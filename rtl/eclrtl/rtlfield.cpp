@@ -23,6 +23,8 @@
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlfield_imp.hpp"
+#include "rtlds_imp.hpp"
+#include "nbcd.hpp"
 
 static const char * queryXPath(const RtlFieldInfo * field)
 {
@@ -54,6 +56,30 @@ static void queryNestedOuterXPath(StringAttr & ret, const RtlFieldInfo * field)
     ret.set(xpath, (size32_t)(sep-xpath));
 }
 
+//-------------------------------------------------------------------------------------------------------------------
+
+class DummyFieldProcessor : public CInterfaceOf<IFieldProcessor>
+{
+public:
+    virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field) {}
+    virtual void processBool(bool value, const RtlFieldInfo * field) {}
+    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field) {}
+    virtual void processInt(__int64 value, const RtlFieldInfo * field) {}
+    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field) {}
+    virtual void processReal(double value, const RtlFieldInfo * field) {}
+    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field) {}
+    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field) {}
+    virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field) {}
+    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field) {}
+    virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field) {}
+
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data) { return false; }
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows) { return true; }
+    virtual bool processBeginRow(const RtlFieldInfo * field) { return true; }
+    virtual void processEndSet(const RtlFieldInfo * field) {}
+    virtual void processEndDataset(const RtlFieldInfo * field) {}
+    virtual void processEndRow(const RtlFieldInfo * field) {}
+};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -69,6 +95,12 @@ size32_t RtlTypeInfoBase::process(const byte * self, const byte * selfrow, const
 }
 
 size32_t RtlTypeInfoBase::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & out) const 
+{
+    rtlFailUnexpected();
+    return 0;
+}
+
+size32_t RtlTypeInfoBase::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
 {
     rtlFailUnexpected();
     return 0;
@@ -91,6 +123,15 @@ const RtlTypeInfo * RtlTypeInfoBase::queryChildType() const
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlBoolTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    builder.ensureCapacity(sizeof(bool)+offset, field->name->str());
+    bool val = source.getBooleanResult(field);
+    * (bool *) (builder.getSelf() + offset) = val;
+    offset += sizeof(bool);
+    return offset;
+}
+
 size32_t RtlBoolTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     target.processBool(*(const bool *)self, field);
@@ -112,6 +153,19 @@ double RtlRealTypeInfo::value(const byte * self) const
     return *(const double *)self;
 }
 
+size32_t RtlRealTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    builder.ensureCapacity(length+offset, field->name->str());
+    double val = source.getRealResult(field);
+    byte *dest = builder.getSelf() + offset;
+    if (length == 4)
+        *(float *) dest = (float) val;
+    else
+        *(double *) dest = val;
+    offset += length;
+    return offset;
+}
+
 size32_t RtlRealTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     target.processReal(value(self), field);
@@ -125,6 +179,15 @@ size32_t RtlRealTypeInfo::toXML(const byte * self, const byte * selfrow, const R
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    builder.ensureCapacity(length+offset, field->name->str());
+    __int64 val = isUnsigned() ? (__int64) source.getUnsignedResult(field) : source.getSignedResult(field);
+    rtlWriteInt(builder.getSelf() + offset, val, length);
+    offset += length;
+    return offset;
+}
 
 size32_t RtlIntTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
@@ -145,6 +208,16 @@ size32_t RtlIntTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlSwapIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    builder.ensureCapacity(length+offset, field->name->str());
+    __int64 val = isUnsigned() ? (__int64) source.getUnsignedResult(field) : source.getSignedResult(field);
+    // NOTE - we assume that the value returned from the source is already a swapped int
+    rtlWriteInt(builder.getSelf() + offset, val, length);
+    offset += length;
+    return offset;
+}
 
 size32_t RtlSwapIntTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
@@ -169,6 +242,16 @@ size32_t RtlSwapIntTypeInfo::toXML(const byte * self, const byte * selfrow, cons
 size32_t RtlPackedIntTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     return rtlGetPackedSize(self); 
+}
+
+size32_t RtlPackedIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    unsigned __int64 value = isUnsigned() ? (__int64) source.getUnsignedResult(field) : source.getSignedResult(field);
+    size32_t sizeInBytes = rtlGetPackedSize(&value);
+    builder.ensureCapacity(sizeInBytes+offset, field->name->str());
+    rtlSetPackedUnsigned(builder.getSelf() + offset, value);
+    offset += sizeInBytes;
+    return offset;
 }
 
 size32_t RtlPackedIntTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
@@ -196,6 +279,44 @@ size32_t RtlStringTypeInfo::size(const byte * self, const byte * selfrow) const
     if (isFixedSize())
         return length;
     return sizeof(size32_t) + rtlReadUInt4(self);
+}
+
+size32_t RtlStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    size32_t size;
+    char *value;
+    source.getStringResult(field, size, value);
+    if (!isFixedSize())
+    {
+        builder.ensureCapacity(offset+size+sizeof(size32_t), field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlWriteInt4(dest, size);
+#if 0
+        // NOTE - you might argue that we should convert the incoming data to EBCDIC. But it seems more useful to
+        // define the semantics as being that the IFieldSource should return EBCDIC if you have declared the matching field as EBCDIC
+        // (otherwise, why did you bother?)
+        if (isEbcdic())
+            rtlStrToEStr(size, (char *) dest+sizeof(size32_t), size, (char *)value);
+        else
+#endif
+            memcpy(dest+sizeof(size32_t), value, size);
+        offset += size+sizeof(size32_t);
+    }
+    else
+    {
+        builder.ensureCapacity(offset+length, field->name->str());
+        byte *dest = builder.getSelf()+offset;
+#if 0
+        // See above...
+        if (isEbcdic())
+            rtlStrToEStr(length, (char *) dest, size, (char *) value);
+        else
+#endif
+            rtlStrToStr(length, dest, size, value);
+        offset += length;
+    }
+    rtlFree(value);
+    return offset;
 }
 
 size32_t RtlStringTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
@@ -269,6 +390,30 @@ size32_t RtlDataTypeInfo::size(const byte * self, const byte * selfrow) const
     return sizeof(size32_t) + rtlReadUInt4(self);
 }
 
+size32_t RtlDataTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    size32_t size;
+    void *value;
+    source.getDataResult(field, size, value);
+    if (!isFixedSize())
+    {
+        builder.ensureCapacity(offset+size+sizeof(size32_t), field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlWriteInt4(dest, size);
+        memcpy(dest+sizeof(size32_t), value, size);
+        offset += size+sizeof(size32_t);
+    }
+    else
+    {
+        builder.ensureCapacity(offset+length, field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlDataToData(length, dest, size, value);
+        offset += length;
+    }
+    rtlFree(value);
+    return offset;
+}
+
 size32_t RtlDataTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     const char * str = reinterpret_cast<const char *>(self);
@@ -319,6 +464,31 @@ size32_t RtlVarStringTypeInfo::size(const byte * self, const byte * selfrow) con
         return length + 1;
     const char * str = reinterpret_cast<const char *>(self);
     return (size32_t)strlen(str)+1;
+}
+
+size32_t RtlVarStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    size32_t size;
+    char *value;
+    source.getStringResult(field, size, value);
+    if (!isFixedSize())
+    {
+        builder.ensureCapacity(offset+size+1, field->name->str());
+        // See notes re EBCDIC conversion in RtlStringTypeInfo code
+        byte *dest = builder.getSelf()+offset;
+        memcpy(dest, value, size);
+        dest[size] = '\0';
+        offset += size+1;
+    }
+    else
+    {
+        builder.ensureCapacity(offset+length, field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlStrToVStr(length, dest, size, value);
+        offset += length;
+    }
+    rtlFree(value);
+    return offset;
 }
 
 size32_t RtlVarStringTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
@@ -374,6 +544,32 @@ size32_t RtlQStringTypeInfo::size(const byte * self, const byte * selfrow) const
     if (isFixedSize())
         return rtlQStrSize(length);
     return sizeof(size32_t) + rtlQStrSize(rtlReadUInt4(self));
+}
+
+size32_t RtlQStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    size32_t size;
+    char *value;
+    source.getStringResult(field, size, value);
+    if (!isFixedSize())
+    {
+        size32_t sizeInBytes = rtlQStrSize(size) + sizeof(size32_t);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlWriteInt4(dest, size);
+        rtlStrToQStr(size, (char *) dest+sizeof(size32_t), size, value);
+        offset += sizeInBytes;
+    }
+    else
+    {
+        size32_t sizeInBytes = rtlQStrSize(length);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlStrToQStr(length, (char *) dest, size, value);
+        offset += sizeInBytes;
+    }
+    rtlFree(value);
+    return offset;
 }
 
 size32_t RtlQStringTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
@@ -432,6 +628,20 @@ size32_t RtlDecimalTypeInfo::size(const byte * self, const byte * selfrow) const
     return calcSize();
 }
 
+size32_t RtlDecimalTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    Decimal value;
+    source.getDecimalResult(field, value);
+    size32_t sizeInBytes = calcSize();
+    builder.ensureCapacity(sizeInBytes+offset, field->name->str());
+    if (isUnsigned())
+        value.getUDecimal(sizeInBytes, getDecimalPrecision(), builder.getSelf()+offset);
+    else
+        value.getDecimal(sizeInBytes, getDecimalPrecision(), builder.getSelf()+offset);
+    offset += sizeInBytes;
+    return offset;
+}
+
 size32_t RtlDecimalTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     size32_t thisSize = calcSize();
@@ -453,6 +663,11 @@ size32_t RtlDecimalTypeInfo::toXML(const byte * self, const byte * selfrow, cons
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlCharTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    throwUnexpected();  // Can't have a field of type char
+}
 
 size32_t RtlCharTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
@@ -485,6 +700,32 @@ size32_t RtlUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const
     if (isFixedSize())
         return length * sizeof(UChar);
     return sizeof(size32_t) + rtlReadUInt4(self) * sizeof(UChar);
+}
+
+size32_t RtlUnicodeTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    size32_t sizeInChars;
+    UChar *value;
+    source.getUnicodeResult(field, sizeInChars, value);
+    if (!isFixedSize())
+    {
+        size32_t sizeInBytes = sizeInChars * sizeof(UChar);
+        builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlWriteInt4(dest, sizeInChars);  // NOTE - in chars!
+        memcpy(dest+sizeof(size32_t), value, sizeInBytes);
+        offset += sizeInBytes+sizeof(size32_t);
+    }
+    else
+    {
+        size32_t sizeInBytes = length * sizeof(UChar);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlUnicodeToUnicode(length, (UChar *) dest, sizeInChars, value);
+        offset += sizeInBytes;
+    }
+    rtlFree(value);
+    return offset;
 }
 
 size32_t RtlUnicodeTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
@@ -539,6 +780,32 @@ size32_t RtlVarUnicodeTypeInfo::size(const byte * self, const byte * selfrow) co
     return (rtlUnicodeStrlen(ustr)+1) * sizeof(UChar);
 }
 
+size32_t RtlVarUnicodeTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    size32_t sizeInChars;
+    UChar *value;
+    source.getUnicodeResult(field, sizeInChars, value);
+    if (!isFixedSize())
+    {
+        size32_t sizeInBytes = (sizeInChars+1) * sizeof(UChar);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        UChar *dest = (UChar *) builder.getSelf()+offset;
+        memcpy(dest, value, sizeInBytes - sizeof(UChar));
+        dest[sizeInChars] = 0;
+        offset += sizeInBytes;
+    }
+    else
+    {
+        size32_t sizeInBytes = length * sizeof(UChar);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        byte *dest = builder.getSelf()+offset;
+        rtlUnicodeToVUnicode(length, (UChar *) dest, sizeInChars, value);
+        offset += sizeInBytes;
+    }
+    rtlFree(value);
+    return offset;
+}
+
 size32_t RtlVarUnicodeTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     const UChar * ustr = reinterpret_cast<const UChar *>(self);
@@ -573,6 +840,22 @@ size32_t RtlUtf8TypeInfo::size(const byte * self, const byte * selfrow) const
 {
     assertex(!isFixedSize());
     return sizeof(size32_t) + rtlUtf8Size(rtlReadUInt4(self), self+sizeof(unsigned));
+}
+
+size32_t RtlUtf8TypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    size32_t sizeInChars;
+    char *value;
+    source.getUTF8Result(field, sizeInChars, value);
+    size32_t sizeInBytes = rtlUtf8Size(sizeInChars, value);
+    assertex(!isFixedSize());
+    builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), field->name->str());
+    byte *dest = builder.getSelf()+offset;
+    rtlWriteInt4(dest, sizeInChars);  // NOTE - in chars!
+    memcpy(dest+sizeof(size32_t), value, sizeInBytes);
+    offset += sizeInBytes+sizeof(size32_t);
+    rtlFree(value);
+    return offset;
 }
 
 size32_t RtlUtf8TypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
@@ -628,6 +911,20 @@ inline size32_t processFields(const RtlFieldInfo * const * cur, const byte * sel
     return offset;
 }
 
+inline size32_t buildFields(const RtlFieldInfo * const * cur, ARowBuilder &builder, size32_t offset, IFieldSource &source)
+{
+    loop
+    {
+        const RtlFieldInfo * child = *cur;
+        if (!child)
+            break;
+        offset = child->build(builder, offset, source);
+        cur++;
+    }
+    return offset;
+}
+
+
 inline size32_t toXMLFields(const RtlFieldInfo * const * cur, const byte * self, const byte * selfrow, IXmlWriter & target)
 {
     size32_t offset = 0;
@@ -676,6 +973,14 @@ size32_t RtlRecordTypeInfo::toXML(const byte * self, const byte * selfrow, const
     return thisSize;
 }
 
+size32_t RtlRecordTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    source.processBeginRow(field);
+    offset = buildFields(fields, builder, offset, source);
+    source.processEndRow(field);
+    return offset;
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlSetTypeInfo::size(const byte * self, const byte * selfrow) const 
@@ -683,23 +988,68 @@ size32_t RtlSetTypeInfo::size(const byte * self, const byte * selfrow) const
     return sizeof(bool) + sizeof(size32_t) + rtlReadUInt4(self + sizeof(bool));
 }
 
+size32_t RtlSetTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    bool isAll;
+    source.processBeginSet(field, isAll);
+    size32_t sizeInBytes = sizeof(bool) + sizeof(size32_t);
+    builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+    byte *dest = builder.getSelf()+offset;
+    if (isAll)
+    {
+        * (bool *) dest = true;
+        rtlWriteInt4(dest+1, 0);
+        offset += sizeInBytes;
+    }
+    else
+    {
+        * (bool *) dest = false;
+        size32_t newOffset = offset + sizeInBytes;
+        RtlFieldStrInfo dummyField("<set element>", NULL, child);
+        while (source.processNextSet(field))
+        {
+            newOffset = child->build(builder, newOffset, &dummyField, source);
+        }
+        // Go back in and patch the size, remembering it may have moved
+        rtlWriteInt4(builder.getSelf()+offset+1, newOffset - (offset+sizeInBytes));
+        offset = newOffset;
+    }
+    source.processEndSet(field);
+    return offset;
+}
+
 size32_t RtlSetTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     unsigned offset = sizeof(bool) + sizeof(size32_t);
     unsigned max = offset + rtlReadUInt4(self + sizeof(bool));
-    if (target.processBeginSet(field))
+    unsigned elements = 0;
+    if (!*(bool *)self)
     {
-        if (*(bool *)self)
-            target.processSetAll(field);
+        unsigned tempOffset = sizeof(bool) + sizeof(size32_t);
+        if (child->isFixedSize())
+        {
+            unsigned elemSize = child->size(NULL, NULL);
+            elements = (max-offset) / elemSize;
+            assert(elements*elemSize == max-offset);
+        }
         else
         {
-            while (offset < max)
+            DummyFieldProcessor dummy;
+            while (tempOffset < max)
             {
-                offset += child->process(self+offset, selfrow, field, target);
+                tempOffset += child->process(self+tempOffset, selfrow, field, dummy);  // NOTE - good thing we can't have a set of sets, or this would recurse
+                elements++;
             }
         }
-        target.processEndSet(field);
     }
+    if (target.processBeginSet(field, elements, *(bool *)self, self+offset))
+    {
+        while (offset < max)
+        {
+            offset += child->process(self+offset, selfrow, field, target);
+        }
+    }
+    target.processEndSet(field);
     return max;
 }
 
@@ -715,21 +1065,20 @@ size32_t RtlSetTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
         target.outputBeginNested(outerTag, false);
     }
 
-    const char *innerPath = queryXPath(field);
-    target.outputBeginArray(innerPath);
-
     if (*(bool *)self)
         target.outputSetAll();
     else
     {
+        const char *innerPath = queryXPath(field);
+        target.outputBeginArray(innerPath);
         while (offset < max)
         {
             child->toXML(self+offset, selfrow, field, target);
             offset += child->size(self+offset, selfrow);
         }
+        target.outputEndArray(innerPath);
     }
 
-    target.outputEndArray(innerPath);
     if (outerTag)
         target.outputEndNested(outerTag);
     return max;
@@ -777,13 +1126,54 @@ size32_t RtlDatasetTypeInfo::size(const byte * self, const byte * selfrow) const
     return sizeof(size32_t) + rtlReadUInt4(self);
 }
 
+size32_t RtlDatasetTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    source.processBeginDataset(field);
+    if (isLinkCounted())
+    {
+        // a 32-bit record count, and a pointer to an array of record pointers
+        size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        size32_t numRows = 0;
+        Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
+        byte **childRows = NULL;
+        RtlFieldStrInfo dummyField("<nested row>", NULL, child);
+        while (source.processNextRow(field))
+        {
+            RtlDynamicRowBuilder childBuilder(childAllocator);
+            size32_t childLen = child->build(childBuilder, 0, &dummyField, source);
+            childRows = childAllocator->appendRowOwn(childRows, ++numRows, (void *) childBuilder.finalizeRowClear(childLen));
+        }
+        // Go back in and patch the count, remembering it may have moved
+        rtlWriteInt4(builder.getSelf()+offset, numRows);
+        * ( const void * * ) (builder.getSelf()+offset+sizeof(size32_t)) = childRows;
+        offset += sizeInBytes;
+    }
+    else
+    {
+        // a 32-bit size, then rows inline
+        size32_t sizeInBytes = sizeof(size32_t);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        size32_t newOffset = offset + sizeInBytes;
+        RtlFieldStrInfo dummyField("<nested row>", NULL, child);
+        while (source.processNextRow(field))
+            newOffset = child->build(builder, newOffset, &dummyField, source);
+        // Go back in and patch the size, remembering it may have moved
+        rtlWriteInt4(builder.getSelf()+offset, newOffset - (offset+sizeInBytes));
+        offset = newOffset;
+    }
+    source.processEndDataset(field);
+    return offset;
+
+}
+
 size32_t RtlDatasetTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     if (isLinkCounted())
     {
-        if (target.processBeginDataset(field))
+        size32_t thisCount = rtlReadUInt4(self);
+        if (target.processBeginDataset(field, thisCount))
         {
-            size32_t thisCount = rtlReadUInt4(self);
             const byte * * rows = *reinterpret_cast<const byte * * const *>(self + sizeof(size32_t));
             for (unsigned i= 0; i < thisCount; i++)
             {
@@ -798,7 +1188,15 @@ size32_t RtlDatasetTypeInfo::process(const byte * self, const byte * selfrow, co
     {
         unsigned offset = sizeof(size32_t);
         unsigned max = offset + rtlReadUInt4(self);
-        if (target.processBeginDataset(field))
+        unsigned thisCount = 0;
+        DummyFieldProcessor dummy;
+        while (offset < max)
+        {
+            offset += child->process(self+offset, self+offset, field, dummy);
+            thisCount++;
+        }
+        offset = sizeof(size32_t);
+        if (target.processBeginDataset(field, thisCount))
         {
             while (offset < max)
             {
@@ -863,13 +1261,41 @@ size32_t RtlDictionaryTypeInfo::size(const byte * self, const byte * selfrow) co
     return sizeof(size32_t) + rtlReadUInt4(self);
 }
 
+size32_t RtlDictionaryTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    source.processBeginDataset(field);
+    if (isLinkCounted())
+    {
+        // a 32-bit record count, and a pointer to an hash table with record pointers
+        size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
+        RtlLinkedDictionaryBuilder dictBuilder(childAllocator, hashInfo);
+        RtlFieldStrInfo dummyField("<nested row>", NULL, child);
+        while (source.processNextRow(field))
+        {
+            RtlDynamicRowBuilder childBuilder(childAllocator);
+            size32_t childLen = child->build(childBuilder, 0, &dummyField, source);
+            dictBuilder.appendOwn((void *) childBuilder.finalizeRowClear(childLen));
+        }
+        // Go back in and patch the count
+        rtlWriteInt4(builder.getSelf()+offset, dictBuilder.getcount());
+        * ( const void * * ) (builder.getSelf()+offset+sizeof(size32_t)) = dictBuilder.linkrows();
+        offset += sizeInBytes;
+    }
+    else
+        UNIMPLEMENTED;  // And may never be...
+    source.processEndDataset(field);
+    return offset;
+}
+
 size32_t RtlDictionaryTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     if (isLinkCounted())
     {
-        if (target.processBeginDataset(field))
+        size32_t thisCount = rtlReadUInt4(self);
+        if (target.processBeginDataset(field, thisCount))
         {
-            size32_t thisCount = rtlReadUInt4(self);
             const byte * * rows = *reinterpret_cast<const byte * * const *>(self + sizeof(size32_t));
             for (unsigned i= 0; i < thisCount; i++)
             {

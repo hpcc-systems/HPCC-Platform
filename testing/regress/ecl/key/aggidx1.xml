@@ -1,0 +1,28 @@
+<Dataset name='Result 1'>
+ <Row><_unnamed_sum_aage1>600</_unnamed_sum_aage1><_unnamed_exists_2>true</_unnamed_exists_2><_unnamed_exists_3>true</_unnamed_exists_3><_unnamed_exists_4>false</_unnamed_exists_4><_unnamed_cnt_5>9</_unnamed_cnt_5></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><_unnamed_max_aage1>99</_unnamed_max_aage1></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><_unnamed_cnt_1>1</_unnamed_cnt_1></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>10</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><_unnamed_cnt_1>1</_unnamed_cnt_1></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><_unnamed_1>10</_unnamed_1></Row>
+ <Row><_unnamed_1>0</_unnamed_1></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>true</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>true</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>false</Result_9></Row>
+</Dataset>

@@ -965,7 +965,6 @@ void CContainerInfo::setRow(HqlCppTranslator & translator, BuildCtx & ctx, IRefe
     if (!recordTypesMatch(selector->queryType(), source->queryType()))
         throwError(HQLERR_RecordNotCompatible);
 
-    assertex(!recordRequiresLinkCount(column->queryRecord()));
     CHqlBoundExpr targetAddress, sourceAddress, length;
     source->buildAddress(ctx, sourceAddress);
 
@@ -988,12 +987,23 @@ void CContainerInfo::setRow(HqlCppTranslator & translator, BuildCtx & ctx, IRefe
     buildAddress(translator, ctx, selector, targetAddress);
 
     HqlExprArray args;
-    args.append(*LINK(targetAddress.expr));
-    args.append(*LINK(sourceAddress.expr));
-    args.append(*LINK(length.expr));
-    translator.callProcedure(ctx, memcpyId, args);
+    if (recordRequiresLinkCount(column->queryRecord()))
+    {
+        args.append(*LINK(targetAddress.expr));
+        args.append(*LINK(length.expr));
+        args.append(*LINK(sourceAddress.expr));
+        args.append(*translator.buildMetaParameter(column));
+        translator.callProcedure(ctx, rtlCopyRowLinkChildrenId, args);
+    }
+    else
+    {
+        args.append(*LINK(targetAddress.expr));
+        args.append(*LINK(sourceAddress.expr));
+        args.append(*LINK(length.expr));
+        translator.callProcedure(ctx, memcpyId, args);
+    }
 
-    //Use the size just calulated for the field
+    //Use the size just calculated for the field
     associateSizeOf(ctx, selector, length.expr, 0);
 }
 
@@ -2340,7 +2350,7 @@ void CBitfieldInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IRe
     if (bitOffset > 0)
         newValue.setown(createValue(no_lshift, LINK(storageType), newValue.getClear(), getSizetConstant(bitOffset)));
     if (newValue->isConstant())
-        newValue.setown(foldHqlExpression(newValue, 0, 0));
+        newValue.setown(foldHqlExpression(translator.queryErrorProcessor(), newValue));
     OwnedHqlExpr final = createValue(no_bor, LINK(storageType), oldValue, newValue.getClear());
 
     CHqlBoundTarget boundTarget;
@@ -2709,7 +2719,7 @@ IHqlExpression * CXmlColumnInfo::getXmlDatasetExpr(HqlCppTranslator & translator
     IHqlExpression * path = selector->queryExpr();
     StringBuffer subPrefix;
     BoundRow * selfCursor = translator.bindSelf(loopctx, path, targetRow->queryBound(), targetRow->queryBuilder());
-    BoundRow * srcCursor = translator.bindXmlTableCursor(loopctx, path, subRowExpr, no_none, NULL, false);
+    translator.bindXmlTableCursor(loopctx, path, subRowExpr, no_none, NULL, false);
     OwnedHqlExpr active = ensureActiveRow(path);
     translator.buildAssign(loopctx, selfCursor->querySelector(), active);
     translator.finishSelf(loopctx, selfCursor, targetRow);

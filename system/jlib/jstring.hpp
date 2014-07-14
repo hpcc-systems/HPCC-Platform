@@ -354,6 +354,7 @@ interface IEntityHelper
 };
 
 void jlib_decl appendURL(StringBuffer *dest, const char *src, size32_t len = -1, char lower=FALSE);
+extern jlib_decl StringBuffer &appendDecodedURL(StringBuffer &out, const char *url);
 extern jlib_decl StringBuffer & appendStringAsCPP(StringBuffer &out, unsigned len, const char * src, bool addBreak);
 extern jlib_decl StringBuffer & appendStringAsQuotedCPP(StringBuffer &out, unsigned len, const char * src, bool addBreak);
 extern jlib_decl StringBuffer & appendDataAsHex(StringBuffer &out, unsigned len, const void * data);
@@ -369,6 +370,7 @@ extern jlib_decl const char *decodeXML(const char *x, StringBuffer &ret, const c
 extern jlib_decl const char *encodeXML(const char *x, IIOStream &out, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
 extern jlib_decl void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsigned len=(unsigned)-1);
 
+extern jlib_decl int utf8CharLen(unsigned char ch);
 extern jlib_decl int utf8CharLen(const unsigned char *ch);
 
 inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)
@@ -437,13 +439,34 @@ jlib_decl StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *va
 
 jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name);
 jlib_decl StringBuffer &appendfJSONName(StringBuffer &s, const char *format, ...);
-jlib_decl StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned len, const void *_value);
+jlib_decl StringBuffer &appendJSONDataValue(StringBuffer& s, const char *name, unsigned len, const void *_value);
 
 inline StringBuffer &appendJSONNameOrDelimit(StringBuffer &s, const char *name)
 {
     if (name && *name)
         return appendJSONName(s, name);
     return delimitJSON(s);
+}
+
+inline StringBuffer &appendJSONStringValue(StringBuffer& s, const char *name, unsigned len, const char *value, bool encode, bool quoted=true)
+{
+    appendJSONNameOrDelimit(s, name);
+    if (!value)
+        return s.append("null");
+    if (quoted)
+        s.append('"');
+    if (encode)
+        encodeJSON(s, len, value);
+    else
+        s.append(len, value);
+    if (quoted)
+        s.append('"');
+    return s;
+}
+
+inline StringBuffer &appendJSONStringValue(StringBuffer& s, const char *name, const char *value, bool encode, bool quoted=true)
+{
+    return appendJSONStringValue(s, name, value ? strlen(value) : 0, value, encode, quoted);
 }
 
 template <typename type>
@@ -464,10 +487,7 @@ inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, bool val
 template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, const char *value)
 {
-    appendJSONNameOrDelimit(s, name);
-    if (!value)
-        return s.append("null");
-    return encodeJSON(s.append('"'), value).append('"');
+    return appendJSONStringValue(s, name, value, true);
 }
 
 template <>
@@ -482,14 +502,6 @@ inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned
 {
     appendJSONNameOrDelimit(s, name);
     return s.appendulong(value);
-}
-
-inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned len, const char *value)
-{
-    appendJSONNameOrDelimit(s, name);
-    if (!value)
-        return s.append("null");
-    return encodeJSON(s.append('"'), len, value).append('"');
 }
 
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);

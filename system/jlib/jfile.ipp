@@ -42,9 +42,9 @@ public:
     virtual fileBool isDirectory();
     virtual fileBool isFile();
     virtual fileBool isReadOnly();
-    virtual IFileIO * open(IFOmode mode);
+    virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone);
     virtual IFileAsyncIO * openAsync(IFOmode mode);
-    virtual IFileIO * openShared(IFOmode mode,IFSHmode shmode);
+    virtual IFileIO * openShared(IFOmode mode,IFSHmode shmode,IFEflags extraFlags=IFEnone);
     virtual const char * queryFilename();
     virtual bool remove();
     virtual void rename(const char *newTail);
@@ -73,18 +73,18 @@ public:
     virtual void setShareMode(IFSHmode shmode);
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime);
 
-    virtual void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress=NULL);
+    virtual void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone);
     // if toOfs is (offset_t)-1 then copies entire file 
 
-    virtual void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp);
+    virtual void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, CFflags copyFlags=CFnone);
 
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false);
     
-    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp)
+    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp,CFflags copyFlags=CFnone)
     {
         // not really for local but simulate
         GetHostIp(resfrom);
-        copyTo(dest,0x100000,NULL,usetmp);
+        copyTo(dest,DEFAULT_COPY_BLKSIZE,NULL,usetmp,copyFlags);
     }
     
 protected:
@@ -96,7 +96,7 @@ protected:
 class jlib_decl CFileIO : public CInterface, implements IFileIO
 {
 public:
-    CFileIO(HANDLE,IFSHmode _sharemode);
+    CFileIO(HANDLE,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags);
     ~CFileIO();
     IMPLEMENT_IINTERFACE
 
@@ -119,6 +119,10 @@ protected:
     HANDLE              file;
     bool                throwOnError;
     IFSHmode            sharemode;
+    IFOmode             openmode;
+    IFEflags            extraFlags;
+    atomic_t            bytesRead;
+    atomic_t            bytesWritten;
 private:
     void setPos(offset_t pos);
 

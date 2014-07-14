@@ -48,10 +48,10 @@ public:
         fprintf(ofile, "Total hits:                       %d\n", numrequests);
         fprintf(ofile, "Time taken(millisecond):          %d\n", msecs);
         fprintf(ofile, "Hits per second:                  %3.1f\n", numrequests/(msecs*0.001));
-        fprintf(ofile, "Total data sent:                  %Ld\n", totalreqlen);
-        fprintf(ofile, "Total data received:              %Ld\n", totalresplen);
+        fprintf(ofile, "Total data sent:                  %"I64F"d\n", totalreqlen);
+        fprintf(ofile, "Total data received:              %"I64F"d\n", totalresplen);
         __int64 totallen = totalreqlen + totalresplen;
-        fprintf(ofile, "Total data transferred:           %Ld\n", totallen);
+        fprintf(ofile, "Total data transferred:           %"I64F"d\n", totallen);
         fprintf(ofile, "Data transfered per second:       %5.1f\n", totallen/(msecs*0.001));
         fprintf(ofile, "Slowest round trip(millisecond):  %d\n", slowest);
         fprintf(ofile, "Fastest round trip(millisecond):  %d\n", fastest);

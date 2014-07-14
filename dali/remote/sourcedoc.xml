@@ -23,4 +23,9 @@
     <para>
         The dali/remote directory contains the sources for the dali/remote library.
     </para>
+    <para>
+        The makefile is for SunOS compiler which is available for download from Oracle Solaris Studio (not in Solaris OS image).
+        Two compiled binaries: 1) daliservix: compiled on Solaris 10 Sparc with SunOS compiler. 2) daliservix_s86: compiled
+        on Solaris 10 x86 with SunOS compiler. The makefle can be run with either SunOS make or GNU gmake.
+    </para>
 </section>

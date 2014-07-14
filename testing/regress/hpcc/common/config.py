@@ -60,7 +60,7 @@ class Config:
             rC = namedtuple("Regress", js.keys())
             return _dict(getattr(rC(**js), "Regress"))
         except IOError as e:
-            print(e)
+            raise(e)
 
     #implement writing out of a config.
     def writeConfig(self, file):

@@ -151,11 +151,24 @@ extern jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const 
 
 class jlib_decl StringArray : public ArrayOf<const char *, const char *>
 {
+    struct CCmp
+    {
+        static int compare(char const **l, char const **r) { return strcmp(*l, *r); }
+        static int compareNC(char const **l, char const **r) { return stricmp(*l, *r); }
+        static int revCompare(char const **l, char const **r) { return strcmp(*r, *l); }
+        static int revCompareNC(char const **l, char const **r) { return stricmp(*r, *l); }
+    };
+    typedef ArrayOf<const char *, const char *> PARENT;
 public:
     // Appends a list in a string delimited by 'delim'
     void appendList(const char *list, const char *delim);
     // Appends a list in a string delimited by 'delim' without duplicates
     void appendListUniq(const char *list, const char *delim);
+    void sortAscii(bool nocase=false);
+    void sortAsciiReverse(bool nocase=false);
+    void sortCompare(int (*compare)(const char * * l, const char * * r));
+private:
+    using PARENT::sort; // prevent access to this function - to avoid ambiguity
 };
 class CIStringArray : public StringArray, public CInterface
 {

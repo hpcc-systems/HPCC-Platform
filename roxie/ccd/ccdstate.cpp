@@ -38,6 +38,7 @@
 #include "dautils.hpp"
 
 #include "pkgimpl.hpp"
+#include "roxiehelper.hpp"
 
 //-------------------------------------------------------------------------------------------
 // class CRoxiePluginCtx - provide the environments for plugins loaded by roxie. 
@@ -71,18 +72,54 @@ SafePluginMap *plugins;
 
 // These two helper functions will return the original filenames placed in the XGMML by the codegen, regardless of how/if roxieconfig resolved them
 
-const char *queryNodeFileName(const IPropertyTree &graphNode)
+static const char *_queryNodeFileName(const IPropertyTree &graphNode)
 {
-    const char *id = graphNode.queryProp("att[@name='_fileName']/@value");
-    return id;
+    if (graphNode.hasProp("att[@name='_file_dynamic']"))
+        return NULL;
+    else
+        return graphNode.queryProp("att[@name='_fileName']/@value");
 }
 
-const char *queryNodeIndexName(const IPropertyTree &graphNode)
+static const char *_queryNodeIndexName(const IPropertyTree &graphNode)
 {
-    const char * id = graphNode.queryProp("att[@name='_indexFileName']/@value");
-    if (!id && !graphNode.hasProp("att[@name='_indexFileName_dynamic']"))   // can remove soon
-        id = graphNode.queryProp("att[@name='_fileName']/@value");
-    return id;
+    if (graphNode.hasProp("att[@name='_indexFile_dynamic']"))
+        return NULL;
+    else
+        return graphNode.queryProp("att[@name='_indexFileName']/@value");
+}
+
+static bool isSimpleIndexActivity(ThorActivityKind kind)
+{
+    switch (kind)
+    {
+    case TAKindexaggregate:
+    case TAKindexcount:
+    case TAKindexexists:
+    case TAKindexgroupaggregate:
+    case TAKindexgroupcount:
+    case TAKindexgroupexists:
+    case TAKindexnormalize:
+    case TAKindexread:
+        return true;
+    default:
+        return false;
+    }
+}
+
+const char *queryNodeFileName(const IPropertyTree &graphNode, ThorActivityKind kind)
+{
+    if (isSimpleIndexActivity(kind))
+        return NULL;
+    else
+        return _queryNodeFileName(graphNode);
+}
+
+const char *queryNodeIndexName(const IPropertyTree &graphNode, ThorActivityKind kind)
+{
+    if (isSimpleIndexActivity(kind))
+        return _queryNodeFileName(graphNode);
+    else
+        return _queryNodeIndexName(graphNode);
 }
 
 // DelayedReleaser mechanism hangs on to a link to an object for a while...
@@ -435,7 +472,7 @@ protected:
                 {
                     Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheResult, writeAccess);
                     if (dFile)
-                        result = createResolvedFile(fileName, NULL, dFile.getClear(), daliHelper, cacheResult, writeAccess);
+                        result = createResolvedFile(fileName, NULL, dFile.getClear(), daliHelper, !useCache, cacheResult, writeAccess);
                 }
                 else if (!writeAccess)  // If we need write access and expect a dali, but don't have one, we should probably fail
                 {
@@ -450,12 +487,12 @@ protected:
                     }
                 }
             }
-            if (!result && resolveLocal)
+            if (!result && (resolveLocal || alwaysCreate))
             {
                 StringBuffer useName;
-                if (strstr(fileName,"::"))
+                bool wasDFS = false;
+                if (!resolveLocal || strstr(fileName,"::") != NULL)
                 {
-                    bool wasDFS;
                     makeSinglePhysicalPartName(fileName, useName, true, wasDFS);
                 }
                 else
@@ -463,7 +500,7 @@ protected:
                 bool exists = checkFileExists(useName);
                 if (exists || alwaysCreate)
                 {
-                    Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, useName, false);
+                    Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, wasDFS ? NULL : useName.str(), false);
                     if (exists)
                         creator->addSubFile(useName);
                     result = creator.getClear();
@@ -581,7 +618,7 @@ public:
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const 
     {
         StringBuffer xpath;
-        xpath.append("SuperFile[@id='").append(queryNodeFileName(graphNode)).append("']");
+        xpath.append("SuperFile[@id='").append(queryNodeFileName(graphNode, getActivityKind(graphNode))).append("']");
         return lookupElements(xpath.str(), "MemIndex");
     }
 
@@ -625,16 +662,16 @@ public:
                 resolved->remove();
             }
             if (resolved->queryPhysicalName())
-                fileName.clear().append(resolved->queryPhysicalName());
+                fileName.clear().append(resolved->queryPhysicalName());  // if it turned out to be a local file
             resolved.clear();
         }
+        else
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
+        // filename by now may be a local filename, or a dali one
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
-        bool disconnected = !daliHelper->connected();
-        // MORE - not sure this is really the right test. If there SHOULD be a dali but is's unavailable, we should fail.
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, disconnected, !disconnected, true);
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, false, !resolveLocally(), true);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
-
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
 
@@ -651,6 +688,10 @@ public:
     {
         return CPackageNode::getEnableFieldTranslation();
     }
+    virtual bool isCompulsory() const
+    {
+        return CPackageNode::isCompulsory();
+    }
     virtual const IPropertyTree *queryTree() const
     {
         return CPackageNode::queryTree();
@@ -662,10 +703,6 @@ public:
     virtual const char *queryId() const
     {
         return CPackageNode::queryId();
-    }
-    virtual bool isCompulsory() const
-    {
-        return CPackageNode::isCompulsory();
     }
     virtual bool resolveLocally() const
     {
@@ -718,9 +755,9 @@ public:
     {
         return BASE::isActive();
     }
-    virtual bool validate(const char *queryid, StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
+    virtual bool validate(StringArray &queryids, StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
     {
-        return BASE::validate(queryid, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles);
+        return BASE::validate(queryids, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles);
     }
     virtual void gatherFileMappingForQuery(const char *queryname, IPropertyTree *fileInfo) const
     {
@@ -838,7 +875,7 @@ protected:
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Invalid parameters to addAlias");
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo) = 0;
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool forceRetry) = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -858,7 +895,7 @@ public:
         return active;
     }
 
-    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash)
+    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry)
     {
         Owned<IPropertyTreeIterator> queryNames = querySet->getElements("Query");
         ForEach (*queryNames)
@@ -885,8 +922,8 @@ public:
                     if(!package) package = packages.matchPackage(id);
                     if (!package) package = &queryRootRoxiePackage();
                 }
-                assertex(package);
-                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query), hash);
+                assertex(package && QUERYINTERFACE(package, const IRoxiePackage));
+                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *QUERYINTERFACE(package, const IRoxiePackage), &query, forceRetry), hash);
             }
             catch (IException *E)
             {
@@ -898,8 +935,8 @@ public:
                 {
                     StringBuffer emsg;
                     E->errorMessage(emsg);
-                    Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), NULL);
-                    dummyQuery->suspend(true, emsg.str(), "roxie", true);
+                    Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), NULL, false);
+                    dummyQuery->suspend(emsg.str());
                     addQuery(id, dummyQuery.getClear(), hash);
                 }
                 E->Release();
@@ -931,7 +968,7 @@ public:
 
     virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
-        Owned<IQueryFactory> f = getQuery(queryName, logctx);
+        Owned<IQueryFactory> f = getQuery(queryName, NULL, logctx);
         if (f)
         {
             reply.appendf("<Query id='%s'>\n", queryName);
@@ -944,7 +981,7 @@ public:
 
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx)
     {
-        Owned<IQueryFactory> f = getQuery(queryName, logctx);
+        Owned<IQueryFactory> f = getQuery(queryName, NULL, logctx);
         if (f)
             f->resetQueryTimings();
         else
@@ -990,7 +1027,7 @@ public:
         }
     }
 
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const
     {
         IQueryFactory *ret;
         ret = aliases.getValue(id);
@@ -998,6 +1035,8 @@ public:
             logctx.CTXLOG("Found query alias %s => %s", id, ret->queryQueryName());
         if (!ret)
             ret = queries.getValue(id);
+        if (ret && querySet)
+            querySet->set(querySetName);
         return LINK(ret);
     }
 
@@ -1014,9 +1053,9 @@ public:
     {
     }
 
-    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
+    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool forceRetry)
     {
-        return createServerQueryFactory(id, dll, package, stateInfo);
+        return createServerQueryFactory(id, dll, package, stateInfo, false, forceRetry);
     }
 
 };
@@ -1038,9 +1077,9 @@ public:
         channelNo = _channelNo;
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool forceRetry)
     {
-        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo);
+        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo, false, forceRetry);
     }
 
 };
@@ -1079,11 +1118,11 @@ public:
         return managers[idx];
     }
 
-    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash)
+    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry)
     {
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
-                managers[channel]->load(querySets, packages, hash); // MORE - this means the hash depends on the number of channels. Is that desirable?
+                managers[channel]->load(querySets, packages, hash, forceRetry); // MORE - this means the hash depends on the number of channels. Is that desirable?
     }
 
     virtual void getQueries(const char *id, IArrayOf<IQueryFactory> &queries, const IRoxieContextLogger &logctx) const
@@ -1091,7 +1130,7 @@ public:
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
             {
-                IQueryFactory *query = managers[channel]->getQuery(id, logctx);
+                IQueryFactory *query = managers[channel]->getQuery(id, NULL, logctx);
                 if (query)
                     queries.append(*query);
             }
@@ -1199,7 +1238,7 @@ public:
         // Default is to do nothing...
     }
 
-    virtual void load() = 0;
+    virtual void load(bool forceReload) = 0;
 
     bool matches(hash64_t _xmlHash, bool _active) const
     {
@@ -1234,7 +1273,7 @@ public:
         CriticalBlock b(updateCrit);
         if (queryId)
         {
-            Owned<IQueryFactory> query = serverManager->getQuery(queryId, logctx);
+            Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
             if (query)
             {
                 const char *id = query->queryQueryName();
@@ -1258,7 +1297,7 @@ public:
     void getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
         CriticalBlock b2(updateCrit);
-        Owned<IQueryFactory> query = serverManager->getQuery(queryId, logctx);
+        Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
         if (query)
         {
             StringBuffer freply;
@@ -1363,24 +1402,24 @@ public:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        reload();
+        reload(false);
         daliHelper->commitCache();
     }
 
-    virtual void load()
+    virtual void load(bool forceReload)
     {
         notifier.setown(daliHelper->getQuerySetSubscription(querySet, this));
-        reload();
+        reload(forceReload);
     }
 
-    virtual void reload()
+    virtual void reload(bool forceRetry)
     {
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySet);
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
-        newServerManager->load(newQuerySet, *packages, newHash);
-        newSlaveManagers->load(newQuerySet, *packages, newHash);
+        newServerManager->load(newQuerySet, *packages, newHash, forceRetry);
+        newSlaveManagers->load(newQuerySet, *packages, newHash, forceRetry);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
         clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
     }
@@ -1404,7 +1443,7 @@ public:
     {
     }
 
-    virtual void load()
+    virtual void load(bool forceReload)
     {
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = createPTree("QuerySet");
@@ -1412,8 +1451,8 @@ public:
         newQuerySet->addPropTree("Query", standaloneDll.getLink());
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
-        newServerManager->load(newQuerySet, *packages, newHash);
-        newSlaveManagers->load(newQuerySet, *packages, newHash);
+        newServerManager->load(newQuerySet, *packages, newHash, forceReload);
+        newSlaveManagers->load(newQuerySet, *packages, newHash, forceReload);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
     }
 };
@@ -1431,16 +1470,16 @@ class CRoxiePackageSetWatcher : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, unsigned numChannels, CRoxiePackageSetWatcher *oldPackages)
+    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, unsigned numChannels, CRoxiePackageSetWatcher *oldPackages, bool forceReload)
     : stateHash(0), daliHelper(_daliHelper)
     {
         ForEachItemIn(idx, allQuerySetNames)
         {
-            createQueryPackageManagers(numChannels, allQuerySetNames.item(idx), oldPackages);
+            createQueryPackageManagers(numChannels, allQuerySetNames.item(idx), oldPackages, forceReload);
         }
     }
 
-    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, const IQueryDll *standAloneDll, unsigned numChannels, const char *querySet)
+    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, const IQueryDll *standAloneDll, unsigned numChannels, const char *querySet, bool forceReload)
     : stateHash(0), daliHelper(_daliHelper)
     {
         Owned<IPropertyTree> standAloneDllTree;
@@ -1448,7 +1487,7 @@ public:
         standAloneDllTree->setProp("@id", "roxie");
         standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
         Owned<CRoxieQueryPackageManager> qpm = new CStandaloneQueryPackageManager(numChannels, querySet, LINK(&queryEmptyRoxiePackageMap()), standAloneDllTree.getClear());
-        qpm->load();
+        qpm->load(forceReload);
         stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, qpm->getHash());
         allQueryPackages.append(*qpm.getClear());
     }
@@ -1460,7 +1499,7 @@ public:
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
             if (sm->isActive())
             {
-                Owned<IQueryFactory> library = sm->getQuery(libraryName, logctx);
+                Owned<IQueryFactory> library = sm->getQuery(libraryName, NULL, logctx);
                 if (library)
                 {
                     if (library->isQueryLibrary())
@@ -1479,14 +1518,14 @@ public:
         throw MakeStringException(ROXIE_LIBRARY_ERROR, "No library available for %s", libraryName);
     }
 
-    IQueryFactory *getQuery(const char *id, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
+    IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
     {
         ForEachItemIn(idx, allQueryPackages)
         {
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
             if (sm->isActive())
             {
-                IQueryFactory *query = sm->getQuery(id, logctx);
+                IQueryFactory *query = sm->getQuery(id, querySet, logctx);
                 if (query)
                 {
                     if (slaveQueries)
@@ -1583,15 +1622,15 @@ private:
         return NULL;
     }
 
-    void createQueryPackageManager(unsigned numChannels, const IRoxiePackageMap *packageMap, const char *querySet, hash64_t xmlHash)
+    void createQueryPackageManager(unsigned numChannels, const IRoxiePackageMap *packageMap, const char *querySet, hash64_t xmlHash, bool forceReload)
     {
         Owned<CRoxieQueryPackageManager> qpm = new CRoxieDaliQueryPackageManager(numChannels, packageMap, querySet, xmlHash);
-        qpm->load();
+        qpm->load(forceReload);
         stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, qpm->getHash());
         allQueryPackages.append(*qpm.getClear());
     }
 
-    void createQueryPackageManagers(unsigned numChannels, const char *querySet, CRoxiePackageSetWatcher *oldPackages)
+    void createQueryPackageManagers(unsigned numChannels, const char *querySet, CRoxiePackageSetWatcher *oldPackages, bool forceReload)
     {
         int loadedPackages = 0;
         int activePackages = 0;
@@ -1639,7 +1678,7 @@ private:
                                     DBGLOG("Loading package map %s, active %s", packageMapId, isActive ? "true" : "false");
                                 Owned<CRoxiePackageMap> packageMap = new CRoxiePackageMap(packageMapId, packageMapFilter, isActive);
                                 packageMap->load(xml);
-                                createQueryPackageManager(numChannels, packageMap.getLink(), querySet, xmlHash);
+                                createQueryPackageManager(numChannels, packageMap.getLink(), querySet, xmlHash, forceReload);
                             }
                             loadedPackages++;
                             if (isActive)
@@ -1660,7 +1699,7 @@ private:
         {
             if (traceLevel)
                 DBGLOG("Loading empty package for QuerySet %s", querySet);
-            createQueryPackageManager(numChannels, LINK(&queryEmptyRoxiePackageMap()), querySet, 0);
+            createQueryPackageManager(numChannels, LINK(&queryEmptyRoxiePackageMap()), querySet, 0, forceReload);
         }
         else if (traceLevel)
             DBGLOG("Loaded %d packages (%d active)", loadedPackages, activePackages);
@@ -1683,6 +1722,7 @@ public:
             daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
         atomic_set(&autoPending, 0);
         atomic_set(&autoSignalsPending, 0);
+        forcePending = false;
         pSetsNotifier.setown(daliHelper->getPackageSetsSubscription(this));
         pMapsNotifier.setown(daliHelper->getPackageMapsSubscription(this));
     }
@@ -1693,8 +1733,10 @@ public:
         autoReloadThread.join();
     }
 
-    void requestReload(bool signal)
+    void requestReload(bool signal, bool force)
     {
+        if (force)
+            forcePending = true;    
         if (signal)
             atomic_inc(&autoSignalsPending);
         atomic_inc(&autoPending);
@@ -1707,7 +1749,7 @@ public:
     {
         try
         {
-            reload();
+            reload(false);
             daliHelper->commitCache();
             controlSem.signal();
             autoReloadThread.start();   // Don't want to overlap auto-reloads with the initial load
@@ -1749,10 +1791,10 @@ public:
         return allQueryPackages->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
-    virtual IQueryFactory *getQuery(const char *id, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
-        return allQueryPackages->getQuery(id, slaveQueries, logctx);
+        return allQueryPackages->getQuery(id, querySet, slaveQueries, logctx);
     }
 
     virtual int getActivePackageCount() const
@@ -1763,7 +1805,7 @@ public:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        requestReload(false);
+        requestReload(false, false);
     }
 
 private:
@@ -1778,6 +1820,7 @@ private:
     Semaphore autoReloadComplete;
     atomic_t autoSignalsPending;
     atomic_t autoPending;
+    bool forcePending;
 
     class AutoReloadThread : public Thread
     {
@@ -1807,7 +1850,7 @@ private:
                     atomic_set(&owner.autoPending, 0);
                     try
                     {
-                        owner.reload();
+                        owner.reload(owner.forcePending);
                     }
                     catch (IException *E)
                     {
@@ -1819,6 +1862,7 @@ private:
                     {
                         DBGLOG("Unknown exception in AutoReloadThread");
                     }
+                    owner.forcePending = false;
                 }
                 if (signalsPending)
                 {
@@ -1838,14 +1882,14 @@ private:
         }
     } autoReloadThread;
 
-    void reload()
+    void reload(bool forceRetry)
     {
         clearDaliMisses();
         // We want to kill the old packages, but not until we have created the new ones
         // So that the query/dll caching will work for anything that is not affected by the changes
         Owned<CRoxiePackageSetWatcher> newPackages;
         if (standAloneDll)
-            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, standAloneDll, numChannels, "roxie"));
+            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, standAloneDll, numChannels, "roxie", forceRetry));
         else
         {
             Owned<CRoxiePackageSetWatcher> currentPackages;
@@ -1853,7 +1897,7 @@ private:
                 ReadLockBlock b(packageCrit);
                 currentPackages.setown(allQueryPackages.getLink());
             }
-            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, numChannels, currentPackages));
+            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, numChannels, currentPackages, forceRetry));
         }
         // Hold the lock for as little time as we can
         // Note that we must NOT hold the lock during the delete of the old object - or we deadlock.
@@ -1881,7 +1925,7 @@ private:
                 if (id)
                 {
                     IArrayOf<IQueryFactory> slaveQueries;
-                    Owned<IQueryFactory> query = getQuery(id, &slaveQueries, logctx);
+                    Owned<IQueryFactory> query = getQuery(id, NULL, &slaveQueries, logctx);
                     if (query)
                         query->getQueryInfo(reply, full, &slaveQueries, logctx);
                     else
@@ -2102,7 +2146,7 @@ private:
                 if (!id)
                     throw MakeStringException(ROXIE_MISSING_PARAMS, "No query name specified");
 
-                Owned<IQueryFactory> q = getQuery(id, NULL, logctx);
+                Owned<IQueryFactory> q = getQuery(id, NULL, NULL, logctx);
                 if (q)
                 {
                     Owned<IPropertyTree> tempTree = q->cloneQueryXGMML();
@@ -2117,7 +2161,7 @@ private:
                 const char *id = control->queryProp("Query/@id");
                 if (!id)
                     badFormat();
-                Owned<IQueryFactory> f = getQuery(id, NULL, logctx);
+                Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx);
                 if (f)
                 {
                     unsigned warnLimit = f->getWarnTimeLimit();
@@ -2321,7 +2365,7 @@ private:
                 const char *id = control->queryProp("Query/@id");
                 if (id)
                 {
-                    Owned<IQueryFactory> f = getQuery(id, NULL, logctx); // MORE - slave too?
+                    Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx); // MORE - slave too?
                     if (f)
                     {
                         Owned<const IPropertyTree> stats = f->getQueryStats(from, to);
@@ -2353,7 +2397,7 @@ private:
                 {
                     if (stricmp(action, "listGraphNames") == 0)
                     {
-                        Owned<IQueryFactory> query = getQuery(id, NULL, logctx); // MORE - slave too?
+                        Owned<IQueryFactory> query = getQuery(id, NULL, NULL, logctx); // MORE - slave too?
                         if (query)
                         {
                             reply.appendf("<Query id='%s'>\n", id);
@@ -2387,7 +2431,7 @@ private:
         case 'R':
             if (stricmp(queryName, "control:reload")==0)
             {
-                requestReload(true);
+                requestReload(true, control->getPropBool("@forceRetry", false));
                 if (daliHelper && daliHelper->connected())
                     reply.appendf("<Dali connected='1'/>");
                 else
@@ -2501,7 +2545,7 @@ private:
                 if (!id.length())
                     badFormat();
                 {
-                    Owned<IQueryFactory> f = getQuery(id, NULL, logctx); // MORE - slave too?
+                    Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx); // MORE - slave too?
                     if (f)
                         id.clear().append(f->queryQueryName());  // use the spelling of the query stored with the query factory
                 }
@@ -2586,6 +2630,7 @@ private:
                 else
                     stopPerformanceMonitor();
             }
+            //MORE: control:stats??
             else
                 unknown = true;
             break;
@@ -2597,8 +2642,8 @@ private:
             }
             else if (stricmp(queryName, "control:timeActivities")==0)
             {
-                timeActivities = control->getPropBool("@val", true);
-                topology->setPropInt("@timeActivities", timeActivities);
+                defaultTimeActivities = control->getPropBool("@val", true);
+                topology->setPropInt("@timeActivities", defaultTimeActivities);
             }
             else if (stricmp(queryName, "control:timings")==0)
             {

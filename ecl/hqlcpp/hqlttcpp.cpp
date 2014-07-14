@@ -296,7 +296,7 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
             StringBuffer nameText,valueText;
             name->getStringValue(nameText);
             if (isOptionTooLate(nameText.str()))
-                translator.reportWarning(HQLWRN_OptionSetToLate, HQLWRN_OptionSetToLate_Text, nameText.str());
+                translator.reportWarning(CategoryIgnored, HQLWRN_OptionSetToLate, HQLWRN_OptionSetToLate_Text, nameText.str());
 
             if (value->queryType()->getTypeCode() == type_boolean)
                 valueText.append(value->getBoolValue() ? 1 : 0);
@@ -1371,9 +1371,30 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
     case no_outputscalar:
         if (applyDepth)
         {
-            translator.WARNINGAT(expr, HQLERR_ScalarOutputWithinApply);
+            translator.WARNINGAT(CategoryUnexpected, expr, HQLERR_ScalarOutputWithinApply);
         }
         break;
+    case no_parallel:
+    case no_sequential:
+    case no_orderedactionlist:
+        {
+            HqlExprArray args;
+            ForEachChild(i, expr)
+            {
+                OwnedHqlExpr next = transform(expr->queryChild(i));
+                if (!next->isAction())
+                {
+                    if (!next->isConstant())
+                        next.setown(createValue(no_evaluate_stmt, makeVoidType(), next.getClear()));
+                    else
+                        next.clear();
+                }
+
+                if (next)
+                    args.append(*next.getClear());
+            }
+            return expr->clone(args);
+        }
     }
     Owned<IHqlExpression> transformed = NewHqlTransformer::createTransformed(expr);
     return attachSequenceNumber(transformed.get());
@@ -1422,6 +1443,7 @@ IHqlExpression * SequenceNumberAllocator::attachSequenceNumber(IHqlExpression * 
                 args.append(*createAttribute(namedAtom, LINK(name)));
             args.append(*createAttribute(outputAtom));
             args.append(*createUniqueId());
+            gatherAttributes(args, xmlnsAtom, expr);
             return createSetResult(args);
         }
     default:
@@ -1764,7 +1786,6 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
 static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortIndexPayload, bool alwaysLocal, bool allowImplicitSubSort)
 {
     LinkedHqlExpr dataset = expr->queryChild(0);
-    IHqlExpression * normalizedDs = dataset->queryNormalizedSelector();
     IHqlExpression * buildRecord = dataset->queryRecord();
 
     // If any field types collate differently before and after translation to their hozed
@@ -2226,7 +2247,7 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 
             if (equalities.ordinality() == 0)
             {
-                translator.reportWarning(queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
+                translator.reportWarning(CategoryEfficiency, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
             }
             else
             {
@@ -2719,16 +2740,20 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
 
     bool hasLocal = isLocalActivity(expr);
     bool alwaysLocal = !translator.targetThor();
+    if (alwaysLocal)
+    {
+        if (expr->hasAttribute(hashAtom))
+            return removeAttribute(expr, hashAtom);
+        //Hthor and roxie don't currently support smart joins since the normal join requires the input to be sorted
+        if (expr->hasAttribute(smartAtom))
+            return removeAttribute(expr, smartAtom);
+    }
+
     bool isLocal = hasLocal || alwaysLocal;
     //hash,local doesn't make sense (hash is only used for distribution) => remove hash
     //but also prevent it being converted to a lookup join??
     if (isLocal && expr->hasAttribute(hashAtom))
-    {
-        HqlExprArray args;
-        unwindChildren(args, expr);
-        removeAttribute(args, hashAtom);
-        return expr->clone(args);
-    }
+        return removeAttribute(expr, hashAtom);
 
     //Check to see if this join should be done as a keyed join...
     if (!expr->hasAttribute(lookupAtom) && !expr->hasAttribute(smartAtom) && !expr->hasAttribute(allAtom))
@@ -3132,7 +3157,6 @@ IHqlExpression * ThorHqlTransformer::normalizeSort(IHqlExpression * expr)
 
 IHqlExpression * ThorHqlTransformer::normalizeSubSort(IHqlExpression * expr)
 {
-    IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * sortlist = expr->queryChild(1);
     IHqlExpression * grouping = expr->queryChild(2);
     OwnedHqlExpr newsort = simplifySortlistComplexity(sortlist);
@@ -3166,7 +3190,6 @@ IHqlExpression * ThorHqlTransformer::normalizeSortSteppedIndex(IHqlExpression * 
     node_operator datasetOp = dataset->getOperator();
     if ((datasetOp == no_keyindex) || (datasetOp == no_newkeyindex))
     {
-        IHqlExpression * indexRecord = dataset->queryRecord();
         if (!dataset->hasAttribute(attrName))
         {
             HqlExprArray selects;
@@ -3629,7 +3652,7 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
         transformer.transformRoot(exprs, transformed);
 
         replaceArray(exprs, transformed);
-        DEBUG_TIMER("EclServer: tree transform: convert logical", msTick()-time);
+        updateTimer("workunit;tree transform: convert logical", msTick()-time);
     }
 
     if (queryOptions().normalizeLocations)
@@ -4701,7 +4724,7 @@ static bool isCheckExistsAtleast(IHqlExpression * cond, IHqlExpression * ds, __i
     case no_ne:
         {
             IHqlExpression * condLhs = cond->queryChild(0);
-            if ((condLhs->getOperator() == no_count) && isZero(cond->queryChild(1)))
+            if ((condLhs->getOperator() == no_count) && isZero(cond->queryChild(1)) && (minMinElements == 1))
             {
                 if (aggregateMatchesDataset(condLhs->queryChild(0), ds))
                     return true;
@@ -4782,19 +4805,30 @@ IHqlExpression * OptimizeActivityTransformer::doCreateTransformed(IHqlExpression
             IHqlExpression * lhs = expr->queryChild(1);
             //convert if(exists(x)|count(x)>0, x, y) to nonempty(x, y);
             //must happen before the count(x)>n optimization below....
-            if (optimizeNonEmpty && expr->isDataset() && !canProcessInline(NULL, expr))
+            if (expr->isDataset())
             {
                 if (isCheckExistsAtleast(cond, lhs, 1, 1))
                 {
-                    HqlExprArray args;
-                    args.append(*transform(lhs));
-                    args.append(*transform(expr->queryChild(2)));
-                    OwnedHqlExpr ret = createDataset(no_nonempty, args);
-                    return expr->cloneAllAnnotations(ret);
+                    IHqlExpression * rhs = expr->queryChild(2);
+
+                    //always convert if(exists(x),x) to x regardless of x, or the optimizeNonEmpty option
+                    if (rhs->getOperator() == no_null)
+                        return transform(lhs);
+
+                    if (optimizeNonEmpty && !canProcessInline(NULL, expr))
+                    {
+                        HqlExprArray args;
+                        args.append(*transform(lhs));
+                        args.append(*transform(rhs));
+                        OwnedHqlExpr ret = createDataset(no_nonempty, args);
+                        return expr->cloneAllAnnotations(ret);
+                    }
                 }
             }
 
             __int64 selectIndex = 0;
+            //check for if (count(x) >= 10, x[10].value, <null>) and convert to x[10].value
+            //also valid for count(x) >= 1, but not count(x) >= 11
             IHqlExpression * ds = queryNullDsSelect(selectIndex, expr->queryChild(1), expr->queryChild(2));
             if (ds)
             {
@@ -5182,7 +5216,6 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
     }
     else
     {
-        ITypeInfo * ct = type->queryChildType();
         if (type->getTypeCode() == type_set)
             extraSetAttr.setown(createComma(extraSetAttr.getClear(), createAttribute(_original_Atom, createValue(no_implicitcast, LINK(type), LINK(value)))));
         setOutput.setown(createSetValue(value, queryAlias(value)));
@@ -5417,6 +5450,7 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
     workflowOut = NULL;
     isConditional = false;
     insideStored = false;
+    activeWfid = 0;
 }
 
 //-- Helper routines --
@@ -5640,7 +5674,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                         throwError1(HQLERR_DuplicateDefinitionDiffType, s.str());
                 }
                 else if (translator.queryOptions().allowStoredDuplicate)            // only here as a temporary workaround
-                    translator.reportWarning(queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
+                    translator.reportWarning(CategoryMistake, queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
                 else
                 {
                     if (queryLocationIndependent(prevValue) != queryLocationIndependent(value))
@@ -5670,13 +5704,9 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         switch (curOp)
         {
         case no_persist:
-            if (isRoxie && translator.getCheckRoxieRestrictions())
+            if (isRoxie)
             {
-                StringBuffer s;
-                IHqlExpression * name = cur.queryChild(0);
-                OwnedHqlExpr seq = getGlobalSequenceNumber();
-                getStoredDescription(s, seq, name, true);
-                throwError1(HQLERR_NotSupportInRoxie, s.str());
+                // MORE - Add dynamic attribute to ensure the file is not pre-resolved
             }
             //fall through
         case no_checkpoint:
@@ -5894,7 +5924,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         Owned<IWorkflowItem> wf = addWorkflowToWorkunit(schedWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(getValue), info.queryCluster());
         setWorkflowSchedule(wf, sched);
         workflowOut->append(*createWorkflowItem(getValue, schedWfid, no_none));
-        getValue.setown(createValue(no_null, makeVoidType()));
+        getValue.setown(createNullExpr(expr->queryType()));
     }
     else
         queryBodyExtra(getValue.get())->addDependency(wfid);
@@ -6581,7 +6611,7 @@ void WorkflowTransformer::analyseExpr(IHqlExpression * expr)
                 if (expr->queryName())
                     s.appendf(" '%s'", expr->queryName()->str());
                 //MORE: Better if we also kept nested track of locations
-                translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
+                translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
             }
 
             unsigned prevWfid = activeWfid;
@@ -7253,6 +7283,7 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
     case no_trim:
     case no_charlen:
     case no_sorted:
+    case no_not:
         break;
     case no_substring:
         //single character substring - don't create separate items just for this, since likely to have many of them.
@@ -7374,9 +7405,9 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                             s.append(" in ").append(symbol->queryName());
                     }
                     if (op == no_nothor)
-                        translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
+                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
                     else
-                        translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
+                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
                 }
                 if (value->getOperator() == no_createset)
                 {
@@ -7493,7 +7524,7 @@ protected:
                 StringBuffer s;
                 if (filename)
                     getExprECL(filename, s);
-                translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
+                translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
 
     #if 0
                 checkIndependentOfScope(expr);
@@ -7503,7 +7534,10 @@ protected:
         default:
             if (!isIndependentOfScope(expr))
             {
-                translator.WARNINGAT(queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
+                //There appears to be partial support for functions generated as workflow items - which are not
+                //scope independent since they depend on their paramaters => don't complain about them
+                if (expr->getOperator() != no_return_stmt)
+                    translator.WARNINGAT(CategoryMistake, queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
 
     #if 0
                 checkIndependentOfScope(expr);
@@ -7594,8 +7628,6 @@ IHqlExpression * NewScopeMigrateTransformer::hoist(IHqlExpression * expr, IHqlEx
     if (minimizeWorkunitTemporaries)
         return createWrapper(no_globalscope, LINK(hoisted));
     IHqlExpression * setResult = createSetResult(hoisted);
-    IHqlExpression * seqAttr = setResult->queryAttribute(sequenceAtom);
-    IHqlExpression * aliasAttr = setResult->queryAttribute(namedAtom);
     appendToTarget(*setResult);
 
     return createGetResultFromSetResult(setResult);
@@ -7703,6 +7735,10 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
             }
             break;
         }
+    case no_globalscope:
+        if (isRedundantGlobalScope(transformed))
+            return LINK(transformed->queryChild(0));
+        break;
     }
     return transformed.getClear();
 }
@@ -7849,6 +7885,7 @@ AutoScopeMigrateTransformer::AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCpp
     hasCandidate = false;
     activityDepth = 0;
     curGraph = 1;
+    globalTarget = NULL;
 }
 
 void AutoScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
@@ -8984,50 +9021,9 @@ Note:
   */
 
 static HqlTransformerInfo hqlScopeTaggerInfo("HqlScopeTagger");
-HqlScopeTagger::HqlScopeTagger(IErrorReceiver * _errors)
-: ScopedDependentTransformer(hqlScopeTaggerInfo), errors(_errors)
+HqlScopeTagger::HqlScopeTagger(IErrorReceiver & _errors, ErrorSeverityMapper & _errorMapper)
+: ScopedDependentTransformer(hqlScopeTaggerInfo), errors(_errors), errorMapper(_errorMapper)
 {
-}
-
-
-bool HqlScopeTagger::isValidNormalizeSelector(IHqlExpression * expr)
-{
-    loop
-    {
-        switch (expr->getOperator())
-        {
-        case no_filter:
-            break;
-        case no_usertable:
-            if (isAggregateDataset(expr))
-                return false;
-            return true;
-        case no_hqlproject:
-            if (isCountProject(expr))
-                return false;
-            return true;
-        case no_select:
-            {
-                IHqlExpression * ds = expr->queryChild(0);
-                if (isDatasetActive(ds))
-                    return true;
-
-                //Not really sure what the following should do.  Avoid a.b.c[1].d.e
-                if (ds->isDatarow() && (ds->getOperator() != no_select))
-                    return false;
-                break;
-            }
-        case no_table:
-            return (queryTableMode(expr) == no_flat);
-        case no_keyindex:
-        case no_newkeyindex:
-        case no_rows:
-            return true;
-        default:
-            return false;
-        }
-        expr = expr->queryChild(0);
-    }
 }
 
 
@@ -9047,7 +9043,7 @@ void HqlScopeTagger::checkActiveRow(IHqlExpression * expr)
         getECL(expr, exprText);
         elideString(exprText, 20);
         VStringBuffer msg("ROW(%s) - dataset argument is not in scope.  Did you mean dataset[1]?", exprText.str());
-        reportError(msg);
+        reportError(CategoryError, msg);
     }
 }
 
@@ -9078,7 +9074,7 @@ void HqlScopeTagger::reportSelectorError(IHqlExpression * selector, IHqlExpressi
             getExprIdentifier(datasetName, selector).str());
     }
 
-    reportError(msg);
+    reportError(CategoryError, msg);
 }
 
 
@@ -9096,7 +9092,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             case no_right:
                 StringBuffer exprText, datasetName;
                 VStringBuffer msg("%s - %s not in scope, possibly passed into a global/workflow definition", getECL(expr, exprText), getExprIdentifier(datasetName, ds).str());
-                reportError(msg);
+                reportError(CategoryError, msg);
                 break;
             }
         }
@@ -9110,18 +9106,9 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
         {
             StringBuffer exprText;
             VStringBuffer msg("dictionary %s must be explicitly NORMALIZED", getECL(expr, exprText));
-            reportError(msg, false);
+            reportError(CategoryError, msg);
         }
-        else if (expr->isDataset())
-        {
-            if (!isValidNormalizeSelector(cursor))
-            {
-                StringBuffer exprText;
-                VStringBuffer msg("dataset %s may not be supported without using NORMALIZE", getECL(expr, exprText));
-                reportError(msg, true);
-            }
-        }
-        else
+        else if (!expr->isDataset())
         {
             if (!isDatasetARow(ds))
                 reportSelectorError(ds, expr);
@@ -9195,7 +9182,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
             {
                 StringBuffer exprText;
                 VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
-                reportError(msg, false);
+                reportError(CategoryError, msg);
             }
         }
         return transformed.getClear();
@@ -9207,7 +9194,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
         {
             StringBuffer exprText;
             VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
-            reportError(msg);
+            reportError(CategoryError, msg);
         }
 
         return ensureActiveRow(transformed->queryNormalizedSelector());
@@ -9315,7 +9302,7 @@ IHqlExpression * HqlScopeTagger::transformWithin(IHqlExpression * dataset, IHqlE
     {
         StringBuffer exprText;
         VStringBuffer msg("%s - dataset filtered by WITHIN is too complex", getECL(dataset, exprText));
-        reportError(msg);
+        reportError(CategoryError, msg);
         return transform(dataset);
     }
 
@@ -9339,7 +9326,7 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     {
         StringBuffer exprText;
         VStringBuffer msg("dataset \"%s\" used in WITHIN is not in scope", getECL(scope, exprText));
-        reportError(msg);
+        reportError(CategoryError, msg);
     }
 
     //Check the ds is a table
@@ -9348,7 +9335,7 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     {
         StringBuffer exprText;
         VStringBuffer msg("dataset \"%s\" used as parameter to WITHIN is too complex", getECL(expr, exprText));
-        reportError(msg);
+        reportError(CategoryError, msg);
     }
 
     return transformWithin(ds, scope->queryNormalizedSelector());
@@ -9363,19 +9350,23 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         switch (expr->getAnnotationKind())
         {
         case annotate_meta:
-            collector.processMetaAnnotation(expr);
-            break;
-        case annotate_symbol:
             {
-                WarningProcessor::OnWarningState saved;
-                collector.pushSymbol(saved, expr);
+                unsigned max = errorMapper.processMetaAnnotation(expr);
                 OwnedHqlExpr transformedBody = transform(body);
-                collector.popSymbol(saved);
+                errorMapper.restoreLocalOnWarnings(max);
                 if (body == transformedBody)
                     return LINK(expr);
                 return expr->cloneAnnotation(transformedBody);
             }
             break;
+        case annotate_symbol:
+            {
+                ErrorSeverityMapper::SymbolScope saved(errorMapper, expr);
+                OwnedHqlExpr transformedBody = transform(body);
+                if (body == transformedBody)
+                    return LINK(expr);
+                return expr->cloneAnnotation(transformedBody);
+            }
         case annotate_location:
             {
                 break;
@@ -9387,7 +9378,6 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         return expr->cloneAnnotation(transformedBody);
     }
 
-    collector.checkForGlobalOnWarning(expr);
     switch (expr->getOperator())
     {
     case no_left:
@@ -9421,7 +9411,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset %s mistakenly interpreted as a datarow, possibly due to missing dataset() in parameter type", getECL(ds, exprText));
-                reportError(msg);
+                reportError(CategoryError, msg);
             }
             return transformAmbiguousChildren(expr);
         }
@@ -9449,7 +9439,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), lhs->queryChild(1)->queryName()->str());
-                reportError(msg.str());
+                reportError(CategoryError, msg.str());
             }
             if (rhs == newRhs)
                 return LINK(expr);
@@ -9465,7 +9455,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         {
             OwnedHqlExpr transformed = Parent::createTransformed(expr);
             if (transformed->queryChild(0)->isDataset())
-                reportError("PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?");
+                reportError(CategoryError, "PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?");
             return transformed.getClear();
         }
     case no_merge:
@@ -9489,7 +9479,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
                 {
                     if (sorts.item(i).isAttribute())
                     {
-                        reportError(HQLWRN_MergeBadSortOrder_Text, true);
+                        reportError(CategorySyntax, HQLWRN_MergeBadSortOrder_Text);
                         sorts.remove(i);
                     }
                 }
@@ -9503,22 +9493,16 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
 }
 
 
-void HqlScopeTagger::reportWarnings()
+void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg)
 {
-    if (errors)
-        collector.report(*errors);
-}
-
-
-void HqlScopeTagger::reportError(const char * msg, bool warning)
-{
-    IHqlExpression * location = collector.queryActiveSymbol();
+    IHqlExpression * location = errorMapper.queryActiveSymbol();
     //Make this an error when we are confident...
     int startLine= location ? location->getStartLine() : 0;
     int startColumn = location ? location->getStartColumn() : 0;
     ISourcePath * sourcePath = location ? location->querySourcePath() : NULL;
-    Owned<IECLError> err = createECLError(!warning, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
-    collector.report(NULL, errors, err);        // will throw immediately if it is an error.
+    ErrorSeverity severity = queryDefaultSeverity(category);
+    Owned<IECLError> err = createECLError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
+    errors.report(err);        // will throw immediately if it is an error.
 }
 
 
@@ -10152,7 +10136,7 @@ void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs)
     normalizer.analyseArray(exprs, 0);
     normalizer.transformRoot(exprs, transformed);
     replaceArray(exprs, transformed);
-    DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.annotations", msTick()-time);
+    translator.updateTimer("workunit;tree transform: normalize.annotations", msTick()-time);
 }
 
 //---------------------------------------------------------------------------
@@ -10315,10 +10299,10 @@ IHqlExpression * NestedCompoundTransformer::createTransformed(IHqlExpression * e
                     location = queryActiveLocation();
                 if (!isSimpleSideeffect(sideEffect))
                 {
-                    //MORE: This should be an error, but there are still occasional false positives e.g., OUTPUT(ds1.childds)
+                    //MORE: This should possibly be an error, but there are still false positives e.g., OUTPUT(ds1.childds)
                     //so needs to stay a warning.
 //                  translator.ERRORAT1(location, HQLERR_GlobalSideEffectDependent, s.str());
-                    translator.WARNINGAT1(location, HQLWRN_GlobalSideEffectDependent, s.str());
+                    translator.WARNINGAT1(CategoryUnexpected, location, HQLWRN_GlobalSideEffectDependent, s.str());
                 }
                 break;
             }
@@ -10525,6 +10509,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     seenForceLocal = false;
     seenLocalUpload = false;
     const HqlCppOptions & translatorOptions = translator.queryOptions();
+    options.assertSortedDistributed = translatorOptions.assertSortedDistributed;
     options.removeAsserts = !translatorOptions.checkAsserts;
     options.commonUniqueNameAttributes = translatorOptions.commonUniqueNameAttributes;
     options.sortIndexPayload = translatorOptions.sortIndexPayload;
@@ -10535,7 +10520,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     options.constantFoldNormalize = translatorOptions.constantFoldNormalize;
     options.allowActivityForKeyedJoin = translatorOptions.allowActivityForKeyedJoin;
     options.implicitSubSort = translatorOptions.implicitBuildIndexSubSort;
-    errors = translator.queryErrors();
+    errorProcessor = &translator.queryErrorProcessor();
     nextSequenceValue = 1;
 }
 
@@ -10651,7 +10636,6 @@ IHqlExpression * HqlTreeNormalizer::removeDefaultsFromExpr(IHqlExpression * expr
     IHqlExpression * oldRecord = expr->queryChild(recordChildIndex);
     OwnedHqlExpr newRecord = transform(oldRecord);
 
-    IHqlExpression * ds = expr->queryChild(0);
     HqlExprArray assigns;
     OwnedHqlExpr self = getSelf(newRecord);
     convertRecordToAssigns(assigns, oldRecord, self, false, false);
@@ -11012,57 +10996,17 @@ IHqlExpression * HqlTreeNormalizer::transformMap(IHqlExpression * expr)
     return elseExpr.getClear();
 }
 
-class AbortingErrorReceiver : extends CInterface, implements IErrorReceiver
-{
-public:
-    AbortingErrorReceiver(IErrorReceiver * _errors)
-    {
-        errors = _errors ? _errors : &defaultReporter;
-    }
-    IMPLEMENT_IINTERFACE
-
-    virtual void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos)
-    {
-        errors->reportError(errNo, msg, filename, lineno, column, pos);
-        throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
-    }
-    virtual void report(IECLError* error)
-    {
-        errors->report(error);
-        throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
-    }
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
-    {
-        errors->reportWarning(warnNo, msg, filename, lineno, column, pos);
-    }
-    virtual size32_t errCount()
-    {
-        return errors->errCount();
-    }
-    virtual size32_t warnCount()
-    {
-        return errors->warnCount();
-    }
-
-protected:
-    IErrorReceiver * errors;
-    ThrowingErrorReceiver defaultReporter;
-};
-
-
 IHqlExpression * HqlTreeNormalizer::transformTempRow(IHqlExpression * expr)
 {
     ECLlocation dummyLocation(0, 0, 0, NULL);
-    AbortingErrorReceiver errorReporter(errors);
-    OwnedHqlExpr createRow = convertTempRowToCreateRow(&errorReporter, dummyLocation, expr);
+    OwnedHqlExpr createRow = convertTempRowToCreateRow(translator.queryErrorProcessor(), dummyLocation, expr);
     return transform(createRow);
 }
 
 IHqlExpression * HqlTreeNormalizer::transformTempTable(IHqlExpression * expr)
 {
     ECLlocation dummyLocation(0, 0, 0, NULL);
-    AbortingErrorReceiver errorReporter(errors);
-    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
+    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(translator.queryErrorProcessor(), dummyLocation, expr);
     if (expr != inlineTable)
         return transform(inlineTable);
 
@@ -11380,7 +11324,7 @@ IHqlExpression * HqlTreeNormalizer::transformIfAssert(node_operator newOp, IHqlE
     unsigned max = expr->numChildren();
     HqlExprArray children;
     bool same = transformChildren(expr, children);
-    if (expr->hasAttribute(assertAtom) && !options.removeAsserts)
+    if ((expr->hasAttribute(assertAtom) || (options.assertSortedDistributed && (newOp != no_assertgrouped))) && !options.removeAsserts)
     {
         OwnedHqlExpr ret = createDataset(newOp, children);
         return expr->cloneAllAnnotations(ret);
@@ -12184,7 +12128,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         {
             IHqlExpression * child = expr->queryChild(0);
             OwnedHqlExpr ret = transform(child);
-            OwnedHqlExpr folded  = foldHqlExpression(ret, NULL, HFOforcefold);
+            OwnedHqlExpr folded  = foldHqlExpression(translator.queryErrorProcessor(), ret, NULL, HFOforcefold);
             if (!folded->isConstant())
             {
                 StringBuffer s;
@@ -12197,7 +12141,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         {
             ECLlocation errpos;
             errpos.extractLocationAttr(expr->queryChild(1));
-            reportAbstractModule(translator.queryErrors(), expr->queryChild(0), errpos);
+            reportAbstractModule(translator.queryErrorProcessor(), expr->queryChild(0), errpos);
             throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
         }
     case no_pat_instance:
@@ -12370,7 +12314,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 IHqlExpression * module = oldFuncdef->queryChild(1);
                 ECLlocation errpos(module);
                 //errpos.extractLocationAttr(expr->queryChild(1));
-                reportAbstractModule(translator.queryErrors(), module, errpos);
+                reportAbstractModule(translator.queryErrorProcessor(), module, errpos);
                 throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
             }
             assertex(oldFuncdef->getOperator() == no_funcdef);
@@ -12566,7 +12510,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         replaceArray(exprs, transformed);
         seenForceLocal = normalizer.querySeenForceLocal();
         seenLocalUpload = normalizer.querySeenLocalUpload();
-        DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.initial", msTick()-time);
+        translator.updateTimer("workunit;tree transform: normalize.initial", msTick()-time);
     }
 
     if (translator.queryOptions().constantFoldPostNormalize)
@@ -12575,19 +12519,18 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         HqlExprArray transformed;
         quickFoldExpressions(transformed, exprs, NULL, 0);
         replaceArray(exprs, transformed);
-        DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.fold", msTick()-time);
+        translator.updateTimer("workunit;tree transform: normalize.fold", msTick()-time);
     }
 
     translator.traceExpressions("before scope tag", exprs);
 
     {
         unsigned time = msTick();
-        HqlScopeTagger normalizer(translator.queryErrors());
+        HqlScopeTagger normalizer(translator.queryErrorProcessor(), translator.queryLocalOnWarningMapper());
         HqlExprArray transformed;
         normalizer.transformRoot(exprs, transformed);
         replaceArray(exprs, transformed);
-        DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.scope", msTick()-time);
-        normalizer.reportWarnings();
+        translator.updateTimer("workunit;tree transform: normalize.scope", msTick()-time);
     }
 
     if (translator.queryOptions().normalizeLocations)
@@ -12601,7 +12544,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         HqlExprArray transformed;
         transformer.transformArray(exprs, transformed);
         replaceArray(exprs, transformed);
-        DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.linkedChildRows", msTick()-time);;
+        translator.updateTimer("workunit;tree transform: normalize.linkedChildRows", msTick()-time);;
     }
 
     if (seenLocalUpload)
@@ -12813,10 +12756,8 @@ IHqlExpression * HqlCppTranslator::separateLibraries(IHqlExpression * query, Hql
     return createComma(exprs);
 }
 
-
-bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & workflow)
+void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQueryContext & query)
 {
-    HqlExprArray exprs;
     if (isLibraryScope(query.expr))
         outputLibrary->mapLogicalToImplementation(exprs, query.expr);
     else
@@ -12829,14 +12770,14 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     //Don't change the engine if libraries are involved, otherwise things will get very confused.
 
     unsigned timeCall = msTick();
-    expandDelayedFunctionCalls(queryErrors(), exprs);
-    DEBUG_TIMER("EclServer: tree transform: expand delayed calls", msTick()-timeCall);
+    expandDelayedFunctionCalls(&queryErrorProcessor(), exprs);
+    updateTimer("workunit;tree transform: expand delayed calls", msTick()-timeCall);
 
 
     unsigned time1 = msTick();
     traceExpressions("before normalize", exprs);
     normalizeHqlTree(*this, exprs);
-    DEBUG_TIMER("EclServer: tree transform: normalize", msTick()-time1);
+    updateTimer("workunit;tree transform: normalize", msTick()-time1);
 
     if (wu()->getDebugValueBool("dumpIR", false))
         EclIR::dbglogIR(exprs);
@@ -12851,22 +12792,18 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
 
     traceExpressions("allocate Sequence", exprs);
     checkNormalized(exprs);
+}
 
-    if (options.generateLogicalGraph || options.generateLogicalGraphOnly)
-    {
-        LogicalGraphCreator creator(wu());
-        creator.createLogicalGraph(exprs);
-        if (options.generateLogicalGraphOnly)
-            return false;
-        curActivityId = creator.queryMaxActivityId();
-    }
+
+void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
+{
     traceExpressions("begin transformGraphForGeneration", exprs);
     checkNormalized(exprs);
 
     {
         unsigned startTime = msTick();
         substituteClusterSize(exprs);
-        DEBUG_TIMER("EclServer: tree transform: substituteClusterSize", msTick()-startTime);
+        updateTimer("workunit;tree transform: substituteClusterSize", msTick()-startTime);
     }
 
     {
@@ -12876,11 +12813,13 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         if (options.foldConstantDatasets) foldOptions |= HFOconstantdatasets;
         if (options.percolateConstants) foldOptions |= HFOpercolateconstants;
         if (options.percolateFilters) foldOptions |= HFOpercolatefilters;
+        if (options.optimizeMax) foldOptions |= HFOx_op_not_x;
         if (options.globalFoldOptions != (unsigned)-1)
             foldOptions = options.globalFoldOptions;
-        foldHqlExpression(folded, exprs, foldOptions);
+
+        foldHqlExpression(queryErrorProcessor(), folded, exprs, foldOptions);
         replaceArray(exprs, folded);
-        DEBUG_TIMER("EclServer: tree transform: global fold", msTick()-startTime);
+        updateTimer("workunit;tree transform: global fold", msTick()-startTime);
     }
 
     traceExpressions("after global fold", exprs);
@@ -12890,24 +12829,151 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     {
         unsigned startTime = msTick();
         HqlExprArray folded;
-        optimizeHqlExpression(folded, exprs, HOOfold);
+        optimizeHqlExpression(queryErrorProcessor(), folded, exprs, HOOfold);
         replaceArray(exprs, folded);
-        DEBUG_TIMER("EclServer: tree transform: global optimize", msTick()-startTime);
+        updateTimer("workunit;tree transform: global optimize", msTick()-startTime);
     }
 
     traceExpressions("alloc", exprs);
     checkNormalized(exprs);
     modifyOutputLocations(exprs);
+}
+
+void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
+{
+#ifdef USE_SELSEQ_UID
+    if (options.normalizeSelectorSequence)
+    {
+        unsigned time = msTick();
+        LeftRightTransformer normalizer;
+        normalizer.process(curWorkflow.queryExprs());
+        updateTimer("workunit;tree transform: left right", msTick()-time);
+        //traceExpressions("after implicit alias", workflow);
+    }
+#endif
+
+    if (queryOptions().createImplicitAliases)
+    {
+        unsigned time = msTick();
+        ImplicitAliasTransformer normalizer;
+        normalizer.process(curWorkflow.queryExprs());
+        updateTimer("workunit;tree transform: implicit alias", msTick()-time);
+        //traceExpressions("after implicit alias", workflow);
+    }
+
+    {
+        unsigned startTime = msTick();
+        hoistNestedCompound(*this, curWorkflow.queryExprs());
+        updateTimer("workunit;tree transform: hoist nested compound", msTick()-startTime);
+    }
+
+    if (options.optimizeNestedConditional)
+    {
+        unsigned time = msTick();
+        optimizeNestedConditional(curWorkflow.queryExprs());
+        updateTimer("workunit;optimize nested conditional", msTick()-time);
+        traceExpressions("nested", curWorkflow);
+        checkNormalized(curWorkflow);
+    }
+
+    checkNormalized(curWorkflow);
+    //sort(x)[n] -> topn(x, n)[]n, count(x)>n -> count(choosen(x,n+1)) > n and possibly others
+    {
+        unsigned startTime = msTick();
+        optimizeActivities(curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
+        updateTimer("workunit;tree transform: optimize activities", msTick()-startTime);
+    }
+    checkNormalized(curWorkflow);
+
+    //----------------------------- Transformations below this mark may have created globals so be very careful with hoisting ---------------------
+
+    unsigned time5 = msTick();
+    migrateExprToNaturalLevel(curWorkflow, wu(), *this);       // Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.
+    updateTimer("workunit;tree transform: migrate", msTick()-time5);
+    //transformToAliases(exprs);
+    traceExpressions("migrate", curWorkflow);
+    checkNormalized(curWorkflow);
+
+    unsigned time2 = msTick();
+    markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
+    updateTimer("workunit;tree transform: thor hole", msTick()-time2);
+    traceExpressions("boundary", curWorkflow);
+    checkNormalized(curWorkflow);
+
+    if (options.optimizeGlobalProjects)
+    {
+        unsigned time = msTick();
+        insertImplicitProjects(*this, curWorkflow.queryExprs());
+        updateTimer("workunit;global implicit projects", msTick()-time);
+        traceExpressions("implicit", curWorkflow);
+        checkNormalized(curWorkflow);
+    }
+
+    unsigned time3 = msTick();
+    normalizeResultFormat(curWorkflow, options);
+    updateTimer("workunit;tree transform: normalize result", msTick()-time3);
+    traceExpressions("results", curWorkflow);
+    checkNormalized(curWorkflow);
+
+    optimizePersists(curWorkflow.queryExprs());
+
+    traceExpressions("per", curWorkflow);
+    checkNormalized(curWorkflow);
+//  flattenDatasets(workflow);
+//  traceExpressions("flatten", workflow);
+
+    {
+        unsigned startTime = msTick();
+        mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);          // reduces number of graphs sent to thor
+        updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
+    }
+
+    traceExpressions("merged", curWorkflow);
+    checkNormalized(curWorkflow);
+
+    if (queryOptions().normalizeLocations)
+        normalizeAnnotations(*this, curWorkflow.queryExprs());
+
+    spotGlobalCSE(curWorkflow);                                                        // spot CSE within those graphs, and create some more
+    checkNormalized(curWorkflow);
+
+    //expandGlobalDatasets(workflow, wu(), *this);
+
+    {
+        unsigned startTime = msTick();
+        mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);
+        updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
+    }
+    checkNormalized(curWorkflow);
+
+    removeTrivialGraphs(curWorkflow);
+    checkNormalized(curWorkflow);
+}
+
+bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & workflow)
+{
+    HqlExprArray exprs;
+    normalizeGraphForGeneration(exprs, query);
+
+    if (options.generateLogicalGraph || options.generateLogicalGraphOnly)
+    {
+        LogicalGraphCreator creator(wu());
+        creator.createLogicalGraph(exprs);
+        if (options.generateLogicalGraphOnly)
+            return false;
+        curActivityId = creator.queryMaxActivityId();
+    }
+
+    applyGlobalOptimizations(exprs);
     if (exprs.ordinality() == 0)
         return false;   // No action needed
 
     unsigned time4 = msTick();
     ::extractWorkflow(*this, exprs, workflow);
 
-
     traceExpressions("workflow", workflow);
     checkNormalized(workflow);
-    DEBUG_TIMER("EclServer: tree transform: stored results", msTick()-time4);
+    updateTimer("workunit;tree transform: stored results", msTick()-time4);
 
     if (outputLibrary && workflow.ordinality() > 1)
     {
@@ -12928,114 +12994,8 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     ForEachItemIn(i, workflow)
     {
         WorkflowItem & curWorkflow = workflow.item(i);
-
-#ifdef USE_SELSEQ_UID
-        if (options.normalizeSelectorSequence)
-        {
-            unsigned time = msTick();
-            LeftRightTransformer normalizer;
-            normalizer.process(curWorkflow.queryExprs());
-            DEBUG_TIMERX(queryTimeReporter(), "EclServer: tree transform: left right", msTick()-time);
-            //traceExpressions("after implicit alias", workflow);
-        }
-#endif
-
-        if (queryOptions().createImplicitAliases)
-        {
-            unsigned time = msTick();
-            ImplicitAliasTransformer normalizer;
-            normalizer.process(curWorkflow.queryExprs());
-            DEBUG_TIMERX(queryTimeReporter(), "EclServer: tree transform: implicit alias", msTick()-time);
-            //traceExpressions("after implicit alias", workflow);
-        }
-
-        {
-            unsigned startTime = msTick();
-            hoistNestedCompound(*this, curWorkflow.queryExprs());
-            DEBUG_TIMER("EclServer: tree transform: hoist nested compound", msTick()-startTime);
-        }
-
-        if (options.optimizeNestedConditional)
-        {
-            cycle_t time = msTick();
-            optimizeNestedConditional(curWorkflow.queryExprs());
-            DEBUG_TIMER("EclServer: optimize nested conditional", msTick()-time);
-            traceExpressions("nested", curWorkflow);
-            checkNormalized(curWorkflow);
-        }
-
-        checkNormalized(curWorkflow);
-        //sort(x)[n] -> topn(x, n)[]n, count(x)>n -> count(choosen(x,n+1)) > n and possibly others
-        {
-            unsigned startTime = msTick();
-            optimizeActivities(curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
-            DEBUG_TIMER("EclServer: tree transform: optimize activities", msTick()-startTime);
-        }
-        checkNormalized(curWorkflow);
-
-        unsigned time5 = msTick();
-        migrateExprToNaturalLevel(curWorkflow, wu(), *this);       // Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.
-        DEBUG_TIMER("EclServer: tree transform: migrate", msTick()-time5);
-        //transformToAliases(exprs);
-        traceExpressions("migrate", curWorkflow);
-        checkNormalized(curWorkflow);
-
-        unsigned time2 = msTick();
-        markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
-        DEBUG_TIMER("EclServer: tree transform: thor hole", msTick()-time2);
-        traceExpressions("boundary", curWorkflow);
-        checkNormalized(curWorkflow);
-
-        if (options.optimizeGlobalProjects)
-        {
-            cycle_t time = msTick();
-            insertImplicitProjects(*this, curWorkflow.queryExprs());
-            DEBUG_TIMER("EclServer: global implicit projects", msTick()-time);
-            traceExpressions("implicit", curWorkflow);
-            checkNormalized(curWorkflow);
-        }
-
-        unsigned time3 = msTick();
-        normalizeResultFormat(curWorkflow, options);
-        DEBUG_TIMER("EclServer: tree transform: normalize result", msTick()-time3);
-        traceExpressions("results", curWorkflow);
-        checkNormalized(curWorkflow);
-
-        optimizePersists(curWorkflow.queryExprs());
-
-        traceExpressions("per", curWorkflow);
-        checkNormalized(curWorkflow);
-    //  flattenDatasets(workflow);
-    //  traceExpressions("flatten", workflow);
-
-        {
-            unsigned startTime = msTick();
-            mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);          // reduces number of graphs sent to thor
-            DEBUG_TIMER("EclServer: tree transform: merge thor", msTick()-startTime);
-        }
-
-        traceExpressions("merged", curWorkflow);
-        checkNormalized(curWorkflow);
-
-        if (queryOptions().normalizeLocations)
-            normalizeAnnotations(*this, curWorkflow.queryExprs());
-
-        spotGlobalCSE(curWorkflow);                                                        // spot CSE within those graphs, and create some more
-        checkNormalized(curWorkflow);
-
-        //expandGlobalDatasets(workflow, wu(), *this);
-
-        {
-            unsigned startTime = msTick();
-            mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);
-            DEBUG_TIMER("EclServer: tree transform: merge thor", msTick()-startTime);
-        }
-        checkNormalized(curWorkflow);
-
-        removeTrivialGraphs(curWorkflow);
-        checkNormalized(curWorkflow);
+        transformWorkflowItem(curWorkflow);
     }
-
 
 #ifndef PICK_ENGINE_EARLY
     if (options.pickBestEngine)
@@ -13056,7 +13016,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         {
             unsigned startTime = msTick();
             checkDependencyConsistency(curWorkflow.queryExprs());
-            DEBUG_TIMER("EclServer: tree transform: check dependency", msTick()-startTime);
+            updateTimer("workunit;tree transform: check dependency", msTick()-startTime);
         }
 
         traceExpressions("end transformGraphForGeneration", curWorkflow);

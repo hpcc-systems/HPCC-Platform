@@ -51,7 +51,6 @@
 static unsigned const hthorReadBufferSize = 0x10000;
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
 static size32_t const spillStreamBufferSize = 0x10000;
-static int const defaultWorkUnitWriteLimit = 10; //10MB as thor
 static unsigned const hthorPipeWaitTimeout = 100; //100ms - fairly arbitrary choice
 
 using roxiemem::IRowManager;
@@ -428,7 +427,7 @@ void CHThorDiskWriteActivity::resolve()
                 else
                     throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
             }
-            else if (f->exists() || agent.queryResolveFilesLocally())
+            else if (f->exists() || f->isExternal() || agent.queryResolveFilesLocally())
             {
                 // special/local/external file
                 if (f->numParts()!=1)
@@ -676,7 +675,8 @@ void CHThorDiskWriteActivity::publish()
         logicalName.allowOsPath(true);
     if (!logicalName.setValidate(lfn.str()))
         throw MakeStringException(99, "Cannot publish %s, invalid logical name", lfn.str());
-    if (!logicalName.isExternal()) { // no need to publish externals
+    if (!logicalName.isExternal()) // no need to publish externals
+    {
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
         if(file->getModificationTime(modifiedTime))
             file->setAccessedTime(modifiedTime);
@@ -1009,13 +1009,18 @@ void CHThorIndexWriteActivity::execute()
 {
     size32_t maxDiskRecordSize;
     if (helper.queryDiskRecordSize()->isVariableSize())
-        maxDiskRecordSize = 0x8000;
-    else
     {
-        maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
-        if (maxDiskRecordSize > 0x8000)
-            throw MakeStringException(99, "Index minimum record length (%d) exceeds 32K internal limit", maxDiskRecordSize);
+        if (helper.getFlags() & TIWmaxlength)
+            maxDiskRecordSize = helper.getMaxKeySize();
+        else
+            maxDiskRecordSize = KEYBUILD_MAXLENGTH; // Current default behaviour, could be improved in the future
     }
+    else
+        maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
+
+    if (maxDiskRecordSize > KEYBUILD_MAXLENGTH)
+        throw MakeStringException(99, "Index maximum record length (%d) exceeds 32K internal limit", maxDiskRecordSize);
+
     OwnedMalloc<char> rowBuffer(maxDiskRecordSize, true);
 
     // Loop thru the results
@@ -3888,7 +3893,7 @@ void CHThorGroupSortActivity::getSorted()
 }
 
 //interface roxiemem::IBufferedRowCallback
-unsigned CHThorGroupSortActivity::getPriority() const
+unsigned CHThorGroupSortActivity::getSpillCost() const
 {
     return 10;
 }
@@ -4275,6 +4280,7 @@ void CHThorJoinActivity::ready()
     }
 
     rightIndex = 0;
+    joinCounter = 0;
     failingLimit.clear();
     state = JSfill;
     if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
@@ -4340,6 +4346,7 @@ void CHThorJoinActivity::fillLeft()
     if (limitedhelper && 0==rightIndex)
     {
         rightIndex = 0;
+        joinCounter = 0;
         right.clear();
         matchedRight.kill();
         if (left)
@@ -4367,6 +4374,7 @@ void CHThorJoinActivity::fillRight()
     else
         right.clear();
     rightIndex = 0;
+    joinCounter = 0;
     unsigned groupCount = 0;
     while(true)
     {
@@ -4446,12 +4454,12 @@ void CHThorJoinActivity::fillRight()
         matchedRight.append(false);
 }
 
-const void * CHThorJoinActivity::joinRecords(const void * curLeft, const void * curRight)
+const void * CHThorJoinActivity::joinRecords(const void * curLeft, const void * curRight, unsigned counter)
 {
     try
     {
         outBuilder.ensureRow();
-        size32_t thisSize = helper.transform(outBuilder, curLeft, curRight);
+        size32_t thisSize = helper.transform(outBuilder, curLeft, curRight, counter);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -4602,14 +4610,15 @@ const void *CHThorJoinActivity::nextInGroup()
                             if (!matchedRight.item(rightIndex))
                             {
                                 const void * rhs = right.item(rightIndex++);
-                                const void * ret = joinRecords(defaultLeft, rhs);
+                                const void * ret = joinRecords(defaultLeft, rhs, 0);
                                 if (ret)
                                 {
                                     processed++;
                                     return ret;
                                 }
                             }
-                            rightIndex++;
+                            else
+                                rightIndex++;
                         }
                         break;
                     }
@@ -4687,7 +4696,7 @@ const void *CHThorJoinActivity::nextInGroup()
                 switch (kind)
                 {
                 case TAKjoin:
-                    ret = joinRecords(left, defaultRight);
+                    ret = joinRecords(left, defaultRight, 0);
                     break;
                 case TAKdenormalize:
                     ret = left.getClear();
@@ -4726,7 +4735,7 @@ const void *CHThorJoinActivity::nextInGroup()
                                 matchedLeft = true;
                                 if (!exclude)
                                 {
-                                    const void *ret = joinRecords(left, rhs);
+                                    const void *ret = joinRecords(left, rhs, ++joinCounter);
                                     if (ret)
                                     {
                                         processed++;
@@ -4817,6 +4826,7 @@ const void *CHThorJoinActivity::nextInGroup()
             }
             state = JSleftonly;
             rightIndex = 0;
+            joinCounter = 0;
             break;
         }
     }
@@ -4896,6 +4906,7 @@ void CHThorSelfJoinActivity::ready()
         limitedhelper.setown(createRHLimitedCompareHelper());
         limitedhelper->init( helper.getJoinLimit(), dualcache->queryOut2(), collate, helper.queryPrefixCompare() );
     }
+    joinCounter = 0;
 }
 
 void CHThorSelfJoinActivity::done()
@@ -4976,6 +4987,7 @@ bool CHThorSelfJoinActivity::fillGroup()
     }
     leftIndex = 0;
     rightIndex = 0;
+    joinCounter = 0;
     rightOuterIndex = 0;
     joinLimit = keepLimit;
     ForEachItemIn(idx, group)
@@ -4994,6 +5006,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
                 if (lhs)
                 {
                     rightIndex = 0;
+                    joinCounter = 0;
                     group.clear();
                     limitedhelper->getGroup(group,lhs);
                 }
@@ -5006,7 +5019,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
                 const void * rhs = group.item(rightIndex++);
                 if(helper.match(lhs, rhs))
                 {
-                    const void * ret = joinRecords(lhs, rhs);
+                    const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
                     return ret;
                 }
             }
@@ -5024,7 +5037,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
         if(failingOuterAtmost)
             while(group.isItem(leftIndex))
             {
-                const void * ret = joinRecords(group.item(leftIndex++), defaultRight);
+                const void * ret = joinRecords(group.item(leftIndex++), defaultRight, 0, NULL);
                 if(ret)
                 {
                     processed++;
@@ -5035,7 +5048,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
         {
             if(leftOuterJoin && !matchedLeft && !failingLimit)
             {
-                const void * ret = joinRecords(group.item(leftIndex), defaultRight);
+                const void * ret = joinRecords(group.item(leftIndex), defaultRight, 0, NULL);
                 if(ret)
                 {
                     matchedLeft = true;
@@ -5046,6 +5059,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
             leftIndex++;
             matchedLeft = false;
             rightIndex = 0;
+            joinCounter = 0;
             joinLimit = keepLimit;
         }
         if(!group.isItem(leftIndex))
@@ -5055,7 +5069,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
                 OwnedConstRoxieRow lhs(input->nextInGroup());
                 while(lhs)
                 {
-                    const void * ret = joinRecords(lhs, defaultRight, failingLimit);
+                    const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
                     if(ret)
                     {
                         processed++;
@@ -5069,7 +5083,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
                 while(group.isItem(rightOuterIndex))
                     if(!matchedRight.item(rightOuterIndex++))
                     {
-                        const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1));
+                        const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1), 0, NULL);
                         if(ret)
                         {
                             processed++;
@@ -5084,7 +5098,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
         if(failingLimit)
         {
             leftIndex++;
-            const void * ret = joinRecords(lhs, defaultRight, failingLimit);
+            const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
             if(ret)
             {
                 processed++;
@@ -5100,7 +5114,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
                 matchedRight.replace(true, rightIndex-1);
                 if(!exclude)
                 {
-                    const void * ret = joinRecords(lhs, rhs);
+                    const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
                     if(ret)
                     {
                         processed++;
@@ -5114,12 +5128,12 @@ const void * CHThorSelfJoinActivity::nextInGroup()
     return NULL;
 }
 
-const void * CHThorSelfJoinActivity::joinRecords(const void * curLeft, const void * curRight, IException * except)
+const void * CHThorSelfJoinActivity::joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except)
 {
     outBuilder.ensureRow();
     try
     {
-            size32_t thisSize = (except ? helper.onFailTransform(outBuilder, curLeft, curRight, except) : helper.transform(outBuilder, curLeft, curRight));
+            size32_t thisSize = (except ? helper.onFailTransform(outBuilder, curLeft, curRight, except) : helper.transform(outBuilder, curLeft, curRight, counter));
             if(thisSize){
                 return outBuilder.finalizeRowClear(thisSize);   
             }
@@ -5258,6 +5272,7 @@ void CHThorLookupJoinActivity::ready()
         createDefaultRight();   
     eog = false;
     matchedGroup = false;
+    joinCounter = 0;
 }
 
 void CHThorLookupJoinActivity::done()
@@ -5313,12 +5328,12 @@ void CHThorLookupJoinActivity::setInput(unsigned index, IHThorInput * _input)
 }
 
 //following are all copied from CHThorJoinActivity - should common up.
-const void * CHThorLookupJoinActivity::joinRecords(const void * left, const void * right)
+const void * CHThorLookupJoinActivity::joinRecords(const void * left, const void * right, unsigned counter)
 {
     try
     {
         outBuilder.ensureRow();
-        size32_t thisSize = helper.transform(outBuilder, left, right);
+        size32_t thisSize = helper.transform(outBuilder, left, right, counter);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -5430,7 +5445,7 @@ const void * CHThorLookupJoinActivity::nextInGroupJoin()
                     gotMatch = true;
                     if(exclude)
                         break;
-                    ret = joinRecords(left, right);
+                    ret = joinRecords(left, right, ++joinCounter);
                     if(ret)
                         break;
                 }
@@ -5439,7 +5454,7 @@ const void * CHThorLookupJoinActivity::nextInGroupJoin()
             }
             if(leftOuterJoin && !gotMatch)
             {
-                ret = joinRecords(left, defaultRight);
+                ret = joinRecords(left, defaultRight, 0);
                 gotMatch = true;
             }
         }
@@ -5450,11 +5465,13 @@ const void * CHThorLookupJoinActivity::nextInGroupJoin()
             if(!many || (--keepCount == 0) || failingLimit)
             {
                 left.clear();
+                joinCounter = 0;
                 failingLimit.clear();
             }
             return ret;
         }
         left.clear();
+        joinCounter = 0;
     }
 }
 
@@ -5681,15 +5698,16 @@ void CHThorAllJoinActivity::loadRight()
         matchedRight.append(false);
     }
     rightIndex = 0;
+    joinCounter = 0;
     rightOrdinality = rightset.ordinality();
 }
 
-const void * CHThorAllJoinActivity::joinRecords(const void * left, const void * right)
+const void * CHThorAllJoinActivity::joinRecords(const void * left, const void * right, unsigned counter)
 {
     try
     {
         outBuilder.ensureRow();
-        memsize_t thisSize = helper.transform(outBuilder, left, right);
+        memsize_t thisSize = helper.transform(outBuilder, left, right, counter);
         if(thisSize)
             return outBuilder.finalizeRowClear(thisSize);
         else
@@ -5763,7 +5781,7 @@ const void * CHThorAllJoinActivity::nextInGroup()
                 switch(kind)
                 {
                 case TAKalljoin:
-                    ret = joinRecords(left, defaultRight);
+                    ret = joinRecords(left, defaultRight, 0);
                     break;
                 case TAKalldenormalize:
                     ret = left.getClear();
@@ -5777,6 +5795,7 @@ const void * CHThorAllJoinActivity::nextInGroup()
                 }
             }
             rightIndex = 0;
+            joinCounter = 0;
             left.clear();
             if(ret)
             {
@@ -5822,7 +5841,7 @@ const void * CHThorAllJoinActivity::nextInGroup()
                     matchedLeft = true;
                     matchedRight.replace(true, rightIndex);
                     if(!exclude)
-                        ret = joinRecords(left, right);
+                        ret = joinRecords(left, right, ++joinCounter);
                 }
                 rightIndex++;
                 if(ret)
@@ -5920,10 +5939,13 @@ CHThorWorkUnitWriteActivity::CHThorWorkUnitWriteActivity(IAgentContext &_agent, 
 
 void CHThorWorkUnitWriteActivity::execute()
 {
-    grouped = (POFgrouped & helper.getFlags()) != 0;
-    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit);
+    unsigned flags = helper.getFlags();
+    grouped = (POFgrouped & flags) != 0;
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", DALI_RESULT_LIMIT_DEFAULT);
+    if (flags & POFmaxsize)
+        outputLimit = helper.getMaxSize();
     if (outputLimit>DALI_RESULT_OUTPUTMAX)
-        throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the default limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, defaultWorkUnitWriteLimit);
+        throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the current limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, DALI_RESULT_LIMIT_DEFAULT);
     assertex(outputLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
     outputLimit *= 0x100000;
     MemoryBuffer rowdata;
@@ -5974,7 +5996,7 @@ void CHThorWorkUnitWriteActivity::execute()
         if(outputLimit && ((rowdata.length() + thisSize) > outputLimit))
         {
             StringBuffer errMsg("Dataset too large to output to workunit (limit "); 
-            errMsg.append(outputLimit/0x100000).append(") megabytes, in result ("); 
+            errMsg.append(outputLimit/0x100000).append(" megabytes), in result (");
             const char *name = helper.queryName();
             if (name)
                 errMsg.append("name=").append(name);
@@ -6064,7 +6086,7 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
     }
     size32_t usedCount = rtlDictionaryCount(builder.getcount(), builder.queryrows());
 
-    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit) * 0x100000;
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", DALI_RESULT_LIMIT_DEFAULT) * 0x100000;
     MemoryBuffer rowdata;
     CThorDemoRowSerializer out(rowdata);
     Owned<IOutputRowSerializer> serializer = input->queryOutputMeta()->createDiskSerializer(agent.queryCodeContext(), activityId);
@@ -6072,7 +6094,7 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
     if(outputLimit && (rowdata.length()  > outputLimit))
     {
         StringBuffer errMsg("Dictionary too large to output to workunit (limit ");
-        errMsg.append(outputLimit/0x100000).append(") megabytes, in result (");
+        errMsg.append(outputLimit/0x100000).append(" megabytes), in result (");
         const char *name = helper.queryName();
         if (name)
             errMsg.append("name=").append(name);
@@ -6671,8 +6693,8 @@ CHThorDistributionActivity::CHThorDistributionActivity(IAgentContext &_agent, un
 
 void CHThorDistributionActivity::execute()
 {
-    IRecordSize *m = helper.queryInternalRecordSize();
-    IDistributionTable * * accumulator = (IDistributionTable * *)rowAllocator->createRow();  //meta: PG MORE --- distribution --- helper.queryInternalRecordSize()
+    MemoryAttr ma;
+    IDistributionTable * * accumulator = (IDistributionTable * *)ma.allocate(helper.queryInternalRecordSize()->getMinRecordSize());
     helper.clearAggregate(accumulator); 
 
     OwnedConstRoxieRow nextrec(input->nextInGroup());
@@ -6693,7 +6715,6 @@ void CHThorDistributionActivity::execute()
     result.append("</XML>");
     helper.sendResult(result.length(), result.str());
     helper.destruct(accumulator);
-    rowAllocator->releaseRow(accumulator);
 }
 
 //---------------------------------------------------------------------------
@@ -7810,9 +7831,9 @@ void CHThorDiskReadBaseActivity::resolve()
         if (!ldFile)
         {
             StringBuffer buff;
-            buff.append("Skipping OPT disk read of nonexistent file ").append(mangledHelperFileName.str());
+            buff.appendf("Input file '%s' was missing but declared optional", mangledHelperFileName.str());
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+            agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         }
     }
 }
@@ -9321,6 +9342,7 @@ public:
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 };
 
 //=====================================================================================================
@@ -10043,9 +10065,4 @@ IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId,
 IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId, unsigned subgraphId, IException * exc, char const * extra)
 {
     return new CHThorException(exc, extra, kind, activityId, subgraphId);
-}
-
-extern HTHOR_API IEngineRowAllocator * createHThorRowAllocator(IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
-{
-    return createRoxieRowAllocator(_rowManager, _meta, _activityId, _allocatorId, roxiemem::RHFnone);
 }

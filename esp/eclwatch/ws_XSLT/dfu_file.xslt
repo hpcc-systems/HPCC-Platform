@@ -32,9 +32,6 @@
       <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
             <link type="text/css" rel="StyleSheet" href="files_/css/sortabletable.css"/>
             <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-      <script type="text/javascript" src="files_/scripts/sortabletable.js">
-                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-            </script>
             <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
                 <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
             </script>
@@ -66,9 +63,6 @@
                          function onLoad()
                          {
                             initSelection('resultsTable');
-                            var table = document.getElementById('resultsTable');
-                            if (table)
-                                sortableTable = new SortableTable(table, table, ["None", "String"]);
 
                             document.getElementById("Save Description").disabled = true;
                          }       
@@ -128,7 +122,6 @@
                          {
                             document.location.href="/WsDfu/DFUInfo?Name=" + escape(name);
                          }                     
-                         var sortableTable = null;
                    ]]></xsl:text>
                 </script>
             <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -315,7 +308,7 @@
                     <col span="3" class="number"/>
                 </colgroup>
                 <tr class="grey"><th>Number</th><th>IP</th><th>Size</th><xsl:if test="string-length($actualSize)"><th>Actual Size</th></xsl:if></tr>
-                <xsl:apply-templates select="DFUFileParts/DFUPart">
+                <xsl:apply-templates select="DFUFilePartsOnClusters/DFUFilePartsOnCluster/DFUFileParts/DFUPart">
                     <xsl:sort select="Id" data-type="number"/>
                     <xsl:sort select="Copy" data-type="number"/>
                 </xsl:apply-templates>
@@ -357,13 +350,13 @@
     </xsl:template>
 
     <xsl:template match="DFUPart">
-    <xsl:if test="Copy mod  2 > 0">
+        <xsl:if test="Copy=1"> <!-- Copy=1: display primary copy only -->
             <tr>
-        <td><xsl:value-of select="Id"/></td>
-        <td><xsl:value-of select="Ip"/></td>
-        <td class="number"><xsl:value-of select="Partsize"/></td>
-        <xsl:if test="string-length($actualSize)"><td class="number"><xsl:value-of select="ActualSize"/></td></xsl:if>
-        </tr>
+                <td><xsl:value-of select="Id"/></td>
+                <td><xsl:value-of select="Ip"/></td>
+                <td class="number"><xsl:value-of select="Partsize"/></td>
+                <xsl:if test="string-length($actualSize)"><td class="number"><xsl:value-of select="ActualSize"/></td></xsl:if>
+            </tr>
         </xsl:if>
     </xsl:template>
 

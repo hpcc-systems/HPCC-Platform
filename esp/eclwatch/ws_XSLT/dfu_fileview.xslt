@@ -41,7 +41,6 @@
         <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/sortabletable.css" />
         <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-        <script type="text/javascript" src="/esp/files/scripts/sortabletable.js">&#160;</script>
         <style type="text/css">
                     .selectedRow { background-color: #0af;}
                 </style>
@@ -118,16 +117,12 @@
                 <script type="text/javascript">
                     var originalPath = '<xsl:value-of select="DFUFileViewResponse/Scope"/>';
                     <xsl:text disable-output-escaping="yes"><![CDATA[
-                    var sortableTable = null;
                     var nSelected = -1;
                     var nPrevClass = null;
 
                     function onLoad()
                     {
                         initSelection('resultsTable');
-                        var table = document.getElementById('resultsTable');
-                        if (table)
-                            sortableTable = new SortableTable(table, table, ["None", "None", "String", "String", "Number", "Number", "String", "String", "String", "Number"]);
                     } 
                     
                     function onRowCheck(checked)

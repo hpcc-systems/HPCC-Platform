@@ -220,7 +220,7 @@ StringBuffer & HqltHql::appendId(StringBuffer & s, IIdAtom * id)
 
 StringBuffer &HqltHql::makeUniqueName(IHqlExpression * expr, StringBuffer &s)
 {
-    IIdAtom * moduleName = expr->queryFullModuleId();
+    IIdAtom * moduleName = expr->queryFullContainerId();
     if (moduleName && !ignoreModuleNames)
     {
         if (isPublicSymbol(expr))
@@ -1811,6 +1811,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 bool first = true;
                 expandTransformValues(s, cur, first);
                 s.append("}");
+                queryNewline(s);
                 if (xgmmlGraphText)
                 {
                     if (child0->numChildren() != 1)
@@ -2035,7 +2036,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 IValue * value = child0->queryValue();
                 if (value)
                     value->getUTF8Value(s);
-                s.append("ENDC++");
+                s.append("ENDC++\n");
                 break;
             }
         case no_nofold:
@@ -2084,7 +2085,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             {
                 if (idx) s.append(", ");
                 IHqlExpression *child = expr->queryChild(idx);
-                getTypeString(child->queryChild(0)->queryType(), s);
+                if (!child->isAttribute())
+                    getTypeString(child->queryChild(0)->queryType(), s);
 
                 toECL(child, s.append(' '), child->getPrecedence() < 0, inType);
             }
@@ -3049,7 +3051,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
 
 #ifdef SHOW_SYMBOL_LOCATION
         if (expandProcessed)
-            newdef.append(expr->queryFullModuleId()).append("(").append(expr->getStartLine()).append(",").append(expr->getStartColumn()).append("):");
+            newdef.append(expr->queryFullContainerId()).append("(").append(expr->getStartLine()).append(",").append(expr->getStartColumn()).append("):");
 #endif
         newdef.append(exports);
         lookupSymbolName(expr, name);

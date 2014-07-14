@@ -40,11 +40,11 @@ inDataset := dataset([
 output(nofold(inDataset),
     {
         '!!',
-        (string8)val1,(varstring8)val1,
-        (string8)val2,(varstring8)val2,
-        (unsigned4)val3,(integer4)val3,
-        (unsigned4)val4,(integer4)val4,
-        (unsigned8)val3,(integer8)val3,
-        (unsigned8)val4,(integer8)val4,
+        (string8)val1,val1b := (varstring8)val1,
+        (string8)val2,val2b := (varstring8)val2,
+        (unsigned4)val3,val3b := (integer4)val3,
+        (unsigned4)val4,val4b := (integer4)val4,
+        val3c := (unsigned8)val3,val3d := (integer8)val3,
+        val4c := (unsigned8)val4,val4d := (integer8)val4,
         '$$'
     }, 'out.d00');

@@ -696,6 +696,7 @@ private:
     void doPostProcessing(CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap);
     void processValue(const char *oid, const char *value, const bool bShow, CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap);
     void addIpAddressesToBuffer( void** buffer, unsigned& count, const char* address);
+    StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
 
     //Still used in StartStop/Rexec, so keep them for now.
     enum OpSysType { OS_Windows, OS_Solaris, OS_Linux };

@@ -1,0 +1,23 @@
+svg {
+    font: 12px sans-serif;
+}
+
+.usa {
+    fill: none;
+    stroke: black;
+    stroke-width: 0.25;
+    stroke-linejoin: round;
+}
+
+.counties {
+    fill: white;
+    stroke: grey;
+    stroke-width: 0.25;
+}
+
+.states {
+    fill: none;
+    stroke: black;
+    stroke-width: 0.25;
+    stroke-linejoin: round;
+}

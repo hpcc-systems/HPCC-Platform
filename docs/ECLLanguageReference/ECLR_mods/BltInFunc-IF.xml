@@ -4,18 +4,10 @@
 <sect1 id="IF">
   <title>IF<indexterm>
       <primary>IF</primary>
-    </indexterm><indexterm>
-      <primary>IFF</primary>
     </indexterm></title>
 
   <para><emphasis role="bold">IF<indexterm>
       <primary>IF function</primary>
-    </indexterm>(</emphasis><emphasis>expression, trueresult
-  </emphasis><emphasis role="bold">[</emphasis><emphasis>, falseresult
-  </emphasis><emphasis role="bold">])</emphasis></para>
-
-  <para><emphasis role="bold">IFF<indexterm>
-      <primary>IFF function</primary>
     </indexterm>(</emphasis><emphasis>expression, trueresult
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, falseresult
   </emphasis><emphasis role="bold">])</emphasis></para>
@@ -60,7 +52,7 @@
 
   <para>The <emphasis role="bold">IF</emphasis> function evaluates the
   <emphasis>expression</emphasis> (which must be a conditional expression with
-  a Boolean result) and returns either the <emphasis>truersult </emphasis>or
+  a Boolean result) and returns either the <emphasis>trueresult </emphasis>or
   <emphasis>falseresult</emphasis> based on the evaluation of the
   <emphasis>expression</emphasis>. Both the <emphasis>trueresult</emphasis>
   and <emphasis>falseresult</emphasis> must be the same type (i.e. both
@@ -70,10 +62,6 @@
   relies on the size of the two being the same, then a type cast to the
   required size may be required (typically to cast an empty string to the
   proper size so subsequent string indexing will not fail).</para>
-
-  <para>The <emphasis role="bold">IFF</emphasis> function performs the same
-  functionality as IF, but ensures that an <emphasis>expression</emphasis>
-  containing complex boolean logic is evaluated exactly as it appears.</para>
 
   <para>Example:</para>
 
@@ -95,7 +83,7 @@ MyAddress := IF(person.gender = 'M',
   // STRING182 ensures a proper-length string return
 </programlisting>
 
-  <para>See Also: <link linkend="MAP">MAP</link>, <link
-  linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>, <link
-  linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
+  <para>See Also: <link linkend="IFF">IFF</link>, <link linkend="MAP">MAP</link>,
+  <link linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>,
+  <link linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
 </sect1>

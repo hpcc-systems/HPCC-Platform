@@ -43,29 +43,37 @@ void WorkUnitErrorReceiver::initializeError(IWUException * exception, int errNo,
     exception->setTimeStamp(NULL);
 }
 
-void WorkUnitErrorReceiver::reportError(int errNo, const char *msg, const char * filename, int lineno, int column, int pos)
+IECLError * WorkUnitErrorReceiver::mapError(IECLError * error)
 {
-    Owned<IWUException> exception = wu->createException();
-    exception->setSeverity(ExceptionSeverityError);
-    initializeError(exception, errNo, msg, filename, lineno, column, pos);
+    return LINK(error);
 }
 
 void WorkUnitErrorReceiver::report(IECLError* eclError)
 {
+    WUExceptionSeverity wuSeverity = ExceptionSeverityInformation;
+    ErrorSeverity severity = eclError->getSeverity();
+
+    switch (severity)
+    {
+    case SeverityIgnore:
+        return;
+    case SeverityInfo:
+        break;
+    case SeverityWarning:
+        wuSeverity = ExceptionSeverityWarning;
+        break;
+    case SeverityError:
+    case SeverityFatal:
+        wuSeverity = ExceptionSeverityError;
+        break;
+    }
+
     Owned<IWUException> exception = wu->createException();
-    if (!eclError->isError())
-        exception->setSeverity(ExceptionSeverityWarning);
+    exception->setSeverity(wuSeverity);
 
     StringBuffer msg;
     initializeError(exception, eclError->errorCode(), eclError->errorMessage(msg).str(), 
                     eclError->getFilename(), eclError->getLine(), eclError->getColumn(), eclError->getPosition());
-}
-
-void WorkUnitErrorReceiver::reportWarning(int warnNo, const char *msg, const char * filename, int lineno, int column, int pos)
-{
-    Owned<IWUException> exception = wu->createException();
-    exception->setSeverity(ExceptionSeverityWarning);
-    initializeError(exception, warnNo, msg, filename, lineno, column, pos);
 }
 
 size32_t WorkUnitErrorReceiver::errCount()
@@ -95,20 +103,16 @@ public:
     CompoundErrorReceiver(IErrorReceiver * _primary, IErrorReceiver * _secondary) { primary.set(_primary); secondary.set(_secondary); }
     IMPLEMENT_IINTERFACE;
 
-    virtual void reportError(int errNo, const char *msg, const char * filename, int lineno, int column, int pos)
+    virtual IECLError * mapError(IECLError * error)
     {
-        primary->reportError(errNo, msg, filename, lineno, column, pos);
-        secondary->reportError(errNo, msg, filename, lineno, column, pos);
+        Owned<IECLError> mappedError = primary->mapError(error);
+        assertex(mappedError == error); // should not expect any mapping below a compound.
+        return mappedError.getClear();
     }
     virtual void report(IECLError* err)
     {
         primary->report(err);
         secondary->report(err);
-    }
-    virtual void reportWarning(int warnNo, const char *msg, const char * filename, int lineno, int column, int pos)
-    {
-        primary->reportWarning(warnNo, msg, filename, lineno, column, pos);
-        secondary->reportWarning(warnNo, msg, filename, lineno, column, pos);
     }
     virtual size32_t errCount()    { return primary->errCount(); }
     virtual size32_t warnCount()       { return primary->warnCount(); }

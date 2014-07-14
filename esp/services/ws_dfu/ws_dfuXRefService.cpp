@@ -21,7 +21,6 @@
 
 #include "dadfs.hpp"
 #include "wshelpers.hpp"
-#include "LogicFileWrapper.hpp"
 #include "exception_util.hpp"
 #include "package.h"
 #include "roxiecontrol.hpp"

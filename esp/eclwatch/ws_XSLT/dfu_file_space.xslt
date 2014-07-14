@@ -55,9 +55,6 @@
                     <title>DFU</title>
                     <link REL="stylesheet" TYPE="text/css" HREF="/esp/files/default.css"/>
                     <link type="text/css" rel="StyleSheet" href="files_/css/sortabletable.css"/>
-                    <script type="text/javascript" src="files_/scripts/sortabletable.js">
-                        <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-                    </script>
                     <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
                         <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
                     </script>
@@ -156,9 +153,6 @@
                                     }
                                 }
                                 initSelection('resultsTable');
-                                var table = document.getElementById('resultsTable');
-                                if (table)
-                                    sortableTable = new SortableTable(table, table, ["String", "NumberWithCommas", "String", "NumberWithCommas", "String", "NumberWithCommas", "NumberWithCommas", "NumberWithCommas"]);
                             }        
                           
                             function format2(n)
@@ -260,7 +254,6 @@
                                 document.location.href=url;
                                 return;
                             }
-                            var sortableTable = null;
                     ]]></xsl:text>
                 </script>
             </head>

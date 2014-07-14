@@ -39,6 +39,9 @@
     <xsl:variable name="enableSNMP" select="/TpMachineQueryResponse/EnableSNMP"/>
     <xsl:variable name="addProcessesToFilter" select="/TpMachineQueryResponse/PreflightProcessFilter"/>
     <xsl:variable name="numSlaveNodes" select="count(/TpMachineQueryResponse/TpMachines/TpMachine/Type[text()='ThorSlaveProcess'])"/>
+    <xsl:variable name="acceptLanguage" select="/TpMachineQueryResponse/AcceptLanguage"/>
+    <xsl:variable name="localiseFile"><xsl:value-of select="concat('nls/', $acceptLanguage, '/hpcc.xml')"/></xsl:variable>
+    <xsl:variable name="hpccStrings" select="document($localiseFile)/hpcc/strings"/>
 
   <xsl:template match="/TpMachineQueryResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -93,14 +96,10 @@
         <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
         ]]></xsl:text>
 
-      <script type="text/javascript" src="files_/scripts/sortabletable.js">
-                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-            </script>
             <script language="javascript" src="files_/scripts/multiselect.js">
                 <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
             </script>
             <script language="javascript">
-                var sortableTable = null;
                 var ClusterName = '<xsl:value-of select="$clusterName"/>';
                 var allowReloadPage = false;
         var fromTargetClusterPage = false;
@@ -112,40 +111,6 @@
                 }
 
             <![CDATA[
-                function setSortableTable(tableId)
-                {
-                    var table = document.getElementById(tableId);
-                    if (table == null)
-                        return;
-
-                    //dynamically create a sort list since our table is defined at run time based on info returned
-                    var cells = table.tHead.rows[0].cells;
-                    var nCols = cells.length;
-                    var sortCriteria = new Array(nCols);
-                    sortCriteria[0] = "None";//multiselect checkbox
-
-                    for (var i = 1; i < nCols; i++)
-                    {
-                        var c = cells[i];
-                        var sort;
-                        switch (c.innerText)
-                        {
-                           case 'Network Address':
-                              sort = 'IP_Address';
-                              break;
-                           case 'Slave Number':
-                              sort = 'Number';
-                              break;
-                           default:
-                              sort = "String";
-                              break;
-                        }//switch
-                        sortCriteria[i] = sort;
-                    }//for
-
-                    sortableTable = new SortableTable(table, table, sortCriteria);
-                }
-
                 var browseUrl = null;
                 var browsePath = null;
                 var browseCaption = null;
@@ -188,13 +153,13 @@
                     initSelection('resultsTable');
                     document.getElementsByName('Addresses.itemcount')[0].value = totalItems;
                     onRowCheck(false);
-                    setSortableTable('resultsTable');
 
                     <xsl:if test="$ShowPreflightInfo and not($SwapNode)">initPreflightControls();</xsl:if>
                 }
                 <xsl:if test="$SwapNode">
                     var OldIP = '<xsl:value-of select="/TpMachineQueryResponse/OldIP"/>';
                     var Path = '<xsl:value-of select="/TpMachineQueryResponse/Path"/>';
+                    var confirmSwapStr = '<xsl:value-of select="$hpccStrings/st[@id='ConfirmSwap']"/>';
                     <xsl:text disable-output-escaping="yes"><![CDATA[
                     singleSelect = true;
                     function onSwapNode()          
@@ -205,7 +170,7 @@
                         var cbValue = checkbox.value;
                         var NewIP = cbValue.substring(0, cbValue.indexOf(':'));
                     
-                        if (confirm('Swap ' + OldIP + ' with ' + NewIP + ' ?'))
+                        if (confirm(confirmSwapStr + ' ' + OldIP + ' - ' + NewIP + '?'))
                         {
                             var s = "/WsTopology/TpSwapNode?Cluster=" + ClusterName;
                             s += "&OldIP=" + OldIP;
@@ -233,21 +198,21 @@
                 <input type="hidden" name="Addresses.itemcount" value=""/>
                 <h3>
                     <xsl:choose>
-                        <xsl:when test="$SwapNode">Select a spare node to swap</xsl:when>
-                        <xsl:when test="/TpMachineQueryResponse/Type='THORSPARENODES'">Thor Slaves</xsl:when>
-                        <xsl:when test="/TpMachineQueryResponse/Type='ALLSERVICES'">System Service Nodes</xsl:when>
-                        <xsl:when test="/TpMachineQueryResponse/Type='AVAILABLEMACHINES'">Available Nodes</xsl:when>
+                        <xsl:when test="$SwapNode"><xsl:value-of select= "$hpccStrings/st[@id='SelectASpareNodeToSwap']"/></xsl:when>
+                        <xsl:when test="/TpMachineQueryResponse/Type='THORSPARENODES'"><xsl:value-of select= "$hpccStrings/st[@id='ThorSlaves']"/></xsl:when>
+                        <xsl:when test="/TpMachineQueryResponse/Type='ALLSERVICES'"><xsl:value-of select= "$hpccStrings/st[@id='SystemServiceNodes']"/></xsl:when>
+                        <xsl:when test="/TpMachineQueryResponse/Type='AVAILABLEMACHINES'"><xsl:value-of select= "$hpccStrings/st[@id='AvailableNodes']"/></xsl:when>
                         <xsl:when test="$clusterName!=''">
                             <xsl:choose>
                                 <xsl:when test="$clusterType='ROXIEMACHINES'">Roxie </xsl:when>
                                 <xsl:when test="$clusterType='THORMACHINES'">Thor </xsl:when>
                                 <xsl:when test="$clusterType='HOLEMACHINES'">Hole </xsl:when>
                             </xsl:choose>
-                            <xsl:text disable-output-escaping="yes">Cluster '</xsl:text>
+                            <xsl:value-of select= "$hpccStrings/st[@id='Cluster']"/><xsl:text disable-output-escaping="yes"> '</xsl:text>
                             <xsl:value-of select="$clusterName"/>
                             <xsl:text disable-output-escaping="yes">'</xsl:text>
                         </xsl:when>
-                        <xsl:otherwise>Nodes</xsl:otherwise>
+                        <xsl:otherwise><xsl:value-of select= "$hpccStrings/st[@id='Nodes']"/></xsl:otherwise>
                     </xsl:choose>
                 </h3>
                 <table class="sort-table" id="resultsTable">
@@ -268,7 +233,7 @@
                             <th>
                                 <xsl:if test="TpMachine[2] and not($SwapNode)">
                                     <xsl:attribute name="id">selectAll1</xsl:attribute>
-                                    <input type="checkbox" id="selectAll1" title="Select or deselect all machines" onclick="selectAll0(this)">
+                                    <input type="checkbox" id="selectAll1" title="{$hpccStrings/st[@id='SelectDeselectAllMachines']}" onclick="selectAll0(this)">
                                         <xsl:if test="not($SwapNode)">
                                             <xsl:attribute name="checked">true</xsl:attribute>
                                         </xsl:if>
@@ -277,15 +242,15 @@
                             </th>
                             <th align="center">Name</th>
                                 <xsl:if test="/TpMachineQueryResponse/HasThorSpareProcess/text()='1' and /TpMachineQueryResponse/Type='THORMACHINES'">
-                                    <th>Action</th>
+                                    <th><xsl:value-of select= "$hpccStrings/st[@id='Action']"/></th>
                                 </xsl:if>
-                            <th>Network Address</th>
-                            <th>Component</th>
+                            <th><xsl:value-of select= "$hpccStrings/st[@id='NetworkAddress']"/></th>
+                            <th><xsl:value-of select= "$hpccStrings/st[@id='Component']"/></th>
                             <xsl:if test="$numSlaveNodes > 0">
-                                <th>Slave Number</th>
+                                <th><xsl:value-of select= "$hpccStrings/st[@id='SlaveNumber']"/></th>
                             </xsl:if>
-                            <th>Domain</th>
-                            <th>Platform</th>
+                            <th><xsl:value-of select= "$hpccStrings/st[@id='Domain']"/></th>
+                            <th><xsl:value-of select= "$hpccStrings/st[@id='Platform']"/></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -296,20 +261,20 @@
                     <table class="select-all">
                         <tr>
                             <th id="selectAll2">
-                                <input type="checkbox" id="selectAll2" title="Select or deselect all machines" onclick="selectAll0(this)">
+                                <input type="checkbox" id="selectAll2" title="{$hpccStrings/st[@id='SelectDeselectAllMachines']}" onclick="selectAll0(this)">
                   <xsl:if test="not($SwapNode)">
                     <xsl:attribute name="checked">true</xsl:attribute>
                   </xsl:if>
                 </input>
                             </th>
-                            <th align="left" colspan="6">Select All / None</th>
+                            <th align="left" colspan="6"><xsl:value-of select="$hpccStrings/st[@id='SelectAllOrNone']"/></th>
                         </tr>
                     </table>
                 </xsl:if>
                 <xsl:choose>
                     <xsl:when test="$SwapNode">
-                        <input type="submit" value="Submit" id="submitBtn" disabled="true"/>
-                        <input type="button" value="Cancel" name="Cancel" onclick="javascript:history.go(-1)"/>
+                        <input type="submit" value="{$hpccStrings/st[@id='Submit']}" id="submitBtn" disabled="true"/>
+                        <input type="button" value="{$hpccStrings/st[@id='Cancel']}" name="Cancel" onclick="javascript:history.go(-1)"/>
                     </xsl:when>
                     <xsl:when test="$ShowPreflightInfo">
                         <xsl:call-template name="ShowPreflightControls">
@@ -336,11 +301,11 @@
             </xsl:choose>
             <xsl:variable name="displayType">
                 <xsl:choose>
-                    <xsl:when test="Type='ThorMasterProcess'">Thor Master</xsl:when>
-                    <xsl:when test="Type='ThorSlaveProcess'">Thor Slave</xsl:when>
-                    <xsl:when test="Type='ThorSpareProcess'">Thor Spare</xsl:when>
-                    <xsl:when test="Type='RoxieServerProcess'">Roxie Server</xsl:when>
-                    <xsl:when test="Type='DropZone'">Drop Zone</xsl:when>
+                    <xsl:when test="Type='ThorMasterProcess'"><xsl:value-of select="$hpccStrings/st[@id='ThorMaster']"/></xsl:when>
+                    <xsl:when test="Type='ThorSlaveProcess'"><xsl:value-of select="$hpccStrings/st[@id='ThorSlave']"/></xsl:when>
+                    <xsl:when test="Type='ThorSpareProcess'"><xsl:value-of select="$hpccStrings/st[@id='ThorSpare']"/></xsl:when>
+                    <xsl:when test="Type='RoxieServerProcess'"><xsl:value-of select="$hpccStrings/st[@id='RoxieServer']"/></xsl:when>
+                    <xsl:when test="Type='DropZone'"><xsl:value-of select="$hpccStrings/st[@id='DropZone']"/></xsl:when>
                     <xsl:otherwise>
                         <xsl:value-of select="Type"/>
                     </xsl:otherwise>
@@ -369,13 +334,7 @@
                         <xsl:value-of select="concat(Netaddress, '%26CompType%3d', Type, '%26OsType%3d', OS, '%26Directory%3d')"/>
                     </xsl:variable>
                     <xsl:variable name="pageCaption">
-                        <!--xsl:text>&amp;esp_iframe_title=Log file for </xsl:text-->
-                        <xsl:text>esp_iframe_title=Log file for </xsl:text>
-                        <xsl:value-of select="concat($displayType, ' [', Netaddress, '] of ')"/>
-                        <xsl:variable name="clusterType" select="$clusterType"/>
-                        <xsl:text disable-output-escaping="yes"> cluster '</xsl:text>
-                        <xsl:value-of select="$clusterName"/>
-                        <xsl:text disable-output-escaping="yes">'</xsl:text>
+                        <xsl:value-of select="concat('esp_iframe_title=', $hpccStrings/st[@id='Cluster'], ' ', $clusterName, ' -- ', $displayType, ' [', Netaddress, '] -- ',  $hpccStrings/st[@id='LogFile'])"/>
                     </xsl:variable>
                     <xsl:attribute name="onclick">
                         <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
@@ -390,7 +349,7 @@
                         <xsl:value-of select="OS"/>
                         <xsl:text>);</xsl:text>
                     </xsl:attribute>
-                    <img border="0" src="/esp/files_/img/base.gif" alt="View log file..." width="19" height="16"/>
+                    <img border="0" src="/esp/files_/img/base.gif" alt="{$hpccStrings/st[@id='ViewLogFile']}" title="{$hpccStrings/st[@id='ViewLogFile']}" width="19" height="16"/>
                 </a>            
                 <xsl:value-of select="Name"/>
             </td>
@@ -398,8 +357,8 @@
         <td>
                   <xsl:if test="Type='ThorSlaveProcess'">
                       <a href="/WsTopology/TpMachineQuery?Type=THORSPARENODES&amp;Cluster={$clusterName}&amp;OldIP={Netaddress}&amp;Path={/TpMachineQueryResponse/Path}" 
-                          title="Swap node...">
-                          Swap Node
+                          title="{$hpccStrings/st[@id='SwapNode']}">
+                          <xsl:value-of select="$hpccStrings/st[@id='SwapNode']"/>
                       </a>
                   </xsl:if>
               </td>
@@ -425,7 +384,7 @@
                     <xsl:when test="OS=0">Windows</xsl:when>
                     <xsl:when test="OS=1">Solaris</xsl:when>
                     <xsl:when test="OS=2">Linux</xsl:when>
-                    <xsl:otherwise>Unknown</xsl:otherwise>
+                    <xsl:otherwise><xsl:value-of select="$hpccStrings/st[@id='Unknown']"/></xsl:otherwise>
                 </xsl:choose>
             </td>
         </tr>

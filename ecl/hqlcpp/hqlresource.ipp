@@ -65,6 +65,8 @@ public:
     bool     combineSiblings;
     bool     actionLinkInNewGraph;
     bool     convertCompoundToExecuteWhen;
+    bool     useResultsForChildSpills;
+    bool     alwaysUseGraphResults;
 
     IHqlExpression * graphIdExpr;
     unsigned nextResult;
@@ -349,7 +351,7 @@ class EclResourcer
 {
     friend class SelectHoistTransformer;
 public:
-    EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions);
+    EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions);
     ~EclResourcer();
 
     void resourceGraph(IHqlExpression * expr, HqlExprArray & transformed);
@@ -360,8 +362,6 @@ public:
     void setUseGraphResults(bool _useGraphResults) 
     { 
         options.useGraphResults = _useGraphResults; 
-        if (_useGraphResults)
-            options.createSpillAsDataset = false; 
     }
     void tagActiveCursors(HqlExprCopyArray & activeRows);
     inline unsigned numGraphResults() { return options.nextResult; }

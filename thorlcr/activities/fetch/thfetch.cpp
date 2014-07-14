@@ -34,7 +34,7 @@ class CFetchActivityMaster : public CMasterActivity
 protected:
     IHThorFetchArg *helper;
     IHThorFetchContext *fetchContext;
-    Owned<IDistributedFile> fetchFile;
+
 public:
     CFetchActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
@@ -51,12 +51,11 @@ public:
     }
     virtual void init()
     {
+        CMasterActivity::init();
         OwnedRoxieString fname(helper->getFileName());
-        fetchFile.setown(queryThorFileManager().lookup(container.queryJob(), fname, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true));
+        Owned<IDistributedFile> fetchFile = queryThorFileManager().lookup(container.queryJob(), fname, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true);
         if (fetchFile)
         {
-            queryThorFileManager().noteFileRead(container.queryJob(), fetchFile);
-
             Owned<IFileDescriptor> fileDesc = getConfiguredFileDescriptor(*fetchFile);
             void *ekey;
             size32_t ekeylen;
@@ -76,11 +75,12 @@ public:
                 throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fname.get());
             mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, fetchFile->querySuperFile()));
             mapping->serializeFileOffsetMap(offsetMapMb);
+            addReadFile(fetchFile);
         }
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        if (fetchFile)
+        if (mapping)
         {
             mapping->serializeMap(slave, dst);
             dst.append(offsetMapMb);
@@ -93,12 +93,6 @@ public:
         if (!container.queryLocalOrGrouped())
             dst.append((int)mpTag);
     }
-    virtual void done()
-    {
-        CMasterActivity::done();
-        if (fetchFile)
-            fetchFile->setAccessed();
-    }
 };
 
 class CCsvFetchActivityMaster : public CFetchActivityMaster
@@ -108,12 +102,9 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         CFetchActivityMaster::serializeSlaveData(dst, slave);
-
+        IDistributedFile *fetchFile = queryReadFile(0);
         if (fetchFile)
-        {
-            IHThorFetchArg *helper = (IHThorFetchArg *)queryHelper();
             fetchFile->queryAttributes().serialize(dst);
-        }
     }
 };
 

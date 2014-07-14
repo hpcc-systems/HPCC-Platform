@@ -29,7 +29,7 @@ extern void addWuException(IConstWorkUnit *workUnit, IException *E);
 
 interface IDaliPackageWatcher : extends IInterface
 {
-    virtual void subscribe() = 0;
+    virtual void subscribe(bool exact) = 0;
     virtual void unsubscribe() = 0;
     virtual const char *queryName() const = 0;
     virtual void onReconnect() = 0;
@@ -49,6 +49,7 @@ interface IRoxieDaliHelper : extends IInterface
     virtual IDaliPackageWatcher *getPackageSetsSubscription(ISDSSubscription *notifier) = 0;
     virtual IDaliPackageWatcher *getPackageMapsSubscription(ISDSSubscription *notifier) = 0;
     virtual IPropertyTree *getPackageMap(const char *id) = 0;
+    virtual IDaliPackageWatcher *getSuperFileSubscription(const char *lfn, ISDSSubscription *notifier) = 0;
     virtual void releaseSubscription(IDaliPackageWatcher *subscription) = 0;
     virtual bool connect(unsigned timeout) = 0;
     virtual void disconnect() = 0;

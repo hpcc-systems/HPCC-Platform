@@ -18,11 +18,13 @@
 #include "platform.h"
 #include "jlib.hpp"
 
+#include "wujobq.hpp"
 #include "nbcd.hpp"
 #include "rtlread_imp.hpp"
 #include "thorplugin.hpp"
 #include "thorxmlread.hpp"
 #include "roxiemem.hpp"
+#include "eventqueue.hpp"
 
 #include "ccd.hpp"
 #include "ccdcontext.hpp"
@@ -32,6 +34,7 @@
 #include "ccdqueue.ipp"
 #include "ccdsnmp.hpp"
 #include "ccdstate.hpp"
+#include "roxiehelper.hpp"
 
 using roxiemem::IRowManager;
 
@@ -187,14 +190,33 @@ public:
 };
 
 //=======================================================================================================================
+#define DEFAULT_PERSIST_COPIES (-1)
+#define PERSIST_LOCK_TIMEOUT 10000
+#define PERSIST_LOCK_SLEEP 5000
 
 class CRoxieWorkflowMachine : public WorkflowMachine
 {
-public:
-    CRoxieWorkflowMachine(IPropertyTree *_workflowInfo, bool _doOnce, const IRoxieContextLogger &_logctx) : WorkflowMachine(_logctx)
+    class PersistVersion : public CInterface
     {
+    public:
+        PersistVersion(char const * _logicalName, unsigned _eclCRC, unsigned __int64 _allCRC, bool _isFile) : logicalName(_logicalName), eclCRC(_eclCRC), allCRC(_allCRC), isFile(_isFile) {}
+        StringAttr logicalName;
+        unsigned eclCRC;
+        unsigned __int64 allCRC;
+        bool isFile;
+    };
+
+public:
+    CRoxieWorkflowMachine(IPropertyTree *_workflowInfo, IConstWorkUnit *_wu, bool _doOnce, const IRoxieContextLogger &_logctx)
+    : WorkflowMachine(_logctx)
+    {
+        workunit = _wu;
         workflowInfo = _workflowInfo;
         doOnce = _doOnce;
+    }
+    void returnPersistVersion(char const * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+    {
+        persist.setown(new PersistVersion(logicalName, eclCRC, allCRC, isFile));
     }
 protected:
     virtual void begin()
@@ -223,15 +245,397 @@ protected:
     virtual bool schedulingPullStop() { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported in roxie"); }
     virtual void reportContingencyFailure(char const * type, IException * e) {}
     virtual void checkForAbort(unsigned wfid, IException * handling) {}
-    virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Persists not supported in roxie"); }
+    virtual void doExecutePersistItem(IRuntimeWorkflowItem & item)
+    {
+        if (!workunit)
+        {
+            throw MakeStringException(0, "PERSIST not supported when running predeployed queries");
+        }
+        unsigned wfid = item.queryWfid();
+        // Old persist model requires dependencies to be executed BEFORE checking if the persist is up to date
+        // Defaults to old model, in case executing a WU that is created by earlier eclcc
+        if (!workunit->getDebugValueBool("expandPersistInputDependencies", false))
+            doExecuteItemDependencies(item, wfid);
+        SCMStringBuffer name;
+        const char *logicalName = item.getPersistName(name).str();
+        int maxPersistCopies = item.queryPersistCopies();
+        if (maxPersistCopies < 0)
+            maxPersistCopies = DEFAULT_PERSIST_COPIES;
+        Owned<IRemoteConnection> persistLock;
+        persistLock.setown(startPersist(logicalName));
+        doExecuteItemDependency(item, item.queryPersistWfid(), wfid, true);  // generated code should end up calling back to returnPersistVersion, which sets persist
+        if (!persist)
+        {
+            StringBuffer errmsg;
+            errmsg.append("Internal error in generated code: for wfid ").append(wfid).append(", persist CRC wfid ").append(item.queryPersistWfid()).append(" did not call returnPersistVersion");
+            throw MakeStringExceptionDirect(0, errmsg.str());
+        }
+        Owned<PersistVersion> thisPersist = persist.getClear();
+        if (strcmp(logicalName, thisPersist->logicalName.get()) != 0)
+        {
+            StringBuffer errmsg;
+            errmsg.append("Failed workflow/persist consistency check: wfid ").append(wfid).append(", WU persist name ").append(logicalName).append(", runtime persist name ").append(thisPersist->logicalName.get());
+            throw MakeStringExceptionDirect(0, errmsg.str());
+        }
+        if (workunit->getDebugValueInt("freezepersists", 0) != 0)
+        {
+            checkPersistMatches(logicalName, thisPersist->eclCRC);
+        }
+        else if(!isPersistUptoDate(persistLock, item, logicalName, thisPersist->eclCRC, thisPersist->allCRC, thisPersist->isFile))
+        {
+            // New persist model allows dependencies to be executed AFTER checking if the persist is up to date
+            if (workunit->getDebugValueBool("expandPersistInputDependencies", false))
+                doExecuteItemDependencies(item, wfid);
+            if (maxPersistCopies > 0)
+                deleteLRUPersists(logicalName, (unsigned) maxPersistCopies-1);
+            doExecuteItem(item, wfid);
+            updatePersist(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC);
+        }
+        logctx.CTXLOG("Finished persists - add to read lock list");
+        persistReadLocks.append(*persistLock.getClear());
+    }
+    bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item)
+    {
+        SCMStringBuffer name;
+        const char *logicalName = item.getPersistName(name).str();
+        StringBuffer whenName;
+        expandLogicalFilename(whenName, logicalName, workunit, false);
+        whenName.append("$when");
+        if (!isResult(whenName, ResultSequencePersist))
+            return false;
+
+        when = getResultInt(whenName, ResultSequencePersist);
+        return true;
+    }
+
 private:
+
+    bool isResult(const char *name, unsigned sequence)
+    {
+        Owned<IConstWUResult> r = getWorkUnitResult(workunit, name, sequence);
+        return r != NULL && r->getResultStatus() != ResultStatusUndefined;
+    }
+
+    unsigned getResultHash(const char * name, unsigned sequence)
+    {
+        Owned<IConstWUResult> r = getWorkUnitResult(workunit, name, sequence);
+        if (!r)
+            throw MakeStringException(ROXIE_INTERNAL_ERROR, "Failed to retrieve hash value %s from workunit", name);
+        return r->getResultHash();
+    }
+
+    unsigned __int64 getResultInt(const char * name, unsigned sequence)
+    {
+        Owned<IConstWUResult> r = getWorkUnitResult(workunit, name, sequence);
+        if (!r)
+            throw MakeStringException(ROXIE_INTERNAL_ERROR, "Failed to retrieve persist value %s from workunit", name);
+        return r->getResultInt();
+    }
+
+    void setResultInt(const char * name, unsigned sequence, unsigned __int64 value)
+    {
+        WorkunitUpdate w(&workunit->lock());
+        w->setResultInt(name, sequence, value);
+    }
+
+    inline bool fileExists(const char *lfn)
+    {
+        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, NULL);  // MORE - need a userdescriptor from workunit
+        if (f)
+            return true;
+        return false;
+    }
+
+    inline IUserDescriptor *queryUserDescriptor()
+    {
+        return workunit->queryUserDescriptor();
+    }
+
+    bool checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer &errText)
+    {
+        StringBuffer lfn, crcName, eclName;
+        expandLogicalFilename(lfn, logicalName, workunit, false);
+        crcName.append(lfn).append("$crc");
+        eclName.append(lfn).append("$eclcrc");
+
+        if (!isResult(lfn, ResultSequencePersist))
+            errText.appendf("Building PERSIST('%s'): It hasn't been calculated before", logicalName);
+        else if (!isResult(crcName, ResultSequencePersist))
+            errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
+        else if (isFile && !fileExists(lfn))
+            errText.appendf("Rebuilding PERSIST('%s'): Persistent file does not exist", logicalName);
+        else
+        {
+            unsigned savedEclCRC = (unsigned) getResultInt(eclName, ResultSequencePersist);
+            unsigned __int64 savedCRC = (unsigned __int64)getResultInt(crcName, ResultSequencePersist);
+            if (savedEclCRC != eclCRC)
+                errText.appendf("Rebuilding PERSIST('%s'): ECL has changed", logicalName);
+            else if (savedCRC != allCRC)
+                errText.appendf("Rebuilding PERSIST('%s'): Input files have changed", logicalName);
+            else if (isItemOlderThanInputPersists(item))
+                errText.appendf("Rebuilding PERSIST('%s'): Input persists are more recent", logicalName);
+            else
+                return true;
+        }
+
+        return false;
+    }
+
+    bool changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat)
+    {
+        logctx.CTXLOG("Waiting to change persist lock to %s for %s", (mode == RTM_LOCK_WRITE) ? "write" : "read", name);  // MORE - pass a logctx around?
+        //When converting a read lock to a write lock so the persist can be rebuilt hold onto the lock as short as
+        //possible.  Otherwise lots of workunits each trying to convert read locks to write locks will mean
+        //that the read lock is never released by all the workunits at the same time, so no workunit can progress.
+        unsigned timeout = repeat ? PERSIST_LOCK_TIMEOUT : 0;
+        loop
+        {
+            try
+            {
+                persistLock->changeMode(mode, timeout);
+                logctx.CTXLOG("Changed persist lock");
+                return true;
+            }
+            catch(ISDSException *E)
+            {
+                if (SDSExcpt_LockTimeout != E->errorCode())
+                    throw E;
+                E->Release();
+            }
+            if (!repeat)
+            {
+                logctx.CTXLOG("Failed to convert persist lock");
+                return false;
+            }
+            //This is only executed when converting write->read.  There is significant doubt whether the changeMode()
+            //can ever fail - and whether the execution can ever get here.
+            logctx.CTXLOG("Waiting to convert persist lock"); // MORE - give a chance to abort
+        }
+    }
+
+    IRemoteConnection *getPersistReadLock(const char * logicalName)
+    {
+        StringBuffer lfn;
+        expandLogicalFilename(lfn, logicalName, workunit, false);
+        if (!lfn.length())
+            throw MakeStringException(0, "Invalid persist name used : '%s'", logicalName);
+
+        const char * name = lfn;
+
+        StringBuffer xpath;
+        xpath.append("/PersistRunLocks/");
+        if (isdigit(*name))
+            xpath.append("_");
+        for (const char * cur = name;*cur;cur++)
+            xpath.append(isalnum(*cur) ? *cur : '_');
+
+        logctx.CTXLOG("Waiting for persist read lock for %s", name);
+        Owned<IRemoteConnection> persistLock;
+        loop
+        {
+            try
+            {
+                unsigned mode = RTM_CREATE_QUERY | RTM_LOCK_READ;
+                if (queryDaliServerVersion().compare("1.4") >= 0)
+                    mode |= RTM_DELETE_ON_DISCONNECT;
+                persistLock.setown(querySDS().connect(xpath.str(), myProcessSession(), mode, PERSIST_LOCK_TIMEOUT));
+            }
+            catch(ISDSException *E)
+            {
+                if (SDSExcpt_LockTimeout != E->errorCode())
+                    throw E;
+                E->Release();
+            }
+            if (persistLock)
+                break;
+            logctx.CTXLOG("Waiting for persist read lock"); // MORE - give a chance to abort
+        }
+
+        logctx.CTXLOG("Obtained persist read lock");
+        return persistLock.getClear();
+    }
+
+    void setBlockedOnPersist(const char * logicalName)
+    {
+        StringBuffer s;
+        s.append("Waiting for persist ").append(logicalName);
+        WorkunitUpdate w(&workunit->lock());
+        w->setState(WUStateBlocked);
+        w->setStateEx(s.str());
+    }
+
+    bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+    {
+        //Loop trying to get a write lock - if it fails, then release the read lock, otherwise
+        //you can get a deadlock with several things waiting to read, and none being able to write.
+        bool rebuildAllPersists = false;   // Useful for debugging purposes
+        loop
+        {
+            StringBuffer dummy;
+            if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
+            {
+                logctx.CTXLOG("PERSIST('%s') is up to date", logicalName);
+                return true;
+            }
+
+            //Get a write lock
+            setBlockedOnPersist(logicalName);
+            if (changePersistLockMode(persistLock, RTM_LOCK_WRITE, logicalName, false))
+                break;
+
+            //failed to get a write lock, so release our read lock
+            persistLock.clear();
+            MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
+            persistLock.setown(getPersistReadLock(logicalName));
+        }
+        WorkunitUpdate w(&workunit->lock());
+        w->setState(WUStateRunning);
+
+        //Check again whether up to date, someone else might have updated it!
+        StringBuffer errText;
+        if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, errText) && !rebuildAllPersists)
+        {
+            logctx.CTXLOG("PERSIST('%s') is up to date (after being calculated by another job)", logicalName);
+            changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
+            return true;
+        }
+        if (errText.length())
+            logctx.CTXLOG("%s", errText.str());
+        return false;
+    }
+
+    void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
+    {
+        StringBuffer lfn, crcName, eclName, whenName;
+        expandLogicalFilename(lfn, logicalName, workunit, false);
+        crcName.append(lfn).append("$crc");
+        eclName.append(lfn).append("$eclcrc");
+        whenName.append(lfn).append("$when");
+
+        setResultInt(crcName, ResultSequencePersist, allCRC);
+        setResultInt(eclName, ResultSequencePersist, eclCRC);
+        setResultInt(whenName, ResultSequencePersist, time(NULL));
+
+        logctx.CTXLOG("Convert persist write lock to read lock");
+        changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
+    }
+
+    IRemoteConnection *startPersist(const char * logicalName)
+    {
+        setBlockedOnPersist(logicalName);
+        IRemoteConnection *persistLock = getPersistReadLock(logicalName);
+        WorkunitUpdate w(&workunit->lock());
+        w->setState(WUStateRunning);
+        return persistLock;
+    }
+
+    void checkPersistMatches(const char * logicalName, unsigned eclCRC)
+    {
+        StringBuffer lfn, eclName;
+        expandLogicalFilename(lfn, logicalName, workunit, true);
+        eclName.append(lfn).append("$eclcrc");
+
+        if (!isResult(lfn, ResultSequencePersist))
+            throw MakeStringException(ROXIE_INTERNAL_ERROR, "Frozen PERSIST('%s') hasn't been calculated ", logicalName);
+        if (isResult(eclName, ResultSequencePersist) && (getResultInt(eclName, ResultSequencePersist) != eclCRC))
+            throw MakeStringException(ROXIE_INTERNAL_ERROR, "Frozen PERSIST('%s') ECL has changed", logicalName);
+
+        StringBuffer msg;
+        msg.append("Frozen PERSIST('").append(logicalName).append("') is up to date");
+        logctx.CTXLOG("%s", msg.str());
+    }
+
+    static int comparePersistAccess(IInterface **_a, IInterface **_b)
+    {
+        IPropertyTree *a = *(IPropertyTree **)_a;
+        IPropertyTree *b = *(IPropertyTree **)_b;
+        const char *accessedA = a->queryProp("@accessed");
+        const char *accessedB = b->queryProp("@accessed");
+        if (accessedA && accessedB)
+            return strcmp(accessedB, accessedA);
+        else if (accessedB)
+            return -1;
+        else if (accessedA)
+            return 1;
+        else
+            return 0;
+
+    }
+
+    void deleteLRUPersists(const char * logicalName, unsigned keep)
+    {
+        StringBuffer lfn;
+        expandLogicalFilename(lfn, logicalName, workunit, false);
+        logicalName = lfn.str();
+        const char *tail = strrchr(logicalName, '_');     // Locate the trailing double-underbar
+        assertex(tail);
+        StringBuffer head(tail-logicalName+1, logicalName);
+        head.append("p*");                                  // Multi-mode persist names end with __pNNNNNNN
+        restart:     // If things change beneath us as we are deleting, repeat the process
+        IArrayOf<IPropertyTree> persists;
+        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(),false,false,NULL);
+        ForEach(*iter)
+        {
+            IPropertyTree &pt = iter->query();
+            const char *name = pt.queryProp("@name");
+            if (stricmp(name, logicalName) == 0)   // Don't include the one we are intending to recreate in the LRU list (keep value does not include it)
+                continue;
+            if (pt.getPropBool("@persistent", false))
+            {
+                // Paranoia - check as far as we can that it really is another instance of this persist
+                tail = strrchr(name, '_');     // Locate the trailing double-underbar
+                assertex(tail);
+                tail++;
+                bool crcSuffix = (*tail++=='p');
+                while (crcSuffix && *tail)
+                {
+                    if (!isdigit(*tail))
+                        crcSuffix = false;
+                    tail++;
+                }
+                if (crcSuffix)
+                    persists.append(*LINK(&pt));
+            }
+        }
+        if (persists.ordinality() > keep)
+        {
+            persists.sort(comparePersistAccess);
+            while (persists.ordinality() > keep)
+            {
+                Owned<IPropertyTree> oldest = &persists.popGet();
+                const char *oldAccessTime = oldest->queryProp("@accessed");
+                VStringBuffer goer("~%s", oldest->queryProp("@name"));   // Make sure we don't keep adding the scope
+                Owned<IRemoteConnection> persistLock = getPersistReadLock(goer);
+                while (!changePersistLockMode(persistLock, RTM_LOCK_WRITE, goer, false))
+                {
+                    persistLock.clear();
+                    MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
+                    persistLock.setown(getPersistReadLock(goer));
+                }
+                Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
+                if (!f)
+                    goto restart; // Persist has been deleted since last checked - repeat the whole process
+                const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
+                if (oldAccessTime && newAccessTime && !streq(oldAccessTime, newAccessTime))
+                    goto restart; // Persist has been accessed since last checked - repeat the whole process
+                else if (newAccessTime && !oldAccessTime)
+                    goto restart; // Persist has been accessed since last checked - repeat the whole process
+                DBGLOG("Deleting LRU persist %s (last accessed at %s)", goer.str(), oldAccessTime);
+                f->detach();
+            }
+        }
+    }
+
+    IConstWorkUnit *workunit;
     IPropertyTree *workflowInfo;
+    Owned<PersistVersion> persist;
+    Array persistReadLocks;
     bool doOnce;
 };
 
-WorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, bool _doOnce, const IRoxieContextLogger &_logctx)
+CRoxieWorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, IConstWorkUnit *_wu, bool _doOnce, const IRoxieContextLogger &_logctx)
 {
-    return new CRoxieWorkflowMachine(_workflowInfo, _doOnce, _logctx);
+    return new CRoxieWorkflowMachine(_workflowInfo, _wu, _doOnce, _logctx);
 }
 
 //=======================================================================================================================
@@ -545,6 +949,37 @@ public:
     }
 };
 
+class WuResultDataReader : public RawDataReader
+{
+    Owned<IConstWUResult> result;
+    IXmlToRowTransformer *rowTransformer;
+public:
+    WuResultDataReader(ICodeContext *codeContext, IEngineRowAllocator *_rowAllocator, bool _isGrouped, const IRoxieContextLogger &_logctx, IConstWUResult *_result, IXmlToRowTransformer *_rowTransformer)
+        : RawDataReader(codeContext, _rowAllocator, _isGrouped, _logctx), result(_result), rowTransformer(_rowTransformer)
+    {
+    }
+
+    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base)
+    {
+        tgt = NULL;
+        base = NULL;
+        if (result)
+        {
+            Variable2IDataVal r(&tlen, &tgt);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(rowTransformer);
+            result->getResultRaw(r, rawXmlTransformer, NULL);
+            base = tgt;
+            result.clear();
+            return tlen != 0;
+        }
+        else
+        {
+            tlen = 0;
+            return false;
+        }
+    }
+};
+
 class InlineXmlDataReader : public WorkUnitRowReaderBase
 {
     Linked<IPropertyTree> xml;
@@ -605,12 +1040,14 @@ protected:
     unsigned ctxPrefetchProjectPreload;
     bool traceActivityTimes;
     bool checkingHeap;
+    bool timeActivities;
 
     Owned<IConstWorkUnit> workUnit;
     Owned<IRoxieDaliHelper> daliHelperLink;
+    Owned<IDistributedFileTransaction> superfileTransaction;
 
     CriticalSection statsCrit;
-    const IRoxieContextLogger &logctx;
+    const ContextLogger &logctx;
 
 protected:
     CriticalSection resultsCrit;
@@ -670,7 +1107,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive, bool _checkingHeap)
+    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive, bool _checkingHeap, bool _timeActivities=defaultTimeActivities)
         : factory(_factory), logctx(_logctx)
     {
         if (_packet)
@@ -686,20 +1123,26 @@ public:
         ctxFetchPreload = 0;
         ctxPrefetchProjectPreload = 0;
         traceActivityTimes = _traceActivityTimes;
+        persists = NULL;
         temporaries = NULL;
         deserializedResultStore = NULL;
         rereadResults = NULL;
         xmlStoredDatasetReadFlags = ptr_none;
         if (_debuggerActive)
         {
+            assertex(header);
             CSlaveDebugContext *slaveDebugContext = new CSlaveDebugContext(this, logctx, *header);
             slaveDebugContext->init(_packet);
             debugContext.setown(slaveDebugContext);
             probeManager.setown(createDebugManager(debugContext, "slaveDebugger"));
         }
         checkingHeap = _checkingHeap;
+        timeActivities = _timeActivities;
 
         aborted = false;
+        exceptionLogged = false;
+        priority = 0;
+        totSlavesReplyLen = 0;
 
         allocatorMetaCache.setown(createRowAllocatorCache(this));
         rowManager.setown(roxiemem::createRowManager(_memoryLimit, this, logctx, allocatorMetaCache, false));
@@ -709,6 +1152,7 @@ public:
     ~CSlaveContext()
     {
         ::Release(rereadResults);
+        ::Release(persists);
         ::Release(temporaries);
         ::Release(deserializedResultStore);
     }
@@ -835,7 +1279,7 @@ public:
         }
     }
 
-    virtual bool queryTimeActivities() const
+    virtual bool queryTraceActivityTimes() const
     {
         return traceActivityTimes;
     }
@@ -843,6 +1287,11 @@ public:
     virtual bool queryCheckingHeap() const
     {
         return checkingHeap;
+    }
+
+    virtual bool queryTimeActivities() const
+    {
+        return timeActivities;
     }
 
     virtual void checkAbort()
@@ -890,6 +1339,20 @@ public:
             }
             lastWuAbortCheck = msTick();
         }
+    }
+
+    virtual unsigned checkInterval() const
+    {
+        unsigned interval = MAX_ABORT_CHECK_INTERVAL;
+        if (timeLimit)
+        {
+            interval = timeLimit / 10;
+            if (interval < MIN_ABORT_CHECK_INTERVAL)
+                interval = MIN_ABORT_CHECK_INTERVAL;
+            if (interval > MAX_ABORT_CHECK_INTERVAL)
+                interval = MAX_ABORT_CHECK_INTERVAL;
+        }
+        return interval;
     }
 
     virtual void notifyAbort(IException *E)
@@ -985,10 +1448,11 @@ public:
     }
 
     Owned<IWUGraphProgress> graphProgress; // could make local to endGraph and pass to reset - might be cleaner
-    void endGraph(bool aborting)
+    virtual void endGraph(cycle_t startCycles, bool aborting)
     {
         if (graph)
         {
+            unsigned __int64 elapsedTime = cycle_to_nanosec(get_cycles_now() - startCycles);
             if (debugContext)
                 debugContext->checkBreakpoint(aborting ? DebugStateGraphAbort : DebugStateGraphEnd, NULL, graph->queryName());
             if (aborting)
@@ -1000,6 +1464,11 @@ public:
                 progressWorkUnit.setown(&workUnit->lock());
                 progress.setown(progressWorkUnit->getGraphProgress(graph->queryName()));
                 graphProgress.setown(progress->update());
+
+                const char * graphName = graph->queryName();
+                StringBuffer graphDesc;
+                formatGraphTimerLabel(graphDesc, graphName);
+                updateWorkunitTimeStat(progressWorkUnit, "roxie", graphName, "time", graphDesc, elapsedTime, 1, 0);
             }
             graph->reset();
             if (graphProgress)
@@ -1036,43 +1505,52 @@ public:
         if (queryTraceLevel() > 8)
             CTXLOG("Executing graph %s", name);
 
-        assertex(!realThor);
-        bool created = false;
-        try
+        if (realThor)
         {
-            beginGraph(name);
-            created = true;
-            runGraph();
+            executeThorGraph(name);
         }
-        catch (IException *e)
+        else
         {
-            if (e->errorAudience() == MSGAUD_operator)
-                EXCLOG(e, "Exception thrown in query - cleaning up");  // if an IException is throw let EXCLOG determine if a trap should be generated
-            else
+            bool created = false;
+            cycle_t startCycles = get_cycles_now();
+            try
             {
-                StringBuffer s;
-                CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
+                beginGraph(name);
+                created = true;
+                runGraph();
             }
-            if (created)
-                endGraph(true);
-            CTXLOG("Done cleaning up");
-            throw;
+            catch (IException *e)
+            {
+                if (e->errorAudience() == MSGAUD_operator)
+                    EXCLOG(e, "Exception thrown in query - cleaning up");  // if an IException is throw let EXCLOG determine if a trap should be generated
+                else
+                {
+                    StringBuffer s;
+                    CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
+                }
+                if (created)
+                    endGraph(startCycles, true);
+                CTXLOG("Done cleaning up");
+                throw;
+            }
+            catch (...)
+            {
+                CTXLOG("Exception thrown in query - cleaning up");
+                if (created)
+                    endGraph(startCycles, true);
+                CTXLOG("Done cleaning up");
+                throw;
+            }
+            endGraph(startCycles, false);
         }
-        catch (...)
-        {
-            CTXLOG("Exception thrown in query - cleaning up");
-            if (created)
-                endGraph(true);
-            CTXLOG("Done cleaning up");
-            throw;
-        }
-        endGraph(false);
     }
 
     virtual IActivityGraph * queryChildGraph(unsigned  id)
     {
         if (queryTraceLevel() > 10)
             CTXLOG("CSlaveContext %p resolveChildGraph %d", this, id);
+        if (id == 0)
+            return graph;
         IActivityGraph *childGraph = childGraphs.getValue(id);
         assertex(childGraph);
         return childGraph;
@@ -1249,19 +1727,19 @@ public:
     }
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
         if (checkingHeap)
-            return createCrcRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+            return createCrcRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
         else
-            return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+            return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
 
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {
         try
         {
-            Owned<IWorkUnitRowReader> wuReader = getWorkunitRowReader(stepname, sequence, xmlTransformer, _rowAllocator, isGrouped);
+            Owned<IWorkUnitRowReader> wuReader = getWorkunitRowReader(NULL, stepname, sequence, xmlTransformer, _rowAllocator, isGrouped);
             wuReader->getResultRowset(tcount, tgt);
         }
         catch (IException * e)
@@ -1281,7 +1759,7 @@ public:
     {
         try
         {
-            Owned<IWorkUnitRowReader> wuReader = getWorkunitRowReader(stepname, sequence, xmlTransformer, _rowAllocator, false);
+            Owned<IWorkUnitRowReader> wuReader = getWorkunitRowReader(NULL, stepname, sequence, xmlTransformer, _rowAllocator, false);
             wuReader->getResultRowset(tcount, tgt);
         }
         catch (IException * e)
@@ -1513,6 +1991,7 @@ public:
 protected:
     mutable CriticalSection contextCrit;
     Owned<IPropertyTree> context;
+    IPropertyTree *persists;
     IPropertyTree *temporaries;
     IPropertyTree *rereadResults;
     PTreeReaderOptions xmlStoredDatasetReadFlags;
@@ -1529,7 +2008,12 @@ protected:
             else
                 throw MakeStringException(ROXIE_CODEGEN_ERROR, "Code generation error - attempting to access stored variable on slave");
         case ResultSequencePersist:
-            throwUnexpected();  // Do not expect to see in Roxie
+            {
+                CriticalBlock b(contextCrit);
+                if (!persists)
+                    persists = createPTree();
+                return *persists;
+            }
         case ResultSequenceInternal:
             {
                 CriticalBlock b(contextCrit);
@@ -1615,44 +2099,63 @@ protected:
     {
         throwUnexpected();  // Should only see on server
     }
-    virtual IWorkUnitRowReader *getWorkunitRowReader(const char *stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
+    virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char *stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
     {
         try
         {
-            CriticalBlock b(contextCrit);
-            IPropertyTree &ctx = useContext(sequence);
-            IPropertyTree *val = ctx.queryPropTree(stepname);
-            if (val)
+            if (wuid)
             {
-                const char *id = val->queryProp("@id");
-                const char *format = val->queryProp("@format");
-                if (id)
+                Owned<IRoxieDaliHelper> daliHelper = connectToDali();
+                if (daliHelper && daliHelper->connected())
                 {
-                    if (!format || strcmp(format, "raw") == 0)
-                    {
-                        return createStreamedRawRowReader(rowAllocator, isGrouped, id);
-                    }
-                    else if (strcmp(format, "deserialized") == 0)
-                    {
-                        IDeserializedResultStore &resultStore = useResultStore(sequence);
-                        return resultStore.createDeserializedReader(atoi(id));
-                    }
-                    else
-                        throwUnexpected();
+                    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                    Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
+                    externalWU->remoteCheckAccess(queryUserDescriptor(), false);
+                    Owned<IConstWUResult> wuResult = getWorkUnitResult(externalWU, stepname, sequence);
+                    if (!wuResult)
+                        throw MakeStringException(ROXIE_FILE_ERROR, "Failed to find value %s:%d in workunit %s", stepname ? stepname : "(null)", sequence, wuid);
+                    return new WuResultDataReader(queryCodeContext(), rowAllocator, isGrouped, logctx, wuResult.getClear(), xmlTransformer);
                 }
                 else
+                    throw MakeStringException(ROXIE_DALI_ERROR, "WorkUnit read: no dali connection available");
+            }
+            else
+            {
+                CriticalBlock b(contextCrit);
+                IPropertyTree &ctx = useContext(sequence);
+                IPropertyTree *val = ctx.queryPropTree(stepname);
+                if (val)
                 {
-                    if (!format || strcmp(format, "xml") == 0)
+                    const char *id = val->queryProp("@id");
+                    const char *format = val->queryProp("@format");
+                    if (id)
                     {
-                        if (xmlTransformer)
-                            return new InlineXmlDataReader(*xmlTransformer, val, rowAllocator, isGrouped);
-                    }
-                    else if (strcmp(format, "raw") == 0)
-                    {
-                        return new InlineRawDataReader(queryCodeContext(), rowAllocator, isGrouped, logctx, val);
+                        if (!format || strcmp(format, "raw") == 0)
+                        {
+                            return createStreamedRawRowReader(rowAllocator, isGrouped, id);
+                        }
+                        else if (strcmp(format, "deserialized") == 0)
+                        {
+                            IDeserializedResultStore &resultStore = useResultStore(sequence);
+                            return resultStore.createDeserializedReader(atoi(id));
+                        }
+                        else
+                            throwUnexpected();
                     }
                     else
-                        throwUnexpected();
+                    {
+                        if (!format || strcmp(format, "xml") == 0)
+                        {
+                            if (xmlTransformer)
+                                return new InlineXmlDataReader(*xmlTransformer, val, rowAllocator, isGrouped);
+                        }
+                        else if (strcmp(format, "raw") == 0)
+                        {
+                            return new InlineRawDataReader(queryCodeContext(), rowAllocator, isGrouped, logctx, val);
+                        }
+                        else
+                            throwUnexpected();
+                    }
                 }
             }
         }
@@ -1668,6 +2171,246 @@ protected:
             throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
         }
         throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
+    }
+
+    // Copied from eclgraph.cpp, in the hope that we will be deleting that code soon
+    void executeThorGraph(const char *graphName)
+    {
+        assertex(workUnit);
+        SCMStringBuffer wuid;
+        workUnit->getWuid(wuid);
+
+        SCMStringBuffer cluster;
+        SCMStringBuffer owner;
+        workUnit->getClusterName(cluster);
+        workUnit->getUser(owner);
+        int priority = workUnit->getPriorityValue();
+        unsigned timelimit = workUnit->getDebugValueInt("thorConnectTimeout", defaultThorConnectTimeout);
+        Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
+        if (!c)
+            throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
+        SCMStringBuffer queueName;
+        c->getThorQueue(queueName);
+        Owned<IJobQueue> jq = createJobQueue(queueName.str());
+
+        bool resubmit;
+        do // loop if pause interrupted graph and needs resubmitting on resume
+        {
+            resubmit = false; // set if job interrupted in thor
+            class CWorkunitResumeHandler : public CInterface, implements ISDSSubscription
+            {
+                IConstWorkUnit &wu;
+                StringBuffer xpath;
+                StringAttr wuid;
+                SubscriptionId subId;
+                CriticalSection crit;
+                Semaphore sem;
+
+                void unsubscribe()
+                {
+                    CriticalBlock b(crit);
+                    if (subId)
+                    {
+                        SubscriptionId _subId = subId;
+                        subId = 0;
+                        querySDS().unsubscribe(_subId);
+                    }
+                }
+            public:
+                IMPLEMENT_IINTERFACE;
+                CWorkunitResumeHandler(IConstWorkUnit &_wu) : wu(_wu)
+                {
+                    xpath.append("/WorkUnits/");
+                    SCMStringBuffer istr;
+                    wu.getWuid(istr);
+                    wuid.set(istr.str());
+                    xpath.append(wuid.get()).append("/Action");
+                    subId = 0;
+                }
+                ~CWorkunitResumeHandler()
+                {
+                    unsubscribe();
+                }
+                void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+                {
+                    CriticalBlock b(crit);
+                    if (0 == subId) return;
+                    if (valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
+                        sem.signal();
+                }
+                bool wait()
+                {
+                    subId = querySDS().subscribe(xpath.str(), *this, false, true);
+                    assertex(subId);
+                    PROGLOG("Job %s paused, waiting for resume/abort", wuid.get());
+                    bool ret = true;
+                    while (!sem.wait(10000))
+                    {
+                        wu.forceReload();
+                        if (WUStatePaused != wu.getState() || wu.aborting())
+                        {
+                            SCMStringBuffer str;
+                            wu.getStateDesc(str);
+                            PROGLOG("Aborting pause job %s, state : %s", wuid.get(), str.str());
+                            ret = false;
+                            break;
+                        }
+                    }
+                    unsubscribe();
+                    return ret;
+                }
+            } workunitResumeHandler(*workUnit);
+
+            if (WUStatePaused == workUnit->getState()) // check initial state - and wait if paused
+            {
+                if (!workunitResumeHandler.wait())
+                    throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+            }
+            setWUState(WUStateBlocked);
+
+            class cPollThread: public Thread  // MORE - why do we ned a thread here?
+            {
+                Semaphore sem;
+                bool stopped;
+                IJobQueue *jq;
+                IConstWorkUnit *wu;
+            public:
+
+                bool timedout;
+                CTimeMon tm;
+                cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
+                    : tm(timelimit)
+                {
+                    stopped = false;
+                    jq = _jq;
+                    wu = _wu;
+                    timedout = false;
+                }
+                ~cPollThread()
+                {
+                    stop();
+                }
+                int run()
+                {
+                    while (!stopped) {
+                        sem.wait(ABORT_POLL_PERIOD);
+                        if (stopped)
+                            break;
+                        if (tm.timedout()) {
+                            timedout = true;
+                            stopped = true;
+                            jq->cancelInitiateConversation();
+                        }
+                        else if (wu->aborting()) {
+                            stopped = true;
+                            jq->cancelInitiateConversation();
+                        }
+
+                    }
+                    return 0;
+                }
+                void stop()
+                {
+                    stopped = true;
+                    sem.signal();
+                }
+            } pollthread(jq, workUnit, timelimit*1000);
+
+            pollthread.start();
+
+            PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
+            IJobQueueItem* item = createJobQueueItem(wuid.str());
+            item->setOwner(owner.str());
+            item->setPriority(priority);
+            Owned<IConversation> conversation = jq->initiateConversation(item);
+            bool got = conversation.get()!=NULL;
+            pollthread.stop();
+            pollthread.join();
+            if (!got)
+            {
+                if (pollthread.timedout)
+                    throw MakeStringException(0, "Query %s failed to start within specified timelimit (%d) seconds", wuid.str(), timelimit);
+                throw MakeStringException(0, "Query %s cancelled (1)",wuid.str());
+            }
+            // get the thor ep from whoever picked up
+
+            SocketEndpoint thorMaster;
+            MemoryBuffer msg;
+            if (!conversation->recv(msg,1000*60)) {
+                throw MakeStringException(0, "Query %s cancelled (2)",wuid.str());
+            }
+            thorMaster.deserialize(msg);
+            msg.clear().append(graphName);
+            SocketEndpoint myep;
+            myep.setLocalHost(0);
+            myep.serialize(msg);  // only used for tracing
+            if (!conversation->send(msg)) {
+                StringBuffer s("Failed to send query to Thor on ");
+                thorMaster.getUrlStr(s);
+                throw MakeStringExceptionDirect(-1, s.str()); // maybe retry?
+            }
+
+            StringBuffer eps;
+            PROGLOG("Thor on %s running %s",thorMaster.getUrlStr(eps).str(),wuid.str());
+            MemoryBuffer reply;
+            try
+            {
+                if (!conversation->recv(reply,INFINITE))
+                {
+                    StringBuffer s("Failed to receive reply from thor ");
+                    thorMaster.getUrlStr(s);
+                    throw MakeStringExceptionDirect(-1, s.str());
+                }
+            }
+            catch (IException *e)
+            {
+                StringBuffer s("Failed to receive reply from thor ");
+                thorMaster.getUrlStr(s);
+                s.append("; (").append(e->errorCode()).append(", ");
+                e->errorMessage(s).append(")");
+                throw MakeStringExceptionDirect(-1, s.str());
+            }
+            ThorReplyCodes replyCode;
+            reply.read((unsigned &)replyCode);
+            switch (replyCode)
+            {
+                case DAMP_THOR_REPLY_PAUSED:
+                {
+                    bool isException ;
+                    reply.read(isException);
+                    if (isException)
+                    {
+                        Owned<IException> e = deserializeException(reply);
+                        VStringBuffer str("Pausing job %s caused exception", wuid.str());
+                        EXCLOG(e, str.str());
+                    }
+                    WorkunitUpdate w(&workUnit->lock());
+                    w->setState(WUStatePaused); // will trigger executeThorGraph to pause next time around.
+                    WUAction action = w->getAction();
+                    switch (action)
+                    {
+                        case WUActionPause:
+                        case WUActionPauseNow:
+                            w->setAction(WUActionUnknown);
+                    }
+                    resubmit = true; // JCSMORE - all subgraph _could_ be done, thor will check though and not rerun
+                    break;
+                }
+                case DAMP_THOR_REPLY_GOOD:
+                    break;
+                case DAMP_THOR_REPLY_ERROR:
+                {
+                    throw deserializeException(reply);
+                }
+                case DAMP_THOR_REPLY_ABORT:
+                    throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+                default:
+                    throwUnexpected();
+            }
+            workUnit->forceReload();
+        }
+        while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
+
     }
 };
 
@@ -1818,6 +2561,7 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
 {
     const IQueryFactory *serverQueryFactory;
     CriticalSection daliUpdateCrit;
+    StringAttr querySetName;
 
     TextMarkupFormat mlFmt;
     bool isRaw;
@@ -1827,7 +2571,8 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
     unsigned lastHeartBeat;
 
 protected:
-    Owned<WorkflowMachine> workflow;
+    Owned<CRoxieWorkflowMachine> workflow;
+    mutable MapStringToMyClass<IResolvedFile> fileCache;
     SafeSocket *client;
     bool isBlocked;
     bool isHttp;
@@ -1900,13 +2645,17 @@ protected:
         ctxPrefetchProjectPreload = defaultPrefetchProjectPreload;
 
         traceActivityTimes = false;
+        timeActivities = defaultTimeActivities;
     }
 
     void startWorkUnit()
     {
         WorkunitUpdate wu(&workUnit->lock());
+        wu->subscribe(SubscribeOptionAbort);
+        wu->addTimeStamp("Roxie", GetCachedHostName(), "Started");
         if (!context->getPropBool("@outputToSocket", false))
             client = NULL;
+        updateSuppliedXmlParams(wu);
         SCMStringBuffer wuParams;
         if (workUnit->getXmlParams(wuParams).length())
         {
@@ -1952,28 +2701,32 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
+    CRoxieServerContext(const IQueryFactory *_factory, const ContextLogger &_logctx)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
     {
         init();
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
-        workflow.setown(_factory->createWorkflowMachine(true, logctx));
+        workflow.setown(_factory->createWorkflowMachine(workUnit, true, logctx));
         context.setown(createPTree(ipt_caseInsensitive));
     }
 
-    CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
+    CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const ContextLogger &_logctx)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
     {
         init();
         workUnit.set(_workUnit);
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
-        workflow.setown(_factory->createWorkflowMachine(false, logctx));
+        workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
         context.setown(createPTree(ipt_caseInsensitive));
+
+        //MORE: Use various debug settings to override settings:
+        rowManager->setActivityTracking(workUnit->getDebugValueBool("traceRoxiePeakMemory", false));
+
         startWorkUnit();
     }
 
-    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
+    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
+        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory), querySetName(_querySetName)
     {
         init();
         context.set(_context);
@@ -2013,7 +2766,7 @@ public:
         rowManager->setActivityTracking(context->getPropBool("_TraceMemory", false));
         rowManager->setMemoryLimit((memsize_t) context->getPropInt64("_MemoryLimit", _factory->getMemoryLimit()));
         authToken.append(httpHelper.queryAuthToken());
-        workflow.setown(_factory->createWorkflowMachine(false, logctx));
+        workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
 
         ctxParallelJoinPreload = context->getPropInt("_ParallelJoinPreload", defaultParallelJoinPreload);
         ctxFullKeyedJoinPreload = context->getPropInt("_FullKeyedJoinPreload", defaultFullKeyedJoinPreload);
@@ -2022,8 +2775,14 @@ public:
         ctxFetchPreload = context->getPropInt("_FetchPreload", defaultFetchPreload);
         ctxPrefetchProjectPreload = context->getPropInt("_PrefetchProjectPreload", defaultPrefetchProjectPreload);
 
-        traceActivityTimes = context->getPropBool("_TraceActivityTimes", false) || context->getPropBool("@timing", false);
         checkingHeap = context->getPropBool("_CheckingHeap", defaultCheckingHeap) || context->getPropBool("@checkingHeap", defaultCheckingHeap);
+
+        traceActivityTimes = context->getPropBool("_TraceActivityTimes", false) || context->getPropBool("@timing", false);
+
+        timeActivities = context->getPropBool("@timeActivities", defaultTimeActivities);
+
+        if (traceActivityTimes && !timeActivities)
+            timeActivities = true;
     }
 
     virtual roxiemem::IRowManager &queryRowManager()
@@ -2085,6 +2844,17 @@ public:
         return trim ? XWFtrim|XWFopt : XWFexpandempty;
     }
 
+    virtual const IProperties *queryXmlns(unsigned seqNo)
+    {
+        IConstWorkUnit *cw = serverQueryFactory->queryWorkUnit();
+        if (cw)
+        {
+            Owned<IConstWUResult> result = cw->getResultBySequence(seqNo);
+            if (result)
+                return result->queryXmlns();
+        }
+        return NULL;
+    }
     virtual unsigned getMemoryUsage()
     {
         return rowManager->getMemoryUsage();
@@ -2145,7 +2915,18 @@ public:
     {
         if (debugContext)
             debugContext->debugTerminate();
-        setWUState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
+        if (workUnit)
+        {
+            WorkunitUpdate w(&workUnit->lock());
+            w->setState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
+            w->addTimeStamp("Roxie", GetCachedHostName(), "Finished");
+            ITimeReporter *timer = logctx.queryTimer();
+            updateWorkunitTimings(w, timer, "roxie");
+            logctx.dumpStats(w);
+
+            WuStatisticTarget statsTarget(w, "roxie");
+            rowManager->reportPeakStatistics(statsTarget, 0);
+        }
     }
 
     virtual ICodeContext *queryCodeContext()
@@ -2297,7 +3078,7 @@ public:
             size32_t oldCount;
             rowset_t oldData;
             resultStore.queryResult(oldId, oldCount, oldData);
-            Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, 0, 0, roxiemem::RHFnone);
+            Owned<IEngineRowAllocator> allocator = getRowAllocator(meta, 0);
             RtlLinkedDatasetBuilder builder(allocator);
             builder.appendRows(oldCount, oldData);
             builder.appendRows(count, data);
@@ -2770,14 +3551,33 @@ public:
         }
     }
 
-    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
+    virtual const IResolvedFile *resolveLFN(const char *fileName, bool isOpt)
     {
-        return factory->queryPackage().lookupFileName(filename, isOpt, false, true, workUnit);
+        CriticalBlock b(contextCrit);
+        StringBuffer expandedName;
+        expandLogicalFilename(expandedName, fileName, workUnit, false);
+        Linked<const IResolvedFile> ret = fileCache.getValue(expandedName);
+        if (!ret)
+        {
+            ret.setown(factory->queryPackage().lookupFileName(fileName, isOpt, false, false, workUnit));
+            if (ret)
+            {
+                IResolvedFile *add = const_cast<IResolvedFile *>(ret.get());
+                fileCache.setValue(expandedName, add);
+            }
+        }
+        return ret.getClear();
     }
 
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
     {
         return factory->queryPackage().createFileName(filename, overwrite, extend, clusters, workUnit);
+    }
+
+    virtual void endGraph(cycle_t startCycles, bool aborting)
+    {
+        fileCache.kill();
+        CSlaveContext::endGraph(startCycles, aborting);
     }
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
@@ -2839,15 +3639,34 @@ public:
         return useContext(sequence).hasProp(name);
     }
 
-    virtual char *getClusterName() { throwUnexpected(); }
+    virtual char *getClusterName()
+    {
+        if (workUnit)
+        {
+            SCMStringBuffer out;
+            workUnit->getClusterName(out);
+            return out.s.detach();  // detach will return "" rather than NULL
+        }
+        else
+        {
+            // predeployed queries with no workunit should return the querySet name
+            return strdup(querySetName.sget()); // sget will return "" rather than NULL
+        }
+    }
     virtual char *getGroupName() { throwUnexpected(); }
-    virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
+    virtual char *queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
     virtual char *getEnv(const char *name, const char *defaultValue) const
     {
         return serverQueryFactory->getEnv(name, defaultValue);
     }
     virtual char *getJobName()
     {
+        if (workUnit)
+        {
+            SCMStringBuffer jobName;
+            workUnit->getJobName(jobName);
+            return strdup(jobName.str());
+        }
         return strdup(factory->queryQueryName());
     }
     virtual char *getJobOwner() { throwUnexpected(); }
@@ -2865,19 +3684,23 @@ public:
         }
         else
         {
-            throw MakeStringException(ROXIE_INVALID_ACTION, "No workunit associated with this context");
+            return strdup("");
         }
     }
 
-    // persist-related code - usage of persist should have been caught and rejected at codegen time
-    virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
-    virtual IRemoteConnection *startPersist(const char * name) { throwUnexpected(); }
-    virtual void finishPersist(IRemoteConnection *) { throwUnexpected(); }
-    virtual void clearPersist(const char * logicalName) { throwUnexpected(); }
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) { throwUnexpected(); }
-    virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) { throwUnexpected(); }
+    // persist-related code
+    virtual char * getExpandLogicalName(const char * logicalName)
+    {
+        StringBuffer lfn;
+        expandLogicalFilename(lfn, logicalName, workUnit, false);
+        return lfn.detach();
+    }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
-    virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { throwUnexpected(); }
+    virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+    {
+        if (workflow)
+            workflow->returnPersistVersion(logicalName, eclCRC, allCRC, isFile);
+    }
     virtual void fail(int code, const char *text)
     {
         addWuException(text, code, 2, "user");
@@ -2885,12 +3708,60 @@ public:
 
     virtual unsigned getWorkflowId() { return workflow->queryCurrentWfid(); }
 
-    virtual void doNotify(char const * code, char const * extra) { UNIMPLEMENTED; }
-    virtual void doNotify(char const * code, char const * extra, const char * target) { UNIMPLEMENTED; }
+    void doNotify(char const * name, char const * text)
+    {
+        doNotify(name, text, NULL);
+    }
+
+    void doNotify(char const * name, char const * text, const char * target)
+    {
+        Owned<IRoxieDaliHelper> daliHelper = connectToDali();
+        if (daliHelper && daliHelper->connected())
+        {
+            Owned<IScheduleEventPusher> pusher(getScheduleEventPusher());
+            pusher->push(name, text, target);
+        }
+        else
+            throw MakeStringException(ROXIE_DALI_ERROR, "doNotify: no dali connection available");
+    }
+
     virtual void doWait(unsigned code, char const * extra) { UNIMPLEMENTED; }
     virtual void doWaitCond(unsigned code, char const * extra, int sequence, char const * alias, unsigned wfid) { UNIMPLEMENTED; }
 
-    virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) { throwUnexpected(); }
+    static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
+    {
+        CDateTime dt;
+        file->getModificationTime(dt);
+        unsigned __int64 modifiedTime = dt.getSimple();
+        return rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
+    }
+
+    virtual unsigned __int64 getDatasetHash(const char * logicalName, unsigned __int64 crc)
+    {
+        StringBuffer fullname;
+        expandLogicalFilename(fullname, logicalName, workUnit, false);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fullname.str(),queryUserDescriptor());
+        if (file)
+        {
+            WorkunitUpdate wu = updateWorkUnit();
+            wu->noteFileRead(file);
+            IDistributedSuperFile * super = file->querySuperFile();
+            if (super)
+            {
+                Owned<IDistributedFileIterator> iter = super->getSubFileIterator(true);
+                ForEach(*iter)
+                {
+                    IDistributedFile & cur = iter->query();
+                    const char * name = cur.queryLogicalName();
+                    crc = rtlHash64Data(strlen(name), name, crc);
+                    crc = crcLogicalFileTime(&cur, crc, name);
+                }
+            }
+            else
+                crc = crcLogicalFileTime(file, crc, fullname.str());
+        }
+        return crc;
+    }
 
     virtual int queryLastFailCode() { UNIMPLEMENTED; }
     virtual void getLastFailMessage(size32_t & outLen, char * &outStr, const char * tag) { UNIMPLEMENTED; }
@@ -2901,14 +3772,20 @@ public:
     virtual void deleteFile(const char * logicalName) { throwUnexpected(); }
 
     virtual unsigned getNodes() { return numChannels; }
-    virtual unsigned getNodeNum() { return 1; }
+    virtual unsigned getNodeNum() { return 0; }
     virtual char *getFilePart(const char *logicalPart, bool create=false) { UNIMPLEMENTED; }
     virtual unsigned __int64 getFileOffset(const char *logicalPart) { throwUnexpected(); }
 
-    virtual IDistributedFileTransaction *querySuperFileTransaction() { UNIMPLEMENTED; }
+    virtual IDistributedFileTransaction *querySuperFileTransaction()
+    {
+        CriticalBlock b(contextCrit);
+        if (!superfileTransaction.get())
+            superfileTransaction.setown(createDistributedFileTransaction(queryUserDescriptor()));
+        return superfileTransaction.get();
+    }
     virtual void flush(unsigned seqNo) { throwUnexpected(); }
     virtual unsigned getPriority() const { return priority; }
-    virtual bool outputResultsToWorkUnit() const { return workUnit != NULL; }
+    virtual IConstWorkUnit *queryWorkUnit() const { return workUnit; }
     virtual bool outputResultsToSocket() const { return client != NULL; }
 
     virtual void selectCluster(const char * cluster) { throwUnexpected(); }
@@ -2924,8 +3801,8 @@ private:
     StringAttr queryName;
 
 public:
-    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
+    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }
@@ -2983,8 +3860,8 @@ private:
     StringAttr queryName;
 
 public:
-    CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
+    CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }
@@ -3062,24 +3939,24 @@ public:
     }
 };
 
-IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions readFlags)
+IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const ContextLogger &_logctx, PTreeReaderOptions readFlags, const char *querySetName)
 {
     if (httpHelper.isHttp())
     {
         if (httpHelper.queryContentFormat()==MarkupFmt_JSON)
-            return new CJsonRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, readFlags);
-        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, readFlags);
+            return new CJsonRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, readFlags, querySetName);
+        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, readFlags, querySetName);
     }
     else
-        return new CRoxieServerContext(context, factory, client, isXml ? MarkupFmt_XML : MarkupFmt_Unknown, isRaw, isBlocked, httpHelper, trim, priority, _logctx, readFlags);
+        return new CRoxieServerContext(context, factory, client, isXml ? MarkupFmt_XML : MarkupFmt_Unknown, isRaw, isBlocked, httpHelper, trim, priority, _logctx, readFlags, querySetName);
 }
 
-IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
+IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const ContextLogger &_logctx)
 {
     return new CRoxieServerContext(factory, _logctx);
 }
 
-IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
+IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const ContextLogger &_logctx)
 {
     return new CRoxieServerContext(wu, factory, _logctx);
 }

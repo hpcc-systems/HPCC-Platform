@@ -49,6 +49,9 @@
   string that can be used in a DATASET declaration to read data from an RFS
   (Remote File Server) instance (e.g. rfsmysql) on another node.</para>
 
+  <para>This function is now considered deprecated in favor of using the EMBED
+  mechanism. It will be removed in Version 6.0. </para>
+
   <para>Example:</para>
 
   <programlisting format="linespecific">IMPORT Std;

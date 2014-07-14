@@ -179,6 +179,21 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     setupLegacyFilters();
 }
 
+StringBuffer& Cws_machineEx::getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage)
+{
+    context.getAcceptLanguage(acceptLanguage);
+    if (!acceptLanguage.length())
+    {
+        acceptLanguage.set("en");
+        return acceptLanguage;
+    }
+    acceptLanguage.setLength(2);
+    VStringBuffer languageFile("%ssmc_xslt/nls/%s/hpcc.xml", getCFD(), acceptLanguage.str());
+    if (!checkFileExists(languageFile.str()))
+        acceptLanguage.set("en");
+    return acceptLanguage;
+}
+
 bool Cws_machineEx::onGetMachineInfo(IEspContext &context, IEspGetMachineInfoRequest & req,
                                              IEspGetMachineInfoResponse & resp)
 {
@@ -216,11 +231,17 @@ bool Cws_machineEx::onGetMachineInfoEx(IEspContext &context, IEspGetMachineInfoR
         if (addresses.empty())
             throw MakeStringException(ECLWATCH_INVALID_IP_OR_COMPONENT, "No network address specified.");
 
+        double version = context.getClientVersion();
         CGetMachineInfoData machineInfoData;
         readMachineInfoRequest(context, true, true, true, true, true, addresses, NULL, machineInfoData);
         getMachineInfo(context, machineInfoData);
         if (machineInfoData.getMachineInfoTable().ordinality())
             resp.setMachines(machineInfoData.getMachineInfoTable());
+        if (version >= 1.12)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+        }
     }
     catch(IException* e)
     {
@@ -1876,6 +1897,11 @@ void Cws_machineEx::setMachineInfoResponse(IEspContext& context, IEspGetMachineI
     char timeStamp[32];
     getTimeStamp(timeStamp);
     resp.setTimeStamp( timeStamp );
+    if (version >= 1.12)
+    {
+        StringBuffer acceptLanguage;
+        resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+    }
 }
 
 
@@ -1938,6 +1964,11 @@ void Cws_machineEx::setTargetClusterInfoResponse(IEspContext& context, IEspGetTa
     char timeStamp[32];
     getTimeStamp(timeStamp);
     resp.setTimeStamp( timeStamp );
+    if (version >= 1.12)
+    {
+        StringBuffer acceptLanguage;
+        resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+    }
 }
 
 void Cws_machineEx::setTargetClusterInfo(IPropertyTree* pTargetClusterTree, IArrayOf<IEspMachineInfoEx>& machineArray, IArrayOf<IEspTargetClusterInfo>& targetClusterInfoList)

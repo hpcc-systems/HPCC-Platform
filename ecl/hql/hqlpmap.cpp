@@ -1027,9 +1027,9 @@ bool transformReturnsSide(IHqlExpression * expr, node_operator side, unsigned in
     return isTrivialTransform(queryNewColumnProvider(expr), selector);
 }
 
-IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * field)
+IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * field, bool okToSkipRow)
 {
-    if (transform->getInfoFlags() & (HEFcontainsSkip))
+    if (!okToSkipRow && (transform->getInfoFlags() & (HEFcontainsSkip)))
         return NULL;
 
     ForEachChild(i, transform)
@@ -1039,7 +1039,7 @@ IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * f
         {
         case no_assignall:
             {
-                IHqlExpression * ret = getExtractSelect(cur, field);
+                IHqlExpression * ret = getExtractSelect(cur, field, okToSkipRow);
                 if (ret)
                     return ret;
                 break;
@@ -1053,6 +1053,8 @@ IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * f
                     break;
                 if (lhs->queryChild(0)->getOperator() != no_self)
                     break;
+                if (lhs->getInfoFlags() & HEFcontainsSkip)
+                    return NULL;
                 return ensureExprType(cur->queryChild(1), lhs->queryType());
             }
         }
@@ -1061,19 +1063,19 @@ IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * f
 }
 
 
-IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * selector, IHqlExpression * select)
+IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * selector, IHqlExpression * select, bool okToSkipRow)
 {
     if (select->getOperator() != no_select)
         return NULL;
     IHqlExpression * ds = select->queryChild(0);
     IHqlExpression * field = select->queryChild(1);
     if (ds == selector)
-        return getExtractSelect(transform, field);
-    OwnedHqlExpr extracted = getExtractSelect(transform, selector, ds);
+        return getExtractSelect(transform, field, okToSkipRow);
+    OwnedHqlExpr extracted = getExtractSelect(transform, selector, ds, okToSkipRow);
     if (!extracted)
         return NULL;
     if (extracted->getOperator() == no_createrow)
-        return getExtractSelect(extracted->queryChild(0), field);
+        return getExtractSelect(extracted->queryChild(0), field, okToSkipRow);
     return createSelectExpr(extracted.getClear(), LINK(field));
 }
 

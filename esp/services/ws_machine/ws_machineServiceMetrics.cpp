@@ -784,6 +784,11 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         {
             resp.setAutoUpdate( req.getAutoUpdate() );
         }
+        if (version >= 1.12)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+        }
         resp.setAutoRefresh( req.getAutoRefresh() );//loop back requested auto refresh timeout to output so javascript sets timeout
     }
     catch(IException* e)

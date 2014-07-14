@@ -249,6 +249,7 @@ int main( int argc, char *argv[]  )
 
     dummyProc();
 #ifndef __64BIT__
+    // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
 #endif
 

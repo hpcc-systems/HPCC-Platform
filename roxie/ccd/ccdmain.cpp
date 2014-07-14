@@ -71,7 +71,7 @@ unsigned maxLockAttempts = 5;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
 bool traceServerSideCache = false;
-bool timeActivities = true;
+bool defaultTimeActivities = true;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
 unsigned restarts = 0;
@@ -94,6 +94,7 @@ IPropertyTree* ccdChannels;
 StringArray allQuerySetNames;
 
 bool allFilesDynamic;
+bool lockSuperFiles;
 bool crcResources;
 bool useRemoteResources;
 bool checkFileDate;
@@ -113,11 +114,13 @@ bool checkCompleted = true;
 unsigned preabortKeyedJoinsThreshold = 100;
 unsigned preabortIndexReadsThreshold = 100;
 bool preloadOnceData;
+bool reloadRetriesFailed;
 
 unsigned memoryStatsInterval = 0;
 memsize_t defaultMemoryLimit;
 unsigned defaultTimeLimit[3] = {0, 0, 0};
 unsigned defaultWarnTimeLimit[3] = {0, 5000, 5000};
+unsigned defaultThorConnectTimeout;
 
 unsigned defaultParallelJoinPreload = 0;
 unsigned defaultPrefetchProjectPreload = 10;
@@ -461,6 +464,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #endif
 
 #ifndef __64BIT__
+    // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
 #endif
     srand( (unsigned)time( NULL ) );
@@ -490,6 +494,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         {
             DBGLOG("Loading topology file %s", topologyFile.str());
             topology = createPTreeFromXMLFile(topologyFile.str());
+            saveTopology();
         }
         else
         {
@@ -499,7 +504,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "topology file %s not found", topologyFile.str());
             }
             topology=createPTreeFromXMLString(
-                "<RoxieTopology localSlave='1'>"
+                "<RoxieTopology allFilesDynamic='1' localSlave='1'>"
                 " <RoxieFarmProcess/>"
                 " <RoxieServerProcess netAddress='.'/>"
                 "</RoxieTopology>"
@@ -665,6 +670,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
         allFilesDynamic = topology->getPropBool("@allFilesDynamic", false);
+        lockSuperFiles = topology->getPropBool("@lockSuperFiles", false);
         crcResources = topology->getPropBool("@crcResources", false);
         ignoreOrphans = topology->getPropBool("@ignoreOrphans", true);
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
@@ -675,6 +681,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (!blindLogging)
             logExcessiveSeeks = true;
         preloadOnceData = topology->getPropBool("@preloadOnceData", true);
+        reloadRetriesFailed  = topology->getPropBool("@reloadRetriesSuspended", true);
         linuxYield = topology->getPropBool("@linuxYield", false);
         traceSmartStepping = topology->getPropBool("@traceSmartStepping", false);
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
@@ -720,6 +727,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultWarnTimeLimit[0] = (unsigned) topology->getPropInt64("@defaultLowPriorityTimeWarning", 0);
         defaultWarnTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeWarning", 0);
         defaultWarnTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeWarning", 0);
+        defaultThorConnectTimeout = (unsigned) topology->getPropInt64("@defaultThorConnectTimeout", 60);
 
         defaultXmlReadFlags = topology->getPropBool("@defaultStripLeadingWhitespace", true) ? ptr_ignoreWhiteSpace : ptr_none;
         defaultParallelJoinPreload = topology->getPropInt("@defaultParallelJoinPreload", 0);
@@ -748,7 +756,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
-        timeActivities = topology->getPropBool("@timeActivities", true);
+        defaultTimeActivities = topology->getPropBool("@timeActivities", true);
         clientCert.certificate.set(topology->queryProp("@certificateFileName"));
         clientCert.privateKey.set(topology->queryProp("@privateKeyFileName"));
         clientCert.passphrase.set(topology->queryProp("@passphrase"));
@@ -904,8 +912,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 int channel = i+1;
                 for (int copy=0; copy<channelsPerNode; copy++)
                 {
-                    channel = channel + copy*numNodes;
                     addChannel(i, channel, copy);
+                    channel += numNodes;
                 }
             }
         }

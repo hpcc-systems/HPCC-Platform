@@ -64,7 +64,8 @@ static int _memicmp (const void *s1, const void *s2, size_t len)
 }
 
 #endif
-#if defined(_M_X64) || defined ( __x86_64) || __WORDSIZE==64
+#if defined(_M_X64) || defined ( __x86_64) || \
+    defined(__aarch64__) || __WORDSIZE==64
 #define __64BIT__
 typedef unsigned long memsize_t;
 #else

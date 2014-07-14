@@ -15,12 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
-#include "jfile.hpp" 
+#include "jfile.hpp"
+#include "jlog.hpp"
 #include "hqlerror.hpp"
 #include "hqlcollect.hpp"
 #include "hqlrepository.hpp"
 #include "hqlplugins.hpp"
 #include "hqlplugininfo.hpp"
+#include "hqlexpr.hpp"
 
 namespace repositoryCommon {
 

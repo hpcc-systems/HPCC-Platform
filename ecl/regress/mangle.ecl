@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-loadxml('<xml/>');
+LOADXML('<xml/>');
 
 #declare(s1,s2)
 

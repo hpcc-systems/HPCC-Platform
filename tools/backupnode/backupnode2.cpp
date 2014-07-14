@@ -364,7 +364,7 @@ public:
 bool outputPartsFiles(const char *daliserver,const char *cluster,const char *outdir, StringBuffer &errstr, bool verbose)
 {
     errstr.clear();
-    bool dalistarted;
+    bool dalistarted = false;
     if (daliserver&&*daliserver) {
         try {
             // connect to dali

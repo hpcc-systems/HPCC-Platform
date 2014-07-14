@@ -26,6 +26,8 @@
 #include "thorxmlwrite.hpp"
 
 #define DALI_RESULT_OUTPUTMAX 2000 // MB
+#define DALI_RESULT_LIMIT_DEFAULT 10 // MB
+
 class THORHELPER_API CSizingSerializer : implements IRowSerializerTarget
 {
     size32_t totalsize;
@@ -33,9 +35,9 @@ public:
     inline CSizingSerializer() { reset(); }
     inline void reset() { totalsize = 0; }
     inline size32_t size() { return totalsize; }
-    void put(size32_t len, const void * ptr);
-    size32_t beginNested();
-    void endNested(size32_t position);
+    virtual void put(size32_t len, const void * ptr);
+    virtual size32_t beginNested(size32_t count);
+    virtual void endNested(size32_t position);
 };
 
 class THORHELPER_API CMemoryRowSerializer: implements IRowSerializerTarget
@@ -48,9 +50,9 @@ public:
     {
         nesting = 0;
     }
-    void put(size32_t len, const void * ptr);
-    size32_t beginNested();
-    void endNested(size32_t sizePos);
+    virtual void put(size32_t len, const void * ptr);
+    virtual size32_t beginNested(size32_t count);
+    virtual void endNested(size32_t sizePos);
 };
 
 
@@ -135,10 +137,10 @@ class ActivityTimer
     unsigned __int64 startCycles;
     unsigned __int64 &accumulator;
 protected:
-    const bool &enabled;
+    const bool enabled;
     IActivityTimer *iActivityTimer;
 public:
-    inline ActivityTimer(unsigned __int64 &_accumulator, const bool &_enabled, IActivityTimer *_iActivityTimer) : accumulator(_accumulator), enabled(_enabled), iActivityTimer(_iActivityTimer)
+    inline ActivityTimer(unsigned __int64 &_accumulator, const bool _enabled, IActivityTimer *_iActivityTimer) : accumulator(_accumulator), enabled(_enabled), iActivityTimer(_iActivityTimer)
     {
         if (enabled)
         {
@@ -146,7 +148,10 @@ public:
             if (iActivityTimer)
                 startCycles -= iActivityTimer->getCyclesAdjustment();
         }
+        else
+            startCycles = 0;
     }
+
     inline ~ActivityTimer()
     {
         if (enabled)
@@ -161,7 +166,7 @@ public:
 #else
 struct ActivityTimer
 {
-    inline ActivityTimer(unsigned __int64 &_accumulator, const bool &_enabled, IActivityTimer *_iActivityTimer) { }
+    inline ActivityTimer(unsigned __int64 &_accumulator, const bool _enabled, IActivityTimer *_iActivityTimer) { }
 };
 #endif
 

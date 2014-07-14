@@ -364,6 +364,11 @@ public:
     virtual IStringVal & getXmlRow(IStringVal &ret);
     virtual IStringVal & getXmlItem(IStringVal & ret);
 
+    virtual void beginWriteXmlRows(IXmlWriter & writer);
+    virtual void writeXmlRow(IXmlWriter &writer);
+    virtual void endWriteXmlRows(IXmlWriter & writer);
+    virtual void writeXmlItem(IXmlWriter &writer);
+
 //IExtendedResultSetCursor
     virtual void noteRelatedFileChanged() {}
 
@@ -372,8 +377,7 @@ protected:
     void init(IExtendedNewResultSet * _resultSet);
     bool isMappedIndexField(unsigned columnIndex) { return resultSet->isMappedIndexField(columnIndex); }
     const byte * getColumn(unsigned idx) const      { return (const byte *)curRowData.toByteArray() + offsets[idx]; }
-    void getXmlText(StringBuffer & out, int columnIndex, const char *tag=NULL);
-    void getXmlAttrText(StringBuffer & out, int columnIndex, const char *tag=NULL);
+    void writeXmlText(IXmlWriter &writer, int columnIndex, const char *tag=NULL);
 
     virtual __int64 getCurRow() const;
     virtual __int64 translateRow(__int64 row) const;
@@ -428,6 +432,10 @@ public:
     virtual IStringVal & getXml(IStringVal & ret, int columnIndex);
     virtual IStringVal & getXmlRow(IStringVal &ret);
     virtual IStringVal & getXmlItem(IStringVal &ret);
+    virtual void beginWriteXmlRows(IXmlWriter & writer);
+    virtual void writeXmlRow(IXmlWriter &writer);
+    virtual void endWriteXmlRows(IXmlWriter & writer);
+    virtual void writeXmlItem(IXmlWriter &writer);
     virtual void noteRelatedFileChanged();
 
 protected:

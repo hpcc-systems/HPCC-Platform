@@ -24,16 +24,12 @@
             <title>XRef - Orphaned Files</title>
                <link type="text/css" rel="StyleSheet" href="/esp/files_/css/sortabletable.css"/>
         <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-        <script type="text/javascript" src="/esp/files_/scripts/sortabletable.js">
-                  <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-               </script>
                <script language="javascript" src="/esp/files_/scripts/multiselect.js">
                   <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
                </script>
         <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
         <script language="JavaScript1.2"><xsl:text disable-output-escaping="yes"><![CDATA[
-               var sortableTable = null;
                function onRowCheck(checked)
                {
                   document.forms[0].deleteBtn.disabled = checkedCount == 0;
@@ -43,9 +39,6 @@
                 {
                   initSelection('resultsTable');
                   onRowCheck(false);
-                  var table = document.getElementById('resultsTable');
-                  if (table)
-                     sortableTable = new SortableTable(table, table, ["None", "String", "DateTime", "Number", "Number", "Number"]);
                 }   
 
               function doconfirm(msg) {

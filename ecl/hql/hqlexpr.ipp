@@ -22,6 +22,13 @@
 //may be accessed in parallel from multiple threads, causing potential conflicts
 #define THREAD_SAFE_SYMBOLS
 
+//The following flag is to allow tracing when expressions are created, linked, released, destroyed
+//It allocates a unique id to each expression that is created, then add the unique ids into the
+//checkSeqId() function, and add a breakpoint there
+#ifdef _DEBUG
+//#define DEBUG_TRACK_INSTANCEID
+#endif
+
 #include "jexcept.hpp"
 #include "javahash.hpp"
 #include "defvalue.hpp"
@@ -133,6 +140,10 @@ protected:
     CHqlDynamicProperty * attributes;
     HqlExprArray operands;
 
+#ifdef DEBUG_TRACK_INSTANCEID
+    unsigned __int64 seqid;
+#endif
+
 protected:
     CHqlExpression(node_operator op);
     void appendOperands(IHqlExpression * arg0, ...);
@@ -242,7 +253,7 @@ public:
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body) { return LINK(body); }
     virtual void unwindList(HqlExprArray &dst, node_operator);
 
-    virtual IIdAtom *           queryFullModuleId() const { return NULL; }
+    virtual IIdAtom *           queryFullContainerId() const { return NULL; }
     virtual ISourcePath *   querySourcePath() const { return NULL; }
 
     virtual IInterface *    queryTransformExtra();
@@ -518,7 +529,7 @@ public:
     virtual IHqlExpression * clone(HqlExprArray &);
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body) = 0;
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body);
-    virtual IIdAtom * queryFullModuleId() const;
+    virtual IIdAtom * queryFullContainerId() const;
     virtual bool isFullyBound() const;
     virtual IHqlExpression *addOperand(IHqlExpression *);
     virtual StringBuffer& getTextBuf(StringBuffer& buf);
@@ -541,7 +552,7 @@ public:
 
     virtual IAtom * queryName() const { return id->lower(); }
     virtual IIdAtom * queryId() const { return id; }
-    virtual IIdAtom * queryFullModuleId() const { return moduleId; }
+    virtual IIdAtom * queryFullContainerId() const { return moduleId; }
     virtual IHqlExpression *queryFunctionDefinition() const;
     virtual unsigned getSymbolFlags() const;
 
@@ -995,6 +1006,7 @@ class HQL_API CHqlScope : public CHqlExpressionWithType, implements IHqlScope, i
 protected:
     Owned<IFileContents> text;
     IIdAtom * id;
+    IIdAtom * containerId;
     StringAttr fullName;                //Fully qualified name of this nested module   E.g.: PARENT.CHILD.GRANDCHILD
     SymbolTable symbols;
 
@@ -1026,6 +1038,7 @@ public:
     virtual IAtom * queryName() const {return id->lower();}
     virtual IIdAtom * queryId() const { return id; }
     virtual const char * queryFullName() const  { return fullName; }
+    virtual IIdAtom * queryFullContainerId() const { return containerId; }
     virtual ISourcePath * querySourcePath() const { return text ? text->querySourcePath() : NULL; }
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
@@ -1078,6 +1091,7 @@ public:
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 
 protected:
+    void initContainer();
     void throwRecursiveError(IIdAtom * id);
 };
 

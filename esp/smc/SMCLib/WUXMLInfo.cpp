@@ -308,9 +308,12 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
     return true;
 }
 
+//GH: MORE - this whole class looks as if it is unused, and should be deleted.  If that is not true the
+//following function needs to be rewritten to take into account the statistics
 bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
 {
     try{
+
         IPropertyTree* timingTree = XMLStructure.addPropTree("Timings", createPTree(ipt_caseInsensitive));
         Owned<IStringIterator> times = &wu.getTimers();
         ForEach(*times)
@@ -318,8 +321,8 @@ bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
             SCMStringBuffer name;
             times->str(name);
             SCMStringBuffer value;
-            unsigned count = wu.getTimerCount(name.str(), NULL);
-            unsigned duration = wu.getTimerDuration(name.str(), NULL);
+            unsigned count = wu.getTimerCount(name.str());
+            unsigned duration = wu.getTimerDuration(name.str());
             StringBuffer fd;
             formatDuration(fd, duration);
             for (unsigned i = 0; i < name.length(); i++)

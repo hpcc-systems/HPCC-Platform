@@ -42,7 +42,8 @@ include_directories (
          ./../../roxie/udplib 
          ./../../roxie/roxie 
          ./../../roxie/roxiemem 
-         ./../../common/thorhelper 
+         ./../../common/thorhelper
+         ./../../common/workunit
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

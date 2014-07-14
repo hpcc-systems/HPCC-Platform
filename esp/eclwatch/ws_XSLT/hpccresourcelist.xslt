@@ -33,9 +33,6 @@
           <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
           <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
           <script type="text/javascript" src="/esp/files/scripts/espdefault.js"></script>
-          <script type="text/javascript" src="/esp/files/scripts/sortabletable.js">
-           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-          </script>
           <script type="text/javascript" src="/esp/files/scripts/multiselect.js">></script>
         ]]></xsl:text>
         
@@ -43,11 +40,6 @@
           function onLoad()
           {
             initSelection('resultsTable');
-            var table = document.getElementById('resultsTable');
-            if (table)
-            {
-              sortableTable = new SortableTable(table, table, ["String", "String", "String", "String", "String"]);
-            }
           }
         </script>
       </head>

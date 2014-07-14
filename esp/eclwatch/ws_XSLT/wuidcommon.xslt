@@ -44,7 +44,14 @@
                 <xsl:otherwise>
                   <xsl:value-of select="$wuid"/>
                   &nbsp;
-                  <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML" >XML</a>
+                  <xsl:choose>
+                    <xsl:when test="WUXMLSize &lt; 5000000">
+                      <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML%26Option%3d0" >XML</a><xsl:value-of select="WUXMLSize"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <a href="/esp/iframe?esp_iframe_title=Download ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML%26Option%3d2" >Download XML</a>
+                    </xsl:otherwise>
+                  </xsl:choose>
                   &nbsp;
                   <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dECLPlaygroundWidget%26Wuid%3d{$wuid}%26Target%3d{Cluster}" >ECL Playground</a>
                 </xsl:otherwise>
@@ -705,6 +712,22 @@
       </xsl:if>
 
       <xsl:if test="number(Archived) &lt; 1">
+        <xsl:if test="count(ResourceURLs/URL)">
+          <p>
+            <div class="wugroup">
+              <div class="WuGroupHdrLeft">
+                <A href="javascript:void(0)" onclick="toggleElement('Resources');" id="explinkResources" class="wusectionexpand">
+                  Resources: (<xsl:value-of select="count(ResourceURLs/URL)"/>)
+                </A>
+              </div>
+            </div>
+            <div id="Resources" class="wusectioncontent">
+              <table id="ResourceTable" class="wusectiontable">
+                <xsl:apply-templates select="ResourceURLs"/>
+              </table>
+            </div>
+          </p>
+        </xsl:if>
         <xsl:if test="count(Helpers/ECLHelpFile)">
           <p>
             <div class="wugroup">
@@ -1232,6 +1255,17 @@
       </td>
     </tr>
   </xsl:template>
+  <xsl:template match="ResourceURLs">
+    <xsl:for-each select="URL">
+    <tr>
+      <td>
+        <a href="{text()}" >
+          <xsl:value-of select="."/>
+        </a>
+      </td>
+    </tr>
+    </xsl:for-each>
+  </xsl:template>
   <xsl:template match="ECLHelpFile">
     <tr>
       <xsl:if test="Type = 'cpp'">
@@ -1325,9 +1359,6 @@
         <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
         <link type="text/css" rel="StyleSheet" href="files_/css/sortabletable.css"/>
-        <script type="text/javascript" src="files_/scripts/sortabletable.js">
-          <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-        </script>
         <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
         </script>
@@ -1359,11 +1390,7 @@
                      function onLoad()
                      {
                         initSelection('resultsTable');
-                        var table = document.getElementById('resultsTable');
-                        if (table)
-                           sortableTable = new SortableTable(table, table, ["None", "String","String",]);
                      }       
-                     var sortableTable = null;
                ]]></xsl:text>
         </script>
       </head>
@@ -1455,9 +1482,6 @@
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
         </script>
         <link type="text/css" rel="StyleSheet" href="/esp/files_/css/sortabletable.css"/>
-        <script type="text/javascript" src="files_/scripts/sortabletable.js">
-          <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-        </script>
         <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
         </script>
@@ -1468,11 +1492,7 @@
                      function onLoad()
                      {
                         initSelection('resultsTable');
-                        var table = document.getElementById('resultsTable');
-                        if (table)
-                           sortableTable = new SortableTable(table, table, ["String", "Number", "None", "Number", "Number"]);
                      }               
-                     var sortableTable = null;
                        
                      function ChangeHeader(o1, headerid)
                      {

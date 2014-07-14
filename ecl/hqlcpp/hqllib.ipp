@@ -43,7 +43,6 @@ public:
     unsigned streamedCount;
     LibraryInputMapper inputMapper;
     HqlExprArray outputs;                       // Only the names and types are significant, not the values
-    bool allowStreamingInputs;
 };
 
 

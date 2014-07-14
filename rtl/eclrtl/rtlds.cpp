@@ -22,6 +22,8 @@
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
 
+#include "roxiemem.hpp"
+
 #define FIRST_CHUNK_SIZE  0x100
 #define DOUBLE_LIMIT      0x10000           // must be a power of 2
 
@@ -516,6 +518,19 @@ const void * rtlCloneRow(IEngineRowAllocator * rowAllocator, size32_t len, const
     return builder.finalizeRowClear(len);
 }
 
+void rtlLinkChildren(void * self, IOutputMetaData & meta)
+{
+    RtlChildRowLinkerWalker walker;
+    meta.walkIndirectMembers(static_cast<byte *>(self), walker);
+}
+
+void rtlCopyRowLinkChildren(void * self, size32_t len, const void * row, IOutputMetaData & meta)
+{
+    memcpy(self, row, len);
+
+    RtlChildRowLinkerWalker walker;
+    meta.walkIndirectMembers(static_cast<byte *>(self), walker);
+}
 
 
 //---------------------------------------------------------------------------
@@ -965,7 +980,7 @@ public:
         buffer.append(len, ptr);
     }
 
-    virtual size32_t beginNested()
+    virtual size32_t beginNested(size32_t count)
     {
         unsigned pos = buffer.length();
         buffer.append((size32_t)0);
@@ -999,7 +1014,7 @@ public:
         offset += len;
     }
 
-    virtual size32_t beginNested()
+    virtual size32_t beginNested(size32_t count)
     {
         unsigned pos = offset;
         offset += sizeof(size32_t);
@@ -1104,14 +1119,14 @@ extern ECLRTL_API void rtlDeserializeChildGroupedRowset(size32_t & count, byte *
 
 void rtlSerializeChildRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
-    size32_t marker = out.beginNested();
+    size32_t marker = out.beginNested(count);
     doSerializeRowset(out, serializer, count, rows, false);
     out.endNested(marker);
 }
 
 void rtlSerializeChildGroupedRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
-    size32_t marker = out.beginNested();
+    size32_t marker = out.beginNested(count);
     doSerializeRowset(out, serializer, count, rows, true);
     out.endNested(marker);
 }
@@ -1337,14 +1352,14 @@ extern ECLRTL_API void rtlDeserializeChildDictionaryFromDataset(size32_t & count
 
 extern ECLRTL_API void rtlSerializeChildDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
-    size32_t marker = out.beginNested();
+    size32_t marker = out.beginNested(count);
     doSerializeDictionary(out, serializer, count, rows);
     out.endNested(marker);
 }
 
 extern ECLRTL_API void rtlSerializeChildDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
-    size32_t marker = out.beginNested();
+    size32_t marker = out.beginNested(count);
     doSerializeRowsetStripNulls(out, serializer, count, rows);
     out.endNested(marker);
 }
@@ -1619,6 +1634,57 @@ const byte * RtlLinkedDatasetCursor::select(unsigned idx)
     return cur < numRows ? rows[cur] : NULL;
 }
 
+
+//---------------------------------------------------------------------------
+
+RtlSafeLinkedDatasetCursor::RtlSafeLinkedDatasetCursor(unsigned _numRows, byte * * _rows)
+{
+    init(_numRows, _rows);
+}
+
+RtlSafeLinkedDatasetCursor::~RtlSafeLinkedDatasetCursor()
+{
+    ReleaseRoxieRowset(numRows, rows);
+}
+
+void RtlSafeLinkedDatasetCursor::init(unsigned _numRows, byte * * _rows)
+{
+    ReleaseRoxieRowset(numRows, rows);
+    numRows = _numRows;
+    rows = _rows;
+    cur = (unsigned)-1;
+    LinkRoxieRowset(rows);
+}
+
+//---------------------------------------------------------------------------
+
+RtlStreamedDatasetCursor::RtlStreamedDatasetCursor(IRowStream * _stream)
+{
+    init(_stream);
+}
+
+RtlStreamedDatasetCursor::RtlStreamedDatasetCursor()
+{
+}
+
+void RtlStreamedDatasetCursor::init(IRowStream * _stream)
+{
+    stream.set(_stream);
+    cur.clear();
+}
+
+const byte * RtlStreamedDatasetCursor::first()
+{
+    cur.setown(stream->nextRow());
+    return cur.getbytes();
+}
+
+
+const byte * RtlStreamedDatasetCursor::next()
+{
+    cur.setown(stream->nextRow());
+    return cur.getbytes();
+}
 
 //---------------------------------------------------------------------------
 

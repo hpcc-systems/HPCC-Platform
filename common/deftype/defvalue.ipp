@@ -121,7 +121,7 @@ public:
     virtual __int64 getIntValue();
     virtual void pushDecimalValue();
     virtual const char *getStringValue(StringBuffer &); 
-
+    virtual const char *getUTF8Value(StringBuffer & out);
 }; 
 
 class UnicodeValue : public MemoryValue
@@ -158,6 +158,7 @@ public:
     UChar const * get(void) const { return text; }
     size32_t length() const { return text ? rtlUnicodeStrlen(text) : 0; }
     void set(UChar const * _text, unsigned _len);
+    void setown(UChar * _text);
 
 private:
     UChar * text;

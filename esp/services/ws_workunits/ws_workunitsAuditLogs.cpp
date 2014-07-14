@@ -392,6 +392,8 @@ void AddToClusterJobXLS(JobUsageArray& jobsummary, CDateTime &adjStart, CDateTim
 
         float xx1= (y==y1 ? x1 : 0.0F);
         float xx2= (y==y2 ? x2 : 86400.0F);
+        if (xx2<=xx1)
+            continue;
         jobUsage.m_usage += (xx2-xx1)/864.0F;
 
         float bhours = ((busEnd < xx2)? busEnd : xx2) - ((busStart > xx1) ? busStart : xx1);
@@ -802,6 +804,9 @@ bool getClusterJobSummaryXLS(double version, StringBuffer &xml, const char* clus
     for (int i = first; i <= last; i++)
     {
         Owned<CJobUsage> jobUsage =  new CJobUsage();
+        jobUsage->m_busage = 0.0;
+        jobUsage->m_nbusage = 0.0;
+        jobUsage->m_usage = 0.0;
         usageDT.getDateString(jobUsage->m_date);
         jobUsages.append(*jobUsage.getClear());
         usageDT.adjustTime(60*24);
@@ -814,7 +819,6 @@ bool getClusterJobSummaryXLS(double version, StringBuffer &xml, const char* clus
             continue;
 
         Owned<IEspECLJob> job = createEclJobFromAuditLine(version, jobs.item(idx).text.get());
-
         CDateTime adjStart;
         adjStart.setString(job->getStartedDate(),NULL,true);
         adjStart.adjustTime(delayTime);
@@ -931,6 +935,10 @@ void streamJobListResponse(IEspContext &context, const char *cluster, const char
         toTime.getString(tostr, false);
     }
 
+    response->setContentType(HTTP_TYPE_TEXT_HTML_UTF8);
+    response->setStatus(HTTP_STATUS_OK);
+    response->startSend();
+
     StringBuffer sb;
     sb.append("<script language=\"javascript\">parent.displayLegend(");
     appendQuoted(sb, fromstr.str(), true);
@@ -1036,7 +1044,7 @@ void streamJobListResponse(IEspContext &context, const char *cluster, const char
     sb.clear().append("<script language=\"javascript\">\r\n");
     sb.append("parent.displaySasha();\r\nparent.displayEnd(");
     appendQuoted(sb, xls, true).append(")</script>\r\n");
-    response->sendChunk(sb.str());
+    response->sendFinalChunk(sb.str());
 }
 
 bool checkSameStrings(const char* s1, const char* s2)
@@ -1264,8 +1272,6 @@ void appendQueueInfoFromAuditLine(IArrayOf<IEspThorQueue>& items, const char* li
 
     if (checkNewThorQueueItem(tq, showAll, items))
         items.append(*tq.getClear());
-
-    DBGLOG("Queue log: [%s]", line);
 }
 
 
@@ -1313,6 +1319,10 @@ void streamJobQueueListResponse(IEspContext &context, const char *cluster, const
             appendQueueInfoFromAuditLine(items, lines.item(idx).text.get(), longestQueue, maxConnected, maxDisplay, 2);
         countLines++;
     }
+
+    response->setContentType(HTTP_TYPE_TEXT_HTML_UTF8);
+    response->setStatus(HTTP_STATUS_OK);
+    response->startSend();
 
     if (items.length() < 1)
     {
@@ -1364,14 +1374,14 @@ void streamJobQueueListResponse(IEspContext &context, const char *cluster, const
     sb.append("parent.displayQEnd(\'<table><tr><td>");
     sb.append("Total Records in the Time Period: ").append(items.length());
     sb.append(" (<a href=\"/WsWorkunits/WUClusterJobQueueLOG?").append(xls);
-    sb.append("\">txt</a>...<a href=\"/WsWorkunits/WUClusterJobQueueXLS?").append(xls).append("\">xls</a>).");
+    sb.append("\">job_queue_log</a>...<a href=\"/WsWorkunits/WUClusterJobQueueXLS?").append(xls).append("\">job_queue.html</a>).");
     sb.append("</td></tr><tr><td>");
     if (count > maxDisplay)
         sb.append("Displayed: First ").append(maxDisplay).append(". ");
     sb.append("Max. Queue Length: ").append(longestQueue).append(".");
     sb.append("</td></tr></table>\')</script>\r\n");
 
-    response->sendChunk(sb.str());
+    response->sendFinalChunk(sb.str());
 }
 
 int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* response)
@@ -1388,18 +1398,13 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
          if(!strnicmp(path.str(), "/WsWorkunits/res/", strlen("/WsWorkunits/res/")))
          {
             const char *pos = path.str();
-            StringBuffer wuid;
-            nextPathNode(pos, wuid, 2);
-            Owned<IWuWebView> web = createWuWebView(wuid, wuid, getCFD(), true);
-            if (!web)
-                throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit");
+            skipPathNodes(pos, 1);
             MemoryBuffer mb;
-            StringAttr mimetype(mimeTypeFromFileExt(strrchr(pos, '.')));
-            if (!web->getResourceByPath(pos, mb))
-                throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open resource");
+            StringBuffer mimetype;
+            getWuResourceByPath(pos, mb, mimetype);
 
             response->setContent(mb.length(), mb.toByteArray());
-            response->setContentType(mimetype.get());
+            response->setContentType(mimetype.str());
             response->setStatus(HTTP_STATUS_OK);
             response->send();
             return 0;
@@ -1424,6 +1429,9 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
          }
          if(!strnicmp(path.str(), "/WsWorkunits/JobList", 20))
          {
+            if (ctx->getClientVersion()<=0)
+                ctx->setClientVersion(1.51);
+
             const char *cluster = params->queryProp("Cluster");
             const char *startDate = params->queryProp("StartDate");
             const char *endDate = params->queryProp("EndDate");
@@ -1518,7 +1526,8 @@ bool CWsWorkunitsEx::onWUClusterJobQueueXLS(IEspContext &context, IEspWUClusterJ
         MemoryBuffer mb;
         mb.setBuffer(xls.length(), (void*)xls.str());
         resp.setResult(mb);
-        resp.setResult_mimetype("application/vnd.ms-excel");
+        resp.setResult_mimetype(HTTP_TYPE_TEXT_HTML);
+        context.addCustomerHeader("Content-disposition", "attachment;filename=job_queue.html");
     }
     catch(IException* e)
     {
@@ -1604,7 +1613,8 @@ bool CWsWorkunitsEx::onWUClusterJobXLS(IEspContext &context, IEspWUClusterJobXLS
         MemoryBuffer mb;
         mb.setBuffer(xls.length(), (void*)xls.str());
         resp.setResult(mb);
-        resp.setResult_mimetype("application/vnd.ms-excel");
+        resp.setResult_mimetype(HTTP_TYPE_TEXT_HTML);
+        context.addCustomerHeader("Content-disposition", "attachment;filename=cluster_jobs.html");
     }
     catch(IException* e)
     {
@@ -1635,7 +1645,7 @@ bool CWsWorkunitsEx::onWUClusterJobSummaryXLS(IEspContext &context, IEspWUCluste
         MemoryBuffer mb;
         mb.setBuffer(xls.length(), (void*)xls.str());
         resp.setResult(mb);
-        resp.setResult_mimetype("application/vnd.ms-excel");
+        resp.setResult_mimetype(HTTP_TYPE_TEXT_HTML);
     }
     catch(IException* e)
     {

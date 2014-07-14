@@ -124,4 +124,9 @@
 #define THOR_BASE_PORT                  20000 //..~20099
 #define THOR_BASESLAVE_PORT             20100 //..~20199
 
+/* ESP PLUG-IN SERVICES */
+//Insecure
+#define WS_SQL_DEFAULT_PORT             8510
+//Secure
+#define WS_SQL_SECURE_PORT              18510
 #endif

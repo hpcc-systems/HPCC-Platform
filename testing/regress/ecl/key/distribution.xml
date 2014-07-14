@@ -1,0 +1,14 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>&lt;XML&gt;&lt;Field name=&quot;value1&quot; distinct=&quot;3&quot;&gt;
+ &lt;Value count=&quot;2&quot;&gt;A&lt;/Value&gt;
+ &lt;Value count=&quot;1&quot;&gt;B&lt;/Value&gt;
+ &lt;Value count=&quot;2&quot;&gt;C&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;Field name=&quot;value2&quot; distinct=&quot;4&quot;&gt;
+ &lt;Value count=&quot;1&quot;&gt;B&lt;/Value&gt;
+ &lt;Value count=&quot;1&quot;&gt;C&lt;/Value&gt;
+ &lt;Value count=&quot;2&quot;&gt;G&lt;/Value&gt;
+ &lt;Value count=&quot;1&quot;&gt;X&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;/XML&gt;</Result_1></Row>
+</Dataset>

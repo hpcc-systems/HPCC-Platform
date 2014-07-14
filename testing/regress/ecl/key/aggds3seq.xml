@@ -1,0 +1,49 @@
+<Dataset name='Result 1'>
+ <Row><surname>Flintstone          </surname><sumage>198</sumage></Row>
+ <Row><surname>Grabdale            </surname><sumage>68</sumage></Row>
+ <Row><surname>Halliday            </surname><sumage>74</sumage></Row>
+ <Row><surname>Jones               </surname><sumage>99</sumage></Row>
+ <Row><surname>Windsor             </surname><sumage>161</sumage></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><_unnamed_max_aage1>99</_unnamed_max_aage1><surname>Flintstone          </surname></Row>
+ <Row><_unnamed_max_aage1>68</_unnamed_max_aage1><surname>Grabdale            </surname></Row>
+ <Row><_unnamed_max_aage1>50</_unnamed_max_aage1><surname>Jones               </surname></Row>
+ <Row><_unnamed_max_aage1>83</_unnamed_max_aage1><surname>Windsor             </surname></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><_unnamed_1>Count: </_unnamed_1><_unnamed_cnt_2>1</_unnamed_cnt_2><_unnamed_3>Name: </_unnamed_3><surname>Halliday            </surname></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><cnt>0</cnt><sumage>99</sumage></Row>
+ <Row><cnt>1</cnt><sumage>99</sumage></Row>
+ <Row><cnt>2</cnt><sumage>118</sumage></Row>
+ <Row><cnt>3</cnt><sumage>34</sumage></Row>
+ <Row><cnt>4</cnt><sumage>137</sumage></Row>
+ <Row><cnt>5</cnt><sumage>113</sumage></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><sbn>                    </sbn><sumage>198</sumage></Row>
+ <Row><sbn>Compilers           </sbn><sumage>35</sumage></Row>
+ <Row><sbn>Fox in Socks        </sbn><sumage>50</sumage></Row>
+ <Row><sbn>Girl guide annual   </sbn><sumage>78</sumage></Row>
+ <Row><sbn>Pride and prejudice,</sbn><sumage>68</sumage></Row>
+ <Row><sbn>Social etiquette    </sbn><sumage>83</sumage></Row>
+ <Row><sbn>The Life of Pi      </sbn><sumage>34</sumage></Row>
+ <Row><sbn>The cat in the hat  </sbn><sumage>49</sumage></Row>
+ <Row><sbn>The story of Jonah  </sbn><sumage>5</sumage></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><cnt>0</cnt><sumage>99</sumage></Row>
+ <Row><cnt>1</cnt><sumage>99</sumage></Row>
+ <Row><cnt>2</cnt><sumage>118</sumage></Row>
+ <Row><cnt>3</cnt><sumage>34</sumage></Row>
+ <Row><cnt>4</cnt><sumage>137</sumage></Row>
+ <Row><cnt>5</cnt><sumage>113</sumage></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><_unnamed_max_aage1>99</_unnamed_max_aage1><surname>Flintstone          </surname><books></books></Row>
+ <Row><_unnamed_max_aage1>68</_unnamed_max_aage1><surname>Grabdale            </surname><books><Row><id>23</id><name>Pride and prejudice, 1st edition</name><author>Jane Austen</author><rating100>95</rating100><price>12000</price></Row><Row><id>24</id><name>Mein Kampf, 1st edition</name><author>Adolph Hitler</author><rating100>80</rating100><price>10000</price></Row></books></Row>
+ <Row><_unnamed_max_aage1>50</_unnamed_max_aage1><surname>Jones               </surname><books><Row><id>25</id><name>All quiet on the western front</name><author>Erich Maria Remarque</author><rating100>85</rating100><price>4.99</price></Row><Row><id>26</id><name>Fox in Socks</name><author>Dr. Seuss</author><rating100>99</rating100><price>4.99</price></Row></books></Row>
+ <Row><_unnamed_max_aage1>83</_unnamed_max_aage1><surname>Windsor             </surname><books><Row><id>13</id><name>The bible</name><author>Various</author><rating100>93</rating100><price>0</price></Row><Row><id>14</id><name>The Prince</name><author>Machiavelli</author><rating100>40</rating100><price>0</price></Row><Row><id>15</id><name>Atlas of the world</name><author>Times</author><rating100>70</rating100><price>0</price></Row><Row><id>16</id><name>Girl guide annual</name><author>Various</author><rating100>50</rating100><price>0</price></Row><Row><id>17</id><name>Rwandan war dances</name><author>Unknown</author><rating100>30</rating100><price>0</price></Row></books></Row>
+</Dataset>

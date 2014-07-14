@@ -233,10 +233,13 @@ public:
         return false;
     }
 
-    virtual bool isUpload()
+    virtual bool isUpload(bool checkMimeType=true)
     {
-        if(m_queryparams && m_queryparams->hasProp("upload_") && !Utils::strncasecmp(m_content_type.get(), "multipart", strlen("multipart")))
-            return true;
+        if(m_queryparams && m_queryparams->hasProp("upload_"))
+        {
+            if (!checkMimeType || !Utils::strncasecmp(m_content_type.get(), "multipart", strlen("multipart")))
+                return true;
+        }
         return false;
     }
 };

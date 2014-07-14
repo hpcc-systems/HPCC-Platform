@@ -34,8 +34,10 @@ public:
     {
         if (sD) delete [] sD;
     }
-    void init()
+    virtual void init()
     {
+        CMasterActivity::init();
+
         // prepare topology.
 
         unsigned rootNodes = container.queryJob().querySlaves();
@@ -94,7 +96,7 @@ public:
             nextLevel->kill();
         }
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         serializeMPtag(dst, mpTag);
         dst.append(sD[slave].length());

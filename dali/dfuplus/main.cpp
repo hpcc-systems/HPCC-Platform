@@ -34,9 +34,10 @@ void handleSyntax()
     StringBuffer out;
 
     out.append("Usage:\n");
-    out.append("    dfuplus action=[spray|replicate|despray|copy|remove|rename|list|\n");
+    out.append("    dfuplus [-v|--version] | action=[spray|replicate|despray|copy|remove|rename|list|\n");
     out.append("                    addsuper|removesuper|listsuper|copysuper|dafilesrv|\n");
-    out.append("                    savexml|add|status|abort|resubmit|monitor] {<options>}\n");
+    out.append("                    savexml|add|status|abort|resubmit|monitor] {<options>}\n\n");
+    out.append("        -v | --version -- display version info\n\n");
     out.append("    general options:\n");
     out.append("        server=<esp-server-url> \n");
     out.append("        username=<user-name>\n");
@@ -73,9 +74,10 @@ void handleSyntax()
     out.append("            maxrecordsize=<max-record-size> -- optional, default is 8192\n");
     out.append("            separator=<separator> -- optional, default is \\,\n");
     out.append("            terminator=<terminator> -- optional, default is \\r,\\r\\n\n");
-    out.append("            quote=<quote> -- optional, default is '\n");
+    out.append("            quote=<quote> -- optional, default is \"\n");
     out.append("            escape=<escape> -- optional, no default value \n");
     out.append("            recordstructurepresent=0|1 -- optional, default is 0 (no field names in first row) \n");
+    out.append("            quotedTerminator=1|0 -- optional, default is 1 (quoted terminators in rows) \n");
     out.append("        options for xml:\n");
     out.append("            rowtag=rowTag -- required\n");
     out.append("            encoding=utf8|utf8n|utf16|utf16le|utf16be|utf32|utf32le|utf32be -- optional, default is utf8\n");
@@ -264,7 +266,8 @@ int main(int argc, const char* argv[])
 {
     InitModuleObjects();
 
-    if ((argc >= 2) && ((stricmp(argv[1], "/version") == 0) || (stricmp(argv[1], "-version") == 0))) 
+    if ((argc >= 2) && ((stricmp(argv[1], "/version") == 0) || (stricmp(argv[1], "-v") == 0)
+        || (stricmp(argv[1], "--version") == 0)))
     {
         printVersion();
         return 0;

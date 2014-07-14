@@ -27,8 +27,10 @@
 #include "jexcept.hpp"
 #include "jstring.hpp"
 #include "jdebug.hpp"
+
 #ifndef _WIN32
 #include <sys/wait.h>
+#include <pwd.h>
 #endif
 
 #ifdef LOGCLOCK
@@ -520,7 +522,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
             setpgid(0,0);
         if (outfile&&*outfile) {
             int outh = open(outfile, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR);
-            if(outh > 0)
+            if(outh >= 0)
             {
                 dup2(outh, STDOUT_FILENO);
                 dup2(outh, STDERR_FILENO);
@@ -648,9 +650,6 @@ void close_program(HANDLE handle)
 }
 
 #endif
-
-
-
 
 #ifndef _WIN32
 bool CopyFile(const char *file, const char *newfile, bool fail)
@@ -936,4 +935,24 @@ StringBuffer & hexdump2string(byte const * in, size32_t inSize, StringBuffer & o
         out.appendf("x%u", seq);
     out.append(" ]");
     return out;
+}
+
+jlib_decl bool getHomeDir(StringBuffer & homepath)
+{
+#ifdef _WIN32
+    const char *home = getenv("APPDATA");
+    // Not the 'official' way - which changes with every windows version
+    // but should work well enough for us (and avoids sorting out windows include mess)
+#else
+    const char *home = getenv("HOME");
+    if (!home)
+    {
+        struct passwd *pw = getpwuid(getuid());
+        home = pw->pw_dir;
+    }
+#endif
+    if (!home)
+        return false;
+    homepath.append(home);
+    return true;
 }

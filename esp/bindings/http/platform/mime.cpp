@@ -312,7 +312,7 @@ void CMimeMultiPart::unserialize(const char* contenttype, int text_length, const
         ptr = Utils::getWord(ptr, oneword, "; ");
     }
 
-    delete typebuf;
+    delete [] typebuf;
 
     int oneline_len = 0;
     int cur_pos = 0;
@@ -488,7 +488,7 @@ void CMimeMultiPart::parseContentType(const char* contenttype)
         ptr = Utils::getWord(ptr, oneword, "; ");
     }
 
-    delete typebuf;
+    delete [] typebuf;
 
     return;
 }

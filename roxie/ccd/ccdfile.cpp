@@ -747,7 +747,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         }
     }
 
-    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg)
+    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
     {
         bool fileCopied = false;
         IFile *sourceFile;
@@ -765,7 +765,8 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
         unsigned __int64 freeDiskSpace = getFreeSpace(destPath);
         deleteTempFiles(targetFilename);
-        if ( (sourceFile->size() + minFreeDiskSpace) > freeDiskSpace)
+        offset_t fileSize = sourceFile->size();
+        if ( (fileSize + minFreeDiskSpace) > freeDiskSpace)
         {
             StringBuffer err;
             err.appendf("Insufficient disk space.  File %s needs %"I64F"d bytes, but only %"I64F"d remains, and %"I64F"d is needed as a reserve", targetFilename, sourceFile->size(), freeDiskSpace, minFreeDiskSpace);
@@ -780,6 +781,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             Owned<IFile> destFile = createIFile(useTreeCopy?targetFilename:tempFile);
 
             bool hardLinkCreated = false;
+            unsigned start = msTick();
             try
             {
                 if (useHardLink)
@@ -794,18 +796,18 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                     {
                         StringBuffer str;
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
-                        MTimeSection timing(NULL, str.str());
+                        TimeSection timing(str.str());
                         if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true);
+                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, copyFlags);
                         else
-                            sourceFile->copyTo(destFile);
+                            sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
                     }
                     else
                     {
                         if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true);
+                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, copyFlags);
                         else
-                            sourceFile->copyTo(destFile);
+                            sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
                     }
                 }
                 f->setCopying(false);
@@ -845,8 +847,10 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                     deleteTempFiles(targetFilename);
                     throw;
                 }
-
-                DBGLOG("%s to %s complete", msg, targetFilename);
+                unsigned elapsed = msTick() - start;
+                double sizeMB = ((double) fileSize) / (1024*1024);
+                double MBperSec = elapsed ? (sizeMB / elapsed) * 1000 : 0;
+                DBGLOG("%s to %s complete in %d ms (%.1f MB/sec)", msg, targetFilename, elapsed, MBperSec);
             }
 
             f->copyComplete();
@@ -855,7 +859,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         return fileCopied;
     }
 
-    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage)
+    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage, CFflags copyFlags=CFnone)
     {
         if (!f->isRemote())
             f->copyComplete();
@@ -879,7 +883,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             
             tempFile.append(".$$$");
             const char *msg = background ? "Background copy" : "Copy";
-            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg);
+            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg, copyFlags);
         }
         return false;  // if we get here there was no file copied
     }
@@ -976,7 +980,7 @@ public:
                 {
                     try
                     {
-                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false);
+                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false, CFflush_rdwr);
                         CriticalBlock b(crit);
                         if (fileCopied)
                             fileCopiedCount++;
@@ -1175,7 +1179,7 @@ public:
                         if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
                         {
                             ret->checkOpen();
-                            doCopy(ret, false, false);
+                            doCopy(ret, false, false, CFflush_rdwr);
                             return ret.getLink();
                         }
 
@@ -1440,9 +1444,16 @@ public:
             IPartDescriptor &part = *fdesc.queryPart(i);
             IPropertyTree &partProps = part.queryProperties();
             offset_t size = partProps.getPropInt64("@size", (unsigned __int64) -1);
-            assertex(size != (unsigned __int64) -1);
             map[i].base = i ? map[i-1].top : 0;
-            map[i].top = map[i].base + size;
+            if (size==(unsigned __int64) -1)
+            {
+                if (i==numParts-1)
+                    map[i].top = (unsigned __int64) -1;
+                else
+                    throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file sizes not known for file %s", fileName.get());
+            }
+            else
+                map[i].top = map[i].base + size;
         }
         if (totalSize == (offset_t)-1)
             totalSize = map[numParts-1].top;
@@ -1634,7 +1645,7 @@ public:
 
 CRoxieFileCache * fileCache;
 
-class CResolvedFile : public CInterface, implements IResolvedFileCreator
+class CResolvedFile : public CInterface, implements IResolvedFileCreator, implements ISDSSubscription
 {
 protected:
     IResolvedFileCache *cached;
@@ -1655,6 +1666,8 @@ protected:
     IArrayOf<IResolvedFile> subRFiles;  // To make sure subfiles get locked too
 
     Owned <IPropertyTree> properties;
+    Linked<IRoxieDaliHelper> daliHelper;
+    Owned<IDaliPackageWatcher> notifier;
 
     void addFile(const char *subName, IFileDescriptor *fdesc, IFileDescriptor *remoteFDesc)
     {
@@ -1684,6 +1697,22 @@ protected:
         fileSize += base;
     }
 
+    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    {
+        if (traceLevel > 2)
+            DBGLOG("Superfile %s change detected", lfn.get());
+
+        {
+            CriticalBlock b(lock);
+            if (cached)
+            {
+                cached->removeCache(this);
+                cached = NULL;
+            }
+        }
+        globalPackageSetManager->requestReload(false, false);
+    }
+
     // We cache all the file maps/arrays etc here. 
     mutable CriticalSection lock;
     mutable Owned<IFilePartMap> fileMap;
@@ -1693,8 +1722,8 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* daliHelper, bool cacheIt, bool writeAccess, bool _isSuperFile)
-    : lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile)
+    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* _daliHelper, bool isDynamic, bool cacheIt, bool writeAccess, bool _isSuperFile)
+    : daliHelper(_daliHelper), lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile)
     {
         cached = NULL;
         fileSize = 0;
@@ -1703,6 +1732,9 @@ public:
         {
             if (traceLevel > 5)
                 DBGLOG("Roxie server adding information for file %s", lfn.get());
+            bool tsSet = dFile->getModificationTime(fileTimeStamp);
+            bool csSet = dFile->getFileCheckSum(fileCheckSum);
+            assertex(tsSet); // per Nigel, is always set
             IDistributedSuperFile *superFile = dFile->querySuperFile();
             if (superFile)
             {
@@ -1718,24 +1750,31 @@ public:
                     subDFiles.append(OLINK(sub));
                     addFile(sub.queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
                 }
+                // We have to clone the properties since we don't want to keep the superfile locked
+                properties.setown(createPTreeFromIPT(&dFile->queryAttributes()));
+                if (!isDynamic && !lockSuperFiles)
+                {
+                    notifier.setown(daliHelper->getSuperFileSubscription(lfn, this));
+                    dFile.clear();  // We don't lock superfiles, except dynamic ones
+                }
             }
             else // normal file, not superkey
             {
                 isSuper = false;
+                properties.set(&dFile->queryAttributes());
                 Owned<IFileDescriptor> fDesc = dFile->getFileDescriptor();
                 Owned<IFileDescriptor> remoteFDesc;
                 if (daliHelper)
                     remoteFDesc.setown(daliHelper->checkClonedFromRemote(_lfn, fDesc, cacheIt));
                 addFile(dFile->queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
             }
-            bool tsSet = dFile->getModificationTime(fileTimeStamp);
-            bool csSet = dFile->getFileCheckSum(fileCheckSum);
-            assertex(tsSet); // per Nigel, is always set
-            properties.set(&dFile->queryAttributes());
         }
     }
     virtual void beforeDispose()
     {
+        if (notifier)
+            daliHelper->releaseSubscription(notifier);
+        notifier.clear();
         if (cached)
         {
             cached->removeCache(this);
@@ -1789,11 +1828,24 @@ public:
         {
             if (subFiles.length())
             {
-                assertex(subFiles.length()==1);
+                if (subFiles.length()!=1)
+                    throw MakeStringException(0, "Roxie does not support FETCH or KEYED JOIN to superkey with multiple parts");
                 fileMap.setown(createFilePartMap(lfn, *subFiles.item(0)));
             }
         }
         return fileMap.getLink();
+    }
+    virtual unsigned getNumParts() const
+    {
+        CriticalBlock b(lock);
+        unsigned numParts = 0;
+        ForEachItemIn(idx, subFiles)
+        {
+            unsigned thisNumParts = subFiles.item(idx)->numParts();
+            if (thisNumParts > numParts)
+                numParts = thisNumParts;
+        }
+        return numParts;
     }
     virtual void serializeFDesc(MemoryBuffer &mb, IFileDescriptor *fdesc, unsigned channel, bool isLocal) const
     {
@@ -1871,10 +1923,10 @@ public:
     {
         Owned<CFileIOArray> f = new CFileIOArray();
         f->addFile(NULL, 0);
-        if (subFiles.length())
+        ForEachItemIn(idx, subFiles)
         {
-            IFileDescriptor *fdesc = subFiles.item(0);
-            IFileDescriptor *remoteFDesc = remoteSubFiles.item(0);
+            IFileDescriptor *fdesc = subFiles.item(idx);
+            IFileDescriptor *remoteFDesc = remoteSubFiles.item(idx);
             if (fdesc)
             {
                 unsigned numParts = fdesc->numParts();
@@ -1887,7 +1939,7 @@ public:
                             IPartDescriptor *pdesc = fdesc->queryPart(i-1);
                             assertex(pdesc);
                             IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, i-1);
-                            Owned<ILazyFileIO> file = createPhysicalFile(subNames.item(0), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL, channel);
+                            Owned<ILazyFileIO> file = createPhysicalFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL, channel);
                             IPropertyTree &partProps = pdesc->queryProperties();
                             f->addFile(file.getClear(), partProps.getPropInt64("@offset"));
                         }
@@ -2074,6 +2126,14 @@ public:
         return fileSize;
     }
 
+    virtual hash64_t addHash64(hash64_t hashValue) const
+    {
+        hashValue = fileTimeStamp.getHash(hashValue);
+        if (fileCheckSum)
+            hashValue = rtlHash64Data(sizeof(fileCheckSum), &fileCheckSum, hashValue);
+        return hashValue;
+    }
+
     virtual void addSubFile(const IResolvedFile *_sub)
     {
         const CResolvedFile *sub = static_cast<const CResolvedFile *>(_sub);
@@ -2138,12 +2198,23 @@ public:
     virtual void remove()
     {
         subFiles.kill();
+        subDFiles.kill();
+        subRFiles.kill();
+        subNames.kill();
+        remoteSubFiles.kill();
+        diskMeta.kill();
         properties.clear();
-        if (dFile)
+        notifier.clear();
+        if (isSuper)
+        {
+            // Because we don't lock superfiles, we need to behave differently
+            UNIMPLEMENTED;
+        }
+        else if (dFile)
         {
             dFile->detach();
         }
-        else
+        else if (!physicalName.isEmpty())
         {
             try
             {
@@ -2152,7 +2223,7 @@ public:
             }
             catch (IException *e)
             {
-                ERRLOG(-1, "Error removing file %s",lfn.get());
+                ERRLOG(-1, "Error removing file %s (%s)", lfn.get(), physicalName.get());
                 e->Release();
             }
         }
@@ -2161,10 +2232,12 @@ public:
     {
         // MORE - this is a little bizarre. We sometimes create a resolvedFile for a file that we are intending to create.
         // This will make more sense if/when we start to lock earlier.
-        if (dFile)
-            return true; // MORE - may need some thought
+        if (dFile || isSuper)
+            return true; // MORE - may need some thought - especially the isSuper case
+        else if (!physicalName.isEmpty())
+            return checkFileExists(physicalName.get());
         else
-            return checkFileExists(lfn.get());
+            return false;
     }
 };
 
@@ -2184,7 +2257,7 @@ public:
 
 public:
     CSlaveDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
-        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, false, false, false), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
+        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, false, false), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
     {
         // call back to the server to get the info
         IPendingCallback *callback = ROQ->notePendingCallback(*header, lfn); // note that we register before the send to avoid a race.
@@ -2284,13 +2357,13 @@ private:
 
 extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical, bool isSuperFile)
 {
-    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, false, false, isSuperFile);
+    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, true, false, false, isSuperFile);
 }
 
-extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool cacheIt, bool writeAccess)
+extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool isDynamic, bool cacheIt, bool writeAccess)
 {
     const char *kind = dFile ? dFile->queryAttributes().queryProp("@kind") : NULL;
-    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, cacheIt, writeAccess, false);
+    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, isDynamic, cacheIt, writeAccess, false);
 }
 
 class CSlaveDynamicFileCache : public CInterface, implements ISlaveDynamicFileCache

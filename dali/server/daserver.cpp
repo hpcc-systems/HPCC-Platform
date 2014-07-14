@@ -143,6 +143,7 @@ int main(int argc, char* argv[])
 
         EnableSEHtoExceptionMapping();
 #ifndef __64BIT__
+        // Restrict stack sizes on 32-bit systems
         Thread::setDefaultStackSize(0x20000);
 #endif
         setAllocHook(true);

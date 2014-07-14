@@ -85,6 +85,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DELETE_PREVIOUS_INI "deletePrevDefault"
 #define ECLOPT_DELETE_PREVIOUS_ENV "ACTIVATE_DELETE_PREVIOUS"
 #define ECLOPT_CHECK_DFS "--check-dfs"
+#define ECLOPT_UPDATE_DFS "--update-dfs"
 #define ECLOPT_GLOBAL_SCOPE "--global-scope"
 
 #define ECLOPT_MAIN "--main"
@@ -105,6 +106,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_CHECK_PACKAGEMAPS "--check-packagemaps"
 
+#define ECLOPT_EXCEPTION_LEVEL "--exception-level"
 #define ECLOPT_RESULT_LIMIT "--limit"
 #define ECLOPT_RESULT_LIMIT_INI "resultLimit"
 #define ECLOPT_RESULT_LIMIT_ENV "ECL_RESULT_LIMIT"
@@ -129,7 +131,6 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PMID "--pmid"
 #define ECLOPT_PMID_S "-pm"
 #define ECLOPT_QUERYID "--queryid"
-
 
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"
@@ -300,21 +301,23 @@ void outputMultiExceptions(const IMultiException &me);
 class EclCmdURL : public StringBuffer
 {
 public:
-    EclCmdURL(const char *service, const char *ip, const char *port, bool ssl)
+    EclCmdURL(const char *service, const char *ip, const char *port, bool ssl, const char *tail=NULL)
     {
         set("http");
         if (ssl)
             append('s');
         append("://").append(ip).append(':').append(port).append('/').append(service);
+        if (tail)
+            append(tail);
     }
 };
 
-template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const char *service)
+template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const char *service, const char *urlTail)
 {
     if(cmd.optServer.isEmpty())
         throw MakeStringException(-1, "Server IP not specified");
 
-    EclCmdURL url(service, cmd.optServer, cmd.optPort, cmd.optSSL);
+    EclCmdURL url(service, cmd.optServer, cmd.optPort, cmd.optSSL, urlTail);
     client->addServiceUrl(url.str());
     if (cmd.optUsername.length())
         client->setUsernameToken(cmd.optUsername, cmd.optPassword, NULL);
@@ -322,6 +325,7 @@ template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const 
     return client;
 }
 
-#define createCmdClient(SN, cmd) intClient<IClient##SN>(create##SN##Client(), cmd, #SN);
+#define createCmdClient(SN, cmd) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, NULL);
+#define createCmdClientExt(SN, cmd, urlTail) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, urlTail);
 
 #endif

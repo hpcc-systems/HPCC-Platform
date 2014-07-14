@@ -150,7 +150,7 @@ void *Thread::_threadmain(void *v)
 }
 
 // JCSMORE - should have a setPriority(), unsupported under _WIN32
-void Thread::adjustPriority(char delta)
+void Thread::adjustPriority(int delta)
 {
     if (delta < -2)
         prioritydelta = -2;
@@ -229,7 +229,7 @@ bool Thread::isCurrentThread() const
 }
 
 // _nicelevel ranges from -20 to 19, the higher the nice level, the less cpu time the thread will get.
-void Thread::setNice(char _nicelevel)
+void Thread::setNice(int _nicelevel)
 {
     if (_nicelevel < -20 || _nicelevel > 19)
         throw MakeStringException(0, "nice level should be between -20 and 19");
@@ -1290,7 +1290,7 @@ public:
         }
     }
 
-    bool run(const char *_title,const char *prog,const char *dir,bool hasinput,bool hasoutput,bool haserror, size32_t stderrbufsize)
+    bool run(const char *_title,const char *prog,const char *dir,bool hasinput,bool hasoutput,bool haserror, size32_t stderrbufsize,bool newProcessGroup)
     {
         // size32_t stderrbufsize ignored as not required (I think)
         CriticalBlock block(sect);
@@ -1758,6 +1758,7 @@ protected: friend class PipeWriterThread;
     bool hasinput;
     bool hasoutput;
     bool haserror;
+    bool newProcessGroup;
     StringAttr title;
     StringAttr cmd;
     StringAttr prog;
@@ -1785,6 +1786,7 @@ public:
         retcode = -1;
         aborted = false;
         stderrbufferthread = NULL;
+        newProcessGroup = false;
     }
     ~CLinuxPipeProcess()
     {
@@ -1873,6 +1875,8 @@ public:
             }
         }
         if (pipeProcess==0) { // child
+            if (newProcessGroup)//Force the child process into its own process group, so we can terminate it and its children.
+                setpgid(0,0);
             if (hasinput) {
                 dup2(inpipe[0],0);
                 close(inpipe[0]);
@@ -1917,7 +1921,7 @@ public:
             closeOutput();
     }
 
-    bool run(const char *_title,const char *_prog,const char *_dir,bool _hasinput,bool _hasoutput, bool _haserror, size32_t stderrbufsize)
+    bool run(const char *_title,const char *_prog,const char *_dir,bool _hasinput,bool _hasoutput, bool _haserror, size32_t stderrbufsize, bool _newProcessGroup)
     {
         static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
         CriticalBlock runblock(runsect);
@@ -1926,6 +1930,7 @@ public:
         hasinput = _hasinput;
         hasoutput = _hasoutput;
         haserror = _haserror;
+        newProcessGroup = _newProcessGroup;
         title.clear();
         prog.set(_prog);
         dir.set(_dir);
@@ -2158,7 +2163,10 @@ public:
             if (pipeProcess != (HANDLE)-1) {
                 if (title.length())
                     PROGLOG("%s: Forcibly killing pipe process %d",title.get(),pipeProcess);
-                ::kill(pipeProcess,SIGKILL);            // if this doesn't kill it we are in trouble
+                if (newProcessGroup)
+                    ::kill(-pipeProcess,SIGKILL);
+                else
+                    ::kill(pipeProcess,SIGKILL);            // if this doesn't kill it we are in trouble
                 CriticalUnblock unblock(sect);
                 wait();
             }

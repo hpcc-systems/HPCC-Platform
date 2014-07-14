@@ -106,7 +106,7 @@
           <entry><emphasis>srcCSVquote</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV quoted
-          field delimiter. If omitted, the default is '\''</entry>
+          field delimiter. If omitted, the default is '\"'</entry>
         </row>
 
         <row>

@@ -20,6 +20,7 @@
 #include "jlib.hpp"
 #include "jlog.hpp"
 #include "jdebug.hpp"
+#include "jstats.h"
 #include "errorlist.h"
 
 #ifdef _WIN32
@@ -55,6 +56,8 @@
 // MAX_ACTIVITY_ID is further subdivided:
 #define ALLOCATORID_CHECK_MASK          0x00300000
 #define ALLOCATORID_MASK                0x000fffff
+#define UNKNOWN_ROWSET_ID               0x000F8421              // Use as the allocatorId for a rowset from an unknown activity
+#define UNKNOWN_ACTIVITY                123456789
 
 #define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
 #define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks
@@ -77,11 +80,12 @@ interface IRowAllocatorCache : extends IInterface
 
 //This interface allows activities that hold on to large numbers of rows to be called back to try and free up
 //memory.  E.g., sorts can spill to disk, read ahead buffers can reduce the number being readahead etc.
-//Lower priority callbacks are called before higher priority.
+//Lower cost callbacks are called before higher cost.
 //The freeBufferedRows will call all callbacks with critical=false, before calling with critical=true
+const static unsigned SpillAllCost = (unsigned)-1;
 interface IBufferedRowCallback
 {
-    virtual unsigned getPriority() const = 0; // lower values get freed up first.
+    virtual unsigned getSpillCost() const = 0; // lower values get freed up first.
     virtual bool freeBufferedRows(bool critical) = 0; // return true if and only if managed to free something.
 };
 
@@ -423,9 +427,10 @@ interface IRowResizeCallback
 interface IRowManager : extends IInterface
 {
     virtual void *allocate(memsize_t size, unsigned activityId) = 0;
+    virtual void *allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost) = 0;
     virtual const char *cloneVString(const char *str) = 0;
     virtual const char *cloneVString(size32_t len, const char *str) = 0;
-    virtual void resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, IRowResizeCallback & callback) = 0;
+    virtual bool resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback) = 0;
     virtual void resizeRow(memsize_t & capacity, void * & original, memsize_t copysize, memsize_t newsize, unsigned activityId) = 0;
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;
     virtual unsigned allocated() = 0;
@@ -436,7 +441,7 @@ interface IRowManager : extends IInterface
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
     virtual void reportLeaks() = 0;
     virtual void checkHeap() = 0;
-    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags) = 0;
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillCost = SpillAllCost) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
@@ -444,10 +449,11 @@ interface IRowManager : extends IInterface
     virtual bool compactRows(memsize_t count, const void * * rows) = 0;
     virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
     virtual memsize_t getExpectedFootprint(memsize_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
+    virtual void reportPeakStatistics(IStatisticTarget & target, unsigned detail) = 0;
 
 //Allow various options to be configured
     virtual void setActivityTracking(bool val) = 0;
-    virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;  // First size is max memory, second is the limit which will trigger a background thread to reduce memory
+    virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0, unsigned backgroundReleaseCost = SpillAllCost) = 0;  // First size is max memory, second is the limit which will trigger a background thread to reduce memory
 
     //set the number of callbacks that successfully free some memory before deciding it is good enough.
     //Default is 1, use -1 to free all possible memory whenever an out of memory occurs
@@ -463,9 +469,13 @@ interface IRowManager : extends IInterface
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
 
+#define MIN_ABORT_CHECK_INTERVAL 10
+#define MAX_ABORT_CHECK_INTERVAL 5000
+
 interface ITimeLimiter 
 {
-    virtual void checkAbort() = 0 ;
+    virtual void checkAbort() = 0;
+    virtual unsigned checkInterval() const = 0;
 };
 
 interface IActivityMemoryUsageMap : public IInterface
@@ -473,6 +483,7 @@ interface IActivityMemoryUsageMap : public IInterface
     virtual void noteMemUsage(unsigned activityId, memsize_t memUsed, unsigned numAllocs) = 0;
     virtual void noteHeapUsage(memsize_t allocatorSize, RoxieHeapFlags heapFlags, memsize_t memReserved, memsize_t memUsed) = 0;
     virtual void report(const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache) = 0;
+    virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache) = 0;
 };
 
 extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false);

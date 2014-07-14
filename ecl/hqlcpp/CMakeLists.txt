@@ -105,15 +105,16 @@ set (    SRCS
 include_directories ( 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ./../../common/remote 
-         ./../../common/workunit 
-         ./../../common/deftype 
-         ./../../system/include 
-         ./../../ecl/hql 
-         ./../../common/dllserver 
-         ./../../system/jlib 
-         ./../../common/thorhelper 
-         ./../../rtl/eclrtl 
+         ./../../common/remote
+         ./../../common/workunit
+         ./../../common/deftype
+         ./../../system/include
+         ./../../ecl/hql
+         ./../../common/dllserver
+         ./../../system/jlib
+         ./../../system/jhtree
+         ./../../common/thorhelper
+         ./../../rtl/eclrtl
          ./../../rtl/include
     )
 

@@ -28,7 +28,6 @@ class CIndexReadBase : public CMasterActivity
 {
 protected:
     BoolArray performPartLookup;
-    Linked<IDistributedFile> index;
     Owned<IFileDescriptor> fileDesc;
     rowcount_t limit;
     IHThorIndexReadBaseArg *indexBaseHelper;
@@ -60,9 +59,9 @@ protected:
         }
         return total;
     }
-    void prepareKey()
+    void prepareKey(IDistributedFile *index)
     {
-        IDistributedFile *f = index.get();
+        IDistributedFile *f = index;
         IDistributedSuperFile *super = f->querySuperFile();
 
         unsigned nparts = f->numParts(); // includes tlks if any, but unused in array
@@ -80,7 +79,8 @@ protected:
         }
 
         Owned<IDistributedFileIterator> iter;
-        if (super) {
+        if (super)
+        {
             iter.setown(super->getSubFileIterator(true));
             verifyex(iter->first());
             f = &iter->query();
@@ -91,7 +91,8 @@ protected:
         bool first = true;
         unsigned superSubIndex=0;
         bool fileCrc = false, rowCrc = false;
-        loop {
+        loop
+        {
             Owned<IDistributedFilePart> part = f->getPart(width);
             if (checkTLKConsistency)
             {
@@ -194,16 +195,16 @@ public:
     }
     virtual void init()
     {
+        CMasterActivity::init();
         nofilter = false;
         OwnedRoxieString indexName(indexBaseHelper->getFileName());
-        index.setown(queryThorFileManager().lookup(container.queryJob(), indexName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true));
+        Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), indexName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true);
         if (index)
         {
             bool localKey = index->queryAttributes().getPropBool("@local");
 
             if (container.queryLocalData() && !localKey)
                 throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");
-
 
             nofilter = 0 != (TIRnofilter & indexBaseHelper->getFlags());
             if (index->queryAttributes().getPropBool("@local"))
@@ -221,8 +222,8 @@ public:
                 fileDesc.setown(getConfiguredFileDescriptor(*index));
                 if (container.queryLocalOrGrouped())
                     nofilter = true;
-                prepareKey();
-                queryThorFileManager().noteFileRead(container.queryJob(), index);
+                prepareKey(index);
+                addReadFile(index);
                 mapping.setown(getFileSlaveMaps(index->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), true, NULL, index->querySuperFile()));
             }
         }
@@ -286,17 +287,6 @@ public:
     {
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
-    }
-    virtual void kill()
-    {
-        CMasterActivity::kill();
-        index.clear();
-    }
-    virtual void done()
-    {
-        CMasterActivity::done();
-        if (index)
-            index->setAccessed();
     }
 };
 

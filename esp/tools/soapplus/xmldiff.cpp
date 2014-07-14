@@ -709,6 +709,8 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
                 {
                     int estimate = chld_total*unmatched/(i+1) + 2*chld_diff;
                     m_diffcountcache[key] = estimate;
+                    delete[] ptrs1;
+                    delete[] ptrs2;
                     return estimate;
                 }
             }

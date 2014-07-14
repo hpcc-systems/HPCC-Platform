@@ -2762,10 +2762,7 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
           var r = recSet.getRecord(cIdx);
           if (r.getData('parent') === record.getData('id'))
           {
-            if (r.getData('name').indexOf('ThorCluster') == 0) {
-              this.getItem(5).cfg.setProperty("disabled", true);
-            }
-            else if (r.getData('name').indexOf('RoxieCluster') == 0) {
+            if (r.getData('name').indexOf('RoxieCluster') == 0) {
               this.getItem(4).cfg.setProperty("disabled", true);
               this.getItem(0).cfg.setProperty("disabled", true);
             }

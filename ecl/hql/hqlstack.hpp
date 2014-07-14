@@ -47,12 +47,13 @@ private:
     char*      toFree[MAXARGS];
     int        numToFree;
 #ifdef __64BIT__
+    // ARMFIX: If this is related to VFP registers in procedure call
+    // than both ARM32 and ARM64 use it and we'll need to account for it
     double      fpRegs[MAXFPREGS];
     unsigned    numFpRegs;
 #endif
 public:
-    FuncCallStack();
-    FuncCallStack(int size);
+    FuncCallStack(int size = DEFAULTSTACKSIZE);
     virtual ~FuncCallStack();
 
     unsigned getSp();

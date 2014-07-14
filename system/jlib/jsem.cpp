@@ -24,22 +24,80 @@
 #ifndef _WIN32
 
 #include <sys/time.h>
+#include <semaphore.h>
 
+#ifndef USE_OLD_SEMAPHORE_CODE
+
+Semaphore::Semaphore(unsigned initialCount)
+{
+    sem_init(&sem, 0, initialCount);
+}
+
+Semaphore::~Semaphore()
+{
+    sem_destroy(&sem);
+}
+
+void Semaphore::reinit(unsigned initialCount)
+{
+    sem_destroy(&sem);
+    sem_init(&sem, 0, initialCount);
+}
+
+void Semaphore::wait()
+{
+    sem_wait(&sem);
+}
+
+bool Semaphore::wait(unsigned timeout)
+{
+    if (timeout==(unsigned)-1) {
+        sem_wait(&sem);
+        return true;
+    }
+
+    //Ensure uncontended case is handled without calling gettimeofday
+    if (sem_trywait(&sem) == 0)
+        return true;
+
+    timeval cur;
+    gettimeofday(&cur, NULL);
+
+    timespec abs;
+    abs.tv_sec = cur.tv_sec + timeout/1000;
+    abs.tv_nsec = (cur.tv_usec + timeout%1000*1000)*1000;
+    if (abs.tv_nsec>=1000000000) {
+        abs.tv_nsec-=1000000000;
+        abs.tv_sec++;
+    }
+    int ret = sem_timedwait(&sem, &abs);
+    if (ret < 0)
+        return false;
+    return true;
+}
+
+
+
+void Semaphore::signal()
+{
+    sem_post(&sem);
+}
+
+void Semaphore::signal(unsigned n)
+{
+    for (unsigned i=0; i < n; i++)
+        sem_post(&sem);
+}
+
+#else
+
+//Old semaphore code based on condition variables.
 
 Semaphore::Semaphore(unsigned initialCount)
 {
     init();
     count = initialCount;
 }
-
-#if 0 // not supported
-Semaphore::Semaphore(const char *name)
-{
-    //MORE - ignores the name...
-    init();
-    count = 0;
-}
-#endif
 
 Semaphore::~Semaphore()
 {
@@ -115,6 +173,8 @@ void Semaphore::signal(unsigned n)
     count += n;
     pthread_mutex_unlock(&mx);
 }
+
+#endif
 
 #endif
 

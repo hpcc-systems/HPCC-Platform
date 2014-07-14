@@ -23,6 +23,9 @@
   <xsl:variable name="autoupdatechecked" select="/MetricsResponse/AutoUpdate"/>
   <xsl:variable name="clusterName" select="/MetricsResponse/Cluster"/>
   <xsl:variable name="selectAllChecked" select="/MetricsResponse/SelectAllChecked"/>
+  <xsl:variable name="acceptLanguage" select="/MetricsResponse/AcceptLanguage"/>
+  <xsl:variable name="localiseFile"><xsl:value-of select="concat('../nls/', $acceptLanguage, '/hpcc.xml')"/></xsl:variable>
+  <xsl:variable name="hpccStrings" select="document($localiseFile)/hpcc/strings"/>
 
   <!--define acceptable percentage deviation from mean-->
    
@@ -69,6 +72,7 @@
          var reloadTimeout = 0;
          var idCount = 0;
          var checkboxIDs = new Array();
+         var viewColumnsStr = '<xsl:value-of select="$hpccStrings/st[@id='ViewColumns']"/>';
 
          // This function gets called when the window has completely loaded.
          // It starts the reload timer with a default time value.
@@ -311,7 +315,7 @@
                          s +='<tr><td><hr size="2"></td></tr>';
 
                   var numRows = i > 5 ? 5 : i;
-                  s1+= '<tr><th align="center" colspan="' + numRows + '">View Columns:<hr/></th></tr>';
+                  s1+= '<tr><th align="center" colspan="' + numRows + '">' + viewColumnsStr + ':<hr/></th></tr>';
                   s1 += s;
                   s1 += '<tr><th align="center" colspan="' + numRows + '"><hr/>' + 
                           '<input type="button" value="Close" onclick="parent.contextMenu.hide()"/>' +
@@ -402,7 +406,7 @@
          </head>
          
          <body onload="setReloadFunction('reloadPage');onLoad()">
-            <h2>Metrics</h2>
+            <h2><xsl:value-of select="$hpccStrings/st[@id='Metrics']"/></h2>
             <form id="listitems" action="/ws_machine/GetMetrics" method="post">
               <input type="hidden" name="Cluster" value="{$clusterName}"/>
               <input type="hidden" id="SelectAllChecked" name="SelectAllChecked" value="{$selectAllChecked}"/>
@@ -420,7 +424,7 @@
                 </colgroup-->
                <thead>
                <tr>
-                  <th id="cell_0_0">I.P. Address</th>
+                  <th id="cell_0_0"><xsl:value-of select="$hpccStrings/st[@id='IPAddress']"/></th>
                   <xsl:apply-templates select="FieldInformation/FieldInfo"/>
                </tr>
                </thead>
@@ -440,7 +444,7 @@
                            <xsl:attribute name="onmouseleave">bgColor='#FFFFFF'</xsl:attribute>
                         </xsl:otherwise>
                      </xsl:choose>
-                     <td><b>Mean</b></td>
+                     <td><b><xsl:value-of select="$hpccStrings/st[@id='Mean']"/></b></td>
                      <xsl:for-each select="FieldInformation/FieldInfo">
                         <td id="cell_{position()}_mean" >
                           <xsl:if test="Hide=1">
@@ -486,11 +490,11 @@
                         <xsl:attribute name="checked">false</xsl:attribute>b
                       </xsl:otherwise>
                     </xsl:choose-->
-                    Auto update metrics when View Columns changing.
+                    <xsl:value-of select="$hpccStrings/st[@id='AutoUpdateMetricsWhenViewColumnsChanging']"/>
                   </input>
                 </td>
                 <td>
-                  <input type="button" id="updateMetriceBtn" value="Update Metrics Now" onclick="UpdateMetricesNow(true)">
+                  <input type="button" id="updateMetriceBtn" value="{$hpccStrings/st[@id='UpdateMetricsNow']}" onclick="UpdateMetricesNow(true)">
                     <!--xsl:choose>
                       <xsl:when test="$autoUpdate = true">
                         <xsl:attribute name="disabled">true</xsl:attribute>
@@ -505,7 +509,7 @@
             </table>
             <br/>
             <br/>
-            <b>View Columns:</b>
+            <b><xsl:value-of select="$hpccStrings/st[@id='ViewColumns']"/>:</b>
             <table id="viewTable" width="100%">
                <tr/>
                <tr>
@@ -516,11 +520,11 @@
                <table>
                   <tr>
                      <th id="selectAll1" colspan="5">
-                       <input type="checkbox" id="SelectAllCheckBox" title="Select or deselect all" onclick="selectAll0(this.checked)">
+                       <input type="checkbox" id="SelectAllCheckBox" title="{$hpccStrings/st[@id='SelectDeselectAll']}" onclick="selectAll0(this.checked)">
                          <xsl:if test="$selectAllChecked &gt; 0">
                            <xsl:attribute name="checked">true</xsl:attribute>
                          </xsl:if>
-                       Select all / none</input>
+                       <xsl:value-of select="$hpccStrings/st[@id='SelectAllOrNone']"/></input>
                      </th>
                   </tr>
                </table>
@@ -531,17 +535,17 @@
             <xsl:if test="$autoRefresh &gt; 0">
                <xsl:attribute name="checked">true</xsl:attribute>
             </xsl:if>
-            </input>Auto Refresh every <input type="text" id="AutoRefresh" name="AutoRefresh" size="2" value="{$autoRefresh}" onblur="setReloadTimeout(this.value)">
+            </input><xsl:value-of select="$hpccStrings/st[@id='AutoRefreshEvery']"/> <input type="text" id="AutoRefresh" name="AutoRefresh" size="2" value="{$autoRefresh}" onblur="setReloadTimeout(this.value)">
             <xsl:if test="$autoRefresh = 0">
                <xsl:attribute name="disabled">true</xsl:attribute>
             </xsl:if>
-            </input> mins.
-            <br/><input type="submit" value="Refresh" id="submitBtn"/>
+            </input> <xsl:value-of select="$hpccStrings/st[@id='Mins']"/>
+            <br/><input type="submit" value="{$hpccStrings/st[@id='Refresh']}" id="submitBtn"/>
             </form>
             <br/>
             <br/>
-            <a href="/WsTopology/TpClusterQuery?Type=ROOT">Cluster Topology</a><br/>
-            <a href="/WsSMC/Activity">Home</a>
+            <a href="/WsTopology/TpClusterQuery?Type=ROOT"><xsl:value-of select="$hpccStrings/st[@id='ClusterTopology']"/></a><br/>
+            <a href="/WsSMC/Activity"><xsl:value-of select="$hpccStrings/st[@id='Home']"/></a>
             <DIV id="menu" style="LEFT: 0px; TOP: 0px; VISIBILITY: hidden; POSITION: absolute"></DIV>
          </body>
       </html>

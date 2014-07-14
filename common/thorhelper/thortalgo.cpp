@@ -177,7 +177,7 @@ void ProductionFeatureInfo::deserialize(MemoryBuffer & in)
     extra.deserialize(in);
     unsigned numActions;
     in.read(numActions);
-    for (unsigned i = 0; i < numActions; numActions++)
+    for (unsigned i = 0; i < numActions; i++)
     {
         FeatureAction & cur = * new FeatureAction;
         cur.deserialize(in);

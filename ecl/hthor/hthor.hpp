@@ -214,7 +214,4 @@ extern HTHOR_API IHThorException * makeHThorException(ThorActivityKind kind, uns
 extern HTHOR_API IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId, unsigned subgraphId, IException * exc);
 extern HTHOR_API IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId, unsigned subgraphId, IException * exc, char const * extra);
 
-extern HTHOR_API IEngineRowAllocator * createHThorRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId);
-
-
 #endif // HTHOR_INCL

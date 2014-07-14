@@ -27,9 +27,6 @@
          <link type="text/css" rel="stylesheet" href="/esp/files_/css/espdefault.css"/>
             <link type="text/css" rel="StyleSheet" href="files_/css/sortabletable.css"/>
       <script type="text/javascript" src="files_/scripts/espdefault.js">&#160;</script>
-            <script type="text/javascript" src="files_/scripts/sortabletable.js">
-                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-            </script>
             <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
                 <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
             </script>
@@ -274,9 +271,6 @@
                 function onLoad()
                 {
                     initSelection('resultsTable');
-                    var table = document.getElementById('resultsTable');
-                    if (table)
-                        sortableTable = new SortableTable(table, table, ["None", "String"]);
 
                     selectAll(true);
 
@@ -309,8 +303,8 @@
         <input type="hidden" name="rtitle" value="{rtitle}"/>
         <input type="hidden" name="prefix" value="{prefix}"/>
         <input type="hidden" name="BasednName" value="{BasednName}"/>
-        <input type="hidden" name="userarray" value=""/>
-        <input type="hidden" name="grouparray" value=""/>
+        <input type="hidden" id="userarray" name="userarray" value=""/>
+        <input type="hidden" id="grouparray" name="grouparray" value=""/>
 
         <h3>Permission Reset</h3>
         <div>

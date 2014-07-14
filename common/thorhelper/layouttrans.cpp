@@ -380,7 +380,7 @@ void RowTransformer::generateCopies(unsigned & seq, CIArrayOf<RowRecord> const &
     }
 }
 
-void RowTransformer::transform(IRecordLayoutTranslator::RowTransformContext * ctx, byte const * in, size32_t inSize, size32_t & inOffset, byte * out, size32_t outBuffSize, size32_t & outOffset) const
+void RowTransformer::transform(IRecordLayoutTranslator::RowTransformContext * ctx, byte const * in, size32_t inSize, size32_t & inOffset, IMemoryBlock & out, size32_t & outOffset) const
 {
     ctx->set(sequence, 0, 0, in+inOffset);
     for(unsigned varIdx = 1; varIdx <= diskVarFieldRelOffsets.ordinality(); ++varIdx)
@@ -402,7 +402,7 @@ void RowTransformer::transform(IRecordLayoutTranslator::RowTransformContext * ct
     inOffset += finalFixedSize;
 
     ForEachItemIn(copyIdx, copies)
-        copies.item(copyIdx).copy(ctx, out, outBuffSize, outOffset);
+        copies.item(copyIdx).copy(ctx, out, outOffset);
 }
 
 void RowTransformer::getFposOut(IRecordLayoutTranslator::RowTransformContext const * ctx, offset_t & fpos) const
@@ -435,17 +435,16 @@ void RowTransformer::createRowTransformContext(IRecordLayoutTranslator::RowTrans
     }
 }
 
-void FieldCopy::copy(IRecordLayoutTranslator::RowTransformContext * ctx, byte * out, size32_t outBuffSize, size32_t & outOffset) const
+void FieldCopy::copy(IRecordLayoutTranslator::RowTransformContext * ctx, IMemoryBlock & out, size32_t & outOffset) const
 {
     if(sequence == static_cast<unsigned>(-1))
     {
-        if(outOffset+fixedSize > outBuffSize)
-            throw MakeStringException(0, "Activity row exceeded expected size limit during record layout translation");
+        byte * target = out.ensure(outOffset+fixedSize);
         // integer field in row is big-endian
 #if __BYTE_ORDER == __BIG_ENDIAN
-        memcpy(out+outOffset, reinterpret_cast<byte const *>(ctx->queryFposIn()) + sizeof(offset_t) - fixedSize, fixedSize);
+        memcpy(target+outOffset, reinterpret_cast<byte const *>(ctx->queryFposIn()) + sizeof(offset_t) - fixedSize, fixedSize);
 #else
-        _cpyrevn(out+outOffset, ctx->queryFposIn(), fixedSize);
+        _cpyrevn(target+outOffset, ctx->queryFposIn(), fixedSize);
 #endif
         outOffset += fixedSize;
         return;
@@ -459,18 +458,20 @@ void FieldCopy::copy(IRecordLayoutTranslator::RowTransformContext * ctx, byte * 
     if(childTransformer)
     {
         size32_t inOffset = sizeof(size32_t);
-        size32_t * outSizePtr = reinterpret_cast<size32_t *>(out+outOffset);
+        size32_t sizeOutOffset = outOffset;
         outOffset += sizeof(size32_t);
         size32_t startOutOffset = outOffset;
         while(inOffset < diskFieldSize)
-            childTransformer->transform(ctx, in, diskFieldSize, inOffset, out, outBuffSize, outOffset);
+            childTransformer->transform(ctx, in, diskFieldSize, inOffset, out, outOffset);
+
+        //Now patch the length up - transform may have resized out...
+        size32_t * outSizePtr = reinterpret_cast<size32_t *>(out.getMem()+sizeOutOffset);
         *outSizePtr = outOffset-startOutOffset;
     }
     else
     {
-        if(outOffset+diskFieldSize > outBuffSize)
-            throw MakeStringException(0, "Activity row exceeded expected size limit during record layout translation");
-        memcpy(out+outOffset, in, diskFieldSize);
+        byte * target = out.ensure(outOffset+diskFieldSize);
+        memcpy(target+outOffset, in, diskFieldSize);
         outOffset += diskFieldSize;
     }
 }
@@ -499,26 +500,10 @@ IRecordLayoutTranslator::RowTransformContext::~RowTransformContext()
     delete [] ptrs;
 }
 
-size32_t calcMetaSize(IDefRecordMeta const * meta)
-{
-    IDefRecordElement * record = meta->queryRecord();
-    size32_t size = record->getMaxSize();
-    unsigned numFields = record->numChildren();
-    if(meta->numKeyedFields() < numFields)
-    {
-        ITypeInfo * lastFieldType = record->queryChild(numFields-1)->queryType();
-        if(lastFieldType->isInteger())
-            size -= lastFieldType->getSize();
-    }
-    return size;
-}
-
 CRecordLayoutTranslator::CRecordLayoutTranslator(IDefRecordMeta const * _diskMeta, IDefRecordMeta const * _activityMeta) : diskMeta(const_cast<IDefRecordMeta *>(_diskMeta)), activityMeta(const_cast<IDefRecordMeta *>(_activityMeta)), activityKeySizes(NULL)
 {
     numKeyedDisk = diskMeta->numKeyedFields();
     numKeyedActivity = activityMeta->numKeyedFields();
-    diskMetaSize = calcMetaSize(diskMeta);
-    activityMetaSize = calcMetaSize(activityMeta);
     MappingLevel topMappingLevel(mappings);
     numTransformers = 0;
     try
@@ -620,10 +605,6 @@ void CRecordLayoutTranslator::createDiskSegmentMonitors(SegmentMonitorContext co
 
 void CRecordLayoutTranslator::checkSizes(char const * filename, size32_t activitySize, size32_t diskSize) const
 {
-    if(activityMetaSize != activitySize)
-        throw MakeStringException(0, "Key size mismatch during translation of index %s: ECL indicates size %u, ECL record meta has size %u", filename, activitySize, activityMetaSize);
-    if(diskMetaSize != diskSize)
-        throw MakeStringException(0, "Key size mismatch during translation of index %s: index indicates size %u, index record meta has size %u", filename, diskSize, diskMetaSize);
 }
 
 IRecordLayoutTranslator::RowTransformContext * CRecordLayoutTranslator::getRowTransformContext()
@@ -633,12 +614,12 @@ IRecordLayoutTranslator::RowTransformContext * CRecordLayoutTranslator::getRowTr
     return ctx.getClear();
 }
 
-size32_t CRecordLayoutTranslator::transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, byte * out, size32_t outBuffSize, offset_t & fpos) const
+size32_t CRecordLayoutTranslator::transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, IMemoryBlock & out, offset_t & fpos) const
 {
     size32_t inOffset = 0;
     size32_t outOffset = 0;
     ctx->setFposIn(fpos);
-    transformer.transform(ctx, in, inSize, inOffset, out, outBuffSize, outOffset);
+    transformer.transform(ctx, in, inSize, inOffset, out, outOffset);
     transformer.getFposOut(ctx, fpos);
     return outOffset;
 }

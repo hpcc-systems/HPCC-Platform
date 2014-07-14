@@ -32,7 +32,10 @@ cycle_t jlib_decl get_cycles_now();  // equivalent to getTSC when available
 double jlib_decl getCycleToNanoScale();
 void jlib_decl display_time(const char * title, cycle_t diff);
 
-#if defined(_WIN32) && ! defined (_AMD64_)
+// X86 / X86_64
+#if defined(_ARCH_X86_64_) || defined(_ARCH_X86_)
+
+#if defined(_WIN32) && defined (_ARCH_X86_)
 #pragma warning(push)
 #pragma warning(disable:4035)
 inline cycle_t getTSC() { __asm { __asm _emit 0x0f __asm _emit 0x31 } }
@@ -47,8 +50,15 @@ inline volatile __int64 getTSC()
 }
 #else
 #include <intrin.h>
-inline cycle_t getTSC() { return __rdtsc(); }   
-#endif
+inline cycle_t getTSC() { return __rdtsc(); }
+#endif // WIN32
+
+#else
+// ARMFIX: cycle-count is not always available in user mode
+// http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0338g/Bihbeabc.html
+// http://neocontra.blogspot.co.uk/2013/05/user-mode-performance-counters-for.html
+inline cycle_t getTSC() { return 0; }
+#endif // X86
 
 struct HardwareInfo
 {
@@ -62,21 +72,32 @@ struct HardwareInfo
     unsigned NICSpeed;       // 
 };
 
+struct UserSystemTime_t
+{
+public:
+    UserSystemTime_t() : user(0), system(0) {}
+
+    unsigned user;
+    unsigned system;
+};
+
+
 interface ITimeReportInfo
 {
-    virtual void report(const char *name, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
+    virtual void report(const char * scope, const char * description, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
 };
 class StringBuffer;
 class MemoryBuffer;
 struct ITimeReporter : public IInterface
 {
-  virtual void addTiming(const char *title, __int64 time) = 0;
-  virtual void addTiming(const char *title, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
+  virtual void addTiming(const char * scope, const char *desc, unsigned __int64 cycles) = 0;
+  virtual void mergeTiming(const char * scope, const char *desc, const __int64 totalcycles, const __int64 maxcycles, const unsigned count) = 0;
   virtual unsigned numSections() = 0;
   virtual __int64 getTime(unsigned idx) = 0;
   virtual __int64 getMaxTime(unsigned idx) = 0;
   virtual unsigned getCount(unsigned idx) = 0;
-  virtual StringBuffer &getSection(unsigned idx, StringBuffer &s) = 0;
+  virtual StringBuffer &getScope(unsigned idx, StringBuffer &s) = 0;
+  virtual StringBuffer &getDescription(unsigned idx, StringBuffer &s) = 0;
   virtual StringBuffer &getTimings(StringBuffer &s) = 0;
   virtual void printTimings() = 0;
   virtual void reset() = 0;
@@ -124,9 +145,10 @@ protected:
 class jlib_decl MTimeSection
 {
 public:
-  MTimeSection(ITimeReporter *_master, const char * _title);
+  MTimeSection(ITimeReporter *_master, const char * scope, const char * _title);
   ~MTimeSection();
 protected:
+  const char * scope;
   const char *    title;
   cycle_t         start_time;
   ITimeReporter *master;
@@ -139,7 +161,7 @@ extern jlib_decl ITimeReporter *timer;
 extern jlib_decl ITimeReporter *createStdTimeReporter();
 extern jlib_decl ITimeReporter *createStdTimeReporter(MemoryBuffer &mb);
 #define TIME_SECTION(title)   TimeSection   glue(_timer,__LINE__)(title);
-#define MTIME_SECTION(master,title)  MTimeSection   glue(mtimer,__LINE__)(master, title);
+#define MTIME_SECTION(master,title)  MTimeSection   glue(mtimer,__LINE__)(master, "workunit;" title, title);
 #else
 #define TIME_SECTION(title)   
 #define MTIME_SECTION(master,title)
@@ -276,6 +298,7 @@ unsigned jlib_decl setAllocHook(bool on);  // bwd compat returns unsigned
 #endif
 
 extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath = NULL, const char *secDiskPath = NULL);
+extern jlib_decl void getProcessTime(UserSystemTime_t & time);
 extern jlib_decl memsize_t getMapInfo(const char *type);
 extern jlib_decl void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed);
 extern jlib_decl void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident);

@@ -597,6 +597,7 @@ void UsedFieldSet::getText(StringBuffer & s) const
         if (cur.isDatarow())
         {
             NestedField * match = findNested(&cur);
+            assertex(match);
             if (!match->used.checkAllFieldsUsed())
                 match->used.getText(s);
         }
@@ -2452,7 +2453,6 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                         if ((cur->getOperator() == no_select) && !isNewSelector(cur))
                         {
                             IHqlExpression * ds = queryDatasetCursor(cur);
-                            IHqlExpression * field = cur->queryChild(1);
                             if (ds == queryActiveTableSelector())
                                 processMatchingSelector(extra->outputFields, cur, queryActiveTableSelector());
                             else
@@ -3266,8 +3266,7 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
 const SelectUsedArray & ImplicitProjectTransformer::querySelectsUsedForField(IHqlExpression * transform, IHqlExpression * field)
 {
     IHqlExpression * transformValues = queryTransformAssignValue(transform, field);
-    if (!transformValues)
-         transformValues = queryTransformAssignValue(transform, field);
+    assertex(transformValues);
     return querySelectsUsed(transformValues);
 }
 

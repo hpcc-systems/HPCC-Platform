@@ -70,12 +70,13 @@ interface IActivityGraph : extends IInterface
 
 interface IRoxiePackage;
 interface IDeserializedResultStore;
+class CRoxieWorkflowMachine;
 
 interface ISharedOnceContext : extends IInterface
 {
-    virtual IPropertyTree &queryOnceContext(const IQueryFactory *queryFactory, const IRoxieContextLogger &_logctx) const = 0;
+    virtual IPropertyTree &queryOnceContext(const IQueryFactory *queryFactory, const ContextLogger &_logctx) const = 0;
     virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
-    virtual void checkOnceDone(const IQueryFactory *queryFactory, const IRoxieContextLogger &_logctx) const = 0;
+    virtual void checkOnceDone(const IQueryFactory *queryFactory, const ContextLogger &_logctx) const = 0;
 };
 
 interface IQueryFactory : extends IInterface
@@ -87,7 +88,8 @@ interface IQueryFactory : extends IInterface
     virtual hash64_t queryHash() const = 0;
     virtual const char *queryQueryName() const = 0;
     virtual const char *queryErrorMessage() const = 0;
-    virtual void suspend(bool suspendIt, const char *errMsg, const char *userId, bool appendIfNewError) = 0;
+    virtual void suspend(const char *errMsg) = 0;
+    virtual bool loadFailed() const = 0;
     virtual bool suspended() const = 0;
     virtual void getStats(StringBuffer &reply, const char *graphName) const = 0;
     virtual void resetQueryTimings() = 0;
@@ -102,27 +104,28 @@ interface IQueryFactory : extends IInterface
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual ISharedOnceContext *querySharedOnceContext() const = 0;
     virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
-    virtual IPropertyTree &queryOnceContext(const IRoxieContextLogger &logctx) const = 0;
+    virtual IPropertyTree &queryOnceContext(const ContextLogger &logctx) const = 0;
 
     virtual const IRoxiePackage &queryPackage() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
 
     virtual IPropertyTree *cloneQueryXGMML() const = 0;
-    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const IRoxieContextLogger &logctx) const = 0;
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const ContextLogger &logctx) const = 0;
     virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
     virtual unsigned getPriority() const = 0;
     virtual unsigned getWarnTimeLimit() const = 0;
     virtual int getDebugValueInt(const char * propname, int defVal) const = 0;
     virtual bool getDebugValueBool(const char * propname, bool defVal) const = 0;
 
-    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags) const = 0;
-    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const = 0;
+    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName) const = 0;
+    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const ContextLogger &_logctx) const = 0;
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut) = 0;
     virtual IPropertyTree *getQueryStats(time_t from, time_t to) = 0;
     virtual void getGraphNames(StringArray &ret) const = 0;
 
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual void getQueryInfo(StringBuffer &result, bool full, IArrayOf<IQueryFactory> *slaveQueries,const IRoxieContextLogger &logctx) const = 0;
+    virtual bool isDynamic() const = 0;
     virtual void checkSuspended() const = 0;
 };
 
@@ -244,8 +247,8 @@ extern const IQueryDll *createExeQueryDll(const char *exeName);
 extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu);
 
 extern IRecordLayoutTranslator *createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta);
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo);
-extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned _channelNo, const IPropertyTree *stateInfo);
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
+extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
 extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu);
 extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo);
@@ -275,7 +278,7 @@ inline unsigned getGraphId(IPropertyTree & node)
     return node.getPropInt("att[@name=\"_graphId\"]/@value", 0);
 }
 
-inline ThorActivityKind getActivityKind(IPropertyTree & node)
+inline ThorActivityKind getActivityKind(const IPropertyTree & node)
 {
     return (ThorActivityKind) node.getPropInt("att[@name=\"_kind\"]/@value", TAKnone);
 }

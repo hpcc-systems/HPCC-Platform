@@ -14,3 +14,7 @@
 #    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (unittests)
+install( DIRECTORY regress DESTINATION "./testing" COMPONENT Runtime
+         USE_SOURCE_PERMISSIONS
+         PATTERN regress/ecl EXCLUDE )
+

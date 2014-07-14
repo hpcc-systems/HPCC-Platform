@@ -2335,7 +2335,11 @@ public:
         assertex(NULL == writer); // should have been closed
         Owned<CFileOwner> fileOwner = spillFile.getClear();
         if (!fileOwner)
+        {
+            if (_count)
+                *_count = 0;
             return NULL;
+        }
         Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, rwFlags);
         Owned<CStreamFileOwner> fileStream = new CStreamFileOwner(fileOwner, strm);
         if (_count)
@@ -2393,7 +2397,7 @@ public:
         else
             return htRows->clear();
     }
-    bool spillHashTable(); // returns true if freed mem
+    bool spillHashTable(bool critical); // returns true if freed mem
     bool flush(bool critical);
     bool rehash();
     void close()
@@ -2446,7 +2450,7 @@ class CBucketHandler : public CSimpleInterface, implements IInterface, implement
         {
         }
     // IBufferedRowCallback
-        virtual unsigned getPriority() const
+        virtual unsigned getSpillCost() const
         {
             return HASHDEDUP_BUCKET_POSTSPILL_PRIORITY;
         }
@@ -2507,9 +2511,7 @@ public:
                 // spill whole bucket unless last
                 // The one left, will be last bucket standing and grown to fill mem
                 // it is still useful to use as much as poss. of remaining bucket HT as filter
-                if (bucket->spillHashTable())
-                    return true;
-                else if (critical && bucket->clearHashTable(true))
+                if (bucket->spillHashTable(critical))
                     return true;
             }
         }
@@ -2525,7 +2527,7 @@ public:
         return (hashValue / div) % numBuckets;
     }
 // IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         return SPILL_PRIORITY_HASHDEDUP;
     }
@@ -2878,12 +2880,17 @@ void CBucket::doSpillHashTable()
     }
 }
 
-bool CBucket::spillHashTable()
+bool CBucket::spillHashTable(bool critical)
 {
     CriticalBlock b(lock);
     rowidx_t removeN = htRows->queryHtElements();
-    if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
+    if (spilt) // NB: if split, will be handled by CBucket on different priority
         return false; // signal nothing to spill
+    else if (0 == removeN)
+    {
+        if (!critical || !clearHashTable(true))
+            return false; // signal nothing to spill
+    }
     doSpillHashTable();
     ActPrintLog(&owner, "Spilt bucket %d - %d elements of hash table", bucketN, removeN);
     return true;
@@ -2900,7 +2907,7 @@ bool CBucket::flush(bool critical)
         {
             if (clearHashTable(critical))
             {
-                PROGLOG("Flushed(%s) bucket %d - %d elements", critical?"(critical)":"", queryBucketNumber(), count);
+                PROGLOG("Flushed%s bucket %d - %d elements", critical?"(critical)":"", queryBucketNumber(), count);
                 return true;
             }
         }
@@ -3165,9 +3172,11 @@ CBucketHandler *CBucketHandler::getNextBucketHandler(Owned<IRowStream> &nextInpu
             // JCSMORE ideally, each key and row stream, would use a unique allocator per destination bucket
             // thereby keeping rows/keys together in pages, making it easier to free pages on spill requests
             Owned<IRowStream> keyStream = bucket->getKeyStream(&keyCount);
+            dbgassertex(keyStream);
             Owned<CBucketHandler> newBucketHandler = new CBucketHandler(owner, rowIf, keyIf, iRowHash, iKeyHash, iCompare, extractKey, depth+1, div*numBuckets);
             ActPrintLog(&owner, "Created bucket handler %d, depth %d", currentBucket, depth+1);
             nextInput.setown(bucket->getRowStream(&count));
+            dbgassertex(nextInput);
             // Use peak in mem keys as estimate for next round of buckets.
             unsigned nextNumBuckets = getBucketEstimateWithPrev(count, (rowidx_t)getPeakCount(), (rowidx_t)keyCount);
             owner.ensureNumHashTables(nextNumBuckets);
@@ -3718,6 +3727,72 @@ public:
 #pragma warning(pop)
 #endif
 
+
+class CHashDistributeSlavedActivity : public CSlaveActivity, public CThorDataLink
+{
+    IHash *ihash;
+    IThorDataLink *input;
+    unsigned myNode, nodes;
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    {
+        IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
+        ihash = distribargs->queryHash();
+        input = NULL;
+        myNode = container.queryJob().queryMyRank()-1;
+        nodes = container.queryJob().querySlaves();
+    }
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    {
+        appendOutputLinked(this);
+    }
+    virtual void start()
+    {
+        ActivityTimer s(totalCycles, timeActivities, NULL);
+        input = inputs.item(0);
+        input->start();
+        dataLinkStart();
+    }
+    virtual void stop()
+    {
+        if (input)
+            input->stop();
+        dataLinkStop();
+    }
+    CATCH_NEXTROW()
+    {
+        ActivityTimer t(totalCycles, timeActivities, NULL);
+        OwnedConstThorRow row = input->ungroupedNextRow();
+        if (!row)
+            return NULL;
+        if (myNode != (ihash->hash(row.get()) % nodes))
+        {
+            StringBuffer errMsg("Not distributed");
+            CommonXmlWriter xmlWrite(0);
+            if (baseHelper->queryOutputMeta()->hasXML())
+            {
+                errMsg.append(" - detected at row: ");
+                baseHelper->queryOutputMeta()->toXML((byte *) row.get(), xmlWrite);
+                errMsg.append(xmlWrite.str());
+            }
+            throw MakeActivityException(this, 0, "%s", errMsg.str());
+        }
+        dataLinkIncrement();
+        return row.getClear();
+    }
+    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    {
+        initMetaInfo(info);
+        if (input)
+            input->getMetaInfo(info);
+    }
+};
+
+
 //===========================================================================
 
 
@@ -3769,5 +3844,10 @@ CActivityBase *createReDistributeSlave(CGraphElementBase *container)
 {
     ActPrintLog(container, "REDISTRIBUTE: createReDistributeSlave");
     return new ReDistributeSlaveActivity(container);
+}
+
+CActivityBase *createHashDistributedSlave(CGraphElementBase *container)
+{
+    return new CHashDistributeSlavedActivity(container);
 }
 

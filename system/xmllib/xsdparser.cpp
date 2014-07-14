@@ -795,15 +795,22 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
         Owned<IPTreeIterator> els = sub->getElements(VStringBuffer("%selement",xsdNs()));
         
         size_t fldCount = 0;
-        for (els->first(); els->isValid(); els->next())
+        size_t typelessCount = 0;
+        ForEach(*els)
+        {
             fldCount++;
+            if (!els->query().hasProp("@type") && !els->query().hasChildren())
+                typelessCount++;
+        }
 
         // TODO: verify with struct with one field
-        if (fldCount==1) // hack: assume to be array
+        if ((fldCount-typelessCount)==1) // hack: assume 1 to be array
         {
-            els->first();
-            IPTree& el = els->query();
+            ForEach(*els)
+                if (els->query().hasProp("@type") || els->query().hasChildren())
+                    break;
 
+            IPTree& el = els->query();
             const char* maxOccurs = sub->queryProp("@maxOccurs");
             if (!maxOccurs)
                 maxOccurs = els->query().queryProp("@maxOccurs");
@@ -879,11 +886,8 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
                 const char* itemName = el.queryProp("@name");
                 const char* typeName = el.queryProp("@type");
                 IXmlType* type = typeName ? queryTypeByName(typeName,el.queryProp("@default")) : parseTypeDef(&el);
-                if (!type) 
-                {
-                    DBGLOG(-1,"Parse schema failed: itemName=%s, typeName=%s", itemName?itemName:"<no-name>", typeName?typeName:"<no-type-name>");
-                    throw MakeStringException(-1, "Internal error: parse schema failed");
-                }
+                if (!type)
+                    type = getNativeSchemaType("none", el.queryProp("@default")); //really should be tag only, no content?
                 
                 types[fldIdx] = type;
                 names[fldIdx] = strdup(itemName);

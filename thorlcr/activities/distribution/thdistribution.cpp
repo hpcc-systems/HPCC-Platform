@@ -56,7 +56,7 @@ public:
         }
 
         StringBuffer tmp;
-        tmp.append("<XML>").newline();
+        tmp.append("<XML>");
         helper->gatherResult(result, tmp);
         tmp.append("</XML>");
 

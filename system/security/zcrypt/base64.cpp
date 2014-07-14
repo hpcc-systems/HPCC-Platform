@@ -26,7 +26,7 @@ static const char pad = '=';
 ZBuffer& base64_encode(int length, const void *data, ZBuffer& result)
 {
     int estlen = (int)(length*4.0/3.0 + (length / 54) + 8);
-    char *out  = new char[estlen];
+    unsigned char *out  = (unsigned char *)malloc(estlen);
 
     const unsigned char *in = static_cast<const unsigned char *>(data);
 
@@ -81,7 +81,7 @@ ZBuffer& base64_encode(int length, const void *data, ZBuffer& result)
     out[j++] = '\n';
     out[j] = '\0';
 
-    result.setBuffer(j, (unsigned char*)out);
+    result.setBuffer(j, out);
 
     return result;
 }
@@ -110,7 +110,7 @@ ZBuffer& base64_decode(int inlen, const char *in, ZBuffer& data)
 
     int bc = 0; 
     int estlen = (int)(inlen/4.0*3.0 + 2);
-    unsigned char* buf = new unsigned char[estlen];
+    unsigned char* buf = (unsigned char *) malloc(estlen);
     for(int i = 0; i < inlen; )
     {
         if(in[i] == '\n')
@@ -144,7 +144,7 @@ ZBuffer& base64_decode(int inlen, const char *in, ZBuffer& data)
     if(bc > 0)
         data.setBuffer(bc, buf);
     else
-        delete buf;
+        free(buf);
 
     return data;
 }

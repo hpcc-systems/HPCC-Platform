@@ -19,6 +19,7 @@
 //Unfortunately it gets optimized away by EXISTS(x) always being true.  Check a warning is output.
 
 #option ('pickBestEngine', false);
+#onwarning (1051, warning);
 
 IMPORT SerialTest;
 

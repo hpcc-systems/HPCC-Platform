@@ -71,7 +71,6 @@ protected:
     unsigned numUses;
     IAtom * name;
     LengthLimit limit;
-    IAtom * cachedModule;
     node_operator kind;
     OwnedHqlExpr searchExpr;
     OwnedHqlExpr expr;
@@ -331,6 +330,7 @@ protected:
     void insertSeparators();
     void optimizePattern();
     void optimizeSpotDFA();
+    void updateTimer(const char * name, unsigned timems);
     HqlNamedRegex * queryNamed(IHqlExpression * defn, IAtom * name, node_operator op, bool caseSensitive);
     HqlNamedRegex * createNamed(IHqlExpression * expr, IAtom * name, node_operator op, bool caseSensitive);
 

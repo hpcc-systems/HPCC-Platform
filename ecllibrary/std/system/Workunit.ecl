@@ -16,7 +16,24 @@ EXPORT FileReadRecord := lib_workunitservices.WsFileRead;
 
 EXPORT FileWrittenRecord := lib_workunitservices.WsFileWritten;
 
-EXPORT TimingRecord := WsTiming;
+EXPORT TimingRecord := lib_workunitservices.WsTiming;
+
+/**
+The statistic record exported from the plugin has the following format:
+
+WsStatistic := RECORD
+    unsigned8 value;
+    unsigned8 count;
+    unsigned8 maxValue;
+    string creator;
+    string scope;
+    string name;
+    string description;
+    string unit;
+END;
+*/
+
+EXPORT StatisticRecord := lib_workunitservices.WsStatistic;
 
 /*
  * Returns a Boolean indication whether the work unit exists.
@@ -134,5 +151,15 @@ EXPORT dataset(FileWrittenRecord) WorkunitFilesWritten(varstring wuid) :=
 
 EXPORT dataset(TimingRecord) WorkunitTimings(varstring wuid) :=
   lib_workunitservices.WorkUnitServices.WorkunitTimings(wuid); 
+
+/*
+ * Returns the statistics from a particular workunit.
+ *
+ * @param wuid          the name of the workunit
+*/
+
+EXPORT dataset(StatisticRecord) WorkunitStatistics(varstring wuid, boolean includeActivities = false) :=
+  lib_workunitservices.WorkUnitServices.WorkunitStatistics(wuid, includeActivities);
+
 
 END;

@@ -32,9 +32,9 @@ set (VERSION_DIR ${CMAKE_CURRENT_BINARY_DIR}/)
 
 
 if ( "${HPCC_MATURITY}" STREQUAL "release" )
-	set (DOC_VERSION "${DOC_VERSION}.${HPCC_SEQUENCE}")
+	set (DOC_VERSION "${DOC_VERSION}-${HPCC_SEQUENCE}")
 else()
-	set (DOC_VERSION "${DOC_VERSION}.${HPCC_SEQUENCE}${HPCC_MATURITY}")
+	set (DOC_VERSION "${DOC_VERSION}-${HPCC_MATURITY}${HPCC_SEQUENCE}")
 endif()
 
 # Build image file list to add to source watch.
@@ -56,6 +56,7 @@ add_subdirectory(HPCCCertify)
 add_subdirectory(HPCCDataHandling)
 add_subdirectory(HPCCDataTutorial)
 add_subdirectory(HPCCMonitoring)
+add_subdirectory(HPCCSystemAdmin)
 add_subdirectory(IMDB)
 add_subdirectory(InstantCloud)
 add_subdirectory(Installing_and_RunningTheHPCCPlatform)

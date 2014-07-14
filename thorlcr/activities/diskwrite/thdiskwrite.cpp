@@ -57,7 +57,7 @@ class CsvWriteActivityMaster : public CWriteMasterBase
 {
 public:
     CsvWriteActivityMaster(CMasterGraphElement *info) : CWriteMasterBase(info) {}
-    void done()
+    virtual void done()
     {
         IPropertyTree &props = fileDesc->queryProperties();
         props.setProp("@format", "utf8n");

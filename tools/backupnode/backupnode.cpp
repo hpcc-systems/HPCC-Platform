@@ -695,6 +695,7 @@ int main(int argc, const char *argv[])
             sigemptyset(&blockset);
             act.sa_mask = blockset;
             act.sa_handler = SIG_IGN;
+            act.sa_flags = 0;
             sigaction(SIGINT, &act, NULL);
 #endif
             waitSlaves(args.item(1),numSlaves,slaveIP);

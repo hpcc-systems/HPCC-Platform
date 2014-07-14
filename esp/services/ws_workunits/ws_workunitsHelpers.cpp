@@ -28,34 +28,11 @@
 #include "wuwebview.hpp"
 #include "dllserver.hpp"
 #include "wujobq.hpp"
+#include "hqlexpr.hpp"
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
 #endif
-
-//#include "workunit.hpp"
-//#include "daclient.hpp"
-//#include "dalienv.hpp"
-//#include "exception_util.hpp"
-//#include "wujobq.hpp"
-//#include "eventqueue.hpp"
-//#include "hqlerror.hpp"
-//#include "sacmd.hpp"
-//#include "portlist.h"
-
-//#define     OWN_WU_ACCESS      "OwnWorkunitsAccess"
-//#define     OTHERS_WU_ACCESS   "OthersWorkunitsAccess"
-
-//const unsigned MAXTHORS = 1024;
-
-//#define    File_Cpp "cpp"
-//#define    File_ThorLog "ThorLog"
-//#define    File_ThorSlaveLog "ThorSlaveLog"
-//#define    File_EclAgentLog "EclAgentLog"
-//#define    File_XML "XML"
-//#define    File_Res "res"
-//#define    File_DLL "dll"
-//#define    File_ArchiveQuery "ArchiveQuery"
 
 namespace ws_workunits {
 
@@ -358,6 +335,41 @@ void WsWuInfo::getVariables(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
+void WsWuInfo::addTimerToList(SCMStringBuffer& name, unsigned count, unsigned duration, unsigned& totalThorTimerCount,
+    StringBuffer& totalThorTimeValue, IArrayOf<IEspECLTimer>& timers)
+{
+    StringBuffer fd;
+    formatDuration(fd, duration);
+
+    if (strieq(name.str(), TOTALTHORTIME))
+    {
+        totalThorTimeValue = fd;
+        totalThorTimerCount = count;
+        return;
+    }
+
+    Owned<IEspECLTimer> t= createECLTimer("","");
+    name.s.replace('_', ' ');
+    t->setName(name.str());
+    t->setValue(fd.str());
+    t->setCount(count);
+
+    if (version > 1.19)
+    {
+        StringAttr graphName;
+        unsigned graphNum, subGraphNum, subId;
+        if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
+        {
+            if (graphName.length() > 0)
+                t->setGraphName(graphName);
+            if (subId > 0)
+                t->setSubGraphId((int)subId);
+        }
+    }
+
+    timers.append(*t.getLink());
+}
+
 void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
 {
     if (!(flags & WUINFO_IncludeTimers))
@@ -368,51 +380,31 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
         unsigned totalThorTimerCount = 0; //Do we need this?
 
         IArrayOf<IEspECLTimer> timers;
-        Owned<IStringIterator> it = &cw->getTimers();
-        ForEach(*it)
+        Owned<IConstWUStatisticIterator> it = &cw->getStatistics();
+        if (it->first())
         {
-            SCMStringBuffer name;
-            it->str(name);
-            SCMStringBuffer value;
-            unsigned count = cw->getTimerCount(name.str(), NULL);
-            unsigned duration = cw->getTimerDuration(name.str(), NULL);
-            StringBuffer fd;
-            formatDuration(fd, duration);
-            for (unsigned i = 0; i < name.length(); i++)
-             if (name.s.charAt(i)=='_')
-                 name.s.setCharAt(i, ' ');
-
-            if (strieq(name.str(), TOTALTHORTIME))
+            ForEach(*it)
             {
-                totalThorTimeValue = fd;
-                totalThorTimerCount = count;
-                continue;
+                IConstWUStatistic & cur = it->query();
+                //Only interested in timings...
+                if (cur.getKind() != SMEASURE_TIME_NS)
+                    continue;
+
+                SCMStringBuffer name;
+                cur.getDescription(name);
+                addTimerToList(name, cur.getCount(), nanoToMilli(cur.getValue()), totalThorTimerCount, totalThorTimeValue, timers);
             }
-
-            Owned<IEspECLTimer> t= createECLTimer("","");
-            t->setName(name.str());
-            t->setValue(fd.str());
-            t->setCount(count);
-
-            if (version > 1.19)
+        }
+        else
+        {//backward compatibility for WU without Statistics
+            Owned<IConstWUTimerIterator> it = &cw->getTimerIterator();
+            ForEach(*it)
             {
-                StringBuffer graphName;
-                unsigned subGraphNum;
-                unsigned __int64 subId;
-                if (parseGraphTimerLabel(name.str(), graphName, subGraphNum, subId))
-                {
-                    if (graphName.length() > 0)
-                    {
-                        t->setGraphName(graphName.str());
-                    }
-                    if (subId > 0)
-                    {
-                        t->setSubGraphId((int)subId);
-                    }
-                }
+                IConstWUTimer& timer = it->query();
+                SCMStringBuffer name;
+                timer.getName(name);
+                addTimerToList(name, timer.getCount(), timer.getDuration(), totalThorTimerCount, totalThorTimeValue, timers);
             }
-
-            timers.append(*t.getLink());
         }
 
         if (totalThorTimeValue.length() > 0)
@@ -610,7 +602,17 @@ void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned flags)
 void WsWuInfo::getDebugValues(IEspECLWorkunit &info, unsigned flags)
 {
     if (!(flags & WUINFO_IncludeDebugValues))
+    {
+        if (version >= 1.50)
+        {
+            unsigned debugValueCount = 0;
+            Owned<IStringIterator> debugs(&cw->getDebugValues());
+            ForEach(*debugs)
+                debugValueCount++;
+            info.setDebugValueCount(debugValueCount);
+        }
         return;
+    }
     try
     {
         IArrayOf<IEspDebugValue> dv;
@@ -626,6 +628,8 @@ void WsWuInfo::getDebugValues(IEspECLWorkunit &info, unsigned flags)
             t->setValue(val.str());
             dv.append(*t.getLink());
         }
+        if (version >= 1.50)
+            info.setDebugValueCount(dv.length());
         info.setDebugValues(dv);
     }
     catch(IException* e)
@@ -655,42 +659,21 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
      if (version > 1.01)
      {
         info.setHaveSubGraphTimings(false);
-        StringBuffer xpath("/WorkUnits/");
-        xpath.append(wuid.str());
-        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000);
-        if (!conn)
-        {
-            DBGLOG("Cannot connect to SDS");
-            info.setGraphsDesc("Cannot connect to SDS");
-            return;
-        }
-        IPropertyTree *wpt = conn->queryRoot();
-        if (!wpt)
-        {
-            DBGLOG("Cannot get data from SDS");
-            info.setGraphsDesc("Cannot get data from SDS");
-            return;
-        }
 
-        Owned<IPropertyTreeIterator> iter = wpt->getElements("Timings/Timing");
-        StringBuffer name;
-        IArrayOf<IConstECLTimingData> timingdatarray;
-        ForEach(*iter)
+        Owned<IStringIterator> times = &cw->getTimers();
+        ForEach(*times)
         {
-            if (iter->query().getProp("@name",name.clear()))
+            SCMStringBuffer name;
+            times->str(name);
+
+            StringAttr graphName;
+            unsigned graphNum;
+            unsigned subGraphNum;
+            unsigned subId;
+            if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
             {
-                if ((name.length()>11) && (strncmp("Graph graph", name.str(), 11)==0))
-                {
-                    unsigned gn;
-                    const char *s = getGraphNum(name.str()+11, gn);
-                    unsigned sn;
-                    s = getGraphNum(s,sn);
-                    if (gn && sn)
-                    {
-                        info.setHaveSubGraphTimings(true);
-                        break;
-                    }
-                }
+                info.setHaveSubGraphTimings(true);
+                break;
             }
         }
      }
@@ -756,48 +739,29 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
 
 void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags)
 {
-    StringBuffer xpath("/WorkUnits/");
-    xpath.append(wuid.str());
-
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000);
-    if (!conn)
+    Owned<IStringIterator> times = &cw->getTimers();
+    ForEach(*times)
     {
-        DBGLOG("Could not connect to SDS");
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "Cannot connect to dali server.");
-    }
+        SCMStringBuffer name;
+        times->str(name);
 
-    IPropertyTree *wpt = conn->queryRoot();
-    Owned<IPropertyTreeIterator> iter = wpt->getElements("Timings/Timing");
+        StringAttr graphName;
+        unsigned graphNum;
+        unsigned subGraphNum;
+        unsigned subId;
 
-    ForEach(*iter)
-    {
-        StringBuffer name;
-        if (iter->query().getProp("@name", name))
+        if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
         {
-            if ((name.length()>11)&&(strncmp("Graph graph", name.str(), 11)==0))
-            {
-                unsigned gn;
-                const char *s = getGraphNum(name.str(),gn);
-                unsigned sn;
-                s = getGraphNum(s, sn);
-                if (gn && sn)
-                {
-                    const char *gs = strchr(name.str(),'(');
-                    unsigned gid = 0;
-                    if (gs)
-                        getGraphNum(gs+1, gid);
-                    unsigned time = iter->query().getPropInt("@duration");
+            unsigned time = cw->getTimerDuration(name.str());
 
-                    Owned<IEspECLTimingData> g = createECLTimingData();
-                    g->setName(name.str());
-                    g->setGraphNum(gn);
-                    g->setSubGraphNum(sn);
-                    g->setGID(gid);
-                    g->setMS(time);
-                    g->setMin(time/60000);
-                    timingData.append(*g.getClear());
-                }
-            }
+            Owned<IEspECLTimingData> g = createECLTimingData();
+            g->setName(name.str());
+            g->setGraphNum(graphNum);
+            g->setSubGraphNum(subGraphNum);
+            g->setGID(subId);
+            g->setMS(time);
+            g->setMin(time/60000);
+            timingData.append(*g.getClear());
         }
     }
 }
@@ -879,7 +843,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
     if (version > 1.27)
     {
         StringBuffer totalThorTimeStr;
-        unsigned totalThorTimeMS = cw->getTimerDuration(TOTALTHORTIME, NULL);
+        unsigned totalThorTimeMS = cw->getTimerDuration(TOTALTHORTIME);
         formatDuration(totalThorTimeStr, totalThorTimeMS);
         info.setTotalThorTime(totalThorTimeStr.str());
     }
@@ -908,6 +872,12 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     info.setDescription(cw->getDebugValue("description", s).str());
     if (version > 1.21)
         info.setXmlParams(cw->getXmlParams(s).str());
+    if (version >= 1.49)
+    {
+        SCMStringBuffer xml;
+        exportWorkUnitToXML(cw, xml, true, false);
+        info.setWUXMLSize(xml.length());
+    }
 
     info.setResultLimit(cw->getResultLimit());
     info.setArchived(false);
@@ -1173,6 +1143,7 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
     try
     {
         info.setEventSchedule(0);
+        unsigned workflowsCount = 0;
         IArrayOf<IConstECLWorkflow> workflows;
         Owned<IConstWorkflowItemIterator> it = cw->getWorkflowItems();
         if (it)
@@ -1208,6 +1179,7 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
                         {
                             eventCountUnlimited = true;
                         }
+                        workflowsCount++;
                         if (flags & WUINFO_IncludeWorkflows)
                             workflows.append(*g.getLink());
                     }
@@ -1217,6 +1189,8 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
                 info.setWorkflows(workflows);
             workflows.kill();
         }
+        if (version >= 1.50)
+            info.setWorkflowCount(workflowsCount);
     }
     catch(IException* e)
     {
@@ -1232,35 +1206,35 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
         info.setEventSchedule(1); //Can reschedule
 }
 
-bool shouldFileContentBeShown(IEspContext &context, const char * logicalName)
+IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent)
 {
     StringBuffer username;
     context.getUserID(username);
-
     Owned<IUserDescriptor> userdesc(createUserDescriptor());
     userdesc->set(username.str(), context.queryPassword());
-
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
     if (!df)
-        return false;
+        return NULL;
 
     bool blocked;
     if (df->isCompressed(&blocked) && !blocked)
-        return false;
+        return df.getClear();
 
-    IPropertyTree & properties = df->queryAttributes();
+    IPropertyTree& properties = df->queryAttributes();
     const char * format = properties.queryProp("@format");
     if (format && (stricmp(format,"csv")==0 || memicmp(format, "utf", 3) == 0))
     {
-        return true;
+        showFileContent = true;
+        return df.getClear();
     }
     const char * recordEcl = properties.queryProp("ECL");
     if (!recordEcl)
-        return false;
+        return df.getClear();
 
     MultiErrorReceiver errs;
     Owned<IHqlExpression> ret = ::parseQuery(recordEcl, &errs);
-    return errs.errCount() == 0;
+    showFileContent = errs.errCount() == 0;
+    return df.getClear();
 }
 
 void WsWuInfo::getEclSchemaChildFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional)
@@ -1357,6 +1331,11 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     SCMStringBuffer filename;
     r.getResultLogicalName(filename);
 
+    bool showFileContent = false;
+    Owned<IDistributedFile> df = NULL;
+    if (filename.length())
+        df.setown(getLogicalFileData(context, filename.str(), showFileContent));
+
     StringBuffer value, link;
     if (r.getResultStatus() == ResultStatusUndefined)
         value.set("[undefined]");
@@ -1415,23 +1394,8 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     else
     {
         value.append('[').append(r.getResultTotalRowCount()).append(" rows]");
-        if(r.getResultSequence()>=0)
-        {
-            if(filename.length())
-            {
-                StringBuffer username;
-                context.getUserID(username);
-
-                Owned<IUserDescriptor> userdesc(createUserDescriptor());
-                userdesc->set(username.str(), context.queryPassword());
-
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(filename.str(), userdesc);
-                if(df && df->queryAttributes().hasProp("ECL"))
-                    link.append(r.getResultSequence());
-            }
-            else
-                link.append(r.getResultSequence());
-        }
+        if((r.getResultSequence()>=0) && (!filename.length() || (df && df->queryAttributes().hasProp("ECL"))))
+            link.append(r.getResultSequence());
     }
 
     Owned<IEspECLResult> result= createECLResult("","");
@@ -1454,7 +1418,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     }
 
     if (filename.length())
-        result->setShowFileContent(shouldFileContentBeShown(context, filename.str()));
+        result->setShowFileContent(showFileContent);
 
     result->setName(name.str());
     result->setLink(link.str());
@@ -1634,15 +1598,20 @@ void WsWuInfo::getSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuper
     return;
 }
 
-bool WsWuInfo::getResultViews(StringArray &viewnames, unsigned flags)
+bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned flags)
 {
-    if (!(flags & WUINFO_IncludeResultsViewNames))
+    if (!(flags & (WUINFO_IncludeResultsViewNames | WUINFO_IncludeResourceURLs)))
         return true;
     try
     {
         Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, false);
         if (wv)
-            wv->getResultViewNames(viewnames);
+        {
+            if (flags & WUINFO_IncludeResultsViewNames)
+                wv->getResultViewNames(viewnames);
+            if (flags & WUINFO_IncludeResourceURLs)
+                wv->getResourceURLs(urls, NULL);
+        }
         return true;
     }
     catch(IException* e)
@@ -1653,6 +1622,24 @@ bool WsWuInfo::getResultViews(StringArray &viewnames, unsigned flags)
     }
 
     return false;
+}
+
+unsigned WsWuInfo::getResourceURLCount()
+{
+    try
+    {
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, false);
+        if (wv)
+            return wv->getResourceURLCount();
+    }
+    catch(IException* e)
+    {
+        StringBuffer eMsg;
+        ERRLOG("%s", e->errorMessage(eMsg).str());
+        e->Release();
+    }
+
+    return 0;
 }
 
 void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownload)
@@ -1922,6 +1909,19 @@ void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
     buf.append(queryText.length(), queryText.str());
 }
 
+void WsWuInfo::getWorkunitQueryShortText(MemoryBuffer& buf)
+{
+    Owned<IConstWUQuery> query = cw->getQuery();
+    if(!query)
+        throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU,"No query for workunit %s.",wuid.str());
+
+    SCMStringBuffer queryText;
+    query->getQueryShortText(queryText);
+    if (queryText.length() < 1)
+        throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU, "No query for workunit %s.",wuid.str());
+    buf.append(queryText.length(), queryText.str());
+}
+
 void WsWuInfo::getWorkunitDll(StringBuffer &dllname, MemoryBuffer& buf)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
@@ -1942,7 +1942,7 @@ void WsWuInfo::getWorkunitXml(const char* plainText, MemoryBuffer& buf)
         header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
 
     SCMStringBuffer xml;
-    exportWorkUnitToXML(cw, xml, true);
+    exportWorkUnitToXML(cw, xml, true, false);
 
     buf.append(strlen(header), header);
     buf.append(xml.length(), xml.str());
@@ -2119,7 +2119,7 @@ DataCacheElement* DataCache::lookup(IEspContext &context, const char* filter, un
         if (list_iter == cache.end())
             break;
 
-        DataCacheElement* awu = list_iter->getLink();
+        DataCacheElement* awu = list_iter->get();
         if (!awu || (awu->m_timeCached > timeNow))
             break;
 
@@ -2186,7 +2186,7 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
         if (list_iter == cache.end())
             break;
 
-        ArchivedWuCacheElement* awu = list_iter->getLink();
+        ArchivedWuCacheElement* awu = list_iter->get();
         if (awu && !stricmp(sashaUpdatedWhen, awu->m_sashaUpdatedWhen.c_str()) && (awu->m_timeCached > timeNow))
             break;
 
@@ -2204,12 +2204,12 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
     return NULL;
 }
 
-void ArchivedWuCache::add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, IArrayOf<IEspECLWorkunit>& wus)
+void ArchivedWuCache::add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus)
 {
     CriticalBlock block(crit);
 
     //Save new data
-    Owned<ArchivedWuCacheElement> e=new ArchivedWuCacheElement(filter, sashaUpdatedWhen, hasNextPage, /*data.str(),*/ wus);
+    Owned<ArchivedWuCacheElement> e=new ArchivedWuCacheElement(filter, sashaUpdatedWhen, hasNextPage, numWUsReturned, wus);
     if (cacheSize > 0)
     {
         if (cache.size() >= cacheSize)
@@ -2516,8 +2516,6 @@ void WsWuJobQueueAuditInfo::getAuditLineInfo(const char* line, unsigned& longest
 
     if (checkNewThorQueueItem(tq, showAll, items))
         items.append(*tq.getClear());
-
-    DBGLOG("Queue log: [%s]", line);
 }
 
 bool WsWuJobQueueAuditInfo::checkSameStrings(const char* s1, const char* s2)
@@ -2598,7 +2596,7 @@ int WUSchedule::run()
 {
     try
     {
-        while(true)
+        while(!stopping)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             Owned<IConstWorkUnitIterator> itr = factory->getWorkUnitsByState(WUStateScheduled);
@@ -2633,7 +2631,7 @@ int WUSchedule::run()
                     }
                 }
             }
-            sleep(60);
+            semSchedule.wait(1000*60);
         }
     }
     catch(IException *e)
@@ -2650,6 +2648,268 @@ int WUSchedule::run()
     if (m_container)
         m_container->exitESP();
     return 0;
+}
+
+void WsWuHelpers::setXmlParameters(IWorkUnit *wu, const char *xml, bool setJobname)
+{
+    if (!xml || !*xml)
+        return;
+    Owned<IPropertyTree> tree = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace | ptr_ignoreNameSpaces));
+    IPropertyTree *root = tree.get();
+    if (strieq(root->queryName(), "Envelope"))
+        root = root->queryPropTree("Body/*[1]");
+    if (!root)
+        return;
+    if (setJobname)
+    {
+        SCMStringBuffer name;
+        wu->getJobName(name);
+        if (!name.length())
+            wu->setJobName(root->queryName());
+    }
+    wu->setXmlParams(LINK(root));
+}
+
+void WsWuHelpers::setXmlParameters(IWorkUnit *wu, const char *xml, IArrayOf<IConstNamedValue> *variables, bool setJobname)
+{
+    StringBuffer extParamXml;
+    if (variables && variables->length())
+    {
+        Owned<IPropertyTree> paramTree = (xml && *xml) ? createPTreeFromXMLString(xml) : createPTree("input");
+        ForEachItemIn(i, *variables)
+        {
+            IConstNamedValue &item = variables->item(i);
+            const char *name = item.getName();
+            const char *value = item.getValue();
+            if (!name || !*name)
+                continue;
+            if (!value)
+            {
+                size_t len = strlen(name);
+                char last = name[len-1];
+                if (last == '-' || last == '+')
+                {
+                    StringAttr s(name, len-1);
+                    paramTree->setPropInt(s.get(), last == '+' ? 1 : 0);
+                }
+                else
+                    paramTree->setPropInt(name, 1);
+                continue;
+            }
+            paramTree->setProp(name, value);
+        }
+        toXML(paramTree, extParamXml);
+        xml=extParamXml.str();
+    }
+    setXmlParameters(wu, xml, setJobname);
+}
+
+void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
+    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+{
+    ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
+    switch(cw->getState())
+    {
+        case WUStateRunning:
+        case WUStateDebugPaused:
+        case WUStateDebugRunning:
+        case WUStateCompiling:
+        case WUStateAborting:
+        case WUStateBlocked:
+        {
+            SCMStringBuffer descr;
+            throw MakeStringException(ECLWATCH_CANNOT_SUBMIT_WORKUNIT, "Cannot submit the workunit. Workunit state is '%s'.", cw->getStateDesc(descr).str());
+        }
+    }
+
+    SCMStringBuffer wuid;
+    cw->getWuid(wuid);
+
+    WorkunitUpdate wu(&cw->lock());
+    if(!wu.get())
+        throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cannot update workunit %s.", wuid.str());
+
+    wu->clearExceptions();
+    if(notEmpty(cluster))
+        wu->setClusterName(cluster);
+    if(notEmpty(snapshot))
+        wu->setSnapshot(snapshot);
+    wu->setState(WUStateSubmitted);
+    if (maxruntime)
+        wu->setDebugValueInt("maxRunTime",maxruntime,true);
+
+    if (debugs && debugs->length())
+    {
+        ForEachItemIn(i, *debugs)
+        {
+            IConstNamedValue &item = debugs->item(i);
+            const char *name = item.getName();
+            const char *value = item.getValue();
+            if (!name || !*name)
+                continue;
+            if (!value)
+            {
+                size_t len = strlen(name);
+                char last = name[len-1];
+                if (last == '-' || last == '+')
+                {
+                    StringAttr s(name, len-1);
+                    wu->setDebugValueInt(s.get(), last == '+' ? 1 : 0, true);
+                }
+                else
+                    wu->setDebugValueInt(name, 1, true);
+                continue;
+            }
+            wu->setDebugValue(name, value, true);
+        }
+    }
+
+    if (resetWorkflow)
+        wu->resetWorkflow();
+    if (!compile)
+        wu->schedule();
+
+    if (resetVariables)
+    {
+        SCMStringBuffer varname;
+        Owned<IConstWUResultIterator> vars = &wu->getVariables();
+        ForEach (*vars)
+        {
+            vars->query().getResultName(varname);
+            Owned<IWUResult> v = wu->updateVariableByName(varname.str());
+            if (v)
+                v->setResultStatus(ResultStatusUndefined);
+        }
+    }
+
+    setXmlParameters(wu, paramXml, variables, (wu->getAction()==WUActionExecuteExisting));
+
+    wu->commit();
+    wu.clear();
+
+    if (!compile)
+        runWorkUnit(wuid.str());
+    else if (context.querySecManager())
+        secSubmitWorkUnit(wuid.str(), *context.querySecManager(), *context.queryUser());
+    else
+        submitWorkUnit(wuid.str(), context.queryUserId(), context.queryPassword());
+
+    AuditSystemAccess(context.queryUserId(), true, "Submitted %s", wuid.str());
+}
+
+void WsWuHelpers::submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
+    const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+    if(!cw)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
+    return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs);
+}
+
+
+void WsWuHelpers::copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char *srcWuid)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned<IConstWorkUnit> src(factory->openWorkUnit(srcWuid, false));
+
+    SCMStringBuffer wuid;
+    wu.getWuid(wuid);
+
+    queryExtendedWU(&wu)->copyWorkUnit(src, false);
+
+    SCMStringBuffer token;
+    wu.setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+    wu.commit();
+}
+
+void WsWuHelpers::runWsWorkunit(IEspContext &context, StringBuffer &wuid, const char *srcWuid, const char *cluster, const char *paramXml,
+    IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+{
+    StringBufferAdaptor isvWuid(wuid);
+
+    NewWsWorkunit wu(context);
+    wu->getWuid(isvWuid);
+    copyWsWorkunit(context, *wu, srcWuid);
+    wu.clear();
+
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml, variables, debugs);
+}
+
+void WsWuHelpers::runWsWorkunit(IEspContext &context, IConstWorkUnit *cw, const char *srcWuid, const char *cluster, const char *paramXml,
+    IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
+{
+    WorkunitUpdate wu(&cw->lock());
+    copyWsWorkunit(context, *wu, srcWuid);
+    wu.clear();
+
+    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml, variables, debugs);
+}
+
+IException * WsWuHelpers::noteException(IWorkUnit *wu, IException *e, WUExceptionSeverity level)
+{
+    if (wu)
+    {
+        Owned<IWUException> we = wu->createException();
+        StringBuffer s;
+        we->setExceptionMessage(e->errorMessage(s).str());
+        we->setExceptionSource("WsWorkunits");
+        we->setSeverity(level);
+        if (level==ExceptionSeverityError)
+            wu->setState(WUStateFailed);
+    }
+    return e;
+}
+
+StringBuffer & WsWuHelpers::resolveQueryWuid(StringBuffer &wuid, const char *queryset, const char *query, bool notSuspended, IWorkUnit *wu)
+{
+    Owned<IPropertyTree> qs = getQueryRegistry(queryset, true);
+    if (!qs)
+        throw noteException(wu, MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet '%s' not found", queryset));
+    Owned<IPropertyTree> q = resolveQueryAlias(qs, query);
+    if (!q)
+        throw noteException(wu, MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query '%s/%s' not found", queryset, query));
+    if (notSuspended && q->getPropBool("@suspended"))
+        throw noteException(wu, MakeStringException(ECLWATCH_QUERY_SUSPENDED, "Query '%s/%s' is suspended", queryset, query));
+    return wuid.append(q->queryProp("@wuid"));
+}
+
+void WsWuHelpers::runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const char *queryset, const char *query, const char *cluster, const char *paramXml)
+{
+    StringBuffer srcWuid;
+
+    WorkunitUpdate wu(&cw->lock());
+    resolveQueryWuid(srcWuid, queryset, query, true, wu);
+    copyWsWorkunit(context, *wu, srcWuid);
+    wu.clear();
+
+    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml);
+}
+
+void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query, const char *cluster, const char *paramXml)
+{
+    StringBuffer srcWuid;
+    StringBufferAdaptor isvWuid(wuid);
+
+    NewWsWorkunit wu(context);
+    wu->getWuid(isvWuid);
+    resolveQueryWuid(srcWuid, queryset, query, true, wu);
+    copyWsWorkunit(context, *wu, srcWuid);
+    wu.clear();
+
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml);
+}
+
+void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& input)
+{
+    const char* trimmedInput = input.trim().str();
+    if (isEmpty(trimmedInput))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Workunit ID not set", methodName);
+
+    if (!looksLikeAWuid(trimmedInput))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Invalid Workunit ID: %s", methodName, trimmedInput);
+
+    return;
 }
 
 }

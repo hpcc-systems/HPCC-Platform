@@ -673,6 +673,17 @@ bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
     switch(item.queryState())
     {
     case WFStateDone:
+        if (item.queryMode() == WFModePersist)
+        {
+#ifdef TRACE_WORKFLOW
+            LOG(MCworkflow, "Recheck persist %u", wfid);
+#endif
+            break;
+        }
+#ifdef TRACE_WORKFLOW
+        LOG(MCworkflow, "Nothing to be done for workflow item %u", wfid);
+#endif
+        return true;
     case WFStateSkip:
 #ifdef TRACE_WORKFLOW
         LOG(MCworkflow, "Nothing to be done for workflow item %u", wfid);
@@ -683,7 +694,8 @@ bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
     case WFStateBlocked:
         throw new WorkflowException(0, "INTERNAL ERROR: attempting to execute workflow item in blocked state", wfid, WorkflowException::SYSTEM, MSGAUD_user);
     case WFStateFail:
-        item.reset(); //fall through
+        item.reset();
+        break;
     }
 
     switch(item.queryMode())
@@ -881,6 +893,45 @@ void WorkflowMachine::doExecuteEndWaitItem(IRuntimeWorkflowItem & item)
     //but that will require some more work.
 }
 
+
+bool WorkflowMachine::isOlderThanPersist(time_t when, IRuntimeWorkflowItem & item)
+{
+    time_t thisTime;
+    if (!getPersistTime(thisTime, item))
+        return false;  // if no time must be older than the persist
+    return when < thisTime;
+}
+
+bool WorkflowMachine::isOlderThanInputPersists(time_t when, IRuntimeWorkflowItem & item)
+{
+    Owned<IWorkflowDependencyIterator> iter = item.getDependencies();
+    ForEach(*iter)
+    {
+        unsigned cur = iter->query();
+
+        IRuntimeWorkflowItem & other = workflow->queryWfid(cur);
+        if (isPersist(other))
+        {
+            if (isOlderThanPersist(when, other))
+                return true;
+        }
+        else
+        {
+            if (isOlderThanInputPersists(when, other))
+                return true;
+        }
+    }
+    return false;
+}
+
+bool WorkflowMachine::isItemOlderThanInputPersists(IRuntimeWorkflowItem & item)
+{
+    time_t curWhen;
+    if (!getPersistTime(curWhen, item))
+        return false; // if no time then old and can't tell
+
+    return isOlderThanInputPersists(curWhen, item);
+}
 
 void WorkflowMachine::performItem(unsigned wfid, unsigned scheduledWfid)
 {

@@ -27,8 +27,6 @@ project( ws_ecl )
 set (    SRCS 
          ws_ecl_plugin.cpp 
          ws_ecl_service.cpp 
-         ws_ecl_json.cpp
-         JSON_parser.c
          ws_ecl_wuinfo.cpp 
     )
 

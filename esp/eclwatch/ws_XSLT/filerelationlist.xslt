@@ -32,24 +32,16 @@
           <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
           <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
           <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-                <script type="text/javascript" src="/esp/files/scripts/sortabletable.js">&#160;</script>
           <script language="JavaScript1.2" src="/esp/files/scripts/multiselect.js">&#160;</script>
         ]]></xsl:text>
         
                 <script language="JavaScript1.2">
-          var sortableTable = null;
           var gobackURL = '<xsl:value-of select="/FileRelationListResponse/GoBackURL"/>';
           var fileName = '<xsl:value-of select="/FileRelationListResponse/FileName"/>';
           var clusterID = '<xsl:value-of select="/FileRelationListResponse/ClusterID"/>';
           var relationTypeID = '<xsl:value-of select="/FileRelationListResponse/RelationTypeID"/>';
           function onLoad()
           {
-          var table = document.getElementById('resultsTable');
-          if (table)
-          {
-          sortableTable = new SortableTable(table, table, ["String", "String", "String", "String"]);
-          }
-
           var sectionDiv = document.getElementById("RoxieFileData");
           if (sectionDiv)
           {

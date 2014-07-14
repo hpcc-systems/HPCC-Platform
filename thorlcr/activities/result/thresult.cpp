@@ -34,6 +34,7 @@ public:
     CResultActivityMaster(CMasterGraphElement *info) : CMasterActivity(info) { }
     virtual void init()
     {
+        CMasterActivity::init();
         replyTag = createReplyTag();
     }
     virtual void abort()

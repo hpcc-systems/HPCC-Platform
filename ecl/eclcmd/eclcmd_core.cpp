@@ -19,33 +19,82 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jargv.hpp"
+#include "jflz.hpp"
 #include "build-config.h"
+#include "httpclient.hpp"
 
 #include "workunit.hpp"
 #include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
 
-
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true)
+size32_t getMaxRequestEntityLength(EclCmdCommon &cmd)
 {
+    if(cmd.optServer.isEmpty())
+        throw MakeStringException(-1, "Server IP not specified");
+
+    EclCmdURL url("?config_", cmd.optServer, cmd.optPort, cmd.optSSL);
+    Owned<IHttpClientContext> httpCtx = getHttpClientContext();
+
+    StringBuffer request; //empty
+    StringBuffer response;
+    StringBuffer status;
+    Owned<IHttpClient> httpclient = httpCtx->createHttpClient(NULL, url);
+    if (cmd.optUsername.length())
+        httpclient->setUserID(cmd.optUsername);
+    if (cmd.optPassword.length())
+         httpclient->setPassword(cmd.optPassword);
+     if (0 > httpclient->sendRequest("GET", NULL, request, response, status) || !response.length() || strncmp("200", status, 3))
+         throw MakeStringException(-1, "Error checking ESP configuration: %s:%s %s", cmd.optServer.sget(), cmd.optPort.sget(), status.str());
+
+    Owned<IPropertyTree> config = createPTreeFromXMLString(response);
+    return config->getPropInt("Software[1]/EspProcess[1]/EspProtocol[@type='http_protocol'][1]/@maxRequestEntityLength");
+}
+
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
+{
+    bool useCompression = false;
+    try
+    {
+        Owned<IClientWUCheckFeaturesRequest> req = client->createWUCheckFeaturesRequest();
+        Owned<IClientWUCheckFeaturesResponse> resp = client->WUCheckFeatures(req);
+        useCompression = resp->getDeployment().getUseCompression();
+    }
+    catch(IException *E) //most likely an older ESP
+    {
+        E->Release();
+    }
+    catch(...)
+    {
+    }
+
+    bool compressed = false;
+    if (useCompression)
+    {
+        MemoryBuffer mb;
+        fastLZCompressToBuffer(mb, cmd.optObj.mb.length(), cmd.optObj.mb.bufferBase());
+        cmd.optObj.mb.swapWith(mb);
+        compressed=true;
+    }
+
     StringBuffer s;
     if (cmd.optVerbose)
         fprintf(stdout, "\nDeploying %s\n", cmd.optObj.getDescription(s).str());
 
+    StringBuffer objType(compressed ? "compressed_" : ""); //change compressed type string so old ESPs will fail gracefully
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
     switch (cmd.optObj.type)
     {
         case eclObjArchive:
-            req->setObjType("archive");
+            req->setObjType(objType.append("archive"));
             break;
         case eclObjSharedObject:
-            req->setObjType("shared_object");
+            req->setObjType(objType.append("shared_object"));
             break;
         case eclObjSource:
         {
             if (noarchive)
-                req->setObjType("ecl_text");
+                req->setObjType(objType.append("ecl_text"));
             else
             {
                 fprintf(stderr, "Failed to create archive from ECL Text\n");
@@ -76,7 +125,30 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         cmd.debugValues.kill();
     }
 
-    Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
+    Owned<IClientWUDeployWorkunitResponse> resp;
+    try
+    {
+         resp.setown(client->WUDeployWorkunit(req));
+    }
+    catch (IException *E)
+    {
+        //ESP doesn't want to process requests that are too large, and so disconnects before reading
+        //  this causes issues capturing the error returned... check if that may have been the issue
+        if (useCompression) //newer build, not a maxRequestEntityLength issue
+            throw;
+        size32_t maxEntity = getMaxRequestEntityLength(cmd); //only do the work to grab max buffersize if we've failed
+        if (maxEntity > 1000)
+        {
+            size32_t maxBufferSize = ((maxEntity - 999) / 4) * 3; //account for soap, other parameters, and base64 encoding (n / 4 * 3)
+            if (maxBufferSize && cmd.optObj.mb.length() > maxBufferSize)
+            {
+                fprintf(stderr, "\nError: %s is larger than maxRequestEntityLength configured for ESP allows.\n", objType.str());
+                E->Release();
+                return false;
+            }
+        }
+        throw;
+    }
     if (resp->getExceptions().ordinality())
         outputMultiExceptions(resp->getExceptions());
     const char *w = resp->getWorkunit().getWuid();
@@ -163,7 +235,7 @@ public:
     }
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         return doDeploy(*this, client, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive) ? 0 : 1;
     }
     virtual void usage()
@@ -195,7 +267,7 @@ class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
     EclCmdPublish() : optNoActivate(false), optSuspendPrevious(false), optDeletePrevious(false),
-        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000), optAllowForeign(false)
+        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000), optAllowForeign(false), optUpdateDfs(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
         optTimeLimit = (unsigned) -1;
@@ -253,6 +325,8 @@ public:
                 continue;
             if (iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS)||iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS_S))
                 continue;
+            if (iter.matchFlag(optUpdateDfs, ECLOPT_UPDATE_DFS))
+                continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -298,7 +372,7 @@ public:
     }
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
@@ -328,6 +402,7 @@ public:
         req->setNoReload(optNoReload);
         req->setDontCopyFiles(optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
+        req->setUpdateDfs(optUpdateDfs);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -386,6 +461,7 @@ public:
             "   --no-files             Do not copy files referenced by query\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
+            "   --update-dfs           Update local DFS info if remote DALI has changed\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
             "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
@@ -415,12 +491,13 @@ private:
     bool optSuspendPrevious;
     bool optDeletePrevious;
     bool optAllowForeign;
+    bool optUpdateDfs;
 };
 
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
-    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false)
+    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false), optExceptionSeverity("info")
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject | eclObjWuid | eclObjQuery;
     }
@@ -446,6 +523,8 @@ public:
                 continue;
             if (iter.matchFlag(optNoRoot, ECLOPT_NOROOT))
                 continue;
+            if (iter.matchOption(optExceptionSeverity, ECLOPT_EXCEPTION_LEVEL))
+                continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -470,7 +549,7 @@ public:
     }
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         Owned<IClientWURunRequest> req = client->createWURunRequest();
         req->setCloneWorkunit(true);
         req->setNoRootTag(optNoRoot);
@@ -510,6 +589,7 @@ public:
         req->setWait((int)optWaitTime);
         if (optInput.length())
             req->setInput(optInput.get());
+        req->setExceptionSeverity(optExceptionSeverity); //throws exception if invalid value
 
         if (debugValues.length())
             req->setDebugValues(debugValues);
@@ -551,18 +631,21 @@ public:
             "   <ecl_file|->           ECL text file to publish\n"
             "   <so|dll|->             workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -t, --target=<val>     target cluster to run job on\n"
-            "                          (defaults to cluster defined inside workunit)\n"
-            "   -n, --name=<val>       job name\n"
-            "   -in,--input=<file|xml> file or xml content to use as query input\n"
-            "   -X<name>=<value>       sets the stored input value (stored('name'))\n"
-            "   --wait=<ms>            time to wait for completion\n",
+            "   -t, --target=<val>        target cluster to run job on\n"
+            "                             (defaults to cluster defined inside workunit)\n"
+            "   -n, --name=<val>          job name\n"
+            "   -in,--input=<file|xml>    file or xml content to use as query input\n"
+            "   -X<name>=<value>          sets the stored input value (stored('name'))\n"
+            "   --wait=<ms>               time to wait for completion\n"
+            "   --exception-level=<level> minimum severity level for exceptions\n"
+            "                             values: 'info', 'warning', 'error'\n",
             stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
     StringAttr optName;
     StringAttr optInput;
+    StringAttr optExceptionSeverity;
     IArrayOf<IEspNamedValue> variables;
     unsigned optWaitTime;
     bool optNoRoot;
@@ -729,6 +812,417 @@ public:
     }
 };
 
+class EclCmdAbort : public EclCmdCommon
+{
+public:
+    EclCmdAbort()
+    {
+        optObj.accept = eclObjWuid;
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        bool retVal = false;
+        if (iter.done())
+        {
+            usage();
+            return retVal;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
+            {
+                optObj.type = eclObjWuid;
+                retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            {
+                optObj.type = eclObjQuery;
+                retVal = true;
+                continue;
+            }
+            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        StringArray wuids;
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryRequest> reqQ = client->createWUQueryRequest();
+
+        if (optObj.type == eclObjQuery)
+        {
+            reqQ->setJobname(optName.get());
+
+            Owned<IClientWUQueryResponse> respQ = client->WUQuery(reqQ);
+            int res = respQ->queryClientStatus();
+
+            if (!respQ->getCount_isNull())
+            {
+                IArrayOf<IConstECLWorkunit>& wus = respQ->getWorkunits();
+
+                ForEachItemIn(idx, wus)
+                {
+                    wuids.append(wus.item(idx).getWuid());
+                }
+            }
+        }
+        else
+        {
+            wuids.append(optName.get());
+        }
+
+        if (wuids.empty())
+            return 0;
+
+        // Abort
+        Owned<IClientWUAbortRequest> req = client->createWUAbortRequest();
+
+        req->setWuids(wuids);
+        Owned<IClientWUAbortResponse> resp = client->WUAbort(req);
+
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
+        // Get status of WU(s)
+        if (optObj.type == eclObjQuery)
+        {
+            reqQ->setJobname(optName.get());
+        }
+        else
+        {
+            reqQ->setWuid(optName.get());
+        }
+        Owned<IClientWUQueryResponse> respQ = client->WUQuery(reqQ);
+
+        if (!respQ->getCount_isNull())
+        {
+            IArrayOf<IConstECLWorkunit>& wus = respQ->getWorkunits();
+
+            if (!wus.empty())
+            {
+                if (wus.ordinality() > 1)
+                {
+                    ForEachItemIn(idx, wus)
+                    {
+                        fprintf(stdout, "%s,%s\n", wus.item(idx).getWuid(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
+                    }
+                }
+                else
+                {
+                    fprintf(stdout, "%s\n", getWorkunitStateStr((WUState) wus.item(0).getStateID()) );
+                }
+            }
+        }
+
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'abort' command aborts one or more workunit on the HPCC system from the given WUID or job name\n"
+            "The workunit(s) abort requests and the current status returns\n"
+            "\n"
+            "ecl abort -wu <WUID>| -n <job name>\n"
+            "   WUID                   workunit ID\n"
+            "   job name               workunit job name\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr         optName;
+    EclObjectParameter optObj;
+};
+
+class EclCmdGetName : public EclCmdCommon
+{
+public:
+    EclCmdGetName()
+    {
+        optObj.accept = eclObjWuid;
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        bool retVal = false;
+        if (iter.done())
+        {
+            usage();
+            return retVal;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
+            {
+                optObj.type = eclObjWuid;
+                retVal = true;
+                continue;
+            }
+            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+
+        if (optName.isEmpty())
+            return 0;
+
+        req->setWuid(optName.get());
+        Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
+
+        if (!resp->getCount_isNull())
+        {
+            IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
+            ForEachItemIn(idx, wus)
+            {
+                fprintf(stdout, "%s\n", wus.item(idx).getJobname());
+            }
+        }
+
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'getname' command returns with the workunit name from the given workunit id.\n"
+            "\n"
+            "ecl getname --wuid <WUID>\n"
+            "\n"
+            "   WUID                   workunit ID\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr         optName;
+    EclObjectParameter optObj;
+};
+
+class EclCmdGetWuid : public EclCmdCommon
+{
+public:
+    EclCmdGetWuid() : optListLimit(100)
+    {
+
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        bool retVal = false;
+        if (iter.done())
+        {
+            usage();
+            return retVal;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            {
+                retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
+            {
+                continue;
+            }
+            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+
+        if (optName.isEmpty())
+            return 0;
+
+        req->setJobname(optName.get());
+
+        Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
+
+        if (!resp->getCount_isNull())
+        {
+            IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
+
+            ForEachItemIn(idx, wus)
+            {
+                if (idx == optListLimit)
+                    break;
+
+                fprintf(stdout, "%s\n", wus.item(idx).getWuid());
+            }
+        }
+
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'getwuid' command returns with WUID(s) of the given workunit job name.\n"
+            "\n"
+            "ecl getwuid -n <job name> [--limit=<limit>]\n"
+            "\n"
+            "   job name               workunit job name\n"
+            " Options:\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr         optName;
+    EclObjectParameter optObj;
+    unsigned int       optListLimit;
+};
+
+class EclCmdStatus : public EclCmdCommon
+{
+public:
+    EclCmdStatus() : optListLimit(100)
+    {
+        optObj.accept = eclObjWuid;
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        bool retVal = false;
+        if (iter.done())
+        {
+            usage();
+            return retVal;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
+            {
+                optObj.type = eclObjWuid;
+                retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            {
+                optObj.type = eclObjQuery;
+                retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
+            {
+                continue;
+            }
+            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+
+        if (optName.isEmpty())
+        {
+            fprintf(stdout, "No WUID or job name.\n");
+            return 0;
+        }
+
+
+        if ( optObj.type ==eclObjWuid )
+            req->setWuid(optName.get());
+        else
+            req->setJobname(optName.get());
+
+        Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
+        int res = resp->queryClientStatus();
+
+        IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
+
+        if (wus.ordinality() == 1)
+        {
+
+            if (optVerbose)
+            {
+                fprintf(stdout, "ID: %-18s, job name: %s, state:", wus.item(0).getWuid(), wus.item(0).getJobname());
+            }
+
+            fprintf(stdout, "%s\n", getWorkunitStateStr((WUState) wus.item(0).getStateID()) );
+        }
+        else
+        {
+            ForEachItemIn(idx, wus)
+            {
+                if (idx == optListLimit)
+                    break;
+
+                if (optVerbose)
+                    fprintf(stdout, "ID: %s, job name: %s, state: %s\n", wus.item(idx).getWuid(), wus.item(idx).getJobname(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
+                else
+                    fprintf(stdout, "%s,%s,%s\n", wus.item(idx).getWuid(), wus.item(idx).getJobname(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
+            }
+        }
+
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'status' command returns the status of the given workunit or job name.\n"
+            "If there are more than one result it generates a CSV list with wuid, name and state.\n"
+            "\n"
+            "ecl status -wu <WUID>|-n <job name> \n"
+            "\n"
+            "   WUID                   workunit ID\n"
+            "   name                   workunit job name\n"
+            " Options:\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
+            "   --verbose              Add field names\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr         optName;
+    EclObjectParameter optObj;
+    unsigned int       optListLimit;
+};
+
 //=========================================================================================
 
 IEclCommand *createCoreEclCommand(const char *cmdname)
@@ -747,5 +1241,13 @@ IEclCommand *createCoreEclCommand(const char *cmdname)
         return new EclCmdActivate();
     if (strieq(cmdname, "deactivate"))
         return new EclCmdDeactivate();
+    if (strieq(cmdname, "abort"))
+        return new EclCmdAbort();
+    if (strieq(cmdname, "getname"))
+        return new EclCmdGetName();
+    if (strieq(cmdname, "getwuid"))
+        return new EclCmdGetWuid();
+    if (strieq(cmdname, "status"))
+        return new EclCmdStatus();
     return NULL;
 }

@@ -381,7 +381,7 @@ protected:
     Owned<IRecordLayoutTranslator> layoutTrans;
     bool transformSegs;
     IIndexReadContext * activitySegs;
-    byte * layoutTransBuff;
+    CMemoryBlock layoutTransBuff;
     Owned<IRecordLayoutTranslator::SegmentMonitorContext> layoutTransSegCtx;
     Owned<IRecordLayoutTranslator::RowTransformContext> layoutTransRowCtx;
 
@@ -407,8 +407,8 @@ protected:
 
     byte const * doRowLayoutTransform(offset_t & fpos)
     {
-        layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff, layoutTrans->queryActivityKeySize(), fpos);
-        return layoutTransBuff;
+        layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff, fpos);
+        return layoutTransBuff.get();
     }
 
     bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen)
@@ -541,13 +541,11 @@ public:
         wildseeks = 0;
         transformSegs = false;
         activitySegs = &segs;
-        layoutTransBuff = NULL;
     }
 
     ~CKeyLevelManager()
     {
         free (keyBuffer);
-        free(layoutTransBuff);
         ::Release(keyCursor);
     }
 
@@ -594,6 +592,7 @@ public:
             {
                 keySize = ki->keySize();
                 keyedSize = ki->keyedSize();
+                assertex(keySize);
                 keyBuffer = (char *) malloc(keySize);
             }
             else
@@ -912,15 +911,12 @@ public:
             layoutTransSegCtx.clear();
             activitySegs = &segs;
         }
-        free(layoutTransBuff);
         if(layoutTrans)
         {
-            layoutTransBuff = (byte *)malloc(layoutTrans->queryActivityKeySize());
             layoutTransRowCtx.setown(layoutTrans->getRowTransformContext());
         }
         else
         {
-            layoutTransBuff = NULL;
             layoutTransRowCtx.clear();
         }
     }
@@ -2543,6 +2539,8 @@ public:
         {
             IKeyIndex *ki = _keyset->queryPart(0);
             keySize = ki->keySize();
+            if (!keySize)
+                throw MakeStringException(0, "Invalid key size 0 in key %s", ki->queryFileName());
             keyedSize = ki->keyedSize();
             numkeys = _keyset->numParts();
         }
@@ -2566,6 +2564,7 @@ public:
         unsigned i;
         for (i = 0; i < numkeys; i++)
         {
+            assertex(keySize);
             if (!keyBuffer) keyBuffer = (char *) malloc(keySize);
             segs.setLow(0, keyBuffer);
             loop
@@ -2605,6 +2604,7 @@ public:
                         fixedValue = NULL;
                         break;
                     }
+                    assertex(sortFieldOffset);
                     void *fixedValue = malloc(sortFieldOffset);
                     memcpy(fixedValue, keyBuffer, sortFieldOffset);
                     fixedArray.append(fixedValue);
@@ -2627,6 +2627,7 @@ public:
                     }
 #endif
                     // Now advance segments 0 through sortFromSeg-1 to next legal value...
+                    assertex(keySize);
                     char *nextBuffer = (char *) malloc(keySize);
                     memcpy(nextBuffer, keyBuffer, keySize);
                     keyBuffer = nextBuffer;
@@ -2825,6 +2826,7 @@ public:
             mb.read(keyno);
             keyNoArray.append(keyno);
             keyCursor = keyset->queryPart(keyno)->getCursor(ctx);
+            assertex(keySize);
             keyBuffer = (char *) malloc(keySize);
             cursorArray.append(*keyCursor);
             keyCursor->deserializeCursorPos(mb, keyBuffer);

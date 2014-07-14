@@ -22,7 +22,6 @@
 
 
 CActivityBase *createWhenActivityMaster(CMasterGraphElement *info);
-CActivityBase *createIfActionActivityMaster(CMasterGraphElement *info);
 
 
 #endif

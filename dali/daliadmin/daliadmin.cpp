@@ -98,7 +98,8 @@ void usage(const char *exe)
   printf("  dfscompratio <logicalname>      -- returns compression ratio of file\n");
   printf("  dfsscopes <mask>                -- lists logical scopes (mask = * for all)\n");
   printf("  cleanscopes                     -- remove empty scopes\n");
-  printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> -- set redundancy for files matching mask, on specified clusters only");
+  printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> -- set redundancy for files matching mask, on specified clusters only\n");
+  printf("  holdlock <logicalfile> <read|write> -- hold a lock to the logical-file until a key is pressed");
   printf("\n");
   printf("Workunit commands:\n");
   printf("  listworkunits [<prop>=<val> [<lower> [<upper>]]] -- list workunits that match prop=val in workunit name range lower to upper\n");
@@ -118,6 +119,7 @@ void usage(const char *exe)
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
+  printf("  workunit <workunit> [true]      -- dump workunit xml, if 2nd parameter equals true, will also include progress data\n");
   printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
   printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
   printf("  xmlsize <filename> [<percentage>] --  analyse size usage in xml file, display individual items above 'percentage' \n");
@@ -696,7 +698,7 @@ static int dfsexists(const char *lname,IUserDescriptor *user)
 
 static void dfsparents(const char *lname, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
     if (file) {
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
         ForEach(*iter) 
@@ -708,20 +710,24 @@ static void dfsparents(const char *lname, IUserDescriptor *user)
 
 static void dfsunlink(const char *lname, IUserDescriptor *user)
 {
-    loop {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user);
-        if (file) {
-            Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
-            if (!iter->first())
-                break;
-            file.clear();
-            Owned<IDistributedSuperFile> sf = &iter->get();
-            iter.clear();
-            if (sf->removeSubFile(lname,false))
-                OUTLOG("removed %s from %s",lname,sf->queryLogicalName());
-            else
-                ERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
+    loop
+    {
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
+        if (!file)
+        {
+            ERRLOG("File '%s' not found", lname);
+            break;
         }
+        Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
+        if (!iter->first())
+            break;
+        file.clear();
+        Owned<IDistributedSuperFile> sf = &iter->get();
+        iter.clear();
+        if (sf->removeSubFile(lname,false))
+            OUTLOG("removed %s from %s",lname,sf->queryLogicalName());
+        else
+            ERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
     }
 }
 
@@ -1162,10 +1168,12 @@ static void checksuperfile(const char *lfn,bool fix=false)
             if (pn>subnum) {
                 ERRLOG("SuperFile %s: corrupt, subfile file part %d spurious",lname.get(),pn);
                 if (fixstate==0)
+                {
                     if (fix&&doFix())
                         fixstate = 1;
                     else
                         fixstate = 2;
+                }
                 if (fixstate==1) {
                     root->removeTree(sub);
                     fixed = true;
@@ -1688,6 +1696,30 @@ static void dfsreplication(const char *clusterMask, const char *lfnMask, unsigne
     }
 }
 
+static void holdlock(const char *logicalFile, const char *mode, IUserDescriptor *userDesc)
+{
+    bool write;
+    if (strieq(mode, "read"))
+        write = false;
+    else if (strieq(mode, "write"))
+        write = true;
+    else
+        throw MakeStringException(0,"Invalid mode: %s", mode);
+
+    PROGLOG("Looking up file: %s, mode=%s", logicalFile, mode);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalFile, userDesc, write, false, false, NULL, 5000);
+    if (!file)
+    {
+        ERRLOG("File not found: %s", logicalFile);
+        return;
+    }
+    OwnedPtr<DistributedFilePropertyLock> writeLock;
+    if (write)
+        writeLock.setown(new DistributedFilePropertyLock(file));
+    PROGLOG("File: %s, locked, mode=%s - press a key to release", logicalFile, mode);
+    getchar();
+}
+
 static const char *getNum(const char *s,unsigned &num)
 {
     while (*s&&!isdigit(*s))
@@ -1700,6 +1732,22 @@ static const char *getNum(const char *s,unsigned &num)
     return s;
 }
 
+
+static void displayGraphTiming(const char * name, unsigned time)
+{
+    unsigned gn;
+    const char *s = getNum(name,gn);
+    unsigned sn;
+    s = getNum(s,sn);
+    if (gn&&sn) {
+        const char *gs = strchr(name,'(');
+        unsigned gid = 0;
+        if (gs)
+            getNum(gs+1,gid);
+        OUTLOG("\"%s\",%d,%d,%d,%d,%d",name,gn,sn,gid,time,(time/60000));
+    }
+}
+
 static void workunittimings(const char *wuid)
 {
     StringBuffer path;
@@ -1710,28 +1758,38 @@ static void workunittimings(const char *wuid)
         return;
     }
     IPropertyTree *wu = conn->queryRoot();
-    Owned<IPropertyTreeIterator> iter = wu->getElements("Timings/Timing");
     StringBuffer name;
     outln("Name,graph,sub,gid,time ms,time min");
-    ForEach(*iter) {
-        if (iter->query().getProp("@name",name.clear())) {
-            if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0)) {
-                unsigned gn;
-                const char *s = getNum(name.str(),gn);
-                unsigned sn;
-                s = getNum(s,sn);
-                if (gn&&sn) {
-                    const char *gs = strchr(name.str(),'(');
-                    unsigned gid = 0;
-                    if (gs)
-                        getNum(gs+1,gid);
-                    unsigned time = iter->query().getPropInt("@duration");
-                    OUTLOG("\"%s\",%d,%d,%d,%d,%d",name.str(),gn,sn,gid,time,(time/60000));
+    if (wu->hasProp("Statistics"))
+    {
+        Owned<IPropertyTreeIterator> iter = wu->getElements("Statistics/Statistic");
+        ForEach(*iter)
+        {
+            if (iter->query().getProp("@desc",name.clear()))
+            {
+                if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0))
+                {
+                    unsigned time = (iter->query().getPropInt64("@value") / 1000000);
+                    displayGraphTiming(name.str(), time);
                 }
             }
         }
     }
-
+    else
+    {
+        Owned<IPropertyTreeIterator> iter = wu->getElements("Timings/Timing");
+        ForEach(*iter)
+        {
+            if (iter->query().getProp("@name",name.clear()))
+            {
+                if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0))
+                {
+                    unsigned time = iter->query().getPropInt("@duration");
+                    displayGraphTiming(name.str(), time);
+                }
+            }
+        }
+    }
 }
 
 //=============================================================================
@@ -2346,6 +2404,13 @@ static void unlock(const char *pattern)
     }
 }
 
+static void dumpWorkunit(const char *wuid, bool includeProgress)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress);
+}
+
 static void wuidCompress(const char *match, const char *type, bool compress)
 {
     if (0 != stricmp("graph", type))
@@ -2564,13 +2629,13 @@ int main(int argc, char* argv[])
         const char *param = argv[i];
         if ((memcmp(param,"server=",7)==0)||
             (memcmp(param,"logfile=",8)==0)||
-            (memcmp(param,"rawlog=",8)==0)||
+            (memcmp(param,"rawlog=",7)==0)||
             (memcmp(param,"user=",5)==0)||
             (memcmp(param,"password=",9)==0) ||
             (memcmp(param,"fix=",4)==0) ||
             (memcmp(param,"verbose=",8)==0) ||
             (memcmp(param,"deletefiles=",12)==0) ||
-            (memcmp(param,"timeout=",4)==0))
+            (memcmp(param,"timeout=",8)==0))
             props->loadProp(param);
         else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
             props->setProp("server",ep.getUrlStr(tmps.clear()).str());
@@ -2847,6 +2912,13 @@ int main(int argc, char* argv[])
                         bool deleteFiles = props->getPropBool("deletefiles");
                         validateStore(fix, deleteFiles, verbose);
                     }
+                    else if (stricmp(cmd, "workunit") == 0) {
+                        CHECKPARAMS(1,2);
+                        bool includeProgress=false;
+                        if (np>1)
+                            includeProgress = strToBool(params.item(2));
+                        dumpWorkunit(params.item(1), includeProgress);
+                    }
                     else if (stricmp(cmd,"wuidCompress")==0) {
                         CHECKPARAMS(2,2);
                         wuidCompress(params.item(1), params.item(2), true);
@@ -2859,6 +2931,10 @@ int main(int argc, char* argv[])
                         CHECKPARAMS(3,4);
                         bool dryRun = np>3 && strieq("dryrun", params.item(4));
                         dfsreplication(params.item(1), params.item(2), atoi(params.item(3)), dryRun);
+                    }
+                    else if (stricmp(cmd,"holdlock")==0) {
+                        CHECKPARAMS(2,2);
+                        holdlock(params.item(1), params.item(2), userDesc);
                     }
                     else
                         ERRLOG("Unknown command %s",cmd);

@@ -123,6 +123,7 @@ class CWsSMCEx : public CWsSMC
     StringBuffer m_PortalURL;
     int m_BannerAction;
     bool m_EnableChatURL;
+    CriticalSection crit;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -148,6 +149,7 @@ public:
 
     virtual bool onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp);
     virtual bool onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdRequest &req, IEspRoxieControlCmdResponse &resp);
+    virtual bool onGetStatusServerInfo(IEspContext &context, IEspGetStatusServerInfoRequest &req, IEspGetStatusServerInfoResponse &resp);
 private:
     void addCapabilities( IPropertyTree* pFeatureNode, const char* access, 
                                  IArrayOf<IEspCapability>& capabilities);
@@ -180,6 +182,7 @@ private:
     void setServerJobQueueStatus(double version, IEspServerJobQueue* jobQueue, const char* status, const char* details);
     void setServerJobQueueStatus(IEspServerJobQueue* jobQueue, const char* status, const char* details);
     void setServerJobQueueStatusDetails(IEspServerJobQueue* jobQueue, const char* status, const char* details);
+    void setJobPriority(IWorkUnitFactory* factory, const char* wuid, const char* queue, WUPriorityClass& priority);
 
     void readTargetClusterInfo(IEspContext &context, CConstWUClusterInfoArray& clusters, IPropertyTree* serverStatusRoot,
         ActivityInfo* activityInfo);
@@ -195,13 +198,26 @@ private:
     void readWUsAndStateFromJobQueue(IEspContext& context, CWsSMCTargetCluster& targetCluster, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void readWUsAndStateFromJobQueue(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void setESPTargetClusters(IEspContext& context, const CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetCluster>& respTargetClusters);
-    ActivityInfo* createActivityInfo(IEspContext &context, IEspActivityRequest &req);
+    ActivityInfo* createActivityInfo(IEspContext &context);
     void clearActivityInfoCache();
-    ActivityInfo* getActivityInfo(IEspContext &context, IEspActivityRequest &req);
+    ActivityInfo* getActivityInfo(IEspContext &context);
     void setActivityResponse(IEspContext &context, ActivityInfo* activityInfo, IEspActivityRequest &req, IEspActivityResponse& resp);
     void addWUsToResponse(IEspContext &context, const IArrayOf<IEspActiveWorkunit>& aws, IEspActivityResponse& resp);
     const char *getStatusServerTypeName(WsSMCStatusServerType type);
+
+    void getStatusServerInfo(IEspContext &context, const char *serverType, const char *serverName, const char *networkAddress, unsigned port, IEspStatusServerInfo& statusServerInfo);
+    void setTargetClusterInfo(IEspContext &context, const char *serverType, const char *serverName, const CIArrayOf<CWsSMCTargetCluster>& targetClusters,
+        const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
+    void setServerQueueInfo(IEspContext &context, const char *serverType, const char *serverName, const IArrayOf<IEspServerJobQueue>& serverJobQueues,
+        const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
+    void setServerQueueInfo(IEspContext &context, const char *serverType, const char *networkAddress, unsigned port, const IArrayOf<IEspServerJobQueue>& serverJobQueues,
+        const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
+    void setESPTargetCluster(IEspContext &context, CWsSMCTargetCluster& targetCluster, IEspTargetCluster* espTargetCluster);
+    void setActiveWUs(IEspContext &context, const char *serverType, const char *clusterName, const char *queueName, const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
+    void setActiveWUs(IEspContext &context, const char *serverType, const char *instance, const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo);
+    void setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspActiveWorkunit* wuToSet);
 };
+
 
 class CWsSMCSoapBindingEx : public CWsSMCSoapBinding
 {
@@ -221,7 +237,12 @@ public:
     }
 
     virtual ~CWsSMCSoapBindingEx(){}
-
+    virtual const char* getRootPage(IEspContext* ctx)
+    {
+        if (ctx->queryRequestParameters()->hasProp("legacy"))
+            return NULL;
+        return "stub.htm";
+    }
     virtual int onGetRoot(IEspContext &context, CHttpRequest* request,  CHttpResponse* response)
     {
         return  onGetInstantQuery(context, request, response, "WsSMC", "Activity");

@@ -44,15 +44,16 @@ public:
     GlobalMergeActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
     }
-    void init()
+    virtual void init()
     {
+        CMasterActivity::init();
         replyTag = createReplyTag();
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         dst.append(replyTag);
     }
-    void process()
+    virtual void process()
     {
         ActPrintLog("GlobalMergeActivityMaster::process");
         CMasterActivity::process();     
@@ -94,7 +95,7 @@ public:
             ActPrintLog("GlobalMergeActivityMaster::process partition generated");
             for (i=0;i<n;i++) {
                 if (abortSoon)
-                    return;
+                    break;
                 CMessageBuffer mb;
                 mb.append(n);
                 for (unsigned j = 0;j<n;j++)
@@ -104,7 +105,7 @@ public:
                 ActPrintLog("Merge process, Replying to node %d tag %d",i+1,replytags[i]);
 #endif
                 if (!container.queryJob().queryJobComm().send(mb, (rank_t)i+1, replytags[i]))
-                    return;
+                    break;
             }
         
         }
@@ -118,8 +119,7 @@ public:
         delete [] intertags;
         ActPrintLog("GlobalMergeActivityMaster::process exit");
     }
-
-    void abort()
+    virtual void abort()
     {
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, replyTag);
@@ -134,5 +134,3 @@ CActivityBase *createMergeActivityMaster(CMasterGraphElement *container)
     else
         return new GlobalMergeActivityMaster(container);
 }
-
-

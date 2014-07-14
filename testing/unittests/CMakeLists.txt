@@ -30,6 +30,7 @@ set (    SRCS
          unittests.cpp
          remotetests.cpp
          dalitests.cpp
+         jlibtests.cpp
     )
 
 include_directories (

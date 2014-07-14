@@ -241,7 +241,6 @@
                 <td>Cluster</td>
                     <td>
                         <select id="Cluster" name="Cluster" size="1">
-                            <option></option>
                         <xsl:for-each select="Cluster">
                             <option>
                             <xsl:if test="@selected">

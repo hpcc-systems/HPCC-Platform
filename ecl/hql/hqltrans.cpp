@@ -1334,7 +1334,7 @@ void NewHqlTransformer::analyseSelector(IHqlExpression * expr)
 
 IHqlExpression * NewHqlTransformer::quickTransformTransform(IHqlExpression * expr)
 {
-    bool same = false;
+    bool same = true;
     unsigned max = expr->numChildren();
     HqlExprArray children;
     children.ensure(max);
@@ -2019,7 +2019,6 @@ IHqlExpression * replaceExpression(IHqlExpression * expr, IHqlExpression * origi
     //specially update selectors in nested expressions.
     if (original->isDataset())
     {
-        IHqlExpression * table = queryTable(original);
         if (!definesColumnList(original) && definesColumnList(replacement))
         {
             HqlMapDatasetTransformer simpleTransformer;
@@ -4012,7 +4011,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
 
             if (expr->isDataset())
                 pushScope();
-                children.append(*transform(expr->queryChild(0)));
+            children.append(*transform(expr->queryChild(0)));
             if (expr->isDataset())
                 popScope();
             for (idx = 1; idx < numChildren; idx++)
@@ -4475,8 +4474,6 @@ bool ScopedDependentTransformer::setLeft(IHqlExpression * _left, IHqlExpression 
 {
     ScopedTransformer::setLeft(_left, seq);
     return false;
-    pushChildContext(cachedLeft, cachedLeft);
-    return true;
 }
 
 
@@ -4484,8 +4481,6 @@ bool ScopedDependentTransformer::setLeftRight(IHqlExpression * _left, IHqlExpres
 {
     ScopedTransformer::setLeftRight(_left, _right, seq);
     return false;
-    pushChildContext(cachedRight, cachedRight);
-    return true;
 }
 
 
@@ -4684,7 +4679,7 @@ public:
             node_operator childOp = child->getOperator();
             if (childOp == no_createrow)
             {
-                OwnedHqlExpr match = getExtractSelect(child->queryChild(0), transformed->queryChild(1));
+                OwnedHqlExpr match = getExtractSelect(child->queryChild(0), transformed->queryChild(1), false);
                 if (match)
                 {
                     IHqlExpression * cur = queryUncastExpr(match);

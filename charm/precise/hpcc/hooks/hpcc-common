@@ -1,0 +1,229 @@
+JUJU_HPCC_DIR=/var/lib/HPCCSystems/charm
+CONFIG_DIR=/etc/HPCCSystems
+ENV_XML_FILE=environment.xml
+ENV_CONF_FILE=environment.conf
+ENV_GEN="/opt/HPCCSystems/sbin/envgen"
+SIGNATURE_FILE=${JUJU_HPCC_DIR}/env_signature.txt
+LOCAL_IP_FILE=${JUJU_HPCC_DIR}/local_ip.txt
+IP_FILE=${JUJU_HPCC_DIR}/ip_file.txt
+ECLWATCH_URL_FILE=${JUJU_HPCC_DIR}/eclwatch_url.txt
+
+##
+## Fix private key in chance newlines removed
+##
+function fix_private_key()
+{
+   head_end_marks=$(echo "${PRI_KEY}" | \
+       sed -n "s/\(-----.*-----\).*\(-----.*-----\)/\1,\2/p" )
+
+   [ -z "$head_end_marks" ] && return
+
+   BEGIN_KEY=$(echo ${head_end_marks} | cut -d',' -f1)
+   END_KEY=$(echo ${head_end_marks} | cut -d',' -f2)
+
+   private_key=$(echo "${PRI_KEY}" | \
+       sed "s/${BEGIN_KEY}\(.*\)${END_KEY}/\1/g" | sed 's/ /\n/g')
+
+   END_KEY=$(echo "${END_KEY}"  | sed 's/^/\n/g')
+   PRI_KEY="${BEGIN_KEY}${private_key}${END_KEY}"
+
+}
+
+##
+## Parse environment.conf
+##
+function parse_env_config()
+{
+  HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+  SECTION=${1:-DEFAULT}
+
+  PATH_PREFIX=$(cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | \
+     grep "^home *= *" | sed -e 's/^home *= *//')
+  USER_NAME=$(cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | \
+     grep "^user *= *" | sed -e 's/^user *= *//')
+
+  PATH_HOME=${PATH_PREFIX}/${USER_NAME}
+}
+
+##
+## Set SSH Keys
+##
+function set_ssh_keys()
+{
+  [ -z "$PUB_KEY" ] || [ -z "$PRI_KEY" ] && return 0
+
+  parse_env_config
+  juju-log "Set SSH Keys. HOME: $PATH_HOME, USER: $USER_NAME."
+  if [ ! -d $PATH_HOME/.ssh ]; then
+     mkdir $PATH_HOME/.ssh
+  fi
+  rm -fr $PATH_HOME/.ssh/*
+
+
+  echo "$PUB_KEY" > $PATH_HOME/.ssh/id_rsa.pub
+  echo "$PRI_KEY" > $PATH_HOME/.ssh/id_rsa
+  if [ -e $PATH_HOME/.ssh/id_rsa.pub ]; then
+     cat $PATH_HOME/.ssh/id_rsa.pub > $PATH_HOME/.ssh/authorized_keys
+  fi
+
+  chown -R $USER_NAME:$USER_NAME $PATH_HOME/.ssh
+  chmod 644 $PATH_HOME/.ssh/authorized_keys
+  chmod 600 $PATH_HOME/.ssh/id_rsa
+  chmod 644 $PATH_HOME/.ssh/id_rsa.pub
+
+}
+
+##
+## Query/Create and set SSH Keys
+##
+function create_and_set_ssh_keys()
+{
+  for UNIT in $(relation-list)
+  do
+    PUB_KEY=$(relation-get ssh-key-public ${UNIT})
+    PRI_KEY=$(relation-get ssh-key-private ${UNIT})
+    [ -n "$PUB_KEY" ] && [ -n "$PRI_KEY" ]  && break
+  done
+  if [ -z "$PUB_KEY" ] || [ -z "$PRI_KEY" ]
+  then
+    SSH_DIR=/tmp/hpcc_ssh
+    [ -d ${SSH_DIR} ] && rm -rf ${SSH_DIR}
+    mkdir ${SSH_DIR}
+    juju-log "Generate ssh keys with ssh-keygen"
+    ssh-keygen -f ${SSH_DIR}/id_isa -t rsa -N ''
+    PUB_KEY=$(cat ${SSH_DIR}/id_isa.pub)
+    PRI_KEY=$(cat ${SSH_DIR}/id_isa)
+    rm -rf ${SSH_DIR}
+  fi
+  set_ssh_keys
+  if [ -n "${JUJU_RELATION_ID}" ]
+  then
+     relation-set ssh-key-public="${PUB_KEY}"
+     relation-set ssh-key-private="${PRI_KEY}"
+  fi
+}
+
+##
+## Save local ip to a file
+##
+function save_local_ip()
+{
+  HOSTNAME=$(unit-get public-address)
+  PRIVATE_HOSTNAME=$(unit-get private-address)
+  IP_ADDRESS=$(dig +short ${PRIVATE_HOSTNAME} | tail -n 1)
+  echo "$IP_ADDRESS" > $LOCAL_IP_FILE
+}
+
+##
+## Get currently defined envgen parameters
+##
+function get_envgen_configuration()
+{
+  support_nodes=$(config-get supportnodes)
+  thor_nodes=$(config-get thornodes)
+  roxie_nodes=$(config-get roxienodes)
+  slaves_per_node=$(config-get slavesPerNode)
+}
+
+
+##
+## Generate environemt.xml
+##
+function configure_cluster()
+{
+
+  number_of_nodes=$1
+
+  if [ -n "$number_of_nodes" ]
+  then
+     support_nodes=1
+     thor_nodes=$(expr $number_of_nodes \- 1)
+     roxie_nodes=$(expr $number_of_nodes \- 1)
+     slaves_per_node=1
+  fi
+
+  juju-log "Stop HPCC"
+  # Following command return 3 even stop succeeds
+  # It will be fixed in HPCC 5.0 release
+  service hpcc-init stop || :
+
+  juju-log "Run envgen ${ENV_GEN} -env ${CONFIG_DIR}/${ENV_XML_FILE} -ipfile ${IP_FILE} -thornodes ${thor_nodes} -slavesPerNode ${slaves_per_node} -roxienodes ${roxie_nodes} -supportnodes ${support_nodes}"
+  "${ENV_GEN}" -env "${CONFIG_DIR}/${ENV_XML_FILE}" -ipfile "${IP_FILE}" -thornodes "${thor_nodes}" -slavesPerNode "${slaves_per_node}" -roxienodes "${roxie_nodes}" -supportnodes "${support_nodes}"
+  [ $? -ne 0 ] && exit 1
+
+  juju-log "Start HPCC"
+  start_and_check
+  rc=$?
+
+  save_evngen_signature
+  save_eclwatch_url
+
+  return $rc
+}
+
+##
+## Save envgen signature
+##
+function save_evngen_signature()
+{
+
+   _signature="${support_nodes}-${roxie_nodes}-${thor_nodes}-${slaves_per_node}"
+   juju-log "Save envgen signature: $_signature"
+   echo "$_signature" > $SIGNATURE_FILE
+}
+
+
+##
+## Save EclWatch URL to a file
+##
+function save_eclwatch_url()
+{
+  juju-log "Update Check ECLWatch URL"
+
+  first_node=$(head -n 1 $IP_FILE | cut -d';' -f1)
+  cat ${CONFIG_DIR}/${ENV_XML_FILE} | grep -q $first_node || exit 0
+
+  eclwatch_port=$(cat ${CONFIG_DIR}/${ENV_XML_FILE} | \
+  sed -n '
+    /<EspBinding/,/>/ {
+      s/port=\([[:digit:]]*\)/\1/p
+    }
+  ' | head -n 1 | cut -d '"' -f 2)
+
+  eclwatch_ip=$(cat ${CONFIG_DIR}/${ENV_XML_FILE} | \
+  sed -n '
+    /<EspProcess/,/EspProcess>/ {
+      s/netAddress=\([[:digit:]]*\)/\1/p
+    }
+  ' |  cut -d '"' -f 2)
+
+  juju-log "set eclwatch-url http://${eclwatch_ip}:${eclwatch_port}"
+
+  echo "http://${eclwatch_ip}:${eclwatch_port}" > ${ECLWATCH_URL_FILE}
+}
+
+##
+## Check HPCC Status
+##
+function check_hpcc_status()
+{
+  stopped_components=$(service hpcc-init status | grep "stopped" | awk '{ print $1 }')
+  [ -z "$stopped_components" ] && return 0
+  juju-log "Failed to start HPCC processes. Check each log directory under /var/log/HPCCSysgtems for detail: ${stopped_components}."
+  return 1
+}
+
+##
+## Start HPCC and check its status
+##
+function start_and_check()
+{
+
+  juju-log "Starting HPCC ..."
+  service hpcc-init start
+  start_check_delay=$(config-get start-check-delay)
+  [ ${start_check_delay} -gt 0 ] && sleep ${start_check_delay}
+
+  check_hpcc_status || return $?
+  
+}

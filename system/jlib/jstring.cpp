@@ -1273,6 +1273,41 @@ void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
   }
 }
 
+inline char translateHex(char hex)
+{
+    if(hex >= 'A')
+        return (hex & 0xdf) - 'A' + 10;
+    else
+        return hex - '0';
+}
+
+inline char translateHex(char h1, char h2)
+{
+    return (translateHex(h1) * 16 + translateHex(h2));
+}
+
+StringBuffer &appendDecodedURL(StringBuffer &s, const char *url)
+{
+    if(!url)
+        return s;
+
+    while (*url)
+    {
+        char c = *url++;
+        if (c == '+')
+            c = ' ';
+        else if (c == '%')
+        {
+            if (isxdigit(url[0]) && isxdigit(url[1]))
+            {
+                c = translateHex(url[0], url[1]);
+                url+=2;
+            }
+        }
+        s.append(c);
+    }
+    return s;
+}
 
 static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len, const char * src, bool addBreak, bool isCpp, bool isUtf8)
 {
@@ -1423,19 +1458,30 @@ void extractItem(StringBuffer & res, const char * src, const char * sep, int whi
 }
 
 
-int utf8CharLen(const unsigned char *ch)
+int utf8CharLen(unsigned char ch)
 {
     //return 1 if this is an ascii character, 
     //or 0 if its not a valid utf-8 character
-    if (*ch < 128)
+    if (ch < 128)
         return 1;
-    if (*ch < 192)
+    if (ch < 192)
         return 0;
     
     unsigned char len = 1;
-    for (unsigned char lead = *ch << 1; (lead & 0x80); lead <<=1)
+    for (unsigned char lead = ch << 1; (lead & 0x80); lead <<=1)
         len++;
     
+    return len;
+}
+
+int utf8CharLen(const unsigned char *ch)
+{
+    //return 1 if this is an ascii character,
+    //or 0 if its not a valid utf-8 character
+    if (*ch < 128)
+        return 1;
+
+    unsigned char len = utf8CharLen(*ch);
     for (unsigned pos = 1; pos < len; pos++)
         if ((ch[pos] < 128) || (ch[pos] >= 192))
             return 0;  //its not a valid utf-8 character after all
@@ -1907,7 +1953,7 @@ jlib_decl StringBuffer &appendfJSONName(StringBuffer &s, const char *format, ...
 }
 
 static char hexchar[] = "0123456789ABCDEF";
-jlib_decl StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned len, const void *_value)
+jlib_decl StringBuffer &appendJSONDataValue(StringBuffer& s, const char *name, unsigned len, const void *_value)
 {
     appendJSONNameOrDelimit(s, name);
     s.append('"');
@@ -1917,9 +1963,9 @@ jlib_decl StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsig
     return s.append('"');
 }
 
-inline StringBuffer &encodeJSON(StringBuffer &s, const char ch)
+inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch)
 {
-    switch (ch)
+    switch (*ch)
     {
         case '\b':
             s.append("\\b");
@@ -1939,10 +1985,29 @@ inline StringBuffer &encodeJSON(StringBuffer &s, const char ch)
         case '\"':
         case '\\':
         case '/':
-            s.append('\\'); //fall through
+            s.append('\\');
+            s.append(*ch);
+            break;
         default:
-            s.append(ch);
+            if (*ch >= ' ' && ((byte)*ch) < 128)
+                s.append(*ch);
+            else if (*ch < ' ' && *ch > 0)
+                s.append("\\u00").appendhex(*ch, true);
+            else //json is always supposed to be utf8 (or other unicode formats)
+            {
+                unsigned chlen = utf8CharLen((const unsigned char *)ch);
+                if (chlen==0)
+                    s.append("\\u00").appendhex(*ch, true);
+                else
+                {
+                    s.append(*ch);
+                    while(--chlen)
+                        s.append(*(++ch));
+                }
+            }
+            break;
     }
+    ch++;
     return s;
 }
 
@@ -1950,9 +2015,8 @@ StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value)
 {
     if (!value)
         return s;
-    unsigned pos=0;
-    while(pos<len && value[pos]!=0)
-        encodeJSON(s, value[pos++]);
+    while (len-- && *value)
+        encodeJSONChar(s, value);
     return s;
 }
 
@@ -1961,7 +2025,7 @@ StringBuffer &encodeJSON(StringBuffer &s, const char *value)
     if (!value)
         return s;
     while (*value)
-        encodeJSON(s, *value++);
+        encodeJSONChar(s, value);
     return s;
 }
 

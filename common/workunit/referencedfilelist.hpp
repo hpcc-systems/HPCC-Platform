@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #ifndef REFFILE_LIST_HPP
@@ -43,6 +42,8 @@ interface IReferencedFile : extends IInterface
     virtual unsigned getFlags() const =0;
     virtual const SocketEndpoint &getForeignIP(SocketEndpoint &ep) const =0;
     virtual const char *queryPackageId() const =0;
+    virtual __int64 getFileSize()=0;
+    virtual unsigned getNumParts()=0;
 };
 
 interface IReferencedFileIterator : extends IIteratorOf<IReferencedFile> { };
@@ -66,8 +67,8 @@ interface IReferencedFileList : extends IInterface
 
 extern WORKUNIT_API const char *skipForeign(const char *name, StringBuffer *ip=NULL);
 
-extern WORKUNIT_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles);
-extern WORKUNIT_API IReferencedFileList *createReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles);
+extern WORKUNIT_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles, bool allowFileSizeCalc);
+extern WORKUNIT_API IReferencedFileList *createReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles, bool allowFileSizeCalc);
 
 extern WORKUNIT_API void splitDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster);
 extern WORKUNIT_API void splitDerivedDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster, const char *baseCluster, const char *baseIP, const char *basePrefix);

@@ -25,6 +25,7 @@
 ####
 
 ###<REPLACE>###
+
 START_STOP_DAEMON=${INSTALL_DIR}/bin/start-stop-daemon
 
 which_service(){
@@ -381,6 +382,8 @@ createRuntime() {
     ulimit -c unlimited
     # for rtprio in Roxie
     ulimit -Hr 4
+    # to enable, must also increase vm.nr_hugepages and/or vm.nr_overcommit_hugepages
+    ulimit -l unlimited
 }
 
 start_dafilesrv() {
@@ -536,7 +539,7 @@ stop_component() {
           removePid ${PIDPATH}
           unlock ${LOCKPATH}
        fi
-       return ${RCSTOP}
+       return 0
     fi
     
     stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
@@ -565,9 +568,10 @@ stop_component() {
                             removePid ${PIDPATH}
                             unlock ${LOCKPATH}
                             log_success_msg  
-                            return 3 
+                            return 0
                         fi
                     fi
+                    sleep 1
                 done
             fi
             sleep 1
@@ -576,7 +580,7 @@ stop_component() {
         removePid ${PIDPATH}
         unlock ${LOCKPATH}
         log_success_msg  
-        RCSTOP=3
+        RCSTOP=0
     fi
     return ${RCSTOP}
 }
@@ -837,3 +841,143 @@ is_user(){
 }
 
 
+##
+## Usage: is_python_installed <verion>
+##    <version> (optional): format: <major>.<minor>
+##         when specified return 0 if python version is equal or higher
+##         than <version>. Otherwise return 1
+##
+is_python_installed () {
+   _expected_version=$1
+
+   which python > /dev/null 2>&1
+   [ $? -ne 0 ] && return 1
+
+   if [ -n "$_expected_version" ]
+   then
+      _actual_version=$(python -V 2>&1 | cut -d' ' -f 2 | cut -d '.' -f -2)
+      echo $_actual_version | grep -q -e "^[0-9]\.[0-9]$"
+      [ $? -ne 0 ] && return 1
+
+      if [[ "$_actual_version" < "$_expected_version" ]]
+      then
+         return 1
+      fi
+   fi
+   return 0
+}
+
+##
+## Usage: run_cluster <script>  <flag> <ip list file>
+##   script:  script file to run
+##   flag (optional) :  1: exclude local host 0: run the script on all hosts in the cluster
+##   ip list file (optional): when specified the ip list will be used instead of from
+##      environment.xml
+##
+run_cluster() {
+   _cmd=$1
+   _exclude_local=0
+   [ -n "$2" ] && _exclude_local=$2
+
+   if [ -z "$3" ]
+   then
+      IPS0=$(${INSTALL_DIR}/sbin/configgen -env ${CONFIG_DIR}/${ENV_XML_FILE} -machines | \
+         awk -F, '{print $1}'  | sort | uniq)
+   else
+      IPS0=$(cat $3)
+   fi
+
+   # Exclude local ip if requested
+   if [ $_exclude_local -eq 1 ]
+   then
+      local_IPS=$(/sbin/ifconfig -a | grep "[[:space:]]*inet[[:space:]]" | \
+          sed 's/^[[:space:]]\+//g' | cut -d ' ' -f 2 | cut -d':' -f 2)
+      for ip in $IPS0
+      do
+         _found=0
+         for lip in $local_IPS
+         do
+            if [ "$ip" = "$lip" ]
+            then
+               _found=1
+               break
+            fi
+         done
+         [ $_found -eq 0 ] && IPS="${IPS:+"$IPS\\n"}$ip"
+      done
+      IPS=$(echo -e $IPS)
+   else
+      IPS=$IPS0
+   fi
+
+   _num_hosts=$(echo $IPS | wc -w)
+   echo "Total $_num_hosts to process"
+   _num_passed=0
+   _num_failed=0
+   _num_processed=0
+   _pregress=0
+   _log_file=${LOG_DIR}/cluster/se_$(basename $_cmd)_$(date +%Y%m%d_%H%M%S).log
+   [ ! -d ${LOG_DIR}/cluster ] && mkdir -p ${LOG_DIR}/cluster
+   [ -e $_log_file ] && rm -rf $_log_file
+   if [ "$RUN_CLUSTER_DISPLAY_OUTPUT" != "TRUE" ]
+   then
+      echo ""
+      echo  -ne "Execution progress: ${_progress}%, succeed: $_num_passed, failed: $_num_failed \r"
+   fi
+   for ip in $IPS
+   do
+      if [ "$RUN_CLUSTER_DISPLAY_OUTPUT" = "TRUE" ]
+      then
+          echo
+          eval $_cmd $ip | tee -a $_log_file 2>&1
+      else
+          eval $_cmd $ip >> $_log_file 2>&1
+      fi
+
+      if [ ${PIPESTATUS[0]} -eq 0 ]
+      then
+         _num_passed=$(expr $_num_passed \+ 1)
+      else
+         _num_failed=$(expr $_num_failed \+ 1)
+      fi
+
+      _num_processed=$(expr $_num_processed \+ 1)
+      if [ "$RUN_CLUSTER_DISPLAY_OUTPUT" != "TRUE" ]
+      then
+         _progress=$(expr $_num_processed \* 100  / $_num_hosts)
+         echo  -ne "Execution progress: ${_progress}%, succeed: $_num_passed, failed: $_num_failed \r"
+      fi
+   done
+
+   echo ""
+   if [ $_num_passed -ne $_num_processed ]
+   then
+      echo "There are errors when executing $(basename $_cmd)"
+      echo "Check log $_log_file for details."
+   else
+      echo "$(basename $_cmd) run successfully on all hosts in the the cluster."
+   fi
+   echo ""
+}
+
+##
+## Usage: cluster_tools_init 
+##    Initialization for cluster tools
+##
+cluster_tools_init() {
+
+   set_environmentvars
+
+   _cmd_prefix=
+   [ "$(id -u)" != "0" ] && _cmd_prefix=sudo
+
+   # Check and set log directory
+   CLUSTER_LOG_DIR=${LOG_DIR}/cluster
+   [ ! -d $LOG_DIR ]  && ${_cmd_prefix} /etc/init.d/hpcc-init status > /dev/null 2>&1
+
+   [ ! -d $CLUSTER_LOG_DIR ] && mkdir -p $CLUSTER_LOG_DIR
+   # workaround inconsistency of stat command
+   cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
+   [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
+   
+}

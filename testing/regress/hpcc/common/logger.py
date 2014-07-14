@@ -21,6 +21,8 @@ import logging
 import sys
 import time
 
+#from ..regression.regress import Regression
+
 try:
     import curses
 except:
@@ -77,11 +79,95 @@ class Logger(object):
                 formatted = formatted.rstrip() + "\n" + record.exc_text
             return formatted.replace("\n", "\n    ")
 
+    class ProgressFileHandler(logging.FileHandler):
+        terminator = '\n'
+        isBuffer = False
+        logBuffer=dict()
+        taskId = 0
+        taskIds = {}
+
+        def close(self):
+            if len(self.logBuffer):
+                stream = self.stream
+                for item in self.logBuffer:
+                    for line in self.logBuffer[item]:
+                        stream.write(line)
+                        stream.write(self.terminator)
+                self.logBuffer.clear()
+                self.taskIds = {}
+                self.isBuffer = False
+            self.flush()
+
+        def addTaskId(self,  taskId,  threadId,  timestamp):
+            if not self.taskIds.has_key(threadId):
+                self.taskIds[threadId] ={'taskId':taskId, 'timestamp':'timestamp'}
+            elif self.taskIds[threadId]['timestamp'] != timestamp:
+                self.taskIds[threadId] ={'taskId':taskId, 'timestamp':'timestamp'}
+
+
+        def getTaskId(self, threadId):
+            record = self.taskIds.get(threadId,  {'taskId':0, 'timestamp':'-'})
+            return record['taskId']
+
+
+        def emit(self, record):
+            try:
+                msg = self.format(record)
+                stream = self.stream
+                isBuffer = hasattr(record, 'filebuffer')
+                toSort = hasattr(record,  'filesort')
+                taskId = 0
+                if hasattr(record, 'taskId'):
+                    taskId = getattr(record,  'taskId')
+                    self.addTaskId(taskId,  record.thread,  record.asctime)
+                else:
+                    if record.threadName == "MainThread":
+                        taskId = 0
+                    else:
+                        taskId = self.getTaskId(record.thread)
+                if record.levelname == 'DEBUG':
+                    msg +=" [asctime:"+record.asctime+", process:"+str(record.process)+", processName:"+record.processName+", thread:"+str(record.thread)+", threadName:"+record.threadName+"]"
+                    msg = "{0:3d}".format(taskId) + ". Debug-[debug-"+record.asctime+"]: "+msg
+                if record.levelname == 'CRITICAL':
+                    msg += " [level: "+record.levelname+" ]"
+                    msg = "{0:3d}".format(taskId) +". " + msg
+                if isBuffer:
+                    #toggle buffer switch
+                    self.isBuffer = not self.isBuffer
+                    isBuffer = False
+                if self.isBuffer or isBuffer:
+                    if len(msg):
+                        self.logBuffer.setdefault(taskId,  []).append(msg)
+                else:
+                    if len(self.logBuffer):
+                        for item in self.logBuffer:
+                            for line in self.logBuffer[item]:
+                                line = line.replace(". Debug-", ".  ")
+                                stream.write(line)
+                                stream.write(self.terminator)
+                        self.logBuffer.clear()
+                        self.taskIds = {}
+                        self.isBuffer = False
+                    if  len(msg):
+                        stream.write(msg)
+                        stream.write(self.terminator)
+                    self.flush()
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception as ex:
+                self.handleError(record)
+
     def addHandler(self, fd, level='info'):
         root_logger = logging.getLogger()
-        channel = logging.FileHandler(fd)
-        channel.setLevel(getattr(logging, level.upper()))
-        root_logger.addHandler(channel)
+        self.channel = self.ProgressFileHandler(fd)
+        self.channel.setLevel(getattr(logging, level.upper()))
+        root_logger.addHandler(self.channel)
+
+    def removeHandler(self):
+        root_logger = logging.getLogger()
+        root_logger.removeHandler(self.channel)
+        self.channel.flush()
+        self.channel.close()
 
     def enable_pretty_logging(self):
         root_logger = logging.getLogger()
@@ -103,3 +189,4 @@ class Logger(object):
     def __init__(self, level='info'):
         self.setLevel(level)
         self.enable_pretty_logging()
+        self.taskId = 0;

@@ -1236,14 +1236,18 @@ bool CLdapSecManager::createUserScopes()
 {
     Owned<ISecUserIterator> it = getAllUsers();
     it->first();
+    bool rc = true;
     while(it->isValid())
     {
         ISecUser &user = it->get();
         if (!m_ldap_client->createUserScope(user))
+        {
             PROGLOG("Error creating scope for user '%s'", user.getName());
+            rc = false;
+        }
         it->next();
     }
-    return true;
+    return rc;
 }
 
 

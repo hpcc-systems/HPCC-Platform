@@ -255,7 +255,6 @@ CActivityBase *createChildAggregateSlave(CGraphElementBase *container);
 CActivityBase *createChildGroupAggregateSlave(CGraphElementBase *container);
 CActivityBase *createChildThroughNormalizeSlave(CGraphElementBase *container);
 CActivityBase *createWhenSlave(CGraphElementBase *container);
-CActivityBase *createIfActionSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
 
@@ -498,6 +497,9 @@ public:
             case TAKhashdistribute:
                 ret = createHashDistributeSlave(this);
                 break;
+            case TAKdistributed:
+                ret = createHashDistributedSlave(this);
+                break;
             case TAKhashdistributemerge:
                 ret = createHashDistributeMergeSlave(this);
                 break;
@@ -618,6 +620,7 @@ public:
                 break;
             case TAKcase:
             case TAKif:
+            case TAKifaction:
                 throwUnexpected();
                 break;
             case TAKwhen_dataset:
@@ -682,8 +685,6 @@ public:
             case TAKsoap_datasetaction:
                 ret = createSoapDatasetActionSlave(this);
                 break;
-            case TAKcountdisk:
-                return new CSlaveActivity(this); 
             case TAKkeydiff:
                 ret = createKeyDiffSlave(this);
                 break;
@@ -739,9 +740,6 @@ public:
                 break;
             case TAKstreamediterator:
                 ret = createStreamedIteratorSlave(this);
-                break;
-            case TAKifaction:
-                ret = createIfActionSlave(this);
                 break;
             default:
                 throw MakeStringException(TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));

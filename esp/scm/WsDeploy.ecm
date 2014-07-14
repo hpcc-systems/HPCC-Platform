@@ -575,10 +575,6 @@ ESPservice [exceptions_inline("xslt/exceptions.xslt")] WsDeploy
     ESPuses ESPstruct DeployOptions;
     ESPuses ESPstruct DeployInfo;
 
-    ESPmethod[description("Initial display"), help(""), resp_xsl_default("xslt/ui_engine.xslt")] 
-        Init(EmptyRequest, InitResponse);
-    ESPmethod[description("Compare or deploy components"), help(""), resp_xsl_default("xslt/ui_engine.xslt")] 
-        Deploy(DeployRequest, DeployResponse);
     ESPmethod[description("Handle an event from the navigation tree menu"), help("")] 
         NavMenuEvent(NavMenuEventRequest, NavMenuEventResponse);    
     ESPmethod[description("Dependency graph"), help(""), resp_xsl_default("xslt/graph_display.xsl")] 

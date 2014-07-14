@@ -18,6 +18,8 @@
 '''
 
 import os
+import logging
+
 from ...common.error import Error
 from ...common.shell import Shell
 from ...util.ecl.file import ECLFile
@@ -27,6 +29,7 @@ class ECLCC(Shell):
     def __init__(self):
         self.defaults = []
         self.cmd = self.which('eclcc')
+        self.makeArchiveError=''
 
     def __ECLCC(self):
         return self.command(self.cmd, *self.defaults)
@@ -35,6 +38,8 @@ class ECLCC(Shell):
         try:
             return self.__ECLCC()('-E', file)
         except Error as err:
+            logging.debug("getArchive exception:'%s'",  repr(err))
+            self.makeArchiveError = str(err)
             return repr(err)
 
     def makeArchive(self, ecl):
@@ -45,9 +50,29 @@ class ECLCC(Shell):
             os.mkdir(dirname)
         if os.path.isfile(filename):
             os.unlink(filename)
-        FILE = open(filename, "w")
-        FILE.write(self.getArchive(ecl.getEcl()))
-        FILE.close()
+        result = self.getArchive(ecl.getEcl())
+
+        if result.startswith( 'Error()'):
+            retVal = False
+            ecl.diff += ecl.getEcl() + '\n  eclcc returns with:\n\t'
+            try:
+                lines = repr(self.makeArchiveError).replace('\\n',  '\n\t').splitlines(True)
+                for line in lines:
+                    if  "Error" in line:
+                        ecl.diff += line.replace("'",  "")
+                    if "): error " in  line:
+                        ecl.diff += line.replace("\\'", "'")
+                #ecl.diff += repr(self.makeArchiveError).replace('\\n',  '\n\t')
+            except Exception as ex:
+                logging.debug("Exception:'%s'",  str(ex))
+                ecl.diff += repr(self.makeArchiveError)
+            self.makeArchiveError=''
+        else:
+            FILE = open(filename, "w")
+            FILE.write(result)
+            FILE.close()
+            retVal = True
+        return retVal
 
     def setVerbose(self):
         self.defaults.append("--verbose")

@@ -42,6 +42,10 @@
 #define STATUS_SERVER_ECLCCSERVER "ECLCCserver"
 #define STATUS_SERVER_ECLAGENT "ECLagent"
 
+#define CLUSTER_TYPE_THOR "Thor"
+#define CLUSTER_TYPE_HTHOR "HThor"
+#define CLUSTER_TYPE_ROXIE "Roxie"
+
 static const char* FEATURE_URL = "SmcAccess";
 const char* THORQUEUE_FEATURE = "ThorQueueAccess";
 static const char* ROXIE_CONTROL_URL = "RoxieControlAccess";
@@ -204,7 +208,7 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
         setStateID(wu->getState());
         if (wu->getState() == WUStateBlocked)
         {
-            wu->getStateEx(stateEx);
+        	wu->getStateEx(stateEx);
             if (notCheckVersion || (version > 1.00))
                 setExtra(stateEx.str());
         }
@@ -524,7 +528,7 @@ void CWsSMCEx::getWUsNotOnTargetCluster(IEspContext &context, IPropertyTree* ser
         const char* instance = serverNode.queryProp("@node");
         const char* queueName = serverNode.queryProp("@queue");
         unsigned port = serverNode.getPropInt("@mpport", 0);
-        if (!serverName || !*serverName || !instance || !*instance || strieq(serverName, "DFUserver") ||//DFUServer already handled separately
+        if (!serverName || !*serverName || !instance || !*instance || strieq(serverName, STATUS_SERVER_DFUSERVER) ||//DFUServer already handled separately
             strieq(serverName, "ThorMaster") || strieq(serverName, "RoxieServer") || strieq(serverName, "HThorServer"))//target clusters already handled separately
             continue;
 
@@ -540,7 +544,7 @@ void CWsSMCEx::getWUsNotOnTargetCluster(IEspContext &context, IPropertyTree* ser
                 continue;
 
             Owned<IEspActiveWorkunit> wu;
-            createActiveWorkUnit(wu, context, wuid, NULL, 0, serverName, queueName, instance, NULL, false);
+            createActiveWorkUnit(wu, context, wuid, NULL, 0, serverName, queueName, instanceName.str(), NULL, false);
             aws.append(*wu.getLink());
         }
         if (!uniqueServers.getValue(instanceName))
@@ -580,7 +584,7 @@ void CWsSMCEx::readDFUWUs(IEspContext &context, const char* queueName, const cha
         }
 
         Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(wuid, uname.str(), jname.str(), state.str(), "normal"));
-        wu->setServer("DFUserver");
+        wu->setServer(STATUS_SERVER_DFUSERVER);
         wu->setInstance(serverName);
         wu->setQueueName(queueName);
         aws.append(*wu.getLink());
@@ -608,7 +612,7 @@ void CWsSMCEx::getDFUServersAndWUs(IEspContext &context, IPropertyTree* envRoot,
         {
             const char *queueName = queues.item(q);
             readDFUWUs(context, queueName, serverName, aws);
-            addServerJobQueue(serverJobQueues, queueName, serverName, "DFUserver", NULL, 0);
+            addServerJobQueue(serverJobQueues, queueName, serverName, STATUS_SERVER_DFUSERVER, NULL, 0);
         }
     }
 }
@@ -652,7 +656,7 @@ void CWsSMCEx::clearActivityInfoCache()
     activityInfoCache.clear();
 }
 
-ActivityInfo* CWsSMCEx::getActivityInfo(IEspContext &context, IEspActivityRequest &req)
+ActivityInfo* CWsSMCEx::getActivityInfo(IEspContext &context)
 {
     CriticalBlock b(getActivityCrit);
 
@@ -661,11 +665,11 @@ ActivityInfo* CWsSMCEx::getActivityInfo(IEspContext &context, IEspActivityReques
 
     DBGLOG("CWsSMCEx::getActivityInfo - rebuild cached information");
 
-    activityInfoCache.setown(createActivityInfo(context, req));
+    activityInfoCache.setown(createActivityInfo(context));
     return activityInfoCache.getLink();
 }
 
-ActivityInfo* CWsSMCEx::createActivityInfo(IEspContext &context, IEspActivityRequest &req)
+ActivityInfo* CWsSMCEx::createActivityInfo(IEspContext &context)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> env = factory->openEnvironment();
@@ -684,7 +688,7 @@ ActivityInfo* CWsSMCEx::createActivityInfo(IEspContext &context, IEspActivityReq
     IPropertyTree* dfuRecoveryRoot = NULL;
     Owned<IRemoteConnection> connDFURecovery = querySDS().connect("DFU/RECOVERY",myProcessSession(), RTM_LOCK_READ, 30000);
     if (connDFURecovery)
-        dfuRecoveryRoot = connDFURecovery->queryRoot();
+    	dfuRecoveryRoot = connDFURecovery->queryRoot();
 
     Owned<ActivityInfo> activityInfo = new ActivityInfo();
     readTargetClusterInfo(context, clusters, serverStatusRoot, activityInfo);
@@ -736,7 +740,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         if (version >= 1.06)
             setBannerAndChatData(version, resp);
 
-        Owned<ActivityInfo> activityInfo = getActivityInfo(context, req);
+        Owned<ActivityInfo> activityInfo = getActivityInfo(context);
         setActivityResponse(context, activityInfo, req, resp);
     }
     catch(IException* e)
@@ -913,11 +917,11 @@ void CWsSMCEx::readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree*
                 createActiveWorkUnit(wu, context, wuid, instance.str(), 0, serverName, serverName, instance.str(), targetClusterName, false);
 
                 if (targetCluster->clusterType == ThorLCRCluster)
-                    wu->setClusterType("Thor");
+                    wu->setClusterType(CLUSTER_TYPE_THOR);
                 else if (targetCluster->clusterType == RoxieCluster)
-                    wu->setClusterType("Roxie");
+                    wu->setClusterType(CLUSTER_TYPE_ROXIE);
                 else
-                    wu->setClusterType("HThor");
+                    wu->setClusterType(CLUSTER_TYPE_HTHOR);
                 wu->setClusterQueueName(targetCluster->queueName.get());
 
                 if (wu->getStateID() != WUStateRunning)
@@ -1153,14 +1157,8 @@ void CWsSMCEx::setESPTargetClusters(IEspContext& context, const CIArrayOf<CWsSMC
 {
     ForEachItemIn(i, targetClusters)
     {
-        CWsSMCTargetCluster& targetCluster = targetClusters.item(i);
         Owned<IEspTargetCluster> respTargetCluster = new CTargetCluster("", "");
-        respTargetCluster->setClusterName(targetCluster.clusterName.get());
-        respTargetCluster->setClusterSize(targetCluster.clusterSize);
-        respTargetCluster->setClusterType(targetCluster.clusterType);
-        respTargetCluster->setQueueName(targetCluster.queueName.get());
-        respTargetCluster->setQueueStatus(targetCluster.queueStatus.get());
-        setClusterStatus(context, targetCluster, respTargetCluster);
+        setESPTargetCluster(context, targetClusters.item(i), respTargetCluster);
         respTargetClusters.append(*respTargetCluster.getClear());
     }
 }
@@ -1213,7 +1211,7 @@ void CWsSMCEx::setServerJobQueueStatus(double version, IEspServerJobQueue* jobQu
 
     jobQueue->setQueueStatus(status);
     if (version >= 1.17)
-        setServerJobQueueStatusDetails(jobQueue, status, details);
+    	setServerJobQueueStatusDetails(jobQueue, status, details);
 }
 
 void CWsSMCEx::setServerJobQueueStatus(IEspServerJobQueue* jobQueue, const char* status, const char* details)
@@ -1444,6 +1442,9 @@ bool CWsSMCEx::onStopQueue(IEspContext &context, IEspSMCQueueRequest &req, IEspS
         queue->stop(createQueueActionInfo(context, "stopped", req, info));
         AccessSuccess(context, "Stopped queue %s",req.getCluster());
         clearActivityInfoCache();
+        double version = context.getClientVersion();
+        if (version >= 1.19)
+            getStatusServerInfo(context, req.getServerType(), req.getCluster(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
 
         resp.setRedirectUrl("/WsSMC/");
     }
@@ -1465,6 +1466,9 @@ bool CWsSMCEx::onResumeQueue(IEspContext &context, IEspSMCQueueRequest &req, IEs
         queue->resume(createQueueActionInfo(context, "resumed", req, info));
         AccessSuccess(context, "Resumed queue %s",req.getCluster());
         clearActivityInfoCache();
+        double version = context.getClientVersion();
+        if (version >= 1.19)
+            getStatusServerInfo(context, req.getServerType(), req.getCluster(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
 
         resp.setRedirectUrl("/WsSMC/");
     }
@@ -1503,6 +1507,9 @@ bool CWsSMCEx::onPauseQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
         queue->pause(createQueueActionInfo(context, "paused", req, info));
         AccessSuccess(context, "Paused queue %s",req.getCluster());
         clearActivityInfoCache();
+        double version = context.getClientVersion();
+        if (version >= 1.19)
+            getStatusServerInfo(context, req.getServerType(), req.getCluster(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
 
         resp.setRedirectUrl("/WsSMC/");
     }
@@ -1527,6 +1534,9 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
         }
         AccessSuccess(context, "Cleared queue %s",req.getCluster());
         clearActivityInfoCache();
+        double version = context.getClientVersion();
+        if (version >= 1.19)
+            getStatusServerInfo(context, req.getServerType(), req.getCluster(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
 
         resp.setRedirectUrl("/WsSMC/");
     }
@@ -1537,31 +1547,57 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
     return true;
 }
 
+void CWsSMCEx::setJobPriority(IWorkUnitFactory* factory, const char* wuid, const char* queueName, WUPriorityClass& priority)
+{
+    if (!wuid || !*wuid)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit ID not specified.");
+    if (!queueName || !*queueName)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "queue not specified.");
+
+    Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
+    if (!lw)
+        throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cannot update Workunit %s", wuid);
+
+    lw->setPriority(priority);
+
+    // set job priority to queue
+    int priorityValue = lw->getPriorityValue();
+    {
+        CriticalBlock b(crit);
+        Owned<IJobQueue> queue = createJobQueue(queueName);
+        QueueLock lock(queue);
+        queue->changePriority(wuid,priorityValue);
+    }
+
+    return;
+}
+
 bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &req, IEspSMCPriorityResponse &resp)
 {
     try
     {
-        const char* wuid = req.getWuid();
-        if (!wuid || !*wuid)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit ID not specified.");
+        WUPriorityClass priority = PriorityClassNormal;
+        if(strieq(req.getPriority(),"high"))
+            priority = PriorityClassHigh;
+        else if(strieq(req.getPriority(),"low"))
+            priority = PriorityClassLow;
 
         Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
-        Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
-        if (!lw)
-            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cannot update Workunit %s", wuid);
 
-        if(stricmp(req.getPriority(),"high")==0)
-            lw->setPriority(PriorityClassHigh);
-        else if(stricmp(req.getPriority(),"normal")==0)
-            lw->setPriority(PriorityClassNormal);
-        else if(stricmp(req.getPriority(),"low")==0)
-            lw->setPriority(PriorityClassLow);
-
-        // set job priority
-        int priority = lw->getPriorityValue();
-        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
-        QueueLock lock(queue);
-        queue->changePriority(req.getWuid(),priority);
+        IArrayOf<IConstSMCJob>& jobs = req.getSMCJobs();
+        if (!jobs.length())
+            setJobPriority(factory, req.getWuid(), req.getQueueName(), priority);
+        else
+        {
+            ForEachItemIn(i, jobs)
+            {
+                IConstSMCJob &item = jobs.item(i);
+                const char *wuid = item.getWuid();
+                const char *queueName = item.getQueueName();
+                if (wuid && *wuid && queueName && *queueName)
+                    setJobPriority(factory, wuid, queueName, priority);
+            }
+        }
 
         clearActivityInfoCache();
         resp.setRedirectUrl("/WsSMC/");
@@ -1983,4 +2019,200 @@ bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdReques
     }
     resp.setEndpoints(respEndpoints);
     return true;
+}
+
+bool CWsSMCEx::onGetStatusServerInfo(IEspContext &context, IEspGetStatusServerInfoRequest &req, IEspGetStatusServerInfoResponse &resp)
+{
+    getStatusServerInfo(context, req.getServerType(), req.getServerName(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
+    return true;
+}
+
+void CWsSMCEx::getStatusServerInfo(IEspContext &context, const char *serverType, const char *server, const char *networkAddress, unsigned port,
+    IEspStatusServerInfo& statusServerInfo)
+{
+    if (!serverType || !*serverType)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Server type not specified.");
+
+    Owned<ActivityInfo> activityInfo = getActivityInfo(context);
+    if (!activityInfo)
+        throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get Activity Info cache.");
+
+    if (strieq(serverType,STATUS_SERVER_THOR))
+    {
+        setTargetClusterInfo(context, serverType, server, activityInfo->thorTargetClusters, activityInfo->aws, statusServerInfo);
+    }
+    else if (strieq(serverType,STATUS_SERVER_ROXIE))
+    {
+        setTargetClusterInfo(context, serverType, server, activityInfo->roxieTargetClusters, activityInfo->aws, statusServerInfo);
+    }
+    else if (strieq(serverType,STATUS_SERVER_HTHOR))
+    {
+        setTargetClusterInfo(context, serverType, server, activityInfo->hthorTargetClusters, activityInfo->aws, statusServerInfo);
+    }
+    else if (strieq(serverType,STATUS_SERVER_DFUSERVER))
+    {
+        setServerQueueInfo(context, serverType, server, activityInfo->serverJobQueues, activityInfo->aws, statusServerInfo);
+    }
+    else
+    {
+        setServerQueueInfo(context, serverType, networkAddress, port, activityInfo->serverJobQueues, activityInfo->aws, statusServerInfo);
+    }
+}
+
+void CWsSMCEx::setTargetClusterInfo(IEspContext &context, const char *serverType, const char *clusterName, const CIArrayOf<CWsSMCTargetCluster>& targetClusters,
+    const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo)
+{
+    if (!clusterName || !*clusterName)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not specified.");
+
+    IEspTargetCluster& clusterInfo = statusServerInfo.updateTargetClusterInfo();
+    ForEachItemIn(i, targetClusters)
+    {
+        CWsSMCTargetCluster& targetCluster = targetClusters.item(i);
+        const char* name = targetCluster.clusterName.get();
+        if (name && strieq(name, clusterName))
+        {
+            setESPTargetCluster(context, targetCluster, &clusterInfo);
+            break;
+        }
+    }
+
+    setActiveWUs(context, serverType, clusterName, clusterInfo.getQueueName(), aws, statusServerInfo);
+}
+
+void CWsSMCEx::setServerQueueInfo(IEspContext &context, const char *serverType, const char *serverName, const IArrayOf<IEspServerJobQueue>& serverJobQueues,
+    const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo)
+{
+    if (!serverName || !*serverName)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Server name not specified.");
+
+    ForEachItemIn(i, serverJobQueues)
+    {
+        IEspServerJobQueue& serverJobQueue = serverJobQueues.item(i);
+        const char* name = serverJobQueue.getServerName();
+        if (name && strieq(name, serverName))
+        {
+            IEspServerJobQueue& serverQueue = statusServerInfo.updateServerInfo();
+            serverQueue.copy(serverJobQueue);
+            break;
+        }
+    }
+
+    setActiveWUs(context, serverType, serverName, aws, statusServerInfo);
+}
+
+void CWsSMCEx::setServerQueueInfo(IEspContext &context, const char *serverType, const char *networkAddress, unsigned port, const IArrayOf<IEspServerJobQueue>& serverJobQueues,
+    const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo)
+{
+    if (!networkAddress || !*networkAddress)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Network address not specified.");
+
+    ForEachItemIn(i, serverJobQueues)
+    {
+        IEspServerJobQueue& serverJobQueue = serverJobQueues.item(i);
+        const char* ipAddress = serverJobQueue.getNetworkAddress();
+        unsigned thePort = serverJobQueue.getPort();
+        if (ipAddress && strieq(ipAddress, networkAddress) && (thePort == port))
+        {
+            IEspServerJobQueue& serverQueue = statusServerInfo.updateServerInfo();
+            serverQueue.copy(serverJobQueue);
+            break;
+        }
+    }
+
+    VStringBuffer instance("%s_on_%s:%d", serverType, networkAddress, port);
+    setActiveWUs(context, serverType, instance.str(), aws, statusServerInfo);
+}
+
+void CWsSMCEx::setESPTargetCluster(IEspContext &context, CWsSMCTargetCluster& targetCluster, IEspTargetCluster* espTargetCluster)
+{
+    espTargetCluster->setClusterName(targetCluster.clusterName.get());
+    espTargetCluster->setClusterSize(targetCluster.clusterSize);
+    espTargetCluster->setClusterType(targetCluster.clusterType);
+    espTargetCluster->setQueueName(targetCluster.queueName.get());
+    espTargetCluster->setQueueStatus(targetCluster.queueStatus.get());
+    setClusterStatus(context, targetCluster, espTargetCluster);
+}
+
+void CWsSMCEx::setActiveWUs(IEspContext &context, const char *serverType, const char *clusterName, const char *queueName, const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo)
+{
+    const char* clusterType = CLUSTER_TYPE_THOR;
+    if (strieq(serverType,STATUS_SERVER_ROXIE))
+        clusterType = CLUSTER_TYPE_ROXIE;
+    else if (strieq(serverType,STATUS_SERVER_HTHOR))
+        clusterType = CLUSTER_TYPE_HTHOR;
+
+    IArrayOf<IEspActiveWorkunit> awsOnThisQueue;
+    ForEachItemIn(i, aws)
+    {
+        IEspActiveWorkunit& wu = aws.item(i);
+        const char* wuid = wu.getWuid();
+        if (!wuid || !*wuid)
+            continue;
+
+        const char* wuServerType = wu.getServer();
+        const char* wuClusterName = wu.getTargetClusterName();
+        if (!wuServerType || !wuClusterName || !strieq(serverType, wuServerType) || !strieq(clusterName, wuClusterName))
+        {
+            const char* wuClusterType = wu.getClusterType();
+            const char* wuClusterQueueName = wu.getClusterQueueName();
+            if (!wuClusterType || !wuClusterQueueName || !strieq(clusterType, wuClusterType) || !strieq(queueName, wuClusterQueueName))
+                continue;
+        }
+
+        Owned<IEspActiveWorkunit> wuOnThisQueue = new CActiveWorkunitWrapper(wuid, "", "", "", "");
+        setActiveWUs(context, wu, wuOnThisQueue);
+        awsOnThisQueue.append(*wuOnThisQueue.getLink());
+    }
+    statusServerInfo.setWorkunits(awsOnThisQueue);
+}
+
+void CWsSMCEx::setActiveWUs(IEspContext &context, const char *serverType, const char *instance, const IArrayOf<IEspActiveWorkunit>& aws, IEspStatusServerInfo& statusServerInfo)
+{
+    IArrayOf<IEspActiveWorkunit> awsOnThisQueue;
+    ForEachItemIn(i, aws)
+    {
+        IEspActiveWorkunit& wu = aws.item(i);
+        const char* wuid = wu.getWuid();
+        if (!wuid || !*wuid)
+            continue;
+
+        const char* wuInstance = wu.getInstance();
+        if (!wuInstance || !strieq(wuInstance, instance))
+            continue;
+
+        Owned<IEspActiveWorkunit> wuOnThisQueue = new CActiveWorkunitWrapper(wuid, "", "", "", "");
+        setActiveWUs(context, wu, wuOnThisQueue);
+        awsOnThisQueue.append(*wuOnThisQueue.getLink());
+    }
+    statusServerInfo.setWorkunits(awsOnThisQueue);
+}
+
+void CWsSMCEx::setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspActiveWorkunit* wuToSet)
+{
+    try
+    {
+        const char* user = context.queryUserId();
+        const char* owner = wu.getOwner();
+
+        //if no access, throw an exception and go to the 'catch' section.
+        context.validateFeatureAccess((!owner || !*owner || (user && streq(user, owner))) ? OWN_WU_ACCESS : OTHERS_WU_ACCESS, SecAccess_Read, true);
+        wuToSet->copy(wu);
+    }
+    catch (IException *e)
+    {   //if the wu cannot be opened for some reason, the openWorkUnit() inside the CActiveWorkunitWrapper() may throw an exception.
+        //We do not want the exception stops this process of retrieving/showing all active WUs. And that WU should still be displayed
+        //with the exception.
+        wuToSet->setStateID(WUStateUnknown);
+        wuToSet->setServer(wu.getServer());
+        wuToSet->setQueueName(wu.getQueueName());
+        const char* instanceName = wu.getInstance();
+        const char* targetClusterName = wu.getTargetClusterName();
+        if (instanceName && *instanceName)
+            wuToSet->setInstance(instanceName); // JCSMORE In thor case at least, if queued it is unknown which instance it will run on..
+        if (targetClusterName && *targetClusterName)
+            wuToSet->setTargetClusterName(targetClusterName);
+
+        e->Release();
+    }
 }

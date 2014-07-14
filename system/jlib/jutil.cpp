@@ -1371,6 +1371,22 @@ void StringArray::appendListUniq(const char *list, const char *delim)
     DelimToStringArray(list, *this, delim, true);
 }
 
+void StringArray::sortAscii(bool nocase)
+{
+    PARENT::sort(nocase ? CCmp::compareNC : CCmp::compare);
+}
+
+void StringArray::sortAsciiReverse(bool nocase)
+{
+    PARENT::sort(nocase ? CCmp::revCompareNC : CCmp::revCompare);
+}
+
+void StringArray::sortCompare(int (*compare)(const char * * l, const char * * r))
+{
+    PARENT::sort(compare);
+}
+
+
 #ifdef _WIN32
 
 
@@ -1672,7 +1688,7 @@ bool callExternalProgram(const char *progname, const StringBuffer &input, String
         char buf[4096];
         for(;;)
         {
-            size32_t r=pipe2.Read(buf, sizeof(buf));
+            int r=pipe2.Read(buf, sizeof(buf));
             if(r>0)
             {
                 output.append(r, buf);
@@ -1712,7 +1728,7 @@ void doStackProbe()
 {
     byte local;
     const volatile byte * x = (const byte *)&local;
-    x[-4096];
+    byte forceload = x[-4096];
 }
 
 #ifdef _WIN32

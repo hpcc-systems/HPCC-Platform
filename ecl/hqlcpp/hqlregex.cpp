@@ -2531,7 +2531,6 @@ void RegexContext::buildStructure()
     unsigned startTime = msTick();
     IHqlExpression * grammar = expr->queryChild(2);
     assertex(grammar->getOperator() == no_pat_instance);
-    IAtom * name = grammar->queryChild(1)->queryName();
     OwnedHqlExpr structure = LINK(grammar);//createValue(no_pat_instance, makeRuleType(NULL), LINK(grammar), LINK(grammar->queryChild(1)));
 
     HqlRegexExpr * rootRegex = createStructure(structure, isCaseSensitive());
@@ -2539,7 +2538,7 @@ void RegexContext::buildStructure()
     root->setRegexOwn(rootRegex);
     named.append(*LINK(root));
 
-    DEBUG_TIMERX(timeReporter, "EclServer: Generate PARSE: Create Structure", msTick()-startTime);
+    updateTimer("workunit;Generate PARSE: Create Structure", msTick()-startTime);
 }
 
 void RegexContext::expandRecursion()
@@ -2606,7 +2605,7 @@ void RegexContext::optimizePattern()
         }
     }
     optimizeSpotDFA();
-    DEBUG_TIMERX(timeReporter, "EclServer: Generate PARSE: Optimize", msTick()-startTime);
+    updateTimer("workunit;Generate PARSE: Optimize", msTick()-startTime);
 }
 
 
@@ -2643,7 +2642,7 @@ void RegexContext::analysePattern()
     ForEachItemIn(idx3, named)
         named.item(idx3).generateDFAs();
 
-    DEBUG_TIMERX(timeReporter, "EclServer: Generate PARSE: Analyse", msTick()-startTime);
+    updateTimer("workunit;Generate PARSE: Analyse", msTick()-startTime);
 }
 
 
@@ -2664,7 +2663,7 @@ void RegexContext::generateRegex()
     parser.grammar.set(root->queryRootPattern());
     parser.minPatternLength = root->getMinLength();
 
-    DEBUG_TIMERX(timeReporter, "EclServer: Generate PARSE: Generate", msTick()-startTime);
+    updateTimer("workunit;Generate PARSE: Generate", msTick()-startTime);
 }
 
 
@@ -2743,6 +2742,12 @@ void RegexContext::generateLexer(IDfaPattern * builder)
     //MORE: Need to call some elements of optimizePattern() to expand limited repeats.
     analysePattern();
     lexerRoot->generateDFA(builder);
+}
+
+void RegexContext::updateTimer(const char * name, unsigned timems)
+{
+    if (timeReporter)
+        timeReporter->addTiming(name, NULL, timems);
 }
 
 /*

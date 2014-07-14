@@ -106,7 +106,6 @@ public:
         CActivityBase *ret = NULL;
         switch (kind)
         {
-            case TAKcountdisk:
             case TAKfiltergroup:
             case TAKlocalresultread:
             case TAKchildif:
@@ -151,6 +150,7 @@ public:
             case TAKsoap_datasetdataset:
             case TAKsoap_datasetaction:
             case TAKhttp_rowdataset:
+            case TAKdistributed:
                 ret = new CMasterActivity(this);
                 break;
             case TAKskipcatch:
@@ -382,12 +382,10 @@ public:
                 UNIMPLEMENTED;
             case TAKcase:           // gen. time.
             case TAKif:
+            case TAKifaction:
                 throwUnexpected();
             case TAKwhen_dataset:
                 ret = createWhenActivityMaster(this);
-                break;
-            case TAKifaction:
-                ret = createIfActionActivityMaster(this);
                 break;
             default:
                 throw MakeActivityException(this, TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));

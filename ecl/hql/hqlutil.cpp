@@ -439,6 +439,16 @@ IHqlExpression * createRawIndex(IHqlExpression * index)
 
 //---------------------------------------------------------------------------------------------
 
+IHqlExpression * queryStripCasts(IHqlExpression * expr)
+{
+    while (isCast(expr))
+        expr = expr->queryChild(0);
+    return expr;
+}
+
+
+//---------------------------------------------------------------------------------------------
+
 IHqlExpression * createRecord(IHqlExpression * field)
 {
     HqlExprArray fields;
@@ -1162,6 +1172,51 @@ void JoinSortInfo::initSorts()
     }
 }
 
+static bool isSameFieldSelected(IHqlExpression * leftExpr, IHqlExpression * rightExpr, IHqlExpression * left, IHqlExpression * right)
+{
+    if ((leftExpr->getOperator() != no_select) || (rightExpr->getOperator() != no_select))
+        return false;
+    if (leftExpr->queryChild(1) != rightExpr->queryChild(1))
+        return false;
+ 
+    IHqlExpression * leftSelector = leftExpr->queryChild(0);
+    IHqlExpression * rightSelector = rightExpr->queryChild(0);
+    if (leftSelector == left || rightSelector == right)
+        return (leftSelector == left) && (rightSelector == right);
+    if (leftSelector == right || rightSelector == left)
+        return (leftSelector == right) && (rightSelector == left);
+    return isSameFieldSelected(leftSelector, rightSelector, left, right);
+}
+
+
+static bool hasNeverMatchCompare(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right)
+{
+    switch (expr->getOperator())
+    {
+    case no_and:
+        return hasNeverMatchCompare(expr->queryChild(0), left, right) ||
+               hasNeverMatchCompare(expr->queryChild(1), left, right);
+    case no_ne:
+    case no_gt:
+    case no_lt:
+        return isSameFieldSelected(expr->queryChild(0), expr->queryChild(1), left, right);
+    default:
+        return false;
+    }
+}
+
+bool JoinSortInfo::neverMatchSelf(IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * selSeq)
+{
+    if (!extraMatch)
+        return false;
+    if (!recordTypesMatch(leftDs, rightDs))
+        return false;
+
+    OwnedHqlExpr left = createSelector(no_left, leftDs, selSeq);
+    OwnedHqlExpr right = createSelector(no_right, rightDs, selSeq);
+    return hasNeverMatchCompare(extraMatch, left, right);
+}
+
 
 extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch)
 {
@@ -1177,7 +1232,8 @@ IHqlExpression * createImpureOwn(IHqlExpression * expr)
 
 IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 {
-    OwnedHqlExpr folded = foldHqlExpression(filename, NULL, HFOloseannotations);
+    Owned<IErrorReceiver> errorProcessor = createNullErrorReceiver();
+    OwnedHqlExpr folded = foldHqlExpression(*errorProcessor, filename, NULL, HFOloseannotations);
     return lowerCaseHqlExpr(folded);
 }
 
@@ -1423,8 +1479,13 @@ IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression * left, IHqlExpr
     if (left->isDatarow() || right->isDatarow())
         return createRow(no_if, cond, createComma(left, right));
 
-    ITypeInfo * type = ::getPromotedECLType(left->queryType(), right->queryType());
-    return createValue(no_if, type, cond, left, right);
+    ITypeInfo * leftType = left->queryType();
+    ITypeInfo * rightType = right->queryType();
+    Owned<ITypeInfo> type = ::getPromotedECLType(leftType, rightType);
+    if (isStringType(type) && (leftType->getStringLen() != rightType->getStringLen()))
+        type.setown(getStretchedType(UNKNOWN_LENGTH, type));
+
+    return createValue(no_if, type.getClear(), cond, left, right);
 }
 
 extern HQL_API unsigned numRealChildren(IHqlExpression * expr)
@@ -2947,7 +3008,7 @@ __int64 getIntValue(IHqlExpression * expr, __int64 dft)
     return dft;
 }
 
-StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft)
+StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft, bool utf8)
 {
     if (expr)
     {
@@ -2956,13 +3017,26 @@ StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const c
         IValue * value = expr->queryValue();
         if (value)
         {
-            value->getStringValue(out);
+            if (utf8)
+                value->getUTF8Value(out);
+            else
+                value->getStringValue(out);
             return out;
         }
     }
     if (dft)
         out.append(dft);
     return out;
+}
+
+StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft)
+{
+    return getStringValue(out, expr, dft, false);
+}
+
+StringBuffer & getUTF8Value(StringBuffer & out, IHqlExpression * expr, const char * dft)
+{
+    return getStringValue(out, expr, dft, true);
 }
 
 bool matchesConstantValue(IHqlExpression * expr, __int64 test)
@@ -3572,8 +3646,8 @@ IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo *
     args.append(*LINK(represents));
     args.append(*getSizetConstant(seq));
     args.append(*createAttribute(rowAtom));
-    OwnedHqlExpr counterResult = createDataset(no_getgraphresult, args);
-    OwnedHqlExpr select = createNewSelectExpr(createRow(no_selectnth, LINK(counterResult), getSizetConstant(1)), LINK(counterField));
+    OwnedHqlExpr counterResult = createRow(no_getgraphresult, args);
+    OwnedHqlExpr select = createNewSelectExpr(LINK(counterResult), LINK(counterField));
     return ensureExprType(select, scalarType);
 }
 
@@ -5424,8 +5498,8 @@ bool isNullList(IHqlExpression * expr)
 class TempTableTransformer
 {
 public:
-    TempTableTransformer(IErrorReceiver * _errors, ECLlocation & _location, bool _strictTypeChecking = false)
-      : errors(_errors), defaultLocation(_location), strictTypeChecking(_strictTypeChecking)
+    TempTableTransformer(IErrorReceiver & _errorProcessor, ECLlocation & _location, bool _strictTypeChecking = false)
+      : errorProcessor(_errorProcessor), defaultLocation(_location), strictTypeChecking(_strictTypeChecking)
     {}
 
     IHqlExpression * createTempTableTransform(IHqlExpression * curRow, IHqlExpression * record);
@@ -5434,11 +5508,11 @@ protected:
     void createTempTableAssign(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * curRow, IHqlExpression * expr, unsigned & col, IHqlExpression * selector, HqlMapTransformer & mapper, bool included);
     IHqlExpression * createTempTableTransform(IHqlExpression * self, IHqlExpression * curRow, IHqlExpression * expr, unsigned & col, IHqlExpression * selector, HqlMapTransformer & mapper, bool included);
 
-    void reportWarning(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
+    void reportWarning(WarnErrorCategory category, IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 5, 6)));
     void reportError(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
 
 protected:
-    IErrorReceiver * errors;
+    IErrorReceiver & errorProcessor;
     ECLlocation & defaultLocation;
     bool strictTypeChecking;
 };
@@ -5653,13 +5727,13 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
         {
             OwnedHqlExpr cond = replaceSelfRefSelector(expr->queryChild(0), selector);
             OwnedHqlExpr mapped = mapper.transformRoot(cond);
-            mapped.setown(foldHqlExpression(mapped, NULL, HFOfoldimpure|HFOforcefold));
+            mapped.setown(foldHqlExpression(errorProcessor, mapped, NULL, HFOfoldimpure|HFOforcefold));
             IValue * mappedValue = mapped->queryValue();
 
             if (included)
             {
                 if (!mappedValue)
-                    reportWarning(NULL, HQLWRN_CouldNotConstantFoldIf, HQLWRN_CouldNotConstantFoldIf_Text);
+                    reportWarning(CategoryUnexpected, NULL, HQLWRN_CouldNotConstantFoldIf, HQLWRN_CouldNotConstantFoldIf_Text);
                 else if (!mappedValue->getBoolValue())
                     included = false;
             }
@@ -5682,8 +5756,6 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
 
 void TempTableTransformer::reportError(IHqlExpression * location, int code,const char *format, ...)
 {
-    if (!errors) return;
-
     ECLlocation * where = &defaultLocation;
     ECLlocation thisLocation;
     if (location)
@@ -5697,13 +5769,12 @@ void TempTableTransformer::reportError(IHqlExpression * location, int code,const
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    errors->reportError(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    Owned<IECLError> err = createECLError(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    errorProcessor.report(err);
 }
 
-void TempTableTransformer::reportWarning(IHqlExpression * location, int code,const char *format, ...)
+void TempTableTransformer::reportWarning(WarnErrorCategory category, IHqlExpression * location, int code,const char *format, ...)
 {
-    if (!errors) return;
-
     ECLlocation * where = &defaultLocation;
     ECLlocation thisLocation;
     if (location)
@@ -5717,7 +5788,7 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    errors->reportWarning(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    errorProcessor.reportWarning(category, code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
 }
 
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
@@ -5772,23 +5843,23 @@ IHqlExpression *getDictionarySearchRecord(IHqlExpression *record)
     return recursiveStretchFields(keyrec);
 }
 
-IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)
+IHqlExpression * createSelectMapRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)
 {
     OwnedHqlExpr record = getDictionarySearchRecord(dict->queryRecord());
-    TempTableTransformer transformer(errors, location, true);
+    TempTableTransformer transformer(errorProcessor, location, true);
     OwnedHqlExpr newTransform = transformer.createTempTableTransform(values, record);
     return createRow(no_selectmap, LINK(dict), createRow(no_createrow, newTransform.getClear()));
 }
 
-IHqlExpression *createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
+IHqlExpression *createINDictExpr(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
 {
     OwnedHqlExpr record = getDictionarySearchRecord(dict->queryRecord());
-    TempTableTransformer transformer(errors, location, true);
+    TempTableTransformer transformer(errorProcessor, location, true);
     OwnedHqlExpr newTransform = transformer.createTempTableTransform(expr, record);
     return createBoolExpr(no_indict, createRow(no_createrow, newTransform.getClear()), LINK(dict));
 }
 
-IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict)
+IHqlExpression *createINDictRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict)
 {
     OwnedHqlExpr record = getDictionarySearchRecord(dict->queryRecord());
     Owned<ITypeInfo> rowType = makeRowType(record->getType());
@@ -5796,13 +5867,13 @@ IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location,
     return createBoolExpr(no_indict, castRow.getClear(), LINK(dict));
 }
 
-IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+IHqlExpression * convertTempRowToCreateRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * expr)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
     OwnedHqlExpr values = normalizeListCasts(oldValues); // ??? not used
+    TempTableTransformer transformer(errorProcessor, location);
 
-    TempTableTransformer transformer(errors, location);
     OwnedHqlExpr newTransform = transformer.createTempTableTransform(oldValues, record);
     HqlExprArray children;
     children.append(*LINK(newTransform));
@@ -5810,7 +5881,7 @@ IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation 
     return expr->cloneAllAnnotations(ret);
 }
 
-static IHqlExpression * convertTempTableToInline(IErrorReceiver & errors, ECLlocation & location, IHqlExpression * expr)
+static IHqlExpression * convertTempTableToInline(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * expr)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
@@ -5823,7 +5894,7 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver & errors, ECLloc
     if ((valueOp != no_recordlist) && (valueOp != no_list))
         return LINK(expr);
 
-    TempTableTransformer transformer(&errors, location);
+    TempTableTransformer transformer(errorProcessor, location);
     HqlExprArray transforms;
     ForEachChild(idx, values)
     {
@@ -5844,7 +5915,7 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver & errors, ECLloc
                     else
                     {
                         VStringBuffer msg(HQLERR_FieldHasNoDefaultValue_Text, field->queryName()->str());
-                        errors.reportError(HQLERR_FieldHasNoDefaultValue, msg.str(), location.sourcePath->str(), location.lineno, location.column, location.position);
+                        errorProcessor.reportError(HQLERR_FieldHasNoDefaultValue, msg.str(), location.sourcePath->str(), location.lineno, location.column, location.position);
                     }
                 }
             }
@@ -5856,6 +5927,7 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver & errors, ECLloc
     HqlExprArray children;
     children.append(*createValue(no_transformlist, makeNullType(), transforms));
     children.append(*LINK(record));
+    unwindChildren(children, expr, 2);
     OwnedHqlExpr ret = createDataset(no_inlinetable, children);
     return expr->cloneAllAnnotations(ret);
 }
@@ -6397,7 +6469,7 @@ void gatherGraphReferences(HqlExprCopyArray & graphs, IHqlExpression * value, bo
 
 //---------------------------------------------------------------------------
 
-IAtom * getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first)
+static ErrorSeverity getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first, ErrorSeverity defaultSeverity)
 {
     //warnings are assumed to be infrequent, so don't worry about efficiency here.
     const unsigned max = overrides.ordinality();
@@ -6405,161 +6477,276 @@ IAtom * getWarningAction(unsigned errorCode, const HqlExprArray & overrides, uns
     {
         IHqlExpression & cur = overrides.item(i);
         if (matchesConstantValue(cur.queryChild(0), errorCode))
-            return cur.queryChild(1)->queryName();
+            return getCheckSeverity(cur.queryChild(1)->queryName());
     }
-    return defaultAtom;
+    return defaultSeverity;
 }
 
-WarningProcessor::WarningProcessor() 
-{ 
-    firstLocalOnWarning = 0; 
-    activeSymbol = NULL; 
-}
+//---------------------------------------------------------------------------
 
-
-void WarningProcessor::addWarning(IECLError * warning)
+ErrorSeverityMapper::ErrorSeverityMapper(IErrorReceiver & _errorProcessor) : IndirectErrorReceiver(_errorProcessor)
 {
-    //warnings are assumed to be infrequent, so don't worry about efficiency here.
-    IAtom * action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
+    firstActiveMapping = 0;
+    activeSymbol = NULL;
+    for (unsigned category = 0; category < CategoryMax; category++)
+        categoryAction[category] = SeverityUnknown;
+}
 
-    if (action == defaultAtom)
-        appendUnique(possibleWarnings, warning);
-    else if (action == warningAtom)
-        appendUnique(warnings, warning);
-    else if (action == errorAtom)
+
+bool ErrorSeverityMapper::addCommandLineMapping(const char * mapping)
+{
+    if (!mapping)
+        return true;
+
+    unsigned len = strlen(mapping);
+    if (len == 0)
+        return true;
+
+    const char * equals = strchr(mapping, '=');
+    const char * value;
+    if (equals)
     {
-        allErrors.append(*changeErrorType(true, warning));
+        value = equals+1;
+        len = equals-mapping;
+    }
+    else if (mapping[len-1] == '+')
+    {
+        len--;
+        value = "error";
+    }
+    else if (mapping[len-1] == '-')
+    {
+        value = "ignore";
+        len--;
+    }
+    else
+        value = "error";
+
+    StringAttr category(mapping, len);
+    return addMapping(category, value);
+ }
+
+bool ErrorSeverityMapper::addMapping(const char * category, const char * value)
+{
+    if (!category || !*category)
+    {
+        ERRLOG("Error: No warning category supplied");
+        return false;
+    }
+
+    //Ignore mappings with no action
+    if (!value || !*value)
+        return true;
+
+    IAtom * action = createAtom(value);
+    ErrorSeverity severity = getSeverity(action);
+    if (severity == SeverityUnknown)
+    {
+        ERRLOG("Error: Invalid warning severity '%s'", value);
+        return false;
+    }
+
+    if (isdigit(*category))
+    {
+        unsigned errorCode = atoi(category);
+        addOnWarning(errorCode, action);
+        return true;
+    }
+
+    WarnErrorCategory cat = getCategory(category);
+    if (cat != CategoryUnknown)
+    {
+        categoryAction[cat] = severity;
+        return true;
+    }
+
+    ERRLOG("Error: Mapping doesn't specify a valid warning code or category '%s'", category);
+    return false;
+}
+
+void ErrorSeverityMapper::addOnWarning(unsigned code, IAtom * action)
+{
+    severityMappings.append(*createAttribute(onWarningAtom, getSizetConstant(code), createAttribute(action)));
+}
+
+void ErrorSeverityMapper::addOnWarning(IHqlExpression * setMetaExpr)
+{
+    IHqlExpression * code = setMetaExpr->queryChild(1);
+    IHqlExpression * action = setMetaExpr->queryChild(2);
+    if (isStringType(code->queryType()))
+    {
+        StringBuffer text;
+        getStringValue(text, code, NULL);
+        WarnErrorCategory cat = getCategory(text);
+        ErrorSeverity severity = getSeverity(action->queryName());
+        if (cat == CategoryUnknown)
+            throwError1(HQLERR_InvalidErrorCategory, text.str());
+
+        categoryAction[cat] = severity;
     }
     else
     {
-        assertex(action == ignoreAtom);
+        severityMappings.append(*createAttribute(onWarningAtom, LINK(code), LINK(action)));
     }
 }
 
-void WarningProcessor::addGlobalOnWarning(unsigned code, IAtom * action)
+unsigned ErrorSeverityMapper::processMetaAnnotation(IHqlExpression * expr)
 {
-    globalOnWarnings.append(*createAttribute(onWarningAtom, getSizetConstant(code), createAttribute(action)));
+    unsigned prevMax = severityMappings.ordinality();
+    gatherMetaAttributes(severityMappings, onWarningAtom, expr);
+    return prevMax;
 }
 
-void WarningProcessor::addGlobalOnWarning(IHqlExpression * setMetaExpr)
+void ErrorSeverityMapper::restoreLocalOnWarnings(unsigned prevMax)
 {
-    globalOnWarnings.append(*createAttribute(onWarningAtom, LINK(setMetaExpr->queryChild(1)), LINK(setMetaExpr->queryChild(2))));
+    severityMappings.trunc(prevMax);
 }
 
-void WarningProcessor::processMetaAnnotation(IHqlExpression * expr)
-{
-    gatherMetaAttributes(localOnWarnings, onWarningAtom, expr);
-}
-
-void WarningProcessor::processWarningAnnotation(IHqlExpression * expr)
-{
-    //would be cleaner if each annotation defined an interface, and this was a dynamic cast
-    //but not sufficiently complicated to warrent it.
-    IECLError * error = static_cast<CHqlWarningAnnotation *>(expr)->queryWarning();
-    addWarning(error);
-}
-
-void WarningProcessor::pushSymbol(OnWarningState & saved, IHqlExpression * _symbol)
+void ErrorSeverityMapper::pushSymbol(ErrorSeverityMapperState & saved, IHqlExpression * _symbol)
 {
     saveState(saved);
     setSymbol(_symbol);
 }
 
-void WarningProcessor::saveState(OnWarningState & saved)
+void ErrorSeverityMapper::saveState(ErrorSeverityMapperState & saved) const
 {
-    saved.firstOnWarning = firstLocalOnWarning;
-    saved.onWarningMax = localOnWarnings.ordinality();
+    saved.firstActiveMapping = firstActiveMapping;
+    saved.maxMappings = severityMappings.ordinality();
     saved.symbol = activeSymbol;
 }
 
-void WarningProcessor::setSymbol(IHqlExpression * _symbol)
+void ErrorSeverityMapper::setSymbol(IHqlExpression * _symbol)
 {
-    firstLocalOnWarning = localOnWarnings.ordinality();
+    firstActiveMapping = severityMappings.ordinality();
     activeSymbol = _symbol;
 }
 
-void WarningProcessor::restoreState(const OnWarningState & saved)
+void ErrorSeverityMapper::restoreState(const ErrorSeverityMapperState & saved)
 {
-    while (localOnWarnings.ordinality() > saved.onWarningMax)
-        localOnWarnings.pop();
-    firstLocalOnWarning = saved.firstOnWarning;
+    severityMappings.trunc(saved.maxMappings);
+    firstActiveMapping = saved.firstActiveMapping;
     activeSymbol = saved.symbol;
 }
 
-void WarningProcessor::report(IErrorReceiver & errors)
+IECLError * ErrorSeverityMapper::mapError(IECLError * error)
 {
-    applyGlobalOnWarning();
-    combineSandboxWarnings();
-    if (allErrors.ordinality())
-        reportErrors(errors, allErrors);
-    else
-        reportErrors(errors, warnings);
+    //An error that is fatal cannot be mapped.
+    Owned<IECLError> mappedError = IndirectErrorReceiver::mapError(error);
+    if (!isFatal(mappedError))
+    {
+        //This takes precedence over mappings in the parent
+        ErrorSeverity newSeverity = getWarningAction(mappedError->errorCode(), severityMappings, firstActiveMapping, SeverityUnknown);
+        if (newSeverity != SeverityUnknown)
+            return mappedError->cloneSetSeverity(newSeverity);
+
+        WarnErrorCategory category = mappedError->getCategory();
+        if (categoryAction[category] != SeverityUnknown)
+            return mappedError->cloneSetSeverity(categoryAction[category]);
+
+        if (categoryAction[CategoryAll] != SeverityUnknown)
+            return mappedError->cloneSetSeverity(categoryAction[CategoryAll]);
+    }
+    return mappedError.getClear();
 }
 
-void WarningProcessor::report(IErrorReceiver * errors, IErrorReceiver * warnings, IECLError * warning)
+//---------------------------------------------------------------------------------------------------------------------
+
+bool isGlobalOnWarning(IHqlExpression * expr)
 {
-    IAtom * action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
-
-    if (action == defaultAtom)
-        action = getWarningAction(warning->errorCode(), globalOnWarnings, 0);
-
-    if (action == defaultAtom)
-        action = warning->isError() ? errorAtom : warningAtom;
-
-    if ((action == warningAtom) || (action == defaultAtom))
-    {
-        if (warnings)
-            warnings->report(warning);
-    }
-    else if (action == errorAtom)
-    {
-        Owned<IECLError> error = changeErrorType(true, warning);
-        if (errors)
-            errors->report(error);
-        else
-            throw error.getClear();
-    }
+    return ((expr->getOperator() == no_setmeta) && (expr->queryChild(0)->queryName() == onWarningAtom));
 }
 
+//---------------------------------------------------------------------------
 
-void WarningProcessor::combineSandboxWarnings()
+static HqlTransformerInfo globalOnWarningCollectorInfo("GlobalOnWarningCollector");
+class GlobalOnWarningCollector : public QuickHqlTransformer
 {
-    StringBuffer s;
-    ForEachItemInRev(i, warnings)
+public:
+    GlobalOnWarningCollector(ErrorSeverityMapper & _mapper) :
+        QuickHqlTransformer(globalOnWarningCollectorInfo, NULL), mapper(_mapper)
     {
-        IECLError & cur = warnings.item(i);
-        if (cur.errorCode() == WRN_DEFINITION_SANDBOXED)
+    }
+
+    virtual void doAnalyse(IHqlExpression * expr)
+    {
+        IHqlExpression * body = expr->queryBody();
+        if (isGlobalOnWarning(body))
+            mapper.addOnWarning(body);
+        QuickHqlTransformer::doAnalyse(body);
+    }
+
+protected:
+    ErrorSeverityMapper & mapper;
+};
+
+
+static HqlTransformerInfo warningCollectingTransformerInfo("WarningCollectingTransformer");
+class WarningCollectingTransformer : public QuickHqlTransformer
+{
+public:
+    WarningCollectingTransformer(IErrorReceiver & _errs) :
+        QuickHqlTransformer(warningCollectingTransformerInfo, &_errs), mapper(_errs)
+    {
+    }
+
+    virtual void doAnalyse(IHqlExpression * expr)
+    {
+        switch (expr->getAnnotationKind())
         {
-            if (s.length())
-                s.append(", ");
-            s.append(cur.getFilename());
-            warnings.remove(i);
+        case annotate_meta:
+            {
+                unsigned max = mapper.processMetaAnnotation(expr);
+                QuickHqlTransformer::doAnalyse(expr);
+                mapper.restoreLocalOnWarnings(max);
+                return;
+            }
+        case annotate_warning:
+            {
+                IECLError * error = static_cast<CHqlWarningAnnotation *>(expr)->queryWarning();
+                Owned<IECLError> mappedError = mapper.mapError(error);
+                mapper.report(mappedError);
+                break;
+            }
+        case annotate_symbol:
+            {
+                ErrorSeverityMapper::SymbolScope saved(mapper, expr);
+                QuickHqlTransformer::doAnalyse(expr);
+                return;
+            }
         }
+        QuickHqlTransformer::doAnalyse(expr);
     }
-    if (s.length())
+
+protected:
+    ErrorSeverityMapper mapper;
+};
+
+
+void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLErrorArray & orphanedWarnings)
+{
+    if (!errs || !expr)
+        return;
+
+    Owned<IErrorReceiver> deduper = createDedupingErrorReceiver(*errs);
+
+    //First collect any #ONWARNINGs held in the parsed expression tree
+    Owned<ErrorSeverityMapper> globalOnWarning = new ErrorSeverityMapper(*deduper);
+    GlobalOnWarningCollector globalCollector(*globalOnWarning);
+    globalCollector.analyse(expr);
+
+    //Now walk all expressions, outputting warnings and processing local onWarnings
+    WarningCollectingTransformer warningCollector(*globalOnWarning);
+    warningCollector.analyse(expr);
+
+    ForEachItemIn(i, orphanedWarnings)
     {
-        s.insert(0, "The following definitions are sandboxed: ");
-        warnings.append(* createECLWarning(WRN_DEFINITION_SANDBOXED, s.str(), NULL, 0, 0, 0));
+        Owned<IECLError> mappedError = globalOnWarning->mapError(&orphanedWarnings.item(i));
+        globalOnWarning->report(mappedError);
     }
 }
 
-void WarningProcessor::applyGlobalOnWarning()
-{
-    ForEachItemIn(i, possibleWarnings)
-    {
-        IECLError & cur = possibleWarnings.item(i);
-        IAtom * action = getWarningAction(cur.errorCode(), globalOnWarnings, 0);
-        if (action == defaultAtom || action == warningAtom)
-        {
-            if (cur.isError())
-                appendUnique(allErrors, &cur);
-            else
-                appendUnique(warnings, &cur);
-        }
-        else if (action == errorAtom)
-            allErrors.append(*changeErrorType(true, &cur));
-    }
-}
+
+//---------------------------------------------------------------------------
 
 bool isActiveRow(IHqlExpression * expr)
 {
@@ -7037,6 +7224,7 @@ class Vs6CppNameMangler
 public:
     Vs6CppNameMangler()
     {
+// Assuming Windows on ARM64 will have the same mangling
 #ifdef __64BIT__
         pointerBaseCode.set("E");
 #endif
@@ -7550,7 +7738,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) 
                 default:
                     extractName(name.clear(), NULL, NULL, cur, NULL);
                     if (name.length())
-                        builder.addField(name, *type);
+                        builder.addField(name, *type, false);
                     else
                         hasMixedContent = true;
                     break;
@@ -8185,7 +8373,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
     //with implicitly importing myModule.
     Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath());
     Owned<IHqlScope> scope = createPrivateScope();
-    if (queryLegacyEclSemantics())
+    if (queryLegacyImportSemantics())
         importRootModulesToScope(scope, ctx);
     return parseQuery(scope, mappedContents, ctx, NULL, macroParms, true);
 }

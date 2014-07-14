@@ -1819,6 +1819,8 @@ IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSc
     if (genEnvConf.length() && checkFileExists(genEnvConf.str()))
       algProp.setown(createProperties(genEnvConf.str()));
 
+    CConfigHelper::getInstance()->addPluginsToGenEnvRules(algProp.get());
+
     enum GenOptional {GENOPTIONAL_ALL, GENOPTIONAL_NONE, GENOPTIONAL_COMPS};
     GenOptional genOpt = GENOPTIONAL_COMPS;
     algProp->getProp("do_not_gen_optional", prop);
@@ -2783,7 +2785,7 @@ const char* getUniqueName(const IPropertyTree* pEnv, StringBuffer& sName, const 
     StringBuffer num(sName);
     char* pszNum = num.detach();
 
-    char *token;
+    char *token = NULL;
     j_strtok_r(pszNum, "_", &token);
 
     if (strspn(token, "0123456789") == strlen(token))
@@ -2797,6 +2799,8 @@ const char* getUniqueName(const IPropertyTree* pEnv, StringBuffer& sName, const 
       if (len > 0 && endsWith(sPrefix.str(), "_")) //ends with '_'
         sPrefix = sPrefix.remove(sPrefix.length() - 1, 1); //lose it
     }
+
+    free(pszNum);
   }
 
   StringBuffer xpath;
@@ -2826,7 +2830,7 @@ const char* getUniqueName2(const IPropertyTree* pEnv, StringBuffer& sName, const
     StringBuffer num(sName);
     char* pszNum = num.detach();
 
-    char *token;
+    char *token = NULL;
     j_strtok_r(pszNum, "_", &token);
 
     if (strspn(token, "0123456789") == strlen(token))
@@ -2840,6 +2844,8 @@ const char* getUniqueName2(const IPropertyTree* pEnv, StringBuffer& sName, const
       if (len > 0 && endsWith(sPrefix.str(), "_")) //ends with '_'
         sPrefix = sPrefix.remove(sPrefix.length() - 1, 1); //lose it
     }
+
+    free(pszNum);
   }
 
   StringBuffer xpath;
@@ -2910,7 +2916,9 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    end.getNetAddress(sizeof(e),&e);
    if( s > e)
    {
-     s^=e^=s^=e;
+     s^=e;
+     e^=s;
+     s^=e;
      const char* temp = startIP;
      startIP = endIP;
      endIP= temp;
@@ -3305,7 +3313,11 @@ void formIPList(const char* ip, StringArray& formattedIpList)
                      unsigned startAddr = atoi(commIPPart.item(3));
                      comip.clear().append(commIPPart.item(0)).append(".").append(commIPPart.item(1)).append(".").append(commIPPart.item(2)).append(".");
                      if( startAddr > endAddr)
-                        startAddr^=endAddr^=startAddr^=endAddr;
+                     {
+                       startAddr^=endAddr;
+                       endAddr^=startAddr;
+                       startAddr^=endAddr;
+                     }
                      
                      while(startAddr <= endAddr)
                      {

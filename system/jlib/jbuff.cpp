@@ -178,7 +178,13 @@ void MemoryAttr::clear()
     len = 0; 
 }
 
-
+void * MemoryAttr::detach()
+{
+    void * ret=ptr;
+    ptr = NULL;
+    len = 0;
+    return ret;
+}
 
 int MemoryAttr::compare(const MemoryAttr & m1, const MemoryAttr & m2)
 {
@@ -202,6 +208,13 @@ void *  MemoryAttr::allocate(size32_t _len)
     ptr = checked_malloc(_len,-2); 
     len = _len;
     return ptr; 
+}
+
+void * MemoryAttr::ensure(size32_t _len)
+{
+    if (_len <=len)
+        return ptr;
+    return reallocate(_len);
 }
 
 void *  MemoryAttr::reallocate(size32_t _len)

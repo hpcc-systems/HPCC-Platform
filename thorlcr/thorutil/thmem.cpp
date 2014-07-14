@@ -190,11 +190,13 @@ protected:
         if (0 == numRows)
             return false;
 
-        StringBuffer tempname;
-        GetTempName(tempname,"streamspill", true);
-        spillFile.setown(createIFile(tempname.str()));
+        StringBuffer tempName;
+        VStringBuffer tempPrefix("streamspill_%d", activity.queryActivityId());
+        GetTempName(tempName, tempPrefix.str(), true);
+        spillFile.setown(createIFile(tempName.str()));
 
-        rows.save(*spillFile, useCompression); // saves committed rows
+        VStringBuffer spillPrefixStr("SpillableStream(%d)", SPILL_PRIORITY_SPILLABLE_STREAM); // const for now
+        rows.save(*spillFile, useCompression, spillPrefixStr.str()); // saves committed rows
         rows.noteSpilled(numRows);
         return true;
     }
@@ -217,7 +219,7 @@ public:
     }
 
 // IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         return SPILL_PRIORITY_SPILLABLE_STREAM;
     }
@@ -262,6 +264,7 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
             if (owner->spillFile) // i.e. has spilt
             {
                 assertex(((offset_t)-1) != outputOffset);
+                owner->rows.kill(); // no longer needed, frees pointer array
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (owner->preserveNulls)
                     rwFlags |= rw_grouped;
@@ -351,6 +354,7 @@ public:
             CThorArrayLockBlock block(rows);
             if (spillFile)
             {
+                rows.kill(); // no longer needed, frees pointer array
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (preserveNulls)
                     rwFlags |= rw_grouped;
@@ -466,11 +470,12 @@ bool CThorExpandingRowArray::resizeRowTable(void **oldRows, memsize_t newCapacit
 {
     try
     {
+        unsigned spillPriority = roxiemem::SpillAllCost;
         if (oldRows)
-            rowManager->resizeRow(oldRows, copy?RoxieRowCapacity(oldRows):0, newCapacity, activity.queryContainer().queryId(), callback);
+            rowManager->resizeRow(oldRows, copy?RoxieRowCapacity(oldRows):0, newCapacity, activity.queryContainer().queryId(), spillPriority, callback);
         else
         {
-            void **newRows = (void **)rowManager->allocate(newCapacity, activity.queryContainer().queryId());
+            void **newRows = (void **)rowManager->allocate(newCapacity, activity.queryContainer().queryId(), spillPriority);
             callback.atomicUpdate(RoxieRowCapacity(newRows), newRows);
         }
     }
@@ -729,6 +734,26 @@ bool CThorExpandingRowArray::appendRows(CThorSpillableRowArray &inRows, bool tak
     inRows.transferRowsCopy(newRows, takeOwnership);
 
     numRows += num;
+    return true;
+}
+
+bool CThorExpandingRowArray::binaryInsert(const void *row, ICompare &compare, bool dropLast)
+{
+    dbgassertex(NULL != row);
+    if (numRows >= maxRows)
+    {
+        if (!ensure(numRows+1))
+            return false;
+    }
+    binary_vec_insert_stable(row, rows, numRows, compare); // takes ownership of row
+    if (dropLast)
+    {
+    	// last row falls out, i.e. release last row and don't increment numRows
+    	dbgassertex(numRows); // numRows must be >=1 for dropLast
+    	ReleaseThorRow(rows[numRows]);
+    }
+    else
+    	++numRows;
     return true;
 }
 
@@ -1180,12 +1205,12 @@ static int callbackSortRev(IInterface **cb2, IInterface **cb1)
     return 1;
 }
 
-rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression)
+rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const char *tracingPrefix)
 {
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
-    ActPrintLog(&activity, "CThorSpillableRowArray::save %"RIPF"d rows", n);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %"RIPF"d rows", tracingPrefix, n);
 
     if (useCompression)
         assertex(0 == writeCallbacks.ordinality()); // incompatible
@@ -1236,7 +1261,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression)
     writer->flush();
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
-    ActPrintLog(&activity, "CThorSpillableRowArray::save done, bytes = %"I64F"d", (__int64)bytesWritten);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, bytes = %"I64F"d", tracingPrefix, (__int64)bytesWritten);
     return n;
 }
 
@@ -1365,19 +1390,21 @@ protected:
             return false;
 
         totalRows += numRows;
+        StringBuffer tempPrefix, tempName;
         if (iCompare)
         {
             ActPrintLog(&activity, "Sorting %"RIPF"d rows", spillableRows.numCommitted());
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
             ActPrintLog(&activity, "Sort took: %f", ((float)timer.elapsedMs())/1000);
+            tempPrefix.append("srt");
         }
-
-        StringBuffer tempname;
-        GetTempName(tempname,"srtspill",true);
-        Owned<IFile> iFile = createIFile(tempname.str());
+        tempPrefix.appendf("spill_%d", activity.queryActivityId());
+        GetTempName(tempName, tempPrefix.str(), true);
+        Owned<IFile> iFile = createIFile(tempName.str());
         spillFiles.append(new CFileOwner(iFile.getLink()));
-        spillableRows.save(*iFile, activity.getOptBool(THOROPT_COMPRESS_SPILLS, true)); // saves committed rows
+        VStringBuffer spillPrefixStr("RowCollector(%d)", spillPriority);
+        spillableRows.save(*iFile, activity.getOptBool(THOROPT_COMPRESS_SPILLS, true), spillPrefixStr.str()); // saves committed rows
         spillableRows.noteSpilled(numRows);
 
         ++overflowCount;
@@ -1456,15 +1483,15 @@ protected:
 
         // NB: CStreamFileOwner links CFileOwner - last usage will auto delete file
         // which may be one of these streams or CThorRowCollectorBase itself
+        unsigned rwFlags = DEFAULT_RWFLAGS;
+        if (activity.getOptBool(THOROPT_COMPRESS_SPILLS, true))
+            rwFlags |= rw_compress;
+        if (preserveGrouping)
+            rwFlags |= rw_grouped;
         IArrayOf<IRowStream> instrms;
         ForEachItemIn(f, spillFiles)
         {
             CFileOwner *fileOwner = spillFiles.item(f);
-            unsigned rwFlags = DEFAULT_RWFLAGS;
-            if (activity.getOptBool(THOROPT_COMPRESS_SPILLS, true))
-                rwFlags |= rw_compress;
-            if (preserveGrouping)
-                rwFlags |= rw_grouped;
             Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, rwFlags);
             instrms.append(* new CStreamFileOwner(fileOwner, strm));
         }
@@ -1624,7 +1651,7 @@ public:
         options = _options;
     }
 // IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         return spillPriority;
     }
@@ -1983,9 +2010,9 @@ public:
         allocatorMetaCache.clear();
     }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
-        return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+        return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
 // IThorAllocator
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
@@ -2014,9 +2041,9 @@ public:
 // IThorAllocator
     virtual bool queryCrc() const { return true; }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned cacheId, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned cacheId, roxiemem::RoxieHeapFlags flags) const
     {
-        return createCrcRoxieRowAllocator(*rowManager, meta, activityId, cacheId, flags);
+        return createCrcRoxieRowAllocator(cache, *rowManager, meta, activityId, cacheId, flags);
     }
 };
 
@@ -2188,6 +2215,10 @@ public:
         //GH: I think this is what it should do, please check
         visitor.visitRow(*(const byte **)(self+extraSz)); 
     }
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return childMeta->queryChildMeta(i);
+    }
 };
 
 IOutputMetaData *createOutputMetaDataWithChildRow(IEngineRowAllocator *childAllocator, size32_t extraSz)
@@ -2331,6 +2362,10 @@ public:
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
     {
         meta->walkIndirectMembers(self, visitor);
+    }
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return meta->queryChildMeta(i);
     }
 };
 

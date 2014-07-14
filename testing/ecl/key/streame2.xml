@@ -1,0 +1,32 @@
+<Dataset name='Result 1'>
+ <Row><name>Generate:</name><value>0</value></Row>
+ <Row><name>Generate:</name><value>1</value></Row>
+ <Row><name>Generate:</name><value>2</value></Row>
+ <Row><name>Generate:</name><value>3</value></Row>
+ <Row><name>Generate:</name><value>4</value></Row>
+ <Row><name>Generate:</name><value>5</value></Row>
+ <Row><name>Generate:</name><value>6</value></Row>
+ <Row><name>Generate:</name><value>7</value></Row>
+ <Row><name>Generate:</name><value>8</value></Row>
+ <Row><name>Generate:</name><value>9</value></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>name1</name><value>1</value></Row>
+ <Row><name>name2</name><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><name>1</name></Row>
+ <Row><name>2</name></Row>
+ <Row><name>3</name></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>1</name></Row>
+ <Row><name>2</name></Row>
+ <Row><name>3</name></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><name>Hello</name><value>10</value></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><name>Hello</name><value>10</value></Row>
+</Dataset>

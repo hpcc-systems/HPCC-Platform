@@ -41,19 +41,28 @@ class Shell:
             return self.__run(*all_args)
         return __command
 
+    def __hidePassw(self,  item):
+        if '--password' in item:
+            return '--password=********'
+        else:
+            return item
+
     def __run(self, *args, **kwargs):
-        args = [i for i in args if i is not None]
-        logging.debug("CMD: " + " ". join(args))
+        _args = [i for i in args if i is not None]
+        argsLog = [self.__hidePassw(i) for i in args if i is not None ]
+        logging.debug("Shell _run CMD: " + " ". join(argsLog))
         process = Popen(
-            args, stdout=kwargs.pop('stdout', PIPE),
+            _args, stdout=kwargs.pop('stdout', PIPE),
             stderr=kwargs.pop('stderr', PIPE),
             close_fds=kwargs.pop('close_fds', True), **kwargs)
         stdout, stderr = process.communicate()
-        if process.returncode:
+        retCode = process.returncode
+        if retCode:
+            logging.debug("Shell _run retCode:: %d, stdout:'%s', stderr:'%s'",  retCode,  stdout,  stderr)
             exception = CalledProcessError(
                 process.returncode, repr(args))
             exception.output = ''.join(filter(None, [stdout, stderr]))
-            raise Error('1001', err=exception.output)
+            raise Error('1001', err=repr(exception.output))
         return stdout
 
     # Currently hacked to use the CMD dict as which can be tempramental.

@@ -300,6 +300,108 @@ private:
     bool optInactive;
 };
 
+class EclCmdQueryFiles : public EclCmdCommon
+{
+public:
+    EclCmdQueryFiles()
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optTarget.isEmpty())
+                    optTarget.set(arg);
+                else if (optQuery.isEmpty())
+                    optQuery.set(arg);
+                else
+                {
+                    fprintf(stderr, "\n%s option not recognized\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (optTarget.isEmpty())
+        {
+            fputs("Target must be specified.\n\n", stderr);
+            return false;
+        }
+        if (optTarget.isEmpty())
+        {
+            fputs("Query must be specified.\n\n", stderr);
+            return false;
+        }
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryFilesRequest> req = client->createWUQueryFilesRequest();
+        req->setTarget(optTarget.get());
+        req->setQueryId(optQuery.get());
+
+        Owned<IClientWUQueryFilesResponse> resp = client->WUQueryFiles(req);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else
+        {
+            IArrayOf<IConstFileUsedByQuery> &files = resp->getFiles();
+            if (!files.length())
+                fputs("No files used.\n", stdout);
+            else
+                fputs("Files used:\n", stdout);
+            ForEachItemIn(i, files)
+            {
+                IConstFileUsedByQuery &file = files.item(i);
+                StringBuffer line("  ");
+                line.append(file.getFileName()).append(", ");
+                line.append(file.getFileSize()).append(" bytes, ");
+                line.append(file.getNumberOfParts()).append(" part(s)\n");
+                fputs(line, stdout);
+            }
+            fputs("\n", stdout);
+        }
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'queries files' command displays a list of the files currently in use by\n"
+            "the given query.\n"
+            "\n"
+            "ecl queries files <target> <query>\n\n"
+            " Options:\n"
+            "   <target>               Name of target cluster the query is published on\n"
+            "   <query>                Name of the query to get a list of files in use by\n"
+            " Common Options:\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optTarget;
+    StringAttr optQuery;
+};
+
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
@@ -362,6 +464,8 @@ public:
                 continue;
             if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
                 continue;
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -414,6 +518,8 @@ public:
             req->setMemoryLimit(optMemoryLimit);
         if (!optPriority.isEmpty())
             req->setPriority(optPriority);
+        if (!optName.isEmpty())
+            req->setDestName(optName);
         if (optComment.get()) //allow empty
             req->setComment(optComment);
 
@@ -459,6 +565,7 @@ public:
             "   --priority=<val>       Set the priority for this query. Value can be LOW,\n"
             "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
             "   --comment=<string>     Set the comment associated with this query\n"
+            "   -n, --name=<val>       Destination query name for the copied query\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -472,6 +579,7 @@ private:
     StringAttr optMemoryLimit;
     StringAttr optPriority;
     StringAttr optComment;
+    StringAttr optName;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;
@@ -765,6 +873,8 @@ IEclCommand *createEclQueriesCommand(const char *cmdname)
         return NULL;
     if (strieq(cmdname, "list"))
         return new EclCmdQueriesList();
+    if (strieq(cmdname, "files"))
+        return new EclCmdQueryFiles();
     if (strieq(cmdname, "config"))
         return new EclCmdQueriesConfig();
     if (strieq(cmdname, "copy"))
@@ -790,6 +900,7 @@ public:
             "ecl queries <command> [command options]\n\n"
             "   Queries Commands:\n"
             "      list         list queries on target cluster(s)\n"
+            "      files        list the files currently used by a query\n"
             "      config       update query settings\n"
             "      copy         copy a query from one target cluster to another\n"
             "      copy-set     copy queries from one target cluster to another\n"

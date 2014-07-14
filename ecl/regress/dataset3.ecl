@@ -32,7 +32,7 @@ namesTable := dataset([
         {'Page','John',62},
         {'Page','Chris',26},
         {'Smithe','Abigail',13},
-        {'X','Za'}], namesRecord);
+        {'X','Za'}], namesRecord, DISTRIBUTED);
 
 x := group(namesTable, surname);// : persist('~GroupedNames2');
 

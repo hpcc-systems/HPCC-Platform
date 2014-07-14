@@ -168,6 +168,105 @@ typedef IIteratorOf<IDistributedFilePart> IDistributedFilePartIterator;
 
 class CDFAction ;
 
+#define DFUQFilterSeparator '|' // | is used as a separator because it is not a valid character for logical file name
+
+enum DFUQFilterType
+{
+    DFUQFTwildcardMatch,
+    DFUQFThasProp,
+    DFUQFTcontainString,
+    DFUQFTbooleanMatch,
+    DFUQFTstringRange,
+    DFUQFTintegerRange,
+    DFUQFTinteger64Range,
+    DFUQFTspecial
+};
+
+enum DFUQSpecialFilter
+{
+    DFUQSFFileNameWithPrefix = 1,
+    DFUQSFFileType = 2
+};
+
+enum DFUQFileTypeFilter
+{
+    DFUQFFTall = 1,
+    DFUQFFTsuperfileonly = 2,
+    DFUQFFTnonsuperfileonly = 3
+};
+
+enum DFUQFilterField
+{
+    DFUQFFfiletype = 0,
+    DFUQFFdescription = 1,
+    DFUQFFdirectory = 2,
+    DFUQFFgroup = 3,
+    DFUQFFtimemodified = 4,
+    DFUQFFname = 5,
+    DFUQFFnumclusters = 6,
+    DFUQFFnumparts = 7,
+    DFUQFFpartmask = 8,
+    DFUQFForigname = 9,
+    DFUQFFattr = 10,
+    DFUQFFattrjob = 11,
+    DFUQFFattrowner = 12,
+    DFUQFFattrrecordcount = 13,
+    DFUQFFattrrecordsize = 14,
+    DFUQFFattrsize = 15,
+    DFUQFFattrcompressedsize = 16,
+    DFUQFFattrworkunit = 17,
+    DFUQFFcluster = 18,
+    DFUQFFclusterdefaultbasedir = 19,
+    DFUQFFclusterdefaultrepldir = 20,
+    DFUQFFclustermapflags = 21,
+    DFUQFFclustername = 22,
+    DFUQFFpart = 23,
+    DFUQFFpartname = 24,
+    DFUQFFpartnum = 25,
+    DFUQFFpartsize = 26,
+    DFUQFFsuperowner = 27,
+    DFUQFFsuperownername = 28,
+    DFUQFFsubfile = 29,
+    DFUQFFsubfilename = 30,
+    DFUQFFsubfilenum = 31,
+    DFUQFFterm = 32,
+    DFUQFFreverse = 256,
+    DFUQFFnocase = 512,
+    DFUQFFnumeric = 1024,
+    DFUQFFwild = 2048
+};
+
+enum DFUQResultField
+{
+    DFUQRFname = 0,
+    DFUQRFdescription = 1,
+    DFUQRFnodegroups = 2,
+    DFUQRFkind = 3,
+    DFUQRFtimemodified = 4,
+    DFUQRFjob = 5,
+    DFUQRFowner = 6,
+    DFUQRFrecordcount = 7,
+    DFUQRForigrecordcount = 8,
+    DFUQRFrecordsize = 9,
+    DFUQRFsize = 10,
+    DFUQRForigsize = 11,
+    DFUQRFworkunit = 12,
+    DFUQRFnodegroup = 13,
+    DFUQRFnumsubfiles = 14,
+    DFUQRFaccessed = 15,
+    DFUQRFnumparts = 16,
+    DFUQRFcompressedsize = 17,
+    DFUQRFdirectory = 18,
+    DFUQRFpartmask = 19,
+    DFUQRFterm = 20,
+    DFUQRFreverse = 256,
+    DFUQRFnocase = 512,
+    DFUQRFnumeric = 1024
+};
+
+extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField feild);
+extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild);
+
 /**
  * File operations can be included in a transaction to ensure that multiple
  * updates are handled atomically. This is the interface to a transaction
@@ -243,7 +342,6 @@ interface IDistributedFile: extends IInterface
     virtual unsigned getPositionPart(offset_t pos,offset_t &base)=0;            // get the part for a given position and the base offset of that part
 
     virtual IDistributedSuperFile *querySuperFile()=0;                          // returns non NULL if superfile
-    virtual bool isSubFile()=0;                                         // returns true if sub file of any SuperFile
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction=NULL)=0;           // returns iterator for all parents
     virtual bool isCompressed(bool *blocked=NULL)=0;
 
@@ -255,7 +353,7 @@ interface IDistributedFile: extends IInterface
 
     virtual ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum)=0;
     virtual IGroup *queryClusterGroup(unsigned clusternum)=0;
-
+    virtual StringBuffer &getClusterGroupName(unsigned clusternum, StringBuffer &name)=0;
     virtual StringBuffer &getECL(StringBuffer &buf) = 0;
     virtual void setECL(const char *ecl) = 0;
 
@@ -269,7 +367,7 @@ interface IDistributedFile: extends IInterface
 
     virtual bool getFormatCrc(unsigned &crc) =0;   // CRC for record format 
     virtual bool getRecordSize(size32_t &rsz) =0;   
-    virtual bool getRecordLayout(MemoryBuffer &layout) =0;   
+    virtual bool getRecordLayout(MemoryBuffer &layout) =0;
 
 
     virtual void enqueueReplicate()=0;
@@ -330,6 +428,7 @@ interface IDistributedSuperFile: extends IDistributedFile
                                 // returns file for part (not linked) NULL if not found
 };
 
+extern da_decl unsigned getSuperFileSubs(IDistributedSuperFile *super, IArrayOf<IDistributedFile> &subFiles, bool superSub=false);
 
 interface ISimpleSuperFileEnquiry: extends IInterface // lightweight local
 {
@@ -431,6 +530,7 @@ interface IDistributedFileDirectory: extends IInterface
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
                                         bool hold = false,
+                                        bool lockSuperOwner = false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
@@ -439,6 +539,7 @@ interface IDistributedFileDirectory: extends IInterface
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
                                         bool hold = false,
+                                        bool lockSuperOwner = false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
@@ -448,6 +549,8 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user) = 0;
             // wildname is in form scope/name and may contain wild components for either
     virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+    virtual IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters,
+        const char *localFilterBuf, IUserDescriptor *user, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
@@ -551,6 +654,8 @@ interface IDistributedFileDirectory: extends IInterface
                                            StringArray &names, UnsignedArray &counts) = 0;
 
     virtual IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false)=0; // if owner = NULL then all
+    virtual IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void* filters, DFUQResultField *localFilters,
+            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total) = 0;
 
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value

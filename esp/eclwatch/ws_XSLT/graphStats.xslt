@@ -36,21 +36,9 @@
         <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
         <link type="text/css" rel="StyleSheet" href="{$filePath}/css/sortabletable.css"/>
         <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-                <script type="text/javascript" src="{$filePath}/scripts/sortabletable.js">
-                    <xsl:text disable-output-escaping="yes">&#160;</xsl:text>
-                </script>
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
                 <script type="text/javascript">
                     <xsl:text disable-output-escaping="yes"><![CDATA[
-                        var sortableTable = null;
-                        
-                        function onLoad()
-                        {
-                            var table = document.getElementById('resultsTable');
-                            if (table)
-                                sortableTable = new SortableTable(table, table, 
-                                    ["Number", "String", "Number", "Number", "Number", "Number"]);                                  
-                        }
                         function findNode(id)
                         {
                             if (window.opener)
@@ -59,7 +47,7 @@
                 ]]></xsl:text>
                 </script>
             </head>
-      <body class="yui-skin-sam" onload="nof5();onLoad()">
+      <body class="yui-skin-sam" onload="nof5()">
                 <h3>Graph Statistics</h3>
         <table class="sort-table" id="resultsTable">
                     <thead>

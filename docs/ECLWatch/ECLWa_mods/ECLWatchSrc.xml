@@ -52,7 +52,7 @@
     </mediaobject>
   </bookinfo>
 
-  <chapter>
+  <chapter id="NewECLWatchIntro">
     <title>Introduction</title>
 
     <para>This document depicts details about the newly redesigned ECL Watch.
@@ -130,7 +130,8 @@
 
       <para>You can select multiple workunits by checking the check box next
       to each workunit. You can also click-and-drag over the workunit check
-      boxes to select multiple workunits.</para>
+      boxes to select multiple workunits. When you select multiple workunits,
+      each workunit will open it's own tab.</para>
 
       <para>The Action buttons allow you to perform actions on the selected
       workunits.</para>
@@ -185,7 +186,7 @@
         </listitem>
       </itemizedlist>
 
-      <sect2 role="brk">
+      <sect2 id="ECLWatchFilterOptions" role="brk">
         <title>Filter Options</title>
 
         <para>You can filter the workunits displayed on the Workunits tab by
@@ -209,6 +210,11 @@
         the specified criteria. Workunits can be filtered by:</para>
 
         <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Archived Only</emphasis> - when
+            checked, this filter will search only archived workunits.</para>
+          </listitem>
+
           <listitem>
             <para><emphasis role="bold">WUID</emphasis> - filter workunits for
             specific workunit ID (wuid).</para>
@@ -282,7 +288,7 @@
             <term>Note:</term>
 
             <listitem>
-              <para>Filter criteria is not case sensitive.</para>
+              <para>Filter criteria are not case sensitive.</para>
             </listitem>
           </varlistentry>
         </variablelist>
@@ -305,7 +311,7 @@
         </sect3>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="ECLWatchContextMenu" role="brk">
         <title>Context Menu</title>
 
         <para>You can right-click on a workunit to get a context menu of
@@ -324,7 +330,7 @@
           </figure></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="ECLWatch_Workunit_Details" role="brk">
         <title role="brk">Workunit Details</title>
 
         <para>The Workunit Details page provides more information about the
@@ -367,6 +373,11 @@
           </listitem>
 
           <listitem>
+            <para>Press the <emphasis role="bold">Restore</emphasis> button to
+            restore an archived workunit.</para>
+          </listitem>
+
+          <listitem>
             <para>Press the <emphasis role="bold">Set To Failed</emphasis>
             button to change the workunit state to failed.</para>
           </listitem>
@@ -377,8 +388,8 @@
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Clone</emphasis> button to
-            clone the workunit.</para>
+            <para>Press the <emphasis role="bold">Recover</emphasis> button to
+            restart the workunit.</para>
           </listitem>
 
           <listitem>
@@ -387,15 +398,159 @@
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Restart</emphasis> button to
-            restart the workunit.</para>
+            <para>Press the <emphasis role="bold">Clone</emphasis> button to
+            clone the workunit.</para>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Publish</emphasis> button to
-            provide a name and and submit the workunit.</para>
+            publish and submit the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Z.A.P.</emphasis> button to
+            package up system information for analysis.</para>
           </listitem>
         </itemizedlist>
+
+        <sect3>
+          <title>Publish Action Button</title>
+
+          <para>Click on the Publish action button to publish a query. <figure>
+              <title>Publish Menu</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWaPubl01.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Fill in the values for the Job Name, the Remote Dali, Source
+          Process, Priority (optional), and you can add a comment. After you
+          fill in the required values you can press the <emphasis
+          role="bold">Submit </emphasis>button to submit your query.</para>
+
+          <para>Options for ECL Publish</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Job Name:</emphasis> The name of the
+              job to publish. Auto-populated if you choose to publish from the
+              workunit details page.</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Remote Dali:</emphasis> The IP of
+              the DALI to be used to resolve remote files. (optional)</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Source Process:</emphasis> Process
+              cluster from which to copy files. (optional)</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Comment: </emphasis>If desired, add
+              a comment. The comment displays on the published queries details
+              page.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Priority:</emphasis> Sets the
+              priority for the query. Values can be LOW, HIGH, SLA, or NONE.
+              NONE will clear current setting.</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Allow Foreign Files:</emphasis>
+              Check the box to allow the use of foreign files in a Roxie
+              query. If a Roxie query references foreign files and this is not
+              enabled, publish will fail.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="ZAP">
+          <title>Z.A.P. Utility</title>
+
+          <para>The Zipped Analysis Package (Z.A.P.) button is a utility for
+          collecting system information and encapsulating it into a shareable
+          package. It is a useful tool for reporting errors, inconsistencies,
+          or other unexpected behavior. When there is such an occurrence, this
+          utility packages up information to send for further analysis.</para>
+
+          <figure>
+            <title>Z.A.P. Button</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWAZ00.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>To use the Z.A.P. utility, press the Z.A.P. button on the
+          workunit details page from the appropriate workunit. The button
+          opens the Zipped Analysis Package dialog.</para>
+
+          <figure>
+            <title>The Zipped Analysis Package Dialog</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWAZ01.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>Fill in the corresponding values under Description, History,
+          and Timings in the Z.A.P. dialog. Press the <emphasis
+          role="bold">Apply </emphasis>button when finished. The Z.A.P.
+          utililty generates a zip file with all the appropriate information
+          for troubleshooting.</para>
+
+          <para>You can find the generated zip file in your browser's
+          designated download directory. You can now send this file to the
+          person handling your support request, or you can upload the file
+          into the issue tracking system. Before distributing the file, verify
+          that the file does not contain any sensitive data, such as
+          personally identifiable information (PII).</para>
+        </sect3>
+
+        <sect3>
+          <title>Visualizations</title>
+
+          <para>You can see visual representations of select workunits.
+          Visualizations are available from the workunit <emphasis
+          role="bold">Outputs</emphasis> tab. The Visualize tab provides a
+          number of chart types you can generate if you have included
+          additional resources in your ECL code via the enhanced manifest
+          mechanism (such as an index web page). <figure>
+              <title>Visualization</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA478.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>To access Visualizations, click on the outputs tab on the
+          selected workunit details page, then select the <emphasis
+          role="bold">Visualize</emphasis> tab. You can view different
+          visualization types by clicking on the drop list on Visualize tab.
+          Click on the <emphasis role="bold">Mappings</emphasis> drop menu, to
+          change the parameters.</para>
+        </sect3>
       </sect2>
     </sect1>
 
@@ -432,7 +587,8 @@
           </mediaobject>
         </figure>To further examine a workunit or to perform some action on it
       you must select it. You can select the workunit by checking the check
-      box. <figure>
+      box. You can also double-click on the workunit to select and open it in
+      a new tab.<figure>
           <title>Select DFU Workunit</title>
 
           <mediaobject>
@@ -449,6 +605,11 @@
 
       <para>The enabled Action buttons now allow you to perform some actions
       on the selected workunits. <itemizedlist>
+          <listitem>
+            <para>Press the<emphasis role="bold"> Refresh </emphasis>button to
+            refresh the list.</para>
+          </listitem>
+
           <listitem>
             <para>Press the<emphasis role="bold"> Open </emphasis>button to
             open the workunit(s) details tab.</para>
@@ -484,7 +645,7 @@
                   <term>Note:</term>
 
                   <listitem>
-                    <para>Filter criteria is case-insensitive.</para>
+                    <para>Filter criteria are not case sensitive.</para>
                   </listitem>
                 </varlistentry>
               </variablelist></para>
@@ -496,8 +657,11 @@
       You can also double-click on a particular workunit to open the details
       tab.</para>
 
-      <sect2 role="brk">
-        <title>DFU Filter Options</title>
+      <para>When you select and then open multiple units, they will each open
+      their own tab.</para>
+
+      <sect2 id="DFU_WU_Filter_Options" role="brk">
+        <title>DFU Workunits Filter Options</title>
 
         <para>You can filter the workunits displayed on the Workunits tab by
         clicking on the<emphasis role="bold"> Filter</emphasis> Action button.
@@ -506,7 +670,7 @@
         button.</para>
 
         <para><figure>
-            <title>The DFU Filter sub-menu</title>
+            <title>The DFU Workunit Filter</title>
 
             <mediaobject>
               <imageobject>
@@ -516,10 +680,15 @@
             </mediaobject>
           </figure></para>
 
-        <para>The DFU filter options allow you to filter workunits using the
-        specified criteria. Workunits can be filtered by:</para>
+        <para>The DFU Workunit filter options allow you to filter workunits
+        using the specified criteria. Workunits can be filtered by:</para>
 
         <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Archived Only</emphasis> - when
+            checked, this filter will search only archived workunits.</para>
+          </listitem>
+
           <listitem>
             <para><emphasis role="bold">Owner</emphasis> - filter workunits
             for specific owners. Supports wildcards.</para>
@@ -539,11 +708,6 @@
             <para><emphasis role="bold">State</emphasis> - filter workunits by
             state. Select the state from the drop list.</para>
           </listitem>
-
-          <listitem>
-            <para><emphasis role="bold">Archived Only</emphasis> - when
-            checked, this filter will search only archived workunits.</para>
-          </listitem>
         </itemizedlist>
 
         <variablelist>
@@ -551,18 +715,18 @@
             <term>Note:</term>
 
             <listitem>
-              <para>Filter criteria is not case sensitive.</para>
+              <para>Filter criteria are not case sensitive.</para>
             </listitem>
           </varlistentry>
         </variablelist>
 
-        <sect3>
+        <sect3 id="DFU_Column_Sorting">
           <title>Sorting Columns</title>
 
           <para>You can sort a column by clicking on the column heading. Click
           once for ascending, click again to toggle to descending. The
           direction of the arrow indicates the sort order. <figure>
-              <title>DFU Sort by column</title>
+              <title>DFU Workunit Sort by column</title>
 
               <mediaobject>
                 <imageobject>
@@ -574,7 +738,7 @@
         </sect3>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="DFU_WorunitDetails" role="brk">
         <title>DFU Workunit Details Page</title>
 
         <para>When you open the selected workunit(s) you will see the workunit
@@ -603,6 +767,11 @@
         tab to perform actions on the selected workunit. Press the appropriate
         Workunit Action button to perform the following actions. <itemizedlist>
             <listitem>
+              <para>Press the<emphasis role="bold"> Refresh </emphasis>button
+              to refresh the workunit details.</para>
+            </listitem>
+
+            <listitem>
               <para>Press the <emphasis role="bold">Save</emphasis> button to
               save the workunit.</para>
             </listitem>
@@ -627,209 +796,240 @@
               to modify the workunit (not yet implemented).</para>
             </listitem>
           </itemizedlist></para>
+
+        <sect3>
+          <title>XML Tab</title>
+
+          <para>The XML Tab on the workunit details page allows you to see the
+          XML representation of the workunit. <figure>
+              <title>Workunit Detail XML tab</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA475.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+
+        <sect3>
+          <title>Source Tab</title>
+
+          <para>The Source Tab on the workunit details page allows you to view
+          the source file(s) of the DFU workunit. <figure>
+              <title>Workunit Detail Source tab</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA476.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+
+        <sect3>
+          <title>Target Tab</title>
+
+          <para>The Target Tab on the workunit details page allows you to view
+          the target of the DFU workunit.<figure>
+              <title>Workunit Detail Target tab</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA477.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
       </sect2>
     </sect1>
 
-    <sect1 id="LogicalFiles" role="brk">
-      <title>Logical Files</title>
+    <sect1 id="ECLWatchLogicalFiles" role="brk">
+      <title>Files</title>
 
-      <para>The Logical Files page contains a list of all the logical files on
-      your system. It provides access to more details about the files. You can
-      also perform actions on selected files using the Workunit Action
-      buttons.</para>
+      <para>The <emphasis role="bold">Files</emphasis> page contains features
+      relating to the process of getting data files on to your cluster,
+      managing these files and also the workunits associated with them. Click
+      on the<emphasis role="bold"> Files</emphasis> icon for access to the
+      Files features. You can also perform actions on selected files and
+      superfiles using the Workunit Action buttons.</para>
 
-      <para>To access the Logical Files page click on the <emphasis
-      role="bold">Files </emphasis>icon, then click the <emphasis
-      role="bold">Logical Files</emphasis> link from the navigation
-      sub-menu.</para>
+      <sect2 id="Logical_Files_Page" role="nobrk">
+        <title>Logical Files Page</title>
 
-      <para><figure>
-          <title>Logical Files</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="../../images/ECLWA430.jpg"
-                         vendor="eclwatchSS" />
-            </imageobject>
-          </mediaobject>
-        </figure>You can browse or search for logical files from this page
-      using the Filter drop menu. <variablelist>
-          <varlistentry>
-            <term>Note:</term>
-
-            <listitem>
-              <para>Filter criteria is not case sensitive.</para>
-            </listitem>
-          </varlistentry>
-        </variablelist><figure>
-          <title>Logical Files Page</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="../../images/ECLWA420.jpg"
-                         vendor="eclwatchSS" />
-            </imageobject>
-          </mediaobject>
-        </figure></para>
-
-      <para>To see details for a particular file, or to perform some action on
-      it you must select it. You can select a file or files by checking the
-      check box. You can also click and drag your mouse over a group of check
-      boxes, to select multiple files. <figure>
-          <title>Select Files</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="../../images/ECLWA421.jpg"
-                         vendor="eclwatchSS" />
-            </imageobject>
-          </mediaobject>
-        </figure></para>
-
-      <para>There are three columns to indicate some file attributes:</para>
-
-      <para><informaltable colsep="1" frame="all">
-          <tgroup cols="2">
-            <colspec colwidth="46pt" />
-
-            <colspec colwidth="110pt" />
-
-            <tbody>
-              <row>
-                <entry>C</entry>
-
-                <entry>Compressed File</entry>
-              </row>
-
-              <row>
-                <entry>K</entry>
-
-                <entry>Key File (index)</entry>
-              </row>
-
-              <row>
-                <entry>S</entry>
-
-                <entry>Superfile</entry>
-              </row>
-            </tbody>
-          </tgroup>
-        </informaltable>You can also sort a column by clicking on the column
-      heading. Click once for ascending, click again to toggle to descending.
-      The arrow shows the sort order.</para>
-
-      <para>Once you have selected a file or files, the Action Buttons are
-      enabled. You can perform actions on selected files.</para>
-
-      <para><itemizedlist>
-          <listitem>
-            <para>Press the<emphasis role="bold"> Open</emphasis> button to
-            open the Logical Files Details page(s).</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Delete</emphasis> button to
-            delete file(s).</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Add To Superfile</emphasis>
-            button to create and add file(s) to a superfile.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Filter</emphasis> button to
-            display additional filter options.</para>
-          </listitem>
-        </itemizedlist></para>
-
-      <para>You can press the <emphasis role="bold">Open</emphasis> button to
-      open a tab with the details for each selected file.</para>
-
-      <sect2 role="brk">
-        <title>Logical Files Filter Options</title>
-
-        <para>You can filter the logIcal files displayed on the Logical Files
-        tab by clicking on the<emphasis role="bold"> Filter</emphasis> Action
-        button. The Filter sub-menu displays. Fill in values to specify the
-        filter criteria, then press the <emphasis role="bold">Apply</emphasis>
-        button.</para>
+        <para>To access the Files page click on the <emphasis
+        role="bold">Files </emphasis>icon, then click the <emphasis
+        role="bold">Logical Files</emphasis> link from the navigation
+        sub-menu.</para>
 
         <para><figure>
-            <title>Logical Files Filter sub-menu</title>
+            <title>Logical Files</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLWA423.jpg"
+                <imagedata fileref="../../images/ECLWA430.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure>You can browse or search for logical files from this page
+        using the Filter drop menu. <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>Filter criteria are not case sensitive.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist><figure>
+            <title>Logical Files Page</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA420.jpg"
                            vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
 
-        <para>The logical file filter options allow you to filter files using
-        the specified criteria. Logical files can be filtered by:</para>
+        <para>To see details for a particular file, or to perform some action
+        on it you must select it. You can select a file or files by checking
+        the check box. You can also click and drag your mouse over a group of
+        check boxes, to select multiple files. <figure>
+            <title>Select Files</title>
 
-        <itemizedlist>
-          <listitem>
-            <para><emphasis role="bold">Name</emphasis> - filter files by
-            name. Supports wildcards.</para>
-          </listitem>
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA421.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
 
-          <listitem>
-            <para><emphasis role="bold">Description</emphasis> - filter files
-            by description. Supports wildcards.</para>
-          </listitem>
+        <para>There are three columns to indicate some file attributes:</para>
 
-          <listitem>
-            <para><emphasis role="bold">Owner</emphasis> - filter files by
-            owners. Supports wildcards.</para>
-          </listitem>
+        <para><informaltable colsep="1" frame="all">
+            <tgroup cols="2">
+              <colspec colwidth="46pt" />
 
-          <listitem>
-            <para><emphasis role="bold">Cluster</emphasis> - filter files by
-            cluster. Select the cluster from the drop list.</para>
-          </listitem>
+              <colspec colwidth="110pt" />
 
-          <listitem>
-            <para><emphasis role="bold">From Sizes</emphasis> - filter files
-            from a specific size.</para>
-          </listitem>
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-compressed.jpg" /></entry>
 
-          <listitem>
-            <para><emphasis role="bold">To Sizes</emphasis> - filter files up
-            to a specific size.</para>
-          </listitem>
+                  <entry>Compressed File</entry>
+                </row>
 
-          <listitem>
-            <para><emphasis role="bold">From date</emphasis> - filter files
-            from a specific date and/or time. Select the date and time from
-            the drop list.</para>
-          </listitem>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-index0.jpg" /></entry>
 
-          <listitem>
-            <para><emphasis role="bold">To date</emphasis> - filter files up
-            to a specific date and/or time. Select the date and time from the
-            drop list.</para>
-          </listitem>
+                  <entry>Key File (index)</entry>
+                </row>
 
-          <listitem>
-            <para><emphasis role="bold">Last</emphasis> <emphasis>N</emphasis>
-            <emphasis role="bold">Days</emphasis> - filter files for a certain
-            number (N) of days. Enter a number in this field.</para>
-          </listitem>
-        </itemizedlist>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/ECLWa-SuperFile.jpg" /></entry>
 
-        <variablelist>
-          <varlistentry>
-            <term>Note:</term>
+                  <entry>Superfile</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>You can also sort a column by clicking on the column
+        heading. Click once for ascending, click again to toggle to
+        descending. The arrow shows the sort order.</para>
+
+        <para>Once you have selected a file or files, the Action Buttons are
+        enabled. You can perform actions on selected files.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Press the<emphasis role="bold"> Open</emphasis> button to
+              open the Logical Files Details page(s).</para>
+            </listitem>
 
             <listitem>
-              <para>Filter criteria is not case sensitive.</para>
+              <para>Press the <emphasis role="bold">Delete</emphasis> button
+              to delete file(s).</para>
             </listitem>
-          </varlistentry>
-        </variablelist>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Remote Copy</emphasis>
+              button to open the dialog where you can copy files from a
+              foreign HPCC Platform. You will need premission to access the
+              foreign Dali server.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the<emphasis role="bold"> Copy</emphasis> button to
+              copy a file. You can modify some of the copy options from the
+              drop menu.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the<emphasis role="bold"> Rename</emphasis> button
+              to rename a logical file. You can modify some rename options
+              from the drop menu.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Add To
+              Superfile</emphasis> button to create and add file(s) to a
+              superfile.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Despray</emphasis> button
+              to despray the file. You can modify some despray options from
+              the drop menu.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Filter</emphasis> button
+              to display additional filter options. Use these options to
+              filter the list.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the Tree image button (to the right of the Filter
+              button) to view files by scope in a tree view.</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <para>You can press the <emphasis role="bold">Open</emphasis> button
+        to open a tab with the details for each selected file.</para>
 
         <sect3>
+          <title>Remote Copy</title>
+
+          <para>Press the <emphasis role="bold">Remote Copy</emphasis> button
+          to open the dialog where you can copy files to or from a foreign
+          dali. <figure>
+              <title>Remote Copy Dialog</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA425.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Fill in the values for the Source file, and the Target
+          destination, check any appropriate options then press the <emphasis
+          role="bold">Submit</emphasis> button.</para>
+        </sect3>
+
+        <sect3 id="CopyLogicalFile">
+          <title>Copy File</title>
+
+          <para>Press the <emphasis role="bold">Copy</emphasis> button to
+          display the copy drop menu, with additional file copy
+          options.</para>
+        </sect3>
+
+        <sect3 id="LogicalFile_Sorting">
           <title>Sorting Columns</title>
 
           <para>You can sort a column by clicking on the column heading. Click
@@ -845,9 +1045,93 @@
               </mediaobject>
             </figure></para>
         </sect3>
+
+        <sect3 id="LogicalFileFilterOptions" role="brk">
+          <title>Logical Files Filter Options</title>
+
+          <para>You can filter the logIcal files displayed on the Logical
+          Files tab by clicking on the<emphasis role="bold"> Filter</emphasis>
+          Action button. The Filter sub-menu displays. Fill in values to
+          specify the filter criteria, then press the <emphasis
+          role="bold">Apply</emphasis> button.</para>
+
+          <para><figure>
+              <title>Logical Files Filter sub-menu</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA423.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>The logical file filter options allow you to filter files
+          using the specified criteria. Logical files can be filtered
+          by:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">Name</emphasis> - filter files by
+              name. Supports wildcards.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Description</emphasis> - filter
+              files by description. Supports wildcards.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Owner</emphasis> - filter files by
+              owners. Supports wildcards.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Cluster</emphasis> - filter files by
+              cluster. Select the cluster from the drop list.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">From Sizes</emphasis> - filter files
+              from a specific size.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">To Sizes</emphasis> - filter files
+              up to a specific size.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">File Type</emphasis> - filter files
+              by type.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">From date</emphasis> - filter files
+              from a specific date and/or time. Select the date and time from
+              the drop list.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">To date</emphasis> - filter files up
+              to a specific date and/or time. Select the date and time from
+              the drop list.</para>
+            </listitem>
+          </itemizedlist>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>Filter criteria are not case sensitive.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </sect3>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="LogicalFilesDetailsPage" role="brk">
         <title>Logical Files Details</title>
 
         <para>The Logical Files Detail page shows specific details for the
@@ -893,12 +1177,17 @@
 
             <listitem>
               <para>Select the <emphasis role="bold">XML</emphasis> tab to
-              view the underlying XML.</para>
+              view the XML representation of the logical file.</para>
             </listitem>
 
             <listitem>
               <para>Select the<emphasis role="bold"> File Parts</emphasis> tab
               to view information about the various file parts.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Queries</emphasis> tab to
+              see which queries use use which logical files.</para>
             </listitem>
 
             <listitem>
@@ -949,8 +1238,12 @@
     <sect1 id="Landing_Zones" vendor="eclwatchSS">
       <title>Landing Zones</title>
 
-      <para>The Landing Zone Page shows you each landing zone you have
-      configured for your cluster and its contents. <figure>
+      <para>To access the Landing Zones page click on the <emphasis
+      role="bold">Files</emphasis> icon, then click the <emphasis
+      role="bold">Landing Zones</emphasis> link from the navigation sub-menu.
+      The Landing Zone link displays the Landing Zones page. The Landing Zone
+      Page shows you each landing zone you have configured for your cluster
+      and its contents. <figure>
           <title>Landing Zone Page</title>
 
           <mediaobject>
@@ -1062,17 +1355,22 @@
           </orderedlist></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="HexPreview" role="brk">
         <title>Hex Preview</title>
 
-        <para>You can view a Hexadecimal representation of files on the
-        landing zone. <orderedlist>
+        <para>The Hex Preview shows the contents of a file on the landing zone
+        in hexadecimal form. If the file large then only the first 32k
+        display. Hex preview is designed for fixed length files, although it
+        can also work for delimited files but may be limited in that
+        regards.</para>
+
+        <para><orderedlist>
             <listitem>
               <para>Select a file by checking the box next to it.</para>
             </listitem>
 
             <listitem>
-              <para>Press the<emphasis role="bold">Hex Preview</emphasis>
+              <para>Press the<emphasis role="bold"> Hex Preview</emphasis>
               action button to display the selected file(s) in a hex
               format.</para>
             </listitem>
@@ -1134,6 +1432,23 @@
               spray the file.</para>
             </listitem>
           </orderedlist></para>
+
+        <sect3 id="multi-fileSpray">
+          <title>Spray multiple files</title>
+
+          <para>You can choose to spray multiple files with the multi-file
+          spray feature. This feature is useful for spraying a number of files
+          of the same type and the same scope using the same spray
+          options.</para>
+
+          <para>Fixed (length) files can have different record lengths and XML
+          files can have different row tags which must be specified
+          individually for each file. To specify these differences select the
+          files you want to spray and the spray type. You will then see the
+          files listed. Enter the record length or row tag information for
+          each file if using the Fixed or XML spray types, then check all
+          other applicable options and Spray.</para>
+        </sect3>
       </sect2>
     </sect1>
 
@@ -1144,7 +1459,7 @@
       clusters in an environment. To access the Queries page click the
       Published Queries link from the Navigation pane in ECL Watch.</para>
 
-      <sect2>
+      <sect2 id="ECLWatch_Queries">
         <title>Queries</title>
 
         <para>Click on any link from the <emphasis

@@ -105,11 +105,3 @@ public:
     }
 };
 
-CActivityBase *createIfActionActivityMaster(CMasterGraphElement *container)
-{
-    if (container->queryLocalOrGrouped())
-        return new CMasterActivity(container);
-    else
-        return new CIfActionMaster(container);
-}
-

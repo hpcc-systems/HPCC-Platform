@@ -32,7 +32,7 @@
 #define INDEXWRITE_SMART_BUFFER_SIZE            (0x100000*12)           // 12MB
 #define COUNTPROJECT_SMART_BUFFER_SIZE          (0x100000*12)           // 12MB
 #define ENTH_SMART_BUFFER_SIZE                  (0x100000*12)           // 12MB
-#define JOINR_SMART_BUFFER_SIZE                 (0x100000*12)           // 12MB
+#define JOIN_SMART_BUFFER_SIZE                 (0x100000*12)            // 12MB
 #define LOOKUPJOINL_SMART_BUFFER_SIZE           (0x100000*12)           // 12MB
 #define CATCH_BUFFER_SIZE                       (0x100000*12)           // 12MB
 #define SKIPLIMIT_BUFFER_SIZE                   (0x100000*12)           // 12MB

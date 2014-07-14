@@ -534,13 +534,8 @@ bool CseSpotter::checkPotentialCSE(IHqlExpression * expr, CseSpotterInfo * extra
         return true;
     case no_substring:
         {
-            IHqlExpression * child = expr->queryChild(0);
-//          if (queryBodyExtra(child)->isAliased())
-            {
-                SubStringHelper helper(expr);
-                return !helper.canGenerateInline();
-            }
-            return true;
+            SubStringHelper helper(expr);
+            return !helper.canGenerateInline();
         }
     case no_cast:
     case no_implicitcast:

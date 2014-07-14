@@ -827,6 +827,7 @@ private:
     bool m_verify;
     bool m_address_match;
     Owned<CStringSet> m_peers;
+    StringAttr password;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -867,11 +868,8 @@ public:
         {
             throw MakeStringException(-1, "ctx can't be created");
         }
-
-        char passwdbuf[128];
-        strcpy(passwdbuf, passphrase);
-
-        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, passwdbuf);
+        password.set(passphrase);
+        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.sget());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
 
         if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
@@ -918,12 +916,10 @@ public:
         const char* passphrase = config->queryProp("passphrase");
         if(passphrase && *passphrase)
         {
-            StringBuffer passbuf;
-            decrypt(passbuf, passphrase);
-            char passwdbuf[128];
-            strcpy(passwdbuf, passbuf.str());
-
-            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, passwdbuf);
+            StringBuffer pwd;
+            decrypt(pwd, passphrase);
+            password.set(pwd);
+            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.sget());
             SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
         }
 

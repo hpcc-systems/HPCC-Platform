@@ -341,6 +341,15 @@ bool EclCmdCommon::finalizeOptions(IProperties *globals)
     extractEclCmdOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
     extractEclCmdOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
 
+    if (!optUsername.isEmpty() && optPassword.isEmpty())
+    {
+        VStringBuffer prompt("%s's password: ", optUsername.get());
+        StringBuffer pw;
+        passwordInput(prompt, pw);
+        if (pw.length())
+            optPassword.set(pw);
+    }
+
     if (!optVerbose)
     {
         Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);

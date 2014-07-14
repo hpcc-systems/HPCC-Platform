@@ -1,0 +1,241 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}_LandingZones" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.title_LZBrowse}'" data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <b>${i18n.Preview}:</b>
+                    <div id="${id}HexPreview" data-dojo-attach-event="onClick:_onHexPreview" data-dojo-type="dijit.form.Button">${i18n.Hex}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <input id="${id}Upload" label="${i18n.Upload}" type="file" data-dojo-attach-event="onChange:_onUpload, onBegin: _onUploadBegin, onProgress: _onUploadProgress" data-dojo-props='multiple: true' data-dojo-type="dojox.form.Uploader" />
+                    <div id="${id}Download" data-dojo-attach-event="onClick:_onDownload" data-dojo-type="dijit.form.Button">${i18n.Download}</div>
+                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}AddFileDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.AddFile}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}AddFileForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="hpcc.TableContainer">
+                                    <input id="${id}AddFileIP" title="${i18n.IP}:" style="width: 95%;" name="NetAddress" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}AddFilePath" title="${i18n.Path}:" style="width: 95%;" name="fullPath" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onAddFile" data-dojo-type="dijit.form.Button">${i18n.Add}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <b>${i18n.Spray}:</b>
+                    <div id="${id}SprayFixedDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Fixed}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}SprayFixedForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Target</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}SprayFixedDestination" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
+                                        <input id="${id}SprayFixedDestinationNamePrefix" title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                    <div id="${id}SprayFixedGrid" data-dojo-type="SelectionGridWidget">
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Options</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onSprayFixed" data-dojo-type="dijit.form.Button">${i18n.Spray}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="${id}SprayDelimitedDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Delimited}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}SprayDelimitedForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Target</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}SprayDelimitedDestination" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
+                                        <input title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                    <div id="${id}SprayDelimitedGrid" data-dojo-type="SelectionGridWidget">
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Options</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <select id="${id}sourceFormat" title="${i18n.Format}:" name="sourceFormat" colspan="2" data-dojo-type="dijit.form.Select">
+                                            <option value="1">ASCII</option>
+                                            <option value="2">UTF-8</option>
+                                            <option value="3">UTF-8N</option>
+                                            <option value="4">UTF-16</option>
+                                            <option value="5">UTF-16LE</option>
+                                            <option value="6">UTF-16BE</option>
+                                            <option value="7">UTF-32</option>
+                                            <option value="8">UTF-32LE</option>
+                                            <option value="9">UTF-32BE</option>
+                                        </select>
+                                        <input id="${id}SprayDelimitedMaxRecordLength" title="${i18n.MaxRecordLength}:" style="width: 95%;" name="sourceMaxRecordSize" value="8192" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input id="${id}SprayDelimitedSeparators" title="${i18n.Separators}:" style="width: 95%;" name="sourceCsvSeparate" value="," data-dojo-props="trim: true, placeHolder:'\,'" colspan="2" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input title="${i18n.OmitSeparator}:" name="NoSourceCsvSeparator" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}SprayDelimitedEscape" title="${i18n.Escape}:" style="width: 95%;" name="sourceCsvEscape" data-dojo-props="trim: true" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                                        <input id="${id}SprayDelimitedTerminators" title="${i18n.LineTerminators}:" name="sourceCsvTerminate" style="width: 95%;" value="\n,\r\n" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'\\n,\\r\\n'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input id="${id}SprayDelimitedQuote" title="${i18n.Quote}:" style="width: 95%;" name="sourceCsvQuote" value='"' data-data-dojo-props="trim: true, placeHolder:'\''" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.RecordStructurePresent}:" name="recordStructurePresent" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.QuotedTerminator}:" name="quotedTerminator" data-dojo-type="dijit.form.CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onSprayDelimited" data-dojo-type="dijit.form.Button">${i18n.Spray}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="${id}SprayXmlDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.XML}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}SprayXmlForm" style="width: 530px;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Target</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}SprayXmlDestinationSelect" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
+                                        <input title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                    <div id="${id}SprayXmlGrid" data-dojo-type="SelectionGridWidget">
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Options</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <select id="${id}xmlsourceFormat" title="${i18n.Format}:" name="sourceFormat" colspan="2" data-dojo-type="dijit.form.Select">
+                                            <option value="1">ASCII</option>
+                                            <option value="2">UTF-8</option>
+                                            <option value="3">UTF-8N</option>
+                                            <option value="4">UTF-16</option>
+                                            <option value="5">UTF-16LE</option>
+                                            <option value="6">UTF-16BE</option>
+                                            <option value="7">UTF-32</option>
+                                            <option value="8">UTF-32LE</option>
+                                            <option value="9">UTF-32BE</option>
+                                        </select>
+                                        <input id="${id}SprayXmlMaxRecordLength" title="${i18n.MaxRecordLength}:" value="8192" style="width: 95%;" name="sourceMaxRecordSize" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button data-dojo-attach-event="onClick:_onSprayXml" data-dojo-type="dijit.form.Button">${i18n.Spray}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="${id}SprayVariableDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Variable}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}SprayVariableForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Target</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}SprayVariableDestination" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
+                                        <input title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                    <div id="${id}SprayVariableGrid" data-dojo-type="SelectionGridWidget">
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Options</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <select title="${i18n.VariableSourceType}:" name="sourceFormat" colspan="2" data-dojo-type="dijit.form.Select">
+                                            <option value="recfmv" selected="true">recfmv</option>
+                                            <option value="recfmvb">recfmvb</option>
+                                            <option value="variable">${i18n.Variable}</option>
+                                            <option value="variablebigendian">${i18n.VariableBigendian}</option>
+                                        </select>
+                                        <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onSprayVariable" data-dojo-type="dijit.form.Button">${i18n.Spray}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="${id}SprayBlobDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Blob}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}SprayBlobForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Target</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}SprayBlobDestination" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
+                                        <input title="${i18n.TargetName}:" style="width: 95%;" name="destLogicalName" data-dojo-props="trim: true, placeHolder:'${i18n.TargetNamePlaceholder}'" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    </div>
+                                    <div id="${id}SprayBlobGrid" data-dojo-type="SelectionGridWidget">
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Options</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input title="${i18n.BlobPrefix}:" style="width: 95%;" name="prefix" data-dojo-props="trim: true, placeHolder:'${i18n.PrefixPlaceholder}'" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onSprayBlob" data-dojo-type="dijit.form.Button">${i18n.Spray}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
+                </div>
+                <div id="${id}LandingZonesGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}LandingZonesGrid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="${id}FileListDialog" title="${i18n.FileUploader}" data-dojo-type="dijit.Dialog">
+        <div class="dijitDialogPaneContentArea">
+            <div data-dojo-props="cols:1" data-dojo-type="hpcc.TableContainer">
+                <input id="${id}DropZoneTargetSelect" title="${i18n.LandingZone}:" style="width: 95%;" data-dojo-type="TargetSelectWidget" />
+            </div>
+            <p>
+            <div id="${id}UploadFileList" class="dijitDialogPaneContentArea" data-dojo-props="uploaderId: '${id}Upload'" data-dojo-type="dojox.form.uploader.FileList"></div>
+            </p>
+            <span id="BrowserSizeMessage" class="hidden">${i18n.YourBrowserMayNotSupport}</span>
+        </div>
+        <div class="dijitDialogPaneActionBar">
+            <label>${i18n.Overwrite}</label>
+            <input id="${id}FileOverwriteCheckbox" title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+            <button id="${id}FileListDialogUpload" data-dojo-attach-event="onClick:_onCheckUploadSubmit" data-dojo-type="dijit.form.Button">${i18n.Start}</button>
+            <button id="${id}FileListDialogCancel" type="button" data-dojo-attach-event="onClick:_onUploadCancel" data-dojo-type="dijit.form.Button">${i18n.Close}</button>
+        </div>
+    </div>
+</div>

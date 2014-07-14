@@ -448,6 +448,8 @@ public:
                 return out.append("Dirty client cache members used");
             case SDSExcpt_LockHeld:
                 return out.append("Lock held");
+            case SDSExcpt_SubscriptionParseError:
+                return out.append("Subscription parse error");
             default:
                 return out.append("INTERNAL ERROR");
         }

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Translate">
+  <title>Translate</title>
+
+  <para><emphasis role="bold">STD.Str.Translate<indexterm>
+      <primary>STD.Str.Translate</primary>
+    </indexterm><indexterm>
+      <primary>Str.Translate</primary>
+    </indexterm><indexterm>
+      <primary>Translate</primary>
+    </indexterm>(</emphasis> <emphasis>source, search, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the characters to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>search </emphasis></entry>
+
+          <entry>A string containing the characters to be replaced by
+          characters in the <emphasis>replacement</emphasis> string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replacement </emphasis></entry>
+
+          <entry>A string containing the characters to act as
+          replacements.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Translate returns a STRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Translate </emphasis>functions return the
+  <emphasis>source</emphasis> string with the <emphasis>replacement</emphasis>
+  character substituted for all characters in the <emphasis>source</emphasis>
+  string. The <emphasis>search</emphasis> string characters are replaced by
+  the characters in the equivalent position in the
+  <emphasis>replacement</emphasis> string.</para>
+
+  <para>If no <emphasis>search</emphasis> string characters are in the
+  <emphasis>source</emphasis> string, it returns the
+  <emphasis>source</emphasis> string unaltered.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.Str.Translate('abcabc','ca','yz'); //A contains 'zbyzby'
+</programlisting>
+</sect1>

@@ -270,7 +270,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
         funcctx.addReturn(queryQuotedNullExpr());
 
         translator.endNestedClass();
-        classctx.addQuoted("virtual INlpHelper * queryHelper() { return &helper; }");
+        classctx.addQuotedLiteral("virtual INlpHelper * queryHelper() { return &helper; }");
     }
 }
 
@@ -298,7 +298,7 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
             s.append(": return &").append(meta.queryInstanceObject()).append(";");
             metacasectx.addQuoted(s);
         }
-        metactx.addQuoted("return 0;");
+        metactx.addQuotedLiteral("return 0;");
     }
 
     {
@@ -337,7 +337,7 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
                 translator.buildTransformBody(childctx, newTransform, NULL, NULL, dataset, NULL);
             }
         }
-        prodctx.addQuoted("return (size32_t)-1;");
+        prodctx.addQuotedLiteral("return (size32_t)-1;");
     }
 }
 
@@ -513,7 +513,7 @@ void HqlCppTranslator::doBuildParseTransform(BuildCtx & classctx, IHqlExpression
 
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IMatchedResults * matched, IMatchWalker * walker)");
     ensureRowAllocated(funcctx, "crSelf");
-    funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     funcctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
     bindTableCursor(funcctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
 
@@ -540,11 +540,11 @@ void HqlCppTranslator::doBuildParseSearchText(BuildCtx & classctx, IHqlExpressio
     if (searchTypeCode == type_unicode)
     {
         funcctx.addQuotedCompound("virtual void getSearchText(size32_t & retLen, char * & _retText, const void * _self)");
-        funcctx.addQuoted("UChar * & retText = *(UChar * *)&_retText;");        // don't ask.
+        funcctx.addQuotedLiteral("UChar * & retText = *(UChar * *)&_retText;");        // don't ask.
     }
     else
         funcctx.addQuotedCompound("virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self)");
-    funcctx.addQuoted("const unsigned char * self = (const unsigned char *) _self;");
+    funcctx.addQuotedLiteral("const unsigned char * self = (const unsigned char *) _self;");
     bindTableCursor(funcctx, dataset, "self");
 
     bool needToFree = true;
@@ -634,7 +634,7 @@ void HqlCppTranslator::doBuildParseValidators(BuildCtx & classctx, IHqlExpressio
 void HqlCppTranslator::doBuildParseCompiled(BuildCtx & classctx, MemoryBuffer & buffer)
 {
     if (buffer.length() > 1000000)
-        WARNING1(HQLWRN_ParseVeryLargeDefinition, buffer.length());
+        WARNING1(CategoryEfficiency, HQLWRN_ParseVeryLargeDefinition, buffer.length());
 
     BuildCtx funcctx(classctx);
 
@@ -716,17 +716,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     doBuildParseSearchText(instance->startctx, expr);
     doBuildParseValidators(instance->nestedctx, expr);
     doBuildParseExtra(instance->startctx, expr);
-    DEBUG_TIMER("EclServer: Generate PARSE: Prepare", msTick()-startPrepareTime);
+    updateTimer("workunit;Generate PARSE: Prepare", msTick()-startPrepareTime);
     
     MemoryBuffer buffer;
     unsigned startCompileTime = msTick();
     nlpParse->compileSearchPattern();
     nlpParse->queryParser()->serialize(buffer);
     if (nlpParse->isGrammarAmbiguous())
-        WARNING1(HQLWRN_GrammarIsAmbiguous, instance->activityId);
+        WARNING1(CategoryEfficiency, HQLWRN_GrammarIsAmbiguous, instance->activityId);
 
     doBuildParseCompiled(instance->classctx, buffer);
-    DEBUG_TIMER("EclServer: Generate PARSE: Compile", msTick()-startCompileTime);
+    updateTimer("workunit;Generate PARSE: Compile", msTick()-startCompileTime);
 
     nlpParse->buildProductions(*this, instance->classctx, instance->startctx);
 
@@ -739,11 +739,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     if (options.debugNlp != 0)
     {
         BuildCtx subctx(instance->classctx);
-        subctx.addQuoted("#if 0\nHuman readable form of the grammar");
+        subctx.addQuotedLiteral("#if 0\nHuman readable form of the grammar");
         StringBuffer s;
         nlpParse->getDebugText(s, options.debugNlp);
         subctx.addQuoted(s);
-        subctx.addQuoted("#endif");
+        subctx.addQuotedLiteral("#endif");
 
         if (options.debugNlpAsHint)
         {
@@ -759,7 +759,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     nlpParse = NULL;
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
-    DEBUG_TIMER("EclServer: Generate PARSE", msTick()-startTime);
+    updateTimer("workunit;Generate PARSE", msTick()-startTime);
 
     return instance->getBoundActivity();
 }

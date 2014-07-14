@@ -38,6 +38,7 @@ private:
     StringAttr      m_path;
     StringAttr      m_peer;
     StringAttr      m_useragent;
+    StringAttr      m_acceptLanguage;
 
     StringBuffer    m_servName;
     StringBuffer    m_servHost;
@@ -296,6 +297,19 @@ public:
         if(agent && *agent)
             useragent.append(m_useragent.get());
         return useragent;
+    }
+
+    virtual void setAcceptLanguage(const char* acceptLanguage)
+    {
+        if(acceptLanguage && *acceptLanguage)
+            m_acceptLanguage.set(acceptLanguage);
+    }
+    virtual StringBuffer& getAcceptLanguage(StringBuffer& acceptLanguage)
+    {
+        const char* acceptLang = m_acceptLanguage.get();
+        if(acceptLang && *acceptLang)
+            acceptLanguage.set(m_acceptLanguage.get());
+        return acceptLanguage;
     }
 
     virtual IProperties *   queryRequestParameters()

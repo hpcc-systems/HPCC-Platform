@@ -154,6 +154,7 @@ protected:
         return (byte *)((bufattr.length()!=bufferSize)?bufattr.allocate(bufferSize):bufattr.bufferBase()); 
     }
     virtual void killBuffer()  { bufattr.clear(); }
+    virtual void clearBufferOverrun() { numOfBufferOverrun = 0; numOfProcessedBytes = 0; }
 protected: 
     Owned<IFileIOStream>   inStream;
     MemoryAttr             bufattr;
@@ -166,6 +167,9 @@ protected:
     bool                   doInputCRC;
     static IFileIOCache    *openfilecache;
     static CriticalSection openfilecachesect;
+
+    unsigned               numOfBufferOverrun;
+    unsigned               numOfProcessedBytes;
 };
 
 
@@ -255,6 +259,7 @@ protected:
     bool            isRecordStructurePresent;
     StringBuffer    recordStructure;
     unsigned        fieldCount;
+    Owned<KeptAtomTable> fields;
     bool            isFirstRow;
 };
 
@@ -263,15 +268,9 @@ class DALIFT_API CCsvQuickPartitioner : public CCsvPartitioner
 {
 public:
     CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation) 
-        : CCsvPartitioner(_format) 
-    { 
+        : CCsvPartitioner(_format)
+    {
         noTranslation = _noTranslation;
-        const char * quote = _format.quote.get();  
-        if (quote && (*quote == '\0')) { 
-            isquoted = false;
-        }       
-        else // default is quoted
-            isquoted = true;
     }
 
 protected:
@@ -280,7 +279,6 @@ protected:
 
 protected:
     bool                        noTranslation;
-    bool                        isquoted;
 };
 
 //---------------------------------------------------------------------------
@@ -291,7 +289,7 @@ public:
     CUtfPartitioner(const FileFormat & _format);
 
     virtual void setTarget(IOutputProcessor * _target);
-    
+
     virtual void getRecordStructure(StringBuffer & _recordStructure) { _recordStructure = recordStructure; }
     virtual void setRecordStructurePresent( bool _isRecordStructurePresent) {isRecordStructurePresent = _isRecordStructurePresent;}
 
@@ -300,9 +298,9 @@ protected:
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
     virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
     {
-        return getSplitRecordSize(record,maxToRead,processFullBuffer,false);
+        return getSplitRecordSize(record,maxToRead,processFullBuffer,true);
     }
-    
+
 private:
     void storeFieldName(const char * start, unsigned len);
 
@@ -313,10 +311,11 @@ protected:
     StringMatcher   matcher;
     unsigned        unitSize;
     UtfReader::UtfFormat utfFormat;
-    
+
     bool            isRecordStructurePresent;
     StringBuffer    recordStructure;
     unsigned        fieldCount;
+    Owned<KeptAtomTable> fields;
     bool            isFirstRow;
 };
 

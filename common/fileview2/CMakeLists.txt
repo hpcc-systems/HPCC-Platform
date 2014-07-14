@@ -77,6 +77,7 @@ include_directories (
          ./../remote 
          ./../../common/workunit 
          ./../../common/environment 
+         ./../../common/thorhelper
     )
 
 HPCC_ADD_LIBRARY( fileview2 SHARED ${SRCS} )

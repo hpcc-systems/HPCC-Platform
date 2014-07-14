@@ -1077,7 +1077,7 @@ extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, 
         StringBuffer buff;
         buff.append("Skipping OPT index read of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1255,7 +1255,7 @@ extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_ag
         StringBuffer buff;
         buff.append("Skipping OPT index normalize of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1373,7 +1373,7 @@ extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_ag
         StringBuffer buff;
         buff.append("Skipping OPT index aggregate of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         return new CHThorNullAggregateActivity(_agent, _activityId, _subgraphId, arg, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1477,7 +1477,7 @@ extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent,
         StringBuffer buff;
         buff.append("Skipping OPT index count of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         return new CHThorNullCountActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1587,7 +1587,7 @@ extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext
         StringBuffer buff;
         buff.append("Skipping OPT index group aggregate of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -2206,7 +2206,7 @@ public:
                 StringBuffer buff;
                 buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
                 WARNLOG("%s", buff.str());
-                agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+                agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
             }
         }
         inputThread.setown(new InputHandler(this));
@@ -2471,7 +2471,7 @@ public:
             StringBuffer buff;
             buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+            agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         }
             
         csvSplitter.init(_arg.getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
@@ -3022,7 +3022,6 @@ class DistributedKeyLookupHandler : public CInterface, implements IThreadedExcep
     bool opened;
     IArrayOf<IKeyManager> managers;
     Owned<IRecordLayoutTranslator> trans;
-    unsigned subStart;
     UnsignedArray keyNumParts;
 
     IArrayOf<KeyedLookupPartHandler> parts;
@@ -3089,7 +3088,7 @@ public:
             ForEachItemIn(subno, managers)
             {
                 agent.reportProgress(NULL);
-                subStart = subSizes.item(subno);
+                unsigned subStart = subSizes.item(subno);
                 IKeyManager & manager = managers.item(subno);
                 owner.readyManager(&manager, row);
                 while(manager.lookup(false))
@@ -3711,7 +3710,7 @@ public:
                         {
                             RtlDynamicRowBuilder rowBuilder(rowAllocator);
                             if (kind == TAKkeyedjoin)
-                                transformedSize = helper.transform(rowBuilder, left, defaultRight, 0);
+                                transformedSize = helper.transform(rowBuilder, left, defaultRight, (__uint64)0, (unsigned)0);
                             else if (kind == TAKkeyeddenormalizegroup)
                                 transformedSize = helper.transform(rowBuilder, left, defaultRight, 0, (const void * *)NULL);
                             if (transformedSize)
@@ -3751,6 +3750,7 @@ public:
                 {
                     if(jg->matches.start())
                     {
+                        unsigned counter = 0;
                         do
                         {
                             try
@@ -3760,7 +3760,7 @@ public:
                                 if(!row) continue;
                                 offset_t fpos = jg->matches.queryOffset();
                                 size32_t transformedSize;
-                                transformedSize = helper.transform(rowBuilder, left, row, fpos);
+                                transformedSize = helper.transform(rowBuilder, left, row, fpos, ++counter);
                                 if (transformedSize)
                                 {
                                     const void * shrunk = rowBuilder.finalizeRowClear(transformedSize);
@@ -3918,7 +3918,7 @@ public:
             StringBuffer buff;
             buff.append("Skipping OPT keyed join against nonexistent file ").append(lfn);
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+            agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         }
         CHThorThreadedActivityBase::start();
     }

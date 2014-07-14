@@ -34,7 +34,6 @@
            <link type="text/css" rel="StyleSheet" href="/esp/files_/css/sortabletable.css"/>
            <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
            <script language="JavaScript1.2" src="/esp/files_/scripts/multiselect.js">&#160;</script>
-           <script language="JavaScript1.2" src="/esp/files_/scripts/sortabletable.js">&#160;</script>
            <script language="JavaScript1.2">
                var eventnamesel = '<xsl:value-of select="$eventname"/>';
                var pusheventnamesel = '<xsl:value-of select="$pusheventname"/>';
@@ -80,11 +79,7 @@
                             document.getElementById("PushEventText").value = pusheventtextsel;
 
                         initSelection('resultsTable');
-                        var table = document.getElementById('resultsTable');
-                        if (table)
-                           sortableTable = new SortableTable(table, table, ["None", "String", "String", "String", "String"]);
                      }       
-                     var sortableTable = null;
                      function push()
                      {
                         var pushevent = document.getElementById("PushEventName");

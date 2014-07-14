@@ -198,8 +198,8 @@ void HqlCppTranslator::buildJoinMatchFunction(BuildCtx & ctx, const char * name,
         BuildCtx matchctx(ctx);
         matchctx.addQuotedCompound(s.append("virtual bool ").append(name).append("(const void * _left, const void * _right)"));
 
-        matchctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-        matchctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        matchctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+        matchctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
 
         bindTableCursor(matchctx, left, "left", no_left, selSeq);
         bindTableCursor(matchctx, right, "right", no_right, selSeq);
@@ -284,6 +284,7 @@ protected:
     OwnedHqlExpr    extractJoinFieldsTransform;
     bool            canOptimizeTransfer;
     bool            hasComplexIndex;
+    bool            keyHasFileposition;
 };
 
 KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _expr, bool _canOptimizeTransfer) : translator(_translator)
@@ -299,6 +300,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
         key.set(keyed->queryChild(0));
         if (right->getOperator() == no_keyed)
             right = right->queryChild(0);
+        assertex(getBoolAttribute(right, filepositionAtom, true));
         file.set(right);
         IHqlExpression * rightTable = queryPhysicalRootTable(right);
         if (!rightTable || rightTable->queryNormalizedSelector() != right->queryNormalizedSelector())
@@ -323,6 +325,8 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
         else
             translator.throwError1(HQLERR_KeyedJoinNoRightIndex_X, getOpString(right->getOperator()));
     }
+
+    keyHasFileposition = getBoolAttribute(key, filepositionAtom, true);
 
     if (!originalKey)
         originalKey.set(key);
@@ -522,8 +526,8 @@ void KeyedJoinInfo::buildIndexReadMatch(BuildCtx & ctx)
         BuildCtx matchctx(ctx);
         matchctx.addQuotedCompound("virtual bool indexReadMatch(const void * _left, const void * _right, unsigned __int64 _filepos, IBlobProvider * blobs)");
 
-        matchctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-        matchctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        matchctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+        matchctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
 
         OwnedHqlExpr fileposExpr = getFilepos(rawKey, false);
         OwnedHqlExpr fileposVar = createVariable("_filepos", fileposExpr->getType());
@@ -548,7 +552,7 @@ void KeyedJoinInfo::buildLeftOnly(BuildCtx & ctx)
     {
         BuildCtx funcctx(ctx);
         funcctx.addQuotedCompound("virtual bool leftCanMatch(const void * _left)");
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *)_left;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *)_left;");
         translator.bindTableCursor(funcctx, expr->queryChild(0), "left", no_left, joinSeq);
         translator.buildReturn(funcctx, leftOnlyMatch);
     }
@@ -562,7 +566,7 @@ void KeyedJoinInfo::buildMonitors(BuildCtx & ctx)
     //---- virtual void createSegmentMonitors(struct IIndexReadContext *) { ... } ----
     BuildCtx createSegmentCtx(ctx);
     createSegmentCtx.addQuotedCompound("virtual void createSegmentMonitors(IIndexReadContext *irc, const void * _left)");
-    createSegmentCtx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+    createSegmentCtx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     translator.bindTableCursor(createSegmentCtx, keyAccessDataset, "left", no_left, joinSeq);
     monitors->buildSegments(createSegmentCtx, "irc", false);
 }
@@ -574,10 +578,6 @@ void KeyedJoinInfo::buildTransform(BuildCtx & ctx)
     switch (expr->getOperator())
     {
     case no_join:
-        {
-            funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos)");
-            break;
-        }
     case no_denormalize:
         {
             funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos, unsigned counter)");
@@ -588,7 +588,7 @@ void KeyedJoinInfo::buildTransform(BuildCtx & ctx)
     case no_denormalizegroup:
         {
             funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned numRows, const void * * _rows)");
-            funcctx.addQuoted("unsigned char * * rows = (unsigned char * *) _rows;");
+            funcctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
             break;
         }
     }   
@@ -687,7 +687,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
     if (extractJoinFieldsTransform)
     {
         IHqlExpression * fileposField = isFullJoin() ? queryVirtualFileposField(file->queryRecord()) : queryLastField(key->queryRecord());
-        if (fileposField && (expr->getOperator() != no_denormalizegroup))
+        if (keyHasFileposition && fileposField && (expr->getOperator() != no_denormalizegroup))
         {
             HqlMapTransformer fileposMapper;
             OwnedHqlExpr select = createSelectExpr(LINK(serializedRight), LINK(fileposField));
@@ -706,7 +706,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
             newTransform.setown(expandDatasetReferences(newTransform, expandedKey));
     }
 
-    newTransform.setown(optimizeHqlExpression(newTransform, HOOfold|HOOcompoundproject));
+    newTransform.setown(optimizeHqlExpression(translator.queryErrorProcessor(), newTransform, HOOfold|HOOcompoundproject));
     newTransform.setown(foldHqlExpression(newTransform));
 
     BoundRow * selfCursor = translator.buildTransformCursors(ctx, newTransform, expr->queryChild(0), joinDataset, expr, joinSeq);
@@ -997,6 +997,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         {
 //          unwindFields(fieldsAccessed, key->queryRecord());
             extractedRecord.set(key->queryRecord());
+            if (keyHasFileposition)
                 fileposField = queryLastField(key->queryRecord());
         }
     }
@@ -1017,7 +1018,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         {
             IHqlExpression * keyRecord = key->queryRecord();
             IHqlExpression * filepos = queryLastField(keyRecord);
-            if (filepos)
+            if (filepos && keyHasFileposition)
                 fieldsAccessed.zap(*filepos);
 
             if (translator.getTargetClusterType() != HThorCluster)
@@ -1142,7 +1143,6 @@ bool KeyedJoinInfo::processFilter()
     //Now need to transform the index into its real representation so
     //the hozed transforms take place.
     unsigned payload = numPayloadFields(key);
-    assertex(payload);          // don't use rawindex once payload can be 0
     TableProjectMapper mapper(expandedKey);
     OwnedHqlExpr rightSelect = createSelector(no_right, key, joinSeq);
     OwnedHqlExpr newFilter = mapper.expandFields(keyedKeyFilter, rightSelect, rawKey, rawKey);
@@ -1251,7 +1251,7 @@ void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpr
         IHqlExpression * indexRecord = index->queryRecord();
         BuildCtx ctx4(instance.startctx);
         ctx4.addQuotedCompound("virtual unsigned __int64 extractPosition(const void * _right)");
-        ctx4.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        ctx4.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         bindTableCursor(ctx4, index, "right");
         OwnedHqlExpr fileposExpr = createSelectExpr(LINK(index), LINK(indexRecord->queryChild(indexRecord->numChildren()-1)));
         buildReturn(ctx4, fileposExpr);

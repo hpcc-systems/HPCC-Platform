@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  
+  <chapter id="Usin-HPCC-ConfigMgr">
+    <title>Using Configuration Manager</title>
+
+    <para id="cfgmgr_introP0">Configuration Manager is the utility with which
+    we configure the HPCC platform. The HPCC platform's configuration is
+    stored in an XML file named <emphasis
+    role="bold">environment.xml</emphasis>. Once you generate an environment
+    (xml) file, it gets saved into a source directory (default is <emphasis
+    role="bold">/etc/HPCCSystems/source</emphasis>). You then need to stop the
+    system to copy it into the active HPCC directory, then distribute it into
+    place on to each node and restart the HPCC system. At no time during
+    configuration do you work on the live environment file.</para>
+
+    <para id="cfgmgr_introP1">When you install the HPCC system package, a
+    default single-node environment.xml file is generated. After that, you can
+    use the Configuration Manager to modify it and/or create a different
+    environment file to configure components, or add nodes. There is a
+    Configuration Manager wizard to help create an environment file. Give any
+    environment file you create a descriptive name that would indicate what it
+    is for in the source. For example, you might create an environment without
+    a Roxie, you could call that file
+    <emphasis>environmentNoRoxie.xml</emphasis>.</para>
+
+    <para id="cfgmgr_p1b">You would then copy the new configuration file you
+    generate from the source directory to the <emphasis
+    role="bold">/etc/HPCCSystems</emphasis> directory. Rename the file to
+    environment.xml, and restart the system in order to reconfigure your
+    system.</para>
+
+    <para id="cfgmgr_introP2">Configuration Manager also offers an <emphasis
+    role="bold">Advanced View</emphasis> which allows more granularity for you
+    to add instances of components or change the default settings of
+    components for more advanced users. Even if you plan to use the Advanced
+    View, it is a good idea to start with a wizard generated configuration
+    file and use Advanced View to edit it.</para>
+
+    <para id="cfgmgr_introP3">More information and specific details for each
+    Configuration Manager component and attributes of those components is
+    detailed in <emphasis>Using Configuration Manager</emphasis>.</para>
+
+    <para>The following sections will provide the details for configuring an
+    HPCC environment using the Configuration Manager.</para>
+
+    <sect1 id="configuring-a-multi-node-system">
+      <title>Running the Configuration Manager</title>
+
+      <para>This section will guide you through configuring an HPCC
+      environment using the Configuration Manager.</para>
+
+      <para>The HPCC package should already be installed on ALL nodes.</para>
+
+      <para>You can use any tool or shell script you choose.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>SSH to a node in your environment and login as a user with
+          sudo privileges. We would suggest that it would be the first node,
+          and that it is a support node, however that is up to your
+          discretion.</para>
+        </listitem>
+
+        <listitem>
+          <para>Start the Configuration Manager service on the node (again we
+          would suggest that it should be on a support node, and further that
+          you use the same node to start the Configuration Manager every time,
+          but this is also entirely up to you).</para>
+
+          <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
+
+          <para><graphic
+          fileref="../../images/gs_img_configmgrStart.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Using a Web browser, go to the Configuration Manager's
+          interface:</para>
+
+          <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
+
+          <para>The Configuration Manager startup wizard displays.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>There are different ways to configure your HPCC system. You can
+      use the <emphasis role="bold">Generate environment wizard</emphasis> and
+      use that environment or experienced users can then use the <emphasis
+      role="bold">Advanced View</emphasis> for more specific customization.
+      There is also the option of using <emphasis role="bold">Create blank
+      environment</emphasis> to generate an empty environment that you could
+      then go in and add only the components you would want.</para>
+
+      <sect2 id="Env_Wizard">
+        <title>Environment Wizard</title>
+
+        <orderedlist>
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>To use the wizard select the <emphasis role="bold">Generate
+            new environment using wizard</emphasis> button.</para>
+
+            <para><graphic fileref="../../images/GS_ConfigMgrWizStart.jpg"
+            vendor="configmgrSS" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Provide a name for the environment file.</para>
+
+            <para>This will then be the name of the configuration XML file.
+            For example, we will name our environment
+            <emphasis>NewEnvironment</emphasis> and this will produce a
+            configuration XML file named
+            <emphasis>NewEnvironment.xml</emphasis> that we will
+            use.<emphasis> </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the Next button.</para>
+
+            <para>Next you will need to define the IP addresses that your HPCC
+            system will be using.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Enter the IP addresses.</para>
+
+            <para>IP Addresses can be specified individually using semi-colon
+            delimiters. You can also specify a range of IPs using a hyphen
+            (for example, nnn.nnn.nnn.x-y). In the image below, we specified
+            the IP addresses 10.239.219.1 through 10.239.219.100 using the
+            range syntax, and also a single IP 10.239.219.111.</para>
+
+            <para><graphic fileref="../../images/GS_ConfigMgrWiz002.jpg"
+            vendor="configmgrSS" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the Next button.</para>
+
+            <para>Now you will define how many nodes to use for the Roxie and
+            Thor clusters.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Enter the appropriate values as indicated.</para>
+
+            <para><graphic fileref="../../images/GS_CMWiz003.jpg"
+            vendor="configmgrSS" /></para>
+
+            <variablelist>
+              <varlistentry>
+                <term>Number of support nodes:</term>
+
+                <listitem>
+                  <para>Specify the number of nodes to use for support
+                  components. The default is 1.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Number of nodes for Roxie cluster:</term>
+
+                <listitem>
+                  <para>Specify the number of nodes to use for your Roxie
+                  cluster. Enter zero (0) if you do not want a Roxie
+                  cluster.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Number of slave nodes for Thor cluster</term>
+
+                <listitem>
+                  <para>Specify the number of slave nodes to use in your Thor
+                  cluster. A Thor master node will be added automatically.
+                  Enter zero (0) if you do not want any Thor slaves.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Number of Thor slaves per node (default 1)</term>
+
+                <listitem>
+                  <para>Specify the number of Thor slave processes to
+                  instantiate on each slave node. Enter zero (0) if you do not
+                  want a Thor cluster.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Enable Roxie on demand</term>
+
+                <listitem>
+                  <para>Specify whether or not to allow queries to be run
+                  immediately on Roxie. This must be enabled to run the
+                  debugger. (Default is true)</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Next</emphasis>
+            button</para>
+
+            <para>The wizard displays the configuration parameters.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Finish</emphasis> button to
+            accept these values or press the <emphasis role="bold">Advanced
+            View</emphasis> button to edit in advanced mode.</para>
+
+            <graphic fileref="../../images/GS_ConfigMgrWiz004.jpg" />
+          </listitem>
+        </orderedlist>
+
+        <para>You will now be notified that you have completed the
+        wizard.</para>
+
+        <para><graphic fileref="../../images/GS_ConfigMgrWiz005.jpg" /></para>
+
+        <para>At this point, you have created a file named NewEnvironment.xml
+        in the <emphasis role="bold">/etc/HPCCSystems/source</emphasis>
+        directory</para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/OSSgr3.png" /></entry>
+
+                <entry>Keep in mind, that your HPCC configuration may be
+                different depending on your needs. For example, you may not
+                need a Roxie or you may need several smaller Roxie clusters.
+                In addition, in a production [Thor] system, you would ensure
+                that Thor and Roxie nodes are dedicated and have no other
+                processes running on them. This document is intended to show
+                you how to use the configuration tools. Capacity planning and
+                system design is covered in a training module.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <sect3 id="Distrib_Conf" role="brk">
+          <title>Distribute the Configuration</title>
+
+          <orderedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Stop the HPCC system.</para>
+
+              <para>If it is running stop the HPCC system (on every node),
+              using a command such as this:</para>
+
+              <para><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Note:</term>
+
+                  <listitem>
+                    <para>You may have a multi-node system and a custom script
+                    such as the one illustrated in Appendix of the <emphasis
+                    role="bluebold">Installing and Running the HPCC
+                    Platform</emphasis> document to start and stop your
+                    system. If that is the case please use the appropriate
+                    command for stopping your system on every node.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="../../images/caution.png" /></entry>
+
+                        <entry>Be sure HPCC is stopped before attempting to
+                        copy the environment.xml file.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <para>Back up the original environment.xml file.</para>
+
+              <programlisting># For example
+sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Note:</term>
+
+                  <listitem>
+                    <para>The live environment.xml file is located in your
+                    <emphasis role="bold">/etc/HPCCSystems/</emphasis>
+                    directory. Configuration Manager works on files in
+                    <emphasis role="bold">/etc/HPCCSystems/source</emphasis>
+                    directory. You must copy from this location to make an
+                    environment.xml file active.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+
+              <para>You can also choose to give the environment file a more
+              descriptive name, to help differentiate any differences.</para>
+
+              <para>Having environment files under source control is a good
+              way to archive your environment settings.</para>
+            </listitem>
+
+            <listitem>
+              <para>Copy the new .xml file from the source directory to the
+              /etc/HPCCSystems and rename the file to
+              <emphasis>environment.xml</emphasis></para>
+
+              <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+              <para></para>
+            </listitem>
+
+            <listitem>
+              <para>Copy the <emphasis
+              role="bold">/etc/HPCCSystems/environment.xml</emphasis> to the
+              <emphasis role="bold">/etc/HPCCSystems/</emphasis> on to
+              <emphasis>every</emphasis> node.</para>
+
+              <para>You may want to use a script to push out the XML file to
+              all nodes. See the <emphasis>Example Scripts</emphasis> section
+              in the Appendix of the <emphasis role="bluebold">Installing and
+              Running the HPCC Platform</emphasis> document. You can use the
+              scripts as a model to create your own script to copy the
+              environment.xml file out to all your nodes.</para>
+            </listitem>
+
+            <listitem>
+              <para>Restart the HPCC platform on all nodes.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

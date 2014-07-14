@@ -37,11 +37,15 @@ if (USE_RINSIDE)
              ./../../system/include
              ./../../rtl/eclrtl
              ./../../rtl/include
+             ./../../rtl/nbcd
              ./../../common/deftype
              ./../../system/jlib
         )
 
     ADD_DEFINITIONS( -D_USRDLL -DREMBED_EXPORTS )
+    if (RCPP_LIBRARY STREQUAL "")
+      ADD_DEFINITIONS( -DRCPP_HEADER_ONLY )
+    endif()
 
     HPCC_ADD_LIBRARY( Rembed SHARED ${SRCS} )
     if (${CMAKE_VERSION} VERSION_LESS "2.8.9")

@@ -446,7 +446,7 @@ void MemoryValue::deserialize(MemoryBuffer &src)
     void *mem = checked_malloc(size, DEFVALUE_MALLOC_FAILED);
     assertex(mem);
     src.read(size, mem);
-    val.set(size, mem);
+    val.setOwn(size, mem);
 }
 
 int MemoryValue::rangeCompare(ITypeInfo * targetType)
@@ -541,6 +541,24 @@ __int64 StringValue::getIntValue()
 const char *StringValue::getStringValue(StringBuffer &out)
 {
     out.append(type->getSize(), (const char *)val.get());
+    return out.toCharArray();
+}
+
+const char *StringValue::getUTF8Value(StringBuffer &out)
+{
+    ICharsetInfo * srcCharset = type->queryCharset();
+    Owned<ICharsetInfo> asciiCharset = getCharset(asciiAtom);
+    if (queryDefaultTranslation(asciiCharset, srcCharset))
+    {
+        Owned<ITypeInfo> asciiType = getAsciiType(type);
+        Owned<IValue> asciiValue = castTo(asciiType);
+        return asciiValue->getUTF8Value(out);
+    }
+
+    rtlDataAttr temp;
+    unsigned bufflen;
+    rtlStrToUtf8X(bufflen, temp.refstr(), type->getSize(), (const char *)val.get());
+    out.append(rtlUtf8Size(bufflen, temp.getstr()), temp.getstr());
     return out.toCharArray();
 }
 
@@ -739,6 +757,25 @@ IValue *createUnicodeValue(char const * value, unsigned size, char const * local
     return ret;
 }
 
+IValue *createUtf8Value(size32_t len, char const * value, char const * locale, bool unescape)
+{
+    if (unescape)
+    {
+        rtlDataAttr temp;
+        size32_t newlen = 0;
+        size32_t size = rtlUtf8Size(len, value);
+        rtlCodepageToUtf8XUnescape(newlen, temp.refstr(), size, value, "UTF-8");
+
+        ITypeInfo * type = makeUtf8Type(newlen, createLowerCaseAtom(locale));
+        return createUtf8Value(temp.getstr(), type);
+    }
+    else
+    {
+        ITypeInfo * type = makeUtf8Type(len, createLowerCaseAtom(locale));
+        return createUtf8Value(value, type);
+    }
+}
+
 IValue *createUnicodeValue(char const * value, ITypeInfo * type)
 {
     if(type->getSize() == UNKNOWN_LENGTH)
@@ -799,6 +836,12 @@ void UnicodeAttr::set(UChar const * _text, unsigned _len)
     text = (UChar *) checked_malloc((_len+1)*2, DEFVALUE_MALLOC_FAILED);
     memcpy(text, _text, _len*2);
     text[_len] = 0x0000;
+}
+
+void UnicodeAttr::setown(UChar * _text)
+{
+    free(text);
+    text = _text;
 }
 
 VarUnicodeValue::VarUnicodeValue(unsigned len, const UChar * v, ITypeInfo * _type) : CValue(_type)
@@ -902,7 +945,7 @@ const char * VarUnicodeValue::getStringValue(StringBuffer & out)
 
 void * VarUnicodeValue::getUCharStringValue(unsigned len, void * out)
 {
-    unsigned vallen = val.length()/2;
+    unsigned vallen = val.length();
     if(vallen > len)
         vallen = len;
     memcpy(out, val.get(), vallen*2);
@@ -958,7 +1001,7 @@ void VarUnicodeValue::deserialize(MemoryBuffer & src)
     src.read(len);
     UChar * buff = (UChar *) checked_malloc(len*2, DEFVALUE_MALLOC_FAILED);
     src.read(len*2, buff);
-    val.set(buff, len);
+    val.setown(buff);
 }
 
 IValue *createVarUnicodeValue(char const * value, unsigned size, char const * locale, bool utf8, bool unescape)
@@ -2914,7 +2957,7 @@ IValue * substringValue(IValue * v, IValue * lower, IValue * higher)
     unsigned low = lower ? (unsigned)lower->getIntValue() : 0;
     unsigned high = higher ? (unsigned)higher->getIntValue() : srcLen;
 
-    unsigned retLen;
+    unsigned retLen = 0;
     void * retPtr;
     ITypeInfo * retType = NULL;
     switch (type->getTypeCode())
@@ -2942,6 +2985,8 @@ IValue * substringValue(IValue * v, IValue * lower, IValue * higher)
     case type_utf8:
         rtlUtf8SubStrFTX(retLen, *(char * *)&retPtr, srcLen, (const char *)raw, low, high);
         break;
+    default:
+        UNIMPLEMENTED;
     }
 
     if (retType == NULL)

@@ -397,7 +397,7 @@ IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, IHqlExpression 
         if (mapTo->getOperator() != no_constant)
             throwUnexpected();
         if (replaceIndex >= num)
-            translator.reportWarning(HQLWRN_CaseCanNeverMatch, "CASE entry %d can never match the test condition", replaceIndex);
+            translator.reportWarning(CategoryIgnored, HQLWRN_CaseCanNeverMatch, "CASE entry %d can never match the test condition", replaceIndex);
         else
             values.replace(*LINK(mapTo),replaceIndex);
     }

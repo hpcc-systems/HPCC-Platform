@@ -49,6 +49,7 @@ class CCloudTask;
 class CCloudActionHandler;
 class CWsDeployEx;
 class CWsDeployExCE;
+class CConfigHelper;
 
 interface IConfigFileObserver : extends IObserver
 {
@@ -900,8 +901,6 @@ public:
     virtual ~CWsDeployExCE();
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
 
-    virtual bool onInit(IEspContext &context, IEspEmptyRequest& req, IEspInitResponse& resp);
-    virtual bool onDeploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
     virtual bool onNavMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
                                                     IEspNavMenuEventResponse &resp);
@@ -950,6 +949,8 @@ public:
     const char* getProcessName() { return m_process.str(); }
     const char* getSourceDir() { return m_sourceDir.str(); }
 
+    CConfigHelper *m_pConfigHelper;
+
 private:
   virtual void getWizOptions(StringBuffer& sb);
 
@@ -974,7 +975,6 @@ public:
     IMPLEMENT_IINTERFACE;
 
     virtual ~CWsDeployEx(){}
-    virtual bool onDeploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
     virtual bool onNavMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
                                                     IEspNavMenuEventResponse &resp);

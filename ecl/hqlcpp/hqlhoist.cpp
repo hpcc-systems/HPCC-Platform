@@ -652,17 +652,20 @@ CHqlExprMultiGuard * ConditionalContextTransformer::createAndOrGuard(Conditional
 
     node_operator op = original->getOperator();
     Owned<CHqlExprMultiGuard> newGuards = new CHqlExprMultiGuard;
-    ForEachItemIn(i, rightGuard->guarded)
+    if (rightGuard)
     {
-        CHqlExprGuard & cur = rightGuard->guarded.item(i);
-        OwnedHqlExpr cond;
-        //(a || b):  b is evaluated if a is false.  => guard'(b,x) = !a && guard(b,x)
-        //(a && b):  b is evaluated if a is true.   => guard'(b,x) = a && guard(b,x)
-        if (op == no_or)
-            cond.setown(createBoolExpr(no_and, getInverse(left), LINK(cur.guard)));
-        else
-            cond.setown(createBoolExpr(no_and, LINK(left), LINK(cur.guard)));
-        newGuards->addGuarded(cond, cur.original, leftGuard != NULL);
+        ForEachItemIn(i, rightGuard->guarded)
+        {
+            CHqlExprGuard & cur = rightGuard->guarded.item(i);
+            OwnedHqlExpr cond;
+            //(a || b):  b is evaluated if a is false.  => guard'(b,x) = !a && guard(b,x)
+            //(a && b):  b is evaluated if a is true.   => guard'(b,x) = a && guard(b,x)
+            if (op == no_or)
+                cond.setown(createBoolExpr(no_and, getInverse(left), LINK(cur.guard)));
+            else
+                cond.setown(createBoolExpr(no_and, LINK(left), LINK(cur.guard)));
+            newGuards->addGuarded(cond, cur.original, leftGuard != NULL);
+        }
     }
 
     //MORE: Is the reversal of the order going to matter?  E.g., instead of guard(a,x) || (a && guard(b,x))?

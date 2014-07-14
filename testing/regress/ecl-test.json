@@ -1,0 +1,31 @@
+{
+    "Regress":{
+        "IpAddress":{
+            "hthor": "127.0.0.1",
+            "thor" : "127.0.0.1",
+            "roxie": "127.0.0.1"
+        },
+        "roxieTestSocket": ":9876",
+        "espSocket": ":8010",
+        "username": "regress",
+        "password": "regress",
+        "suiteDir": "",
+        "eclDir": "ecl",
+        "setupDir": "ecl/setup",
+        "keyDir": "ecl/key",
+        "archiveDir": "archives",
+        "resultDir": "results",
+        "regressionDir": "~/HPCCSystems-regression",
+        "logDir": "~/HPCCSystems-regression/log",
+        "Clusters": [
+            "hthor",
+            "thor",
+            "roxie"
+        ],
+        "timeout":"720",
+        "maxAttemptCount":"3",
+        "Params":[
+            "PassTest.ecl:bla='A value'"
+        ]
+    }
+}

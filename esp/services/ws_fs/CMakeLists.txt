@@ -58,6 +58,7 @@ include_directories (
          ./../../smc/SMCLib 
          ./../../bindings/SOAP/xpp 
          ./../../../common/remote 
+         ./../../../common/workunit
     )
 
 ADD_DEFINITIONS( -D_USRDLL )
@@ -70,6 +71,7 @@ target_link_libraries ( ws_fs
          esphttp 
          dalibase 
          environment 
+         workunit
          SMCLib 
          dfuwu 
     )

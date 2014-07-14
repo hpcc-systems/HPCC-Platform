@@ -99,6 +99,10 @@ public:
             return meta->querySerializedDiskMeta();
         return meta;
     }
+    inline IOutputMetaData * queryChildMeta(unsigned i) const
+    {
+        return meta->queryChildMeta(i);
+    }
 
 //cast operators.
     inline IOutputMetaData * queryOriginal() const          { return meta; }
@@ -143,6 +147,10 @@ public:
         self = NULL;
         reserved = 0;
     }
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return NULL;
+    }
 
 protected:
     virtual byte * createSelf()
@@ -181,6 +189,10 @@ public:
         return self;
     }
 
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return builder->queryAllocator();
+    }
 protected:
     size32_t offset;
     Linked<ARowBuilder> builder;
@@ -394,7 +406,11 @@ public:
     {
         original->walkIndirectMembers(self+offset, visitor);
     }
-        
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return original->queryChildMeta(i);
+    }
+
 protected:
     size32_t offset;
     IOutputMetaData *original;
@@ -525,7 +541,11 @@ public:
     {
         original->walkIndirectMembers(self, visitor);
     }
-        
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return original->queryChildMeta(i);
+    }
+
 protected:
     size32_t offset;
     Linked<IOutputMetaData> original;
@@ -604,7 +624,7 @@ public:
         memcpy(buffer+pos, ptr, len);
         pos += len;
     }
-    virtual size32_t beginNested()
+    virtual size32_t beginNested(size32_t count)
     {
         nesting++;
         size32_t ret = pos;
@@ -633,7 +653,7 @@ public:
     CThorDemoRowSerializer(MemoryBuffer & _buffer);
 
     virtual void put(size32_t len, const void * ptr);
-    virtual size32_t beginNested();
+    virtual size32_t beginNested(size32_t count);
     virtual void endNested(size32_t position);
 
 protected:
@@ -733,7 +753,7 @@ public:
 
     virtual const byte * peek(size32_t maxSize);
     virtual offset_t beginNested();
-    virtual bool finishedNested(offset_t len);
+    virtual bool finishedNested(offset_t & len);
 
     virtual size32_t read(size32_t len, void * ptr);
     virtual size32_t readSize();

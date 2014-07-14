@@ -24,6 +24,7 @@
 #####################################################
 
 set ( debug_python Off )   # A lot slower but can assist in debugging...
+SET ( DEBUG_PYTHON_LIBRARY "/usr/lib/libpython2.7_d.so" )
 
 project( pyembed )
 
@@ -39,7 +40,9 @@ if (USE_PYTHON)
          ./../../system/include
          ./../../rtl/eclrtl
          ./../../rtl/include
+         ./../../rtl/nbcd
          ./../../common/deftype
+         ./../../roxie/roxiemem
          ./../../system/jlib
        )
 
@@ -57,13 +60,14 @@ if (USE_PYTHON)
 
     install ( TARGETS pyembed DESTINATION plugins )
     if (debug_python)
-      target_link_libraries ( pyembed ${PYTHON_DEBUG_LIBRARY} )
+      target_link_libraries ( pyembed ${DEBUG_PYTHON_LIBRARY} )
     else()
       target_link_libraries ( pyembed ${PYTHON_LIBRARY} )
     endif()
 
     target_link_libraries ( pyembed
         eclrtl
+        roxiemem
         jlib
         )
   endif()

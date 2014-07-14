@@ -1,0 +1,111 @@
+options:
+
+  base-url:
+    type: string
+    default: http://cdn.hpccsystems.com/releases
+    description: HPCC download base URL
+
+  hpcc-version:
+    type: string
+    default: 4.2.0-4
+    description: HPCC package version
+
+  hpcc-type:
+    type: string
+    default: CE
+    description: HPCC package type -  CE (Community Edition) is only choice now.
+
+  package-checksum:
+    type: string
+    default: bc2fb0ad5f9fa1eaf7a33483ec31bfa3
+    description: |
+      HPCC package checksum. The default the value is for HPCC CE 4.2.0-4 Ubunut
+      12.04 amd64. User can get other package checksum from:
+           http://hpccsystems.com/download
+      In future HPCCSystem download site will provide checksum file which will
+      allow automatically verification without this setting.
+      Set this value to empty string to skip the validation when download the
+      package.
+   
+  start-check-delay:
+    type: int
+    default: 5
+    description: |
+      Delay time in seconds. If the value is not zero it will wait amount of time
+      before checking the HPCC processes status. Otherwise will check immediately
+      after start.
+
+  download-url:
+    type: string
+    default: ""
+    description: |
+      Download URL. If this is defined all above three download related settings 
+      are ignored.
+
+  ssh-key-public:
+    type: string
+    default: ""
+    description: The content of public SSH Key
+
+  ssh-key-private:
+    type: string
+    default: ""
+    description: The content of private SSH Key
+
+
+
+# HPCC environment variable - Do we want to define them here?
+
+# Control when to run envgen
+  auto-gen:
+    type: int
+    default: 1
+    description: |
+      0: will not generate HPCC cluster configuration in relation-changed hook.
+         User need manually run bin/config_hpcc.sh script to do it.
+      1: automatically generate HPCC cluster configuration in relation-changed
+         hook with following topology with nodes N:
+           1 support nodes, N-1 thor nodes, and N-1 roxie nodes.
+      2: automatically generate HPCC cluster configuration in relation-changed
+         hook with parameters defined in service configuration. Usually user
+         run bin/config_hpcc.sh script with option -updateonly to set parameters
+         before add nodes to the cluster.
+
+
+# Following variables should not be changed directly by end users
+
+  envgen-signature:
+    type: string
+    default: ""
+    description: |
+      When manually trigger envgen set this variable as:
+        <supportnodes>-<roxienodes>-<thornodes>-<slavePerNode>
+      This will prevent unwanted running of envgen when roxienode/thornodes increase with new node join.
+      Each node also will keep previous envgen-sigature value in a file
+      Only previous value is different than current envgen-signature
+      will trigger envgen  from config-changed. It is for non-envgen related config variable update,(for example: download-url for HPCC update).
+      In this case, we don't want to trigger envgen.
+
+
+# Following are the parameters for envgen which will create environment.xml
+# Reference HPCC Platform envgen usage for more details
+
+  supportnodes:
+    type: int
+    default: 1
+    description: Number of nodes to be used for non-Thor and non-Roxie components.
+
+  roxienodes:
+    type: int
+    default: 1
+    description: Number of nodes to be generated for roxie.
+
+  thornodes:
+    type: int
+    default: 1
+    description: Number of nodes to be generated for thor.
+
+  slavesPerNode:
+    type: int
+    default: 0
+    description: Number of thor slaves per node.

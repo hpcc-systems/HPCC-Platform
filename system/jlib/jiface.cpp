@@ -75,6 +75,15 @@ void poor_atomic_add(atomic_t * v, int i)
     ICrit->leave();
 }
 
+int poor_atomic_add_and_read(atomic_t * v, int i)
+{
+    ICrit->enter();
+    (*v) += i;
+    int ret = (*v);
+    ICrit->leave();
+    return ret;
+}
+
 int poor_atomic_add_exchange(atomic_t * v, int i)       
 {
     ICrit->enter();

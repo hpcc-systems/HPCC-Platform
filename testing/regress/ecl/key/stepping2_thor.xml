@@ -1,0 +1,18 @@
+<Dataset name='Result 1'>
+ <Row><kind>1</kind><word>boy                 </word><doc>281474976710658</doc><segment>0</segment><wpos>29</wpos><wip>1</wip><flags>1</flags><original>boy                 </original><dpos>144</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>281474976710659</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>42</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>281474976710661</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>17</dpos></Row>
+ <Row><kind>1</kind><word>boy                 </word><doc>281474976710661</doc><segment>0</segment><wpos>32</wpos><wip>1</wip><flags>1</flags><original>boy                 </original><dpos>145</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>562949953421313</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>17</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>844424930131969</doc><segment>0</segment><wpos>2</wpos><wip>1</wip><flags>3</flags><original>Sheep               </original><dpos>1</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>844424930131971</doc><segment>0</segment><wpos>3</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>7</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>844424930131971</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>23</dpos></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><kind>1</kind><word>sheep               </word><doc>281474976710659</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>42</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>281474976710661</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>17</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>562949953421313</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>17</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>844424930131969</doc><segment>0</segment><wpos>2</wpos><wip>1</wip><flags>3</flags><original>Sheep               </original><dpos>1</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>844424930131971</doc><segment>0</segment><wpos>3</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>7</dpos></Row>
+ <Row><kind>1</kind><word>sheep               </word><doc>844424930131971</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>sheep               </original><dpos>23</dpos></Row>
+</Dataset>

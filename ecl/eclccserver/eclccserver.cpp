@@ -17,6 +17,7 @@
 
 #include <jlib.hpp>
 #include <jmisc.hpp>
+#include <jisem.hpp>
 #include <jfile.hpp>
 #include <jencrypt.hpp>
 #include <jregexp.hpp>
@@ -122,6 +123,52 @@ private:
 };
 
 //------------------------------------------------------------------------------------------------------------------
+// Check for aborts of the workunit as it is compiling
+//------------------------------------------------------------------------------------------------------------------
+
+class AbortWaiter : public Thread
+{
+public:
+    AbortWaiter(IPipeProcess *_pipe, IConstWorkUnit *_wu)
+        : Thread("EclccCompileThread::AbortWaiter"), pipe(_pipe), wu(_wu)
+    {
+    }
+
+    virtual int run()
+    {
+        wu->subscribe(SubscribeOptionAbort);
+        try
+        {
+            loop
+            {
+                if (sem.wait(2000))
+                    break;
+                if (wu->aborting())
+                {
+                    pipe->abort();
+                    break;
+                }
+            }
+        }
+        catch (IException *E)
+        {
+            ::Release(E);
+        }
+        return 0;
+    }
+
+    void stop()
+    {
+        sem.interrupt(NULL);
+        join();
+    }
+private:
+    IPipeProcess *pipe;
+    IConstWorkUnit *wu;
+    InterruptableSemaphore sem;
+};
+
+//------------------------------------------------------------------------------------------------------------------
 // Class EclccCompileThread does the work of compiling workunits (using eclcc), and optionally then enqueueing them for execution by agentexec.
 // A threadpool is used to allow multiple compiles to be submitted at once. Threads are reused when compilation completes.
 //------------------------------------------------------------------------------------------------------------------
@@ -159,8 +206,13 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
                 {
                     section.insert(0, "eclcc: ");
-                    unsigned __int64 umax = atoi(max); // in microseconds
-                    workunit->setTimerInfo(section.str(), NULL, atoi(total), atoi(count), umax*1000); // max is stored in nanoseconds
+
+                    unsigned __int64 mval = atoi64(total); // in milliseconds
+                    unsigned __int64 umax = atoi64(max); // in microseconds
+                    unsigned __int64 cnt = atoi64(count);
+                    const char * wuScope = section.str(); // should be different
+                    const char * description = section.str();
+                    updateWorkunitTiming(workunit, "eclcc", wuScope, description, milliToNano(mval), cnt, umax*1000);
                 }
             }
             else
@@ -179,7 +231,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                     err->setExceptionFileName(file);
                     err->setExceptionLineNo(atoi(line));
                     err->setExceptionColumn(atoi(col));
-                    if (stricmp(errClass, "warning")==0)
+                    if (stricmp(errClass, "info")==0)
+                        err->setSeverity(ExceptionSeverityInformation);
+                    else if (stricmp(errClass, "warning")==0)
                         err->setSeverity(ExceptionSeverityWarning);
                     else
                         err->setSeverity(ExceptionSeverityError);
@@ -210,6 +264,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             else
                 optName.set(start);
 
+            if (!optName)
+                return;
+
             if (stricmp(optName, "hook") == 0)
             {
                 if (isLocal)
@@ -222,7 +279,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 eclccCmd.appendf(" -I%s", value);
             else if (stricmp(optName, "libraryPath") == 0)
                 eclccCmd.appendf(" -L%s", value);
-            else if (stricmp(start, "-allow")==0)
+            else if (stricmp(start, "-allow")==0 || stricmp(optName, "-allow")==0)
             {
                 if (isLocal)
                     throw MakeStringException(0, "eclcc-allow option can not be set per-workunit");  // for security reasons
@@ -299,9 +356,11 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         {
             unsigned time = msTick();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
+            Owned<AbortWaiter> abortWaiter = new AbortWaiter(pipe, workunit);
             eclccCmd.insert(0, eclccProgName);
-            pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0);
+            pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0, true);
             errorReader->start();
+            abortWaiter->start();
             try
             {
                 pipe->write(eclQuery.s.length(), eclQuery.s.str());
@@ -314,6 +373,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             }
             unsigned retcode = pipe->wait();
             errorReader->join();
+            abortWaiter->stop();
             if (retcode == 0)
             {
                 StringBuffer realdllname, dllurl;
@@ -344,7 +404,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
                 time = msTick()-time;
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
-                    workunit->setTimerInfo("eclccserver: create workunit", NULL, time, 1, 0);
+                    updateWorkunitTimeStat(workunit, "eclccserver", "workunit", "create workunit", NULL, milliToNano(time), 1, 0);
 
                 workunit->commit();
                 return true;

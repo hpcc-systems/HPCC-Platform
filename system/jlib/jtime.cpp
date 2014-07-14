@@ -174,6 +174,23 @@ void CDateTime::serialize(MemoryBuffer &dst) const
     dst.append(year).append(mon).append(utc_mday).append(utc_hour).append(utc_min).append(utc_sec).append(nanosec);
 }
 
+// See http://www.isthe.com/chongo/tech/comp/fnv/index.html and eclrtl.cpp
+
+#define FNV_64_PRIME I64C(0x100000001b3U)
+#define APPLY_FNV64(hval, next) { hval *= FNV_64_PRIME; hval ^= next; }
+
+hash64_t CDateTime::getHash(hash64_t hash) const
+{
+    APPLY_FNV64(hash, utc_sec);
+    APPLY_FNV64(hash, utc_min);
+    APPLY_FNV64(hash, utc_hour);
+    APPLY_FNV64(hash, utc_mday);
+    APPLY_FNV64(hash, utc_mon);
+    APPLY_FNV64(hash, utc_year);
+    APPLY_FNV64(hash, nanosec);
+    return hash;
+}
+
 void CDateTime::clear()
 {
     utc_sec = 0;

@@ -148,7 +148,7 @@ inline static int validJSONUtf8ChrLen(unsigned char c)
         return 0;
     if ('\\' == c)
         return 2;
-    return utf8CharLen(&c);
+    return utf8CharLen(c);
 }
 
 inline static bool isAttribute(const char *xpath) { return (xpath && *xpath == '@'); }

@@ -539,8 +539,8 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Click on the <emphasis>Browse Logical Files</emphasis> link
-        under DFU Files.</para>
+        <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+        click on Logical Files.</para>
 
         <para><figure>
             <title>Browse Logical Files link</title>
@@ -554,18 +554,21 @@
       </listitem>
 
       <listitem>
-        <?dbfo keep-together="always"?>
+        <para>Check the box next to <emphasis
+        role="bold">certification::full_test_distributed_index</emphasis> ,
+        then press the <emphasis role="bold">Open</emphasis> action button.
+        </para>
+      </listitem>
 
-        <para>Click on the <inlinegraphic fileref="../../images/RM-19.jpg" />
-        button next to the file listing for <emphasis
-        role="bold">thor::full_test_distributed_index</emphasis> , then select
-        <emphasis role="bold">Details</emphasis> to open the logical file
-        details page.</para>
+      <listitem>
+        <para>Select the Contents tab. </para>
+
+        <para><emphasis role="bold"></emphasis></para>
       </listitem>
     </orderedlist>
 
     <para><figure>
-        <title>Details</title>
+        <title>Contents</title>
 
         <mediaobject>
           <imageobject>

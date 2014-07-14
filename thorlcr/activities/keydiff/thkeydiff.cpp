@@ -43,6 +43,7 @@ public:
     }
     virtual void init()
     {
+        CMasterActivity::init();
         helper = (IHThorKeyDiffArg *)queryHelper();
         OwnedRoxieString origName(helper->getOriginalName());
         OwnedRoxieString updatedName(helper->getUpdatedName());
@@ -66,14 +67,13 @@ public:
         if (width > container.queryJob().querySlaves())
             throw MakeActivityException(this, 0, "Unsupported: keydiff(%s, %s) - Cannot diff a key that's wider(%d) than the target cluster size(%d)", originalIndexFile->queryLogicalName(), newIndexFile->queryLogicalName(), width, container.queryJob().querySlaves());
 
-        queryThorFileManager().noteFileRead(container.queryJob(), originalIndexFile);
-        queryThorFileManager().noteFileRead(container.queryJob(), newIndexFile);
-
         IArrayOf<IGroup> groups;
         OwnedRoxieString outputName(helper->getOutputName());
         fillClusterArray(container.queryJob(), outputName, clusters, groups);
         patchDesc.setown(queryThorFileManager().create(container.queryJob(), outputName, clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));
         patchDesc->queryProperties().setProp("@kind", "keydiff");
+        addReadFile(originalIndexFile);
+        addReadFile(newIndexFile);
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -197,8 +197,7 @@ public:
         index->setProp("@name", originalIndexFile->queryLogicalName());
         if (originalIndexFile->getFileCheckSum(checkSum))
             index->setPropInt64("@checkSum", checkSum);
-        originalIndexFile->setAccessed();
-        newIndexFile->setAccessed();
+        CMasterActivity::done();
     }
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {

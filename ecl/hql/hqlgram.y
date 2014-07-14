@@ -461,6 +461,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   XMLDECODE
   XMLDEFAULT
   XMLENCODE
+  XMLNS
   XMLPROJECT
   XMLTEXT
   XMLUNICODE
@@ -561,6 +562,8 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
 %left VALUE_MACRO
 %left OR
 %left AND
+
+%left reduceAttrib
 
 %left ORDER UNICODEORDER
 %left SHIFTL SHIFTR
@@ -665,8 +668,8 @@ importItem
                         }
     | importSelectorList AS '*'
                         {
-                            if (queryLegacyEclSemantics())
-                                parser->reportWarning(ERR_DEPRECATED, $1.pos, "IMPORT <module> AS * is deprecated, use IMPORT * FROM <module>");
+                            if (queryLegacyImportSemantics())
+                                parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "IMPORT <module> AS * is deprecated, use IMPORT * FROM <module>");
                             else
                                 parser->reportError(ERR_DEPRECATED, $1.pos, "IMPORT <module> AS * is deprecated, use IMPORT * FROM <module>");
                             parser->processImportAll($1);
@@ -710,6 +713,10 @@ importId
     | importId '.' UNKNOWN_ID
                         {
                             $$.setExpr(createAttribute(_dot_Atom, $1.getExpr(), createId($3.getId())), $1);
+                        }
+    | importId '.' '^'
+                        {
+                            $$.setExpr(createAttribute(_container_Atom, $1.getExpr()), $1);
                         }
     ;
 
@@ -800,6 +807,30 @@ explicitDictionaryType
     | userTypedefDictionary
     ;
 
+explicitRowType
+    : explicitRowType1
+    | LINKCOUNTED explicitRowType1
+                        {
+                            Owned<ITypeInfo> rowType = $2.getType();
+                            $$.setType(setLinkCountedAttr(rowType, true));
+                            $$.setPosition($1);
+                        }
+    ;
+
+explicitRowType1
+    : ROW               {
+                            IHqlExpression* record = queryNullRecord();
+                            $$.setType(makeRowType(record->getType()));
+                            $$.setPosition($1);
+                        }
+    | ROW '(' recordDef ')'
+                        {
+                            OwnedHqlExpr record = $3.getExpr();
+                            $$.setType(makeRowType(record->getType()));
+                            $$.setPosition($1);
+                        }
+    ;
+
 
 transformType
     : TRANSFORM '(' recordDef ')'
@@ -862,17 +893,7 @@ paramType
                         }
     | explicitDatasetType
     | explicitDictionaryType
-    | ROW               {
-                            IHqlExpression* record = queryNullRecord();
-                            $$.setType(makeRowType(record->getType()));
-                            $$.setPosition($1);
-                        }
-    | LINKCOUNTED ROW {
-                            IHqlExpression* record = queryNullRecord();
-                            Owned<ITypeInfo> rowType = makeRowType(record->getType());
-                            $$.setType(setLinkCountedAttr(rowType, true));
-                            $$.setPosition($1);
-                        }
+    | explicitRowType
     | abstractModule
                         {
                             OwnedHqlExpr scope = $1.getExpr();
@@ -1027,7 +1048,10 @@ embedBody
                         {
                             OwnedHqlExpr language = $1.getExpr();
                             OwnedHqlExpr embedText = $2.getExpr();
-                            $$.setExpr(parser->processEmbedBody($2, embedText, language, NULL), $1);
+                            if (language->getOperator()==no_comma)
+                                $$.setExpr(parser->processEmbedBody($2, embedText, language->queryChild(0), language->queryChild(1)), $1);
+                            else
+                                $$.setExpr(parser->processEmbedBody($2, embedText, language, NULL), $1);
                         }
     | EMBED '(' abstractModule ',' expression ')'
                         {
@@ -1048,10 +1072,10 @@ embedBody
     ;
 
 embedPrefix
-    : EMBED '(' abstractModule ')'
+    : EMBED '(' abstractModule attribs ')'
                         {
                             parser->getLexer()->enterEmbeddedMode();
-                            $$.inherit($3);
+                            $$.setExpr(createComma($3.getExpr(), $4.getExpr()), $1);
                         }
     ;
 
@@ -1436,7 +1460,7 @@ metaCommandWithNoSemicolon
     : setMetaCommand
                         {
                             //These are really treated like actions now, this is here for backward compatibility
-                            parser->reportWarning(ERR_DEPRECATED, $1.pos, "#command with no trailing semicolon is deprecated");
+                            parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "#command with no trailing semicolon is deprecated");
                             parser->addResult($1.getExpr(), $1);
                             $$.clear();
                         }
@@ -1483,7 +1507,14 @@ setMetaCommand
                         }
     | HASH_ONWARNING '(' expression ',' warningAction ')'
                         {
-                            parser->normalizeExpression($3, type_int, false);
+                            if (isNumericType($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($3, type_int, false);
+                            }
+                            else
+                            {
+                                parser->normalizeExpression($3, type_string, false);
+                            }
                             $$.setExpr(createValue(no_setmeta, makeVoidType(), createAttribute(onWarningAtom), $3.getExpr(), $5.getExpr()), $1);
                         }
     ;
@@ -1643,9 +1674,11 @@ failure
     ;
 
 warningAction
-    : TOK_IGNORE        {   $$.setExpr(createAttribute(ignoreAtom), $1); }
+    : TOK_LOG           {   $$.setExpr(createAttribute(logAtom), $1); }
+    | TOK_IGNORE        {   $$.setExpr(createAttribute(ignoreAtom), $1); }
     | TOK_WARNING       {   $$.setExpr(createAttribute(warningAtom), $1); }
     | TOK_ERROR         {   $$.setExpr(createAttribute(errorAtom), $1); }
+    | FAIL              {   $$.setExpr(createAttribute(failAtom), $1); }
     ;
 
 optPersistOpts
@@ -2448,7 +2481,7 @@ actionStmt
                         {
                             parser->normalizeExpression($3);
                             // change error to warning.
-                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            parser->reportWarning(CategoryUnusual, WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
                             HqlExprArray list;
                             parser->endList(list);
                             ::Release($3.getExpr());
@@ -2868,9 +2901,18 @@ buildFlag
                         {
                             $$.setExpr(createAttribute(dedupAtom), $1);
                         }
+    | FILEPOSITION optConstBoolArg
+                        {
+                            $$.setExpr(createExprAttribute(filepositionAtom, $2.getExpr()), $1);
+                        }
     | MAXLENGTH
                         {
                             $$.setExpr(createExprAttribute(maxLengthAtom), $1);
+                        }
+    | MAXLENGTH '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_numeric, false);
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
                         }
     ;
 
@@ -3070,9 +3112,18 @@ indexFlag
                             $$.setPosition($1);
                         }
     | UNORDERED         {   $$.setExpr(createAttribute(unorderedAtom)); $$.setPosition($1); }
+    | FILEPOSITION optConstBoolArg
+                        {
+                            $$.setExpr(createExprAttribute(filepositionAtom, $2.getExpr()), $1);
+                        }
     | MAXLENGTH
                         {
                             $$.setExpr(createExprAttribute(maxLengthAtom), $1);
+                        }
+    | MAXLENGTH '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_numeric, false);
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
                         }
     | commonAttribute
     ;
@@ -3424,6 +3475,13 @@ outputWuFlag
                             $$.setExpr(createAttribute(allAtom));
                             $$.setPosition($1);
                         }
+    | XMLNS '(' expression ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_stringorunicode, true);
+                            parser->normalizeExpression($5, type_stringorunicode, true);
+                            $$.setExpr(createExprAttribute(xmlnsAtom, $3.getExpr(), $5.getExpr()));
+                            $$.setPosition($1);
+                        }
     | FIRST '(' constExpression ')'
                         {
                             parser->normalizeExpression($3, type_int, true);
@@ -3465,6 +3523,12 @@ outputWuFlag
                             $$.setPosition($1);
                         }
     | commonAttribute
+    | MAXSIZE '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createExprAttribute(maxSizeAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
     ;
 
 optCommaTrim
@@ -3811,22 +3875,23 @@ attriblist
 attrib
     : knownOrUnknownId EQ UNKNOWN_ID        
                         {
-                            parser->reportWarning(WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
+                            parser->reportWarning(CategoryDeprecated, SeverityError, WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
                             $$.setExpr(createAttribute($1.getId()->lower(), createConstant(*$3.getId())));
                         }
-    | knownOrUnknownId EQ const
+    | knownOrUnknownId EQ expr %prec reduceAttrib
                         {
-                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr()), $1);
+                            //NOTE %prec is there to prevent a s/r error from the "SERVICE : attrib" production
+                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr()), $1);
                         }
     | knownOrUnknownId                  
                         {   $$.setExpr(createAttribute($1.getId()->lower()));  }
-    | knownOrUnknownId '(' const ')'
+    | knownOrUnknownId '(' expr ')'
                         {
-                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr()), $1);
+                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr()), $1);
                         }
-    | knownOrUnknownId '(' const ',' const ')'
+    | knownOrUnknownId '(' expr ',' expr ')'
                         {
-                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr(), $5.getExpr()), $1);
+                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr(), $5.getExpr()), $1);
                         }
     ;
 
@@ -3839,22 +3904,10 @@ funcRetType
     | propType
     | setType
     | explicitDatasetType
+    | explicitRowType
     | explicitDictionaryType
     | transformType
  // A plain record would be better, but that then causes a s/r error in knownOrUnknownId because scope
-    | ROW '(' recordDef ')'     
-                        {
-                            OwnedHqlExpr expr = $3.getExpr();
-                            $$.setType(makeOriginalModifier(makeRowType(expr->getType()), LINK(expr)));
-                            $$.setPosition($1);
-                        }
-    | LINKCOUNTED ROW '(' recordDef ')'       
-                        {
-                            OwnedHqlExpr expr = $4.getExpr();
-                            Owned<ITypeInfo> rowType = makeOriginalModifier(makeRowType(expr->getType()), LINK(expr));
-                            $$.setType(setLinkCountedAttr(rowType, true));
-                            $$.setPosition($1);
-                        }
     | recordDef         {
                             OwnedHqlExpr expr = $1.getExpr();
 //                          $$.setType(makeOriginalModifier(makeRowType(expr->getType()), LINK(expr)));
@@ -4965,6 +5018,15 @@ optExpression
     | expression
     ;
 
+optConstBoolArg
+    :                   {   $$.setNullExpr(); }
+    | '(' expression ')'
+                        {
+                            parser->normalizeExpression($2, type_boolean, true);
+                            $$.inherit($2);
+                        }
+    ;
+
 booleanExpr
     : expression        {
                             parser->normalizeExpression($1, type_boolean, false);
@@ -5160,7 +5222,7 @@ compareExpr
                             parser->normalizeExpression($4, type_dictionary, false);
                             OwnedHqlExpr dict = $4.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
-                            OwnedHqlExpr indict = createINDictExpr(parser->errorHandler, $4.pos, row, dict);
+                            OwnedHqlExpr indict = createINDictExpr(*parser->errorHandler, $4.pos, row, dict);
                             $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
                         }
@@ -5171,7 +5233,7 @@ compareExpr
                             parser->normalizeExpression($4, type_dictionary, false);
                             OwnedHqlExpr dict = $4.getExpr();
                             OwnedHqlExpr row = $1.getExpr();
-                            OwnedHqlExpr indict = createINDictRow(parser->errorHandler, $4.pos, row, dict);
+                            OwnedHqlExpr indict = createINDictRow(*parser->errorHandler, $4.pos, row, dict);
                             $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
                         }
@@ -5182,7 +5244,7 @@ compareExpr
                             parser->normalizeExpression($3, type_dictionary, false);
                             OwnedHqlExpr dict = $3.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
-                            $$.setExpr(createINDictExpr(parser->errorHandler, $3.pos, row, dict));
+                            $$.setExpr(createINDictExpr(*parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
                         }
     | dataRow TOK_IN dictionary
@@ -5192,7 +5254,7 @@ compareExpr
                             parser->normalizeExpression($3, type_dictionary, false);
                             OwnedHqlExpr dict = $3.getExpr();
                             OwnedHqlExpr row = $1.getExpr();
-                            $$.setExpr(createINDictRow(parser->errorHandler, $3.pos, row, dict));
+                            $$.setExpr(createINDictRow(*parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
                         }
     | dataSet EQ dataSet    
@@ -5572,7 +5634,7 @@ primexpr1
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($6);
                             // change error to warning.
-                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            parser->reportWarning(CategoryUnusual, WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
                             HqlExprArray args;
                             parser->endList(args);
                             ::Release($3.getExpr());
@@ -5582,8 +5644,7 @@ primexpr1
                         {
                             parser->normalizeExpression($5);
                             parser->normalizeExpression($7);
-                            ITypeInfo * type = parser->checkPromoteIfType($5, $7);
-                            $$.setExpr(createValue(no_if, type, $3.getExpr(), $5.getExpr(), $7.getExpr()), $1);
+                            $$.setExpr(parser->processIfProduction($3, $5, &$7), $1);
                         }
     | IFF '(' booleanExpr ',' expression ',' expression ')'
                         {
@@ -6027,10 +6088,7 @@ primexpr1
                         }
     | COUNT             {
                             $$.setExpr(parser->getActiveCounter($1));
-                            if (queryLegacyEclSemantics())
-                                parser->reportWarning(ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
-                            else
-                                parser->reportError(ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
+                            parser->reportWarning(CategoryDeprecated, SeverityError, ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
                         }
     | COUNTER               {
                             $$.setExpr(parser->getActiveCounter($1));
@@ -6368,7 +6426,7 @@ primexpr1
     | EXISTS '(' expressionList ')'
                         {
                             if (parser->isSingleValuedExpressionList($3))
-                                parser->reportWarning(WRN_SILLY_EXISTS,$1.pos,"EXISTS() on a scalar expression is always true, was this intended?");
+                                parser->reportWarning(CategoryMistake, WRN_SILLY_EXISTS,$1.pos,"EXISTS() on a scalar expression is always true, was this intended?");
 
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
                             $$.setExpr(createValue(no_existslist, makeBoolType(), LINK(list)));
@@ -6553,6 +6611,7 @@ sizeof_expr_target
                         }
     | dataSet
     | dataRow
+    | enumTypeId
     | recordDef
     | fieldSelectedFromRecord
                         {
@@ -6916,7 +6975,7 @@ dataRow
                             $3.unwindCommaList(args);
                             OwnedHqlExpr dict = $1.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), args);
-                            $$.setExpr(createSelectMapRow(parser->errorHandler, $3.pos, dict, row));
+                            $$.setExpr(createSelectMapRow(*parser->errorHandler, $3.pos, dict, row));
                         }
     | dataSet '[' NOBOUNDCHECK expression ']'
                         {   
@@ -7064,7 +7123,7 @@ simpleDataRow
     | ROW '(' inlineDatasetValue ',' recordDef ')'
                         {
                             OwnedHqlExpr row = createRow(no_temprow, $3.getExpr(), $5.getExpr());
-                            $$.setExpr(convertTempRowToCreateRow(parser->errorHandler, $3.pos, row));
+                            $$.setExpr(convertTempRowToCreateRow(*parser->errorHandler, $3.pos, row));
                             $$.setPosition($1);
                         }
     | ROW '(' startLeftSeqRow ',' recordDef ')' endSelectorSequence
@@ -7345,7 +7404,7 @@ simpleDictionary
                         {
                             parser->normalizeExpression($3, type_scalar, false);
                             // change error to warning.
-                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            parser->reportWarning(CategoryUnusual, WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
                             HqlExprArray list;
                             parser->endList(list);
                             $3.release();
@@ -7595,7 +7654,7 @@ simpleDataSet
                             
                             IHqlExpression * limit = $5.getExpr();
                             if (limit->queryValue() && limit->queryValue()->getIntValue() == 0)
-                                parser->reportWarning(WRN_CHOOSEN_ALL,$1.pos,"Use CHOOSEN(dataset, ALL) to remove implicit choosen.  CHOOSEN(dataset, 0) now returns no records.");
+                                parser->reportWarning(CategoryUnusual, WRN_CHOOSEN_ALL,$1.pos,"Use CHOOSEN(dataset, ALL) to remove implicit choosen.  CHOOSEN(dataset, 0) now returns no records.");
                             $$.setExpr(createDataset(no_choosen, $3.getExpr(), createComma(limit, $6.getExpr())), $1);
                             parser->attachPendingWarnings($$);
                         }
@@ -7727,14 +7786,15 @@ simpleDataSet
                             $$.setExpr(createDataset(no_distribute, $3.getExpr(), value.getClear()));
                             $$.setPosition($1);
                         }
-    | JOIN '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression opt_join_transform_flags ')' endSelectorSequence
+    | JOIN '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression beginCounterScope opt_join_transform_flags endCounterScope ')' endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
 
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
                             IHqlExpression * cond = $7.getExpr();
-                            OwnedHqlExpr flags = $8.getExpr();
+                            OwnedHqlExpr flags = $9.getExpr();
+                            OwnedHqlExpr counter = $10.getExpr();
                             OwnedHqlExpr transform;
                             if (flags)
                             {
@@ -7753,11 +7813,14 @@ simpleDataSet
 
                             if (!transform)
                             {
-                                IHqlExpression * seq = $10.queryExpr();
+                                IHqlExpression * seq = $12.queryExpr();
                                 transform.setown(parser->createDefJoinTransform(left,right,$1,seq,flags));
                             }
 
-                            IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $10.getExpr())));
+                            if (counter)
+                                flags.setown(createComma(flags.getClear(), createAttribute(_countProject_Atom, counter.getClear())));
+
+                            IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $12.getExpr())));
 
                             bool isLocal = join->hasAttribute(localAtom);
                             parser->checkDistribution($3, left, isLocal, true);
@@ -7807,7 +7870,7 @@ simpleDataSet
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
                             if (!queryAttribute(sortedAtom, sortItems))
-                                parser->reportWarning(WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
+                                parser->reportWarning(CategoryDeprecated, WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
 
                             IHqlExpression * ds = $3.getExpr();
                             parser->expandSortedAsList(sortItems);
@@ -8056,7 +8119,7 @@ simpleDataSet
                             OwnedHqlExpr newSorted;
                             if (!sorted)
                             {
-                                parser->reportWarning(WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
+                                parser->reportWarning(CategoryDeprecated, WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
                                 OwnedHqlExpr order = getExistingSortOrder(ds, isLocal, true);
                                 HqlExprArray sorts;
                                 if (order)
@@ -8300,7 +8363,7 @@ simpleDataSet
                             {
                                 parser->checkGrouping($7, dataset,record,grouping);
                                 if (dataset->getOperator() == no_group && isGrouped(dataset))
-                                    parser->reportWarning(WRN_GROUPINGIGNORED, $3.pos, "Grouping of table input will have no effect, was this intended?");
+                                    parser->reportWarning(CategoryIgnored, WRN_GROUPINGIGNORED, $3.pos, "Grouping of table input will have no effect, was this intended?");
                             }
 
                             HqlExprArray args;
@@ -8370,7 +8433,8 @@ simpleDataSet
 
                             parser->inheritRecordMaxLength(dataset, record);
 
-                            record.setown(parser->checkIndexRecord(record, $5));
+                            bool hasFileposition = getBoolAttributeInList(extra, filepositionAtom, true);
+                            record.setown(parser->checkIndexRecord(record, $5, extra));
                             if (transform)
                             {
                                 if (!recordTypesMatch(dataset, transform))
@@ -8512,21 +8576,21 @@ simpleDataSet
                             $$.setExpr(dataset);
                             $$.setPosition($1);
                         }
-    | DATASET '(' '[' beginList inlineDatasetValueList ']' ',' recordDef ')'
+    | DATASET '(' '[' beginList inlineDatasetValueList ']' ',' recordDef optDatasetFlags ')'
                         {
                             HqlExprArray values;
                             parser->endList(values);
-                            OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $8.getExpr());
+                            OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), createComma($8.getExpr(), $9.getExpr()));
                             $$.setExpr(convertTempTableToInlineTable(*parser->errorHandler, $5.pos, table));
                             $$.setPosition($1);
                         }
-    | DATASET '(' '[' beginList transformList ']' ')'
+    | DATASET '(' '[' beginList transformList ']' optDatasetFlags ')'
                         {
                             HqlExprArray values;
                             parser->endList(values);
                             IHqlExpression * record = values.item(0).queryRecord();
                             parser->checkCompatibleTransforms(values, record, $5);
-                            $$.setExpr(createDataset(no_inlinetable, createValue(no_transformlist, makeNullType(), values), LINK(record)));
+                            $$.setExpr(createDataset(no_inlinetable, createValue(no_transformlist, makeNullType(), values), createComma(LINK(record), $7.getExpr())));
                             $$.setPosition($1);
                         }
     | DATASET '(' thorFilenameOrList ',' beginCounterScope recordDef endCounterScope ')'
@@ -8805,7 +8869,7 @@ simpleDataSet
                         {
                             parser->normalizeExpression($3, type_scalar, false);
                             // change error to warning.
-                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            parser->reportWarning(CategoryUnusual, WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
                             HqlExprArray list;
                             parser->endList(list);
                             $3.release();
@@ -11214,13 +11278,7 @@ dedupFlags
     ;
 
 dedupFlag
-    : LEFT              {
-                            $$.setExpr(createAttribute(leftAtom));
-                        }
-    | RIGHT             {
-                            $$.setExpr(createAttribute(rightAtom));
-                        }
-    | KEEP expression   {
+    : KEEP expression   {
                             parser->normalizeExpression($2, type_int, false);
                             $$.setExpr(createExprAttribute(keepAtom, $2.getExpr()));
                         }
@@ -11241,6 +11299,16 @@ dedupFlag
                         }
     | MANY              {   $$.setExpr(createAttribute(manyAtom)); }
     | HASH              {   $$.setExpr(createAttribute(hashAtom)); }
+    | dataRow
+                        {
+                            //Backward compatibility... special case use of LEFT and RIGHT as modifiers.
+                            OwnedHqlExpr row = $1.getExpr();
+                            if (row->getOperator() == no_left)
+                                row.setown(createAttribute(leftAtom));
+                            else if (row->getOperator() == no_right)
+                                row.setown(createAttribute(rightAtom));
+                            $$.setExpr(row.getClear(), $1);
+                        }
     ;
 
 rollupExtra
@@ -11268,6 +11336,7 @@ rollupFlag
                             parser->normalizeExpression($2);
                             $$.setExpr(createAttribute(exceptAtom, $2.getExpr())); 
                         }
+    | dataRow
     ;
 
 conditions
@@ -12219,7 +12288,7 @@ featureValueList
 featureModifiers
     : '{' featureValueList '}'
                         {
-                            parser->reportWarning(WRN_FEATURE_NOT_REPEAT, $1.pos, "Curly brackets are not used for repeats - they are reserved for future functionality");
+                            parser->reportWarning(CategorySyntax, SeverityError, WRN_FEATURE_NOT_REPEAT, $1.pos, "Curly brackets are not used for repeats - they are reserved for future functionality");
                             $$.setExpr($2.getExpr());
                         }
     ;

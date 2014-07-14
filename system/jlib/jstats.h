@@ -60,8 +60,25 @@ enum StatisticType
     STATS_SIZE
 };
 
+enum StatisticMeasure
+{
+    SMEASURE_TIME_NS,
+    SMEASURE_COUNT,
+    SMEASURE_MEM_KB,
+    SMEASURE_MAX
+};
+
 extern jlib_decl const char *getStatName(unsigned i);
 extern jlib_decl const char *getStatShortName(unsigned i);
+extern jlib_decl StatisticMeasure getStatMeasure(unsigned i);
 extern jlib_decl StatisticCombineType getStatCombineMode(unsigned i);
+inline unsigned __int64 milliToNano(unsigned __int64 value) { return value * 1000000; } // call avoids need to upcast values
+inline unsigned __int64 nanoToMilli(unsigned __int64 value) { return value / 1000000; }
+
+//This interface is primarily here to reduce the dependency between the different components.
+interface IStatisticTarget
+{
+    virtual void addStatistic(const char * creator_who, const char * wuScope_where, const char * stat_what, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge) = 0;
+};
 
 #endif

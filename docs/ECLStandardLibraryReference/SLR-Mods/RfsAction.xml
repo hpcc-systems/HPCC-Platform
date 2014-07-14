@@ -39,7 +39,10 @@
 
   <para>The <emphasis role="bold">RfsAction </emphasis>function sends the
   <emphasis>query</emphasis> to the <emphasis>server</emphasis>. This is used
-  when there is no expected return value</para>
+  when there is no expected return value.</para>
+
+  <para>This function is now considered deprecated in favor of using the EMBED
+  mechanism. It will be removed in Version 6.0. </para>
 
   <para>Example:</para>
 

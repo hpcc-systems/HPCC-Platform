@@ -94,11 +94,13 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual IFileIOArray *getIFileIOArray(bool isOpt, unsigned channel) const = 0;
     virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, bool allowFieldTranslation) const = 0;
     virtual IFilePartMap *getFileMap() const = 0;
+    virtual unsigned getNumParts() const = 0;
     virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IFileIOArray *files, IRecordSize *recs, bool preload, int numKeys) const = 0;
     virtual offset_t getFileSize() const = 0;
 
     virtual const CDateTime &queryTimeStamp() const = 0;
     virtual unsigned queryCheckSum() const = 0;
+    virtual hash64_t addHash64(hash64_t hashValue) const = 0;
 
     virtual const char *queryPhysicalName() const = 0; // Returns NULL unless in local file mode.
     virtual const char *queryFileName() const = 0;
@@ -119,7 +121,7 @@ interface IResolvedFileCreator : extends IResolvedFile
 };
 
 extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical, bool isSuperFile);
-extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool cacheIt, bool writeAccess);
+extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool isDynamic, bool cacheIt, bool writeAccess);
 
 interface IRoxiePublishCallback
 {

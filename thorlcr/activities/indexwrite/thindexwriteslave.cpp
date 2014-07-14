@@ -171,11 +171,18 @@ public:
                 }
             }
         }
-        assertex(!(helper->queryDiskRecordSize()->getMetaFlags() & MDFneedserializedisk));
-        maxDiskRecordSize = helper->queryDiskRecordSize()->isVariableSize() ? KEYBUILD_MAXLENGTH : helper->queryDiskRecordSize()->getFixedSize();
-        // NB: the max [ecl] length is not used, other than setting a max field in the header.
-        // However, legacy systems (<=702) check that query rec length == key rec len.
-        maxDiskRecordSize = helper->queryDiskRecordSize()->getRecordSize(NULL);
+
+        IOutputMetaData * diskSize = helper->queryDiskRecordSize();
+        assertex(!(diskSize->getMetaFlags() & MDFneedserializedisk));
+        if (diskSize->isVariableSize())
+        {
+            if (TIWmaxlength & helper->getFlags())
+                maxDiskRecordSize = helper->getMaxKeySize();
+            else
+                maxDiskRecordSize = KEYBUILD_MAXLENGTH; //Current default behaviour, could be improved in the future
+        }
+        else
+            maxDiskRecordSize = diskSize->getFixedSize();
         reportOverflow = false;
     }
 

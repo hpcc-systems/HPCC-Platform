@@ -59,22 +59,10 @@ public:
 protected:
     virtual void init()
     {
+        CMasterActivity::init();
         mptag = container.queryJob().allocateMPTag();
         if (mode==DM_join)
             mptag2 = container.queryJob().allocateMPTag();
-    }
-    virtual void process()
-    {
-        ActPrintLog("HashDistributeActivityMaster::process");
-
-        CMasterActivity::process();
-        ActPrintLog("HashDistributeActivityMaster::process exit");
-    }
-    virtual void done()
-    {
-        ActPrintLog("HashDistributeActivityMaster::done");
-        CMasterActivity::done();
-        ActPrintLog("HashDistributeActivityMaster::done exit");
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -127,7 +115,6 @@ public:
 class IndexDistributeActivityMaster : public HashDistributeMasterBase
 {
     MemoryBuffer tlkMb;
-    OwnedRoxieString indexFileName;
 
 public:
     IndexDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_index, info) { }
@@ -139,7 +126,7 @@ public:
         IHThorKeyedDistributeArg *helper = (IHThorKeyedDistributeArg *)queryHelper();
 
         StringBuffer scoped;
-        indexFileName.setown(helper->getIndexFileName());
+        OwnedRoxieString indexFileName(helper->getIndexFileName());
         queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
         Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName);
         if (!file)
@@ -163,19 +150,12 @@ public:
         tlkMb.append(iFileIO->size());
         ::read(iFileIO, 0, (size32_t)iFileIO->size(), tlkMb);
 
-        queryThorFileManager().noteFileRead(container.queryJob(), file);
+        addReadFile(file);
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         HashDistributeMasterBase::serializeSlaveData(dst, slave); // have to chain for standard activity data..
         dst.append(tlkMb);
-    }
-    virtual void done()
-    {
-        HashDistributeMasterBase::done();
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName, false, true);
-        if (file)
-            file->setAccessed();
     }
 };
 

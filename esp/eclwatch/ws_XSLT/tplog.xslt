@@ -34,6 +34,9 @@
     
     <xsl:variable name="firstrows" select="TpLogFileResponse/FirstRows"/>
     <xsl:variable name="lastrows" select="TpLogFileResponse/LastRows"/>
+    <xsl:variable name="acceptLanguage" select="/TpLogFileResponse/AcceptLanguage"/>
+    <xsl:variable name="localiseFile"><xsl:value-of select="concat('nls/', $acceptLanguage, '/hpcc.xml')"/></xsl:variable>
+    <xsl:variable name="hpccStrings" select="document($localiseFile)/hpcc/strings"/>
 
     <xsl:template match="TpLogFileResponse">
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -61,6 +64,16 @@
           var hasDate = <xsl:value-of select="$hasdate"/>;
           var prevPage = <xsl:value-of select="$prevpage"/>;
           var nextPage = <xsl:value-of select="$nextpage"/>;
+          var invalidPageNumberAlert = '<xsl:value-of select="$hpccStrings/st[@id='InvalidPageNumber']"/>';
+          var invalidFirstRowsAlert = '<xsl:value-of select="$hpccStrings/st[@id='InvalidFirstRows']"/>';
+          var invalidLastHoursAlert = '<xsl:value-of select="$hpccStrings/st[@id='InvalidLastHours']"/>';
+          var invalidLastRowsAlert = '<xsl:value-of select="$hpccStrings/st[@id='InvalidLastRows']"/>';
+          var invalidTimeAlert = '<xsl:value-of select="$hpccStrings/st[@id='InvalidTime']"/>';
+          var timeNotDefinedAlert = '<xsl:value-of select="$hpccStrings/st[@id='TimeNotDefined']"/>';
+          var firstRowsNotDefinedAlert = '<xsl:value-of select="$hpccStrings/st[@id='FirstRowsNotDefined']"/>';
+          var lastHoursNotDefinedAlert = '<xsl:value-of select="$hpccStrings/st[@id='LastHoursNotDefined']"/>';
+          var lastRowsNotDefinedAlert = '<xsl:value-of select="$hpccStrings/st[@id='LastRowsNotDefined']"/>';
+          var pageNumberNotDefinedAlert = '<xsl:value-of select="$hpccStrings/st[@id='PageNumberNotDefined']"/>';
 
           <xsl:text disable-output-escaping="yes"><![CDATA[
             // This function gets called when the window has completely loaded.
@@ -185,14 +198,14 @@
                 var nb = document.getElementById('PageNumber').value
                 if(!nb)
                 {
-                  alert("'PageNumber' field should be defined.");
+                  alert(pageNumberNotDefinedAlert);
                   return false;
                 }
 
                 var d=parseInt(nb);
                 if(isNaN(d))
                 {
-                  alert("Invalid data in 'PageNumber' field");
+                  alert(invalidPageNumberAlert);
                   return false;
                 }
 
@@ -204,7 +217,7 @@
               {
                 if(!document.getElementById('First').value)
                 {
-                  alert("'First rows' field should be defined.");
+                  alert(firstRowsNotDefinedAlert);
                   return false;
                 }
 
@@ -212,7 +225,7 @@
                 var d=parseInt(firstRows);
                 if(isNaN(d))
                 {
-                  alert("Invalid data in 'First rows' field");
+                  alert(invalidFirstRowsAlert);
                   return false;
                 }
 
@@ -222,7 +235,7 @@
               {
                 if(!document.getElementById('Hour').value)
                 {
-                  alert("'Last hours' field should be defined.");
+                  alert(lastHoursNotDefinedAlert);
                   return false;
                 }
 
@@ -230,7 +243,7 @@
                 var d=parseInt(hours);
                 if(isNaN(d))
                 {
-                  alert("Invalid data in 'Last hours' field");
+                  alert(invalidLastHoursAlert);
                   return false;
                 }
 
@@ -240,7 +253,7 @@
               {
                 if(!document.getElementById('Last').value)
                 {
-                  alert("'Last rows' field should be defined.");
+                  alert(lastRowsNotDefinedAlert);
                   return false;
                 }
 
@@ -248,7 +261,7 @@
                 var d=parseInt(lastRows);
                 if(isNaN(d))
                 {
-                  alert("Invalid data in a 'Last rows' field");
+                  alert(invalidLastRowsAlert);
                   return false;
                 }
 
@@ -260,7 +273,7 @@
                 var dt=document.getElementById('To').value;
                 if(!df && !dt)
                 {
-                  alert("Either 'Date from' or 'to' field should be defined.");
+                  alert(timeNotDefinedAlert);
                   return false;
                 }
 
@@ -269,7 +282,7 @@
                   startDate = formatTime(df);
                   if (startDate == null)
                   {
-                    alert("Invalid data in a 'Time' field");
+                    alert(invalidTimeAlert);
                     return false;
                   }
                 }
@@ -279,7 +292,7 @@
                   endDate = formatTime(dt);
                   if (endDate == null)
                   {
-                    alert("Invalid data in a 'Time' field");
+                    alert(invalidTimeAlert);
                     return false;
                   }
                 }
@@ -303,7 +316,7 @@
               {
                 if(firstRows == '')
                 {
-                  alert("'First rows' field should be defined.");
+                  alert(firstRowsNotDefinedAlert);
                   return false;
                 }
 
@@ -313,7 +326,7 @@
               {
                 if(lastRows == '')
                 {
-                  alert("'Last rows' field should be defined.");
+                  alert(lastRowsNotDefinedAlert);
                   return false;
                 }
 
@@ -329,7 +342,7 @@
                 var d=parseInt(lastHours);
                 if(isNaN(d))
                 {
-                  alert("Invalid data in 'Last hours' field");
+                  alert(invalidLastHoursAlert);
                   return false;
                 }
 
@@ -339,7 +352,7 @@
               {
                 if(startDate == '' && endDate == '')
                 {
-                  alert("Either 'Time from' or 'to' field should be defined.");
+                  alert(timeNotDefinedAlert);
                   return false;
                 }
 
@@ -348,7 +361,7 @@
                   startDate = formatTime(startDate);
                   if (startDate == null)
                   {
-                    alert("Invalid data in a 'Time' field");
+                    alert(invalidTimeAlert);
                     return false;
                   }
                 }
@@ -358,7 +371,7 @@
                   endDate = formatTime(endDate);
                   if (endDate == null)
                   {
-                    alert("Invalid data in a 'Time' field");
+                    alert(invalidTimeAlert);
                     return false;
                   }
                 }
@@ -481,13 +494,13 @@
               <td>
                 <table>
                   <tr>
-                    <td><input type="radio" name="FilterRB" value="0" onclick="onRBChanged(0)"/>First page</td>
+                    <td><input type="radio" name="FilterRB" value="0" onclick="onRBChanged(0)"/><xsl:value-of select="$hpccStrings/st[@id='FirstPage']"/></td>
                   </tr>
                   <tr>
-                    <td><input type="radio" name="FilterRB" value="3" onclick="onRBChanged(3)"/>or last page (page <xsl:value-of select="$totalpages"/>)</td>
+                    <td><input type="radio" name="FilterRB" value="3" onclick="onRBChanged(3)"/><xsl:value-of select="$hpccStrings/st[@id='OrLastPage']"/> (<xsl:value-of select="$hpccStrings/st[@id='Page']"/><xsl:text disable-output-escaping="yes"> </xsl:text><xsl:value-of select="$totalpages"/>)</td>
                   </tr>
                   <tr>
-                    <td><input type="radio" name="FilterRB" value="4" onclick="onRBChanged(4)"/>or go to page:<input id="PageNumber" size="5" type="text" value="{PageNumber+1}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> </td>
+                    <td><input type="radio" name="FilterRB" value="4" onclick="onRBChanged(4)"/><xsl:value-of select="$hpccStrings/st[@id='OrGoToPage']"/>:<input id="PageNumber" size="5" type="text" value="{PageNumber+1}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> </td>
                   </tr>
                 </table>
               </td>
@@ -495,11 +508,11 @@
                 <table>
                   <tr>
                     <td><input type="radio" name="FilterRB" value="1" onclick="onRBChanged(1)"/></td>
-                    <td>or first:<input id="First" size="5" type="text" value="{FirstRows}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> rows</td>
+                    <td><xsl:value-of select="$hpccStrings/st[@id='OrFirst']"/>:<input id="First" size="5" type="text" value="{FirstRows}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> <xsl:value-of select="$hpccStrings/st[@id='Rows']"/></td>
                   </tr>
                   <tr>
                     <td><input type="radio" name="FilterRB" value="5" onclick="onRBChanged(5)"/></td>
-                    <td colspan="2">or last:<input id="Last" size="5" type="text" value="{LastRows}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> rows</td>
+                    <td colspan="2"><xsl:value-of select="$hpccStrings/st[@id='OrLast']"/>:<input id="Last" size="5" type="text" value="{LastRows}" style="text-align:right;" onKeyUp = "onEditKeyUp(event)"/> <xsl:value-of select="$hpccStrings/st[@id='Rows']"/></td>
                   </tr>
                 </table>
               </td>
@@ -509,23 +522,23 @@
                     <xsl:choose>
                       <xsl:when test="HasDate=1">
                         <td><input type="radio" name="FilterRB" value="6"  onclick="onRBChanged(6)"/>
-                        or time from:<input id="From" size="8" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)"/></td>
-                        <td colspan="4">to: <input id="To" size="8" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)"/> (hh:mm:ss)</td>
+                        <xsl:value-of select="$hpccStrings/st[@id='OrTimeFrom']"/>:<input id="From" size="8" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)"/></td>
+                        <td colspan="4"><xsl:value-of select="$hpccStrings/st[@id='To']"/>: <input id="To" size="8" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)"/> (hh:mm:ss)</td>
                       </xsl:when>
                       <xsl:otherwise>
                         <td><input type="radio" name="FilterRB" value="6"  onclick="onRBChanged(6)" disabled="true"/>
-                            or time from:<input id="From" size="8" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/></td>
-                        <td colspan="4">to: <input id="To" size="8" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/> (hh:mm:ss)</td>
+                            <xsl:value-of select="$hpccStrings/st[@id='OrTimeFrom']"/>:<input id="From" size="8" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/></td>
+                        <td colspan="4"><xsl:value-of select="$hpccStrings/st[@id='To']"/>: <input id="To" size="8" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/> (hh:mm:ss)</td>
                       </xsl:otherwise>
                     </xsl:choose>
                   </tr>
                   <tr>
                     <xsl:choose>
                       <xsl:when test="HasDate=1">
-                        <td><input type="radio" name="FilterRB" value="2" onclick="onRBChanged(2)"/> or last:<input id="Hour" size="5" type="text" value="{LastHours}"  onKeyUp = "onEditKeyUp(event)" style="text-align:right;"/> hours</td>
+                        <td><input type="radio" name="FilterRB" value="2" onclick="onRBChanged(2)"/> <xsl:value-of select="$hpccStrings/st[@id='OrLast']"/>:<input id="Hour" size="5" type="text" value="{LastHours}"  onKeyUp = "onEditKeyUp(event)" style="text-align:right;"/> <xsl:value-of select="$hpccStrings/st[@id='Hours']"/></td>
                       </xsl:when>
                       <xsl:otherwise>
-                        <td><input type="radio" name="FilterRB" value="2" onclick="onRBChanged(2)" disabled="true"/> or last:<input id="Hour" size="5" type="text" value="{LastHours}"  onKeyUp = "onEditKeyUp(event)" style="text-align:right;" disabled="true"/> hours</td>
+                        <td><input type="radio" name="FilterRB" value="2" onclick="onRBChanged(2)" disabled="true"/> <xsl:value-of select="$hpccStrings/st[@id='OrLast']"/>:<input id="Hour" size="5" type="text" value="{LastHours}"  onKeyUp = "onEditKeyUp(event)" style="text-align:right;" disabled="true"/> <xsl:value-of select="$hpccStrings/st[@id='Hours']"/></td>
                       </xsl:otherwise>
                     </xsl:choose>
                   </tr>
@@ -547,13 +560,13 @@
                 <input type="button" id="Download" class="sbutton"  size="40" value="Download" onClick="return onDownload(0)"/>
               </td>
               <xsl:if test="FilterType=0 or FilterType=3 or FilterType=4">
-                <td>Viewing page <xsl:value-of select="1+$pagenumber"/> of <xsl:value-of select="$totalpages"/></td>
+                <td><xsl:value-of select="$hpccStrings/st[@id='ViewingPage']"/><xsl:text disable-output-escaping="yes"> </xsl:text><xsl:value-of select="1+$pagenumber"/>/<xsl:value-of select="$totalpages"/></td>
               </xsl:if>
             </tr>
           </table>
           <div id="ViewLogData">
-            <span id="loadingMsg"><h3>Loading, please wait...</h3></span>
-            <span id="loadingTimeOut" style="visibility:hidden"><h3>Browser timed out due to a long time delay.</h3></span>
+            <span id="loadingMsg"><h3><xsl:value-of select="$hpccStrings/st[@id='LoadingPleaseWait']"/></h3></span>
+            <span id="loadingTimeOut" style="visibility:hidden"><h3><xsl:value-of select="$hpccStrings/st[@id='BrowserTimedOut']"/></h3></span>
           </div>
         </form>
         <iframe id="DataFrame" name="DataFrame" style="display:none; visibility:hidden;"></iframe>

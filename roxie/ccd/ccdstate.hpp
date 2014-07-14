@@ -96,15 +96,15 @@ interface IFileIOArray : extends IInterface
 
 interface IRoxieQuerySetManagerSet : extends IInterface
 {
-    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash) = 0;
+    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry) = 0;
     virtual void getQueries(const char *id, IArrayOf<IQueryFactory> &queries, const IRoxieContextLogger &logctx) const = 0;
 };
 
 interface IRoxieQuerySetManager : extends IInterface
 {
     virtual bool isActive() const = 0;
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &ctx) const = 0;
-    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash) = 0;
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &ctx) const = 0;
+    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry) = 0;
     virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const = 0;
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx) = 0;
     virtual void resetAllQueryTimings() = 0;
@@ -121,9 +121,10 @@ interface IRoxieDebugSessionManager : extends IInterface
 
 interface IRoxieQueryPackageManagerSet : extends IInterface
 {
+    virtual void requestReload(bool wait, bool force) = 0;
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
-    virtual IQueryFactory *getQuery(const char *id, IArrayOf<IQueryFactory> *slaves, const IRoxieContextLogger &logctx) const = 0;
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *slaves, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual int getActivePackageCount() const = 0;
 };
@@ -142,11 +143,11 @@ extern void mergeStats(IPropertyTree *s1, IPropertyTree *s2, unsigned level);
 extern void mergeStats(IPropertyTree *s1, IPropertyTree *s2);
 extern void mergeQueries(IPropertyTree *s1, IPropertyTree *s2);
 
-extern const char *queryNodeFileName(const IPropertyTree &graphNode);
-extern const char *queryNodeIndexName(const IPropertyTree &graphNode);
+extern const char *queryNodeFileName(const IPropertyTree &graphNode, ThorActivityKind kind);
+extern const char *queryNodeIndexName(const IPropertyTree &graphNode, ThorActivityKind kind);
 
-extern IPropertyTreeIterator *getNodeSubFileNames(const IPropertyTree &graphNode);
-extern IPropertyTreeIterator *getNodeSubIndexNames(const IPropertyTree &graphNode);
+extern void createDelayedReleaser();
+extern void stopDelayedReleaser();
 
 extern void createDelayedReleaser();
 extern void stopDelayedReleaser();

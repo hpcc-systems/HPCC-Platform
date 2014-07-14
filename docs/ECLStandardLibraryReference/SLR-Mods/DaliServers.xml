@@ -1,28 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE sect1
-  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DaliServer">
-   <title>
-      <emphasis role="bold">DaliServer</emphasis>
-   </title>
-   <para>
-      <emphasis role="bold">STD.System.Thorlib.DaliServer    <indexterm>
+  <title><emphasis role="bold">DaliServer</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Thorlib.DaliServer <indexterm>
       <primary>STD.System.ThorLib.DaliServer</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>System.ThorLib.DaliServer</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>ThorLib.DaliServer</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>DaliServer</primary>
-    </indexterm>
-(</emphasis>
-      <emphasis>
-        </emphasis>
-      <emphasis role="bold">)</emphasis>
-   </para>
+    </indexterm> (</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="80.50pt" />
@@ -31,21 +23,19 @@
 
       <tbody>
         <row>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-
-
-   <entry>Return:<emphasis> </emphasis></entry><entry>Daliserver returns a VARSTRING
-        value.</entry>
-
-
+          <entry>Daliserver returns a VARSTRING value.</entry>
         </row>
-
       </tbody>
     </tgroup>
   </informaltable>
-   <para>The <emphasis role="bold">Daliserver </emphasis>function
-        returns the IP and port of the system data store (Dali) servers for
-        the environment running the workunit.</para>
-   <para>Example:</para>
-   <programlisting format="linespecific">A := Thorlib.Daliservers();</programlisting>
+
+  <para>The <emphasis role="bold">Daliserver </emphasis>function returns the
+  IP and port of the system data store (Dali) server for the environment
+  running the workunit.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := Thorlib.Daliserver();</programlisting>
 </sect1>

@@ -243,22 +243,25 @@
                             else
                             {
                                 var firstNTypeS = document.getElementById("FirstNType").selectedIndex;
-                                var firstNType = "newest";
-                                if (firstNTypeS > 2)
-                                    firstNType = "smallest";
-                                else if (firstNTypeS > 1)
-                                    firstNType = "largest";
-                                else if (firstNTypeS > 0)
-                                    firstNType = "oldest";
-
+                                var sortBy = "Modified";
+                                var descending = true;
+                                if (firstNTypeS > 2)//largest
+                                {
+                                    sortBy = "FileSize";
+                                    descending = "false";
+                                }
+                                else if (firstNTypeS > 1)//smallest
+                                    sortBy = "FileSize";
+                                else if (firstNTypeS > 0)//oldest
+                                    descending = "false";
                                 if (first)
                                 {
-                                    url += "?FirstN=" + firstN + "&FirstNType=" + firstNType;
+                                    url += "?FirstN=" + firstN + "&Sortby=" + sortBy + "&Descending=" + descending;
                                     first = false;
                                 }
                                 else
                                 {
-                                    url += "&FirstN=" + firstN + "&FirstNType=" + firstNType;
+                                    url += "&FirstN=" + firstN + "&Sortby=" + sortBy + "&Descending=" + descending;
                                 }
                             }
                         

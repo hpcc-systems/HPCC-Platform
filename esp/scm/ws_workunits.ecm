@@ -232,8 +232,13 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.29")] string ApplicationValuesDesc;
     [min_ver("1.29")] string WorkflowsDesc;
     [min_ver("1.31")] bool HasArchiveQuery(false);
+    [min_ver("1.49")] int64 WUXMLSize;
     [min_ver("1.38")] ESParray<ESPstruct ThorLogInfo> ThorLogList;
-
+    [min_ver("1.47")] ESParray<string, URL> ResourceURLs;
+    [min_ver("1.50")] int ResultViewCount;
+    [min_ver("1.50")] int ResourceURLCount;
+    [min_ver("1.50")] int DebugValueCount;
+    [min_ver("1.50")] int WorkflowCount;
 };
 
 ESPStruct [nil_remove] WUECLAttribute
@@ -507,6 +512,13 @@ ESPresponse [exceptions_inline] WUResubmitResponse
     [min_ver("1.40")] ESParray<ESPstruct ResubmittedWU, WU> WUs;
 };
 
+ESPenum WUExceptionSeverity : string
+{
+    INFO("info"),
+    WARNING("warning"),
+    ERROR("error")
+};
+
 ESPrequest WURunRequest
 {
     string QuerySet;
@@ -519,6 +531,7 @@ ESPrequest WURunRequest
     bool NoRootTag(0);
     ESParray<ESPstruct NamedValue> DebugValues;
     ESParray<ESPstruct NamedValue> Variables;
+    ESPenum WUExceptionSeverity ExceptionSeverity("info");
 };
 
 ESPresponse [exceptions_inline] WURunResponse
@@ -592,6 +605,7 @@ ESPrequest WUInfoRequest
     [min_ver("1.16")] bool IncludeApplicationValues(true);
     [min_ver("1.16")] bool IncludeWorkflows(true);
     [min_ver("1.39")] bool IncludeXmlSchemas(false);
+    [min_ver("1.47")] bool IncludeResourceURLs(false);
     [min_ver("1.16")] bool SuppressResultSchemas(false);
     [min_ver("1.25")] string ThorSlaveIP;
 };
@@ -656,6 +670,7 @@ ESPrequest WUResultBinRequest
     string ResultName;
     int    Sequence;
     string Format("raw");
+    [min_ver("1.50")] ESParray<ESPstruct NamedValue> FilterBy;
 
     int64 Start(0);
     int Count;
@@ -685,6 +700,7 @@ ESPrequest WUResultRequest
     string LogicalName;
     string Cluster;
     bool SuppressXmlSchema(0);
+    [min_ver("1.50")] ESParray<ESPstruct NamedValue> FilterBy;
 
     int64 Start(0);
     int Count;
@@ -703,7 +719,7 @@ ESPresponse [exceptions_inline,http_encode(0)] WUResultResponse
     int Count;
     int64 Total;
 
-    string Result;
+    [json_inline(1)] string Result;
 };
 
 ESPrequest WUResultViewRequest
@@ -948,6 +964,7 @@ ESPresponse [exceptions_inline] WUCompileECLResponse
 ESPrequest WUJobListRequest
 {
     string Cluster;
+    [min_ver("1.50")] string Process;
     string StartDate;
     string EndDate;
     bool ShowAll;
@@ -968,6 +985,7 @@ ESPrequest [nil_remove] WUShowScheduledRequest
     string EventName("");
     string PushEventName("");
     string PushEventText("");
+    [min_ver("1.51")] string State("");
 };
 
 ESPStruct [nil_remove] ScheduledWU
@@ -977,6 +995,9 @@ ESPStruct [nil_remove] ScheduledWU
     string EventName("");
     string EventText("");
     string JobName("");
+    [min_ver("1.51")] int StateID;
+    [min_ver("1.51")] string State("");
+    [min_ver("1.51")] string Owner("");
 };
 
 ESPStruct [nil_remove] ServerInfo
@@ -1109,6 +1130,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     bool DontCopyFiles(false);
     string SourceProcess;
     bool AllowForeignFiles(false);
+    bool UpdateDfs(false);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -1230,6 +1252,7 @@ ESPrequest [nil_remove] WUListQueriesRequest
 {
     string  QuerySetName;
     string  ClusterName;
+    string  LibraryName;
     int64 MemoryLimitLow;
     int64 MemoryLimitHigh;
     nonNegativeInteger TimeLimitLow;
@@ -1238,12 +1261,18 @@ ESPrequest [nil_remove] WUListQueriesRequest
     nonNegativeInteger WarnTimeLimitHigh;
     nonNegativeInteger PriorityLow;
     nonNegativeInteger PriorityHigh;
+    [min_ver("1.48")] bool Activated;
+    [min_ver("1.48")] bool SuspendedByUser;
+    [min_ver("1.50")] string WUID;
+    [min_ver("1.51")] string QueryID;
+    [min_ver("1.51")] string QueryName;
 
     nonNegativeInteger PageSize(0);
     nonNegativeInteger PageStartFrom(0);
     string Sortby;
     bool Descending(false);
     int64 CacheHint;
+    string FileName;
 };
 
 ESPresponse [exceptions_inline] WUListQueriesResponse
@@ -1279,6 +1308,24 @@ ESPresponse [exceptions_inline] WUListQueriesUsingFileResponse
     string Process;
     string FileName;
     ESParray<ESPstruct TargetQueriesUsingFile> Targets;
+};
+
+ESPrequest [nil_remove] WUQueryFilesRequest
+{
+    string Target;
+    string QueryId;
+};
+
+ESPStruct [nil_remove] FileUsedByQuery
+{
+    string FileName;
+    int64 FileSize;
+    unsigned NumberOfParts;
+};
+
+ESPresponse [exceptions_inline] WUQueryFilesResponse
+{
+    ESParray<ESPstruct FileUsedByQuery, File> Files;
 };
 
 ESPrequest WUQueryDetailsRequest
@@ -1318,6 +1365,7 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
     [min_ver("1.46")] ESParray<string> LibrariesUsed;
     [min_ver("1.46")] int CountGraphs;
     [min_ver("1.46")] ESParray<string> GraphIds;
+    [min_ver("1.50")] int ResourceURLCount;
 };
 
 ESPrequest WUMultiQuerySetDetailsRequest
@@ -1436,6 +1484,7 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     string priority;
     string Comment;
     string SourceProcess;
+    string DestName;
     bool AllowForeignFiles(true);
 };
 
@@ -1494,8 +1543,26 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
     [http_content("application/octet-stream")] binary thefile;
 };
 
+ESPrequest [nil_remove] WUCheckFeaturesRequest
+{
+};
+
+ESPStruct DeploymentFeatures
+{
+    bool UseCompression;
+};
+
+ESPresponse [exceptions_inline] WUCheckFeaturesResponse
+{
+    int BuildVersionMajor;
+    int BuildVersionMinor;
+    int BuildVersionPoint;
+    unsigned maxRequestEntityLength;
+    ESPStruct DeploymentFeatures Deployment;
+};
+
 ESPservice [
-    version("1.48"), default_client_version("1.48"),
+    version("1.51"), default_client_version("1.51"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1565,9 +1632,11 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
     ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
+    ESPmethod WUQueryFiles(WUQueryFilesRequest, WUQueryFilesResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
+    ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
 };
 
 

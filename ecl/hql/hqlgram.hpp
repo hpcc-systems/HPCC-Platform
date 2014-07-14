@@ -358,7 +358,6 @@ public:
     bool hasAnyActiveParameters();
 public:
     CIArrayOf<ActiveScopeInfo> defineScopes;
-    IEclRepository *dataServer;
     HqlScopeArray defaultScopes;
     Owned<IHqlScope> globalScope;
     Linked<ISourcePath> sourcePath;
@@ -454,7 +453,7 @@ public:
     void checkWorkflowMultiples(IHqlExpression * currentWorkflow, IHqlExpression * newWorkflow, attribute& errpos);
     void checkJoinFlags(const attribute & err, IHqlExpression * joinExpr);
     void checkLoopFlags(const attribute & err, IHqlExpression * loopExpr);
-    IHqlExpression * checkIndexRecord(IHqlExpression * record, const attribute & errpos);
+    IHqlExpression * checkIndexRecord(IHqlExpression * record, const attribute & errpos, OwnedHqlExpr & indexAttrs);
     void checkIndexFieldType(IHqlExpression * cur, bool isPayload, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordType(IHqlExpression * record, unsigned numPayloadFields, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordTypes(IHqlExpression * index, const attribute & errpos);
@@ -565,24 +564,26 @@ public:
     IHqlExpression * nextEnumValue();
 
 // Error handling
-    void doReportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
+    void doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
     void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
-    void reportMacroExpansionPosition(int errNo, HqlLex * lexer, bool isError);
+    void reportMacroExpansionPosition(IECLError * warning, HqlLex * lexer);
     void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
 
     // Don't use overloading: va_list is the same as char*!!
     void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args);
     void reportError(int errNo, const char *msg, int lineno, int column, int position=0);
-    void reportWarning(int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
-    void reportWarningVa(int errNo, const attribute& a, const char* format, va_list args);
-    void reportWarning(int warnNo, const char *msg, int lineno, int column);
+    void reportWarning(WarnErrorCategory category, int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 5,6)));
+    void reportWarning(WarnErrorCategory category, ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 6, 7)));
+    void reportWarningVa(WarnErrorCategory category, int errNo, const attribute& a, const char* format, va_list args);
+    void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, int lineno, int column);
     void addResult(IHqlExpression *query, const attribute& errpos);
-    bool okToReportError(const ECLlocation & pos);
-// interface IErrorReceiver
+
+    // interface IErrorReceiver
     virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
-    virtual void report(IECLError*);
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
+    virtual void report(IECLError * error);
+    virtual IECLError * mapError(IECLError * error);
+    void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual size32_t errCount();
     virtual size32_t warnCount();
     
@@ -831,9 +832,11 @@ protected:
     bool resolveSymbols;
     bool forceResult;
     bool associateWarnings;
-    bool legacyEclSemantics;
+    bool legacyImportSemantics;
+    bool legacyWhenSemantics;
     bool isQuery;
     bool parseConstantText;
+    bool expandingMacroPosition;
     unsigned m_maxErrorsAllowed;
 
     IECLErrorArray pendingWarnings;
@@ -841,7 +844,6 @@ protected:
     IIdAtom * moduleName;
     IIdAtom * current_id;
     IIdAtom * expectedAttribute;
-    int current_flags;
     IHqlScope *transformScope;
     PointerArray savedIds;
     UnsignedArray savedLastpos;
@@ -864,8 +866,6 @@ protected:
     CIArrayOf<ActiveScopeInfo> defineScopes;
     OwnedHqlExpr curList;
     BoolArray wasInEvaluate;
-    HqlExprAttr curDatabase;
-    unsigned curDatabaseCount;
     HqlExprCopyArray activeRecords;
     HqlExprArray activeIfBlocks;
     HqlLex *lexObject;
@@ -876,7 +876,6 @@ protected:
     ITypeInfo * uint4Type;
     ITypeInfo * defaultRealType;
     ITypeInfo * boolType;
-    IEclRepository *dataServer;
     HqlScopeArray defaultScopes;
     PointerArray savedType;
     HqlExprAttr curFeatureParams;
@@ -998,6 +997,12 @@ protected:
 typedef void* yyscan_t;
 #endif
 
+enum
+{
+    HEFhadtrue = 0x0001,
+    HEFhadelse = 0x0002,
+};
+
 class HqlLex
 {
     public:
@@ -1095,11 +1100,12 @@ class HqlLex
 
         IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
         void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
-        void reportWarning(const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
+        void reportWarning(WarnErrorCategory category, const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 5, 6)));
 
-        void beginNestedHash(unsigned kind) { hashendKinds.append(kind); hashendDepths.append(1); }
-        unsigned endNestedHash() { hashendKinds.pop(); return hashendDepths.pop(); }
-        void clearNestedHash() { hashendKinds.kill(); hashendDepths.kill(); }
+        void beginNestedHash(unsigned kind) { hashendKinds.append(kind); hashendFlags.append(0); }
+        void endNestedHash() { hashendKinds.pop(); hashendFlags.pop(); }
+        void clearNestedHash() { hashendKinds.kill(); hashendFlags.kill(); }
+        void setHashEndFlags(unsigned i) { if (hashendFlags.ordinality()) { hashendFlags.pop(); hashendFlags.append(i); } }
 
         inline bool parserExpecting(int tok, const short * activeState)
         {
@@ -1131,6 +1137,7 @@ class HqlLex
         void doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int extra);
         void doApply(YYSTYPE & returnToken);
         int doElse(YYSTYPE & returnToken, bool lookup, const short * activeState, bool isElseIf);
+        int doEnd(YYSTYPE & returnToken, bool lookup, const short * activeState);
         void doExpand(YYSTYPE & returnToken);
         void doTrace(YYSTYPE & returnToken);
         void doError(YYSTYPE & returnToken, bool isError);
@@ -1138,7 +1145,7 @@ class HqlLex
         void doFor(YYSTYPE & returnToken, bool doAll);
         int doHashText(YYSTYPE & returnToken);
         void doLoop(YYSTYPE & returnToken);
-        void doIf(YYSTYPE & returnToken);
+        void doIf(YYSTYPE & returnToken, bool isElseIf);
         void doSet(YYSTYPE & returnToken, bool _append);
         void doLine(YYSTYPE & returnToken);
         void doDeclare(YYSTYPE & returnToken);
@@ -1149,6 +1156,8 @@ class HqlLex
         void doInModule(YYSTYPE & returnToken);
         void doMangle(YYSTYPE & returnToken, bool de);
         void doUniqueName(YYSTYPE & returnToken);
+        void doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat);
+
         void processEncrypted();
 
         void declareUniqueName(const char* name, const char * pattern);
@@ -1179,8 +1188,8 @@ private:
         enum { HashStmtNone, HashStmtFor, HashStmtForAll, HashStmtLoop, HashStmtIf };
         int lastToken;
         int macroGathering;
-        int skipping;
-        UnsignedArray hashendDepths;
+        int skipNesting;
+        UnsignedArray hashendFlags;
         UnsignedArray hashendKinds;
         bool hasHashbreak;
         int loopTimes;

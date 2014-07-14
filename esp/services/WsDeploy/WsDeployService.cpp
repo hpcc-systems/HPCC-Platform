@@ -153,7 +153,7 @@ void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropert
         StringBuffer sb(xpath2);
         int pos = xpath2.indexOf(']');
         if (pos != -1)
-          sb.clear().append(xpath2.substring(0, pos)->toCharArray());
+          sb.clear().append(xpath2.toCharArray(), 0, pos);
 
         result.append('\"');
         result.append(pNode->queryProp(sb.str()));
@@ -194,7 +194,6 @@ void expandRange(IPropertyTree* pComputers)
     }
   }
 }
-
 
 CWsDeployExCE::~CWsDeployExCE()
 {
@@ -250,6 +249,8 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
   m_bCloud = false;
   StringBuffer xpath;
   m_envFile.clear();
+
+  m_pConfigHelper = CConfigHelper::getInstance(cfg,service);
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", service);
   const char* tmp = cfg->queryProp(xpath.str());
@@ -3853,7 +3854,7 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
   else 
   {
     Owned<IFile> inFiles = NULL;
-    IPropertyTree* pParentNode = createPTree("BuildServerComps");
+    Owned<IPropertyTree> pParentNode = createPTree("BuildServerComps");
 
     if (!strcmp(cmd, "Release"))
       sourceDir.append(PATHSEPCHAR).append("release");
@@ -4300,12 +4301,10 @@ bool CWsDeployFileInfo::handleComponentCopy(IPropertyTree *pComponents, IPropert
   bool bError = false;
   StringBuffer errMsg;
 
-  char targetName[255] = "";
   iterComp->first();
-  strncpy(targetName, iterComp->query().queryProp("@target"), 255);  //get the copy target configuration file name
 
   StringBuffer filePath;
-  CWsDeployFileInfo::setFilePath(filePath, targetName);
+  CWsDeployFileInfo::setFilePath(filePath, iterComp->query().queryProp("@target"));
 
   Owned<CWsDeployFileInfo> fi = new CWsDeployFileInfo(m_pService, filePath, false);
 
@@ -5625,13 +5624,6 @@ bool CWsDeployFileInfo::deploy(IEspContext &context, IEspDeployRequest& req, IEs
   return true;
 }
 
-bool CWsDeployExCE::onInit(IEspContext &context, IEspEmptyRequest& req, IEspInitResponse& resp)
-{
-  resp.setComponent("WsDeploy");
-  resp.setCommand("Init");
-  return true;
-}
-
 //the following method must be called with ownership of m_mutex
 //
 void CWsDeployFileInfo::generateGraph(IEspContext &context, IConstWsDeployReqInfo *reqInfo)
@@ -6272,6 +6264,20 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
     StringBuffer s("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Environment></Environment>");
     Owned<IPropertyTree> pNewTree = createPTreeFromXMLString(s);
 
+    if ( strlen(m_pService->m_pConfigHelper->getBuildSetFilePath()) > 0 )
+    {
+        try
+        {
+          Owned<IPropertyTree> pDefBldSet = m_pService->m_pConfigHelper->getBuildSetTree(); //createPTreeFromXMLFile( m_pService->m_pConfigHelper->getBuildSetFilePath() );
+          pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pDefBldSet->queryPropTree("./Programs")));
+          pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTreeFromIPT(pDefBldSet->queryPropTree("./Software")));
+        }
+        catch(IException* e)
+        {
+          e->Release();
+        }
+    }
+
     if(!pNewTree->queryPropTree(XML_TAG_SOFTWARE))
     {
       pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTree());
@@ -6891,12 +6897,6 @@ bool CWsDeployExCE::onAddReqdComps(IEspContext &context, IEspAddReqdCompsRequest
   return fi->addReqdComps(context, req, resp);
 }
 
-bool CWsDeployEx::onDeploy(IEspContext &context, IEspDeployRequest& req, IEspDeployResponse& resp)
-{
-  CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
-  return fi->deploy(context, req, resp);
-}
-
 CWsDeployFileInfo* CWsDeployExCE::getFileInfo(const char* fileName, bool addIfNotFound, bool createFile)
 {
   synchronized block(m_mutexSrv);
@@ -7115,11 +7115,6 @@ bool CWsDeployExCE::onHandleAccessRules(IEspContext &context, IEspHandleAccessRu
 }
 
 bool CWsDeployExCE::onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp)
-{
-  return supportedInEEOnly();
-}
-
-bool CWsDeployExCE::onDeploy(IEspContext &context, IEspDeployRequest& req, IEspDeployResponse& resp)
 {
   return supportedInEEOnly();
 }

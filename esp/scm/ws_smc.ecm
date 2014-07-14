@@ -190,7 +190,6 @@ ESPresponse [] SMCPermissionsResponse
 
 ESPrequest SMCQueueRequest
 {
-    int ClusterType;
     string Cluster;
     string QueueName;
     string Comment;
@@ -202,6 +201,7 @@ ESPrequest SMCQueueRequest
 
 ESPresponse [exceptions_inline] SMCQueueResponse
 {
+    [min_ver("1.19")] ESPstruct StatusServerInfo StatusServerInfo;
 };
 
 ESPrequest SMCJobRequest
@@ -217,13 +217,20 @@ ESPresponse [exceptions_inline] SMCJobResponse
 {
 };
 
+ESPStruct SMCJob
+{
+    string Wuid;
+    string QueueName;
+};
+
 ESPrequest SMCPriorityRequest
 {
-    int ClusterType;
-    string Cluster;
+    [depr_ver("1.18")] int ClusterType;
+    [depr_ver("1.18")] string Cluster;
     string QueueName;
     string Wuid;
     string Priority;
+    [min_ver("1.18")] ESParray<ESPstruct SMCJob> SMCJobs;
 };
 
 
@@ -333,6 +340,23 @@ RoxieControlCmdResponse
     ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
 };
 
+ESPrequest GetStatusServerInfoRequest
+{
+    string ServerName;
+    string ServerType;
+    string NetworkAddress;
+    int Port;
+};
+
+ESPresponse
+[
+    exceptions_inline, nil_remove
+]
+GetStatusServerInfoResponse
+{
+    ESPstruct StatusServerInfo StatusServerInfo;
+};
+
 ESPservice [noforms, version("1.19"), default_client_version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
@@ -358,6 +382,7 @@ ESPservice [noforms, version("1.19"), default_client_version("1.19"), exceptions
     ESPmethod [resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
 
     ESPmethod RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
+    ESPmethod GetStatusServerInfo(GetStatusServerInfoRequest, GetStatusServerInfoResponse);
 };
 
 SCMexportdef(WSSMC);

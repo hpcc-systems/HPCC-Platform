@@ -85,34 +85,13 @@ extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext
 
 //-------------------------------------------------------------------------------------------------------------------
 
-void lookupAllRootDefinitions(IHqlScope * scope, HqlLookupContext & ctx)
-{
-    HqlExprArray rootSymbols;
-    scope->getSymbols(rootSymbols);
-    ForEachItemIn(i, rootSymbols)
-    {
-        ::Release(scope->lookupSymbol(rootSymbols.item(i).queryId(), LSFsharedOK, ctx));
-    }
-}
-
-void lookupAllRootDefinitions(IEclRepository * repository)
-{
-    HqlParseContext parseCtx(repository, NULL);
-    ThrowingErrorReceiver errs;
-    HqlLookupContext ctx(parseCtx, &errs);
-    lookupAllRootDefinitions(repository->queryRootScope(), ctx);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     Owned<IHqlScope> parentScope;
     const char * item = attrname;
-    const char * dot;
-    do
+    loop
     {
-        dot = strchr(item, '.');
+        const char * dot = strchr(item, '.');
         IIdAtom * moduleName;
         if (dot)
         {
@@ -123,6 +102,10 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
         {
             moduleName = createIdAtom(item);
         }
+
+        //Check for empty module name
+        if (!moduleName)
+            return NULL;
 
         OwnedHqlExpr resolved;
         if (parentScope)
@@ -142,8 +125,7 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
             return NULL;
 
         parentScope.set(scope);
-    } while (dot);
-    return LINK(queryExpression(parentScope));
+    }
 }
 
 
@@ -197,6 +179,7 @@ extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repos
             break;
         compound->addRepository(*next);
     }
+    va_end(args);
     return compound.getClear();
 }
 

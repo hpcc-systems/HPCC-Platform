@@ -28,9 +28,19 @@ struct IHThorGraphResult : extends IInterface
     virtual const void * queryRow(unsigned whichRow) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
     virtual const void * getOwnRow(unsigned whichRow) = 0;      // used internally, removes row from result
+    virtual const void * getLinkedRowResult() = 0;
 };
 
-struct IHThorGraphResults : extends IEclGraphResults
+struct ILocalEclGraphResults : public IEclGraphResults
+{
+public:
+    virtual IHThorGraphResult * queryResult(unsigned id) = 0;
+    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id) = 0;
+    virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator) = 0;
+    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) = 0;
+};
+
+struct IHThorGraphResults : extends ILocalEclGraphResults
 {
     virtual void clear() = 0;
     virtual IHThorGraphResult * queryResult(unsigned id) = 0;
@@ -49,15 +59,6 @@ struct IHThorBoundLoopGraph : extends IInterface
 struct IEclLoopGraph : public IInterface
 {
     virtual void executeChild(const byte * parentExtract, IHThorGraphResults * results, IHThorGraphResults * _graphLoopResults) = 0;
-};
-
-struct ILocalEclGraphResults : public IEclGraphResults
-{
-public:
-    virtual IHThorGraphResult * queryResult(unsigned id) = 0;
-    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id) = 0;
-    virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator) = 0;
-    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) = 0;
 };
 
 interface IOrderedOutputSerializer;

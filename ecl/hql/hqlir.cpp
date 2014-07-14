@@ -757,6 +757,7 @@ inline type_t getRequiredTypeCode(node_operator op)
     case no_remotescope:
     case no_libraryscope:
     case no_type:
+    case no_libraryscopeinstance:
         return type_alias; // type is an alias if itself.
     }
     return type_none;
@@ -924,7 +925,7 @@ class BinaryIRPlayer : public CIRPlayer
     };
 
 public:
-    BinaryIRPlayer(ISimpleReadStream * _in, IEclBuilder * _target) : CIRPlayer(_target), in(_in)
+    BinaryIRPlayer(ISimpleReadStream * _in, IEclBuilder * _target) : CIRPlayer(_target), in(_in), seq(0)
     {
     }
 
@@ -1340,7 +1341,7 @@ public:
                 appendStringAsCPP(line, msg.length(), msg.str(), false);
                 line.append("'");
                 line.append(",").append(warning->errorAudience());
-                line.append(",").append(warning->isError());
+                line.append(",").append((unsigned)warning->getSeverity());
                 line.append(")");
                 break;
             }

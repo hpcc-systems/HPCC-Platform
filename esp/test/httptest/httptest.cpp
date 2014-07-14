@@ -421,6 +421,7 @@ int HttpClient::sendRequest(StringBuffer& req)
             if(m_stat.slowest < stat.slowest)
                 m_stat.slowest = stat.slowest;
         }
+        delete [] thrdlist;
     }
     else
         sendRequest(m_times, m_stat, req);

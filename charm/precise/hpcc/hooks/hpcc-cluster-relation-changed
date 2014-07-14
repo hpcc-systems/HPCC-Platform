@@ -1,0 +1,102 @@
+#!/bin/bash -e
+# This must be renamed to the name of the relation. The goal here is to
+# affect any change needed by relationships being formed, modified, or broken
+# This script should be idempotent.
+
+
+. ${CHARM_DIR}/hooks/hpcc-common
+
+#juju-log $JUJU_REMOTE_UNIT modified its settings
+#juju-log Relation settings:
+#relation-get
+#juju-log Relation members:
+#relation-list
+
+TMP_FILE=${JUJU_HPCC_DIR}/ip_file.tmp
+
+LOCAL_IP=$(head -n 1  $LOCAL_IP_FILE) 
+echo "${LOCAL_IP};,$JUJU_UNIT_NAME" > ${TMP_FILE}
+
+RESET_SSH_KEYS=$(relation-get reset-ssh-keys)
+
+juju-log "RESET_SSH_KEYS: $RESET_SSH_KEYS"
+
+TOTAL_UNITS=1
+for UNIT in $(relation-list)
+do
+   UNIT_ADDRESS=$(relation-get netAddress ${UNIT})
+   if [ -n "${UNIT_ADDRESS}" ]
+   then
+      TOTAL_UNITS=$(expr ${TOTAL_UNITS} \+ 1)
+      echo "${UNIT_ADDRESS};,${UNIT}" >> "${TMP_FILE}"
+   fi
+done
+
+##
+## Sort IPs
+##
+cat $TMP_FILE | cut -d',' -f 1 | \
+   sort -n -t . -k 1,1 -k 2,2 -k 3,3 -k 4,4  > $IP_FILE
+
+LOWEST_IP=$(head -n 1 $IP_FILE | cut -d ';' -f1)
+
+
+##
+## Set SSH Keys
+##
+if [ -n "$RESET_SSH_KEYS" ] &&  [ $RESET_SSH_KEYS -eq 1 ] 
+then
+  if [ "$LOWEST_IP" = "$LOCAL_IP" ]
+  then
+     PUB_KEY=$(relation-get ssh-key-public)
+     PRI_KEY=$(relation-get ssh-key-private)
+     if [ -z "$PUB_KEY" ] || [ -z "$PRI_KEY" ] 
+     then
+        create_and_set_ssh_keys
+     fi
+  else
+     LOWEST_IP_UNIT=$(cat ${TMP_FILE} | grep "${LOWEST_IP}" | \
+        cut -d',' -f 2)
+     SELECTED_PUB_KEY=$(relation-get ssh-key-public ${LOWEST_IP_UNIT})
+     SELECTED_PRI_KEY=$(relation-get ssh-key-private ${LOWEST_IP_UNIT})
+     [ -z "$SELECTED_PUB_KEY" ] || [ -z "$SELECTED_PRI_KEY" ] && exit 0 
+
+     # If we have the same public key as DESIRED_PUB_KEY
+     # our ssh keys are already set correctly
+     PUB_KEY=$(relation-get ssh-key-public)
+     if [ "$PUB_KEY" != "$SELECTED_PUB_KEY" ]
+     then 
+        juju-log "Set ssh keys from lowest ip system"
+        PUB_KEY=$SELECTED_PUB_KEY
+        PRI_KEY=$SELECTED_PRI_KEY
+        set_ssh_keys
+        relation-set ssh-key-public="${PUB_KEY}"
+        relation-set ssh-key-private="${PRI_KEY}"
+     fi
+  fi
+fi
+
+
+
+[  ${TOTAL_UNITS}  -eq 1 ] && exit 0
+
+##
+## If auto-gen set to 0 we need manually trigger
+#  configure_cluster by running bin/config_hpcc.sh script later
+##
+auto_gen=$(config-get auto-gen)
+juju-log "auto_gen $auto_gen"
+[  ${auto_gen}  -eq 0 ] && exit 0
+
+
+if [ ${auto_gen} -eq 1 ]
+then
+   configure_cluster ${TOTAL_UNITS}
+   rc=$?
+else
+   get_envgen_configuration
+   configure_cluster
+   rc=$?
+fi
+
+exit $rc

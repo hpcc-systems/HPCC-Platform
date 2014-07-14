@@ -435,8 +435,8 @@
       identical, this is not required. However, it is important to note that
       your system will only run as fast as its slowest node.</para>
 
-      <sect2 id="Node-Mandatory-requirements">
-        <title>Node mandatory requirements</title>
+      <sect2 id="Node-Min-requirements">
+        <title>Node minimum requirements</title>
 
         <itemizedlist mark="square" spacing="compact">
           <listitem>
@@ -444,16 +444,21 @@
           </listitem>
 
           <listitem>
-            <para>64-bit</para>
+            <para>32-bit</para>
           </listitem>
 
           <listitem>
-            <para>4GB RAM</para>
+            <para>1GB RAM per slave</para>
+
+            <para>(Note: If you configure more than 1 slave per node, memory
+            is shared. For example, if you want 2 slaves per node with each
+            having 4 GB of memory, the server would need 8 GB total.)</para>
           </listitem>
 
           <listitem>
-            <para>Two Hard Drives (with sufficient free space to handle the
-            size of the data you plan to process)</para>
+            <para>One Hard Drive (with sufficient free space to handle the
+            size of the data you plan to process) or Network Attached
+            Storage.</para>
           </listitem>
 
           <listitem>
@@ -475,7 +480,7 @@
             </listitem>
 
             <listitem>
-              <para>4 GB RAM (or more)</para>
+              <para>4 GB RAM (or more) per slave</para>
             </listitem>
 
             <listitem>
@@ -532,19 +537,35 @@
       <sect2 id="Operating-System-Requirements">
         <title>Operating System Requirements</title>
 
-        <para>You will need one of the following:</para>
+        <para>Binary packages are available for the following:</para>
 
         <para><itemizedlist mark="square" spacing="compact">
             <listitem>
-              <para>64-bit LINUX CentOS 5.x / Red Hat Enterprise Linux</para>
+              <para>64-bit CentOS 5</para>
             </listitem>
 
             <listitem>
-              <para>64-bit Ubuntu 10.04 LTS, 11.04, or 11.10</para>
+              <para>64-bit CentOS 6</para>
             </listitem>
 
             <listitem>
-              <para>64-bit Debian 6.x (Squeeze)</para>
+              <para>64-bit RedHat Enterprise 5</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit RedHat Enterprise 6</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Ubuntu 12.04 (LTS)</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Ubuntu 13.10</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Ubuntu 14.04 (LTS)</para>
             </listitem>
           </itemizedlist></para>
       </sect2>
@@ -855,8 +876,9 @@
                       <entry>There are log files for each component in
                       directories below <emphasis
                       role="bold">/var/log/HPCCSystems</emphasis> (default
-                      location). If any component fails to start, these logs
-                      can help in troubleshooting.</entry>
+                      location) including an hpcc-init log for the start up
+                      process. If any component fails to start, these logs can
+                      help in troubleshooting.</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -917,9 +939,9 @@
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>From ECL Watch page, click on the <emphasis
-                role="bold">Resources </emphasis> link in the menu on the left
-                side.</para>
+                <para>From the ECL Watch Advanced menu, select on the
+                <emphasis role="bold">Additional Resources
+                </emphasis>link.</para>
 
                 <para><figure>
                     <title>ECL Watch Resource Page</title>
@@ -932,12 +954,14 @@
                     </mediaobject>
                   </figure></para>
 
-                <para>Follow the link to the HPCC System's portal.</para>
+                <para>Follow the link to the HPCC System's portal download
+                page.</para>
               </listitem>
 
               <listitem>
-                <para>Click on the <emphasis role="bold">ECL IDE and Client
-                Tools </emphasis>link.</para>
+                <para>Click on the <emphasis role="bold">ECL IDE
+                </emphasis>link. (on the right hand side in the Download
+                column, under the Free Community Edition heading)</para>
               </listitem>
 
               <listitem>
@@ -951,8 +975,6 @@
                 successfully, you can proceed.</para>
               </listitem>
             </orderedlist></para>
-
-          <para></para>
         </sect3>
 
         <sect3 role="brk">
@@ -1587,15 +1609,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <emphasis role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
             role="bold">every</emphasis> node.</para>
 
-            <para>You may want to create a script to push out XML file to all
-            nodes. A sample script is provided with HPCC. The following
+            <para>You may want to create a script to push out the XML file to
+            all nodes. A sample script is provided with HPCC. The following
             command copies the XML files out to all nodes as required:</para>
 
             <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
 </programlisting>See the appendix for more information on using this
             script.</para>
           </listitem>
+        </orderedlist>
 
+        <?hard-pagebreak ?>
+
+        <orderedlist continuation="continues">
           <listitem>
             <para>Restart the HPCC system on <emphasis
             role="bold">every</emphasis> node. The following command starts
@@ -1976,12 +2002,16 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From ECL Watch page, click on the <emphasis
-            role="bold">Upload/download File </emphasis> link in the menu on
-            the left side.</para>
+            <para>From ECL Watch click on the <emphasis
+            role="bold">Files</emphasis> icon, then click the <emphasis
+            role="bold">Landing Zones</emphasis> link from the navigation
+            sub-menu.</para>
+
+            <para>Press the <emphasis role="bold">Upload </emphasis>action
+            button.</para>
 
             <para><figure>
-                <title>Upload/download</title>
+                <title>Upload</title>
 
                 <mediaobject>
                   <imageobject>
@@ -1990,15 +2020,13 @@ OUTPUT(L);</programlisting></para>
                   </imageobject>
                 </mediaobject>
               </figure></para>
+          </listitem>
 
-            <para>Once you click on the Upload/download file link, it will
-            take you to the <emphasis role="bold">Dropzones and
-            Files</emphasis> page, where you can choose to <emphasis
-            role="bold">Browse</emphasis> your machine for a file to
-            upload:</para>
-
-            <para><figure>
-                <title>Dropzones and Files</title>
+          <listitem>
+            <para>A dialog opens. <emphasis role="bold">Browse</emphasis> your
+            local machine select the file to upload and then press the
+            <emphasis role="bold">Open</emphasis> button. <figure>
+                <title>File Uploader</title>
 
                 <mediaobject>
                   <imageobject>
@@ -2007,21 +2035,14 @@ OUTPUT(L);</programlisting></para>
                   </imageobject>
                 </mediaobject>
               </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Browse</emphasis> button to
-            browse the files on your local machine, select the file to upload
-            and then press the <emphasis role="bold">Open</emphasis>
-            button.</para>
 
             <para>The file you selected should appear in the <emphasis
-            role="bold">Select a file to upload:</emphasis> field. The data
-            file is named: <emphasis role="bold">2of12.txt</emphasis>.</para>
+            role="bold">File Name</emphasis> field. The data file is named:
+            <emphasis role="bold">2of12.txt</emphasis>.</para>
           </listitem>
 
           <listitem>
-            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+            <para>Press the <emphasis role="bold">Start</emphasis> button to
             complete the file upload.</para>
           </listitem>
         </orderedlist>
@@ -2053,17 +2074,30 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
+            <para>Click on the <emphasis role="bold">Files</emphasis> icon,
+            then click the <emphasis role="bold">Landing Zones</emphasis> link
+            from the navigation sub-menu. Select the appropriate landing zone
+            (if there are more than one landing zones). Click the arrow to the
+            left of your landing zone to expand it.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the file from your drop zone by checking the box next
+            to it.</para>
+          </listitem>
+
+          <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Click on the Spray Delimited hyperlink under the DFU Files
-            menu on the left.</para>
+            <para>Check the box next to 2of12.txt, then press the <emphasis
+            role="bold">Delimited</emphasis> button.</para>
 
             <para><figure>
                 <title>Spray Delimited</title>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_01.jpg"
+                    <imagedata fileref="images/GSSprayDict.jpg"
                                vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
@@ -2074,21 +2108,12 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Select mydropzone in the Source <emphasis
-            role="bold">Machine/dropzone</emphasis> drop list.</para>
-
-            <para>The IP Address is automatically filled and the Local Path is
-            partially filled with the default folder on your landing zone.
-            Note: The VM and Community Edition typically only has one landing
-            zone defined.</para>
+            <para>Select mythor in the Target Group drop list.</para>
           </listitem>
 
           <listitem>
-            <para>Complete the Local Path to include the complete file name or
-            use the <emphasis role="bold">Choose File</emphasis> button to
-            select the file from a list of files in the folder. The file is
-            <emphasis role="bold">2of12.txt</emphasis>.<emphasis
-            role="bold"></emphasis></para>
+            <para>Complete the Name Prefix as<emphasis>
+            thor</emphasis>.</para>
           </listitem>
 
           <listitem>
@@ -2115,8 +2140,9 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Fill in the Label using the Logical File name desired:
-            thor::word_list_csv<emphasis role="bold"> </emphasis></para>
+            <para>Fill in the Target Name using the rest of the Logical File
+            name desired: word_list_csv<emphasis role="bold">
+            </emphasis></para>
           </listitem>
 
           <listitem>
@@ -2126,16 +2152,6 @@ OUTPUT(L);</programlisting></para>
             <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
             </emphasis>boxes are checked.</para>
 
-            <para><figure>
-                <title>Spray the File</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/VM1000.jpg" vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-
             <para><emphasis role="bold">Note:</emphasis> The <emphasis
             role="bold">Replicate</emphasis> option is only available on
             systems where replication has been enabled.</para>
@@ -2144,39 +2160,11 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Submit</emphasis><emphasis
-            role="bold"> </emphasis>button</para>
+            <para>Press the <emphasis role="bold">Spray</emphasis><emphasis
+            role="bold"> </emphasis>button.</para>
 
-            <para><figure>
-                <title>View Progress</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/VM1001.jpg" vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Click the <emphasis role="bold">View Progress</emphasis>
-            link</para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>The Workunit progress page displays.</para>
-
-            <figure>
-              <title>Workunit Progress</title>
-
-              <mediaobject>
-                <imageobject>
-                  <imagedata fileref="images/VM1002.jpg" />
-                </imageobject>
-              </mediaobject>
-            </figure>
+            <para>A tab displays the DFU Workunit where you can see the
+            progress of the spray.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -2454,8 +2442,9 @@ OUTPUT(ValidWords)
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Publish</emphasis> button
-            (you may need to scroll down the main window)</para>
+            <para>Press the <emphasis role="bold">Publish</emphasis> button,
+            complete the dialog, and press <emphasis
+            role="bold">Submit</emphasis>.</para>
 
             <para><figure>
                 <title>Publish Query</title>
@@ -2465,17 +2454,8 @@ OUTPUT(ValidWords)
                     <imagedata fileref="images/VM1008.jpg" />
                   </imageobject>
                 </mediaobject>
-              </figure>When it successfully publishes, you will see:</para>
-
-            <para><figure>
-                <title>Workunit Published</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/DT173-18b.png" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+              </figure>When it successfully publishes, a confirmation message
+            displays.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -2620,7 +2600,7 @@ OUTPUT(ValidWords)
     <sect1 id="Example-Scripts" role="nobrk">
       <title>Example Scripts</title>
 
-      <para>For a multi-node configuration, the packages must be installed on
+      <para>For a multi-node configuration, you must install the packages on
       each node. You can install each one manually or use scripts to copy and
       install the packages. On a large system where you have many nodes
       copying and installing on every node is not practical, therefore we
@@ -2628,7 +2608,9 @@ OUTPUT(ValidWords)
       start in making your own.</para>
 
       <para>Scripts are installed to the<emphasis role="bold">
-      /opt/HPCCSystems/sbin</emphasis> directory.</para>
+      /opt/HPCCSystems/sbin</emphasis> directory. Scripts should be run as
+      sudo or as a user with appropriate privileges on all nodes. The scripts
+      have the ability to multi-thread.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -2655,8 +2637,8 @@ OUTPUT(ValidWords)
         <title>install-cluster.sh</title>
 
         <para><emphasis
-        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k]
-        &lt;package-name&gt; </emphasis></emphasis></para>
+        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k] [-n
+        &lt;value&gt;] &lt;package-name&gt; </emphasis></emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -2676,6 +2658,13 @@ OUTPUT(ValidWords)
 
                   <entry>When specified, the script generates and distributes
                   ssh keys to all hosts. Optional.</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --concurrent</entry>
+
+                  <entry>When specified, denotes the number of concurrent
+                  executions. Default is 5. Optional.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2712,6 +2701,11 @@ OUTPUT(ValidWords)
             the required ssh keys and deploys them as required to all nodes
             specified.</para>
           </listitem>
+
+          <listitem>
+            <para>optionally, if you specify the -n &lt;value&gt; option it
+            spawns that many concurrent executions. Default is 5.</para>
+          </listitem>
         </itemizedlist>
 
         <para><?hard-pagebreak ?><emphasis
@@ -2734,6 +2728,142 @@ OUTPUT(ValidWords)
 </programlisting></para>
 
         <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+
+        <para>This example installs the HPCC Platform packages and pushes out
+        the active environment.xml file to 8 concurrent nodes.:</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -n 8 hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> 
+</programlisting></para>
+
+        <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>deploy-java-files.sh</title>
+
+        <para><emphasis
+        role="bold">deploy-java-files.sh</emphasis><emphasis><emphasis> [-c]
+        [-e] [-H &lt;value&gt;] [-n &lt;value&gt;] [-r] [-s &lt;value&gt;] [-t
+        &lt;value&gt;] [-u &lt;value&gt;] [-x] </emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="100.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>-c</entry>
+
+                  <entry>When specified, this option adds the target directory
+                  or jar file path to classpath in environment.conf. </entry>
+                </row>
+
+                <row>
+                  <entry>-e</entry>
+
+                  <entry>When specified, this denotes the target is to be
+                  removed from the classpath. </entry>
+                </row>
+
+                <row>
+                  <entry>-H</entry>
+
+                  <entry>Host IP list. When specified, will target the IP
+                  addresses specified, one IP address per line. If this option
+                  is not used will run on the IP list generated from the
+                  environment.xml</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>When specified, denotes the number of concurrent
+                  execution threads. Default is 5. You must have python
+                  installed, otherwise this option will be ignored and the
+                  action will run on each host sequentially.</entry>
+                </row>
+
+                <row>
+                  <entry>-r</entry>
+
+                  <entry>Reset classpath. When specified, will reset the
+                  classpath to &lt;install_directory&gt;/classes. If used in
+                  conjunction with the -t adds the new entries to the
+                  classpath after reset.</entry>
+                </row>
+
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>Source file or directory.</entry>
+                </row>
+
+                <row>
+                  <entry>-t</entry>
+
+                  <entry>Target directory. The default is
+                  &lt;install_directory&gt;/classes. If it is only for adding
+                  to classpath, the value can be the full path of the java jar
+                  file.</entry>
+                </row>
+
+                <row>
+                  <entry>-u</entry>
+
+                  <entry>The username to use for ssh access to remote system.
+                  Provide this option when the specified user does not use a
+                  password to run ssh/scp. Without specifying this option you
+                  will be prompted to supply a username and password. We
+                  strongly recommend not using &lt;hpcc user&gt; to avoid
+                  security issues. </entry>
+                </row>
+
+                <row>
+                  <entry>-x</entry>
+
+                  <entry>When specified, this option excludes execution on the
+                  current host.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>The <emphasis role="bold">deploy-java-files.sh</emphasis>
+        script, is used to deploy java files (source) to HPCC cluster hosts
+        and update the classpath variable in environment.conf.</para>
+
+        <para>This script runs a command on all IP addresses or host names in
+        the active environment.xml. The IP addresses are defined when editing
+        the environment in ConfigMgr.</para>
+
+        <para>This script writes to a log file:</para>
+
+        <para><emphasis
+        role="bold">/var/log/HPCCSystems/cluster/se_&lt;action&gt;_&lt;commnd&gt;_&lt;pid&gt;_yyyymmdd_HHMMSS.log</emphasis></para>
+
+        <para><emphasis role="bold">Examples:</emphasis></para>
+
+        <para>To deploy java files from /home/hpcc/development/java/ on local
+        system to /home/hpcc/java/ on all hosts in cluster and update
+        classpath with 10 concurrent executions:</para>
+
+        <para><programlisting>./deploy-java-files.sh -s /home/hpcc/development/java/* -t /home/hpcc/java/ -c -n 10
+</programlisting></para>
+
+        <para>To deploy java files from /home/hpcc/java/ on local system to
+        /home/hpcc/java on all hosts in cluster except local system:</para>
+
+        <para><programlisting>./deploy-java-files.sh -s /home/hpcc/java/* -t /home/hpcc/java -x
+</programlisting>To update classpath for a cluster:</para>
+
+        <para><programlisting>./deploy-java-files.sh -c -t /home/hpcc/develop/java:/home/hpcc/test/java/ 
+</programlisting></para>
+
+        <para>To To deploy java files to a list of hosts :</para>
+
+        <para><programlisting>./deploy-java-files.sh -H /home/hpcc/hosts.txt -s /home/hpcc/java/* -t /home/hpcc/java/ </programlisting></para>
       </sect2>
 
       <sect2 role="brk">
@@ -2762,59 +2892,56 @@ OUTPUT(ValidWords)
 
         <para><emphasis role="bold">hpcc-run.sh
         </emphasis><emphasis><emphasis>[-c component] [-a
-        {hpcc-init|dafilesrv}]
+        {hpcc-init|dafilesrv}] [-n &lt;value&gt;] [-s] [-S]
         {start|stop|restart|status|setup}</emphasis></emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="80.50pt" />
+              <colspec colwidth="100.50pt" />
 
               <colspec />
 
               <tbody>
                 <row>
-                  <entry>-c</entry>
+                  <entry>-a</entry>
 
-                  <entry><itemizedlist>
-                      <listitem>
-                        <para>-c <emphasis>componentname</emphasis></para>
-
-                        <para>Specifies the component upon which to execute
-                        the command. If omitted, the default is <emphasis
-                        role="bold">all</emphasis> components on the
-                        machine.</para>
-
-                        <para>-c <emphasis>componenttype</emphasis></para>
-
-                        <para>Specifies the component type upon which to
-                        execute the command. If more than one of this type is
-                        configured, all will be acted upon. If omitted, the
-                        default is <emphasis role="bold">all</emphasis>
-                        components on the machine.</para>
-                      </listitem>
-                    </itemizedlist></entry>
+                  <entry>HPCC service name. Either hpcc-init (default) of
+                  dafilesrv.</entry>
                 </row>
 
                 <row>
-                  <entry>-a</entry>
+                  <entry>-c</entry>
 
-                  <entry><itemizedlist spacing="compact">
-                      <listitem>
-                        <para>hpcc-init:
-                        [start|stop|restart|status|setup]</para>
-                      </listitem>
+                  <entry>HPCC component. For example, mydali, myroxie, mythor,
+                  etc.</entry>
+                </row>
 
-                      <listitem>
-                        <para>dafilesrv [start|stop]</para>
-                      </listitem>
-                    </itemizedlist></entry>
+                <row>
+                  <entry>-n, --concurrent</entry>
+
+                  <entry>When specified, denotes the number of concurrent
+                  instances to run. The default is 5. Optional.</entry>
+                </row>
+
+                <row>
+                  <entry>-S</entry>
+
+                  <entry>When specified, the command runs sequentially, one
+                  host at a time. </entry>
+                </row>
+
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>When specified, saves the result to a file named
+                  &lt;ip address&gt;.</entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable></para>
 
         <para>To use this script, the ssh keys need to be properly configured
-        on all nodes, and you must sudo as user hpcc:</para>
+        on all nodes, and you must sudo as user hpcc.</para>
 
         <para><emphasis role="bold">This script runs a command on all IP
         addresses in the active environment.xml. </emphasis></para>
@@ -2823,11 +2950,17 @@ OUTPUT(ValidWords)
         ConfigMgr. This script supports all the parameters of hpcc-init and
         dafilesrv.</para>
 
-        <para><emphasis role="bold">Example:</emphasis></para>
+        <para><emphasis role="bold">Examples:</emphasis></para>
 
         <para>This example starts all components on the nodes</para>
 
         <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+</programlisting></para>
+
+        <para>This example starts all components on all the nodes, using 8
+        concurrent executions</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start -n 8
 </programlisting>This example starts all components of the esp type on the
         nodes</para>
 
@@ -3402,7 +3535,8 @@ split_words('Once upon a time');
             search for Rcpp_ and RInside_ to obtain the latest version for
             your system.</para>
 
-            <para>For Example:</para>
+            <para><emphasis role="bold">For all distros except Ubuntu
+            14.04:</emphasis></para>
 
             <programlisting>wget http://cran.r-project.org/src/contrib/<emphasis
                 role="bold">Rcpp_0.10.4.</emphasis>tar.gz
@@ -3415,16 +3549,25 @@ wget http://cran.r-project.org/src/contrib/<emphasis role="bold">RInside</emphas
             <programlisting>sudo R CMD INSTALL <emphasis role="bold">Rcpp_0.10.4.</emphasis>tar.gz
 sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</programlisting>
 
+            <para><emphasis role="bold">For Ubuntu 14.04:</emphasis></para>
+
+            <programlisting>wget http://cran.r-project.org/src/contrib/<emphasis
+                role="bold">Rcpp_0.11.0.</emphasis>tar.gz
+</programlisting>
+
+            <para>To Install:</para>
+
+            <programlisting>sudo R CMD INSTALL <emphasis role="bold">Rcpp_0.11.0.</emphasis>tar.gz
+</programlisting>
+
             <para><variablelist>
                 <varlistentry>
                   <term>Note:</term>
 
                   <listitem>
                     <para>The version of library files to install on your
-                    system should be a version supported by the distribution
-                    of R installed on your system. The above files are for
-                    demonstration purposes only, these may not be the
-                    appropriate files to install on your system.</para>
+                    system must be 0.2.10 for all distros except Ubuntu 14.04.
+                    For Ubuntu 14.04, use 0.2.11.x.</para>
                   </listitem>
                 </varlistentry>
               </variablelist>These libraries are maintained by the R project
@@ -3433,6 +3576,34 @@ sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</progr
             along with more information. Use the version number appropriate
             for your system. If a version number is unsupported, you must use
             an earlier version.</para>
+          </listitem>
+        </orderedlist>
+
+        <?hard-pagebreak ?>
+
+        <orderedlist continuation="continues">
+          <listitem>
+            <para>Install the <emphasis role="bold">RInside</emphasis>
+            library.</para>
+
+            <para>You will also need RInside library in order for the
+            R-embedding to work properly. The version must match the</para>
+
+            <para><emphasis role="bold">For all distros:</emphasis></para>
+
+            <programlisting>wget http://cran.r-project.org/src/contrib/Archive/RInside_0.2.10.tar.gz
+</programlisting>
+
+            <para>To Install:</para>
+
+            <programlisting>sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</programlisting>
+
+            <para>These libraries are maintained by the R project and can be
+            found on the site <ulink
+            url="http://cran.r-project.org/src/contrib/">http://cran.r-project.org/src/contrib/</ulink>
+            and <ulink
+            url="http://cran.r-project.org/src/contrib/archive">http://cran.r-project.org/src/contrib/archive/</ulink>
+            along with more information.</para>
           </listitem>
 
           <listitem>

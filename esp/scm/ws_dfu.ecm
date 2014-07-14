@@ -33,7 +33,8 @@ ESPStruct SpaceItem
 ESPStruct DFULogicalFile
 {
     string Prefix;      
-    string ClusterName; 
+    [depr_ver("1.26")] string ClusterName;
+    [min_ver("1.26")] string NodeGroup;
     string Directory;
     string Description;
     string Parts;
@@ -52,8 +53,9 @@ ESPStruct DFULogicalFile
     [min_ver("1.01")] int64 IntRecordCount;
     [min_ver("1.02")] bool FromRoxieCluster;
     [min_ver("1.03")] bool BrowseData;
-    [min_ver("1.14")] bool IsKeyFile;
+    [min_ver("1.14"), depr_ver("1.24")] bool IsKeyFile;
     [min_ver("1.22")] bool IsCompressed;
+    [min_ver("1.24")] string ContentType;
     [min_ver("1.22")] int64 CompressedFileSize;
 };
 
@@ -61,7 +63,7 @@ ESPStruct DFUPart
 {
     int Id;
     int Copy;
-    string ActualSize;
+    [depr_ver("1.23")] string ActualSize;
     string Ip;
     string Partsize;
 };
@@ -72,6 +74,12 @@ ESPStruct DFUFileStat
     string MaxSkew;
 };
 
+ESPStruct DFUFilePartsOnCluster
+{
+    string Cluster;
+    ESParray<ESPstruct DFUPart> DFUFileParts;
+};
+
 ESPStruct DFUFileDetail
 {
     string Name;
@@ -80,12 +88,12 @@ ESPStruct DFUFileDetail
     string Dir;
     string PathMask;
     string Filesize;
-    string ActualSize;
+    [depr_ver("1.23")] string ActualSize;
     string RecordSize;
     string RecordCount;
     string Wuid;
     string Owner;
-    string Cluster;
+    [depr_ver("1.25")] string Cluster;
     string JobName;
     string Persistent;
     string Format;
@@ -99,7 +107,8 @@ ESPStruct DFUFileDetail
     string Ecl;
     [depr_ver("1.22")] bool ZipFile(false);
     ESPstruct DFUFileStat Stat;
-    ESParray<ESPstruct DFUPart> DFUFileParts;
+    [depr_ver("1.25")] ESParray<ESPstruct DFUPart> DFUFileParts;
+    [min_ver("1.25")] ESParray<ESPstruct DFUFilePartsOnCluster> DFUFilePartsOnClusters;
     bool isSuperfile(false);
     bool ShowFileContent(true);
     ESParray<string> subfiles;
@@ -124,13 +133,19 @@ ESPStruct DFUSpaceItem
     string SmallestSize;
 };
 
-ESPrequest 
-[
-]
-DFUQueryRequest
+ESPStruct DFUActionInfo
+{
+    string FileName;
+    string NodeGroup;
+    string ActionResult;
+    bool   Failed;
+};
+
+ESPrequest [nil_remove] DFUQueryRequest
 {
     string Prefix;
-    string ClusterName;
+    [depr_ver("1.26")] string ClusterName;
+    [min_ver("1.26")] string NodeGroup;
     string LogicalName;
     string Description;
     string Owner;
@@ -140,7 +155,7 @@ DFUQueryRequest
     int64 FileSizeFrom(-1);
     int64 FileSizeTo(-1);
     int FirstN(-1);
-    string FirstNType;
+    [depr_ver("1.24")] string FirstNType;
 
     int PageSize;
     int PageStartFrom;
@@ -149,6 +164,7 @@ DFUQueryRequest
     bool Descending(false);
 
     bool OneLevelDirFileReturn(false);
+    [min_ver("1.24")] int64 CacheHint;
 };
 
 ESPresponse 
@@ -160,7 +176,8 @@ DFUQueryResponse
     ESParray<ESPstruct DFULogicalFile> DFULogicalFiles;
 
     string Prefix;
-    string ClusterName;
+    [depr_ver("1.26")] string ClusterName;
+    [min_ver("1.26")] string NodeGroup;
     string LogicalName;
     string Description;
     string Owner;
@@ -170,7 +187,7 @@ DFUQueryResponse
     int64 FileSizeFrom(-1);
     int64 FileSizeTo(-1);
     int FirstN(-1);
-    string FirstNType;
+    [depr_ver("1.24")] string FirstNType;
 
     int PageSize(20);
     int64 PageStartFrom(1);
@@ -185,6 +202,7 @@ DFUQueryResponse
     string BasicQuery;
     string ParametersForPaging;
     string Filters;
+    [min_ver("1.24")] int64 CacheHint;
 };
 
 ESPrequest 
@@ -226,7 +244,8 @@ DFUArrayActionResponse
 {
     [min_ver("1.04")] string BackToPage;
     [min_ver("1.18")] string RedirectTo;
-    string DFUArrayActionResult;
+    string DFUArrayActionResult; //used by legacy eclwatch
+    [min_ver("1.27")] ESParray<ESPstruct DFUActionInfo> ActionResults;
 };
 
 ESPrequest 
@@ -631,7 +650,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.22"), default_client_version("1.22"),
+    version("1.27"), default_client_version("1.27"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

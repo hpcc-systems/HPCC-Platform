@@ -44,39 +44,40 @@
 
 ###<REPLACE>###
 
+
 function print_usage {
-    echo >&2 "Usage: $0 [-c component] {start|stop|restart|status|setup}
+    echo "Usage: $0 [-c component] {start|stop|restart|status|setup}
        $0 [--componentlist] Display node component name list.
        $0 [--typelist] Display node component type list.
        $0 [-h] [--help] Display help"
-    echo >&2
+    echo
     print_components
     exit 0
 }
 
 function print_components {
     if [ ! -z ${compList} ];then
-        echo >&2 "Components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}:"
+        echo  "Components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}:"
         IFS=$'\n'
-        echo >&2 "${compList[*]}"
+        echo  "${compList[*]}"
         unset IFS
     else
-        echo >&2 "No components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}."
+        echo  "No components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}."
     fi
-    echo >&2
+    echo
     exit 0
 }
 
 function print_types {
     if [ ! -z ${compList} ];then
-        echo >&2 "Components types on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}:"
+        echo  "Components types on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}:"
         IFS=$'\n'
-        echo >&2 "${compTypeList[*]}"
+        echo  "${compTypeList[*]}"
         unset IFS
     else
-        echo >&2 "No components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}."
+        echo  "No components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}."
     fi
-    echo >&2
+    echo
     exit 0
 }
 
@@ -87,6 +88,18 @@ source  ${INSTALL_DIR}/etc/init.d/pid.sh
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 source  ${INSTALL_DIR}/etc/init.d/init-functions
 source  ${INSTALL_DIR}/etc/init.d/export-path
+
+# Only root user can write following HPCC_INIT_LOG
+is_root
+
+[ ! -e ${LOG_DIR} ] && mkdir -p ${LOG_DIR}
+HPCC_INIT_LOG=${LOG_DIR}/hpcc-init.log
+
+export PS4='+${BASH_SOURCE[1]} ${LINENO}: '
+[ -e ${HPCC_INIT_LOG}  ] && rm -rf ${HPCC_INIT_LOG}
+touch $HPCC_INIT_LOG
+exec 2> ${HPCC_INIT_LOG}
+set -x
 
 ## Debug variable allowing verbose debug output
 ##
@@ -99,12 +112,16 @@ DAFILESRV=${DAFILESRV:-0}
 set_environmentvars
 envfile=$configs/$environment
 
+# Know HPCC user after set_environmentvars
+log_dir_owner=$(ls -ld $LOG_DIR | awk '{print $3}')
+[ "log_dir_owner" != "${user}" ] && chown ${user}:${user} $LOG_DIR
+chown ${user}:${user} $HPCC_INIT_LOG
+
 #Sourcing the hpcc environment
 configgen_path=${path}/sbin
 bin_path=${path}/bin
 source ${configgen_path}/hpcc_setenv
 
-is_root
 which_service
 get_commondirs
 
@@ -296,6 +313,8 @@ if [ ! -z "${compDafilesrv}" ];then
             /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
             if [ $? -ne 0 ];then
               /etc/init.d/dafilesrv $1 2>/dev/null
+            else
+              echo "Dependent service dafilesrv, ${compDafilesrv} is already running."
             fi
             ;;
         status|setup)
@@ -344,6 +363,11 @@ if [ ${cmd} = "restart" ] && [ "${isComp}" -eq 0 ]; then
     echo "Starting the entire System"
     echo "***************************************************"
     cmd=start
+    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+    if [ $? -ne 0 ];then
+        /etc/init.d/dafilesrv $1 2>/dev/null
+    fi
+
     statForStart=0
     for (( i=0; i<=${compListLen}; i++ ));do
         if [ -z "${compList[$i]}" ];then
@@ -400,4 +424,19 @@ for C in ${component} ; do
         STATUS=$(( $STATUS == 0 ? $statForEach : $STATUS))
     fi
 done 
+
+
+if [ "$cmd" = "stop" ] && [ -n "$compDafilesrv" ]
+then
+     echo 
+    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+    if [ $? -ne 0 ];then
+       echo "Service dafilesrv, ${compDafilesrv} is already stopped.".
+    else
+       echo "Service dafilesrv, ${compDafilesrv} is still running".
+       echo "To stop it, run \"service dafilesrv stop\"."
+    fi
+    echo 
+
+fi
 exit ${STATUS}

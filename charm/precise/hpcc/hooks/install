@@ -1,0 +1,165 @@
+#!/bin/bash -e
+
+##
+## Set debugging
+##
+set -ux
+
+
+##
+## Current working directory
+##
+CWD=$(dirname $0)
+
+. ${CHARM_DIR}/hooks/hpcc-common
+
+
+##
+## Detect Linux Distro
+##
+uname -a  | grep -q "x86_64" || ( juju-log "Only arch x86_64 is supported."; exit 1)
+
+
+Distributor_ID=$(lsb_release -a | grep  "Distributor ID:" | \
+sed -n "s/.*:[[:space:]]*\(.*\)/\1/p")
+juju-log "Distriobutor_ID: $Distributor_ID"
+
+if [ "$Distributor_ID" == "CentOS" ]
+then
+   os_release=$(lsb_release -a | grep -e "Release:" | \
+   sed -n "s/.*:[[:space:]]*\(.*\)/\1/p")
+   if [ ${os_release:0:1} -eq 6 ]
+   then
+      os_id=el6
+   elif [ ${os_release:0:1} -eq 5 ]
+   then
+      os_id=el5
+   else
+      juju-log "Unsupported CenOS version: ${os_release}."
+      exit 1
+   fi
+
+elif [ "$Distributor_ID" == "Ubuntu" ]
+then
+   code_name=$(lsb_release -a | grep -e "Codename:" | \
+   sed -n "s/.*:[[:space:]]*\(.*\)/\1/p")
+   os_id=$code_name
+else
+   juju-log "Unsupported Linux for Juju/charm HPCC: $Distributor_ID"
+   exit 1
+fi
+juju-log "OS release version:  $os_id"
+
+
+##
+## HPCC prerequisites
+##
+dependence_dir=${CWD}/../dependences
+if [ ! -e ${dependence_dir}/${os_id} ]
+then
+   juju-log "Prequisites for $os_id hasn't been implemented yet."
+   exit 1
+fi
+${dependence_dir}/${os_id}  || exit 1
+
+
+##
+## Download and install HPCC
+##
+download_url=$(config-get download-url)
+if [ -z "$download_url" ]
+then
+  base_url=$(config-get  base-url)
+  hpcc_type=$(config-get  hpcc-type)
+  hpcc_version=$(config-get  hpcc-version)
+  hpcc_version_mmp=$(echo $hpcc_version | cut -d '-' -f1)
+  juju-log "hpcc_version_mmp: $hpcc_version_mmp"
+
+  declare -A type_detail
+  type_detail[CE]=community
+  type_detail[EE]=enterprise
+  type_detail[LN]=internal
+
+  package_name="hpccsystems-platform_${type_detail[$hpcc_type]}-${hpcc_version}"
+  download_url="${base_url}/${hpcc_type}-Candidate-${hpcc_version_mmp}"
+  download_url="${download_url}/bin/platform/$package_name"
+
+  if [ "$Distributor_ID" == "CentOS" ]
+  then
+    download_url="${download_url}.${os_id}_x86_64.rpm"
+  else
+     download_url="${download_url}${os_id}_amd64.deb"
+  fi
+fi
+
+juju-log "Download URL: $download_url"
+
+
+curl -s -O $download_url
+hpcc_package=$(basename $download_url)
+
+expected_checksum=$(config-get package-checksum)
+if [ -n "$expected_checksum" ]
+then 
+   downloaded_checksum=$(md5sum ${hpcc_package} | cut -d ' ' -f1)
+   if [ "$expected_checksum" != "${downloaded_checksum}" ]
+   then
+      juju-log "Package checksum don't match. Expected ${expected_checksum} but get ${downloaded_checksum}" 
+      exit 1
+   fi
+else
+  juju-log "Missing package-checksum in config.yaml. You must validate checksum before installing the HPCC package. The checksum can be retrieved from http://hpccsystems.com/download/free-community-edition/server-platform for HPCC Community Server Platform." 
+  exit 1
+   
+fi
+
+if [ "$Distributor_ID" == "CentOS" ]
+then
+   rpm -i $hpcc_package || exit 1
+else
+   DEBIAN_FRONTEND=noninteractive dpkg -i $hpcc_package || exit 1
+fi
+
+
+##
+## Set SSH keys
+## Using shipped for now. Will provide script to generate new kyes later
+##
+parse_env_config
+echo $PATH_HOME
+
+if [ ! -d $PATH_HOME/.ssh ]; then
+        mkdir $PATH_HOME/.ssh
+fi
+rm -fr $PATH_HOME/.ssh/*
+
+set +x
+PUB_KEY=$(config-get ssh-key-public)
+PRI_KEY=$(config-get ssh-key-private)
+fix_private_key
+set_ssh_keys
+set -x
+
+##
+## Open the necessory firewall ports
+##
+which open-port  && \
+if [ $? -eq 0 ];then
+   open-port 8010/TCP
+   open-port 8002/TCP
+   open-port 8015/TCP
+   open-port 9876/TCP
+   #open-port 18010/TCP
+   #open-port 18002/TCP
+   #open-port 18008/TCP
+fi
+
+##
+## Create directory for stagging and tempory files
+##
+JUJU_HPCC_DIR=/var/lib/HPCCSystems/charm
+if [ ! -e ${JUJU_HPCC_DIR} ]
+then
+   mkdir -p $JUJU_HPCC_DIR
+   chmod -R 777 $JUJU_HPCC_DIR
+fi

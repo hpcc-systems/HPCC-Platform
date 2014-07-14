@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IFF">
+  <title>IFF<indexterm>
+      <primary>IFF</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">IFF<indexterm>
+      <primary>IFF function</primary>
+    </indexterm>(</emphasis><emphasis>expression, trueresult
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, falseresult
+  </emphasis><emphasis role="bold">])</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A conditional expression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>trueresult</emphasis></entry>
+
+            <entry>The result to return when the expression is true. This may
+            be any expression or action.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>falseresult</emphasis></entry>
+
+            <entry>The result to return when the expression is false. This may
+            be any expression or action. This may be omitted only if the
+            result is an action.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>IF returns a single value, set, recordset, or
+            action.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+   <para>The <emphasis role="bold">IFF</emphasis> function performs the same
+  functionality as IF, but ensures that an <emphasis>expression</emphasis>
+  containing complex boolean logic is evaluated exactly as it appears.</para>
+
+  <para>See Also: <link linkend="IF">IF</link>, <link linkend="MAP">MAP</link>,
+  <link linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>,
+  <link linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
+</sect1>

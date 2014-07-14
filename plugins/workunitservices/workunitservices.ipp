@@ -45,6 +45,16 @@ inline void fixedAppend(MemoryBuffer &mb,unsigned w,IPropertyTree &pt,const char
     fixedAppend(mb,w,s.str(),s.length());
 }
 
+inline void varAppend(MemoryBuffer &mb,size32_t sz, const char * s)
+{
+    mb.append(sz).append(sz,s);
+}
+
+inline void varAppend(MemoryBuffer &mb,const char * s)
+{
+    varAppend(mb, strlen(s), s);
+}
+
 inline void varAppend(MemoryBuffer &mb,unsigned w,IPropertyTree &pt,const char *prop)
 {
     StringBuffer s;

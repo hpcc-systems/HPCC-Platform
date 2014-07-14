@@ -127,7 +127,7 @@ public:
     bool needToEvaluateLocally(BuildCtx & ctx, IHqlExpression * expr);
 
 public://only used by friends
-    virtual void callNestedHelpers(const char * memberName) = 0;
+    virtual void callNestedHelpers(const char * memberName, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt) = 0;
     virtual void ensureHelpersExist() = 0;
     virtual bool isRowInvariant(IHqlExpression * expr)      { return false; }
 
@@ -159,7 +159,7 @@ protected:
     void cloneAliasInClass(CtxCollection & ctxs, const CHqlBoundExpr & bound, CHqlBoundExpr & tgt);
     IHqlExpression * cloneExprInClass(CtxCollection & ctxs, IHqlExpression * expr);
     void createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, IHqlExpression * value, CHqlBoundExpr & tgt);
-    void doCallNestedHelpers(const char * member, const char * acticity);
+    void doCallNestedHelpers(const char * member, const char * activity, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt);
     void ensureSerialized(CtxCollection & ctxs, const CHqlBoundTarget & tgt, IAtom * serializeForm);
 
 protected:
@@ -173,7 +173,7 @@ class GlobalClassEvalContext : public ClassEvalContext
 public:
     GlobalClassEvalContext(HqlCppTranslator & _translator, ParentExtract * _parentExtract, EvalContext * _parent, BuildCtx & createctx, BuildCtx & startctx);
 
-    virtual void callNestedHelpers(const char * memberName);
+    virtual void callNestedHelpers(const char * memberName, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt);
     virtual IHqlExpression * createGraphLookup(unique_id_t id, bool isChild) { throwUnexpected(); }
     virtual void ensureHelpersExist();
     virtual bool isColocal()                                { return false; }
@@ -187,7 +187,7 @@ class ActivityEvalContext : public ClassEvalContext
 public:
     ActivityEvalContext(HqlCppTranslator & _translator, ActivityInstance * _activity, ParentExtract * _parentExtract, EvalContext * _parent, IHqlExpression * _colocal, BuildCtx & createctx, BuildCtx & startctx);
 
-    virtual void callNestedHelpers(const char * memberName);
+    virtual void callNestedHelpers(const char * memberName, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt);
     virtual IHqlExpression * createGraphLookup(unique_id_t id, bool isChild);
     virtual void ensureHelpersExist();
     virtual bool isColocal()                                { return (colocalMember != NULL); }
@@ -205,7 +205,7 @@ class NestedEvalContext : public ClassEvalContext
 public:
     NestedEvalContext(HqlCppTranslator & _translator, const char * _memberName, ParentExtract * _parentExtract, EvalContext * _parent, IHqlExpression * _colocal, BuildCtx & createctx, BuildCtx & startctx);
 
-    virtual void callNestedHelpers(const char * memberName);
+    virtual void callNestedHelpers(const char * memberName, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt);
     virtual IHqlExpression * createGraphLookup(unique_id_t id, bool isChild);
     virtual void ensureHelpersExist();
 
@@ -226,7 +226,7 @@ class MemberEvalContext : public EvalContext
 public:
     MemberEvalContext(HqlCppTranslator & _translator, ParentExtract * _parentExtract, EvalContext * _parent, BuildCtx & _ctx);
 
-    virtual void callNestedHelpers(const char * memberName);
+    virtual void callNestedHelpers(const char * memberName, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt);
     virtual void ensureHelpersExist();
     virtual bool isRowInvariant(IHqlExpression * expr);
 
@@ -257,7 +257,7 @@ public:
     void ensureContextAvailable()                           { }
 
 public:
-    virtual void callNestedHelpers(const char * memberName)     {}
+    virtual void callNestedHelpers(const char * memberName, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt)     {}
     virtual void ensureHelpersExist()                           {}
 
 protected:

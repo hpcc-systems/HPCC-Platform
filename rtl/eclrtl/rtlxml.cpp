@@ -245,7 +245,7 @@ void outputJsonUnicode(unsigned len, const UChar *field, const char *fieldname, 
     char * buff = 0;
     unsigned bufflen = 0;
     rtlUnicodeToCodepageX(bufflen, buff, len, field, "utf-8");
-    appendJSONValue(out, fieldname, bufflen, buff); // output as UTF-8
+    appendJSONStringValue(out, fieldname, bufflen, buff, true); // output as UTF-8
     rtlFree(buff);
 }
 

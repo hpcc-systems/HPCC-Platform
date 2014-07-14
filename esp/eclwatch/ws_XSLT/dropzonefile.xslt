@@ -31,9 +31,6 @@
         <link type="text/css" rel="styleSheet" href="/esp/files/css/sortabletable.css"/>
         <link type="text/css" rel="StyleSheet" href="/esp/files/css/list.css"/>
         <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-        <script type="text/javascript" src="/esp/files/scripts/sortabletable.js">
-          <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-        </script>
         <script language="javascript" src="/esp/files/scripts/multiselect.js">
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
         </script>
@@ -45,7 +42,6 @@
             var intervalId = 0;
             var hideLoading = 1;
             var url0 = '';
-            var sortableTable = null;
             function onChangeMachine(resetPath)
             {
               machineDropDown = document.forms['DropZoneForm'].machine;
@@ -209,11 +205,6 @@
             function onLoad()
             {
               initSelection('resultsTable');
-              var table = document.getElementById('resultsTable');
-              if (table)
-              {
-                sortableTable = new SortableTable(table, table, ["None", "String", "NumberWithCommas", "String"]);
-              }
 
               getSelectedDropZone();
               document.forms['DropZoneForm'].Directory.value = initialPath;

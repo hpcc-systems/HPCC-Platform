@@ -115,6 +115,7 @@ public:
                 s = lfn.str();
             }
             CDfsLogicalFileName lfn;
+            lfn.setAllowWild(true);
             lfn.set(s);
             dlfns.push_back(lfn);
             if (expanded && (strchr(s,'*') || strchr(s,'?')))
@@ -229,6 +230,7 @@ public:
 CDfsLogicalFileName::CDfsLogicalFileName()
 {
     allowospath = false;
+    allowWild = false;
     multi = NULL;
     clear();
 }
@@ -311,7 +313,7 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
                     full.append(',');
                 const CDfsLogicalFileName &item = multi->item(i1);
                 StringAttr norm;
-                normalizeName(item.get(), norm);
+                normalizeName(item.get(), norm, false);
                 full.append(norm);
                 if (item.isExternal())
                     external = external || item.isExternal();
@@ -330,46 +332,79 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
     }
 }
 
-void CDfsLogicalFileName::normalizeName(const char * name, StringAttr &res)
+inline void normalizeScope(const char *name, const char *scope, unsigned len, StringBuffer &res, bool strict)
 {
+    while (len && isspace(scope[len-1]))
+    {
+        if (strict)
+            throw MakeStringException(-1, "Scope contains trailing spaces in file name '%s'", name);
+        len--;
+    }
+    while (len && isspace(scope[0]))
+    {
+        if (strict)
+            throw MakeStringException(-1, "Scope contains leading spaces in file name '%s'", name);
+        len--;
+        scope++;
+    }
+    if (!len)
+        throw MakeStringException(-1, "Scope is blank in file name '%s'", name);
+    while (len--)
+    {
+        res.append(*scope++);
+    }
+}
+
+void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict)
+{
+    // NB: If !strict(default) allows spaces to exist either side of scopes (no idea why would want to permit that, but preserving for bwrd compat.)
     StringBuffer str;
     StringBuffer nametmp;
-    const char *s = name;
-    const char *ct = NULL;
+    const char *ct = NULL;    
     bool wilddetected = false;
-    while (*s) {
-        switch (*s) {
-        case '@': ct = s; break;
-        case ':': ct = NULL; break;
-        case '?':
-        case '*': wilddetected = true; break;
-        case '~':
-            if (s==name) { // leading ~ not allowed
-                name++;
-                skipSp(name);
-                s = name;
-                continue;
-            }
-            break;
-        }
-        s++;
-    }
-    if (wilddetected)
+    if ('~' == *name) // allowed 1 leading ~
     {
-        res.set(name);
-        return;
+        name++;
+        if (!strict)
+            skipSp(name);
     }
-
+    const char *s = name;
+    char c = *s;
+    while (c)
+    {
+        switch (c)
+        {
+            case '@': ct = s; break;
+            case ':': ct = NULL; break;
+            case '?':
+            case '*': wilddetected = true; break;
+            case '~':
+                throw MakeStringException(-1, "Unexpected character '%c' in logical name '%s' detected", *s, name);
+            case '>':
+            {
+                c = '\0'; // will cause break out of loop
+                continue; // can't validate query syntax
+            }
+            default:
+            {
+                if (!validFNameChar(c))
+                    throw MakeStringException(-1, "Unexpected character '%c' in logical name '%s' detected", *s, name);
+            }
+        }
+        c = *++s;
+    }
     bool isext = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
-    if (!isext&&wilddetected)
-        throw MakeStringException(-1,"Wildcards not allowed in filename (%s)",name);
+    if (!isext && !allowWild && wilddetected)
+        throw MakeStringException(-1, "Wildcards not allowed in filename (%s)", name);
     if (!isext&&ct&&(ct-name>=1)) // trailing @
     {
-        if ((ct[1]=='@')||(ct[1]=='^')) { // escape
+        if ((ct[1]=='@')||(ct[1]=='^')) // escape
+        {
             nametmp.append(ct-name,name).append(ct+1);
             name = nametmp.str();
         }
-        else {
+        else
+        {
             nametmp.append(ct+1);
             nametmp.trim().toLowerCase();
             if (nametmp.length())
@@ -381,95 +416,108 @@ void CDfsLogicalFileName::normalizeName(const char * name, StringAttr &res)
     if (!*name)
         name = ".::_blank_";
     s=strstr(name,"::");
-    if (s) {
-        if (s==name)
+    if (s)
+    {
+        if (s==name) // JCS: meaning name leads with "::", would have thought should be treated as invalid
             str.append('.');
-        else {
-            str.append(s-name,name).clip();
-            if (isext) {    // normalize node
+        else
+        {
+            normalizeScope(name, name, s-name, str, strict);
+            bool isForeign = 0 == stricmp(str.str(),FOREIGN_SCOPE);
+            if (isext || isForeign) // normalize node
+            {
                 const char *s1 = s+2;
                 const char *ns1 = strstr(s1,"::");
-                if (ns1) {                                          // TBD accept groupname here
-                    skipSp(s1);
+                if (ns1) // TBD accept groupname here (in the case of isext)
+                {
+                    if (!strict)
+                        skipSp(s1);
                     StringBuffer nodename;
-                    nodename.append(ns1-s1,s1).clip();
+                    nodename.append(ns1-s1,s1);
+                    if (!strict)
+                        nodename.clip();
                     SocketEndpoint ep(nodename.str());
-                    if (!ep.isNull()) {
+                    if (!ep.isNull())
+                    {
                         ep.getUrlStr(str.append("::"));
                         s = ns1;
-                        external = true;
-                        if (s[2]=='>') {
-                            str.append("::");
-                            tailpos = str.length();
-                            str.append(s+2);
-                            res.set(str);
-                            return;
+                        if (isext)
+                        {
+                            external = true;
+                            if (s[2]=='>')
+                            {
+                                str.append("::");
+                                tailpos = str.length();
+                                str.append(s+2);
+                                res.set(str);
+                                return;
+                            }
                         }
-
-                    }
-                }
-            }
-            else if (stricmp(str.str(),FOREIGN_SCOPE)==0) { // normalize node
-                const char *s1 = s+2;
-                const char *ns1 = strstr(s1,"::");
-                if (ns1) {
-                    skipSp(s1);
-                    StringBuffer nodename;
-                    nodename.append(ns1-s1,s1).clip();
-                    SocketEndpoint ep(nodename.str());
-                    if (!ep.isNull()) {
-                        ep.getUrlStr(str.append("::"));
-                        s = ns1;
-                        localpos = str.length()+2;
+                        else
+                        {
+                            dbgassertex(isForeign);
+                            localpos = str.length()+2;
+                        }
                     }
                 }
             }
         }
-        loop {
+        loop
+        {
             s+=2;
             const char *ns = strstr(s,"::");
             if (!ns)
                 break;
-            skipSp(s);
-            str.append("::").append(ns-s,s).clip();
+            str.append("::");
+            normalizeScope(name, s, ns-s, str, strict);
             s = ns;
         }
     }
-    else {
+    else
+    {
         s = name;
         str.append(".");
     }
     str.append("::");
     tailpos = str.length();
-    if (strstr(s,"::")!=NULL) {
+    if (strstr(s,"::")!=NULL)
         ERRLOG("Tail contains '::'!");
-    }
-    skipSp(s);
-    str.append(s).clip().toLowerCase();
+    normalizeScope(name, s, strlen(name)-(s-name), str, strict);
+    str.toLowerCase();
     res.set(str);
 }
 
 
-void CDfsLogicalFileName::set(const char *name)
+void CDfsLogicalFileName::set(const char *name, bool removeForeign)
 {
     clear();
-    StringBuffer str;
     if (!name)
         return;
     skipSp(name);
-    try {
+    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==NULL)))
+    {
+        RemoteFilename rfn;
+        rfn.setRemotePath(name);
+        setExternal(rfn);
+        return;
+    }
+    try
+    {
         multi = CMultiDLFN::create(name);
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         StringBuffer err;
         e->errorMessage(err);
         WARNLOG("CDfsLogicalFileName::set %s",err.str());
         e->Release();
     }
-    if (multi) {
+    if (multi)
+    {
         StringBuffer full;
         full.append('{');
-        ForEachItemIn(i1,*multi) {
+        ForEachItemIn(i1,*multi)
+        {
             if (i1)
                 full.append(',');
             const CDfsLogicalFileName &item = multi->item(i1);
@@ -481,86 +529,27 @@ void CDfsLogicalFileName::set(const char *name)
         lfn.set(full);
         return;
     }
-    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==NULL))) {
-        RemoteFilename rfn;
-        rfn.setRemotePath(name);
-        setExternal(rfn);
-        return;
+    normalizeName(name, lfn, false);
+    if (removeForeign)
+    {
+        const char *_lfn = get(true);
+        lfn.clear();
+        lfn.set(_lfn);
     }
-    normalizeName(name, lfn);
 }
-bool CDfsLogicalFileName::setValidate(const char *lfn,bool removeforeign)
+
+bool CDfsLogicalFileName::setValidate(const char *lfn, bool removeForeign)
 {
-    // NB will allows multi
-    const char *s = lfn;
-    if (!s)
-        return false;
-    skipSp(s);
-    if (*s=='~') {  // allowed 1 leading ~
-        s++;
-        skipSp(s);
-    }
-    if (*s=='~')
-        return false;
-    if (allowospath&&(isAbsolutePath(s)||(stdIoHandle(s)>=0)||(strstr(lfn,"::")==NULL))) {
-        set(lfn);
+    try
+    {
+        set(lfn, removeForeign);
         return true;
     }
-
-    const char *ns = skipScope(s,FOREIGN_SCOPE);
-    if (ns) {
-        while (*ns&&((*ns!=':')||(ns[1]!=':'))) // remove IP
-            ns++;
-        if (*ns) {
-            s = ns+2;
-            if (removeforeign) {
-                lfn = s;
-                skipSp(s);
-            }
-        }
+    catch (IException *e)
+    {
+        e->Release();
+        return false;
     }
-    const char *es = ns?NULL:skipScope(s,EXTERNAL_SCOPE);
-    if (es) { 
-        while (*es&&((*es!=':')||(es[1]!=':'))) // remove IP
-            es++;
-        if (*es) {
-            if (es[2]=='>') { // query
-                set(lfn);
-                return true;
-            }
-            s = es+2;
-        }
-    }
-    unsigned sc=0;
-    int inmulti = 0;
-    loop {
-        while(*s!=':') {
-            if (!*s) {
-                if (sc==0)
-                    return false;
-                set(lfn);
-                return true;
-            }
-            if (!validFNameChar(*s)) {
-                if (!inmulti||((*s!='?')&&(*s!='*')))
-                    return false;
-            }
-            if (*s=='{')
-                inmulti++;
-            else if (inmulti&&(*s=='}'))
-                inmulti--;
-            if (*s!=' ')
-                sc++;
-            s++;
-        }
-        if (sc==0)
-            break;
-        if (s[1]!=':')
-            break;
-        s += 2;
-        sc = 0;
-    }
-    return false;
 }
 
 
@@ -901,6 +890,50 @@ StringBuffer &CDfsLogicalFileName::makeFullnameQuery(StringBuffer &query, DfsXml
     makeScopeQuery(query,absolute);
     query.append('/').append(queryDfsXmlBranchName(bkind));
     return query.append("[@name=\"").append(queryTail()).append("\"]");
+}
+
+StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) const
+{
+    const char *s=get(true);    // skip foreign
+    // Ensure only chars that are accepted by jptree in an xpath element are used
+    bool first=true;
+    loop
+    {
+        const char *e=strstr(s,"::");
+        if ((e && 0 != strncmp(".", s, e-s)) || (!e && !streq(".", s))) // skip '.' scopes
+        {
+            if (first)
+                first = false;
+            else
+                lfnNodeName.append('_');
+            while (s != e)
+            {
+                char c = *s;
+                switch (c)
+                {
+                case '\0':
+                    return lfnNodeName; // done
+                case '^':
+                    ++s;
+                    if ('\0' == *s)
+                        return lfnNodeName; // probably an error really to end in '^'
+                    c = toupper(*s);
+                    // fall through
+                default:
+                    if (isalnum(c))
+                        lfnNodeName.append(c);
+                    else
+                        lfnNodeName.append('_').append((unsigned) (unsigned char) c);
+                    break;
+                }
+                ++s;
+            }
+        }
+        if (!e)
+            break;
+        s = e+2;
+    }
+    return lfnNodeName;
 }
 
 bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
@@ -1567,7 +1600,7 @@ void filterParts(IPropertyTree *file,UnsignedArray &partslist)
 #define SORT_NOCASE  2
 #define SORT_NUMERIC 4
 
-inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterlo,const char *namefilterhi,IPropertyTree *item)
+inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterlo,const char *namefilterhi,StringArray& unknownAttributes, IPropertyTree *item)
 {
 
     if (!item)
@@ -1581,6 +1614,14 @@ inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterl
         if (namefilterhi&&(strcmp(namefilterhi,n)<0))
             return;
     }
+    ForEachItemIn(i, unknownAttributes) {
+        const char *attribute = unknownAttributes.item(i);
+        if (!attribute || !*attribute)
+            continue;
+        const char *attrValue = item->queryProp(attribute);
+        if (attrValue && *attrValue)
+            return;
+    }
     item->Link();
     results.append(*item);
 }
@@ -1591,7 +1632,7 @@ class cSort
     static CriticalSection sortsect;
     static cSort *sortthis;
     mutable CLargeMemoryAllocator buf;
-    StringArray sortkeys;
+    CIArrayOf<CIStringArray> sortKeys;
     IArrayOf<IPropertyTree> sortvalues;
     IntArray modifiers;
     mutable char **vals;
@@ -1602,7 +1643,7 @@ public:
         : buf(0x100000*100,0x10000,true)
     {
     }
-    void dosort(IPropertyTreeIterator &iter,const char *sortorder, const char *namefilterlo,const char *namefilterhi, IArrayOf<IPropertyTree> &results)
+    void dosort(IPropertyTreeIterator &iter,const char *sortorder, const char *namefilterlo,const char *namefilterhi, StringArray& unknownAttributes, IArrayOf<IPropertyTree> &results)
     {
         StringBuffer sk;
         const char *s = sortorder;
@@ -1611,7 +1652,9 @@ public:
             if (!*s||(*s==',')) {
                 if (sk.length()) {
                     // could add '-' and '?' prefixes here (reverse/caseinsensitive)
-                    sortkeys.append(sk.str());
+                    Owned<CIStringArray> keyList = new CIStringArray;
+                    keyList->appendListUniq(sk.str(), "|");
+                    sortKeys.append(*keyList.getClear());
                     modifiers.append(mod);
                     sk.clear();
                 }
@@ -1630,9 +1673,9 @@ public:
             s++;
         }
         ForEach(iter)
-            filteredAdd(sortvalues,namefilterlo,namefilterhi,&iter.query());
+            filteredAdd(sortvalues,namefilterlo,namefilterhi,unknownAttributes,&iter.query());
         nv = sortvalues.ordinality();
-        nk = sortkeys.ordinality();
+        nk = sortKeys.ordinality();
         vals = (char **)calloc(sizeof(char *),nv*nk);
         unsigned *idx=(unsigned *)malloc(sizeof(unsigned)*nv);
         unsigned i;
@@ -1654,12 +1697,25 @@ public:
 
     void getkeyval(unsigned idx,unsigned k,char *&val) const
     {
-        const char *key = sortkeys.item(k);
+        StringArray &keys = sortKeys.item(k);
+        const char *key = keys.item(0); // must be >=1
         const char *v;
         if ((key[0]=='@')&&(key[1]==0))
+        {
             v = sortvalues.item(idx).queryName();
+            dbgassertex(1 == keys.ordinality()); // meaningless for multivalue key if key is special key "@"
+        }
         else
-            v = sortvalues.item(idx).queryProp(key);
+        {
+            unsigned k2=1;
+            loop
+            {
+                v = sortvalues.item(idx).queryProp(key);
+                if (v || k2 == keys.ordinality())
+                    break;
+                key = keys.item(k2++);
+            }
+        }
         if (!v)
             v = "";
         size32_t l = strlen(v)+1;
@@ -1678,9 +1734,19 @@ public:
                 char *&v2 = vals[i2*nk+i];
                 if (!v2)
                     getkeyval(i2,i,v2);
+                if (!v1 || !v2)
+                    return 0;
                 int ret;
                 if (mod&SORT_NUMERIC)
-                    ret = (int)(_atoi64(v1)-_atoi64(v2));
+                {
+                    __int64 ret0 = _atoi64(v1)-_atoi64(v2);
+                    if (ret0 > 0)
+                        ret = 1;
+                    else if (ret0 < 0)
+                        ret = -1;
+                    else
+                        ret = 0;
+                }
                 else if (mod&SORT_NOCASE)
                     ret = stricmp(v1,v2);
                 else
@@ -1711,6 +1777,7 @@ IRemoteConnection *getSortedElements( const char *basexpath,
                                      const char *sortorder,
                                      const char *namefilterlo,
                                      const char *namefilterhi,
+                                     StringArray& unknownAttributes,
                                      IArrayOf<IPropertyTree> &results)
 {
     Owned<IRemoteConnection> conn = querySDS().connect(basexpath, myProcessSession(), 0, SDS_LOCK_TIMEOUT);
@@ -1719,17 +1786,8 @@ IRemoteConnection *getSortedElements( const char *basexpath,
     Owned<IPropertyTreeIterator> iter = conn->getElements(xpath);
     if (!iter)
         return NULL;
-    if (namefilterlo&&!*namefilterlo)
-        namefilterlo = NULL;
-    if (namefilterhi&&!*namefilterhi)
-        namefilterhi = NULL;
-    StringBuffer nbuf;
-    cSort sort;
-    if (sortorder&&*sortorder)
-        sort.dosort(*iter,sortorder,namefilterlo,namefilterhi,results);
-    else
-        ForEach(*iter)
-            filteredAdd(results,namefilterlo,namefilterhi,&iter->query());
+
+    sortElements(iter, sortorder, namefilterlo,namefilterhi,unknownAttributes, results);
     return conn.getClear();
 }
 
@@ -1894,18 +1952,21 @@ void sortElements(IPropertyTreeIterator* elementsIter,
                     const char *sortOrder,
                     const char *nameFilterLo,
                     const char *nameFilterHi,
+                    StringArray& unknownAttributes,
                     IArrayOf<IPropertyTree> &sortedElements)
 {
     if (nameFilterLo&&!*nameFilterLo)
         nameFilterLo = NULL;
     if (nameFilterHi&&!*nameFilterHi)
         nameFilterHi = NULL;
-    cSort sort;
     if (sortOrder && *sortOrder)
-        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,sortedElements);
+    {
+        cSort sort;
+        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,unknownAttributes, sortedElements);
+    }
     else
         ForEach(*elementsIter)
-            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,&elementsIter->query());
+            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,unknownAttributes, &elementsIter->query());
 };
 
 IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
@@ -1915,7 +1976,8 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
                                      const char *owner,
                                      __int64 *hint,
                                      IArrayOf<IPropertyTree> &results,
-                                     unsigned *total)
+                                     unsigned *total,
+                                     bool checkConn)
 {
     if ((pagesize==0) || !elementsPager)
         return NULL;
@@ -1932,11 +1994,12 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
         elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem)); // NB: removes from cache in process, added back at end
         postfilter = elem->postFilter; // reuse cached postfilter
     }
-    if (!elem)
+    else
+    {
         elem.setown(new CPECacheElem(owner, postfilter));
-    if (!elem->conn)
         elem->conn.setown(elementsPager->getElements(elem->totalres));
-    if (!elem->conn)
+    }
+    if (checkConn && !elem->conn)
         return NULL;
     unsigned n;
     if (total)
@@ -1986,7 +2049,9 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
             results.append(item);
         }
     }
-    IRemoteConnection *ret = elem->conn.getLink();
+    IRemoteConnection *ret = NULL;
+    if (elem->conn)
+        ret = elem->conn.getLink();
     if (hint) {
         *hint = elem->hint;
         pagedElementsCache->add(elem.getClear());
@@ -2304,7 +2369,6 @@ void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
         }
     }
 
-
     HashIterator siter(supermap);
     ForEach(siter) {
         const char *supername = (const char *)siter.query().getKey();
@@ -2313,23 +2377,23 @@ void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
         StringBuffer query;
         lname.makeFullnameQuery(query, DXB_SuperFile, true);
         Owned<IRemoteConnection> conn = querySDS().connect(query.str(),myProcessSession(),0, INFINITE);
-        if (!conn)
-            throw MakeStringException(-1,"Could not connect to %s",lname.get());
-        Owned<IPropertyTree> root = conn->getRoot();
-        unsigned n=root->getPropInt("@numsubfiles");
-        StringBuffer path;
-        StringBuffer subname;
-        unsigned subnum = 0;
-        for (unsigned si=0;si<n;si++) {
-            IPropertyTree *sub = root->queryPropTree(path.clear().appendf("SubFile[@num=\"%d\"]",si+1).str());
-            if (sub) {
-                const char *subname = sub->queryProp("@name");
-                if (subname&&*subname) {
-                    if (!supermap.getValue(subname)) {
-                        size32_t sz = strlen(supername);
-                        mb.append(sz).append(sz,supername);
-                        sz = strlen(subname);
-                        mb.append(sz).append(sz,subname);
+        if (conn) { // Superfile may have disappeared by this stage, ignore.
+            Owned<IPropertyTree> root = conn->getRoot();
+            unsigned n=root->getPropInt("@numsubfiles");
+            StringBuffer path;
+            StringBuffer subname;
+            unsigned subnum = 0;
+            for (unsigned si=0;si<n;si++) {
+                IPropertyTree *sub = root->queryPropTree(path.clear().appendf("SubFile[@num=\"%d\"]",si+1).str());
+                if (sub) {
+                    const char *subname = sub->queryProp("@name");
+                    if (subname&&*subname) {
+                        if (!supermap.getValue(subname)) {
+                            size32_t sz = strlen(supername);
+                            mb.append(sz).append(sz,supername);
+                            sz = strlen(subname);
+                            mb.append(sz).append(sz,subname);
+                        }
                     }
                 }
             }
@@ -2836,9 +2900,8 @@ public:
                 gotlocal = false;
             if (gotlocal)
             {
-                if (!write) // MORE - this means the dali access checks not happening... maybe that's ok?
+                if (!write && !onlylocal) // MORE - this means the dali access checks not happening... maybe that's ok?
                     dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write)); // MORE - if dFile is not null then arguably exists should be true
-                // do I want to touch the dfile if I am writing to local file system only??
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
                 {
@@ -2849,12 +2912,22 @@ public:
         }
         if (!onlylocal)
         {
-            dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
-            if (dfile.get())
+            if (lfn.isExternal())
             {
+                Owned<IFileDescriptor> fDesc = createExternalFileDescriptor(lfn.get());
+                dfile.setown(queryDistributedFileDirectory().createNew(fDesc, true));
+                Owned<IFile> file = getPartFile(0,0);
+                if (file.get())
+                    fileExists = file->exists();
                 if (write && lfn.isExternal()&&(dfile->numParts()==1))   // if it is writing to an external file then don't return distributed
                     dfile.clear();
                 return true;
+            }
+            else
+            {
+                dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
+                if (dfile.get())
+                    return true;
             }
             // MORE - should we create the IDistributedFile here ready for publishing (and/or to make sure it's locked while we write)?
             StringBuffer physicalPath;
@@ -3020,3 +3093,4 @@ bool traceAllTransactions(bool on)
     transactionLoggingOn = on;
     return ret;
 }
+

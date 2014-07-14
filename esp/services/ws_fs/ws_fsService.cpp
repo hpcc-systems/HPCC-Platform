@@ -26,12 +26,16 @@
 #include "daclient.hpp"
 #include "wshelpers.hpp"
 #include "dfuwu.hpp"
+#include "workunit.hpp"
 #include "ws_fsService.hpp"
 #ifdef _WIN32
 #include "windows.h"
 #endif
 #include "TpWrapper.hpp"
-#include "LogicFileWrapper.hpp"
+
+#include "dalienv.hpp"
+
+
 #include "dfuutil.hpp"
 #include "portlist.h"
 #include "sacmd.hpp"
@@ -48,7 +52,7 @@ int Schedule::run()
 {
     try
     {
-        while(true)
+        while(!stopping)
         {
             {
                 Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -78,7 +82,7 @@ int Schedule::run()
                     itr->next();
                 }
             }
-            sleep(60);
+            semSchedule.wait(1000*60);
         }
     }
     catch(IException *e)
@@ -91,7 +95,6 @@ int Schedule::run()
     {
         ERRLOG("Unknown exception in WS_FS Schedule::run");
     }
-
     return 0;
 }
 
@@ -129,6 +132,22 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
     m_sched.start();
 
 }
+
+StringBuffer& CFileSprayEx::getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage)
+{
+    context.getAcceptLanguage(acceptLanguage);
+    if (!acceptLanguage.length())
+    {
+        acceptLanguage.set("en");
+        return acceptLanguage;
+    }
+    acceptLanguage.setLength(2);
+    VStringBuffer languageFile("%ssmc_xslt/nls/%s/hpcc.xml", getCFD(), acceptLanguage.str());
+    if (!checkFileExists(languageFile.str()))
+        acceptLanguage.set("en");
+    return acceptLanguage;
+}
+
 
 void ParsePath(const char * fullPath, StringBuffer &ip, StringBuffer &filePath, StringBuffer &title)
 {
@@ -356,7 +375,8 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         if (version >= 1.04 && (file->getFormat() == DFUff_csv))
         {
             StringBuffer separate, terminate, quote, escape;
-            file->getCsvOptions(separate,terminate,quote, escape);
+            bool quotedTerminator;
+            file->getCsvOptions(separate,terminate,quote, escape, quotedTerminator);
             if(separate.length() > 0)
                 dest.setSourceCsvSeparate(separate.str());
             if(terminate.length() > 0)
@@ -365,6 +385,8 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
                 dest.setSourceCsvQuote(quote.str());
             if((version >= 1.05) && (escape.length() > 0))
                 dest.setSourceCsvEscape(escape.str());
+            if(version >=1.10)
+                dest.setQuotedTerminator(quotedTerminator);
         }
     }
 
@@ -440,7 +462,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
     }
 }
 
-bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* cluster,
+bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* groupName, const char* cluster,
                                     StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder)
 {
     if(!pLogicalPath || !*pLogicalPath)
@@ -453,11 +475,11 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* clust
     defaultReplicateFolder.clear();
     DFD_OS os = DFD_OSdefault;
 
-    if(cluster != NULL && *cluster != '\0')
+    if(groupName != NULL && *groupName != '\0')
     {
         StringBuffer basedir;
         GroupType groupType;
-        Owned<IGroup> group = queryNamedGroupStore().lookup(cluster, basedir, groupType);
+        Owned<IGroup> group = queryNamedGroupStore().lookup(groupName, basedir, groupType);
         if (group) {
             switch (queryOS(group->queryNode(0).endpoint())) {
             case MachineOsW2K:
@@ -582,7 +604,7 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
     wuOptions->setReplicate(replicate);
 }
 
-void getClusterFromLFN(const char* lfn, StringBuffer& cluster, const char* username, const char* passwd)
+StringBuffer& getNodeGroupFromLFN(StringBuffer& nodeGroup, const char* lfn, const char* username, const char* passwd)
 {
     Owned<IUserDescriptor> udesc;
     if(username != NULL && *username != '\0')
@@ -591,8 +613,10 @@ void getClusterFromLFN(const char* lfn, StringBuffer& cluster, const char* usern
         udesc->set(username, passwd);
     }
 
-    LogicFileWrapper lfw;
-    lfw.FindClusterName(lfn, cluster, udesc);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn, udesc);
+    if (!df)
+        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", lfn);
+    return df->getClusterGroupName(0, nodeGroup);
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
@@ -1807,9 +1831,9 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
 
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
 
-        const char* destCluster = req.getDestGroup();
-        if(destCluster == NULL || *destCluster == '\0')
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination cluster/group not specified.");
+        const char* destNodeGroup = req.getDestGroup();
+        if(destNodeGroup == NULL || *destNodeGroup == '\0')
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
         const char* srcip = req.getSourceIP();
@@ -1831,19 +1855,19 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         destname = lfn.get();
 
         StringBuffer gName, ipAddr;
-        const char *pTr = strchr(destCluster, ' ');
+        const char *pTr = strchr(destNodeGroup, ' ');
         if (pTr)
         {
-            gName.append(pTr - destCluster, destCluster);
+            gName.append(pTr - destNodeGroup, destNodeGroup);
             ipAddr.append(pTr+1);
         }
         else
-            gName.append(destCluster);
+            gName.append(destNodeGroup);
 
         if (ipAddr.length() > 0)
-            ParseLogicalPath(destname, ipAddr.str(), destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+            ParseLogicalPath(destname, ipAddr.str(), NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
         else
-            ParseLogicalPath(destname, destCluster, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+            ParseLogicalPath(destname, destNodeGroup, NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
@@ -1978,19 +2002,19 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
 
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
 
-        const char* destCluster = req.getDestGroup();
-        if(destCluster == NULL || *destCluster == '\0')
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination cluster/group not specified.");
+        const char* destNodeGroup = req.getDestGroup();
+        if(destNodeGroup == NULL || *destNodeGroup == '\0')
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
         StringBuffer gName, ipAddr;
-        const char *pTr = strchr(destCluster, ' ');
+        const char *pTr = strchr(destNodeGroup, ' ');
         if (pTr)
         {
-            gName.append(pTr - destCluster, destCluster);
+            gName.append(pTr - destNodeGroup, destNodeGroup);
             ipAddr.append(pTr+1);
         }
         else
-            gName.append(destCluster);
+            gName.append(destNodeGroup);
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
         const char* srcip = req.getSourceIP();
@@ -2012,9 +2036,9 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         destname = lfn.get();
 
         if (ipAddr.length() > 0)
-            ParseLogicalPath(destname, ipAddr.str(), destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+            ParseLogicalPath(destname, ipAddr.str(), NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
         else
-            ParseLogicalPath(destname, destCluster, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+            ParseLogicalPath(destname, destNodeGroup, NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
@@ -2071,8 +2095,10 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
                 ct = "\\n,\\r\\n";
             const char* cq = req.getSourceCsvQuote();
             if(cq== NULL)
-                cq = "'";
-            source->setCsvOptions(cs, ct, cq, req.getSourceCsvEscape());
+                cq = "\"";
+            source->setCsvOptions(cs, ct, cq, req.getSourceCsvEscape(), req.getQuotedTerminator());
+
+            options->setQuotedTerminator(req.getQuotedTerminator());
         }
 
         destination->setLogicalName(destname);
@@ -2312,22 +2338,19 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination logical file not specified.");
 
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
-        StringBuffer srcCluster, destCluster, destClusterName;
+        StringBuffer srcNodeGroup, destNodeGroup;
         bool bRoxie = false;
-        const char* destCluster0 = req.getDestGroup();
-        if(destCluster0 == NULL || *destCluster0 == '\0')
+        const char* destNodeGroupReq = req.getDestGroup();
+        if(!destNodeGroupReq || !*destNodeGroupReq)
         {
-            getClusterFromLFN(srcname, srcCluster, context.queryUserId(), context.queryPassword());
-            DBGLOG("Destination cluster/group not specified, using source cluster %s", srcCluster.str());
-            destCluster = srcCluster.str();
-            destClusterName = srcCluster.str();
+            getNodeGroupFromLFN(destNodeGroup, srcname, context.queryUserId(), context.queryPassword());
+            DBGLOG("Destination node group not specified, using source node group %s", destNodeGroup.str());
         }
         else
         {
-            destCluster = destCluster0;
-            destClusterName = destCluster0;
-            const char* destClusterRoxie = req.getDestGroupRoxie();
-            if (destClusterRoxie && !stricmp(destClusterRoxie, "Yes"))
+            destNodeGroup = destNodeGroupReq;
+            const char* destRoxie = req.getDestGroupRoxie();
+            if (destRoxie && !stricmp(destRoxie, "Yes"))
             {
                 bRoxie = true;
             }
@@ -2341,7 +2364,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             dstname = lfn.get();
         }
 
-        ParseLogicalPath(dstname, destCluster.str(), destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+        ParseLogicalPath(dstname, destNodeGroup.str(), NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
         StringBuffer fileMask; 
         constructFileMask(destTitle.str(), fileMask);
@@ -2380,8 +2403,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         StringBuffer user, passwd;
         wu->setUser(context.getUserID(user).str());
         wu->setPassword(context.getPassword(passwd).str());
-        if(destCluster.length() > 0)
-            wu->setClusterName(destCluster.str());
+        if(destNodeGroup.length() > 0)
+            wu->setClusterName(destNodeGroup.str());
         if (supercopy)
             wu->setCommand(DFUcmd_supercopy);
         else
@@ -2409,7 +2432,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
 
         if (bRoxie)
         {
-            setRoxieClusterPartDiskMapping(destCluster.str(), defaultFolder.str(), defaultReplicateFolder.str(), supercopy, wuFSpecDest, wuOptions);
+            setRoxieClusterPartDiskMapping(destNodeGroup.str(), defaultFolder.str(), defaultReplicateFolder.str(), supercopy, wuFSpecDest, wuOptions);
             wuFSpecDest->setWrap(true);                             // roxie always wraps
             if(req.getCompress())
                 wuFSpecDest->setCompressed(true);
@@ -2425,7 +2448,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             if (destDiffKeyName&&*destDiffKeyName)
                 wuFSpecDest->setDiffKey(destDiffKeyName);
             wuFSpecDest->setDirectory(destFolder.str());
-            wuFSpecDest->setGroupName(destCluster.str());
+            wuFSpecDest->setGroupName(destNodeGroup.str());
             wuFSpecDest->setWrap(req.getWrap());
             const char * encryptkey = req.getEncrypt();
             if(req.getCompress()||(encryptkey&&*encryptkey))
@@ -2453,10 +2476,10 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
                 wuOptions->setIfNewer(true);
 
             ClusterPartDiskMapSpec mspec;
-            wuFSpecDest->getClusterPartDiskMapSpec(destCluster.str(), mspec);
+            wuFSpecDest->getClusterPartDiskMapSpec(destNodeGroup.str(), mspec);
             mspec.setDefaultBaseDir(defaultFolder.str());
             mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-            wuFSpecDest->setClusterPartDiskMapSpec(destCluster.str(), mspec);
+            wuFSpecDest->setClusterPartDiskMapSpec(destNodeGroup.str(), mspec);
         }
 
         resp.setResult(wu->queryId());
@@ -2677,6 +2700,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         if (!path || !*path)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Path not specified.");
 
+        double version = context.getClientVersion();
         const char* netaddr = req.getNetaddr();
         const char* mask = req.getMask();
         bool directoryOnly = req.getDirectoryOnly();
@@ -2755,6 +2779,11 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         if (mask && *mask)
             resp.setMask(mask);
 
+        if (version >= 1.10)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+        }
         resp.setDirectoryOnly(directoryOnly);
     }
     catch(IException* e)

@@ -130,7 +130,6 @@ public:
         aborting=true;
         CriticalBlock b(crit);
     }
-
     IPropertyTree *getTree()
     {
         CriticalBlock b(crit);
@@ -145,6 +144,7 @@ public:
         return LINK(tree);
     }
 
+    IPropertyTreeIterator *findAllQueriesUsingFile(const char *lfn);
     IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn, StringAttr &pmid);
     StringBuffer &toStr(StringBuffer &s)
     {
@@ -158,7 +158,7 @@ class CWsWorkunitsEx : public CWsWorkunits
 public:
     IMPLEMENT_IINTERFACE;
 
-    CWsWorkunitsEx(){port=8010;}
+    CWsWorkunitsEx() : maxRequestEntityLength(0) {port=8010;}
 
     virtual ~CWsWorkunitsEx()
     {
@@ -175,10 +175,10 @@ public:
     bool isValidCluster(const char *cluster);
     void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL);
     void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
-    void checkAndTrimWorkunit(const char* methodName, StringBuffer& input);
     unsigned getGraphIdsByQueryId(const char *target, const char *queryId, StringArray& graphIds);
     bool getQueryFiles(const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *superFiles);
     void getGraphsByQueryId(const char *target, const char *queryId, const char *graphName, const char *subGraphId, IArrayOf<IEspECLGraphEx>& ECLGraphs);
+    void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries);
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp);
@@ -194,6 +194,7 @@ public:
     bool onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRequest & req, IEspWUQueryDetailsResponse & resp);
     bool onWUListQueries(IEspContext &context, IEspWUListQueriesRequest &req, IEspWUListQueriesResponse &resp);
     bool onWUListQueriesUsingFile(IEspContext &context, IEspWUListQueriesUsingFileRequest &req, IEspWUListQueriesUsingFileResponse &resp);
+    bool onWUQueryFiles(IEspContext &context, IEspWUQueryFilesRequest &req, IEspWUQueryFilesResponse &resp);
 
     bool onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
     bool onWUInfoDetails(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
@@ -251,9 +252,12 @@ public:
     bool isQuerySuspended(const char* query, IConstWUClusterInfo *clusterInfo, unsigned wait, StringBuffer& errorMessage);
     bool onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp);
     bool onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoRequest &req, IEspWUGetZAPInfoResponse &resp);
-private:
-    void addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr);
+    bool onWUCheckFeatures(IEspContext &context, IEspWUCheckFeaturesRequest &req, IEspWUCheckFeaturesResponse &resp);
 
+private:
+#ifdef _USE_ZLIB
+    void addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr);
+#endif
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
     StringAttr daliServers;
@@ -266,6 +270,7 @@ private:
     WUSchedule m_sched;
     unsigned short port;
     Owned<IPropertyTree> directories;
+    int maxRequestEntityLength;
 public:
     QueryFilesInUse filesInUse;
 };
@@ -291,10 +296,6 @@ public:
 
             IPropertyTree *folderQueryset = ensureNavFolder(data, "Queries", NULL, NULL, false, 3);
             ensureNavLink(*folderQueryset, "Browse", "/WsWorkunits/WUQuerySets", "Browse Published Queries");
-
-            IPropertyTree *folderTP = CEspBinding::ensureNavFolder(data, "Tech Preview", "Technical Preview");
-            IPropertyTree *eclWatchTP = CEspBinding::ensureNavLink(*folderTP, "ECL Watch", "/esp/files/stub.htm?Widget=HPCCPlatformWidget", "ECL Watch", NULL, NULL, 1);
-            eclWatchTP->setProp("@target", "_blank");
         }
     }
 

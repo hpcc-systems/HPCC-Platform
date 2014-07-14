@@ -637,49 +637,45 @@ const char *splitXPath(const char *xpath, StringBuffer &headPath)
 
 const char *queryNextUnquoted(const char *str, char c)
 {
-    const char *end = str+strlen(str);
     bool quote = false;
-    while (end != str)
+    loop
     {
+        char next = *str;
+        if (next == '\0')
+            return NULL;
+        if ('"' == next)
+            quote = !quote;
+        else if (c == next && !quote)
+            return str;
         ++str;
-        if ('"' == *str)
-        {
-            if (quote) quote = false;
-            else quote = true;
-        }
-        else if (c == *str && !quote)
-            break;
     }
-    return str==end?NULL:str;
 }
 
 const char *queryHead(const char *xpath, StringBuffer &head)
 {
     if (!xpath) return NULL;
-    StringBuffer path;
     const char *start = xpath;
-    const char *end = xpath+strlen(xpath);
     bool quote = false;
     bool braced = false;
-    while (end != xpath)
+    loop
     {
+        if (*xpath == '\0')
+            return NULL;
         ++xpath;
-        if (*xpath == '"')
-        {
-            if (quote) quote = false;
-            else quote = true;
-        }
-        else if (*xpath == ']' && !quote)
+        char next = *xpath;
+        if ('"' == next)
+            quote = !quote;
+        else if (next == ']' && !quote)
         {
             assertex(braced);
             braced = false;
         }
-        else if (*xpath == '[' && !quote)
+        else if (next == '[' && !quote)
         {
             assertex(!braced);
             braced = true;
         }
-        else if (*xpath == '/' && !quote && !braced)
+        else if (next == '/' && !quote && !braced)
         {
             if ('/' == *start) // so leading '//'
                 return start;
@@ -691,8 +687,6 @@ const char *queryHead(const char *xpath, StringBuffer &head)
             break;
         }
     }
-    if (xpath == end)
-        return NULL;
     head.append(xpath-start, start);
     return xpath+1;
 }
@@ -1878,6 +1872,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
 
 bool PTree::removeTree(IPropertyTree *child)
 {
+    if (child == this)
+        throw MakeIPTException(-1, "Cannot remove self");
     if (children)
     {
         Owned<IPropertyTreeIterator> iter = children->getIterator(false);
@@ -3274,7 +3270,7 @@ bool PTIdMatchIterator::match()
 
 ////////////////////////////
 
-SingleIdIterator::SingleIdIterator(const PTree &_tree, unsigned pos, unsigned _many) : tree(_tree), many(_many), start(pos-1), whichNext(start), count(0), current(NULL)
+SingleIdIterator::SingleIdIterator(const PTree &_tree, unsigned pos, unsigned _many) : tree(_tree), many(_many), start(pos-1), whichNext(pos-1), count(0), current(NULL)
 {
     tree.Link();
 }
@@ -5152,12 +5148,19 @@ IPTreeMaker *createRootLessPTreeMaker(byte flags, IPropertyTree *root, IPTreeNod
 
 ////////////////////////////
 ///////////////////////////
+
+static IPTreeMaker *createDefaultPTreeMaker(byte flags, PTreeReaderOptions readFlags)
+{
+    bool noRoot = 0 != ((unsigned)readFlags & (unsigned)ptr_noRoot);
+    return new CPTreeMaker(flags, NULL, NULL, noRoot);
+}
+
 IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createXMLStreamReader(stream, *iMaker, readFlags);
@@ -5193,7 +5196,7 @@ IPropertyTree *createPTreeFromXMLString(const char *xml, byte flags, PTreeReader
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createXMLStringReader(xml, *iMaker, readFlags);
@@ -5206,7 +5209,7 @@ IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flag
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createXMLBufferReader(xml, len, *iMaker, readFlags);
@@ -5448,6 +5451,232 @@ void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, unsi
 {
     toXML(tree, stream, indent, flags);
 }
+
+/////////////////////////
+
+void checkWriteJSONDelimiter(IIOStream &out, bool &delimit)
+{
+    if (delimit)
+        writeCharToStream(out, ',');
+    delimit = false;
+}
+
+static void writeJSONNameToStream(IIOStream &out, const char *name, unsigned indent, bool &delimit)
+{
+    if (!name || !*name)
+        return;
+    checkWriteJSONDelimiter(out, delimit);
+    if (indent)
+    {
+        writeCharToStream(out, '\n');
+        writeCharsNToStream(out, ' ', indent);
+    }
+    else
+        writeCharToStream(out, ' ');
+
+    writeCharToStream(out, '"');
+    writeStringToStream(out, name);
+    writeStringToStream(out, "\": ");
+    delimit = false;
+}
+
+static void writeJSONValueToStream(IIOStream &out, const char *val, bool &delimit, bool hidden=false)
+{
+    checkWriteJSONDelimiter(out, delimit);
+    delimit = true;
+    if (!val)
+    {
+        writeStringToStream(out, "null");
+        return;
+    }
+    writeCharToStream(out, '"');
+    if (hidden)
+        writeCharsNToStream(out, '*', strlen(val));
+    else
+        writeStringToStream(out, val);
+    writeCharToStream(out, '"');
+}
+
+static void writeJSONBase64ValueToStream(IIOStream &out, const char *val, size32_t len, bool &delimit)
+{
+    checkWriteJSONDelimiter(out, delimit);
+    delimit = true;
+    if (!val)
+    {
+        writeStringToStream(out, "null");
+        return;
+    }
+    writeCharToStream(out, '"');
+    JBASE64_Encode(val, len, out);
+    writeCharToStream(out, '"');
+}
+
+static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags, bool &delimit, bool root=false, bool isArrayItem=false)
+{
+    Owned<IAttributeIterator> it = tree->getAttributes(true);
+    bool hasAttributes = it->first();
+    bool complex = (hasAttributes || tree->hasChildren());
+    bool isBinary = tree->isBinary(NULL);
+
+    const char *name = tree->queryName();
+    if (!root && !isArrayItem)
+    {
+        if (!name || !*name)
+            name = "__unnamed__";
+        writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
+    }
+
+    checkWriteJSONDelimiter(out, delimit);
+
+    if (isArrayItem && (flags & JSON_Format))
+    {
+        writeCharToStream(out, '\n');
+        writeCharsNToStream(out, ' ', indent);
+    }
+
+    if (root || complex)
+    {
+        writeCharToStream(out, '{');
+        delimit = false;
+    }
+
+    if (hasAttributes)
+    {
+        ForEach(*it)
+        {
+            const char *key = it->queryName();
+            if (!isBinary || stricmp(key, "@xsi:type")!=0)
+            {
+                const char *val = it->queryValue();
+                if (val)
+                {
+                    writeJSONNameToStream(out, key, (flags & JSON_Format) ? indent+1 : 0, delimit);
+                    if (flags & JSON_SanitizeAttributeValues)
+                    {
+                        bool hide = !(streq(val, "0") || streq(val, "1") || strieq(val, "true") || strieq(val, "false") || strieq(val, "yes") || strieq(val, "no"));
+                        writeJSONValueToStream(out, val, delimit, hide);
+                    }
+                    else
+                    {
+                        StringBuffer encoded;
+                        encodeJSON(encoded, val);
+                        writeJSONValueToStream(out, encoded.str(), delimit);
+                    }
+                }
+            }
+        }
+    }
+    MemoryBuffer thislevelbin;
+    StringBuffer _thislevel;
+    const char *thislevel = NULL; // to avoid uninitialized warning
+    bool isNull;
+    if (isBinary)
+    {
+        isNull = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
+    }
+    else
+    {
+        if (tree->isCompressed(NULL))
+        {
+            isNull = false; // can't be empty if compressed;
+            verifyex(tree->getProp(NULL, _thislevel));
+            thislevel = _thislevel.toCharArray();
+        }
+        else
+            isNull = (NULL == (thislevel = tree->queryProp(NULL)));
+    }
+
+    if (isNull && !root && !complex)
+    {
+        writeJSONValueToStream(out, NULL, delimit);
+        return;
+    }
+
+    Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & JSON_SortTags) ? iptiter_sort : iptiter_null);
+    //note that detection of repeating elements relies on the fact that ptree elements
+    //of the same name will be grouped together
+    bool repeatingElement = false;
+    sub->first();
+    while(sub->isValid())
+    {
+        Linked<IPropertyTree> element = &sub->query();
+        const char *name = element->queryName();
+        if (sub->next() && !repeatingElement && streq(name, sub->query().queryName()))
+        {
+            if (flags & JSON_Format)
+                indent++;
+            writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
+            writeCharToStream(out, '[');
+            repeatingElement = true;
+            delimit = false;
+        }
+
+        _toJSON(element, out, indent+1, flags, delimit, false, repeatingElement);
+
+        if (repeatingElement && (!sub->isValid() || !streq(name, sub->query().queryName())))
+        {
+            if (flags & JSON_Format)
+            {
+                writeCharToStream(out, '\n');
+                writeCharsNToStream(out, ' ', indent);
+                indent--;
+            }
+            writeCharToStream(out, ']');
+            repeatingElement = false;
+            delimit = true;
+        }
+    }
+
+
+    if (!isNull)
+    {
+        if (complex)
+            writeJSONNameToStream(out, "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
+        if (isBinary)
+            writeJSONBase64ValueToStream(out, thislevelbin.toByteArray(), thislevelbin.length(), delimit);
+        else
+        {
+            // NOTE - JSON_Sanitize won't output anything for binary.... is that ok?
+            bool hide = (flags & JSON_Sanitize) && thislevel && !(streq(thislevel, "0") || streq(thislevel, "1") || strieq(thislevel, "true") || strieq(thislevel, "false") || strieq(thislevel, "yes") || strieq(thislevel, "no"));
+            writeJSONValueToStream(out, thislevel, delimit, hide);
+        }
+    }
+
+    if (root || complex)
+    {
+        if (flags & JSON_Format)
+        {
+            writeCharToStream(out, '\n');
+            writeCharsNToStream(out, ' ', indent);
+        }
+        writeCharToStream(out, '}');
+        delimit = true;
+    }
+}
+
+jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, byte flags)
+{
+    class CAdapter : public CInterface, implements IIOStream
+    {
+        StringBuffer &out;
+    public:
+        IMPLEMENT_IINTERFACE;
+        CAdapter(StringBuffer &_out) : out(_out) { }
+        virtual void flush() { }
+        virtual size32_t read(size32_t len, void * data) { UNIMPLEMENTED; return 0; }
+        virtual size32_t write(size32_t len, const void * data) { out.append(len, (const char *)data); return len; }
+    } adapter(ret);
+    bool delimit = false;
+    _toJSON(tree->queryBranch(NULL), adapter, indent, flags, delimit, true);
+    return ret;
+}
+
+void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags)
+{
+    bool delimit = false;
+    _toJSON(tree, out, indent, flags, delimit, true);
+}
+
 
 static inline void skipWS(const char *&xpath)
 {
@@ -6231,7 +6460,9 @@ public:
     void readValueNotify(const char *name, bool skipAttributes)
     {
         StringBuffer value;
-        readValue(value);
+        if (readValue(value)==elementTypeNull)
+            return;
+
         if ('@'==*name)
         {
             if (!skipAttributes)
@@ -6855,7 +7086,7 @@ IPropertyTree *createPTreeFromJSONString(const char *json, byte flags, PTreeRead
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createJSONStringReader(json, *iMaker, readFlags);
@@ -6868,7 +7099,7 @@ IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte fl
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createJSONBufferReader(json, len, *iMaker, readFlags);

@@ -20,7 +20,7 @@
     <xsl:output method="html"/>
     <xsl:variable name="owner" select="/DFUQueryResponse/Owner"/>
     <xsl:variable name="cluster" select="/DFUQueryResponse/Prefix"/>
-    <xsl:variable name="clustername" select="/DFUQueryResponse/ClusterName"/>
+    <xsl:variable name="nodegroup" select="/DFUQueryResponse/NodeGroup"/>
     
     <xsl:variable name="logicalname" select="/DFUQueryResponse/LogicalName"/>
     <xsl:variable name="descriptionfilter" select="/DFUQueryResponse/Description"/>
@@ -42,6 +42,7 @@
     <xsl:variable name="filters" select="/DFUQueryResponse/Filters"/>
     <xsl:variable name="parametersforpaging" select="/DFUQueryResponse/ParametersForPaging"/>
     <xsl:variable name="basicquery" select="/DFUQueryResponse/BasicQuery"/>
+    <xsl:variable name="cachehint" select="/DFUQueryResponse/CacheHint"/>
 
     <xsl:template match="/DFUQueryResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -63,7 +64,7 @@
           <script language="JavaScript1.2" id="menuhandlers">
                     var owner = '<xsl:value-of select="$owner"/>';;
                     var cluster = '<xsl:value-of select="$cluster"/>';;
-                    var clusterName = '<xsl:value-of select="$clustername"/>';;
+                    var nodeGroup = '<xsl:value-of select="$nodegroup"/>';;
                     var logicalName = '<xsl:value-of select="$logicalname"/>';;
                     var descriptionFilter = '<xsl:value-of select="$descriptionfilter"/>';;
                     var startDate = '<xsl:value-of select="$startdate"/>';;
@@ -74,8 +75,7 @@
                     var pageSize = '<xsl:value-of select="$pagesize"/>';;
                     var sortBy = '<xsl:value-of select="$sortby"/>';;
                     var descending = '<xsl:value-of select="$descending"/>';;
-                    //var firstN = '<xsl:value-of select="$firstn"/>';;
-                    //var firstNType = '<xsl:value-of select="$firstntype"/>';;
+                    var cacheHint='<xsl:value-of select="$cachehint"/>';
 
             var oMenu;
 
@@ -312,11 +312,11 @@
                                     }
                                     if (type != 3)
                                     {
-                                        if (clusterName)
+                                        if (nodeGroup)
                                         {
                                             if (numParam > 0)
                                                 url += '&';
-                                            url += 'ClusterName=' + clusterName;
+                                            url += 'NodeGroup=' + nodeGroup;
                                             numParam++;
                                         }
                                     }
@@ -324,7 +324,7 @@
                                     {
                                         if (numParam > 0)
                                             url += '&';
-                                        url += 'ClusterName=' + value;
+                                        url += 'NodeGroup=' + value;
                                         numParam++;
                                     }
                                     document.location.href=url;
@@ -400,15 +400,12 @@
                           
                             function headerClicked(headername, descending)
                             {
-                                document.location.href='/WsDfu/DFUQuery?'+currentFilters+'&Sortby='+headername+'&Descending='+descending;
+                                document.location.href='/WsDfu/DFUQuery?'+currentFilters.replace(/\&amp;/g,'&')+'&Sortby='+headername+'&Descending='+descending;
                             }                
                             
                             function onLoad()
                             {
                                 initSelection('resultsTable');
-                                //var table = document.getElementById('resultsTable');
-                                //if (table)
-                                //  sortableTable = new SortableTable(table, table, ["None", "None", "String", "Number", "NumberWithCommas", "NumberWithCommas", "String", "String"]);
                             }        
                           
                             function getNewPage()
@@ -422,9 +419,9 @@
                                 var size = pageEndAt - startFrom + 1;
 
                                 if (basicQuery.length > 0)
-                                    document.location.href = '/WsDfu/DFUQuery?PageSize='+size+'&'+basicQuery+'&PageStartFrom='+startFrom;
+                                    document.location.href = '/WsDfu/DFUQuery?PageSize='+size+'&'+basicQuery.replace(/\&amp;/g,'&')+'&PageStartFrom='+startFrom + '&CacheHint=' + cacheHint;
                                 else
-                                    document.location.href = '/WsDfu/DFUQuery?PageStartFrom='+startFrom+'&PageSize='+size;
+                                    document.location.href = '/WsDfu/DFUQuery?PageStartFrom='+startFrom+'&PageSize='+size + '&CacheHint=' + cacheHint;
 
                                 return false;
                             }
@@ -470,11 +467,11 @@
         <form id="listitems" action="/WsDFU/DFUArrayAction" method="post">
             <xsl:choose>
                 <xsl:when test="$basicquery!=''">
-          <input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery?PageSize={$pagesize}&amp;{$basicquery}&amp;PageStartFrom={/DFUQueryResponse/PageStartFrom}">&#160;</input> 
+          <input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery?PageSize={$pagesize}&amp;{$basicquery}&amp;PageStartFrom={/DFUQueryResponse/PageStartFrom}&amp;CacheHint={$cachehint}">&#160;</input>
                     <!--input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery{$pagesize}&amp;{/DFUQueryResponse/PageStartFrom}"/-->
                 </xsl:when>
                 <xsl:otherwise>
-                    <input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery?PageSize={$pagesize}&amp;PageStartFrom={/DFUQueryResponse/PageStartFrom}">&#160;</input>
+                    <input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery?PageSize={$pagesize}&amp;PageStartFrom={/DFUQueryResponse/PageStartFrom}&amp;CacheHint={$cachehint}">&#160;</input>
           <!--input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery{$pagesize}&amp;{/DFUQueryResponse/PageStartFrom}"/-->
                 </xsl:otherwise>
             </xsl:choose>
@@ -529,14 +526,14 @@
                        </xsl:otherwise>
                    </xsl:choose>
                    <xsl:choose>
-                       <xsl:when test="$sortby='Size' and $descending &lt; 1">
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Size', 1)">Size<img src="/esp/files/img/upsimple.png" width="10" height="10"></img></th>
+                       <xsl:when test="$sortby='FileSize' and $descending &lt; 1">
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('FileSize', 1)">Size<img src="/esp/files/img/upsimple.png" width="10" height="10"></img></th>
                        </xsl:when>
-                       <xsl:when test="$sortby='Size'">
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Size', 0)">Size<img src="/esp/files/img/downsimple.png" width="10" height="10"></img></th>
+                       <xsl:when test="$sortby='FileSize'">
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('FileSize', 0)">Size<img src="/esp/files/img/downsimple.png" width="10" height="10"></img></th>
                        </xsl:when>
                        <xsl:otherwise>
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Size', 1)">Size</th>
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('FileSize', 1)">Size</th>
                        </xsl:otherwise>
                    </xsl:choose>
                    <xsl:choose>
@@ -573,14 +570,14 @@
                        </xsl:otherwise>
                    </xsl:choose>
                    <xsl:choose>
-                       <xsl:when test="$sortby='Cluster' and $descending &lt; 1">
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Cluster', 1)">Cluster<img src="/esp/files/img/upsimple.png" width="10" height="10"></img></th>
+                       <xsl:when test="$sortby='NodeGroup' and $descending &lt; 1">
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('NodeGroup', 1)">NodeGroup<img src="/esp/files/img/upsimple.png" width="10" height="10"></img></th>
                        </xsl:when>
-                       <xsl:when test="$sortby='Cluster'">
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Cluster', 0)">Cluster<img src="/esp/files/img/downsimple.png" width="10" height="10"></img></th>
+                       <xsl:when test="$sortby='NodeGroup'">
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('NodeGroup', 0)">NodeGroup<img src="/esp/files/img/downsimple.png" width="10" height="10"></img></th>
                        </xsl:when>
                        <xsl:otherwise>
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Cluster', 0)">Cluster</th>
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('NodeGroup', 0)">NodeGroup</th>
                        </xsl:otherwise>
                    </xsl:choose>
                    <xsl:choose>
@@ -603,12 +600,12 @@
       <table>
             <tr>
             <xsl:if test="$prevpagefrom &gt; 0">
-                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}')">First</a></td>
-                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$prevpagefrom}')">Prev</a></td>
+                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;CacheHint={$cachehint}')">First</a></td>
+                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$prevpagefrom}&amp;CacheHint={$cachehint}')">Prev</a></td>
             </xsl:if>
             <xsl:if test="$nextpagefrom &gt; 0">
-                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$nextpagefrom}')">Next</a></td>
-                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$lastpagefrom}')">Last</a></td>
+                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$nextpagefrom}&amp;CacheHint={$cachehint}')">Next</a></td>
+                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$lastpagefrom}&amp;CacheHint={$cachehint}')">Last</a></td>
             </xsl:if>
             </tr>
       </table>  
@@ -650,15 +647,15 @@
             <xsl:variable name="info_query">
                 <xsl:value-of select="Name"/>
                 <xsl:choose>
-                    <xsl:when test="string-length(ClusterName)">&amp;Cluster=<xsl:value-of select="ClusterName"/></xsl:when>
+                    <xsl:when test="string-length(NodeGroup)">&amp;NodeGroup=<xsl:value-of select="NodeGroup"/></xsl:when>
                 </xsl:choose>
             </xsl:variable>
       <td>
         <xsl:if test="FromRoxieCluster=1">
-          <input type="hidden" id="{Name}@{ClusterName}"/>
+          <input type="hidden" id="{Name}@{NodeGroup}"/>
         </xsl:if>
-        <input type="checkbox" name="LogicalFiles_i{position()}" value="{Name}@{ClusterName}" onclick="return clicked(this, event)"/>
-          <xsl:variable name="popup">return DFUFilePopup('<xsl:value-of select="$info_query"/>', '<xsl:value-of select="Name"/>', '<xsl:value-of select="ClusterName"/>', '<xsl:value-of select="Replicate"/>', '<xsl:value-of select="FromRoxieCluster"/>', '<xsl:value-of select="BrowseData"/>', '<xsl:value-of select="position()"/>')</xsl:variable>
+        <input type="checkbox" name="LogicalFiles_i{position()}" value="{Name}@{NodeGroup}" onclick="return clicked(this, event)"/>
+          <xsl:variable name="popup">return DFUFilePopup('<xsl:value-of select="$info_query"/>', '<xsl:value-of select="Name"/>', '<xsl:value-of select="NodeGroup"/>', '<xsl:value-of select="Replicate"/>', '<xsl:value-of select="FromRoxieCluster"/>', '<xsl:value-of select="BrowseData"/>', '<xsl:value-of select="position()"/>')</xsl:variable>
           <xsl:variable name="oncontextmenu">
             <xsl:value-of select="$popup"/>
           </xsl:variable>
@@ -670,7 +667,7 @@
               </xsl:if>
             </td>
             <td>
-              <xsl:if test="IsKeyFile=1">
+              <xsl:if test="ContentType='key'">
                 <img border="0" src="/esp/files/img/keyfile.png" title="Indexed" width="16" height="16"/>
               </xsl:if>
             </td>
@@ -734,13 +731,13 @@
             </td>
             <td>
                 <xsl:choose>
-                    <xsl:when test="string-length(ClusterName) and not(string-length($clustername))">
-                        <a href="javascript:doQuery(3, '{ClusterName}')">
-                            <xsl:value-of select="ClusterName"/>
+                    <xsl:when test="string-length(NodeGroup) and not(string-length($nodegroup))">
+                        <a href="javascript:doQuery(3, '{NodeGroup}')">
+                            <xsl:value-of select="NodeGroup"/>
                         </a>
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:value-of select="ClusterName"/>
+                        <xsl:value-of select="NodeGroup"/>
                     </xsl:otherwise>
                 </xsl:choose>
             </td>

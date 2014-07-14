@@ -47,22 +47,52 @@ class Report:
         self.report = _dict(report)
         self.name = name
 
-    def display(self, log=None):
+    def display(self, log=None,  elapsTime = 0):
+        logging.debug("Report::display(log='%s', elapsTime:%d",  log,  elapsTime)
         reportStr = "\n"
         reportStr += "Results\n"
         reportStr += "-------------------------------------------------\n"
         reportStr += "Passing: %i\n" % len(self.report._pass)
         reportStr += "Failure: %i\n" % len(self.report._fail)
         reportStr += "-------------------------------------------------\n"
+        if self.report._pass:
+            passStr = ''
+            for result in self.report._pass:
+                try:
+                    if result.Diff !=  '':
+                        passStr += repr(result.Diff)
+                        passStr += "\n"
+                except AttributeError as ae:
+                    logging.debug("AttributeError Exception:'%s'",  repr(ae))
+                except Exception as ex:
+                    logging.debug("Exception:'%s'",  str(ex))
+                    #reportStr += str(result.Diff)
+            if len(passStr):
+                reportStr += passStr
+                reportStr += "-------------------------------------------------\n"
         if self.report._fail:
             for result in self.report._fail:
-                reportStr += result.Diff
-                reportStr += "\n"
+                if len(result.Diff) > 0:
+                    try:
+                        reportStr += result.Diff.replace('\\n',  '\n').replace('"',  '')
+                    except Exception as ex:
+                        logging.debug("Exception:'%s'",  str(ex))
+                        reportStr += repr(result.Diff).replace('\\n',  '\n').replace('"',  '')
+                    reportStr += "\n"
             reportStr += "-------------------------------------------------\n"
         if log:
             reportStr += "Log: %s\n" % str(log)
             reportStr += "-------------------------------------------------\n"
+        if elapsTime:
+            reportStr += "Elapsed time: %d sec " % (elapsTime)
+            hours = elapsTime / 3600
+            elapsTime = elapsTime % 3600
+            mins = elapsTime / 60
+            reportStr += " (%02d:%02d:%02d) \n" % (hours,  mins,  elapsTime % 60)
+            reportStr += "-------------------------------------------------\n"
         logging.warn(reportStr)
+        self.report._pass = []
+        self.report._fail = []
 
     def getResult(self, eclfile):
         pass
@@ -90,10 +120,26 @@ class Report:
     def __addEclFile(self, eclfile):
         result = {}
         result['File'] = eclfile.ecl
-        if eclfile.diff:
+        if eclfile.wuid == 'Not found':
             result['Result'] = 'Fail'
-            result['Diff'] = eclfile.diff
+            if len(eclfile.diff) > 0:
+                result['Diff'] = eclfile.diff
+            else:
+                result['Diff'] = ''
             self.report._fail.append(_dict(result))
+        elif eclfile.diff:
+            if eclfile.testNoKey():
+                result['Result'] = 'Pass'
+                if eclfile.testNoOutput():
+                    result['Diff'] = ''
+                else:
+                    result['Diff'] = eclfile.diff
+                self.report._pass.append(_dict(result))
+            else:
+                result['Result'] = 'Fail'
+                result['Diff'] = eclfile.diff
+                self.report._fail.append(_dict(result))
         else:
             result['Result'] = 'Pass'
+            result['Diff'] = ''
             self.report._pass.append(_dict(result))

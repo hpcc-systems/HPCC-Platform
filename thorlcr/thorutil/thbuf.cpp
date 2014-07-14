@@ -624,13 +624,13 @@ class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiR
     IRowInterfaces *rowIf;
     Owned<IThorRowCollector> collector;
     Owned<IRowWriter> writer;
-    bool eoi, grouped, shared;
+    bool eoi, shared;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _grouped, bool _shared, unsigned spillPriority)
-        : activity(_activity), rowIf(_rowIf), grouped(_grouped), shared(_shared)
+    COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool grouped, bool _shared, unsigned spillPriority)
+        : activity(_activity), rowIf(_rowIf), shared(_shared)
     {
         collector.setown(createThorRowCollector(activity, rowIf, NULL, stableSort_none, rc_mixed, spillPriority, grouped));
         writer.setown(collector->getWriter());
@@ -832,7 +832,13 @@ protected:
                 const rowcount_t &rowsWritten = parent.readerWait(rowsRead);
                 {
                     CriticalUnblock b(parent.crit);
-                    readWaitSem.wait();
+                    unsigned mins=0;
+                    loop
+                    {
+                        if (readWaitSem.wait(60000))
+                            break; // NB: will also be signal if aborting
+                        ActPrintLog(parent.activity, "output %d @ row # %"RCPF"d, has been blocked for %d minute(s)", output, rowsRead, ++mins);
+                    }
                 }
                 if (parent.isEof(rowsRead))
                     return 0;

@@ -69,7 +69,7 @@
 #define HQLERR_RowTooLarge                      4043
 #define HQLERR_ShouldHaveBeenHoisted            4044
 #define HQLERR_NoArgumentsInValidator           4045
-#define HQLERR_NotSupportInRoxie                4046
+
 #define HQLERR_InputMergeNotSorted              4047
 #define HQLERR_TooComplicatedToPreload          4048
 #define HQLERR_KeyedNotKeyed                    4049
@@ -209,6 +209,8 @@
 #define HQLERR_UnexpectedOptionValue_XY         4189
 #define HQLERR_VariableRowMustBeLinked          4190
 #define HQLERR_UserCodeNotAllowed               4191
+#define HQLERR_StreamInputUsedDirectly          4192
+#define HQLERR_MaxlengthExceedsLimit            4193
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -269,8 +271,7 @@
 #define HQLERR_ThorNotSupportStepping           4617
 #define HQLERR_OnceCannotAccessStored           4618
 #define HQLERR_ThorCombineOnlyLocal             4619
-
-#define HQLERR_ErrorAlreadyReported             4799            // special case...
+#define HQLERR_SteppedNotImplemented            4620
 
 //Internal errors....
 #define HQLERR_NoClearOnLocalDataset            4800
@@ -355,15 +356,14 @@
 #define HQLERR_RowTooLarge_Text                 "Row size %u exceeds the maximum specified (%u)"
 #define HQLERR_ShouldHaveBeenHoisted_Text       "Select expression should have been hoisted"
 #define HQLERR_NoArgumentsInValidator_Text      "%s() cannot have a parameter inside a VALIDATE"
-#define HQLERR_NotSupportInRoxie_Text           "%s is not supported in roxie queries"
 #define HQLERR_InputMergeNotSorted_Text         "Input to MERGE does not appear to be sorted"
 #define HQLERR_TooComplicatedToPreload_Text     "Expression is too complicated to preload"
-#define HQLERR_KeyedNotKeyed_Text               "KEYED(%s) couldn't be looked up in a key."
+#define HQLERR_KeyedNotKeyed_Text               "KEYED(%s) could not be looked up in a key."
 #define HQLERR_KeyedFollowsGap_Text             "KEYED(%s) follows unfiltered component %s in the key%s"
 #define HQLERR_WildFollowsGap_Text              "WILD(%s) follows unfiltered component %s in the key%s"
 #define HQLERR_KeyedWildNoIndex_Text            "%s could not be implemented by the key"
 #define HQLERR_ZeroLengthIllegal_Text           "Cannot process zero length rows"
-#define HQLERR_SetCastNotSupported_Text         "Set casts aren't supported yet"
+#define HQLERR_SetCastNotSupported_Text         "Set casts are not supported yet"
 #define HQLERR_FuncNotInGlobalContext_Text      "Cannot call function %s in a non-global context"
 #define HQLERR_SetUnknownLength_Text            "Sets of items of unknown length are not yet supported!"
 #define HQLERR_HashStoredTypeMismatch_Text      "#STORED (%s) type mismatch (was '%s' replacement '%s')"
@@ -395,7 +395,7 @@
 #define HQLERR_CannotDetermineSizeVar_Text      "Cannot determine size because variable size dataset is not in scope.  Try using sizeof(x,max)"
 #define HQLERR_DuplicateDefinition_Text         "Duplicate definition of %s"
 #define HQLERR_DuplicateDefinitionDiffType_Text "Duplicate definition of %s with different type"
-#define HQLERR_WildNotReferenceIndex_Text       "WILD() doesn't reference fields in key %s"
+#define HQLERR_WildNotReferenceIndex_Text       "WILD() does not reference fields in key %s"
 #define HQLERR_InconsistentKeyedOpt_Text        "Field %s cannot have both KEYED and KEYED,OPT conditions"
 #define HQLERR_OptKeyedFollowsWild_Text         "KEYED(%s,OPT) follows a WILD() field in key %s"
 #define HQLERR_KeyedCountCantNormalize_Text     "COUNT(,KEYED) cannot be used on a child dataset"
@@ -407,7 +407,7 @@
 #define HQLERR_KeyAccessNoKeyField_Text         "Key condition (%s) does not have any comparisons against key fields"
 #define HQLERR_MinusOnString_Text               "unary - cannot be performed on a string"
 #define HQLERR_NotSupportedInsideNoThor_Text    "%s is not supported inside NOTHOR()"
-#define HQLERR_RegexNoTransformSupport_Text     "Regular expression parsing doesn't support productions - need to use tomita"
+#define HQLERR_RegexNoTransformSupport_Text     "Regular expression parsing does not support productions - need to use tomita"
 #define HQLERR_AccessMatchAttrInChildQuery_Text "Unimplemented: Cannot yet access $<n> inside a child query"
 #define HQLERR_ExpectedTransformManyInputs_Text "Ambiguous default production for rule with multiple inputs"
 #define HQLERR_AmbiguousLeftRight_Text          "Selector %s is used ambiguously at multiple levels"
@@ -435,9 +435,9 @@
 #define HQLERR_SortOrderMustMatchJoinFields_Text "Merge order must match all the stepped join fields"
 #define HQLERR_OrMultipleKeyfields_Text         "Cannot OR together conditions on multiple key fields (%s)"
 #define HQLERR_RowCompressRequireFixedSize_Text "ROW compression can only be used on fixed size indexes"
-#define HQLERR_InputsAreTooComplexToUpdate_Text "UPDATE cannot be used when the inputs names aren't globally constant"
+#define HQLERR_InputsAreTooComplexToUpdate_Text "UPDATE cannot be used when the inputs names are not globally constant"
 #define HQLERR_ThorDenormOnlyLeftOuterJoin_Text "THOR currently only supports LEFT OUTER denormalize"
-#define HQLERR_ThorDenormNoFeatureX_Text        "THOR doesn't support DENORMALIZE(%s)"
+#define HQLERR_ThorDenormNoFeatureX_Text        "THOR does not support DENORMALIZE(%s)"
 #define HQLERR_SkipNotValidHere_Text            "SKIP cannot be used here.  It is only valid directly with a transform"
 #define HQLERR_CsvNotSupportTableSet_Text       "Cannot read tables/datasets from a csv file"
 #define HQLERR_ExpectedConstantWorkunit_Text    "Argument %s to #workunit must be a constant"
@@ -468,7 +468,7 @@
 #define HQLERR_JoinXTooComplex_Text             "JOIN%s contains no equality conditions - use ,ALL to allow"
 #define HQLERR_GlobalDedupFuzzy_Text            "A global DEDUP(ALL) or local hash dedup cannot include comparisons in the dedup criteria"
 #define HQLERR_GlobalDedupNoEquality_Text       "Global dedup,ALL must have a field to partition"
-#define HQLERR_HashDedupNotSupportX_Text        "Hash dedup doesn't support %s"
+#define HQLERR_HashDedupNotSupportX_Text        "Hash dedup does not support %s"
 #define HQLERR_JoinSortedMustBeDataset_Text     "SORTED() used by JOINED must be applied to a DATASET"
 #define HQLERR_JoinSortedMustBeThor_Text        "SORTED() used by JOINED must be applied to a THOR dataset"
 #define HQLERR_SortAndCoSortConcurrent_Text     "SORT supplied to COSORT needs to be executed at the same time"
@@ -489,12 +489,13 @@
 #define HQLERR_ResourceAddAfterFinalManifest_Text "%s resource added after manifest was finalized"
 #define HQLERR_SkipInsideCreateRow_Text         "SKIP inside a ROW(<transform>) not supported.  It is only allowed in a DATASET transform."
 #define HQLERR_ScalarOutputWithinApply_Text     "A scalar output within an APPLY is undefined and may fail.  Use OUTPUT(dataset,EXTEND) instead."
-#define HQLERR_KeyedJoinNoRightIndex_X_Text     "Right dataset (%s) for a keyed join isn't a key"
+#define HQLERR_KeyedJoinNoRightIndex_X_Text     "Right dataset (%s) for a keyed join is not a key"
 #define HQLERR_EmbeddedTypeNotSupported_X_Text  "Type %s not supported for embedded/external scripts"
 #define HQLERR_MaximumSizeLessThanMinimum_XY_Text "Maximum size (%u) for this record is lower than the minimum (%u)"
 #define HQLERR_UnexpectedOptionValue_XY_Text    "Unexpected value for option %s: %s"
 #define HQLERR_VariableRowMustBeLinked_Text     "External function '%s' cannot return a non-linked variable length row"
 #define HQLERR_UserCodeNotAllowed_Text          "Workunit-supplied code is not permitted on this system"
+#define HQLERR_StreamInputUsedDirectly_Text     "Library input used directly in a child query"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
@@ -535,16 +536,18 @@
 #define HQLERR_DistributionNoSequence_Text      "DISTRIBUTION() only supported at the outer level"
 #define HQLERR_PhysicalJoinTooComplex_Text      "Physical table join condition too complicated"
 #define HQLERR_ArbitaryRepeatUnimplemented_Text "Arbitrary repeats not yet supported!"
-#define HQLERR_TomitaNoUnicode_Text             "Tomita doesn't yet support unicode"
+#define HQLERR_TomitaNoUnicode_Text             "Tomita does not yet support unicode"
 #define HQLERR_TomitaPatternTooComplex_Text     "Patterns are too complicated for Tomita to handle at the moment [%s]"
 #define HQLERR_CannotCreateSizedChildDataset_Text "Cannot currently assign to DATASET(SIZEOF(x)) fields"
 #define HQLERR_OnlyNormalizeSimpleChildren_Text "Can only normalize simple child datasets - use other form if more complicated"
-#define HQLERR_RoxieLocalNotSupported_Text      "ROXIE doesn't yet support local activities"
+#define HQLERR_RoxieLocalNotSupported_Text      "ROXIE does not yet support local activities"
 #define HQLERR_ThorNotSupportStepping_Text      "STEPPED is not currently supported by thor"
 #define HQLERR_StarRangeOnlyInJoinCondition_Text "string[n..*] syntax is only valid in a join condition"
-#define HQLERR_KeyedDistributeNoSubstringJoin_Text "Keyed distribute doesn' support join condition of the form field[n..*]"
+#define HQLERR_KeyedDistributeNoSubstringJoin_Text "Keyed distribute does not support join condition of the form field[n..*]"
 #define HQLERR_OnceCannotAccessStored_Text      "ONCE workflow items cannot be dependent on other workflow items (including ONCE)"
 #define HQLERR_ThorCombineOnlyLocal_Text        "Thor currently only supports the local version of COMBINE"
+#define HQLERR_SteppedNotImplemented_Text       "STEPPED could not be merged into an index read activity"
+#define HQLERR_MaxlengthExceedsLimit_Text       "MAXLENGTH(%u) for BUILD(index) exceeds the maximum of (%u)"
 
 #define HQLERR_NoClearOnLocalDataset_Text       "INTERNAL: Clear not supported on LOCAL datasets"
 #define HQLERR_NoCreateLocalDataset_Text        "INTERNAL: Local datasets cannot be created"
@@ -565,8 +568,8 @@
 #define HQLERR_CounterNotFound_Text             "INTERNAL: Could not resolve COUNTER for inline count project"
 #define HQLERR_GraphContextNotFound_Text        "INTERNAL: Graph context not found"
 #define HQLERR_InvalidAcessStoredVariable_Text  "INTERNAL: Accessing unserialized stored variable %s in slave context"
-#define HQLERR_LibraryNoWorkunitRead_Text       "INTERNAL: Library '%s' shouldn't access work unit temporary '%s'"
-#define HQLERR_LibraryNoWorkunitWrite_Text      "INTERNAL: Library '%s' shouldn't create work unit temporary '%s'"
+#define HQLERR_LibraryNoWorkunitRead_Text       "INTERNAL: Library '%s' should not access work unit temporary '%s'"
+#define HQLERR_LibraryNoWorkunitWrite_Text      "INTERNAL: Library '%s' should not create work unit temporary '%s'"
 #define HQLERR_GraphInputAccessedChild_Text     "INTERNAL: Attempting to access graph output directly from a child query"
 #define HQLERR_InconsisentLocalisation_Text     "INTERNAL: Inconsistent activity localisation (child %d:graph %d)"
 #define HQLERR_NoParentExtract_Text             "INTERNAL: No active parent extract - activity has incorrect localisation?"
@@ -578,9 +581,9 @@
 #define HQLERR_UnknownCompoundAssign_Text       "INTERNAL: Unrecognised compound assign %s"
 #define HQLERR_ReadSpillBeforeWriteFix_Text     "INTERNAL: Attempt to read spill file %s before it is written.  Try adding #option ('allowThroughSpill', false); to the query."
 
-#define WARNINGAT(e, x)                 reportWarning(e, x, x##_Text)
-#define WARNINGAT1(e, x, a)             reportWarning(e, x, x##_Text, a)
-#define WARNINGAT2(e, x, a, b)          reportWarning(e, x, x##_Text, a, b)
-#define WARNINGAT3(e, x, a, b, c)       reportWarning(e, x, x##_Text, a, b, c)
+#define WARNINGAT(cat, e, x)                 reportWarning(cat, e, x, x##_Text)
+#define WARNINGAT1(cat, e, x, a)             reportWarning(cat, e, x, x##_Text, a)
+#define WARNINGAT2(cat, e, x, a, b)          reportWarning(cat, e, x, x##_Text, a, b)
+#define WARNINGAT3(cat, e, x, a, b, c)       reportWarning(cat, e, x, x##_Text, a, b, c)
 
 #endif

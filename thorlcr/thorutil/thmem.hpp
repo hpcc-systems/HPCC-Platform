@@ -317,6 +317,7 @@ public:
         rows[numRows++] = row;
         return true;
     }
+    bool binaryInsert(const void *row, ICompare &compare, bool dropLast=false); // NB: takes ownership on success
     inline const void *query(rowidx_t i) const
     {
         if (i>=numRows)
@@ -449,7 +450,7 @@ public:
 
     //A thread calling the following functions must own the lock, or guarantee no other thread will access
     void sort(ICompare & compare, unsigned maxcores);
-    rowidx_t save(IFile &file, bool useCompression);
+    rowidx_t save(IFile &file, bool useCompression, const char *tracingPrefix);
     const void **getBlock(rowidx_t readRows);
     inline void noteSpilled(rowidx_t spilledRows)
     {

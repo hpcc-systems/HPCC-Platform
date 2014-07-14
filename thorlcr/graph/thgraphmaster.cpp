@@ -357,6 +357,36 @@ CMasterActivity::~CMasterActivity()
     delete [] data;
 }
 
+void CMasterActivity::addReadFile(IDistributedFile *file, bool temp)
+{
+    readFiles.append(*LINK(file));
+    if (!temp) // NB: Temps not listed in workunit
+        queryThorFileManager().noteFileRead(container.queryJob(), file);
+}
+
+IDistributedFile *CMasterActivity::queryReadFile(unsigned f)
+{
+    if (f>=readFiles.ordinality())
+        return NULL;
+    return &readFiles.item(f);
+}
+
+void CMasterActivity::preStart(size32_t parentExtractSz, const byte *parentExtract)
+{
+    CActivityBase::preStart(parentExtractSz, parentExtract);
+    IArrayOf<IDistributedFile> tmpFiles;
+    tmpFiles.swapWith(readFiles);
+    ForEachItemIn(f, tmpFiles)
+    {
+        IDistributedFile &file = tmpFiles.item(f);
+        IDistributedSuperFile *super = file.querySuperFile();
+        if (super)
+            getSuperFileSubs(super, readFiles, true);
+        else
+            readFiles.append(*LINK(&file));
+    }
+}
+
 MemoryBuffer &CMasterActivity::queryInitializationData(unsigned slave) const
 { // NB: not intended to be called by multiple threads.
     return data[slave].reset();
@@ -392,6 +422,11 @@ void CMasterActivity::main()
     }
 }
 
+void CMasterActivity::init()
+{
+    readFiles.kill();
+}
+
 void CMasterActivity::startProcess(bool async)
 {
     if (async)
@@ -408,6 +443,12 @@ bool CMasterActivity::wait(unsigned timeout)
     if (!asyncStart)
         return true;
     return threaded.join(timeout);
+}
+
+void CMasterActivity::kill()
+{
+    CActivityBase::kill();
+    readFiles.kill();
 }
 
 bool CMasterActivity::fireException(IException *_e)
@@ -464,6 +505,16 @@ void CMasterActivity::getXGMML(unsigned idx, IPropertyTree *edge)
     CriticalBlock b(progressCrit);
     if (progressInfo.isItem(idx))
         progressInfo.item(idx).getXGMML(edge);
+}
+
+void CMasterActivity::done()
+{
+    CActivityBase::done();
+    ForEachItemIn(s, readFiles)
+    {
+        IDistributedFile &file = readFiles.item(s);
+        file.setAccessed();
+    }
 }
 
 //////////////////////
@@ -1988,7 +2039,12 @@ public:
     virtual void getLinkedResult(unsigned & count, byte * * & ret)
     {
         ensure();
-        return result->getLinkedResult(count, ret);
+        result->getLinkedResult(count, ret);
+    }
+    virtual const void * getLinkedRowResult()
+    {
+        ensure();
+        return result->getLinkedRowResult();
     }
 };
 
@@ -2117,7 +2173,7 @@ void CMasterGraph::abort(IException *e)
 void CMasterGraph::serializeCreateContexts(MemoryBuffer &mb)
 {
     CGraphBase::serializeCreateContexts(mb);
-    Owned<IThorActivityIterator> iter = (queryOwner() && !isGlobal()) ? getIterator() : getTraverseIterator();
+    Owned<IThorActivityIterator> iter = getIterator();
     ForEach (*iter)
     {
         CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
@@ -2234,7 +2290,7 @@ void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
 
 void CMasterGraph::start()
 {
-    Owned<IThorActivityIterator> iter = getTraverseIterator();
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach (*iter)
         iter->query().queryActivity()->startProcess();
 }
@@ -2250,7 +2306,7 @@ void CMasterGraph::sendActivityInitData()
     for (; w<queryJob().querySlaves(); w++)
     {
         unsigned needActInit = 0;
-        Owned<IThorActivityIterator> iter = getTraverseIterator();
+        Owned<IThorActivityIterator> iter = getConnectedIterator();
         ForEach(*iter)
         {
             CGraphElementBase &element = iter->query();
@@ -2265,7 +2321,7 @@ void CMasterGraph::sendActivityInitData()
             try
             {
                 msg.rewrite(pos);
-                Owned<IThorActivityIterator> iter = getTraverseIterator();
+                Owned<IThorActivityIterator> iter = getConnectedIterator();
                 serializeActivityInitData(w, msg, *iter);
             }
             catch (IException *e)
@@ -2585,12 +2641,17 @@ void CMasterGraph::done()
                     {
                         wu.setown(&graph.queryJob().queryWorkUnit().lock());
                     }
-                    virtual void report(const char *name, const __int64 totaltime, const __int64 maxtime, const unsigned count)
+                    virtual void report(const char * stat, const char *description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
                     {
                         StringBuffer timerStr(graph.queryJob().queryGraphName());
                         timerStr.append("(").append(graph.queryGraphId()).append("): ");
-                        timerStr.append(name);
-                        wu->setTimerInfo(timerStr.str(), NULL, (unsigned)totaltime, count, (unsigned)maxtime);
+                        timerStr.append(description);
+
+                        StringBuffer wuScope;
+                        wuScope.append(graph.queryJob().queryGraphName()).append("(").append(graph.queryGraphId()).append(")");
+
+                        updateWorkunitTimeStat(wu, "thor", wuScope, stat, timerStr.str(), totaltime, count, maxtime);
+
                     }
                 } wureport(*this);
                 queryJob().queryTimeReporter().report(wureport);

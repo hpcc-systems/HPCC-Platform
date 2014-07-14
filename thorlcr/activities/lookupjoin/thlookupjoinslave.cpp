@@ -629,10 +629,6 @@ public:
     {
         return helper->match(lhs, rhsrow);
     }
-    inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *lhs, const void *rhsrow)
-    {
-        return helper->transform(rowBuilder, lhs, rhsrow);
-    }
     inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned numRows, const void **rows)
     {
         return helper->transform(rowBuilder, left, right, numRows, rows);
@@ -776,6 +772,7 @@ protected:
     rowidx_t nextRhsRow;
     unsigned keepLimit;
     unsigned joined;
+    unsigned joinCounter;
     OwnedConstThorRow defaultLeft;
 
     bool leftMatch, grouped;
@@ -979,6 +976,7 @@ protected:
                 if (NULL == rhsNext)
                 {
                     leftRow.setown(left->nextRow());
+                    joinCounter = 0;
                     if (leftRow)
                     {
                         eog = false;
@@ -1018,7 +1016,7 @@ protected:
                             leftMatch = true;
                             if (!exclude)
                             {
-                                size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, rhsNext);
+                                size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, rhsNext, ++joinCounter);
                                 if (sz)
                                 {
                                     OwnedConstThorRow row = rowBuilder.finalizeRowClear(sz);
@@ -1037,7 +1035,7 @@ protected:
                     }
                     if (!leftMatch && NULL == rhsNext && 0!=(flags & JFleftouter))
                     {
-                        size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, defaultRight);
+                        size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, defaultRight, 0);
                         if (sz)
                             ret.setown(rowBuilder.finalizeRowClear(sz));
                     }
@@ -1068,6 +1066,7 @@ public:
         leftITDL = rightITDL = NULL;
 
         joined = 0;
+        joinCounter = 0;
         leftMatch = false;
         returnMany = false;
 
@@ -1116,6 +1115,7 @@ public:
         gotRHS = false;
         nextRhsRow = 0;
         joined = 0;
+        joinCounter = 0;
         leftMatch = false;
         rhsNext = NULL;
         rhsTableLen = 0;
@@ -1386,7 +1386,7 @@ protected:
         else
         {
             /* NB: It is likely that there will be unflushed rows in the rhsNodeRows arrays after we are done here.
-            /* These will need flushing when all is done and clearNonLocalRows will need recalling to process rest
+             * These will need flushing when all is done and clearNonLocalRows will need recalling to process rest
              */
             ForEachItemIn(a, rhsNodeRows)
             {
@@ -1449,6 +1449,7 @@ protected:
  * 10) The LHS side is loaded and spilt and sorted if necessary
  * 11) A regular join helper is created to perform a local join against the two hash distributed sorted sides.
  */
+        bool rhsAlreadySorted = helper->isRightAlreadyLocallySorted();
         CMarker marker(*this);
         if (needGlobal)
         {
@@ -1460,7 +1461,7 @@ protected:
             }
             if (!hasBroadcastSpilt())
             {
-                if (stable)
+                if (stable && !rhsAlreadySorted)
                     rhs.setup(NULL, false, stableSort_earlyAlloc);
                 rhs.ensure(rhsRows);
             }
@@ -1486,7 +1487,7 @@ protected:
                         rows.kill(); // free up ptr table asap
                     }
                     // Have to keep broadcastSpillingLock locked until sort and calculate are done
-                    uniqueKeys = marker.calculate(rhs, compareRight, true);
+                    uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted);
                     rhsCollated = true;
                 }
             }
@@ -1592,18 +1593,19 @@ protected:
         if (localLookupJoin)
         {
             Owned<IThorRowLoader> rowLoader;
+            ICompare *cmp = rhsAlreadySorted ? NULL : compareRight;
             if (failoverToStdJoin)
             {
                 dbgassertex(!stable);
                 if (getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)) // for testing only (force to disk, as if spilt)
-                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, stableSort_none, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
+                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
                 else
-                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
+                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
             }
             else
             {
                 // i.e. will fire OOM if runs out of memory loading local right
-                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, stable ? stableSort_lateAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE));
+                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stable ? stableSort_lateAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE));
             }
 
             Owned<IRowStream> rightStream = rowLoader->load(right, abortSoon, false, &rhs);
@@ -1620,10 +1622,10 @@ protected:
 
                 rowLoader.clear();
 
-                // If stable already sorted by rowLoader
-                rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, !stable);
+                // If stable (and sort needed), already sorted by rowLoader
+                rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted && !stable);
 
-                Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), compareRight, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
+                Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
                 collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
                 collector->transferRowsIn(rhs); // can spill after this
 
@@ -1643,7 +1645,7 @@ protected:
                 if (grouped)
                     throw MakeActivityException(this, 0, "Degraded to standard join, LHS order cannot be preserved");
 
-                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(leftITDL), compareLeft));
+                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(leftITDL), helper->isLeftAlreadyLocallySorted() ? NULL : compareLeft));
                 left.setown(rowLoader->load(left, abortSoon, false));
                 leftITDL = inputs.item(0); // reset
                 ActPrintLog("LHS loaded/sorted");
@@ -1857,7 +1859,7 @@ public:
         rowProcessor.addBlock(sendItem); // NB: NULL indicates end
     }
 // IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         return SPILL_PRIORITY_LOOKUPJOIN;
     }

@@ -2479,8 +2479,7 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                 mapper.setMapping(transform, leftSelect);
                 break;
             default:
-                assertex(!"Missing entry...");
-                break;
+                throwUnexpected();
             }
 
             extractMeta(meta, dataset);
@@ -2508,7 +2507,8 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                 if (expr->queryAttribute(sort_KeyedAtom))
                 {
                     IHqlExpression * payloadAttr = expr->queryAttribute(_payload_Atom);
-                    unsigned payloadCount = payloadAttr ? (unsigned)getIntValue(payloadAttr->queryChild(0), 1) : 1;
+                    bool hasFileposition = getBoolAttribute(expr, filepositionAtom, true);
+                    unsigned payloadCount = payloadAttr ? (unsigned)getIntValue(payloadAttr->queryChild(0), 1) : hasFileposition ? 1 : 0;
                     unsigned payloadIndex = firstPayloadField(record, payloadCount);
                     unwindRecordAsSelects(sortExprs, record, queryActiveTableSelector(), payloadIndex);
                 }
@@ -2960,7 +2960,7 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
         }
     case no_translated:
         type.setown(parms.item(0).getType());
-        assertex(parms.ordinality()>1);     // should have a count or a length
+        assertex(parms.ordinality()>1 || hasStreamedModifier(type));     // should have a count or a length
         break;
     case no_inlinetable:
     case no_dataset_from_transform:

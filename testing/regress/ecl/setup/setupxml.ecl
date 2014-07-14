@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $; C := $.files('');
+import $;
+C := $.files(__PLATFORM__, false);
 
 set of string lines := [
     '<?xml version="1.0" encoding="UTF-8"?>',

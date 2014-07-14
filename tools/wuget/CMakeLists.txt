@@ -27,6 +27,7 @@ include_directories (
          ./../../system/jlib
          ./../../common/dllserver
          ./../../system/include 
+         ./../../common/workunit
     )
 
 ADD_DEFINITIONS( -DMODULE_PRIORITY=1 -D_CONSOLE )
@@ -36,6 +37,7 @@ HPCC_ADD_EXECUTABLE ( wuget ${SRCS} )
 target_link_libraries ( wuget
          jlib
          dllserver
+         workunit
          )
 install ( TARGETS wuget RUNTIME DESTINATION ${EXEC_DIR} )
 

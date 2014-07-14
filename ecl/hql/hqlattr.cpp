@@ -3632,6 +3632,8 @@ bool isArrayRowset(ITypeInfo * t)
     case type_array:
     case type_dictionary:
         {
+            if (hasStreamedModifier(t))
+                return false;
             if (hasLinkCountedModifier(t))
                 assertex(hasLinkCountedModifier(t->queryChildType()));
             if (hasOutOfLineModifier(t) || hasLinkCountedModifier(t))

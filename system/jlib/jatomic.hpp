@@ -51,6 +51,7 @@ typedef volatile long atomic_t;
 #define atomic_set(v,i)                 ((*v) = (i))
 #define atomic_xchg(i, v)               InterlockedExchange(v, i)
 #define atomic_add(v,i)                 InterlockedExchangeAdd(v,i)
+#define atomic_add_and_read(v,i)        InterlockedAdd(v,i)
 #define atomic_add_exchange(v, i)       InterlockedExchangeAdd(v,i)
 #define atomic_xchg_ptr(p, v)           InterlockedExchangePointer(v,p)
 #if defined (_MSC_VER) && (_MSC_VER <= 1200)
@@ -111,8 +112,14 @@ static __inline__ int atomic_xchg(int i, atomic_t *v)
 
 static __inline__ void atomic_add(atomic_t *v,int i)
 {
-    // (*v)+=i;
+    // (*v) += i;
     __sync_add_and_fetch(&v->counter,i);
+}
+
+static __inline__ int atomic_add_and_read(atomic_t *v,int i)
+{
+    // (*v) += i; return *v;
+    return __sync_add_and_fetch(&v->counter,i);
 }
 
 static __inline__ int atomic_add_exchange(atomic_t *v,int i)
@@ -149,6 +156,7 @@ int jlib_decl poor_atomic_dec_and_read(atomic_t * v);
 bool jlib_decl poor_atomic_inc_and_test(atomic_t * v);
 int jlib_decl poor_atomic_xchg(int i, atomic_t * v);
 void jlib_decl poor_atomic_add(atomic_t * v, int i);
+int jlib_decl poor_atomic_add_and_read(atomic_t * v, int i);
 int jlib_decl poor_atomic_add_exchange(atomic_t * v, int i);
 bool jlib_decl poor_atomic_cas(atomic_t * v, int newvalue, int expectedvalue);
 void jlib_decl *poor_atomic_xchg_ptr(void *p, void **v);
@@ -165,6 +173,7 @@ void jlib_decl poor_compiler_memory_barrier();
 #define atomic_set(v,i)                 ((*v) = (i))
 #define atomic_xchg(i, v)               poor_atomic_xchg(i, v)
 #define atomic_add(v,i)                 poor_atomic_add(v, i)
+#define atomic_add_and_read(v,i)        poor_atomic_add_and_read(v, i)
 #define atomic_add_exchange(v, i)       poor_atomic_add_exchange(v, i)
 #define atomic_cas(v,newvalue,expectedvalue)    poor_atomic_cas(v,newvalue,expectedvalue)
 #define atomic_xchg_ptr(p, v)               poor_atomic_xchg_ptr(p, v)

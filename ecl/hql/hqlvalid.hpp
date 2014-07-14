@@ -20,7 +20,7 @@
 #include "hqlexpr.hpp"
 
 //Checking functions
-extern HQL_API void reportAbstractModule(IErrorReceiver * errors, IHqlExpression * expr, const ECLlocation & errpos);
+extern HQL_API void reportAbstractModule(IErrorReceiver & errorProcessor, IHqlExpression * expr, const ECLlocation & errpos);
 extern HQL_API IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const ECLlocation & errpos);
 extern HQL_API IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const IHqlExpression * locationExpr);
 extern HQL_API IHqlExpression * createLocationAttr(ISourcePath * filename, int lineno, int column, int position);

@@ -28,13 +28,13 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/navigation.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/soap_page.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/sso_create_session.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/ui_engine.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/ui_overrides.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/yuitree.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/xmlformatter.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl3_form.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl3_boxform.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl3_links.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/wsecl3_url.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl3_tabview.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl3_xmltest.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl3_jsontest.xsl

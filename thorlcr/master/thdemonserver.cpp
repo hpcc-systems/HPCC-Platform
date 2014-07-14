@@ -41,7 +41,11 @@ private:
     
     void doReportGraph(IWUGraphProgress *progress, CGraphBase *graph, bool finished)
     {
-        Owned<IThorActivityIterator> iter = (graph->queryOwner() && !graph->isGlobal()) ? graph->getIterator() : graph->getTraverseIterator();
+        Owned<IThorActivityIterator> iter;
+        if (graph->queryOwner() && !graph->isGlobal())
+            iter.setown(graph->getIterator()); // Local child graphs still send progress, but aren't connected in master
+        else
+            iter.setown(graph->getConnectedIterator());
         ForEach (*iter)
         {
             CMasterGraphElement &container = (CMasterGraphElement &)iter->query();
@@ -84,10 +88,12 @@ private:
     void reportStatus(IWorkUnit *wu, CGraphBase &graph, unsigned startTime, bool finished, bool success=true)
     {
         const char *graphname = graph.queryJob().queryGraphName();
-        StringBuffer timer;
+        StringBuffer timer, graphScope;
         formatGraphTimerLabel(timer, graphname, 0, graph.queryGraphId());
+        formatGraphTimerScope(graphScope, graphname, 0, graph.queryGraphId());
         unsigned duration = msTick()-startTime;
-        wu->setTimerInfo(timer.str(), NULL, duration, 1, 0);
+        updateWorkunitTimeStat(wu, "thor", graphScope, "totalTime", timer, milliToNano(duration), 1, 0);
+
         if (finished)
         {
             if (memcmp(graphname,"graph",5)==0)

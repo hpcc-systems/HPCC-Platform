@@ -75,6 +75,7 @@ pkgCmd(){
             echo "Bad option type."
             exit 1
         fi
+        [ $WITH_PLUGINS -eq 1 ] && PKGCMD="$PKGCMD --nodeps"
     else
         echo "BAD Package type."
         exit 1
@@ -194,7 +195,12 @@ if [ -z $pkgtype ]; then
     OSPKG="deb"
 else
     OSPKG="rpm"
+    WITH_PLUGINS=0
+    basename $PKG | grep -i with-plugins
+    [ $? -eq 0 ] && WITH_PLUGINS=1
 fi
+
+
 
 installPkg
 checkUser "hpcc"

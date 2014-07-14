@@ -67,8 +67,8 @@ class jlib_decl Thread : public CInterface, public IThread
 private:
     ThreadId threadid;
     unsigned short stacksize; // in 4K blocks
-    char prioritydelta;
-    char nicelevel;
+    int prioritydelta;
+    int nicelevel;
 
     bool alive;
     unsigned tidlog;
@@ -103,9 +103,9 @@ public:
     Thread() { init(NULL); }
     ~Thread();
 
-    void adjustPriority(char delta);
+    void adjustPriority(int delta);
     bool isCurrentThread() const;
-    void setNice(char nicelevel);
+    void setNice(int nicelevel);
     void setStackSize(size32_t size);               // required stack size in bytes - called before start() (obviously)
     const char *getName() { const char *ret = ithreadname?ithreadname->get():NULL; return ret?ret:"unknown"; }
     bool isAlive() { return alive; }
@@ -250,7 +250,8 @@ interface IPipeProcess: extends IInterface
 {
     virtual bool run(const char *title,const char *prog, const char *dir,
                        bool hasinput,bool hasoutput,bool haserror=false,
-                       size32_t stderrbufsize=0) = 0;               // set to non-zero to automatically buffer stderror output
+                       size32_t stderrbufsize=0,                      // set to non-zero to automatically buffer stderror output
+                       bool newProcessGroup=false) = 0;
     virtual bool hasInput() = 0;                                    // i.e. can write to pipe
     virtual size32_t write(size32_t sz, const void *buffer) = 0;    // write pipe process standard output
     virtual bool hasOutput() = 0;                                   // i.e. can read from pipe

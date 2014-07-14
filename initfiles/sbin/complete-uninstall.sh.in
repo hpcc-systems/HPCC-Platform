@@ -20,20 +20,80 @@
 
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 
+usage() {
+   cat << EOF
+
+    $(basename $0) [OPTIONS]
+       -f, --force: force to remove hpccsystems-platform.
+       -e, --env: leave environment configuration files behind.
+EOF
+   exit 0
+}
+
+message() {
+   cat << MESSAGE_MARKER
+
+   If you get an uninstall error using $1, use the -f (--force) option.
+   This will force the uninstall of hpccsystems-platform.
+
+MESSAGE_MARKER
+}
+
+
+force=0
+leaveenv=0
+
+TEMP=$(/usr/bin/getopt -o efh --long env,help,force -- "$@")
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+        -f|--force) force=1
+            shift ;;
+        -e|--env) leaveenv=1
+            shift ;;
+        -h|--help) usage
+                   shift ;;
+        --) shift ; break ;;
+        *) usage ;;
+    esac
+done
+
+
 set_environmentvars
 
 if [ -e /etc/debian_version ]; then
-    dpkg --purge hpccsystems-platform
+    echo "Removing DEB"
+    if [ $force -eq 0 ]; then
+        dpkg --purge hpccsystems-platform
+        if [ $? -ne 0 ]; then
+           message dpkg
+           exit 1
+        fi
+    else
+        dpkg --purge --force-all hpccsystems-platform
+    fi
+
 elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
     echo "Removing RPM"
-    rpm -e hpccsystems-platform
+    if [ $force -eq 0 ]; then
+       rpm -e hpccsystems-platform
+       if [ $? -ne 0 ]; then
+           message rpm
+           exit 1
+       fi
+    else
+       rpm -e --nodeps hpccsystems-platform
+    fi
 fi
 
 echo "Removing Directory - ${path}"
 rm -rf ${path}
 
-echo "Removing Directory - ${configs}"
-rm -rf ${configs}
+if [ $leaveenv -eq 0 ]; then
+    echo "Removing Directory - ${configs}"
+    rm -rf ${configs}
+fi
 
 echo "Removing Directory - ${lock}"
 rm -rf ${lock}

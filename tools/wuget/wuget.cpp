@@ -17,6 +17,7 @@
 
 #include "jlib.hpp"
 #include "thorplugin.hpp"
+#include "workunit.hpp"
 
 void usage(const char *progname)
 {
@@ -25,6 +26,7 @@ void usage(const char *progname)
 
 int main(int argc, char **argv)
 {
+    InitModuleObjects();
     bool doManifestInfo = false;
     bool doWorkunit = false;
     for (int i = 1; i < argc; i++)
@@ -54,6 +56,9 @@ int main(int argc, char **argv)
                 StringBuffer xml;
                 if (getWorkunitXMLFromFile(argv[i], xml))
                 {
+                    Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+                    wu->loadXML(xml);
+                    exportWorkUnitToXML(wu, xml.clear(), true, false);
                     printf("%s\n", xml.str());
                 }
                 else

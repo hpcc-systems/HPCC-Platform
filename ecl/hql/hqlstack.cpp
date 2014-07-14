@@ -18,18 +18,6 @@
 #include <string.h>
 #include "hqlstack.hpp"
 
-FuncCallStack::FuncCallStack() {
-    sp = 0;
-    tos = DEFAULTSTACKSIZE;
-    stackbuf = (char *)malloc(tos);
-    numToFree = 0;
-#ifdef __64BIT__
-    numFpRegs = 0;
-    for (unsigned i=0;i<MAXFPREGS;i++)
-        fpRegs[i] = 0.0;
-#endif
-}
-
 FuncCallStack::FuncCallStack(int size) {
     if(size < DEFAULTSTACKSIZE)
         size = DEFAULTSTACKSIZE;

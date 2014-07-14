@@ -38,8 +38,6 @@ CRoxieDeploymentEngine::CRoxieDeploymentEngine(IEnvDeploymentEngine& envDepEngin
 
 void CRoxieDeploymentEngine::checkInstance(IPropertyTree& node) const
 {
-    if (!m_process.getPropInt("@numChannels", 0))
-        throw MakeStringException(0, "Number of channels must be set for process %s", m_name.get());
     CDeploymentEngine::checkInstance(node);
 }
 

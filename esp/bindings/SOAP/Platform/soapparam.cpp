@@ -24,12 +24,12 @@
 #include "soapmessage.hpp"
 #include "soapparam.hpp"
 
-void BaseEspParam::toJSON(IEspContext *ctx, StringBuffer &s, const char *tagname)
+void BaseEspParam::toJSON(IEspContext *ctx, StringBuffer &s, const char *tagname, bool encode)
 {
     if (isNil && nilBH==nilRemove)
         return;
     appendJSONName(s, tagname);
-    toJSONValue(s);
+    toJSONValue(s, encode);
 }
 
 void BaseEspParam::toXML(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *prefix, bool encode)
@@ -47,7 +47,7 @@ void BaseEspParam::toStr(IEspContext* ctx, StringBuffer &s, const char *tagname,
         return;
 
     if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
-        return toJSON(ctx, s, tagname);
+        return toJSON(ctx, s, tagname, true);
     toXML(ctx, s, tagname, prefix, encode);
 }
 
@@ -107,9 +107,20 @@ void SoapStringParam::toXMLValue(StringBuffer &s, bool encode)
         encodeUtf8XML(value.str(), s, getEncodeNewlines() ? ENCODE_NEWLINES : 0);
 }
 
-void SoapStringParam::toJSONValue(StringBuffer &s)
+void SoapStringParam::toStr(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *basepath, bool encode, const char *xsdtype, const char *prefix, bool encodeJSON)
 {
-    appendJSONValue(s, NULL, (isNil) ? NULL : value.str());
+    if (isNil && nilBH!=nilIgnore)
+        return;
+
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
+        toJSON(ctx, s, tagname, encodeJSON);
+    else
+        toXML(ctx, s, tagname, prefix, encode);
+}
+
+void SoapStringParam::toJSONValue(StringBuffer &s, bool encode)
+{
+    appendJSONStringValue(s, NULL, (isNil) ? NULL : value.str(), encode, encode);
 }
 
 void SoapStringParam::addRpcValue(IRpcMessage &rpc_call, const char *tagname, const char *basepath, const char *xsdtype, const char *prefix, bool *encodex)

@@ -134,6 +134,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         //can't do a skip inside an inline project - since the generated code doesn't allow "continue" to be used.
         if (transformContainsSkip(expr->queryChild(1)))
             return 0;
+        //fallthrough
     case no_newusertable:
         {
             if (expr->hasAttribute(prefetchAtom))
@@ -1025,6 +1026,9 @@ void ParentExtract::beginReuseExtract()
 
 void ParentExtract::beginChildActivity(BuildCtx & declareCtx, BuildCtx & startCtx, GraphLocalisation childLocalisation, IHqlExpression * colocal, bool nested, bool ignoreSelf, ActivityInstance * activityRequiringCast)
 {
+    if (type == PETcallback)
+        assertex(ignoreSelf);
+
     //MORE: If we ever generate grand children - nested classes then the following isn't going to work
     //because accessing colocal->exNNN isn't going to get at the extract defined in the child class+passed to the grandchild.
     //Simplest would be to define the builders in the activity, and access them as activity->exXXX in the (grand)child.
@@ -1039,14 +1043,16 @@ void ParentExtract::beginChildActivity(BuildCtx & declareCtx, BuildCtx & startCt
             if (!colocal && bound != boundExtract.expr)
                 break;
 
+            //If this is the parent extract for a local callback, it will be passed as a parameter, so it shouldn't
+            //be added as a member of the child class
+            if (ignoreSelf && (bound == boundExtract.expr))
+                continue;
+
             declareCtx.addDeclare(bound);
 
             OwnedHqlExpr src;
             if (bound == boundExtract.expr)
             {
-                if (ignoreSelf)
-                    continue;
-
                 //MORE: This cast is a hack.  We should process const correctly in helper functions etc.
                 if (!nested)
                     src.setown(createVariable("(byte *)pe", bound->getType()));
@@ -1669,14 +1675,16 @@ void ClassEvalContext::createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, I
     ctxs.declarectx.associateExpr(value, tgt);
 }
 
-void ClassEvalContext::doCallNestedHelpers(const char * member, const char * activity)
+void ClassEvalContext::doCallNestedHelpers(const char * member, const char * activity, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt)
 {
     StringBuffer s;
 
     onCreate.childctx.addQuoted(s.clear().append(member).append(".onCreate(ctx, ").append(activity).append(");"));
 
-    if (requiresOnStart())
-        onStart.childctx.addQuoted(s.clear().append(member).append(".onStart();"));
+    BuildCtx childctx(onStart.childctx);
+    if (!requiresOnStart())
+        childctx.addConditionalGroup(onStartStmt);
+    childctx.addQuoted(s.clear().append(member).append(".onStart();"));
 }
 
 
@@ -1825,9 +1833,9 @@ void GlobalClassEvalContext::ensureHelpersExist()
 {
 }
 
-void GlobalClassEvalContext::callNestedHelpers(const char * member)
+void GlobalClassEvalContext::callNestedHelpers(const char * member, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt)
 {
-    doCallNestedHelpers(member, "this");
+    doCallNestedHelpers(member, "this", onCreateStmt, onStartStmt);
 }
 
 //---------------------------------------------------------------------------
@@ -1849,9 +1857,9 @@ void ActivityEvalContext::ensureHelpersExist()
 }
 
 
-void ActivityEvalContext::callNestedHelpers(const char * member)
+void ActivityEvalContext::callNestedHelpers(const char * member, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt)
 {
-    doCallNestedHelpers(member, "this");
+    doCallNestedHelpers(member, "this", onCreateStmt, onStartStmt);
 }
 
 ActivityInstance * ActivityEvalContext::queryActivity()
@@ -1877,6 +1885,7 @@ IHqlExpression * NestedEvalContext::createGraphLookup(unique_id_t id, bool isChi
 
 void NestedEvalContext::ensureHelpersExist()
 {
+    assertex(parentExtract);
     if (!helpersExist)
     {
         if (parent)
@@ -1887,11 +1896,11 @@ void NestedEvalContext::ensureHelpersExist()
 
         //void onStart(ICodeContext * _ctx, <ActivityClass> * _activity)
         BuildCtx oncreatectx(onCreate.declarectx);
-        oncreatectx.addQuotedCompound(s.clear().append("inline void onCreate(ICodeContext * _ctx, ").append(rootActivity->className).append(" * _activity)"));
+        IHqlStmt * onCreateStmt  = oncreatectx.addQuotedCompound(s.clear().append("inline void onCreate(ICodeContext * _ctx, ").append(rootActivity->className).append(" * _activity)"));
         oncreatectx.addQuoted(s.clear().append("activity = _activity;"));
-        oncreatectx.addQuoted("ctx = _ctx;");
+        oncreatectx.addQuotedLiteral("ctx = _ctx;");
 
-        onCreate.declarectx.addQuoted("ICodeContext * ctx;");
+        onCreate.declarectx.addQuotedLiteral("ICodeContext * ctx;");
         onCreate.declarectx.addQuoted(s.clear().append(rootActivity->className).append(" * activity;"));
         onCreate.declarectx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
 
@@ -1899,17 +1908,17 @@ void NestedEvalContext::ensureHelpersExist()
 
         //void onStart(const byte * parentExtract)
         BuildCtx onstartctx(onStart.declarectx);
-        if (requiresOnStart())
-        {
-            onstartctx.addQuotedCompound("inline void onStart()");
-            if (parentExtract)
-                parentExtract->beginChildActivity(onStart.declarectx, onstartctx, GraphCoLocal, colocalMember, true, parentExtract->canSerializeFields(), NULL);
+        IHqlStmt * onStartStmt = onstartctx.addQuotedCompound("inline void onStart()");
+        if (parentExtract)
+            parentExtract->beginChildActivity(onStart.declarectx, onstartctx, GraphCoLocal, colocalMember, true, parentExtract->canSerializeFields(), NULL);
 
-            onstartctx.associateExpr(insideOnStartMarker, NULL);
-            onStart.createFunctionStructure(translator, onstartctx, false, NULL);
-        }
+        onstartctx.associateExpr(insideOnStartMarker, NULL);
+        onStart.createFunctionStructure(translator, onstartctx, false, NULL);
 
-        parent->callNestedHelpers(memberName);
+        parent->callNestedHelpers(memberName, onCreateStmt, onStartStmt);
+        if (!requiresOnStart())
+            onStartStmt->finishedFramework();
+
         helpersExist = true;
     }
 }
@@ -1932,9 +1941,9 @@ bool NestedEvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, 
     return parent->isRowInvariant(expr) || parentExtract->canEvaluate(expr);
 }
 
-void NestedEvalContext::callNestedHelpers(const char * member)
+void NestedEvalContext::callNestedHelpers(const char * member, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt)
 {
-    doCallNestedHelpers(member, "activity");
+    doCallNestedHelpers(member, "activity", onCreateStmt, onStartStmt);
 }
 
 //---------------------------------------------------------------------------
@@ -1947,9 +1956,9 @@ MemberEvalContext::MemberEvalContext(HqlCppTranslator & _translator, ParentExtra
     colocalMember.set(colocalSameClassPreserveExpr);
 }
 
-void MemberEvalContext::callNestedHelpers(const char * member)
+void MemberEvalContext::callNestedHelpers(const char * member, IHqlStmt * onCreateStmt, IHqlStmt * onStartStmt)
 {
-    parent->callNestedHelpers(member);
+    parent->callNestedHelpers(member, onCreateStmt, onStartStmt);
 }
 
 IHqlExpression * MemberEvalContext::createGraphLookup(unique_id_t id, bool isChild)

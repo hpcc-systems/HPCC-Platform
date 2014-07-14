@@ -27,6 +27,6 @@ IHqlExpression * resourceLoopGraph(HqlCppTranslator & translator, HqlExprCopyArr
 IHqlExpression * resourceNewChildGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned numResults);
 IHqlExpression * resourceRemoteGraph(HqlCppTranslator & translator, IHqlExpression * expr, ClusterType targetClusterType, unsigned clusterSize);
 
-IHqlExpression * convertSpillsToActivities(IHqlExpression * expr);
+IHqlExpression * convertSpillsToActivities(IHqlExpression * expr, bool createGraphResults);
 
 #endif

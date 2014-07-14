@@ -379,7 +379,7 @@
         </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="DfuXRef">
-        <xs:attribute name="xrefInterval" type="xs:nonNegativeInteger" default="0">
+        <xs:attribute name="xrefInterval" type="xs:nonNegativeInteger" default="672">
             <xs:annotation>
                 <xs:appinfo>
                     <tooltip>minimum interval between running DFU XREF (in hours, 0 disables).</tooltip>

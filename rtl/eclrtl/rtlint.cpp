@@ -323,9 +323,19 @@ unsigned __int64 rtlReadSwapUInt8(const void * _data)
 }
 
 //no sign extension issues, so same functions can be used for signed and unsigned.
+void rtlWriteSwapInt2(void * _data, unsigned value)
+{
+    _cpyrev2(_data, &value);
+}
+
 void rtlWriteSwapInt3(void * _data, unsigned value)                     
 { 
     _cpyrev3(_data, &value);
+}
+
+void rtlWriteSwapInt4(void * _data, unsigned value)
+{
+    _cpyrev4(_data, &value);
 }
 
 void rtlWriteSwapInt5(void * _data, unsigned __int64 value)     
@@ -342,6 +352,12 @@ void rtlWriteSwapInt7(void * _data, unsigned __int64 value)
 { 
     _cpyrev7(_data, &value);
 }
+
+void rtlWriteSwapInt8(void * _data, unsigned __int64 value)
+{
+    _cpyrev8(_data, &value);
+}
+
 
 //The following functions are identical to the rtlReadSwapIntX functions for little endian.
 //big endian functions would be different.
@@ -573,6 +589,24 @@ void rtlWriteInt(void * self, __int64 val, unsigned length)
     case 6: rtlWriteInt6(self, val); break;
     case 7: rtlWriteInt7(self, val); break;
     case 8: rtlWriteInt8(self, val); break;
+    default:
+        rtlFailUnexpected();
+        break;
+    }
+}
+
+void rtlWriteSwapInt(void * self, __int64 val, unsigned length)
+{
+    switch (length)
+    {
+    case 1: rtlWriteSwapInt1(self, val); break;
+    case 2: rtlWriteSwapInt2(self, val); break;
+    case 3: rtlWriteSwapInt3(self, val); break;
+    case 4: rtlWriteSwapInt4(self, val); break;
+    case 5: rtlWriteSwapInt5(self, val); break;
+    case 6: rtlWriteSwapInt6(self, val); break;
+    case 7: rtlWriteSwapInt7(self, val); break;
+    case 8: rtlWriteSwapInt8(self, val); break;
     default:
         rtlFailUnexpected();
         break;

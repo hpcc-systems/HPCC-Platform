@@ -28,9 +28,6 @@
       <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
       <link type="text/css" rel="StyleSheet" href="files_/css/sortabletable.css"/>
       <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-            <script type="text/javascript" src="files_/scripts/sortabletable.js">
-                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-            </script>
             <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
                 <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
             </script>
@@ -60,9 +57,6 @@
                 function onLoad()
                 {
                     initSelection('resultsTable');
-                    var table = document.getElementById('resultsTable');
-                    if (table)
-                        sortableTable = new SortableTable(table, table, ["None", "String", "String", "None"]);
                 }
 
                 function onSubmit(o, theaction)
@@ -75,8 +69,6 @@
                 {
                     document.getElementById('DoUpdate').value=value;
                 }
-
-                var sortableTable = null;
             ]]></xsl:text>
             </script>
         </head>
@@ -194,20 +186,22 @@
                 </form>
             </td>
 
-            <xsl:if test="scopeScansStatus/retcode=0">
-              <xsl:if test="scopeScansStatus/isEnabled=0">
-                <td>
-                  <form action="/ws_access/EnableScopeScans">
-                    <input id="EnableScopeScansBtn" class="sbutton" type="submit"  name="action" value="Enable Scope Scans" onclick="return confirm('Are you sure you want to enable Scope Scans?')"/>
-                  </form>
-                </td>
-              </xsl:if>
-              <xsl:if test="scopeScansStatus/isEnabled=1">
-                <td>
-                  <form action="/ws_access/DisableScopeScans">
-                    <input id="DisableScopeScansBtn" class="sbutton" type="submit"  name="action" value="Disable Scope Scans" onclick="return confirm('Are you sure you want to disable Scope Scans?')"/>
-                  </form>
-                </td>
+            <xsl:if test="rtype='file' and rtitle='FileScope'">
+              <xsl:if test="scopeScansStatus/retcode=0">
+                <xsl:if test="scopeScansStatus/isEnabled=0">
+                  <td>
+                    <form action="/ws_access/EnableScopeScans">
+                      <input id="EnableScopeScansBtn" class="sbutton" type="submit"  name="action" value="Enable Scope Scans" onclick="return confirm('Are you sure you want to enable Scope Scans? Changes will revert to configuration settings on DALI reboot.')"/>
+                    </form>
+                  </td>
+                </xsl:if>
+                <xsl:if test="scopeScansStatus/isEnabled=1">
+                  <td>
+                    <form action="/ws_access/DisableScopeScans">
+                      <input id="DisableScopeScansBtn" class="sbutton" type="submit"  name="action" value="Disable Scope Scans" onclick="return confirm('Are you sure you want to disable Scope Scans?  Changes will revert to configuration settings on DALI reboot.')"/>
+                    </form>
+                  </td>
+                </xsl:if>
               </xsl:if>
             </xsl:if>
 

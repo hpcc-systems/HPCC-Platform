@@ -3603,7 +3603,7 @@ void XmlSchemaBuilder::addSchemaPrefix(bool hasMixedContent)
     if (addHeader)
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     xml.append(
-    "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
+    "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:hpcc=\"urn:hpccsystems:xsd:appinfo\" elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\n"
         "<xs:element name=\"Dataset\">"
             "<xs:complexType>"
                 "<xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">\n"
@@ -3724,7 +3724,7 @@ void XmlSchemaBuilder::getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type)
     }
 }
 
-void XmlSchemaBuilder::appendField(StringBuffer &s, const char * name, ITypeInfo & type)
+void XmlSchemaBuilder::appendField(StringBuffer &s, const char * name, ITypeInfo & type, bool keyed)
 {
     const char * tag = name;
     if (*tag == '@')
@@ -3750,11 +3750,19 @@ void XmlSchemaBuilder::appendField(StringBuffer &s, const char * name, ITypeInfo
         if (*name == '@')
             s.append(" use=\"required\"");
     }
-
-    s.append("/>\n");
+    if (keyed)
+    {
+        s.append("><xs:annotation><xs:appinfo hpcc:keyed=\"true\"/></xs:annotation>");
+        if (*name == '@')
+            s.append("</xs:attribute>\n");
+        else
+            s.append("</xs:element>\n");
+    }
+    else
+        s.append("/>\n");
 }
 
-void XmlSchemaBuilder::addField(const char * name, ITypeInfo & type)
+void XmlSchemaBuilder::addField(const char * name, ITypeInfo & type, bool keyed)
 {
     if (xml.length() == 0)
         addSchemaPrefix();
@@ -3765,10 +3773,10 @@ void XmlSchemaBuilder::addField(const char * name, ITypeInfo & type)
     if (*name == '@')
     {
         if (attributes.length())
-            appendField(attributes.tos(), name, type);
+            appendField(attributes.tos(), name, type, keyed);
     }
     else
-        appendField(xml, name, type);
+        appendField(xml, name, type, keyed);
 }
 
 void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITypeInfo & type)
@@ -3923,7 +3931,7 @@ bool XmlSchemaBuilder::addSingleFieldDataset(const char * name, const char * chi
     }
 
     xml.append("<xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">").newline();
-    addField(childname, type);
+    addField(childname, type, false);
     xml.append("</xs:sequence>").newline();
 
     if (name && *name)

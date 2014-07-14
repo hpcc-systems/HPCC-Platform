@@ -77,6 +77,7 @@ public:
     }
     virtual void done()
     {
+        CDiskReadMasterVF::done();
         IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
         if (0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
             container.queryTempHandler()->deregisterFile(fileName, fileDesc->queryProperties().getPropBool("@pausefile"));
@@ -165,8 +166,8 @@ public:
         {
             if (!helper->hasSegmentMonitors() && !helper->hasFilter() && !(helper->getFlags() & TDXtemporary))
             {
-                Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()));
-                if (file.get() && canMatch)
+                IDistributedFile *file = queryReadFile(0);
+                if (file && canMatch)
                 {
                     if (0 != (TDRunfilteredcount & helper->getFlags()) && file->queryAttributes().hasProp("@recordCount"))
                     {

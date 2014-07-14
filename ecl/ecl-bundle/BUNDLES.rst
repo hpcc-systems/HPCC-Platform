@@ -45,3 +45,11 @@ Dependencies
 A bundle can specify dependencies on zero or more other modules, using the DependsOn string set.
 After the name of the bundle, a version or version range can be specified to indicate that a particular
 version of the bundle is required.
+
+Installing a bundle
+===================
+To install a bundle to your development machine, use the ecl command line tool: 
+
+   ecl bundle install <bundlefile>.ecl 
+
+For complete details, see the Client Tools Manual, available in the download section of hpccsystems.com .

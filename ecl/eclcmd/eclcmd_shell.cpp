@@ -34,6 +34,8 @@
 
 #ifdef _WIN32
 #include "process.h"
+#else
+#include <pwd.h>
 #endif
 
 int EclCMDShell::callExternal(ArgvIterator &iter)
@@ -109,15 +111,13 @@ int EclCMDShell::run()
 
         if (!optIniFilename)
         {
+            StringBuffer fn;
             if (checkFileExists(INIFILE))
                 optIniFilename.set(INIFILE);
-            else
-            {
-                StringBuffer fn(SYSTEMCONFDIR);
-                fn.append(PATHSEPSTR).append(DEFAULTINIFILE);
-                if (checkFileExists(fn))
-                    optIniFilename.set(fn);
-            }
+            else if (getHomeDir(fn) && checkFileExists(addPathSepChar(fn).append(INIFILE)))
+                optIniFilename.set(fn);
+            else if (fn.set(SYSTEMCONFDIR).append(PATHSEPSTR).append(DEFAULTINIFILE))
+                optIniFilename.set(fn);
         }
 
         globals.setown(createProperties(optIniFilename, true));
@@ -198,7 +198,13 @@ void EclCMDShell::usage()
            "   activate    activate a published query\n"
            "   deactivate  deactivate the given query alias name\n"
            "   queries     show or manipulate queries and querysets\n"
+           "   packagemap  manage HPCC packagemaps\n"
+           "   bundle      manage ECL bundles\n"
            "   roxie       commands specific to roxie clusters\n"
+           "   abort       abort workunit(s) for WUID or job name\n"
+           "   status      show workunit(s) current status for WUID or job name\n"
+           "   getname     provide job name from WUID\n"
+           "   getwuid     provide WUID from job name\n"
            "\nRun 'ecl help <command>' for more information on a specific command\n\n"
     );
 }

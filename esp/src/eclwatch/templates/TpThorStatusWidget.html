@@ -1,0 +1,62 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.Summary}'" data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
+                </div>
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <h2>
+                        <span id="${id}Name" class="bold">${i18n.Name}</span>
+                    </h2>
+                    <form id="${id}SummaryForm">
+                        <ul>
+                            <li>
+                                <label class="Prompt" for="${id}Queue">${i18n.Queue}:</label>
+                                <div id="${id}Queue"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}Group">${i18n.NodeGroup}:</label>
+                                <div id="${id}Group"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}ThorMasterIPAddress">${i18n.ThorMasterAddress}:</label>
+                                <div id="${id}ThorMasterIPAddress"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}Port">${i18n.Port}:</label>
+                                <div id="${id}Port"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}StartTime">${i18n.Started}:</label>
+                                <div id="${id}StartTime"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}Wuid">${i18n.WUID}:</label>
+                                <div id="${id}Wuid"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}GraphSummary">${i18n.Graph}:</label>
+                                <div id="${id}GraphSummary"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="${id}SubGraphDuration">${i18n.Duration}:</label>
+                                <div id="${id}SubGraphDuration"></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="LogFile">${i18n.LogFile}:</label>
+                                <div id="${id}LogFile"></div>
+                            </li>
+                        </ul>
+                    </form>
+                </div>
+            </div>
+            <div id="${id}_Charts" title="${i18n.Usage}" style="padding: 0px; border:0px; border-color:none; overflow: hidden" data-dojo-type="dijit.layout.ContentPane">
+            </div>
+            <div id="${id}_Log" title="${i18n.LogFile}" style="padding: 0px; border:0px; border-color:none; overflow: hidden" data-dojo-type="dijit.layout.ContentPane">
+            </div>
+        </div>
+    </div>
+</div>

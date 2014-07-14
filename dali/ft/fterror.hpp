@@ -72,6 +72,8 @@
 #define DFTERR_CannotFindLastXmlRecord          8099
 #define DFTERR_CouldNotOpenCompressedFile       8100
 #define DFTERR_EndOfXmlRecordNotFound           8101
+#define DFTERR_EndOfCsvRecordNotFound           8102
+#define DFTERR_EndOfUtfRecordNotFound           8103
 
 //Internal errors
 #define DFTERR_UnknownFormatType                8190
@@ -132,6 +134,8 @@
 #define DFTERR_CannotFindFirstXmlRecord_Text    "Could not find the start of the first record"
 #define DFTERR_CouldNotOpenCompressedFile_Text  "Could not open file %s as compressed file"
 #define DFTERR_EndOfXmlRecordNotFound_Text      "End of XML record not found (need to increase maxRecordSize?)! At offset:%"I64F"d, record size (>%d bytes) is larger than expected maxRecordSize (%d bytes)."
+#define DFTERR_EndOfCsvRecordNotFound_Text      "End of CSV record not found (wrong record terminator defined or need to increase maxRecordSize?) after processing %d bytes!"
+#define DFTERR_EndOfUtfRecordNotFound_Text      "End of UTF record not found (wrong record terminator defined or need to increase maxRecordSize?) after processing %d bytes!"
 
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%"I64F"d expected %"I64F"d) at %s of block %d"

@@ -243,7 +243,6 @@ void checkFile(IChecker *checker,IDistributedFile *file)
         checker->add("getFileCheckSum",csum);
     else
         checker->add("getFileCheckSum","nochecksum");
-    checker->add("isSubFile",file->isSubFile()?1:0);
     StringBuffer clustname;
     checker->add("queryClusterName(0)",file->getClusterName(0,clustname).str());
     for (unsigned i=0;i<np;i++) {
@@ -440,9 +439,9 @@ void dispFDesc(IFileDescriptor *fdesc)
 
 // ================================================================================== UNIT TESTS
 
-class DaliTests : public CppUnit::TestFixture
+class CDaliTests : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( DaliTests );
+    CPPUNIT_TEST_SUITE( CDaliTests );
         CPPUNIT_TEST(testDFS);
 //        CPPUNIT_TEST(testReadAllSDS); // Ignoring this test; See comments below
         CPPUNIT_TEST(testSDSRW);
@@ -469,6 +468,7 @@ class DaliTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testDFSAddFailReAdd);
         CPPUNIT_TEST(testDFSRetrySuperLock);
         CPPUNIT_TEST(testDFSHammer);
+        CPPUNIT_TEST(testSDSNodeSubs);
     CPPUNIT_TEST_SUITE_END();
 
 #ifndef COMPAT
@@ -690,11 +690,11 @@ class DaliTests : public CppUnit::TestFixture
     const IContextLogger &logctx;
 
 public:
-    DaliTests() : logctx(queryDummyContextLogger()) {
+    CDaliTests() : logctx(queryDummyContextLogger()) {
         init();
     }
 
-    ~DaliTests() {
+    ~CDaliTests() {
         destroy();
     }
 
@@ -964,7 +964,7 @@ public:
          * the super files, this should _not_ cause an issue, as no single super file will contain
          * mismatched subfiles.
         */
-        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
         assertex(sub1);
         sub1->lockProperties();
         sub1->queryAttributes().setPropBool("@local", true);
@@ -1046,7 +1046,7 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub1") == 0 && "promote failed, outlinked expected to be sub1");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
         }
 
@@ -1068,9 +1068,9 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub3");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub2") == 0 && "promote failed, outlinked expected to be sub2");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
-            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, false, false, NULL, timeout);
             ASSERT(sub2.get() && "promote failed, sub2 was physically deleted");
         }
     }
@@ -1098,6 +1098,223 @@ public:
             a.item(i2).join();
         ASSERT(subchangenum==1000 && "Not all notifications received");
         logctx.CTXLOG("%d subscription notifications, check sum = %"I64F"d",subchangenum,subchangetotal);
+    }
+
+    class CNodeSubCommitThread : public CInterface, implements IThreaded
+    {
+        StringAttr xpath;
+        bool finalDelete;
+        CThreaded threaded;
+    public:
+        IMPLEMENT_IINTERFACE;
+
+        CNodeSubCommitThread(const char *_xpath, bool _finalDelete) : threaded("CNodeSubCommitThread"), xpath(_xpath), finalDelete(_finalDelete)
+        {
+        }
+        virtual void main()
+        {
+            unsigned mode = RTM_LOCK_WRITE;
+            if (finalDelete)
+                mode |= RTM_DELETE_ON_DISCONNECT;
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), mode, 1000000);
+            assertex(conn);
+            for (unsigned i=0; i<5; i++)
+            {
+                VStringBuffer val("newval%d", i+1);
+                conn->queryRoot()->setProp(NULL, val.str());
+                conn->commit();
+            }
+            conn->queryRoot()->setProp("subnode", "newval");
+            conn->commit();
+            conn.clear(); // if finalDelete=true, deletes subscribed node in process, should get notificaiton
+
+        }
+        void start()
+        {
+            threaded.init(this);
+        }
+        void join()
+        {
+            threaded.join();
+        }
+    };
+
+
+    class CResults
+    {
+        StringArray results;
+        CRC32 crc;
+    public:
+        void add(const char *out)
+        {
+            PROGLOG("%s", out);
+            results.append(out);
+        }
+        unsigned getCRC()
+        {
+            results.sortAscii();
+            ForEachItemIn(r, results)
+            {
+                const char *result = results.item(r);
+                crc.tally(strlen(result), result);
+            }
+            PROGLOG("CRC = %x", crc.get());
+            results.kill();
+            return crc.get();
+        }
+    };
+
+    class CSubscriber : CSimpleInterface, implements ISDSNodeSubscription
+    {
+        StringAttr path;
+        CResults &results;
+        unsigned notifications, expectedNotifications;
+        Semaphore joinSem;
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CSubscriber(const char *_path, CResults &_results, unsigned _expectedNotifications)
+            : path(_path), results(_results), expectedNotifications(_expectedNotifications)
+        {
+            notifications = 0;
+            if (0 == expectedNotifications)
+                joinSem.signal();
+        }
+        virtual void notify(SubscriptionId id, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+        {
+            StringAttr value;
+            if (valueLen)
+                value.set((const char *)valueData, valueLen);
+            VStringBuffer res("Subscriber(%s): flags=%d, value=%s", path.get(), flags, 0==valueLen ? "(none)" : value.get());
+            results.add(res);
+            ++notifications;
+            if (notifications == expectedNotifications)
+                joinSem.signal();
+        }
+        void join()
+        {
+            if (joinSem.wait(5000))
+            {
+                MilliSleep(100); // wait a bit, see if get more than expected
+                if (notifications == expectedNotifications)
+                {
+                    VStringBuffer out("Subscriber(%s): %d notifications received", path.get(), notifications);
+                    results.add(out);
+                    return;
+                }
+            }
+            VStringBuffer out("Expected %d notifications, received %d", expectedNotifications, notifications);
+            results.add(out);
+        }
+    };
+
+    void sdsNodeCommit(const char *test, unsigned from, unsigned to, bool finalDelete)
+    {
+        CIArrayOf<CNodeSubCommitThread> commitThreads;
+        for (unsigned i=from; i<=to; i++)
+        {
+            VStringBuffer path("/DAREGRESS/NodeSubTest/node%d", i);
+            CNodeSubCommitThread *commitThread = new CNodeSubCommitThread(path, finalDelete);
+            commitThreads.append(* commitThread);
+        }
+        ForEachItemIn(t, commitThreads)
+            commitThreads.item(t).start();
+        ForEachItemIn(t2, commitThreads)
+            commitThreads.item(t2).join();
+    }
+
+    void testSDSNodeSubs()
+    {
+        // setup
+        Owned<IRemoteConnection> conn = querySDS().connect("/DAREGRESS/NodeSubTest", myProcessSession(), RTM_CREATE, 1000000);
+        IPropertyTree *root = conn->queryRoot();
+        unsigned i, ai;
+        for (i=0; i<10; i++)
+        {
+            VStringBuffer name("node%d", i+1);
+            IPropertyTree *sub = root->setPropTree(name, createPTree());
+            for (ai=0; ai<2; ai++)
+            {
+                VStringBuffer name("@attr%d", i+1);
+                VStringBuffer val("val%d", i+1);
+                sub->setProp(name, val);
+            }
+        }
+        conn.clear();
+
+        CResults results;
+
+        {
+            const char *testPath = "/DAREGRESS/NodeSubTest/doesnotexist";
+            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 0);
+            try
+            {
+                querySDS().subscribeExact(testPath, *subscriber, true);
+                throwUnexpected();
+            }
+            catch(IException *e)
+            {
+                if (SDSExcpt_SubscriptionNoMatch != e->errorCode())
+                    throw;
+                results.add("Correctly failed to add subscriber to non-existent node.");
+            }
+            subscriber.clear();
+        }
+
+        {
+            const char *testPath = "/DAREGRESS/NodeSubTest/node1";
+            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 2*5+1+1);
+            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
+
+            sdsNodeCommit(testPath, 1, 1, false);
+            sdsNodeCommit(testPath, 1, 1, true); // will delete 'node1'
+
+            subscriber->join();
+            querySDS().unsubscribeExact(id); // will actually be a NOP, as will be already unsubscribed when 'node1' deleted.
+        }
+
+        {
+            const char *testPath = "/DAREGRESS/NodeSubTest/node*";
+            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 9*6);
+            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
+
+            sdsNodeCommit(testPath, 2, 10, false);
+
+            subscriber->join();
+            querySDS().unsubscribeExact(id);
+        }
+
+        {
+            UInt64Array subscriberIds;
+            IArrayOf<CSubscriber> subscribers;
+            for (i=2; i<=10; i++) // NB: from 2, as 'node1' deleted in previous tests
+            {
+                for (ai=0; ai<2; ai++)
+                {
+                    VStringBuffer path("/DAREGRESS/NodeSubTest/node%d[@attr%d=\"val%d\"]", i, i, i);
+                    Owned<CSubscriber> subscriber = new CSubscriber(path, results, 11);
+                    SubscriptionId id = querySDS().subscribeExact(path, *subscriber, 0==ai);
+                    subscribers.append(* subscriber.getClear());
+                    subscriberIds.append(id);
+                }
+            }
+            const char *testPath = "/DAREGRESS/NodeSubTest/node*";
+            Owned<CSubscriber> subscriber = new CSubscriber(testPath, results, 9*5+9*(5+1));
+            SubscriptionId id = querySDS().subscribeExact(testPath, *subscriber, false);
+
+            sdsNodeCommit(testPath, 2, 10, false);
+            sdsNodeCommit(testPath, 2, 10, true);
+
+            subscriber->join();
+            querySDS().unsubscribeExact(id);
+            ForEachItemIn(s, subscriberIds)
+            {
+                subscribers.item(s).join();
+                querySDS().unsubscribeExact(subscriberIds.item(s));
+            }
+        }
+
+        ASSERT(0xa68e2324 == results.getCRC() && "SDS Node notifcation differences");
     }
 
     /*
@@ -1621,6 +1838,10 @@ public:
             CThreaded threaded;
         public:
             CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
+            ~CShortLock()
+            {
+                threaded.join();
+            }
             virtual void main()
             {
                 Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
@@ -2028,7 +2249,92 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( DaliTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliTests, "Dali" );
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliTests, "Dali" );
+
+class CDaliUtils : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(CDaliUtils);
+      CPPUNIT_TEST(testDFSLfn);
+    CPPUNIT_TEST_SUITE_END();
+public:
+    void testDFSLfn()
+    {
+        const char *lfns[] = { "~foreign::192.168.16.1::scope1::file1",
+                               "~file::192.168.16.1::dir1::file1",
+                               "~file::192.168.16.1::>some query or another",
+                               "~file::192.168.16.1::wild?card1",
+                               "~file::192.168.16.1::wild*card2",
+                               "~file::192.168.16.1::^C^a^S^e^d",
+                               "~file::192.168.16.1::file@cluster1",
+                               "~prefix::{multi1*,multi2*}",
+                               "{~foreign::192.168.16.1::multi1, ~foreign::192.168.16.2::multi2}",
+
+                               // NB: CDfsLogicalFileName allows these with strict=false (the default)
+                               ". :: scope1 :: file",
+                               ":: scope1 :: file",
+                               "~ scope1 :: scope2 :: file  ",
+                               ". :: scope1 :: file nine",
+                               ". :: scope1 :: file ten  ",
+                               ". :: scope1 :: file",
+                               NULL                                             // terminator
+                             };
+        const char *invalidLfns[] = {
+                               ". :: sc~ope1::file",
+                               ". ::  ::file",
+                               "~~scope1::file",
+                               "~sc~ope1::file2",
+                               ".:: scope1::file*",
+                               NULL                                             // terminator
+                             };
+        PROGLOG("Checking valid logical filenames");
+        unsigned nlfn=0;
+        loop
+        {
+            const char *lfn = lfns[nlfn++];
+            if (NULL == lfn)
+                break;
+            PROGLOG("lfn = %s", lfn);
+            CDfsLogicalFileName dlfn;
+            try
+            {
+                dlfn.set(lfn);
+            }
+            catch (IException *e)
+            {
+                VStringBuffer err("Logical filename '%s' failed.", lfn);
+                EXCLOG(e, err.str());
+                CPPUNIT_FAIL(err.str());
+                e->Release();
+            }
+        }
+        PROGLOG("Checking invalid logical filenames");
+        nlfn = 0;
+        loop
+        {
+            const char *lfn = invalidLfns[nlfn++];
+            if (NULL == lfn)
+                break;
+            PROGLOG("lfn = %s", lfn);
+            CDfsLogicalFileName dlfn;
+            try
+            {
+                dlfn.set(lfn);
+                VStringBuffer err("Logical filename '%s' passed and should have failed.", lfn);
+                ERRLOG("%s", err.str());
+                CPPUNIT_FAIL(err.str());
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "Expected error:");
+                e->Release();
+            }
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliUtils );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliUtils, "DaliUtils" );
+
 
 #endif // _USE_CPPUNIT

@@ -59,15 +59,16 @@ class da_decl CDfsLogicalFileName
     CMultiDLFN *multi;   // for temp superfile
     bool external;
     bool allowospath;
+    bool allowWild;
 
 public:
     CDfsLogicalFileName();
     ~CDfsLogicalFileName();
 
     CDfsLogicalFileName & operator = (CDfsLogicalFileName const &from);
-    void set(const char *lfn);
+    void set(const char *lfn, bool removeForeign=false); // throws an exception on invalid filenames
+    bool setValidate(const char *lfn, bool removeForeign=false); // returns false for invalid filenames
     void set(const CDfsLogicalFileName &lfn);
-    bool setValidate(const char *lfn,bool removeforeign=false); // checks for invalid chars
     void set(const char *scopes,const char *tail);
     bool setFromMask(const char *partmask,const char *rootdir=NULL);
     void clear();
@@ -115,6 +116,7 @@ public:
 
     StringBuffer &makeScopeQuery(StringBuffer &query, bool absolute=true) const; // returns xpath for containing scope
     StringBuffer &makeFullnameQuery(StringBuffer &query, DfsXmlBranchKind kind, bool absolute=true) const; // return xpath for branch
+    StringBuffer &makeXPathLName(StringBuffer &lfnNodeName) const; // return a mangled logical name compatible with a xpath node name
 
     bool getEp(SocketEndpoint &ep) const;       // foreign and external
     StringBuffer &getGroupName(StringBuffer &grp) const;    // external only
@@ -133,9 +135,10 @@ public:
     const void resolveWild();  // only for multi
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
+    void setAllowWild(bool b=true) { allowWild = b; } // allow wildcards
     bool isExpanded() const;
     void expand(IUserDescriptor *user);
-    void normalizeName(const char * name, StringAttr &res);
+    void normalizeName(const char * name, StringAttr &res, bool strict);
 };
 
 // abstract class, define getCmdText to return tracing text of commands
@@ -219,6 +222,7 @@ struct da_decl TransactionLog
         va_start(args, formatMsg);
         msg.append(" ");
         msg.valist_appendf(formatMsg, args);
+        va_end(args);
         log();
     }
     inline void markExtra()
@@ -231,6 +235,7 @@ struct da_decl TransactionLog
         va_list args;
         va_start(args, formatMsg);
         msg.valist_appendf(formatMsg, args);
+        va_end(args);
         markExtra();
     }
 };
@@ -252,15 +257,12 @@ extern da_decl void expandFileTree(IPropertyTree *file,bool expandnodes,const ch
 extern da_decl bool shrinkFileTree(IPropertyTree *file); // compresses parts into Parts blob
 extern da_decl void filterParts(IPropertyTree *file,UnsignedArray &partslist); // only include parts in list (in expanded tree)
 
-
-
-
-
 IRemoteConnection *getSortedElements( const char *basexpath, 
                                      const char *xpath, 
                                      const char *sortorder, 
                                      const char *namefilterlo, // if non null filter less than this value
                                      const char *namefilterhi, // if non null filter greater than this value
+                                     StringArray& unknownAttributes,
                                      IArrayOf<IPropertyTree> &results);
 interface ISortedElementsTreeFilter : extends IInterface
 {
@@ -274,6 +276,7 @@ extern da_decl void sortElements( IPropertyTreeIterator* elementsIter,
                                      const char *sortorder, 
                                      const char *namefilterlo, // if non null filter less than this value
                                      const char *namefilterhi, // if non null filter greater than this value
+                                     StringArray& unknownAttributes, //the attribute not exist or empty
                                      IArrayOf<IPropertyTree> &sortedElements);
 
 extern da_decl IRemoteConnection *getElementsPaged(IElementsPager *elementsPager,
@@ -283,7 +286,8 @@ extern da_decl IRemoteConnection *getElementsPaged(IElementsPager *elementsPager
                                      const char *owner,
                                      __int64 *hint,                         // if non null points to in/out cache hint
                                      IArrayOf<IPropertyTree> &results,
-                                     unsigned *total); // total possible filtered matches, i.e. irrespective of startoffset and pagesize
+                                     unsigned *total,
+                                     bool checkConn = true); // total possible filtered matches, i.e. irrespective of startoffset and pagesize
 
 extern da_decl void clearPagedElementsCache();
 

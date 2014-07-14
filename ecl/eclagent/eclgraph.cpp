@@ -184,8 +184,6 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createXmlFetchActivity(agent, activityId, subgraphId, (IHThorXmlFetchArg &)arg, kind);
     case TAKmerge: 
         return createMergeActivity(agent, activityId, subgraphId, (IHThorMergeArg &)arg, kind);
-    case TAKcountdisk: 
-        return NULL; // NOTE - activity gets created when needed
     case TAKhttp_rowdataset:
         return createHttpRowCallActivity(agent, activityId, subgraphId, (IHThorHttpCallArg &)arg, kind);
     case TAKsoap_rowdataset:
@@ -260,7 +258,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKxmlread:
         return createXmlReadActivity(agent, activityId, subgraphId, (IHThorXmlReadArg &)arg, kind);
     case TAKlocalresultread:
-        return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, graphId);
+        return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, node->getPropInt("att[@name='_graphId']/@value"));
     case TAKlocalresultwrite:
         return createLocalResultWriteActivity(agent, activityId, subgraphId, (IHThorLocalResultWriteArg &)arg, kind, graphId);
     case TAKdictionaryresultwrite:
@@ -379,6 +377,8 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
             helper->getUpdateCRCs(eclCRC, totalCRC);
             break;
         }
+    default:
+        UNIMPLEMENTED;
     }
 
     Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(filename.get(), "Read", true, false, false);
@@ -776,7 +776,7 @@ EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph
     isChildGraph = false;
 }
 
-void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IPropertyTree * node, unsigned * subGraphSeqNo, EclSubGraph * resultsGraph)
+void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IPropertyTree * node, unsigned & subGraphSeqNo, EclSubGraph * resultsGraph)
 {
     xgmml.set(node->queryPropTree("att/graph"));
 
@@ -803,9 +803,9 @@ void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IProp
         {
             Owned<IProbeManager> childProbe;
             if (probeManager)
-                childProbe.setown(probeManager->startChildGraph(*subGraphSeqNo, NULL));
+                childProbe.setown(probeManager->startChildGraph(subGraphSeqNo, NULL));
 
-            Owned<EclSubGraph> subgraph = new EclSubGraph(*agent, *graph, this, *subGraphSeqNo++, probeEnabled, debugContext, probeManager);
+            Owned<EclSubGraph> subgraph = new EclSubGraph(*agent, *graph, this, subGraphSeqNo++, probeEnabled, debugContext, probeManager);
             subgraph->createFromXGMML(graph, dll, &cur, subGraphSeqNo, resultsGraph);
             if (probeManager)
                 probeManager->endChildGraph(childProbe, NULL);
@@ -980,10 +980,16 @@ void EclSubGraph::execute(const byte * parentExtract)
         cleanupActivities();
 
         {
+            unsigned elapsed = msTick()-startTime;
+
             Owned<IWorkUnit> wu(agent->updateWorkUnit());
-            StringBuffer timer;
-            timer.append("Graph ").append(parent.queryGraphName()).append(" - ").append(seqNo+1).append(" (").append(id).append(")");
-            wu->setTimerInfo(timer.str(), NULL, msTick()-startTime, 1, 0);
+            StringBuffer timerText;
+            formatGraphTimerLabel(timerText, parent.queryGraphName(), seqNo+1, id);
+
+            //graphn: id
+            StringBuffer wuScope;
+            formatGraphTimerScope(wuScope, parent.queryGraphName(), seqNo+1, id);
+            updateWorkunitTimeStat(wu, "eclagent", wuScope, "time", timerText.str(), milliToNano(elapsed), 1, 0);
         }
     }
     agent->updateWULogfile();//Update workunit logfile name in case of rollover
@@ -1077,6 +1083,11 @@ void EclSubGraph::getDictionaryResult(unsigned & count, byte * * & ret, unsigned
     localResults->queryResult(id)->getLinkedResult(count, ret);
 }
 
+const void * EclSubGraph::getLinkedRowResult(unsigned id)
+{
+    return localResults->queryResult(id)->getLinkedRowResult();
+}
+
 
 EclGraphElement * EclSubGraph::idToActivity(unsigned id)
 {
@@ -1106,6 +1117,11 @@ void EclAgentQueryLibrary::updateProgress()
         graph->updateLibraryProgress(); 
 }
 
+void EclAgentQueryLibrary::destroyGraph()
+{
+    graph.clear();
+}
+
 void EclGraph::associateSubGraph(EclSubGraph * subgraph)
 {
     subgraphMap.setValue(subgraph->id, subgraph);
@@ -1123,7 +1139,7 @@ void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, boo
             childProbe.setown(probeManager->startChildGraph(subGraphSeqNo, NULL));
 
         Owned<EclSubGraph> subgraph = new EclSubGraph(*agent, *this, NULL, subGraphSeqNo++, enableProbe, debugContext, probeManager);
-        subgraph->createFromXGMML(this, dll, &iter->query(), &subGraphSeqNo, NULL);
+        subgraph->createFromXGMML(this, dll, &iter->query(), subGraphSeqNo, NULL);
         if (probeManager)
             probeManager->endChildGraph(childProbe, NULL);
 
@@ -1188,12 +1204,24 @@ void EclGraph::execute(const byte * parentExtract)
     if (agent->queryRemoteWorkunit())
         run = new GraphRunningState(*this, 0);
 
+    unsigned startTime = msTick();
     aindex_t lastSink = -1;
     ForEachItemIn(idx, graphs)
     {
         EclSubGraph & cur = graphs.item(idx);
         if (cur.isSink)
             cur.execute(parentExtract);
+    }
+
+    {
+        unsigned elapsed = msTick()-startTime;
+
+        Owned<IWorkUnit> wu(agent->updateWorkUnit());
+
+        StringBuffer description;
+        formatGraphTimerLabel(description, queryGraphName(), 0, 0);
+
+        updateWorkunitTimeStat(wu, "eclagent", queryGraphName(), "time", description.str(), milliToNano(elapsed), 1, 0);
     }
 
     if (run)
@@ -1285,6 +1313,12 @@ void UninitializedGraphResult::getLinkedResult(unsigned & count, byte * * & ret)
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
 }
 
+const void * UninitializedGraphResult::getLinkedRowResult()
+{
+    throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
+}
+
+
 
 void GraphResult::addRowOwn(const void * row)
 {
@@ -1324,6 +1358,14 @@ void GraphResult::getLinkedResult(unsigned & count, byte * * & ret)
     ret = rowset;
 }
 
+const void * GraphResult::getLinkedRowResult()
+{
+    assertex(rows.ordinality() == 1);
+    const void * next = rows.item(0);
+    LinkRoxieRow(next);
+    return next;
+}
+
 //---------------------------------------------------------------------------
 
 GraphResults::GraphResults(unsigned _maxResults)
@@ -1350,6 +1392,11 @@ IHThorGraphResult * GraphResults::queryResult(unsigned id)
     CriticalBlock procedure(cs);
     ensureAtleast(id+1);
     return &results.item(id);
+}
+
+IHThorGraphResult * GraphResults::queryGraphLoopResult(unsigned id)
+{
+    throwUnexpected();
 }
 
 IHThorGraphResult * GraphResults::createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator)
@@ -1396,6 +1443,8 @@ IThorChildGraph * EclGraph::resolveChildQuery(unsigned subgraphId)
 //NB: resolveLocalQuery (unlike children) can't link otherwise you get a cicular dependency.
 IEclGraphResults * EclGraph::resolveLocalQuery(unsigned subgraphId)
 {
+    if (subgraphId == 0)
+        return &globalResults;
     return idToGraph(subgraphId);
 }
 
@@ -1495,7 +1544,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             {
                 CriticalBlock b(crit);
                 if (0 == subId) return;
-                if (valueLen && valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
+                if (valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
                     sem.signal();
             }
             bool wait()
@@ -1537,7 +1586,6 @@ void EclAgent::executeThorGraph(const char * graphName)
         {
             Semaphore sem;
             bool stopped;
-            unsigned starttime;
             IJobQueue *jq;
             IConstWorkUnit *wu;
         public:

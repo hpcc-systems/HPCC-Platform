@@ -97,6 +97,7 @@ public:
     IHqlStmt *                  addBlock();
     IHqlStmt *                  addBreak();
     IHqlStmt *                  addCase(IHqlStmt * owner, IHqlExpression * condition);
+    IHqlStmt *                  addConditionalGroup(IHqlStmt * stmt); // generated if stmt->isIncluded() is true
     IHqlStmt *                  addContinue();
     IHqlStmt *                  addDeclare(IHqlExpression * name, IHqlExpression * value=NULL);
     IHqlStmt *                  addDeclareExternal(IHqlExpression * name);
@@ -115,6 +116,7 @@ public:
     IHqlStmt *                  addLine(const char * filename = NULL, unsigned lineNum = 0);
     IHqlStmt *                  addLoop(IHqlExpression * cond, IHqlExpression * next, bool atEnd);
     IHqlStmt *                  addQuoted(const char * text);
+    IHqlStmt *                  addQuotedLiteral(const char * text); // must only be used for constant C++ strings - avoids a memory clone
     IHqlStmt *                  addQuotedF(const char * text, ...) __attribute__((format(printf, 2, 3)));
     IHqlStmt *                  addQuotedCompound(const char * text, const char * extra = NULL);
     IHqlStmt *                  addQuotedCompoundOpt(const char * text, const char * extra = NULL);
@@ -199,17 +201,18 @@ enum StmtKind {
 interface IHqlStmt : public IInterface
 {
 public:
-    virtual StringBuffer &  getTextExtra(StringBuffer & out) = 0;
+    virtual StringBuffer &  getTextExtra(StringBuffer & out) const = 0;
     virtual bool            isIncluded() const = 0;
-    virtual StmtKind        getStmt() = 0;
-    virtual unsigned                numChildren() const = 0;
-    virtual IHqlStmt *          queryChild(unsigned index) const = 0;
-    virtual IHqlExpression *queryExpr(unsigned index) = 0;
+    virtual StmtKind        getStmt() const = 0;
+    virtual unsigned        numChildren() const = 0;
+    virtual IHqlStmt *      queryChild(unsigned index) const = 0;
+    virtual IHqlExpression *queryExpr(unsigned index) const = 0;
 
 //used when creating the statement graph
     virtual void            mergeScopeWithContainer() = 0;
     virtual void            setIncomplete(bool incomplete) = 0;
     virtual void            setIncluded(bool _included) = 0;
+    virtual void            finishedFramework() = 0;
 };
 
 class HqlCppTranslator;
@@ -268,10 +271,11 @@ public:
 };
 
 
-unsigned calcTotalChildren(IHqlStmt * stmt);
+unsigned calcTotalChildren(const IHqlStmt * stmt);
 
 IHqlExpression * stripTranslatedCasts(IHqlExpression * e);
 IHqlExpression * peepholeAddExpr(IHqlExpression * left, IHqlExpression * right);
 bool rightFollowsLeft(IHqlExpression * left, IHqlExpression * leftLen, IHqlExpression * right);
+extern HQLCPP_API void outputSizeStmts();
 
 #endif

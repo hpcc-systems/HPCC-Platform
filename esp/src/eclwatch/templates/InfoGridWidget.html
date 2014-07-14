@@ -1,0 +1,33 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+            <div id="${id}Clear" data-dojo-attach-event="onClick:_onClear" data-dojo-type="dijit.form.Button">${i18n.Clear}</div>
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+            <div id="${id}Copy" data-dojo-attach-event="onClick:_onCopy" data-dojo-type="dijit.form.Button">${i18n.Copy}</div>
+            <div id="${id}Download" data-dojo-attach-event="onClick:_onDownload" data-dojo-type="dijit.form.Button">${i18n.Download}</div>
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+        </div>
+        <div id="${id}InfoGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+            <div id="${id}InfoGrid">
+            </div>
+        </div>
+        <div id="${id}Filter" class="edgePanel" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.layout.ContentPane">
+            <input id="${id}Errors" data-dojo-attach-event="onClick:_onErrors" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
+            <label for="${id}Errors">${i18n.Errors}</label>
+            &nbsp;
+            <input id="${id}Warnings" data-dojo-attach-event="onClick:_onWarnings" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
+            <label for="${id}Warnings">${i18n.Warnings}</label>
+            &nbsp;
+            <input id="${id}Info" data-dojo-attach-event="onClick:_onInfo" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
+            <label for="${id}Info">${i18n.Info}</label>
+        </div>
+    </div>
+    <div id="${id}ErrWarnDialog" title="${i18n.ManualCopy}" data-dojo-type="dijit.Dialog">
+        <div class="dijitDialogPaneContentArea">
+            <textarea id="${id}ErrWarnDialogTextArea" rows="25" cols="80" data-dojo-type="dijit.form.SimpleTextarea"></textarea>
+        </div>
+        <div class="dijitDialogPaneActionBar">
+            <button type="button" data-dojo-attach-event="onClick:_onErrWarnDialogClose" data-dojo-type="dijit.form.Button">${i18n.Close}</button>
+        </div>
+    </div>
+</div>

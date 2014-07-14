@@ -181,9 +181,9 @@ extern HQL_API bool transformReturnsSide(IHqlExpression * expr, node_operator si
 
 extern HQL_API bool sortDistributionMatches(IHqlExpression * dataset, bool isLocal);
 
-extern HQL_API IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * field);
+extern HQL_API IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * field, bool okToSkipRow);
 //Find the assignment that corresponds to select (with selector "selector") and return the assigned value
-extern HQL_API IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * selector, IHqlExpression * select);
+extern HQL_API IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * selector, IHqlExpression * select, bool okToSkipRow);
 extern HQL_API IHqlExpression * getParentDatasetSelector(IHqlExpression * ds);
 //return all selects from the expression that refer to a particular selector
 extern HQL_API void gatherSelects(HqlExprCopyArray & selectors, IHqlExpression * expr, IHqlExpression * selector);

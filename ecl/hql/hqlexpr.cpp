@@ -74,7 +74,6 @@
 //#define PARANOID
 //#define SEARCH_NAME1   "v1"
 //#define SEARCH_NAME2   "v2"
-//#define SEARCH_IEXPR 0x0681cb0
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
 #define VERIFY_EXPR_INTEGRITY
@@ -83,6 +82,41 @@
 static void debugMatchedName() {}
 #endif
 
+#ifdef DEBUG_TRACK_INSTANCEID
+static int checkSeqId(unsigned __int64 seqid, unsigned why)
+{
+    switch (seqid)
+    {
+    //Add a case statement here for each expression being tracked.
+    case 0:
+        break;
+    default:
+        return 0;
+    }
+
+    //Return values are here to allow breakpoints to be set - not because they are useful
+    //Add breakpoint on the switch to break on all reasons.
+    switch (why)
+    {
+    case 0:             //Created
+        return 1;
+    case 1:             // Linked
+        return 2;
+    case 2:             // Released
+        return 3;
+    case 3:             // Destroyed
+        return 4;
+    }
+    return 0; // Unknown reason
+}
+
+#define CHECK_EXPR_SEQID(x) checkSeqId(seqid, x)
+
+#else
+#define CHECK_EXPR_SEQID(x)
+#endif
+#else
+#define CHECK_EXPR_SEQID(x)
 #endif
 
 #define STDIO_BUFFSIZE 0x10000     // 64K
@@ -555,30 +589,15 @@ extern HQL_API void gatherMetaAttributes(HqlExprArray & matches, IAtom * search,
     }
 }
 
-extern HQL_API void gatherMetaAttributes(HqlExprCopyArray & matches, IAtom * search, IHqlExpression * expr)
+extern HQL_API void gatherAttributes(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
 {
-    loop
+    ForEachChild(i, expr)
     {
-        annotate_kind kind = expr->getAnnotationKind();
-        if (kind == annotate_none)
-            return;
-        if (kind == annotate_meta)
-        {
-            unsigned i=0;
-            IHqlExpression * cur;
-            while ((cur = expr->queryAnnotationParameter(i++)) != NULL)
-            {
-                //It's possible we may want to implement this whole function as a member function and allow
-                //information to be stored in a non expression format, and only create expressions when requested.
-                //may end up less efficient in the end.
-                if (cur->queryName() == search && cur->isAttribute())
-                    matches.append(*cur);
-            }
-        }
-        expr = expr->queryBody(true);
+        IHqlExpression *kid = expr->queryChild(i);
+        if (kid->isAttribute() && kid->queryName()==search)
+            matches.append(*LINK(kid));
     }
 }
-
 
 extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr)
 {
@@ -1637,7 +1656,6 @@ bool checkConstant(node_operator op)
     case no_xmlencode:
     case no_sortpartition:
     case no_clustersize:
-    case no_debug_option_value:
         return false;
     }
     return true;
@@ -3053,9 +3071,16 @@ extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr)
 
 //==============================================================================================================
 
-/* All parms: linked */
+#ifdef DEBUG_TRACK_INSTANCEID
+static unsigned __int64 exprseqid;
+#endif
+
 CHqlExpression::CHqlExpression(node_operator _op)
 {
+#ifdef DEBUG_TRACK_INSTANCEID
+    //Not thread safe, but not much use if multi threading anyway.
+    seqid = ++exprseqid;
+#endif
     op = _op;
     for (unsigned i=0; i < NUM_PARALLEL_TRANSFORMS; i++)
     {
@@ -3067,6 +3092,8 @@ CHqlExpression::CHqlExpression(node_operator _op)
     attributes = NULL;
 
     initFlagsBeforeOperands();
+
+    CHECK_EXPR_SEQID(0);
 }
 
 void CHqlExpression::appendOperands(IHqlExpression * arg0, ...)
@@ -3122,13 +3149,6 @@ void CHqlExpression::setOperands(HqlExprArray & _ownedOperands)
 
 void CHqlExpression::initFlagsBeforeOperands()
 {
-#ifdef _DEBUG
-#ifdef SEARCH_IEXPR
-    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
-        DBGLOG("initFlags");
-#endif
-#endif
-
     //NB: The following code is not allowed to access queryType()!
     infoFlags = 0;
     infoFlags2 = 0;
@@ -4354,13 +4374,8 @@ void CHqlExpression::Link(void) const
     if (insideCreate)
         numCreateLinks++;
 #endif
-#ifdef _DEBUG
-#ifdef SEARCH_IEXPR
-    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
-        DBGLOG("Link");
-#endif
-#endif
     Parent::Link();
+    CHECK_EXPR_SEQID(1);
 }
 
 bool CHqlExpression::Release(void) const
@@ -4370,18 +4385,14 @@ bool CHqlExpression::Release(void) const
     if (insideCreate)
         numCreateReleases++;
 #endif
-#ifdef _DEBUG
-#ifdef SEARCH_IEXPR
-    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
-        DBGLOG("Release");
-#endif
-#endif
+    CHECK_EXPR_SEQID(2);
     return Parent::Release();
 }
 
 
 void CHqlExpression::beforeDispose()
 {
+    CHECK_EXPR_SEQID(3);
 #ifdef CONSISTENCY_CHECK
     if (hashcode)
     {
@@ -4665,7 +4676,7 @@ bool CHqlNamedExpression::equals(const IHqlExpression & r) const
 void CHqlNamedExpression::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = HASHFIELD(id);
+    HASHFIELD(id);
 }
 
 IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id, HqlExprArray & args)
@@ -6641,9 +6652,9 @@ bool CHqlAnnotation::isFullyBound() const
     return body->isFullyBound();
 }
 
-IIdAtom * CHqlAnnotation::queryFullModuleId() const
+IIdAtom * CHqlAnnotation::queryFullContainerId() const
 {
-    return body->queryFullModuleId();
+    return body->queryFullContainerId();
 }
 
 IHqlExpression * CHqlAnnotation::queryProperty(ExprPropKind kind)
@@ -6915,7 +6926,7 @@ bool CHqlSymbolAnnotation::equals(const IHqlExpression & other) const
     if ((symbolFlags != other.getSymbolFlags()) || (funcdef != other.queryFunctionDefinition()))
         return false;
 
-    if (moduleId != other.queryFullModuleId())
+    if (moduleId != other.queryFullContainerId())
         return false;
 
     if (op == no_nobody)
@@ -7541,24 +7552,29 @@ extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents
 CHqlScope::CHqlScope(node_operator _op, IIdAtom * _id, const char * _fullName)
 : CHqlExpressionWithType(_op, NULL), id(_id), fullName(_fullName)
 {
+    containerId = NULL;
     type = this;
+    initContainer();
 }
 
 CHqlScope::CHqlScope(IHqlScope* scope)
 : CHqlExpressionWithType(no_scope, NULL)
 {
     id = scope->queryId();
+    containerId = NULL;
     fullName.set(scope->queryFullName());
     CHqlScope* s = QUERYINTERFACE(scope, CHqlScope);
     if (s && s->text)
         text.set(s->text);
     type = this;
+    initContainer();
 }
 
 CHqlScope::CHqlScope(node_operator _op) 
 : CHqlExpressionWithType(_op, NULL)
 {
     id = NULL;
+    containerId = NULL;
     type = this;
 }
 
@@ -7566,6 +7582,16 @@ CHqlScope::~CHqlScope()
 {
     if (type == this)
         type = NULL;
+}
+
+void CHqlScope::initContainer()
+{
+    if (fullName)
+    {
+        const char * dot = strrchr(fullName, '.');
+        if (dot)
+            containerId = createIdAtom(fullName, dot-fullName);
+    }
 }
 
 bool CHqlScope::assignableFrom(ITypeInfo * source)
@@ -8038,7 +8064,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     if (repositoryFlags&ob_sandbox)
     {
         if (ctx.errs)
-            ctx.errs->reportWarning(WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
+            ctx.errs->reportWarning(CategoryInformation,WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
     }
 
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
@@ -8132,7 +8158,6 @@ extern HQL_API void ensureSymbolsDefined(IHqlExpression * scopeExpr, HqlLookupCo
 
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx)
 {
-    ThrowingErrorReceiver errs;
     scope->ensureSymbolsDefined(ctx); 
 
     data->setProp("@name", scope->queryFullName());
@@ -9063,8 +9088,8 @@ IHqlScope * CHqlVirtualScope::deriveConcreteScope()
 void CHqlVirtualScope::resolveUnboundSymbols()
 {
     IHqlExpression * virtualAttr = queryAttribute(_virtualSeq_Atom);
-    ThrowingErrorReceiver errors;
-    HqlDummyLookupContext localCtx(&errors);
+    Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
+    HqlDummyLookupContext localCtx(errorReporter);
     SymbolTableIterator iter(symbols);
     HqlExprArray defines;
     ForEach(iter)
@@ -9215,8 +9240,8 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
     {
         //Generally we should have a lookup context passed in so the archive is updated correctly
         //But currently painful in one context, so allow it to be omitted.
-        ThrowingErrorReceiver errors;
-        HqlDummyLookupContext localCtx(&errors);
+        Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
+        HqlDummyLookupContext localCtx(errorReporter);
         HqlLookupContext * activeContext = context ? context : &localCtx;
         HqlExprArray syms;
         getSymbols(syms);
@@ -9996,8 +10021,6 @@ CHqlAlienType::CHqlAlienType(IIdAtom * _id, IHqlScope *_scope, IHqlExpression * 
     scope = _scope;
     funcdef = _funcdef;
 
-    if (!scope)
-        return;
     if (!funcdef)
         funcdef = this;
 
@@ -10148,11 +10171,13 @@ size32_t CHqlAlienType::getSize()
 /* in parm _scope: linked */
 extern IHqlExpression *createAlienType(IIdAtom * _id, IHqlScope *_scope)
 {
+    assertex(_scope);
     return new CHqlAlienType(_id, _scope, NULL);
 }
 
 extern IHqlExpression *createAlienType(IIdAtom * id, IHqlScope * scope, HqlExprArray &newkids, IHqlExpression * funcdef)
 {
+    assertex(scope);
 //  assertex(!funcdef);     // I'm not sure what value this has...
     IHqlExpression * ret = new CHqlAlienType(id, scope, funcdef);
     ForEachItemIn(idx2, newkids)
@@ -11624,6 +11649,8 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
         {
             IHqlExpression & record = args.item(1);
             type = makeRowType(LINK(record.queryRecordType()));
+            if (queryAttribute(_linkCounted_Atom, args))
+                type = makeAttributeModifier(type, getLinkCountedAttr());
             break;
         }
     case no_typetransfer:
@@ -11659,7 +11686,6 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
     case no_deserialize:
         {
             assertex(args.ordinality() >= 3);
-            ITypeInfo * childType = args.item(0).queryType();
             IHqlExpression & record = args.item(1);
             IHqlExpression & form = args.item(2);
             assertex(form.isAttribute());
@@ -11669,13 +11695,23 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
 
 #ifdef _DEBUG
             OwnedITypeInfo serializedType = getSerializedForm(type, form.queryName());
+            ITypeInfo * childType = args.item(0).queryType();
             assertex(recordTypesMatch(serializedType, childType));
 #endif
             break;
         }
     case no_getresult:
+    case no_getgraphresult:
         {
             IHqlExpression * record = &args.item(0);
+            type = makeRowType(record->getType());
+            if (recordRequiresLinkCount(record))
+                type = makeAttributeModifier(type, getLinkCountedAttr());
+            break;
+        }
+    case no_readspill:
+        {
+            IHqlExpression * record = queryOriginalRecord(&args.item(0));
             type = makeRowType(record->getType());
             if (recordRequiresLinkCount(record))
                 type = makeAttributeModifier(type, getLinkCountedAttr());
@@ -12089,7 +12125,6 @@ IHqlExpression * ensureDataset(IHqlExpression * expr)
         return createDatasetFromRow(LINK(expr));
 
     throwUnexpected();
-    return createNullDataset();
 }
 
 
@@ -12182,6 +12217,17 @@ bool isDummySerializeDeserialize(IHqlExpression * expr)
     return true;
 }
 
+
+bool isRedundantGlobalScope(IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_globalscope);
+    IHqlExpression * child = expr->queryChild(0);
+    if (child->getOperator() != no_globalscope)
+        return false;
+    if (expr->hasAttribute(optAtom) && !child->hasAttribute(optAtom))
+        return false;
+    return true;
+}
 
 bool isIndependentOfScope(IHqlExpression * expr)
 {
@@ -12943,7 +12989,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
             IPropertyTree *end = createPTree("Field", ipt_caseInsensitive);
             end->setPropBool("@isEnd", true);
             end->setProp("@name", field->queryName()->getAtomNamePtr());
-            end = table->addPropTree(end->queryName(), end);
+            table->addPropTree(end->queryName(), end);
         }
         else
             thisSize = exportRecord(f, record, flatten);
@@ -13698,7 +13744,6 @@ static bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur,
                             break;
                         case type_record:
                             throwUnexpected();
-                            targetType.set(newRecord->queryType());
                             break;
                         }
                     }
@@ -14846,7 +14891,9 @@ unsigned numPayloadFields(IHqlExpression * index)
     IHqlExpression * payloadAttr = index->queryAttribute(_payload_Atom);
     if (payloadAttr)
         return (unsigned)getIntValue(payloadAttr->queryChild(0));
-    return 1;
+    if (getBoolAttribute(index, filepositionAtom, true))
+        return 1;
+    return 0;
 }
 
 unsigned numKeyedFields(IHqlExpression * index)
@@ -15159,8 +15206,9 @@ bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right)
 
 IHqlExpression * queryTransformSingleAssign(IHqlExpression * transform)
 {
-    if (transform->numChildren() != 1)
+    if ((transform->numChildren() == 0) || queryRealChild(transform, 1))
         return NULL;
+
     IHqlExpression * assign = transform->queryChild(0);
     if (assign->getOperator() == no_assignall)
     {
@@ -15347,19 +15395,42 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
 }
 
 
+static bool getBoolAttributeValue(IHqlExpression * attr)
+{
+    IHqlExpression * value = attr->queryChild(0);
+    //No argument implies true
+    if (!value)
+        return true;
+
+    //If it is a constant return it.
+    if (value->queryValue())
+        return getBoolValue(value, true);
+
+    //Not a constant => fold the expression
+    OwnedHqlExpr folded = foldHqlExpression(value);
+    if (folded->queryValue())
+        return getBoolValue(folded, true);
+
+    throwError1(HQLERR_PropertyArgumentNotConstant, attr->queryName()->str());
+}
+
 bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft)
 {
     if (!expr)
         return dft;
-    IHqlExpression * prop = expr->queryAttribute(name);
-    if (!prop)
+    IHqlExpression * attr = expr->queryAttribute(name);
+    if (!attr)
         return dft;
-    IHqlExpression * value = prop->queryChild(0);
-    if (!value)
-        return true;
-    return getBoolValue(value, true);
+    return getBoolAttributeValue(attr);
 }
 
+bool getBoolAttributeInList(IHqlExpression * expr, IAtom * search, bool dft)
+{
+    IHqlExpression * match = queryAttributeInList(search, expr);
+    if (!match)
+        return dft;
+    return getBoolAttributeValue(match);
+}
 
 IHqlExpression * queryOriginalRecord(IHqlExpression * expr)
 {
@@ -15626,8 +15697,8 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     HqlParseContext parseCtx(dataServer, NULL);
     parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
-    NullErrorReceiver errorHandler;
-    HqlLookupContext ctx(parseCtx, &errorHandler);
+    Owned<IErrorReceiver> errorHandler = createNullErrorReceiver();
+    HqlLookupContext ctx(parseCtx, errorHandler);
     if (items && *items)
     {
         loop
@@ -15672,49 +15743,6 @@ IHqlExpression * createGroupedAttribute(IHqlExpression * grouping)
 }
 
 
-static HqlTransformerInfo warningCollectingTransformerInfo("WarningCollectingTransformer");
-class WarningCollectingTransformer : public QuickHqlTransformer
-{
-public:
-    WarningCollectingTransformer(IErrorReceiver & _errs) : QuickHqlTransformer(warningCollectingTransformerInfo, &_errs) { }
-
-    virtual void doAnalyse(IHqlExpression * expr)
-    {
-        switch (expr->getAnnotationKind())
-        {
-        case annotate_meta:
-            collector.processMetaAnnotation(expr);
-            break;
-        case annotate_warning:
-            collector.processWarningAnnotation(expr);
-            break;
-        case annotate_symbol:
-            {
-                WarningProcessor::OnWarningState saved;
-                collector.pushSymbol(saved, expr);
-                QuickHqlTransformer::doAnalyse(expr);
-                collector.popSymbol(saved);
-                return;
-            }
-        case annotate_none:
-            collector.checkForGlobalOnWarning(expr);
-            break;
-        }
-        QuickHqlTransformer::doAnalyse(expr);
-    }
-
-    void report(IHqlExpression * expr)
-    {
-        analyse(expr);
-        collector.report(*errors);
-    }
-
-
-protected:
-    WarningProcessor collector;
-};
-
-
 IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * _newType)
 {
     Owned<ITypeInfo> newType = _newType;
@@ -15734,16 +15762,6 @@ IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * _newType)
 }
 
 
-void gatherWarnings(IErrorReceiver * errs, IHqlExpression * expr)
-{
-    if (!errs || !expr)
-        return;
-
-    WarningCollectingTransformer collector(*errs);
-    collector.report(expr);
-}
-
-
 //Make sure the expression doesn't get leaked if an exception occurs when closing it.
 IHqlExpression * closeAndLink(IHqlExpression * expr)
 {
@@ -15760,14 +15778,20 @@ IHqlExpression * closeAndLink(IHqlExpression * expr)
 }
 
 //MORE: This should probably be handled via the Lookup context instead (which shoudl be renamed parse
-static bool legacyEclMode = false;
-extern HQL_API void setLegacyEclSemantics(bool _value)
+static bool legacyImportMode = false;
+static bool legacyWhenMode = false;
+extern HQL_API void setLegacyEclSemantics(bool _legacyImport, bool _legacyWhen)
 {
-    legacyEclMode = _value;
+    legacyImportMode = _legacyImport;
+    legacyWhenMode = _legacyWhen;
 }
-extern HQL_API bool queryLegacyEclSemantics()
+extern HQL_API bool queryLegacyImportSemantics()
 {
-    return legacyEclMode;
+    return legacyImportMode;
+}
+extern HQL_API bool queryLegacyWhenSemantics()
+{
+    return legacyWhenMode;
 }
 
 

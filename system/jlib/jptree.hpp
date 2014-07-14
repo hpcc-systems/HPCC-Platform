@@ -168,6 +168,7 @@ interface IPTreeNodeCreator : extends IInterface
     virtual IPropertyTree *create(const char *tag) = 0;
 };
 
+// NB ipt_ext4 - used by SDS
 // NB ipt_ext5 - used by SDS
 enum ipt_flags { ipt_none=0x00, ipt_caseInsensitive=0x01, ipt_binary=0x02, ipt_ordered=0x04, ipt_ext1=0x08, ipt_ext2=16, ipt_ext3=32, ipt_ext4=64, ipt_ext5=128 };
 jlib_decl IPTreeMaker *createPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
@@ -223,6 +224,14 @@ jlib_decl void saveXML(const char *filename, const IPropertyTree *tree, unsigned
 jlib_decl void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, unsigned=XML_Format);
 jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
+
+#define JSON_SortTags 0x01
+#define JSON_Format   0x02
+#define JSON_Sanitize 0x08
+#define JSON_SanitizeAttributeValues 0x10
+
+jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, byte flags=JSON_Format);
+jlib_decl void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, byte flags=JSON_Format);
 
 jlib_decl const char *splitXPath(const char *xpath, StringBuffer &head); // returns tail, fills 'head' with leading xpath
 jlib_decl bool validateXPathSyntax(const char *xpath, StringBuffer *error=NULL);

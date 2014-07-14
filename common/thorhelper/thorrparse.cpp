@@ -1979,6 +1979,7 @@ void RegexNamedPattern::getTraceText(StringBuffer & s)
 RegexMatchAction RegexNamedPattern::match(RegexState & state)
 {
 #ifdef __64BIT__
+    // 64-bit systems have more space for stack
     RegexMatchState matched(def);
     return def->match(state, &end, matched);
 #else

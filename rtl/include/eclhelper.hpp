@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      149
-#define MIN_ACTIVITY_INTERFACE_VERSION  149             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      155
+#define MIN_ACTIVITY_INTERFACE_VERSION  155             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -62,6 +62,7 @@ interface IException;
 class MemoryBuffer;
 class StringBuffer;
 class rtlRowBuilder;
+class Decimal;
 struct RtlFieldInfo;
 struct RtlTypeInfo;
 
@@ -102,12 +103,16 @@ interface INaryCompareEq
     virtual bool match(unsigned _num, const void * * _rows) const = 0;
 };
 
+interface IEngineRowAllocator;
+
 interface IRowBuilder : public IInterface
 {
     virtual byte * ensureCapacity(size32_t required, const char * fieldName) = 0;
 protected:
     virtual byte * createSelf() = 0;
     virtual void reportMissingRow() const = 0;
+public:
+    virtual IEngineRowAllocator *queryAllocator() const = 0;
 };
 
 class ARowBuilder : public IRowBuilder
@@ -163,12 +168,16 @@ public:
     virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) = 0;
     virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) = 0;
     virtual void outputQString(unsigned len, const char *field, const char *fieldname) = 0;
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren) = 0;
+    virtual void outputEndDataset(const char *dsname) = 0;
     virtual void outputBeginNested(const char *fieldname, bool nestChildren) = 0;
     virtual void outputEndNested(const char *fieldname) = 0;
     virtual void outputSetAll() = 0;
     virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) = 0;
     virtual void outputBeginArray(const char *fieldname) = 0;
     virtual void outputEndArray(const char *fieldname) = 0;
+    virtual void outputInlineXml(const char *text) = 0; //for appending raw xml content
+    virtual void outputXmlns(const char *name, const char *uri) = 0;
     inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
 };
 
@@ -186,20 +195,45 @@ public:
     virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field) = 0;
     virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field) = 0;
     virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field) = 0;
-    virtual void processSetAll(const RtlFieldInfo * field) = 0;
     virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field) = 0;
     inline  void processCString(const char *value, const RtlFieldInfo * field) { processString((size32_t)strlen(value), value, field); }
 
 //The following are used process the structured fields
-    virtual bool processBeginSet(const RtlFieldInfo * field) = 0;
-    virtual bool processBeginDataset(const RtlFieldInfo * field) = 0;
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned elements, bool isAll, const byte *data) = 0;
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned rows) = 0;
     virtual bool processBeginRow(const RtlFieldInfo * field) = 0;           // either in a dataset, or nested
     virtual void processEndSet(const RtlFieldInfo * field) = 0;
     virtual void processEndDataset(const RtlFieldInfo * field) = 0;
     virtual void processEndRow(const RtlFieldInfo * field) = 0;
 };
 
-// Functions for processing rows - creating, serializing, destorying etc.
+class RtlDynamicRowBuilder;
+
+interface IFieldSource : public IInterface
+{
+public:
+    virtual bool getBooleanResult(const RtlFieldInfo *field) = 0;
+    virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void * &result) = 0;
+    virtual double getRealResult(const RtlFieldInfo *field) = 0;
+    virtual __int64 getSignedResult(const RtlFieldInfo *field) = 0;
+    virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field) = 0;
+    virtual void getStringResult(const RtlFieldInfo *field, size32_t &len, char * &result) = 0;
+    virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result) = 0;
+    virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result) = 0;
+    virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value) = 0;
+
+    //The following are used process the structured fields
+    virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll) = 0;
+    virtual void processBeginDataset(const RtlFieldInfo * field) = 0;
+    virtual void processBeginRow(const RtlFieldInfo * field) = 0;
+    virtual bool processNextSet(const RtlFieldInfo * field) = 0;
+    virtual bool processNextRow(const RtlFieldInfo * field) = 0;
+    virtual void processEndSet(const RtlFieldInfo * field) = 0;
+    virtual void processEndDataset(const RtlFieldInfo * field) = 0;
+    virtual void processEndRow(const RtlFieldInfo * field) = 0;
+};
+
+// Functions for processing rows - creating, serializing, destroying etc.
 interface IOutputRowSerializer;
 interface IOutputRowDeserializer;
 
@@ -227,12 +261,13 @@ interface IEngineRowAllocator : extends IInterface
     virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) = 0;
     virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) = 0;
     virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) = 0;
+    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *childtype) = 0;
 };
 
 interface IRowSerializerTarget
 {
     virtual void put(size32_t len, const void * ptr) = 0;
-    virtual size32_t beginNested() = 0;
+    virtual size32_t beginNested(size32_t count) = 0;
     virtual void endNested(size32_t position) = 0;
 };
 
@@ -240,7 +275,7 @@ interface IRowDeserializerSource
 {
     virtual const byte * peek(size32_t maxLen) = 0;     // try and ensure up to maxSize bytes are available.
     virtual offset_t beginNested() = 0;
-    virtual bool finishedNested(offset_t pos) = 0;
+    virtual bool finishedNested(offset_t & pos) = 0;
 
     virtual size32_t read(size32_t len, void * ptr) = 0;
     virtual size32_t readSize() = 0;
@@ -313,6 +348,8 @@ interface RtlITypeInfo
     virtual const char * queryLocale() const = 0;
     virtual const RtlFieldInfo * const * queryFields() const = 0;               // null terminated list
     virtual const RtlTypeInfo * queryChildType() const = 0;
+
+    virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const = 0;
 };
 
 
@@ -340,6 +377,7 @@ public:
                                     // if RFTMunknownsize then maxlength (records) [maxcount(datasets)]
 };
 
+
 //Core struct used for representing meta for a field.
 struct RtlFieldInfo
 {
@@ -356,6 +394,10 @@ struct RtlFieldInfo
     inline size32_t size(const byte * self, const byte * selfrow) const 
     { 
         return type->size(self, selfrow); 
+    }
+    inline size32_t build(ARowBuilder &builder, size32_t offset, IFieldSource & source) const
+    {
+        return type->build(builder, offset, this, source);
     }
     inline size32_t process(const byte * self, const byte * selfrow, IFieldProcessor & target) const 
     {
@@ -410,6 +452,7 @@ interface IOutputMetaData : public IRecordSize
 
     virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}            // from and to are *hints* for the range of fields to call through with
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) = 0;
+    virtual IOutputMetaData * queryChildMeta(unsigned i) = 0;
 };
 
 
@@ -464,7 +507,6 @@ protected:
 
 interface IXmlToRowTransformer;
 interface ICsvToRowTransformer;
-interface IHThorCountFileArg;
 interface IThorDiskCallback;
 interface IThorIndexCallback;
 interface IIndexReadContext;                    // this is misnamed!
@@ -482,6 +524,7 @@ interface IEclGraphResults : public IInterface
 {
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id) = 0;
     virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id) = 0;
+    virtual const void * getLinkedRowResult(unsigned id) = 0;
 };
 
 //Provided by engine=>can extent
@@ -693,11 +736,6 @@ enum ThorActivityKind
     TAKfirstn,
     TAKsample,
     TAKdegroup,
-    TAKjoin,
-    TAKhashjoin,
-    TAKlookupjoin,
-    TAKselfjoin,
-    TAKkeyedjoin,
     TAKgroup,
     TAKworkunitwrite,
     TAKfunnel,
@@ -707,7 +745,6 @@ enum ThorActivityKind
     TAKnormalize,
     TAKremoteresult,
     TAKpull,
-    TAKdenormalize,
     TAKnormalizechild,
     TAKchilddataset,
     TAKselectn,
@@ -725,7 +762,6 @@ enum ThorActivityKind
     TAKchoosesetsenth,
     TAKchoosesetslast,
     TAKfetch,
-    TAKhashdenormalize,
     TAKworkunitread,
     TAKthroughaggregate,
     TAKspill,
@@ -740,15 +776,12 @@ enum ThorActivityKind
     TAKxmlfetch,
     TAKxmlparse,
     TAKkeyeddistribute,
-    TAKjoinlight,           // lightweight, local, presorted join.
-    TAKalljoin,
     TAKsoap_rowdataset,     // a source activity
     TAKsoap_rowaction,      // source and sink activity
     TAKsoap_datasetdataset,     // a through activity
     TAKsoap_datasetaction,      // sink activity
     TAKkeydiff,
     TAKkeypatch,
-    TAKkeyeddenormalize,
     TAKsequential,
     TAKparallel,
     TAKchilditerator,
@@ -759,21 +792,24 @@ enum ThorActivityKind
     TAKlocalgraph,
     TAKifaction,
     TAKemptyaction,
-    TAKdiskread,                    // records one at a time. (filter+project)
+    TAKdiskread,                // records one at a time. (filter+project)
     TAKdisknormalize,           // same, but normalize a child dataset (filter+project)
     TAKdiskaggregate,           // non-grouped aggregate of dataset, or normalized dataset (filter/project input)
     TAKdiskcount,               // non-grouped count of dataset (not child), (may filter input)
     TAKdiskgroupaggregate,      // grouped aggregate on dataset (filter) (may work on project of input)
+    TAKdiskexists,              // non-grouped count of dataset (not child), (may filter input)
     TAKindexread,
     TAKindexnormalize,
     TAKindexaggregate,
     TAKindexcount,
     TAKindexgroupaggregate,
+    TAKindexexists,
     TAKchildread,
     TAKchildnormalize,
     TAKchildaggregate,
     TAKchildcount,
     TAKchildgroupaggregate,
+    TAKchildexists,
     TAKskiplimit,
     TAKchildthroughnormalize,
     TAKcsvread,
@@ -784,13 +820,6 @@ enum ThorActivityKind
     TAKregroup,
     TAKrollupgroup,
     TAKcombinegroup,
-    TAKlookupdenormalize,
-    TAKalldenormalize,
-    TAKdenormalizegroup,
-    TAKhashdenormalizegroup,
-    TAKlookupdenormalizegroup,
-    TAKkeyeddenormalizegroup,
-    TAKalldenormalizegroup,
     TAKlocalresultspill,
     TAKsimpleaction,
     TAKloopcount,
@@ -828,9 +857,6 @@ enum ThorActivityKind
     TAKlinkedrawiterator,
     TAKnormalizelinkedchild,
     TAKfilterproject,
-    TAKdiskexists,              // non-grouped count of dataset (not child), (may filter input)
-    TAKindexexists,
-    TAKchildexists,
     TAKcatch,
     TAKskipcatch,
     TAKcreaterowcatch,
@@ -842,22 +868,59 @@ enum ThorActivityKind
     TAKindexgroupexists,
     TAKindexgroupcount,
     TAKhashdistributemerge,
-    TAKselfjoinlight,
     TAKhttp_rowdataset,     // a source activity
     TAKinlinetable,
-    TAKcountdisk,
     TAKstreamediterator,
     TAKexternalsource,
     TAKexternalsink,
     TAKexternalprocess,
     TAKdictionaryworkunitwrite,
     TAKdictionaryresultwrite,
+    //Joins
+    TAKjoin,
+    TAKhashjoin,
+    TAKlookupjoin,
+    TAKselfjoin,
+    TAKkeyedjoin,
+    TAKalljoin,
     TAKsmartjoin,
+    TAKunknownjoin1, // place holders to make it easy to insert new join kinds
+    TAKunknownjoin2,
+    TAKunknownjoin3,
+    TAKjoinlight,           // lightweight, local, presorted join.
+    TAKselfjoinlight,
+    TAKlastjoin,
+    //Denormalize
+    TAKdenormalize,
+    TAKhashdenormalize,
+    TAKlookupdenormalize,
+    TAKselfdenormalize,
+    TAKkeyeddenormalize,
+    TAKalldenormalize,
     TAKsmartdenormalize,
+    TAKunknowndenormalize1,
+    TAKunknowndenormalize2,
+    TAKunknowndenormalize3,
+    TAKlastdenormalize,
+    //DenormalizeGroup
+    TAKdenormalizegroup,
+    TAKhashdenormalizegroup,
+    TAKlookupdenormalizegroup,
+    TAKselfdenormalizegroup,
+    TAKkeyeddenormalizegroup,
+    TAKalldenormalizegroup,
     TAKsmartdenormalizegroup,
+    TAKunknowndenormalizegroup1,
+    TAKunknowndenormalizegroup2,
+    TAKunknowndenormalizegroup3,
+    TAKlastdenormalizegroup,
 
     TAKlast
 };
+
+inline bool isSimpleJoin(ThorActivityKind kind) { return (kind >= TAKjoin) && (kind <= TAKlastjoin); }
+inline bool isDenormalizeJoin(ThorActivityKind kind) { return (kind >= TAKdenormalize) && (kind <= TAKlastdenormalize); }
+inline bool isDenormalizeGroupJoin(ThorActivityKind kind) { return (kind >= TAKdenormalizegroup) && (kind <= TAKlastdenormalizegroup); }
 
 enum ActivityInterfaceEnum
 {
@@ -905,7 +968,6 @@ enum ActivityInterfaceEnum
     TAItopnextra_1,
     TAIkeyedjoinbasearg_1,
     TAIjoinbasearg_1,
-    TAIjoinextra_1,
     TAIalljoinarg_1,
     TAIhashjoinextra_1,
     TAIkeyeddistributearg_1,
@@ -998,8 +1060,6 @@ enum ActivityInterfaceEnum
     TAIgroupiteratearg_1 = TAIiteratearg_1,
     TAIkeyeddenormalizearg_1 = TAIkeyedjoinbasearg_1,
     TAIkeyeddenormalizegrouparg_1 = TAIkeyedjoinbasearg_1,
-    TAIdenormalizeextra_1 = TAIjoinextra_1,
-    TAIdenormalizegroupextra_1 = TAIjoinextra_1,
     TAIalldenormalizearg_1 = TAIalljoinarg_1,
     TAIalldenormalizegrouparg_1 = TAIalljoinarg_1,
     TAIlocalresultspillarg_1 = TAIlocalresultwritearg_1,
@@ -1118,6 +1178,7 @@ enum
     TIWupdatecrc        = 0x0400,
     TIWhaswidth         = 0x0800,
     TIWexpires          = 0x1000,
+    TIWmaxlength        = 0x2000,       // explicit maxlength
 };
 
 //flags for thor dataset/temp tables
@@ -1146,6 +1207,7 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) = 0;
     virtual unsigned getWidth() = 0;                // only guaranteed present if TIWhaswidth defined
     virtual ICompare * queryCompare() = 0;          // only guaranteed present if TIWhaswidth defined
+    virtual unsigned getMaxKeySize() = 0;
 };
 
 struct IHThorFirstNArg : public IHThorArg
@@ -1552,24 +1614,28 @@ struct IHThorSubSortArg : public IHThorSortArg, public IHThorSubSortExtra
 
 // JoinFlags
 enum { 
-    JFleftouter=1, JFrightouter=2, JFexclude=4,
+    JFleftouter                  = 0x00000001,
+    JFrightouter                 = 0x00000002,
+    JFexclude                    = 0x00000004,
     JFleftonly  =JFleftouter|JFexclude,
     JFrightonly =JFrightouter|JFexclude,
     JFtypemask  =JFleftouter|JFrightouter|JFexclude,
-    JFfirst=8, JFfirstleft=0x10, JFfirstright=0x20,
-    JFpartitionright             = 0x40,
-    JFtransformMaySkip           = 0x80,
-    JFfetchMayFilter             = 0x100,
-    JFmatchAbortLimitSkips       = 0x200,
-    JFonfail                     = 0x400,
-    JFindexoptional              = 0x800,
-    JFslidingmatch               = 0x1000,
-    JFextractjoinfields          = 0x2000,
-    JFmatchrequired              = 0x4000,
-    JFmanylookup                 = 0x8000,
-    JFparallel                   = 0x10000,
-    JFsequential                 = 0x20000,
-    JFkeepsorted                 = 0x40000,
+    JFfirst                      = 0x00000008,
+    JFfirstleft                  = 0x00000010,
+    JFfirstright                 = 0x00000020,
+    JFpartitionright             = 0x00000040,
+    JFtransformMaySkip           = 0x00000080,
+    JFfetchMayFilter             = 0x00000100,
+    JFmatchAbortLimitSkips       = 0x00000200,
+    JFonfail                     = 0x00000400,
+    JFindexoptional              = 0x00000800,
+    JFslidingmatch               = 0x00001000,
+    JFextractjoinfields          = 0x00002000,
+    JFmatchrequired              = 0x00004000,
+    JFmanylookup                 = 0x00008000,
+    JFparallel                   = 0x00010000,
+    JFsequential                 = 0x00020000,
+    JFkeepsorted                 = 0x00040000,
     JFcountmatchabortlimit       = 0x00080000,
     JFreorderable                = 0x00100000,
     JFtransformmatchesleft       = 0x00200000,
@@ -1581,6 +1647,7 @@ enum {
     JFrightSortedLocally         = 0x08000000,
     JFsmart                      = 0x10000000,
     JFunstable                   = 0x20000000, // can sorts be unstable?
+    JFnevermatchself             = 0x40000000, // for a self join can a record match itself
 };
 
 // FetchFlags
@@ -1590,29 +1657,45 @@ enum {
     FFdynamicfilename            = 0x0004,
 };  
 
-struct IHThorJoinBaseArg : public IHThorArg
+struct IHThorAnyJoinBaseArg : public IHThorArg
+{
+    virtual bool match(const void * _left, const void * _right) = 0;
+    virtual size32_t createDefaultLeft(ARowBuilder & rowBuilder) = 0;
+    virtual size32_t createDefaultRight(ARowBuilder & rowBuilder) = 0;
+    virtual unsigned getJoinFlags() = 0;
+    virtual unsigned getKeepLimit() = 0;
+
+//Join:
+//Denormalize
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
+//Denormalize group
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
+
+    inline bool isLeftAlreadyLocallySorted() { return (getJoinFlags() & JFleftSortedLocally) != 0; }
+    inline bool isRightAlreadyLocallySorted() { return (getJoinFlags() & JFrightSortedLocally) != 0; }
+};
+
+
+struct IHThorJoinBaseArg : public IHThorAnyJoinBaseArg
 {
     virtual ICompare * queryCompareRight()=0;
     virtual ICompare * queryCompareLeft()=0;
     virtual bool isLeftAlreadySorted() = 0;
     virtual bool isRightAlreadySorted() = 0;
     virtual ICompare * queryCompareLeftRight()=0;
-    virtual size32_t createDefaultLeft(ARowBuilder & rowBuilder) = 0;
-    virtual size32_t createDefaultRight(ARowBuilder & rowBuilder) = 0;
-    virtual bool match(const void * _left, const void * _right) = 0;
     virtual ISortKeySerializer * querySerializeLeft() = 0;
     virtual ISortKeySerializer * querySerializeRight() = 0;
     virtual unsigned __int64 getThreshold() = 0;                                // limit to size of dataset on a node. (0=default)
     virtual double getSkew() = 0;
     virtual unsigned getJoinLimit() = 0;                                        // if a key joins more than this limit no records are output (0 = no limit)
-    virtual unsigned getJoinFlags() = 0;
-    virtual unsigned getKeepLimit() = 0;                                        // limit to number of matches that are kept (0 = no limit)
     virtual double getTargetSkew() = 0;
     virtual unsigned getMatchAbortLimit() = 0;
     virtual void onMatchAbortLimitExceeded() = 0;
     virtual ICompare * queryCompareLeftRightLower() = 0;
     virtual ICompare * queryCompareLeftRightUpper() = 0;
     virtual ICompare * queryPrefixCompare() = 0;
+
+    virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
 };
 
 struct IHThorFetchContext : public IInterface
@@ -1627,8 +1710,6 @@ struct IHThorFetchContext : public IInterface
 
 struct IHThorKeyedJoinBaseArg : public IHThorArg
 {
-    COMMON_NEWTHOR_FUNCTIONS
-
     // For the data going to the indexRead remote activity:
     virtual size32_t extractIndexReadFields(ARowBuilder & rowBuilder, const void * _input) = 0;
     virtual IOutputMetaData * queryIndexReadInputRecordSize() = 0;
@@ -1665,7 +1746,6 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
 
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _dummyRight, const void * _origRow, unsigned __int64 keyedFpos, IException * e) { return 0; }
 //Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned __int64 keyedFpos) { return 0; }
 //Denormalize:
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned __int64 keyedFpos, unsigned counter) { return 0; }
 //Denormalize group:
@@ -1677,45 +1757,12 @@ struct IHThorKeyedJoinArg : public IHThorKeyedJoinBaseArg, public IHThorFetchCon
     COMMON_NEWTHOR_FUNCTIONS
 };
 
-typedef IHThorKeyedJoinArg IHThorKeyedDenormalizeArg;
-typedef IHThorKeyedJoinArg IHThorKeyedDenormalizeGroupArg;
-
-struct IHThorJoinExtra : public IInterface
+struct IHThorJoinArg : public IHThorJoinBaseArg
 {
-    virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
-//Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
-//Denormalize
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
-//Denormalize group
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
-};
-
-struct IHThorJoinArg : public IHThorJoinBaseArg, public IHThorJoinExtra
-{
-    COMMON_NEWTHOR_FUNCTIONS
 };
 typedef IHThorJoinArg IHThorDenormalizeArg;
-typedef IHThorJoinArg IHThorDenormalizeGroupArg;
 
-struct IHThorAllJoinArg : public IHThorArg
-{
-    virtual bool match(const void * _left, const void * _right) = 0;
-    virtual size32_t createDefaultLeft(ARowBuilder & rowBuilder) = 0;
-    virtual size32_t createDefaultRight(ARowBuilder & rowBuilder) = 0;
-    virtual unsigned getJoinFlags() = 0;
-    virtual unsigned getKeepLimit() = 0;
-
-//Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
-//Denormalize
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
-//Denormalize group
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
-};
-
-typedef IHThorAllJoinArg IHThorAllDenormalizeArg;
-typedef IHThorAllJoinArg IHThorAllDenormalizeGroupArg;
+typedef IHThorAnyJoinBaseArg IHThorAllJoinArg;
 
 // Used for hash and lookup joins.
 struct IHThorHashJoinExtra : public IInterface
@@ -1751,13 +1798,6 @@ struct IHThorKeyedDistributeArg : public IHThorArg
 };
 
 
-struct IHThorCountFileArg : public IHThorArg
-{
-    virtual const char * getFileName() = 0;
-    virtual IOutputMetaData * queryRecordSize() = 0;
-    virtual unsigned getFlags() = 0;
-};
-
 struct IHThorFetchBaseArg : public IHThorArg
 {
     virtual unsigned __int64 getRowLimit() { return (unsigned __int64) -1; }
@@ -1782,6 +1822,7 @@ enum
 {
     POFextend           = 0x0001,
     POFgrouped          = 0x0002,
+    POFmaxsize          = 0x0004,
 };
 
 struct IHThorWorkUnitWriteArg : public IHThorArg
@@ -1790,6 +1831,7 @@ struct IHThorWorkUnitWriteArg : public IHThorArg
     virtual void serializeXml(const byte * self, IXmlWriter & out) = 0;
     virtual const char * queryName() = 0;
     virtual unsigned getFlags() = 0;
+    virtual unsigned getMaxSize() = 0; // size in Mb
 };
 
 struct IHThorXmlWorkunitWriteArg : public IHThorWorkUnitWriteArg
@@ -2742,13 +2784,6 @@ struct IGlobalCodeContext
 
     virtual void selectCluster(const char * cluster) = 0;
     virtual void restoreCluster() = 0;
-
-    // These next 5 are not used from generated code, and should be remove in 5.0
-    virtual IRemoteConnection *startPersist(const char * name) = 0;
-    virtual void finishPersist(IRemoteConnection *) = 0;
-    virtual void clearPersist(const char * logicalName) = 0;
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) = 0;
-    virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) = 0;
 
     virtual void setWorkflowCondition(bool value) = 0;
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) = 0;

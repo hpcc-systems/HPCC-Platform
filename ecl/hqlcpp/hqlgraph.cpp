@@ -383,7 +383,7 @@ void LogicalGraphCreator::createGraphActivity(IHqlExpression * expr)
     if (symbol)
     {
         addAttribute("name", symbol->queryId()->str());
-        addAttribute("module", symbol->queryFullModuleId()->str());
+        addAttribute("module", symbol->queryFullContainerId()->str());
         addAttributeInt("line", symbol->getStartLine());
         addAttributeInt("column", symbol->getStartColumn());
     }
@@ -573,7 +573,7 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
 {
     if (expr->queryBody() != expr)
     {
-        IIdAtom * module = includeModuleInText ? expr->queryFullModuleId() : NULL;
+        IIdAtom * module = includeModuleInText ? expr->queryFullContainerId() : NULL;
         IIdAtom * name = includeNameInText ? expr->queryId() : NULL;
         StringBuffer header;
         if (module)
