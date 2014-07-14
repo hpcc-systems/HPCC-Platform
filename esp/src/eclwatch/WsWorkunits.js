@@ -127,6 +127,10 @@ define([
             });
             return all(requests);
         },
+        
+        WUListQueries: function (params) {
+            return ESPRequest.send("WsWorkunits", "WUListQueries", params);
+        },
 
         CreateQuerySetStore: function (options) {
             var store = new QuerySetStore(options);
