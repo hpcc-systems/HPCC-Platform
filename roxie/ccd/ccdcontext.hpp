@@ -20,6 +20,7 @@
 
 #include <jlib.hpp>
 #include <workunit.hpp>
+#include <ccdquery.hpp>
 
 interface IActivityGraph;
 interface IQueryFactory;
@@ -50,12 +51,7 @@ interface IRoxieSlaveContext : extends IRoxieContextLogger
     virtual IActivityGraph * queryChildGraph(unsigned id) = 0;
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;
-    virtual unsigned parallelJoinPreload() = 0;
-    virtual unsigned concatPreload() = 0;
-    virtual unsigned fetchPreload() = 0;
-    virtual unsigned fullKeyedJoinPreload() = 0;
-    virtual unsigned keyedJoinPreload() = 0;
-    virtual unsigned prefetchProjectPreload() = 0;
+    virtual const QueryOptions &queryOptions() const = 0;
     virtual void addSlavesReplyLen(unsigned len) = 0;
     virtual const char *queryAuthToken() = 0;
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt) = 0;
@@ -64,9 +60,6 @@ interface IRoxieSlaveContext : extends IRoxieContextLogger
     virtual IActivityGraph * getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity) = 0;
     virtual void noteProcessed(const IRoxieContextLogger &_activityContext, const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const = 0;
     virtual IProbeManager *queryProbeManager() const = 0;
-    virtual bool queryTraceActivityTimes() const = 0;
-    virtual bool queryCheckingHeap() const = 0;
-    virtual bool queryTimeActivities() const = 0;
     virtual IDebuggableContext *queryDebugContext() const = 0;
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) = 0;
     virtual void setWUState(WUState state) = 0;
@@ -112,8 +105,8 @@ typedef IEclProcess* (* EclProcessFactory)();
 class CRoxieWorkflowMachine;
 
 extern IDeserializedResultStore *createDeserializedResultStore();
-extern IRoxieSlaveContext *createSlaveContext(const IQueryFactory *factory, const SlaveContextLogger &logctx, unsigned timeLimit, memsize_t memoryLimit, IRoxieQueryPacket *packet);
-extern IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const ContextLogger &logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName);
+extern IRoxieSlaveContext *createSlaveContext(const IQueryFactory *factory, const SlaveContextLogger &logctx, IRoxieQueryPacket *packet);
+extern IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName);
 extern IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const ContextLogger &_logctx);
 extern IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const ContextLogger &logctx);
 extern CRoxieWorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, IConstWorkUnit *wu, bool doOnce, const IRoxieContextLogger &_logctx);

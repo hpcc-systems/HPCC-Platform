@@ -1194,7 +1194,7 @@ public:
             }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
-            priority = queryFactory->getPriority();
+            priority = queryFactory->queryOptions().priority;
             switch (priority)
             {
             case 0: loQueryStats.noteActive(); break;
@@ -1660,7 +1660,7 @@ readAnother:
                         if (queryFactory)
                         {
                             queryFactory->checkSuspended();
-                            bool stripWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (ptr_ignoreWhiteSpace & defaultXmlReadFlags));
+                            bool stripWhitespace = queryFactory->queryOptions().stripWhitespaceFromStoredDataset;
                             stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
                             PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
                                                                                (stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none));
@@ -1730,7 +1730,7 @@ readAnother:
                                 logctx.setTraceLevel(queryXml->getPropInt("@traceLevel", traceLevel));
                             }
 
-                            priority = queryFactory->getPriority();
+                            priority = queryFactory->queryOptions().priority;
                             switch (priority)
                             {
                             case 0: loQueryStats.noteActive(); break;

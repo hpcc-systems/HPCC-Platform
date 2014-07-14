@@ -155,7 +155,7 @@ public:
 
     bool getEnableFieldTranslation() const
     {
-        return queryFactory.getEnableFieldTranslation();
+        return queryFactory.queryOptions().enableFieldTranslation;
     }
 
     const char *queryQueryName() const
@@ -3087,7 +3087,7 @@ public:
             OwnedRoxieString indexName(helper->getFileName());
             datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
         }
     }
 };
@@ -4658,7 +4658,7 @@ public:
             OwnedRoxieString indexFileName(helper->getIndexFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
         }
     }
 
@@ -5358,7 +5358,7 @@ public:
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
                     indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit()));
                     if (indexfile)
-                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
                 }
                 if (fileName)
                 {

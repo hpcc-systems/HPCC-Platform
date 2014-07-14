@@ -264,6 +264,183 @@ protected:
 };
 
 //----------------------------------------------------------------------------------------------
+// Class CQueryOptions is used to store options affecting the execution of a query
+// These can be set globally, byt he query workunit, or by the query XML parameters
+//----------------------------------------------------------------------------------------------
+
+QueryOptions::QueryOptions()
+{
+    priority = 0;
+    timeLimit = defaultTimeLimit[0];
+    warnTimeLimit = defaultWarnTimeLimit[0];
+
+    memoryLimit = defaultMemoryLimit;
+
+    parallelJoinPreload = defaultParallelJoinPreload;
+    fullKeyedJoinPreload = defaultFullKeyedJoinPreload;
+    keyedJoinPreload = defaultKeyedJoinPreload;
+    concatPreload = defaultConcatPreload;
+    fetchPreload = defaultFetchPreload;
+    prefetchProjectPreload = defaultPrefetchProjectPreload;
+
+    checkingHeap = defaultCheckingHeap;
+    disableLocalOptimizations = false;  // No global default for this
+    enableFieldTranslation = fieldTranslationEnabled;
+    skipFileFormatCrcCheck = false;
+    stripWhitespaceFromStoredDataset = ((ptr_ignoreWhiteSpace & defaultXmlReadFlags) != 0);
+    traceActivityTimes = false;   // No global default for this
+    timeActivities = defaultTimeActivities;
+}
+
+QueryOptions::QueryOptions(const QueryOptions &other)
+{
+    priority = other.priority;
+    timeLimit = other.timeLimit;
+    warnTimeLimit = other.warnTimeLimit;
+
+    memoryLimit = other.memoryLimit;
+
+    parallelJoinPreload = other.parallelJoinPreload;;
+    fullKeyedJoinPreload = other.fullKeyedJoinPreload;
+    keyedJoinPreload = other.keyedJoinPreload;
+    concatPreload = other.concatPreload;
+    fetchPreload = other.fetchPreload;
+    prefetchProjectPreload = other.prefetchProjectPreload;
+
+    checkingHeap = other.checkingHeap;
+    disableLocalOptimizations = other.disableLocalOptimizations;
+    enableFieldTranslation = other.enableFieldTranslation;
+    skipFileFormatCrcCheck = other.skipFileFormatCrcCheck;
+    stripWhitespaceFromStoredDataset = other.stripWhitespaceFromStoredDataset;
+    timeActivities =other.timeActivities;
+    traceActivityTimes = other.traceActivityTimes;
+}
+
+void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
+{
+    // calculate priority before others since it affects the defaults of others
+    updateFromWorkUnit(priority, wu, "priority");
+    if (stateInfo)
+        updateFromContext(priority, stateInfo, "@priority");
+    timeLimit = defaultTimeLimit[priority];
+    warnTimeLimit = defaultWarnTimeLimit[priority];
+    updateFromWorkUnit(timeLimit, wu, "timeLimit");
+    updateFromWorkUnit(warnTimeLimit, wu, "warnTimeLimit");
+    updateFromWorkUnit(memoryLimit, wu, "memoryLimit");
+    if (stateInfo)
+    {
+        updateFromContext(timeLimit, stateInfo, "@timeLimit");
+        updateFromContext(warnTimeLimit, stateInfo, "@warnTimeLimit");
+        updateFromContext(memoryLimit, stateInfo, "@memoryLimit");
+    }
+
+    updateFromWorkUnit(parallelJoinPreload, wu, "parallelJoinPreload");
+    updateFromWorkUnit(fullKeyedJoinPreload, wu, "fullKeyedJoinPreload");
+    updateFromWorkUnit(keyedJoinPreload, wu, "keyedJoinPreload");
+    updateFromWorkUnit(concatPreload, wu, "concatPreload");
+    updateFromWorkUnit(fetchPreload, wu, "fetchPreload");
+    updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
+
+    updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
+    updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
+    updateFromWorkUnit(enableFieldTranslation, wu, "layoutTranslationEnabled");  // Name is different for compatibility reasons
+    updateFromWorkUnit(skipFileFormatCrcCheck, wu, "skipFileFormatCrcCheck");
+    updateFromWorkUnit(stripWhitespaceFromStoredDataset, wu, "stripWhitespaceFromStoredDataset");
+    updateFromWorkUnit(timeActivities, wu, "timeActivities");
+    updateFromWorkUnit(traceActivityTimes, wu, "traceActivityTimes");
+}
+
+void QueryOptions::updateFromWorkUnit(memsize_t &value, IConstWorkUnit &wu, const char *name)
+{
+    value = (memsize_t) wu.getDebugValueInt64(name, value);
+}
+
+void QueryOptions::updateFromWorkUnit(int &value, IConstWorkUnit &wu, const char *name)
+{
+    value = wu.getDebugValueInt(name, value);
+}
+
+void QueryOptions::updateFromWorkUnit(unsigned &value, IConstWorkUnit &wu, const char *name)
+{
+    value = (unsigned) wu.getDebugValueInt(name, value);
+}
+
+void QueryOptions::updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const char *name)
+{
+    value = wu.getDebugValueBool(name, value);
+}
+
+void QueryOptions::setFromContext(const IPropertyTree *ctx)
+{
+    if (ctx)
+    {
+        updateFromContext(priority, ctx, "@priority", "_Priority");
+        updateFromContext(timeLimit, ctx, "@timeLimit", "_TimeLimit");
+        updateFromContext(warnTimeLimit, ctx, "@warnTimeLimit", "_WarnTimeLimit");
+        updateFromContext(memoryLimit, ctx, "@memoryLimit", "_MemoryLimit");
+        updateFromContext(parallelJoinPreload, ctx, "@parallelJoinPreload", "_ParallelJoinPreload");
+        updateFromContext(fullKeyedJoinPreload, ctx, "@fullKeyedJoinPreload", "_FullKeyedJoinPreload");
+        updateFromContext(keyedJoinPreload, ctx, "@keyedJoinPreload", "_KeyedJoinPreload");
+        updateFromContext(concatPreload, ctx, "@concatPreload", "_ConcatPreload");
+        updateFromContext(fetchPreload, ctx, "@fetchPreload", "_FetchPreload");
+        updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
+
+        updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
+        // Note: disableLocalOptimizations is not permitted at context level (too late)
+        // Note: enableFieldTranslation is not permitted at context level (generally too late anyway)
+        updateFromContext(skipFileFormatCrcCheck, ctx, "_SkipFileFormatCrcCheck", "@skipFileFormatCrcCheck");
+        updateFromContext(stripWhitespaceFromStoredDataset, ctx, "_StripWhitespaceFromStoredDataset", "@stripWhitespaceFromStoredDataset");
+        updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
+        updateFromContext(traceActivityTimes, ctx, "@timing", "_TraceActivityTimes");
+    }
+}
+
+const char * QueryOptions::findProp(const IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    if (name1 && ctx->hasProp(name1))
+        return name1;
+    else if (name2 && ctx->hasProp(name2))
+        return name2;
+    else
+        return NULL;
+}
+
+void QueryOptions::updateFromContext(memsize_t &value, const IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    const char *name = findProp(ctx, name1, name2);
+    if (name)
+        value = (memsize_t) ctx->getPropInt64(name);
+}
+
+void QueryOptions::updateFromContext(int &value, const IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    const char *name = findProp(ctx, name1, name2);
+    if (name)
+        value = ctx->getPropInt(name);
+}
+
+void QueryOptions::updateFromContext(unsigned &value, const IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    const char *name = findProp(ctx, name1, name2);
+    if (name)
+        value = (unsigned) ctx->getPropInt(name);
+}
+
+void QueryOptions::updateFromContext(bool &value, const IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    const char *name = findProp(ctx, name1, name2);
+    if (name)
+        value = ctx->getPropBool(name);
+}
+
+void QueryOptions::setFromSlaveContextLogger(const SlaveContextLogger &logctx)
+{
+    // MORE - priority/timelimit ?
+    checkingHeap = logctx.queryCheckingHeap();
+    traceActivityTimes = logctx.queryTraceActivityTimes();
+}
+
+//----------------------------------------------------------------------------------------------
 // Class CQueryFactory is the main implementation of IQueryFactory, combining a IQueryDll and a
 // package context into an object that can quickly create a the query context that executes a specific
 // instance of a Roxie query. 
@@ -282,15 +459,11 @@ protected:
     StringBuffer errorMessage;
     MapIdToActivityFactory allActivities;
 
+    QueryOptions options;
     bool dynamic;
     bool isSuspended;
     bool isLoadFailed;
-    bool enableFieldTranslation;
     ClusterType targetClusterType;
-    unsigned timeLimit;
-    unsigned warnTimeLimit;
-    memsize_t memoryLimit;
-    unsigned priority;
     unsigned libraryInterfaceHash;
     hash64_t hashValue;
 
@@ -855,11 +1028,7 @@ public:
         isSuspended = false;
         isLoadFailed = false;
         libraryInterfaceHash = 0;
-        priority = 0;
-        memoryLimit = defaultMemoryLimit;
-        timeLimit = defaultTimeLimit[priority];
-        warnTimeLimit = 0;
-        enableFieldTranslation = package.getEnableFieldTranslation();
+        options.enableFieldTranslation = package.getEnableFieldTranslation();  // NOTE - can be overridden by wu settings
     }
 
     ~CQueryFactory()
@@ -989,27 +1158,16 @@ public:
         {
             libraryInterfaceHash = wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0);
 
-            // calculate priority before others since it affects the defaults of others
-            priority = wu->getDebugValueInt("@priority", 0);
-            if (stateInfo)
-                priority = stateInfo->getPropInt("@priority", priority);
-
-            memoryLimit = (memsize_t) wu->getDebugValueInt64("memoryLimit", defaultMemoryLimit);
-            timeLimit = (unsigned) wu->getDebugValueInt("timeLimit", defaultTimeLimit[priority]);
-            warnTimeLimit = (unsigned) wu->getDebugValueInt("warnTimeLimit", 0);
-            enableFieldTranslation = wu->getDebugValueBool("layoutTranslationEnabled", enableFieldTranslation);
+            options.setFromWorkUnit(*wu, stateInfo);
             SCMStringBuffer bStr;
             targetClusterType = getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster);
 
-            // MORE - does package override stateInfo, or vice versa?
+            // NOTE: stateinfo overrides package info
 
             if (stateInfo)
             {
                 // info in querySets can override the defaults from workunit for some limits
                 isSuspended = stateInfo->getPropBool("@suspended", false);
-                memoryLimit = (memsize_t) stateInfo->getPropInt64("@memoryLimit", memoryLimit);
-                timeLimit = (unsigned) stateInfo->getPropInt("@timeLimit", timeLimit);
-                warnTimeLimit = (unsigned) stateInfo->getPropInt("@warnTimeLimit", warnTimeLimit);
             }
             if (targetClusterType == RoxieCluster)
             {
@@ -1242,13 +1400,9 @@ public:
     {
         return isSuspended;
     }
-    virtual memsize_t getMemoryLimit() const
+    virtual const QueryOptions &queryOptions() const
     {
-        return memoryLimit;
-    }
-    virtual unsigned getTimeLimit() const
-    {
-        return timeLimit;
+        return options;
     }
     virtual ILoadedDllEntry *queryDll() const 
     {
@@ -1285,28 +1439,6 @@ public:
         if (!result)
             result = getenv(name);
         return strdup(result ? result : defaultValue);
-    }
-    virtual unsigned getPriority() const
-    {
-        return priority;
-    }
-    virtual unsigned getWarnTimeLimit() const
-    {
-        return warnTimeLimit;
-    }
-    virtual int getDebugValueInt(const char * propname, int defVal) const
-    {
-        assertex(dll && dll->queryWorkUnit());
-        return dll->queryWorkUnit()->getDebugValueInt(propname, defVal);
-    }
-    virtual bool getDebugValueBool(const char * propname, bool defVal) const
-    {
-        assertex(dll && dll->queryWorkUnit());
-        return dll->queryWorkUnit()->getDebugValueBool(propname, defVal);
-    }
-    bool getEnableFieldTranslation() const
-    {
-        return enableFieldTranslation;
     }
 
     virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
@@ -1441,7 +1573,7 @@ public:
     virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName) const
     {
         checkSuspended();
-        return createRoxieServerContext(context, this, client, mlFmt==MarkupFmt_XML, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _xmlReadFlags, _querySetName);
+        return createRoxieServerContext(context, this, client, mlFmt==MarkupFmt_XML, isRaw, isBlocked, httpHelper, trim, _logctx, _xmlReadFlags, _querySetName);
     }
 
     virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const ContextLogger &_logctx) const
@@ -1708,7 +1840,7 @@ public:
 
     virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return ::createSlaveContext(this, logctx, timeLimit, memoryLimit, packet);
+        return ::createSlaveContext(this, logctx, packet);
     }
 
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName)
