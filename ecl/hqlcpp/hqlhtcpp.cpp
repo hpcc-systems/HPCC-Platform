@@ -330,6 +330,9 @@ public:
     void markHoistPoints(IHqlExpression * expr)
     {
         node_operator op = expr->getOperator();
+        if (op == no_sizeof)
+            return;
+
         if (expr->isDataset() || (expr->isDatarow() && (op != no_select)))
         {
             if (!translator.canAssignInline(&ctx, expr))

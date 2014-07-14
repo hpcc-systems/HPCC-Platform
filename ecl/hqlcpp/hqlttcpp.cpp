@@ -7934,6 +7934,7 @@ void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
     case no_allnodes:
     case no_keyedlimit:
     case no_nothor:
+    case no_sizeof:
         return;
     case no_sequential:
         return;
