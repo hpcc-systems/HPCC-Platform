@@ -169,7 +169,11 @@
       <title>Roxie Superfiles</title>
 
       <para>A superfile or superkey used in Roxie may contain more than a
-      single sub-file. </para>
+      single sub-file.</para>
+
+      <para>However, your superfile cannot contain more than one sub-file when
+      the superfile is used for a FETCH operation or in a full-keyed
+      JOIN.</para>
 
       <para>Even if you only have one sub-file, you can write a query that
       uses superfiles or superkeys (even though they contain only a single

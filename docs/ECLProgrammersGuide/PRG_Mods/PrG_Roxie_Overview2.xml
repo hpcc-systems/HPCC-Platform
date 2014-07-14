@@ -48,22 +48,22 @@
           <row>
             <entry>Thor</entry>
 
-            <entry>The commonly used name for an instance of Seisint’s Data
-            Refinery.</entry>
+            <entry>The commonly used name for an instance of the Data Refinery
+            component of the HPCC platform.</entry>
           </row>
 
           <row>
             <entry>Roxie</entry>
 
-            <entry>The commonly used name for an instance of Seisint’s Rapid
-            Data Delivery Engine.</entry>
+            <entry>The commonly used name for an instance of the Rapid Data
+            Delivery Engine component of the HPCC platform.</entry>
           </row>
 
           <row>
-            <entry>Doxie</entry>
+            <entry>hThor</entry>
 
-            <entry>The commonly used name for an instance of Seisint’s Data
-            Delivery Engine.</entry>
+            <entry>The commonly used name for an instance of the Data Delivery
+            Engine component of the HPCC platform.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -98,12 +98,12 @@
   </sect2>
 
   <sect2 id="Doxie">
-    <title>Doxie</title>
+    <title>hThor</title>
 
-    <para>Doxie is not a separate cluster on its own; it is an instance of ECL
+    <para>hThor is not a separate cluster on its own; it is an instance of ECL
     Agent (which operates on a single server) that emulates the operation of a
-    Roxie cluster. Just as with Thor queries, Doxie queries are compiled each
-    time they are run. Doxie queries access data directly from an associated
+    Roxie cluster. Just as with Thor queries, hThor queries are compiled each
+    time they are run. These queries access data directly from an associated
     Thor cluster’s disk drives without interfering with any Thor operations.
     This makes it an appropriate tool for developing queries that are destined
     for use on a Roxie cluster.</para>
