@@ -102,8 +102,6 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized)
-                return;
 	    if (this.inherited(arguments))
                 return;
 
@@ -132,11 +130,11 @@ define([
             domAttr.set(this.id + "StateIdImage", "title", this.active? this.i18n.Active:this.i18n.NotActive);
         },
 
-        showErrors: function (errMsg, errStack) {
+        showErrors: function (err) {
             topic.publish("hpcc/brToaster", {
                 Severity: "Error",
-                Source: errMsg,
-                Exceptions: [{ Message: errStack }]
+                Source: err.message,
+                Exceptions: [{ Message: err.stack }]
             });
         },
 
@@ -146,15 +144,12 @@ define([
             packageMaps[0] = {Target:this.target,
                 Process:this.process,Id:this.packageMap};
 
-            WsPackageMaps.activatePackageMap(packageMaps, {
-                load: function (response) {
-                    domClass.replace(context.id + "StateIdImage", "iconRunning");
-                    context.active = true;
-                    context.refreshActionState();
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                }
+            WsPackageMaps.activatePackageMap(packageMaps).then(function (response) {
+                domClass.replace(context.id + "StateIdImage", "iconRunning");
+                context.active = true;
+                context.refreshActionState();
+            }, function (err) {
+                context.showErrors(err);
             });
         },
         _onDeactivate: function (event) {
@@ -163,15 +158,12 @@ define([
             packageMaps[0] = {Target:this.target,
                 Process:this.process,Id:this.packageMap};
 
-            WsPackageMaps.deactivatePackageMap(packageMaps, {
-                load: function (response) {
-                    domClass.replace(context.id + "StateIdImage", "iconArchived");
-                    context.active = false;
-                    context.refreshActionState();
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                }
+            WsPackageMaps.deactivatePackageMap(packageMaps).then(function (response) {
+                domClass.replace(context.id + "StateIdImage", "iconArchived");
+                context.active = false;
+                context.refreshActionState();
+            }, function (err) {
+                context.showErrors(err);
             });
         },
         _onDelete: function (event) {
@@ -181,13 +173,10 @@ define([
                 packageMaps[0] = {Target:this.target,
                     Process:this.process,Id:this.packageMap};
 
-                WsPackageMaps.deletePackageMap(packageMaps, {
-                    load: function (response) {
-                        topic.publish("packageMapDeleted", context.tabId);
-                    },
-                    error: function (errMsg, errStack) {
-                        context.showErrors(errMsg, errStack);
-                    }
+                WsPackageMaps.deletePackageMap(packageMaps).then(function (response) {
+                    topic.publish("packageMapDeleted", context.tabId);
+                }, function (err) {
+                    context.showErrors(err);
                 });
             }
         }

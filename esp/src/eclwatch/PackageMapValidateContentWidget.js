@@ -88,9 +88,6 @@ define([
 
         //  Init  ---
         init: function (params) {
-            if (this.initalized)
-                return;
-
             if (this.inherited(arguments))
                 return;
 
@@ -119,19 +116,16 @@ define([
         getSelections: function () {
             var context = this;
             WsPackageMaps.GetPackageMapSelectOptions({
-                    includeTargets: true,
-                    IncludeProcesses: true,
-                    IncludeProcessFilters: true
-                }, {
-                load: function (response) {
-                    if (lang.exists("Targets.TargetData", response)) {
-                        context.targets = response.Targets.TargetData;
-                        context.initSelections(context.targets);
-                    }
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
+                includeTargets: true,
+                IncludeProcesses: true,
+                IncludeProcessFilters: true
+            }).then(function (response) {
+                if (lang.exists("Targets.TargetData", response.GetPackageMapSelectOptionsResponse)) {
+                    context.targets = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
+                    context.initSelections(context.targets);
                 }
+            }, function (err) {
+                context.showErrors(err);
             });
         },
 
@@ -209,21 +203,17 @@ define([
             var context = this;
             this.resultControl.setText("");
             this.validateButton.set("disabled", true);
-            WsPackageMaps.validatePackage(request, {
-                load: function (response) {
-                    var responseText = context.validateResponseToText(response);
-                    if (responseText === '')
-                        context.resultControl.setText(context.i18n.Empty);
-                    else {
-                        responseText = context.i18n.ValidateResult + responseText;
-                        context.resultControl.setText(responseText);
-                    }
-                    context.validateButton.set("disabled", false);
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                    context.validateButton.set("disabled", false);
+            WsPackageMaps.validatePackage(request).then(function (response) {
+                var responseText = context.validateResponseToText(response.ValidatePackageResponse);
+                if (responseText === '')
+                    context.resultControl.setText(context.i18n.Empty);
+                else {
+                    responseText = context.i18n.ValidateResult + responseText;
+                    context.resultControl.setText(responseText);
                 }
+                    context.validateButton.set("disabled", false);
+            }, function (err) {
+                context.showErrors(err);
             });
         },
 
@@ -255,11 +245,11 @@ define([
             return text;
         },
 
-        showErrors: function (errMsg, errStack) {
+        showErrors: function (err) {
             topic.publish("hpcc/brToaster", {
                 Severity: "Error",
-                Source: errMsg,
-                Exceptions: [{ Message: errStack }]
+                Source: err.message,
+                Exceptions: [{ Message: err.stack }]
             });
         }
     });
