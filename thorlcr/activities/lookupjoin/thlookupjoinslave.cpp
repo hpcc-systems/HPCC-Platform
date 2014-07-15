@@ -1214,7 +1214,8 @@ public:
     virtual bool addLocalRHSRow(CThorSpillableRowArray &localRhsRows, const void *row)
     {
         LinkThorRow(row);
-        localRhsRows.append(row);
+        if (!localRhsRows.append(row))
+            throw MakeActivityException(this, 0, "Out of memory: Cannot append local rhs row");
         return true;
     }
 // ISmartBufferNotify
@@ -1337,6 +1338,7 @@ protected:
     inline void setBroadcastingSpilt(bool tf) { atomic_set(&spiltBroadcastingRHS, (int)tf); }
     rowidx_t clearNonLocalRows(CThorSpillableRowArray &rows, rowidx_t startPos)
     {
+        CThorArrayLockBlock block(rows);
         rowidx_t clearedRows = 0;
         rowidx_t numRows = rows.numCommitted();
         for (rowidx_t r=startPos; r<numRows; r++)
