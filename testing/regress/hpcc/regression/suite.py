@@ -42,9 +42,10 @@ class Suite:
         self.buildSuite(args, isSetup, fileList)
 
         if len(self.exclude):
-            curTime = time.strftime("%y-%m-%d-%H-%M")
+            curTime = time.strftime("%y-%m-%d-%H-%M-%S")
             logName = self.name + "-exclusion." + curTime + ".log"
             self.logName = os.path.join(self.logDir, logName)
+            args.exclusionFile=self.logName
             self.log = open(self.logName, "w");
             for item in self.exclude:
                 self.log.write(item+"\n")
@@ -59,6 +60,16 @@ class Suite:
         else:
                 allfiles = fileList
 
+        classIncluded=''
+        if 'runclass' in args:
+            classIncluded=args.runclass[0].split(',')
+            pass
+
+        classExcluded=''
+        if 'excludeclass' in args:
+            classExcluded = args.excludeclass[0].split(',')
+            pass
+
         for file in allfiles:
             if file.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, file)
@@ -70,17 +81,29 @@ class Suite:
                     skipResult = eclfile.testSkip(self.name)
 
                 if not skipResult['skip']:
+                    exclusionReason=''
                     if isSetup:
                         exclude = eclfile.testExclusion('setup')
+                        exclusionReason=' setup'
+                    elif ( 'all' not in  classIncluded ) or ('none' not in classExcluded):
+                        included = True
+                        if 'all' not in classIncluded:
+                            included = eclfile.testInClass(classIncluded)
+                        excluded = False
+                        if 'none' not in classExcluded:
+                            excluded = eclfile.testInClass(classExcluded)
+                        exclude = (not included )  or excluded
+                        exclusionReason=' class member excluded'
                     else:
                         exclude = eclfile.testExclusion(self.name)
+                        exclusionReason=' ECL excluded'
 
                     if not exclude:
                         self.suite.append(eclfile)
                     else:
-                        self.exclude.append(format(file, "25")+" excluded")
+                        self.exclude.append(format(file, "30")+exclusionReason)
                 else:
-                    self.exclude.append(format(file, "25")+" skipped (reason:"+skipResult['reason']+")");
+                    self.exclude.append(format(file, "30")+" skipped (reason:"+skipResult['reason']+")");
 
                 if eclfile.testPublish():
                     self.publish.append(eclfile.getBaseEcl())
