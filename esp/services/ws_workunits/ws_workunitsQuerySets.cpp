@@ -1183,6 +1183,40 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
     return graphIds.length();
 }
 
+void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries)
+{
+    try
+    {
+        double version = context.getClientVersion();
+        if (isEmpty(cluster))
+            cluster = querySetId;
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId);
+        if (!queriesOnCluster)
+        {
+            DBGLOG("getQueriesOnCluster() returns NULL for cluster<%s> and querySetId<%s>", cluster, querySetId);
+            return;
+        }
+
+        ForEachItemIn(i, queries)
+        {
+            IEspQuerySetQuery& query = queries.item(i);
+            const char* queryId = query.getId();
+            const char* querySetId0 = query.getQuerySetId();
+            if (!queryId || !querySetId0 || !strieq(querySetId0, querySetId))
+                continue;
+
+            IArrayOf<IEspClusterQueryState> clusters;
+            addClusterQueryStates(queriesOnCluster, cluster, queryId, clusters, version);
+            query.setClusters(clusters);
+        }
+    }
+    catch(IException *e)
+    {
+        EXCLOG(e, "CWsWorkunitsEx::checkAndSetClusterQueryState: Failed to read Query State On Cluster");
+        e->Release();
+    }
+}
+
 bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequest & req, IEspWUListQueriesResponse & resp)
 {
     bool descending = req.getDescending();
@@ -1249,15 +1283,17 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     Owned<IConstQuerySetQueryIterator> it = factory->getQuerySetQueriesSorted(sortOrder, filters, filterBuf.bufferBase(), pageStartFrom, pageSize, &cacheHint, &numberOfQueries);
     resp.setCacheHint(cacheHint);
 
+    StringArray querySetIds;
     IArrayOf<IEspQuerySetQuery> queries;
     double version = context.getClientVersion();
     ForEach(*it)
     {
         IPropertyTree &query=it->query();
+        const char *queryTarget = query.queryProp("@querySetId");
         Owned<IEspQuerySetQuery> q = createQuerySetQuery();
         q->setId(query.queryProp("@id"));
         q->setName(query.queryProp("@name"));
-        q->setQuerySetId(query.queryProp("@querySetId"));
+        q->setQuerySetId(queryTarget);
         q->setDll(query.queryProp("@dll"));
         q->setWuid(query.queryProp("@wuid"));
         q->setActivated(query.getPropBool("@activated", false));
@@ -1282,28 +1318,18 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
             q->setIsLibrary(query.getPropBool("@isLibrary"));
         }
 
-        try
-        {
-            const char* cluster = clusterReq;
-            const char* querySetId = query.queryProp("@querySetId");
-            if (isEmpty(cluster))
-                cluster = querySetId;
-            Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId);
-            if (queriesOnCluster)
-            {
-                IArrayOf<IEspClusterQueryState> clusters;
-                addClusterQueryStates(queriesOnCluster, cluster, query.queryProp("@id"), clusters, version);
-                q->setClusters(clusters);
-            }
-        }
-        catch(IException *e)
-        {
-            StringBuffer err;
-            DBGLOG("Get exception in WUListQueries: %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
-            e->Release();
-        }
+        if (!querySetIds.contains(queryTarget))
+            querySetIds.append(queryTarget);
         queries.append(*q.getClear());
     }
+
+    ForEachItemIn(i, querySetIds)
+    {
+        const char* querySetId = querySetIds.item(i);
+        if(querySetId && *querySetId)
+            checkAndSetClusterQueryState(context, clusterReq, querySetId, queries);
+    }
+
     resp.setQuerysetQueries(queries);
     resp.setNumberOfQueries(numberOfQueries);
 
