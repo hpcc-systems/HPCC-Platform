@@ -1,5 +1,5 @@
-Overview of Regression Suite usage (v:0.0.29)
-==============================================
+Overview of Regression Suite usage
+==================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
 
@@ -27,27 +27,27 @@ Result:
 | 
 |       positional arguments:
 |          {list,setup,run,query} sub-command help
-|            list                list help
-|            setup               setup help
-|            run                 run help
-|            query               query help
+|            list                 list help
+|            setup                setup help
+|            run                  run help
+|            query                query help
 |
 |       optional arguments:
-|            -h, --help            show this help message and exit
-|            --version, -v         show program's version number and exit
-|            --config [CONFIG]     config file to use. Default: ecl-test.json.
-|            --loglevel [{info,debug}]
-|                                  set the log level. Use debug for more detailed logfile.
-|            --suiteDir [SUITEDIR], -s [SUITEDIR]
-|                                  suiteDir to use. Default value is the current directory and it can handle relative path.
-|            --timeout [TIMEOUT]   timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
-|            --keyDir [KEYDIR], -k [KEYDIR]
-|                                  key file directory to compare test output. Default value defined in regress.json config file.
-|            --ignoreResult, -i    completely ignore the result.
-|            -X name1=value1[,name2=value2...]
-|                                  sets the stored input value (stored('name')).
-|            -f optionA=valueA[,optionB=valueB...]
-|                                  set an ECL option (equivalent to #option).
+|        -h, --help               show this help message and exit
+|        --version, -v            show program's version number and exit
+|        --config [CONFIG]        config file to use. Default: ecl-test.json.
+|        --loglevel [{info,debug}]
+|                                 set the log level. Use debug for more detailed logfile.
+|        --suiteDir [SUITEDIR], -s [SUITEDIR]
+|                                 suiteDir to use. Default value is the current directory and it can handle relative path.
+|        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|        --keyDir [KEYDIR], -k [KEYDIR]
+|                                 key file directory to compare test output. Default value defined in regress.json config file.
+|        --ignoreResult, -i    completely ignore the result.
+|        -X name1=value1[,name2=value2...]
+|                                 sets the stored input value (stored('name')).
+|        -f optionA=valueA[,optionB=valueB...]
+|                                 set an ECL option (equivalent to #option).
 
 Important!
     There is a bug in Python argparse library whichis impacts the quoted parameters. So either in -X or -f or both contains a value with space(s) inside then the whole argument should be put in double quote!
@@ -76,10 +76,10 @@ Result:
 |       usage: ecl-test list [-h]
 |
 |       positional arguments:
-|         targets     Print target clusters from config (ecl-test.json by default).
+|        targets                  print target clusters from config (ecl-test.json by default).
 |
 |       optional arguments:
-|         -h, --help  show this help message and exit
+|        -h, --help               show this help message and exit
 |
 
 Parameters of Regression Suite setup sub-command:
@@ -92,13 +92,14 @@ Command:
 Result:
 
 |
-|       usage: usage: ecl-test setup [-h] [--target [target_cluster | all]] [--pq threadNumber]
+|       usage: ecl-test setup [-h] [--target [target_cluster | all]]
+|                             [--pq threadNumber]
 |
 |       optional arguments:
-|         -h, --help            show this help message and exit
-|          --target [target_cluster | all], -t [target_cluster | all]
-|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
-|         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        -h, --help               show this help message and exit
+|        --target [target_cluster | all], -t [target_cluster | all]
+|                                 target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
+|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
 Parameters of Regression Suite run sub-command:
@@ -111,13 +112,15 @@ Command:
 Result:
 
 |
-|       usage: ecl-test run [-h] [--target [target_cluster | all]] [--pq threadNumber]
+|       usage: ecl-test run [-h] [--target [target_cluster | all]] [--publish]
+|                           [--pq threadNumber]
 |
 |       optional arguments:
-|         -h, --help         show this help message and exit
-|         --target [target_cluster | all], -t [target_cluster | all]
-|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
-|         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        -h, --help               show this help message and exit
+|        --target [target_cluster | all], -t [target_cluster | all]
+|                                 target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
+|        --publish, -p            publish compiled query instead of run.
+|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
 
@@ -132,18 +135,18 @@ Result:
 
 |
 |       usage: ecl-test query [-h] [--target [target_cluster | all]] [--publish]
-|                  [--pq threadNumber]
-|                  ECL_query [ECL_query ...]
+|                             [--pq threadNumber]
+|                             ECL_query [ECL_query ...]
 |
 |       positional arguments:
-|         ECL_query                   Name of one or more ECL file(s). It can contain wildcards. (mandatory).
+|        ECL_query                name of one or more ECL file(s). It can contain wildcards. (mandatory).
 |
 |       optional arguments:
-|         -h, --help                  Show this help message and exit
-|         --target [target_cluster | all], -t [target_cluster | all]
-|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
-|         --publish, -p               Publish compiled query instead of run.
-|         --pq threadNumber           Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )
+|        -h, --help               show this help message and exit
+|        --target [target_cluster | all], -t [target_cluster | all]
+|                                 target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
+|        --publish, -p            publish compiled query instead of run.
+|        --pq threadNumber        parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )
 |
 
 Steps to run Regression Suite
