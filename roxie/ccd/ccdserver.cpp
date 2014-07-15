@@ -21393,6 +21393,18 @@ public:
     {
         if (datafile)
             addXrefFileInfo(reply, datafile);
+        else
+        {
+            // Temporarily resolve the file
+            Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
+            if ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) == 0)
+            {
+                OwnedRoxieString fileName(helper->getFileName());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit());
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+        }
     }
 };
 
@@ -22490,6 +22502,17 @@ public:
     {
         if (indexfile)
             addXrefFileInfo(reply, indexfile);
+        else
+        {
+            Owned<IHThorIndexReadBaseArg> indexHelper = (IHThorIndexReadBaseArg *) helperFactory();
+            if ((indexHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) == 0)
+            {
+                OwnedRoxieString indexName(indexHelper->getFileName());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit());
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+        }
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -23467,6 +23490,19 @@ public:
     {
         if (datafile)
             addXrefFileInfo(reply, datafile);
+        else
+        {
+            // Temporarily resolve the file
+            Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
+            IHThorFetchContext *fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
+            if ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) == 0)
+            {
+                OwnedRoxieString fileName(fetchContext->getFileName());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit());
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+        }
     }
 };
 
