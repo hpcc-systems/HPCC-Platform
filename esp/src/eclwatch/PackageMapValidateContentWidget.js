@@ -42,7 +42,6 @@ define([
         baseClass: "PackageMapValidateContentWidget",
         i18n: nlsHPCC,
 
-        initalized: false,
         targets: null,
 
         targetSelectControl: null,
@@ -91,7 +90,6 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.initalized = true;
             if ((params.targets !== undefined) && (params.targets[0].Name !== undefined))
                 this.initSelections(params.targets);
             else
@@ -124,8 +122,10 @@ define([
                     context.targets = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
                     context.initSelections(context.targets);
                 }
+                return response;
             }, function (err) {
                 context.showErrors(err);
+                return err;
             });
         },
 
@@ -211,9 +211,11 @@ define([
                     responseText = context.i18n.ValidateResult + responseText;
                     context.resultControl.setText(responseText);
                 }
-                    context.validateButton.set("disabled", false);
+                context.validateButton.set("disabled", false);
+                return response;
             }, function (err) {
                 context.showErrors(err);
+                return err;
             });
         },
 

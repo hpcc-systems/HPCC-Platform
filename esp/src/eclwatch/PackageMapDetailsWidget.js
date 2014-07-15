@@ -50,7 +50,6 @@ define([
         xmlWidget: null,
         xmlWidgetLoaded: false,
 
-        initalized: false,
         tabId: "",
         packageMap: "",
         target: "",
@@ -105,7 +104,6 @@ define([
 	    if (this.inherited(arguments))
                 return;
 
-            this.initalized = true;
             this.tabId = params.tabId;
             this.packageMap = params.packageMap;
             this.target = params.target;
@@ -148,8 +146,10 @@ define([
                 domClass.replace(context.id + "StateIdImage", "iconRunning");
                 context.active = true;
                 context.refreshActionState();
+                return response;
             }, function (err) {
                 context.showErrors(err);
+                return err;
             });
         },
         _onDeactivate: function (event) {
@@ -162,8 +162,10 @@ define([
                 domClass.replace(context.id + "StateIdImage", "iconArchived");
                 context.active = false;
                 context.refreshActionState();
+                return response;
             }, function (err) {
                 context.showErrors(err);
+                return err;
             });
         },
         _onDelete: function (event) {
@@ -175,8 +177,10 @@ define([
 
                 WsPackageMaps.deletePackageMap(packageMaps).then(function (response) {
                     topic.publish("packageMapDeleted", context.tabId);
+                    return response;
                 }, function (err) {
                     context.showErrors(err);
+                    return err;
                 });
             }
         }

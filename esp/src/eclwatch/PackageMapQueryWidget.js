@@ -276,8 +276,10 @@ define([
                 WsPackageMaps.deletePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
                     context.packagesGrid.rowSelectCell.toggleAllSelection(false);
                     context.refreshGrid(response.DeletePackageResponse);
+                    return response;
                 }, function (err) {
                     context.showErrors(err);
+                    return err;
                 });
             }
         },
@@ -286,8 +288,10 @@ define([
             WsPackageMaps.activatePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
                 context.packagesGrid.rowSelectCell.toggleAllSelection(false);
                 context.refreshGrid();
+                return response;
             }, function (err) {
                 context.showErrors(err);
+                return err;
             });
         },
         _onDeactivate: function (event) {
@@ -295,8 +299,10 @@ define([
             WsPackageMaps.deactivatePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
                 context.packagesGrid.rowSelectCell.toggleAllSelection(false);
                 context.refreshGrid();
+                return response;
             }, function (err) {
                 context.showErrors(err);
+                return err;
             });
         },
 
@@ -329,8 +335,10 @@ define([
                 }
                 context.initPackagesGrid();
                 context.initTabs();
+                return response;
             }, function (err) {
                 context.showErrors(err);
+                return err;
             });
         },
 
@@ -393,7 +401,6 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.initalized = true;
             this.params = params;
             this.getSelections();
         },
