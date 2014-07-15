@@ -162,6 +162,21 @@ define([
                         }
                     });
                     break;
+                case "Query":
+                    return new DelayLoadWidget({
+                        id: id,
+                        title: row.Summary,
+                        closable: true,
+                        delayWidget: "QuerySetDetailsWidget",
+                        hpcc: {
+                            type: "QuerySetDetailsWidget",
+                            params: {
+                                QuerySetId: row._querySetId,
+                                Id: row._id
+                            }
+                        }
+                    });
+                    break;
                 default:
                     break;
             }
@@ -176,7 +191,7 @@ define([
                 arrayUtil.forEach(workunits, function (item, idx) {
                     context.store.add({
                         id: "WsWorkunitsWUQuery" + idPrefix + ++context._rowID,
-                        Type: "ECL Workunit",
+                        Type: context.i18n.ECLWorkunit,
                         Reason: prefix,
                         Summary: item.Wuid,
                         _type: "Wuid",
@@ -196,7 +211,7 @@ define([
                 arrayUtil.forEach(workunits, function (item, idx) {
                     context.store.add({
                         id: "FileSprayGetDFUWorkunits" + idPrefix + ++context._rowID,
-                        Type: "DFU Workunit",
+                        Type: context.i18n.DFUWorkunit,
                         Reason: prefix,
                         Summary: item.ID,
                         _type: "DFUWuid",
@@ -214,7 +229,7 @@ define([
                 var idPrefix = prefix.split(" ").join("_");
                 this.store.add({
                     id: "FileSprayGetDFUWorkunits" + idPrefix + workunit.ID,
-                    Type: "DFU Workunit",
+                    Type: context.i18n.DFUWorkunit,
                     Reason: prefix,
                     Summary: workunit.ID,
                     _type: "DFUWuid",
@@ -234,7 +249,7 @@ define([
                     if (item.isSuperfile) {
                         context.store.add({
                             id: "WsDfuDFUQuery" + idPrefix + ++context._rowID,
-                            Type: "Super File",
+                            Type: context.i18n.SuperFile,
                             Reason: prefix,
                             Summary: item.Name,
                             _type: "SuperFile",
@@ -243,7 +258,7 @@ define([
                     } else {
                         context.store.add({
                             id: "WsDfuDFUQuery" + idPrefix + ++context._rowID,
-                            Type: "Logical File",
+                            Type: context.i18n.LogicalFile,
                             Reason: prefix,
                             Summary: item.Name + " (" + item.NodeGroup + ")",
                             _type: "LogicalFile",
@@ -251,6 +266,27 @@ define([
                             _name: item.Name
                         });
                     }
+                });
+                return items.length;
+            }
+            return 0;
+        },
+        
+        loadWUListQueriesResponse: function (prefix, response) {
+            var items = lang.getObject("WUListQueriesResponse.QuerysetQueries.QuerySetQuery", false, response)
+            if (items) {
+                var idPrefix = prefix.split(" ").join("_");
+                var context = this;
+                arrayUtil.forEach(items, function (item, idx) {
+                    context.store.add({
+                        id: "WsDfuDFUQuery" + idPrefix + ++context._rowID,
+                        Type: context.i18n.Query,
+                        Reason: prefix,
+                        Summary: item.Name + " (" + item.QuerySetId + " - " + item.Id + ")",
+                        _type: "Query",
+                        _querySetId: item.QuerySetId,
+                        _id: item.Id
+                    });
                 });
                 return items.length;
             }
@@ -282,6 +318,7 @@ define([
             var searchECL = false;
             var searchDFU = false;
             var searchFile = false;
+            var searchQuery = false;
             var searchText = "";
             if (this.searchText.indexOf("ecl:") === 0) {
                 searchECL = true;
@@ -292,12 +329,17 @@ define([
             } else if (this.searchText.indexOf("file:") === 0) {
                 searchFile = true;
                 searchText = this.searchText.substring(5);
+            } else if (this.searchText.indexOf("query:") === 0) {
+                searchQuery = true;
+                searchText = this.searchText.substring(6);
             } else {
                 searchECL = true;
                 searchDFU = true;
                 searchFile = true;
+                searchQuery = true;
                 searchText = this.searchText;
             }
+            searchText = searchText.trim();            
 
             var searchArray = [];
             if (searchECL) {
@@ -334,6 +376,14 @@ define([
                 }));
                 searchArray.push(WsDfu.DFUQuery({ request: { Owner: searchText } }).then(function (response) {
                     context.loadDFUQueryResponse(context.i18n.Owner, response);
+                }));
+            }
+            if (searchQuery) {
+                searchArray.push(WsWorkunits.WUListQueries({ request: { QueryID: "*" + searchText + "*" } }).then(function (response) {
+                    context.loadWUListQueriesResponse(context.i18n.ID, response);
+                }));
+                searchArray.push(WsWorkunits.WUListQueries({ request: { QueryName: "*" + searchText + "*" } }).then(function (response) {
+                    context.loadWUListQueriesResponse(context.i18n.Name, response);
                 }));
             }
 
