@@ -61,7 +61,7 @@ define([
     _TabContainerWidget, DelayLoadWidget, PackageMapDetailsWidget, PackageMapValidateWidget,
     WsPackageMaps, ESPPackageProcess, SFDetailsWidget,
     template) {
-    return declare("PackageMapQueryWidget", [_TabContainerWidget, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("PackageMapQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapQueryWidget",
         i18n: nlsHPCC,
@@ -273,47 +273,44 @@ define([
         _onDelete: function (event) {
             if (confirm('Delete selected packages?')) {
                 var context = this;
-                WsPackageMaps.deletePackageMap(this.packagesGrid.selection.getSelected(), {
-                    load: function (response) {
-                        context.packagesGrid.rowSelectCell.toggleAllSelection(false);
-                        context.refreshGrid(response);
-                    },
-                    error: function (errMsg, errStack) {
-                        context.showErrors(errMsg, errStack);
-                    }
+                WsPackageMaps.deletePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
+                    context.packagesGrid.rowSelectCell.toggleAllSelection(false);
+                    context.refreshGrid(response.DeletePackageResponse);
+                    return response;
+                }, function (err) {
+                    context.showErrors(err);
+                    return err;
                 });
             }
         },
         _onActivate: function (event) {
             var context = this;
-            WsPackageMaps.activatePackageMap(this.packagesGrid.selection.getSelected(), {
-                load: function (response) {
-                    context.packagesGrid.rowSelectCell.toggleAllSelection(false);
-                    context.refreshGrid();
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                }
+            WsPackageMaps.activatePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
+                context.packagesGrid.rowSelectCell.toggleAllSelection(false);
+                context.refreshGrid();
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
             });
         },
         _onDeactivate: function (event) {
             var context = this;
-            WsPackageMaps.deactivatePackageMap(this.packagesGrid.selection.getSelected(), {
-                load: function (response) {
-                    context.packagesGrid.rowSelectCell.toggleAllSelection(false);
-                    context.refreshGrid();
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                }
+            WsPackageMaps.deactivatePackageMap(this.packagesGrid.selection.getSelected()).then(function (response) {
+                context.packagesGrid.rowSelectCell.toggleAllSelection(false);
+                context.refreshGrid();
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
             });
         },
 
-        showErrors: function (errMsg, errStack) {
+        showErrors: function (err) {
             topic.publish("hpcc/brToaster", {
                 Severity: "Error",
-                Source: errMsg,
-                Exceptions: [{ Message: errStack }]
+                Source: err.message,
+                Exceptions: [{ Message: err.stack }]
             });
         },
 
@@ -324,25 +321,24 @@ define([
 
             var context = this;
             WsPackageMaps.GetPackageMapSelectOptions({
-                    includeTargets: true,
-                    IncludeProcesses: true,
-                    IncludeProcessFilters: true
-                }, {
-                load: function (response) {
-                    if (lang.exists("Targets.TargetData", response)) {
-                        context.targets = response.Targets.TargetData;
-                        context.initSelections();
-                    }
-                    context.targetSelect.set("value", context.targetSelected);
-                    if (lang.exists("ProcessFilters.Item", response)) {
-                        context.processFilters = response.ProcessFilters.Item;
-                    }
-                    context.initPackagesGrid();
-                    context.initTabs();
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
+                includeTargets: true,
+                IncludeProcesses: true,
+                IncludeProcessFilters: true
+            }).then(function (response) {
+                if (lang.exists("Targets.TargetData", response.GetPackageMapSelectOptionsResponse)) {
+                    context.targets = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
+                    context.initSelections();
                 }
+                context.targetSelect.set("value", context.targetSelected);
+                if (lang.exists("ProcessFilters.Item", response.GetPackageMapSelectOptionsResponse)) {
+                    context.processFilters = response.GetPackageMapSelectOptionsResponse.ProcessFilters.Item;
+                }
+                context.initPackagesGrid();
+                context.initTabs();
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
             });
         },
 
@@ -402,10 +398,9 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
 
-            this.initalized = true;
             this.params = params;
             this.getSelections();
         },

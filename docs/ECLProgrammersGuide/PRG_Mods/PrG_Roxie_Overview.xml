@@ -258,15 +258,6 @@ END;</programlisting>
 
     <para>PERSISTed attributes</para>
 
-    <para>A SuperFile used in Roxie may not contain more than a single
-    sub-file (a SuperKey, however, may contain multiple payload indexes). This
-    restriction makes using SuperFiles in Roxie just an exercise in file
-    redirection. By writing queries that use SuperFiles (even though they
-    contain only a single sub-file) you have the advantage of being able to
-    update your Roxie by simply deploying new data without needing to
-    re-compile the queries that use that data simply because the sub-file name
-    changed. This saves compilation time, and in a production environment
-    (which a Roxie always is) where a data file is used by many queries, this
-    savings can be a significant amount.</para>
+    <para></para>
   </sect2>
 </sect1>

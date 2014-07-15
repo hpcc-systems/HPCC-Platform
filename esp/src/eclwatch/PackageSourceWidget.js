@@ -86,37 +86,33 @@ define([
 
                 var context = this;
                 if (this.isXmlContent) {
-                    WsPackageMaps.getPackageMapById(params, {
-                        load: function (response) {
-                            context.editor.setValue(response);
-                        },
-                        error: function (errMsg, errStack) {
-                            context.showErrors(errMsg, errStack);
-                        }
+                    WsPackageMaps.getPackageMapById(params).then(function (response) {
+                        if (!lang.exists("GetPackageMapByIdResponse.Info", response))
+                            context.editor.setValue(i18n.NoContent);
+                        else
+                            context.editor.setValue(response.GetPackageMapByIdResponse.Info);
+                    }, function (err) {
+                        context.showErrors(err);
                     });
                 }
                 else {
-                    WsPackageMaps.validatePackage(params, {
-                        load: function (response) {
-                            var responseText = context.validateResponseToText(response);
-                            //console.log(responseText);
-                            if (responseText == '')
-                                context.editor.setValue("(Empty)");
-                            else
-                                context.editor.setValue(responseText);
-                        },
-                        error: function (errMsg, errStack) {
-                            context.showErrors(errMsg, errStack);
-                        }
+                    WsPackageMaps.validatePackage(params).then(function (response) {
+                        var responseText = context.validateResponseToText(response.ValidatePackageResponse);
+                        if (responseText == '')
+                            context.editor.setValue("(Empty)");
+                        else
+                            context.editor.setValue(responseText);
+                    }, function (err) {
+                        context.showErrors(err);
                     });
                 }
             },
 
-            showErrors: function (errMsg, errStack) {
+            showErrors: function (err) {
                 topic.publish("hpcc/brToaster", {
                     Severity: "Error",
-                    Source: errMsg,
-                    Exceptions: [{ Message: errStack }]
+                    Source: err.message,
+                Exceptions: [{ Message: err.stack }]
                 });
             },
 
