@@ -613,7 +613,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
     }
     else
     {
-        recordStructure.set("field");
+        recordStructure.append("field");
         recordStructure.append(fieldCount);
     }
     recordStructure.append(";\n");
