@@ -23518,6 +23518,8 @@ class CRoxieServerDummyActivityFactory : public CRoxieServerActivityFactory  // 
 public:
     Owned<const IResolvedFile> indexfile;
     Owned<const IResolvedFile> datafile;
+    StringAttr fileName;
+    StringAttr indexName;
     Owned<IKeyArray> keySet;
     Owned<IFileIOArray> files;
     TranslatorArray layoutTranslators;
@@ -23533,16 +23535,16 @@ public:
             ThorActivityKind kind = getActivityKind(_graphNode);
             if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
             {
-                const char *fileName = queryNodeFileName(_graphNode, kind);
-                const char *indexName = queryNodeIndexName(_graphNode, kind);
-                if (indexName)
+                fileName.set(queryNodeFileName(_graphNode, kind));
+                indexName.set(queryNodeIndexName(_graphNode, kind));
+                if (indexName && !allFilesDynamic)
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
                     indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
                     if (indexfile)
                         keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, false));
                 }
-                if (fileName)
+                if (fileName && !allFilesDynamic)
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
                     datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit()));
@@ -23567,10 +23569,29 @@ public:
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {
-        if (datafile)
-            addXrefFileInfo(reply, datafile);
-        if (indexfile)
-            addXrefFileInfo(reply, indexfile);
+        if (!allFilesDynamic)
+        {
+            if (datafile)
+                addXrefFileInfo(reply, datafile);
+            if (indexfile)
+                addXrefFileInfo(reply, indexfile);
+        }
+        else
+        {
+            Owned<const IResolvedFile> temp;
+            if (fileName.length())
+            {
+                temp.setown(queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit()));
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+            if (indexName.length())
+            {
+                temp.setown(queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit()));
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+        }
     }
 };
 
