@@ -1378,7 +1378,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     }
 
     resp.setQuerysetQueries(queries);
-    resp.setNumberOfQueries(queries.length());
+    resp.setNumberOfQueries(numberOfQueries);
 
     return true;
 }
