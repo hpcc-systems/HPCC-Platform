@@ -23,7 +23,6 @@ define([
     "dojo/topic",
     "dijit/registry",
 
-    "hpcc/_Widget",
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/ECLSourceWidget",
@@ -34,16 +33,15 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
-    "dijit/form/Button"
+    "dijit/form/Button",
+    "dijit/form/Select"
 ], function (declare, lang, i18n, nlsHPCC, dom, query, topic, registry,
-                _Widget, _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps,
-                template) {
+    _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps, template) {
     return declare("PackageMapValidateWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapValidateWidget",
         i18n: nlsHPCC,
 
-        initalized: false,
         targets: null,
 
         targetSelectControl: null,
@@ -57,6 +55,7 @@ define([
 
         constructor: function() {
             this.processes = new Array();
+            this.targets = new Array();
         },
 
         buildRendering: function (args) {
@@ -83,14 +82,33 @@ define([
             this.validatePackageMapContentWidget = registry.byId(this.id + "_ValidatePackageMapContent");
         },
 
+        getSelections: function () {
+            var context = this;
+            WsPackageMaps.GetPackageMapSelectOptions({
+                includeTargets: true,
+                IncludeProcesses: true,
+                IncludeProcessFilters: true
+            }).then(function (response) {
+                if (lang.exists("Targets.TargetData", response.GetPackageMapSelectOptionsResponse)) {
+                    context.targets = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
+                    context.initSelections(context.targets);
+                }
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
+            });
+        },
+
         //  init this page
         init: function (params) {
-            if (this.initalized)
+	    if (this.inherited(arguments))
                 return;
 
-            this.initalized = true;
             if (params.params.targets !== undefined)
                 this.initSelections(params.params.targets);
+            else
+                this.getSelections();
 
             this.editorControl = registry.byId(this.id + "Source");
             this.editorControl.init(params);
@@ -171,17 +189,17 @@ define([
             var context = this;
             this.editorControl.setText('');
             WsPackageMaps.getPackage({
-                    target: this.targetSelectControl.getValue(),
-                    process: process
-                }, {
-                load: function (content) {
-                    if (content !== '') {
-                        context.editorControl.setText(content);;
-                    }
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                }
+                target: this.targetSelectControl.getValue(),
+                process: process
+            }).then(function (response) {
+                if (!lang.exists("GetPackageResponse.Info", response))
+                    context.editorControl.setText(i18n.NoContent);
+                else
+                    context.editorControl.setText(response.GetPackageResponse.Info);
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
             });
         },
 
@@ -197,21 +215,19 @@ define([
             var context = this;
             this.resultControl.setText("");
             this.validateButton.set("disabled", true);
-            WsPackageMaps.validatePackage(request, {
-                load: function (response) {
-                    var responseText = context.validateResponseToText(response);
-                    if (responseText === '')
-                        context.resultControl.setText(context.i18n.Empty);
-                    else {
-                        responseText = context.i18n.ValidateResult + responseText;
-                        context.resultControl.setText(responseText);
-                    }
-                    context.validateButton.set("disabled", false);
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                    context.validateButton.set("disabled", false);
+            WsPackageMaps.validatePackage(request).then(function (response) {
+                var responseText = context.validateResponseToText(response.ValidatePackageResponse);
+                if (responseText === '')
+                    context.resultControl.setText(context.i18n.Empty);
+                else {
+                    responseText = context.i18n.ValidateResult + responseText;
+                    context.resultControl.setText(responseText);
                 }
+                context.validateButton.set("disabled", false);
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
             });
         },
 
@@ -243,11 +259,11 @@ define([
             return text;
         },
 
-        showErrors: function (errMsg, errStack) {
+        showErrors: function (err) {
             topic.publish("hpcc/brToaster", {
                 Severity: "Error",
-                Source: errMsg,
-                Exceptions: [{ Message: errStack }]
+                Source: err.message,
+                Exceptions: [{ Message: err.stack }]
             });
         }
     });

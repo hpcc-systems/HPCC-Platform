@@ -22,28 +22,24 @@ define([
     "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/topic",
-
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
-    "hpcc/WsPackageMaps",
+    "hpcc/_TabContainerWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/PackageSourceWidget",
+    "hpcc/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapDetailsWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
+    "dijit/form/TextBox",
     "dijit/form/Button",
-    "dijit/Toolbar",
-    "dijit/TooltipDialog",
-    "dijit/TitlePane"
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic,
-    _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-    WsPackageMaps, PackageSourceWidget, template) {
-    return declare("PackageMapDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    "dijit/Toolbar"
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic, registry,
+    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, WsPackageMaps, template) {
+    return declare("PackageMapDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",
         i18n: nlsHPCC,
@@ -54,7 +50,6 @@ define([
         xmlWidget: null,
         xmlWidgetLoaded: false,
 
-        initalized: false,
         tabId: "",
         packageMap: "",
         target: "",
@@ -106,9 +101,9 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized)
+	    if (this.inherited(arguments))
                 return;
-            this.initalized = true;
+
             this.tabId = params.tabId;
             this.packageMap = params.packageMap;
             this.target = params.target;
@@ -133,11 +128,11 @@ define([
             domAttr.set(this.id + "StateIdImage", "title", this.active? this.i18n.Active:this.i18n.NotActive);
         },
 
-        showErrors: function (errMsg, errStack) {
+        showErrors: function (err) {
             topic.publish("hpcc/brToaster", {
                 Severity: "Error",
-                Source: errMsg,
-                Exceptions: [{ Message: errStack }]
+                Source: err.message,
+                Exceptions: [{ Message: err.stack }]
             });
         },
 
@@ -147,15 +142,14 @@ define([
             packageMaps[0] = {Target:this.target,
                 Process:this.process,Id:this.packageMap};
 
-            WsPackageMaps.activatePackageMap(packageMaps, {
-                load: function (response) {
-                    domClass.replace(context.id + "StateIdImage", "iconRunning");
-                    context.active = true;
-                    context.refreshActionState();
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                }
+            WsPackageMaps.activatePackageMap(packageMaps).then(function (response) {
+                domClass.replace(context.id + "StateIdImage", "iconRunning");
+                context.active = true;
+                context.refreshActionState();
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
             });
         },
         _onDeactivate: function (event) {
@@ -164,15 +158,14 @@ define([
             packageMaps[0] = {Target:this.target,
                 Process:this.process,Id:this.packageMap};
 
-            WsPackageMaps.deactivatePackageMap(packageMaps, {
-                load: function (response) {
-                    domClass.replace(context.id + "StateIdImage", "iconArchived");
-                    context.active = false;
-                    context.refreshActionState();
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                }
+            WsPackageMaps.deactivatePackageMap(packageMaps).then(function (response) {
+                domClass.replace(context.id + "StateIdImage", "iconArchived");
+                context.active = false;
+                context.refreshActionState();
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
             });
         },
         _onDelete: function (event) {
@@ -182,13 +175,12 @@ define([
                 packageMaps[0] = {Target:this.target,
                     Process:this.process,Id:this.packageMap};
 
-                WsPackageMaps.deletePackageMap(packageMaps, {
-                    load: function (response) {
-                        topic.publish("packageMapDeleted", context.tabId);
-                    },
-                    error: function (errMsg, errStack) {
-                        context.showErrors(errMsg, errStack);
-                    }
+                WsPackageMaps.deletePackageMap(packageMaps).then(function (response) {
+                    topic.publish("packageMapDeleted", context.tabId);
+                    return response;
+                }, function (err) {
+                    context.showErrors(err);
+                    return err;
                 });
             }
         }

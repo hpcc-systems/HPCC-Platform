@@ -31,129 +31,57 @@ define([
             return ESPRequest.send("WsPackageProcess", "ListPackages", params);
         },
 
-        errorMessageCallback: function (callback, message, errorStack)        {
+        errorMessageCallback: function (callback, error)        {
             if (callback && callback.error) {
-                callback.error(message, errorStack);
+                callback.error(error);
             }
         },
 
-        checkExceptions: function (callback, response) {
-            if (!lang.exists("Exceptions.Exception", response))
-                return true;
-            var exceptionCode = response.Exceptions.Exception[0].Code;
-            var exceptionMSG = response.Exceptions.Exception[0].Message;
-            this.errorMessageCallback(callback, i18n.Exception + ":", i18n.Code + ":" +exceptionCode+ " " +i18n.Message+ ":" +exceptionMSG);
-            return false;
-        },
-
-        checkStatus: function (callback, hasStatus, status) {
-            if (hasStatus && (status.Code == 0))
-                return true;
-            if (callback && callback.error) {
-                if (!hasStatus)
-                    this.errorMessageCallback(callback, i18n.InvalidResponse, "");
-                else
-                    this.errorMessageCallback(callback, status.Description, "");
-            }
-            return false;
-        },
-
-        getPackage: function (params, callback) {
-            var request = {
-                Target: params.target,
-                Process: params.process
-            };
-
-            var context = this;
+        getPackage: function (params) {
             return ESPRequest.send("WsPackageProcess", "GetPackage", {
-                request: request,
-                load: function (response) {
-                    if (context.checkExceptions(callback, response) &&
-                        context.checkStatus(callback, lang.exists("GetPackageResponse.status", response),
-                        response.GetPackageResponse.status))
-                    {
-                        if (!lang.exists("GetPackageResponse.Info", response))
-                            callback.load(i18n.NoContent);
-                        else
-                            callback.load(response.GetPackageResponse.Info);
-                    }
-                },
-                error: function (err) {
-                    context.errorMessageCallback(callback, err.message, err.stack);
+                request: {
+                    Target: params.target,
+                    Process: params.process
                 }
             });
         },
 
-        getPackageMapById: function (params, callback) {
-            var request = {
-                PackageMapId: params.packageMap
-            };
-
-            var context = this;
+        getPackageMapById: function (params) {
             return ESPRequest.send("WsPackageProcess", "GetPackageMapById", {
-                request: request,
-                load: function (response) {
-                    if (context.checkExceptions(callback, response) &&
-                        context.checkStatus(callback, lang.exists("GetPackageMapByIdResponse.status", response),
-                        response.GetPackageMapByIdResponse.status))
-                    {
-                        if (!lang.exists("GetPackageMapByIdResponse.Info", response))
-                            callback.load(i18n.NoContent);
-                        else
-                            callback.load(response.GetPackageMapByIdResponse.Info);
-                    }
-                },
-                error: function (err) {
-                    context.errorMessageCallback(callback, err.message, err.stack);
+                request: {
+                    PackageMapId: params.packageMap
                 }
             });
         },
 
-        GetPackageMapSelectOptions: function (params, callback) {
-            var request = {
-                IncludeTargets: params.includeTargets,
-                IncludeProcesses: params.includeProcesses,
-                IncludeProcessFilters: params.includeProcessFilters
-            };
-            var context = this;
+        GetPackageMapSelectOptions: function (params) {
             return ESPRequest.send("WsPackageProcess", "GetPackageMapSelectOptions", {
-                request: {},
-                load: function (response) {
-                    if (context.checkExceptions(callback, response) &&
-                        context.checkStatus(callback, lang.exists("GetPackageMapSelectOptionsResponse.status", response),
-                        response.GetPackageMapSelectOptionsResponse.status))
-                    {
-                        callback.load(response.GetPackageMapSelectOptionsResponse);
-                    }
-                },
-                error: function (err) {
-                    context.errorMessageCallback(callback, err.message, err.stack);
+                request: {
+                    IncludeTargets: params.includeTargets,
+                    IncludeProcesses: params.includeProcesses,
+                    IncludeProcessFilters: params.includeProcessFilters
                 }
             });
         },
 
+        //Not used for now. May be used later.
         listProcessFilters: function (callback) {
             var context = this;
             return ESPRequest.send("WsPackageProcess", "ListProcessFilters", {
                 request: {},
                 load: function (response) {
-                    if (context.checkExceptions(callback, response) &&
-                        context.checkStatus(callback, lang.exists("ListProcessFiltersResponse.status", response),
-                        response.ListProcessFiltersResponse.status))
-                    {
-                        if (!lang.exists("ListProcessFiltersResponse.ProcessFilters", response))
-                            callback.load(i18n.NoContent);
-                        else
-                            callback.load(response.ListProcessFiltersResponse.ProcessFilters);
-                    }
+                    if (!lang.exists("ListProcessFiltersResponse.ProcessFilters", response))
+                        callback.load(i18n.NoContent);
+                    else
+                        callback.load(response.ListProcessFiltersResponse.ProcessFilters);
                 },
                 error: function (err) {
-                    context.errorMessageCallback(callback, err.message, err.stack);
+                    context.errorMessageCallback(callback, err);
                 }
             });
         },
 
-        validatePackage: function ( params, callback) {
+        validatePackage: function ( params) {
             var request = { Target: params.target };
             if ( params.packageMap )
                 request['PMID'] = params.packageMap;
@@ -164,72 +92,30 @@ define([
             if ( params.active )
                 request['Active'] = params.active;
 
-            var context = this;
             return ESPRequest.send("WsPackageProcess", "ValidatePackage", {
-                request: request,
-                load: function (response) {
-                    if (context.checkExceptions(callback, response) &&
-                        context.checkStatus(callback, lang.exists("ValidatePackageResponse.status", response),
-                        response.ValidatePackageResponse.status))
-                    {
-                        //console.log(response.ValidatePackageResponse);
-                        callback.load(response.ValidatePackageResponse);
-                    }
-                },
-                error: function (err) {
-                    context.errorMessageCallback(callback, err.message, err.stack);
-                }
+                request: request
             });
         },
 
-        activatePackageMap: function (packageMaps, callback) {
-            var request = {
-                Target: packageMaps[0].Target,
-                Process: packageMaps[0].Process,
-                PackageMap: packageMaps[0].Id
-            };
-
-            var context = this;
+        activatePackageMap: function (packageMaps) {
             return ESPRequest.send("WsPackageProcess", "ActivatePackage", {
-                request: request,
-                load: function (response) {
-                    if (context.checkExceptions(callback, response) &&
-                        context.checkStatus(callback, lang.exists("ActivatePackageResponse.status", response),
-                        response.ActivatePackageResponse.status))
-                    {
-                        callback.load(response.ActivatePackageResponse);
-                    }
-                },
-                error: function (err) {
-                    context.errorMessageCallback(callback, err.message, err.stack);
+                request: {
+                    Target: packageMaps[0].Target,
+                    Process: packageMaps[0].Process,
+                    PackageMap: packageMaps[0].Id
                 }
             });
         },
-        deactivatePackageMap: function (packageMaps, callback) {
-            var request = {
-                Target: packageMaps[0].Target,
-                Process: packageMaps[0].Process,
-                PackageMap: packageMaps[0].Id
-            };
-
-            var context = this;
+        deactivatePackageMap: function (packageMaps) {
             return ESPRequest.send("WsPackageProcess", "DeActivatePackage", {
-                request: request,
-                load: function (response) {
-                    if (context.checkExceptions(callback, response) &&
-                        context.checkStatus(callback, lang.exists("DeActivatePackageResponse.status", response),
-                        response.DeActivatePackageResponse.status))
-                    {
-                        callback.load(response.DeActivatePackageResponse);
-                    }
-                },
-                error: function (err) {
-                    context.errorMessageCallback(callback, err.message, err.stack);
+                request: {
+                    Target: packageMaps[0].Target,
+                    Process: packageMaps[0].Process,
+                    PackageMap: packageMaps[0].Id
                 }
             });
         },
-        deletePackageMap: function (packageMaps, callback) {
-            var context = this;
+        deletePackageMap: function (packageMaps) {
             var request = {};
             arrayUtil.forEach(packageMaps, function (item, idx) {
                 request["PackageMaps.PackageMapEntry." + idx + ".Id"] = item.Id;
@@ -240,18 +126,7 @@ define([
                 "PackageMaps.PackageMapEntry.itemcount": packageMaps.length
             });
             return ESPRequest.send("WsPackageProcess", "DeletePackage", {
-                request: request,
-                load: function (response) {
-                    if (context.checkExceptions(callback, response) &&
-                        context.checkStatus(callback, lang.exists("DeletePackageResponse.status", response),
-                        response.DeletePackageResponse.status))
-                    {
-                        callback.load(response.DeletePackageResponse);
-                    }
-                },
-                error: function (err) {
-                    context.errorMessageCallback(callback, err.message, err.stack);
-                }
+                request: request
             });
         }
     };
