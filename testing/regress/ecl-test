@@ -186,6 +186,10 @@ class RegressMain:
                                 action='store_true')
         parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )",
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
+        parser_run.add_argument('--runclass', '-r', help="run subclass(es) of the suite. Default value is 'all'",
+                                nargs=1,  default = ['all'],   metavar="class[,class,...]")
+        parser_run.add_argument('--excludeclass', '-e', help="exclude subclass(es) of the suite. Default value is 'none'",
+                                nargs=1,  default = ['none'],   metavar="class[,class,...]")
 
         parser_query = subparsers.add_parser('query', help='query help')
         parser_query.set_defaults(func='query')
