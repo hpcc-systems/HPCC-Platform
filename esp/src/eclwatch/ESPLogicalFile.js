@@ -384,12 +384,21 @@ define([
     });
 
     return {
-        Get: function (Cluster, Name) {
+        Get: function (Cluster, Name, data) {
             if (!Name) {
                 throw new Error("Invalid Logical File ID");
             }
             var store = new Store();
-            return store.get(createID(Cluster, Name));
+            var retVal = store.get(createID(Cluster, Name));
+            if (data) {
+                lang.mixin(data, {
+                    __hpcc_id: createID(data.NodeGroup, data.Name),
+                    __hpcc_isDir: false,
+                    __hpcc_displayName: data.Name
+                });
+                retVal.updateData(data);
+            }
+            return retVal;
         },
 
         CreateLFQueryStore: function (options) {

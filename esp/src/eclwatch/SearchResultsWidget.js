@@ -19,6 +19,8 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
+    "dojo/store/Memory",
+    "dojo/store/Observable",
     "dojo/on",
     "dojo/promise/all",
 
@@ -31,21 +33,25 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/WsWorkunits",
+    "hpcc/ESPWorkunit",
+    "hpcc/ESPDFUWorkunit",
+    "hpcc/ESPLogicalFile",
+    "hpcc/ESPQuery",
     "hpcc/FileSpray",
     "hpcc/WsDfu",
     "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, all,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, on, all,
                 Button,
                 Standby, validate,
                 selector,
-                GridDetailsWidget, WsWorkunits, FileSpray, WsDfu, DelayLoadWidget, ESPUtil) {
+                GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil) {
     return declare("SearchResultsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_SearchResults,
-        idProperty: "id",
+        idProperty: "storeID",
         _rowID: 0,
 
         doSearch: function (searchText) {
@@ -53,7 +59,6 @@ define([
                 searchText: searchText
             });
             this.searchText = searchText;
-            this.selectChild(this.gridTab);
             this.refreshGrid();
         },
 
@@ -71,13 +76,58 @@ define([
             return "Results Widget";
         },
 
+        refreshTab: function (tab) {
+            var title = "";
+            var store = null;
+            switch (tab) {
+                case this.eclTab:
+                    title = this.i18n.title_WUQuery;
+                    store = this.eclStore;
+                    break;
+                case this.dfuTab:
+                    title = this.i18n.title_GetDFUWorkunits;
+                    store = this.dfuStore;
+                    break;
+                case this.fileTab:
+                    title = this.i18n.title_DFUQuery;
+                    store = this.fileStore;
+                    break;
+                case this.queryTab:
+                    title = this.i18n.title_QuerySetQuery;
+                    store = this.queryStore;
+                    break;
+            }
+            if (title && store) {
+                tab.set("title", title + " (" + store.data.length + ")");
+                tab.set("disabled", store.data.length === 0);
+            }
+        },
+
+        getDetailID: function (row, params) {
+            return "Detail" + row.id;
+        },
+
         createGrid: function (domID) {
+            this.eclStore = new Observable(new Memory({ idProperty: "Wuid", data: [] }));
+            this.dfuStore = new Observable(new Memory({ idProperty: "ID", data: [] }));
+            this.fileStore = new Observable(new Memory({ idProperty: "__hpcc_id", data: [] }));
+            this.queryStore = new Observable(new Memory({ idProperty: "__hpcc_id", data: [] }));
+            this.eclTab = this.ensurePane({ id: this.i18n.ECLWorkunit }, { type: this.i18n.ECLWorkunit });
+            this.dfuTab = this.ensurePane({ id: this.i18n.DFUWorkunit }, { type: this.i18n.DFUWorkunit });
+            this.fileTab = this.ensurePane({ id: this.i18n.LogicalFile }, { type: this.i18n.LogicalFile });
+            this.queryTab = this.ensurePane({ id: this.i18n.Query }, { type: this.i18n.Query });
+
             var context = this;
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Type: { label: this.i18n.What, width: 108, sortable: true },
+                    Type: { 
+                        label: this.i18n.What, width: 108, sortable: true,
+                        formatter: function (type, idx) {
+                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "SearchTypeClick'>" + type + "</a>";
+                        }
+                    },
                     Reason: { label: this.i18n.Where, width: 108, sortable: true },
                     Summary: {
                         label: this.i18n.Who, sortable: true,
@@ -95,9 +145,15 @@ define([
                     context._onRowDblClick(row);
                 }
             });
+            on(document, "." + this.id + "SearchTypeClick:click", function (evt) {
+                if (context._onRowDblClick) {
+                    var row = retVal.row(evt).data;
+                    context._onRowDblClick({id: row.Type}, {type: row.Type});
+                }
+            });
 
             this.standby = new Standby({
-                target: domID,
+                target: this.domNode,
                 image: dojoConfig.getImageURL("loadingBar.gif"),
                 color: null
             });
@@ -108,77 +164,124 @@ define([
         },
 
         createDetail: function (id, row, params) {
-            switch (row._type) {
-                case "Wuid":
-                    return new DelayLoadWidget({
-                        id: id,
-                        title: row.Summary,
-                        closable: true,
-                        delayWidget: "WUDetailsWidget",
-                        hpcc: {
-                            params: {
-                                Wuid: row._wuid
+            if (lang.exists("type", params)) {
+                switch (params.type) {
+                    case this.i18n.ECLWorkunit:
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: this.i18n.title_WUQuery + " (0)",
+                            disabled: true,
+                            delayWidget: "WUQueryWidget",
+                            hpcc: {
+                                params: {
+                                    searchResults: this.eclStore
+                                }
                             }
-                        }
-                    });
-                    break;
-                case "DFUWuid":
-                    return new DelayLoadWidget({
-                        id: id,
-                        title: row.Summary,
-                        closable: true,
-                        delayWidget: "DFUWUDetailsWidget",
-                        hpcc: {
-                            params: {
-                                Wuid: row._wuid
+                        });
+                    case this.i18n.DFUWorkunit:
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: this.i18n.title_GetDFUWorkunits + " (0)",
+                            disabled: true,
+                            delayWidget: "GetDFUWorkunitsWidget",
+                            hpcc: {
+                                params: {
+                                    searchResults: this.dfuStore
+                                }
                             }
-                        }
-                    });
-                    break;
-                case "SuperFile":
-                    return new DelayLoadWidget({
-                        id: id,
-                        title: row.Summary,
-                        closable: true,
-                        delayWidget: "SFDetailsWidget",
-                        hpcc: {
-                            params: {
-                                Name: row._name
+                        });
+                    case this.i18n.LogicalFile:
+                    case this.i18n.SuperFile:
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: this.i18n.title_DFUQuery + " (0)",
+                            disabled: true,
+                            delayWidget: "DFUQueryWidget",
+                            hpcc: {
+                                params: {
+                                    searchResults: this.fileStore
+                                }
                             }
-                        }
-                    });
-                    break;
-                case "LogicalFile":
-                    return new DelayLoadWidget({
-                        id: id,
-                        title: row.Summary,
-                        closable: true,
-                        delayWidget: "LFDetailsWidget",
-                        hpcc: {
-                            params: {
-                                NodeGroup: row._nodeGroup,
-                                Name: row._name
+                        });
+                    case this.i18n.Query:
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: this.i18n.title_QuerySetQuery + " (0)",
+                            disabled: true,
+                            delayWidget: "QuerySetQueryWidget",
+                            hpcc: {
+                                params: {
+                                    searchResults: this.queryStore
+                                }
                             }
-                        }
-                    });
-                    break;
-                case "Query":
-                    return new DelayLoadWidget({
-                        id: id,
-                        title: row.Summary,
-                        closable: true,
-                        delayWidget: "QuerySetDetailsWidget",
-                        hpcc: {
-                            type: "QuerySetDetailsWidget",
-                            params: {
-                                QuerySetId: row._querySetId,
-                                Id: row._id
+                        });
+                }    
+            } else {
+                switch (row._type) {
+                    case "Wuid":
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: row.Summary,
+                            closable: true,
+                            delayWidget: "WUDetailsWidget",
+                            hpcc: {
+                                params: {
+                                    Wuid: row._wuid
+                                }
                             }
-                        }
-                    });
-                    break;
-                default:
-                    break;
+                        });
+                    case "DFUWuid":
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: row.Summary,
+                            closable: true,
+                            delayWidget: "DFUWUDetailsWidget",
+                            hpcc: {
+                                params: {
+                                    Wuid: row._wuid
+                                }
+                            }
+                        });
+                    case "SuperFile":
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: row.Summary,
+                            closable: true,
+                            delayWidget: "SFDetailsWidget",
+                            hpcc: {
+                                params: {
+                                    Name: row._name
+                                }
+                            }
+                        });
+                    case "LogicalFile":
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: row.Summary,
+                            closable: true,
+                            delayWidget: "LFDetailsWidget",
+                            hpcc: {
+                                params: {
+                                    NodeGroup: row._nodeGroup,
+                                    Name: row._name
+                                }
+                            }
+                        });
+                    case "Query":
+                        return new DelayLoadWidget({
+                            id: id,
+                            title: row.Summary,
+                            closable: true,
+                            delayWidget: "QuerySetDetailsWidget",
+                            hpcc: {
+                                type: "QuerySetDetailsWidget",
+                                params: {
+                                    QuerySetId: row._querySetId,
+                                    Id: row._id
+                                }
+                            }
+                        });
+                }
             }
             return null;
         },
@@ -190,14 +293,17 @@ define([
                 var context = this;
                 arrayUtil.forEach(workunits, function (item, idx) {
                     context.store.add({
-                        id: "WsWorkunitsWUQuery" + idPrefix + ++context._rowID,
+                        storeID: ++context._rowID,
+                        id: context.id + item.Wuid,
                         Type: context.i18n.ECLWorkunit,
                         Reason: prefix,
                         Summary: item.Wuid,
                         _type: "Wuid",
                         _wuid: item.Wuid
                     });
+                    context.eclStore.add(ESPWorkunit.Get(item.Wuid, item), { overwrite: true });
                 });
+                this.refreshTab(this.eclTab);
                 return workunits.length;
             }
             return 0;
@@ -210,14 +316,17 @@ define([
                 var context = this;
                 arrayUtil.forEach(workunits, function (item, idx) {
                     context.store.add({
-                        id: "FileSprayGetDFUWorkunits" + idPrefix + ++context._rowID,
+                        storeID: ++context._rowID,
+                        id: context.id + item.ID,
                         Type: context.i18n.DFUWorkunit,
                         Reason: prefix,
                         Summary: item.ID,
                         _type: "DFUWuid",
                         _wuid: item.ID
                     });
+                    context.dfuStore.add(ESPDFUWorkunit.Get(item.ID, item), { overwrite: true });
                 });
+                this.refreshTab(this.dfuTab);
                 return workunits.length;
             }
             return 0;
@@ -228,13 +337,16 @@ define([
             if (workunit && workunit.State !== 999) {
                 var idPrefix = prefix.split(" ").join("_");
                 this.store.add({
-                    id: "FileSprayGetDFUWorkunits" + idPrefix + workunit.ID,
+                    storeID: ++context._rowID,
+                    id: context.id + item.ID,
                     Type: context.i18n.DFUWorkunit,
                     Reason: prefix,
                     Summary: workunit.ID,
                     _type: "DFUWuid",
                     _wuid: workunit.ID
                 });
+                this.dfuStore.add(ESPDFUWorkunit.Get(workunit.ID, workunit), { overwrite: true });
+                this.refreshTab(this.dfuTab);
                 return 1;
             }
             return 0;
@@ -248,7 +360,8 @@ define([
                 arrayUtil.forEach(items, function (item, idx) {
                     if (item.isSuperfile) {
                         context.store.add({
-                            id: "WsDfuDFUQuery" + idPrefix + ++context._rowID,
+                            storeID: ++context._rowID,
+                            id: context.id + item.Name,
                             Type: context.i18n.SuperFile,
                             Reason: prefix,
                             Summary: item.Name,
@@ -257,7 +370,8 @@ define([
                         });
                     } else {
                         context.store.add({
-                            id: "WsDfuDFUQuery" + idPrefix + ++context._rowID,
+                            storeID: ++context._rowID,
+                            id: context.id + item.Name,
                             Type: context.i18n.LogicalFile,
                             Reason: prefix,
                             Summary: item.Name + " (" + item.NodeGroup + ")",
@@ -266,7 +380,9 @@ define([
                             _name: item.Name
                         });
                     }
+                    context.fileStore.add(ESPLogicalFile.Get(item.NodeGroup, item.Name, item), { overwrite: true });
                 });
+                this.refreshTab(this.fileTab);
                 return items.length;
             }
             return 0;
@@ -279,7 +395,8 @@ define([
                 var context = this;
                 arrayUtil.forEach(items, function (item, idx) {
                     context.store.add({
-                        id: "WsDfuDFUQuery" + idPrefix + ++context._rowID,
+                        storeID: ++context._rowID,
+                        id: context.id + item.QuerySetId + "::" + item.Id,
                         Type: context.i18n.Query,
                         Reason: prefix,
                         Summary: item.Name + " (" + item.QuerySetId + " - " + item.Id + ")",
@@ -287,7 +404,9 @@ define([
                         _querySetId: item.QuerySetId,
                         _id: item.Id
                     });
+                    context.queryStore.add(ESPQuery.Get(item.QuerySetId, item.Id, item), { overwrite: true });
                 });
+                this.refreshTab(this.queryTab);
                 return items.length;
             }
             return 0;
@@ -321,25 +440,30 @@ define([
             var searchQuery = false;
             var searchText = "";
             if (this.searchText.indexOf("ecl:") === 0) {
+                this.selectChild(this.eclTab);
                 searchECL = true;
                 searchText = this.searchText.substring(4);
             } else if (this.searchText.indexOf("dfu:") === 0) {
-                searchDFU= true;
+                this.selectChild(this.dfuTab);
+                searchDFU = true;
                 searchText = this.searchText.substring(4);
             } else if (this.searchText.indexOf("file:") === 0) {
+                this.selectChild(this.fileTab);
                 searchFile = true;
                 searchText = this.searchText.substring(5);
             } else if (this.searchText.indexOf("query:") === 0) {
+                this.selectChild(this.queryTab);
                 searchQuery = true;
                 searchText = this.searchText.substring(6);
             } else {
+                this.selectChild(this.gridTab);
                 searchECL = true;
                 searchDFU = true;
                 searchFile = true;
                 searchQuery = true;
                 searchText = this.searchText;
             }
-            searchText = searchText.trim();            
+            searchText = searchText.trim();
 
             var searchArray = [];
             if (searchECL) {
@@ -397,6 +521,14 @@ define([
 
         refreshGrid: function (args) {
             this.store.setData([]);
+            this.eclStore.setData([]);
+            this.refreshTab(this.eclTab);
+            this.dfuStore.setData([]);
+            this.refreshTab(this.dfuTab);
+            this.fileStore.setData([]);
+            this.refreshTab(this.fileTab);
+            this.queryStore.setData([]);
+            this.refreshTab(this.queryTab);
             this.grid.refresh();
             if (this.searchText) {
                 this.searchAll();
