@@ -1,0 +1,25 @@
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;data::test::sf&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;data::test::sf&apos;, &apos;data::name1&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;data::test::sf&apos;, &apos;data::name2&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;data::test::sf&apos;, &apos;data::name2&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;data::test::sf&apos;, &apos;data::name1&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;data::test::sf&apos;) done</Message></Info>
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><name>aaa                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>bbb                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>ccc                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>ddd                 </name><logicalfile>data::name2                                                                                                                                                                                                                                                    </logicalfile></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>aaa                 </name><logicalfile>~data::name1                                                                                                                                                                                                                                                   </logicalfile></Row>
+ <Row><name>bbb                 </name><logicalfile>~data::name1                                                                                                                                                                                                                                                   </logicalfile></Row>
+ <Row><name>ccc                 </name><logicalfile>~data::name1                                                                                                                                                                                                                                                   </logicalfile></Row>
+</Dataset>
