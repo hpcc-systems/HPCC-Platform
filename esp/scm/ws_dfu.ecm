@@ -84,6 +84,9 @@ ESPStruct DFUFileDetail
 {
     string Name;
     string Filename;
+    [min_ver("1.28")] string Prefix;
+    [min_ver("1.28")] string NodeGroup;
+    [min_ver("1.28")] int NumParts;
     string Description;
     string Dir;
     string PathMask;
@@ -119,6 +122,7 @@ ESPStruct DFUFileDetail
     [min_ver("1.21")] string ContentType;
     [min_ver("1.22")] int64 CompressedFileSize;
     [min_ver("1.22")] bool IsCompressed(false);
+    [min_ver("1.28")] bool BrowseData(true);
 };
 
 ESPStruct DFUSpaceItem
@@ -650,7 +654,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.27"), default_client_version("1.27"),
+    version("1.28"), default_client_version("1.28"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
