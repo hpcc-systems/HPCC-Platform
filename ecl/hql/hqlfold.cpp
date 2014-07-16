@@ -895,17 +895,11 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             "pop %%r8 \n\t"
             "pop %%r9 \n\t"
             "call   *%%rax \n\t"
+            "add    %%rbx, %%rsp \n\t" // Restore stack opinter (note have popped 6 registers)
             : "=a"(int64result),"=d"(dummy1),"=c"(dummy1),"=S"(dummy3),"=D"(dummy4)
-            : "c"(len),"S"(strbuf),"a"(fh)
+            : "c"(len),"b"(len-6*REGSIZE),"S"(strbuf),"a"(fh)
             );
         
-        // Restore stack pointer
-        __asm__  __volatile__(
-            "add    %%rcx, %%rsp \n\t"
-            : 
-        : "c"(len-6*REGSIZE)        // have popped 6 registers
-            );
-
         // Get real (float/double) return values;
         if(isRealvalue)
         {
