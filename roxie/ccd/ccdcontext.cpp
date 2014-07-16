@@ -3029,17 +3029,7 @@ public:
             if (r)
             {
                 r->startScalar(name, sequence);
-                if (isRaw)
-                    r->append(len, (const char *) data);
-                else
-                {
-                    const byte *field = (const byte *) data;
-                    for (int i = 0; i < len; i++)
-                    {
-                        r->append(hexchar[field[i] >> 4]);
-                        r->append(hexchar[field[i] & 0x0f]);
-                    }
-                }
+                r->encodeData(data, len);
             }
         }
         if (workUnit)

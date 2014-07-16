@@ -885,6 +885,22 @@ void FlushingStringBuffer::encodeString(const char *x, unsigned len, bool utf8)
         append(len, x);
 }
 
+void FlushingStringBuffer::encodeData(const void *data, unsigned len)
+{
+    static char hexchar[] = "0123456789ABCDEF";
+    if (mlFmt==MarkupFmt_XML)
+    {
+        const byte *field = (const byte *) data;
+        for (int i = 0; i < len; i++)
+        {
+            append(hexchar[field[i] >> 4]);
+            append(hexchar[field[i] & 0x0f]);
+        }
+    }
+    else
+        append(len, (const char *) data);
+}
+
 void FlushingStringBuffer::addPayload(StringBuffer &s, unsigned int reserve)
 {
     if (!s.length())
@@ -1105,6 +1121,12 @@ void FlushingJsonBuffer::encodeString(const char *x, unsigned len, bool utf8)
 {
     CriticalBlock b(crit);
     appendJSONStringValue(s, NULL, len, x, true);
+}
+
+void FlushingJsonBuffer::encodeData(const void *data, unsigned len)
+{
+    CriticalBlock b(crit);
+    appendJSONDataValue(s, NULL, len, data);
 }
 
 void FlushingJsonBuffer::startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend, const IProperties *xmlns)

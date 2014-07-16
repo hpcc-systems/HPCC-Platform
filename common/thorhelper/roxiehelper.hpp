@@ -156,6 +156,7 @@ public:
     virtual void append(unsigned len, const char *data);
     virtual void appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
     virtual void encodeString(const char *x, unsigned len, bool utf8=false);
+    virtual void encodeData(const void *data, unsigned len);
     virtual void flushXML(StringBuffer &current, bool isClosing);
     virtual void flush(bool closing) ;
     virtual void addPayload(StringBuffer &s, unsigned int reserve=0);
@@ -174,6 +175,7 @@ public:
     }
 
     void encodeString(const char *x, unsigned len, bool utf8=false);
+    void encodeData(const void *data, unsigned len);
     void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
     void startScalar(const char *resultName, unsigned sequence);
 };
