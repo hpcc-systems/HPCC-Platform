@@ -361,6 +361,10 @@ EnumList
  ;
 
 EnumItemDef
+ : EspMetaData EnumItemBare
+ ;
+
+EnumItemBare
  : ID '(' EnumConstValue ')'
  {
     CurParam = new ParamInfo;
@@ -830,7 +834,7 @@ EnumDef
  }
  | ID '=' '-' INTEGER_CONST
  {
-    EnumValue = - $3.getInt();
+    EnumValue = - $4.getInt();
     CurEnumVal = new EnumValInfo($1.getName(),EnumValue);
     EnumValue++;
  }
@@ -874,6 +878,12 @@ EspVersionDef
  {
     VersionInfo *prev = hcp->versions;
     hcp->versions = new VersionInfo($3.getName(), $5.getDouble());
+    hcp->versions->next = prev;
+ }
+ | ESPVERSIONDEF '(' ID ',' INTEGER_CONST ')' ';'
+ {
+    VersionInfo *prev = hcp->versions;
+    hcp->versions = new VersionInfo($3.getName(), $5.getInt());
     hcp->versions->next = prev;
  }
  ;
@@ -1574,24 +1584,24 @@ void AddEnum()
    }
 }
 
-void yyInitESDLGlobals(ESDLcompiler * esdlcompiler)
+void yyCleanupESDLGlobals()
 {
-    hcp = esdlcompiler;
+//These global pointers, have been assigned to the esdlcompiler 'hcp' member vars
+//The compiler is responsible for releasing memory allocated.
+
+    hcp = NULL;
     CurModule=NULL;
     CurProc=NULL;
     CurParam=NULL;
     CurLayout=NULL;
     CurEnum=NULL;
     CurEnumVal=NULL;
-    EnumValue = 0;
     CurApi=NULL;
-    CurInclude=NULL;
-
+    CurInclude = NULL;
     CurEspMessage=NULL;
     CurService=NULL;
     CurMethod=NULL;
     CurMetaTags=NULL;
-
     LastModule=NULL;
     LastProc=NULL;
     LastParam=NULL;
@@ -1600,18 +1610,22 @@ void yyInitESDLGlobals(ESDLcompiler * esdlcompiler)
     LastEnumVal=NULL;
     LastApi=NULL;
     LastInclude=NULL;
-
     LastEspMessage=NULL;
     LastService=NULL;
     LastMethod=NULL;
-
-    esp_def_export_tag=NULL;
-
-    unsigned linenum=1;
-    unsigned errnum=0;
-    nCommentStartLine = -1;
 }
 
+void yyInitESDLGlobals(ESDLcompiler * esdlcompiler)
+{
+    hcp = esdlcompiler;
+
+    EnumValue = 0;
+    esp_def_export_tag=NULL;
+
+    linenum=1;
+    errnum=0;
+    nCommentStartLine = -1;
+}
 
 extern char *yytext;
 void yyerror(const char *s)

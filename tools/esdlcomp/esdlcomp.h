@@ -258,6 +258,7 @@ public:
 
     void release()
     {
+
         if (mttype_==mt_string && str_val_!=NULL)
             free(str_val_);
 
@@ -623,6 +624,7 @@ public:
     ModuleInfo(const char *n);
     ~ModuleInfo();
 
+
     char        *name;
     char        *base;
     int          version;
@@ -658,10 +660,11 @@ public:
     ApiInfo(const char *grp="");
     ~ApiInfo();
 
+
    void write_header_method();
    void write_clarion_include_method();
 
-    char            *group;
+    char        *group;
     char        *name;
     ProcInfo    *proc;
     ApiInfo  *next;
@@ -687,13 +690,13 @@ public:
 class VersionInfo
 {
 public:
-    //VersionInfo(const char *version_name_, double version_value_) : version_name(version_name_), version_value(version_value_)
     VersionInfo(const char *version_name_, double version_value_)
     {
         version_name.append(version_name_);
         version_value = version_value_;
         next=NULL;
     };
+
     ~VersionInfo(){}
 
    void write_esxdl()
@@ -740,10 +743,16 @@ public:
     ~EnumInfo()
     {
         free(name);
+        while (vals)
+        {
+            EnumValInfo *va=vals;
+            vals = va->next;
+            delete va;
+        }
     }
 
     char             *name;
-    EnumValInfo  *vals;
+    EnumValInfo      *vals;
     EnumInfo         *next;
 };
 
@@ -935,6 +944,28 @@ public:
     MetaTagInfo     *tags;
     EspMessageInfo  *next;
 
+    ~EspMessageInfo()
+    {
+        while (attrs_)
+        {
+            ParamInfo *attr=attrs_;
+            attrs_ = attr->next;
+            delete attr;
+        }
+
+        while (tags)
+        {
+            MetaTagInfo *attr=tags;
+            tags = attr->next;
+            delete attr;
+        }
+        delete tags;
+        free (name_);
+        free (base_);
+        free (parent);
+        free (xsdgrouptype);
+    }
+
 private:
     ParamInfo       *attrs_;
     espm_type       espm_type_;
@@ -979,6 +1010,18 @@ public:
 
         tags=NULL;
         next=NULL;
+    }
+
+    ~EspMethodInfo()
+    {
+        fprintf(stderr, "~EspMethodInfo(%s)\n", name_);
+
+        while (tags)
+        {
+            MetaTagInfo *p=tags;
+            tags = p->next;
+            delete p;
+        }
     }
 
     const char *getName(){return name_;}

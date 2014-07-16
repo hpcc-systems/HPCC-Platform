@@ -45,8 +45,10 @@ extern int yyparse();
 //extern YY_BUFFER_STATE getCurrentBuffer();
 
 extern void yyrestart  (FILE * input_file );
-extern int yylex_destroy  (void);
+extern int  yylex_destroy  (void);
+//extern void yy_delete_buffer (YY_BUFFER_STATE  b );
 extern void yyInitESDLGlobals(ESDLcompiler * esdlcompiler);
+extern void yyCleanupESDLGlobals();
 
 extern ESDLcompiler * hcp;
 extern char *esp_def_export_tag;
@@ -418,11 +420,19 @@ ParamInfo::~ParamInfo()
         free(xsdtype);
     if (m_arrayImplType)
         delete m_arrayImplType;
+
     while (layouts)
     {
         LayoutInfo *l=layouts;
         layouts = l->next;
         delete l;
+    }
+
+    while (tags)
+    {
+        MetaTagInfo *t=tags;
+        tags = t->next;
+        delete t;
     }
 }
 
@@ -908,12 +918,15 @@ ApiInfo::ApiInfo(const char *n)
 
 ApiInfo::~ApiInfo()
 {
-    if (name)
-        free(name);
-    if (proc)
-        delete proc;
-    if (group)
-        free(group);
+    free (group);
+    free (name);
+
+    while (proc)
+    {
+        ProcInfo *pr=proc;
+        proc = pr->next;
+        delete pr;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -931,13 +944,15 @@ ModuleInfo::ModuleInfo(const char *n)
 
 ModuleInfo::~ModuleInfo()
 {
-    free(name);
     while (procs)
     {
-        ProcInfo *p=procs;
-        procs = p->next;
-        delete p;
+       ProcInfo *proc=procs;
+       procs = proc->next;
+       delete proc;
     }
+
+    free (name);
+    free (base);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -1125,6 +1140,71 @@ ESDLcompiler::~ESDLcompiler()
 {
     free(packagename);
     free(filename);
+
+    while (modules)
+    {
+        ModuleInfo *mo=modules;
+        modules = mo->next;
+        delete mo;
+    }
+
+    while (enums)
+    {
+        EnumInfo *en=enums;
+        enums = en->next;
+        delete en;
+    }
+
+    while (apis)
+    {
+        ApiInfo *api=apis;
+        apis = api->next;
+        delete api;
+    }
+
+    while (servs)
+    {
+        EspServInfo *ser=servs;
+        servs = ser->next;
+        delete ser;
+    }
+
+
+
+    while (includes)
+    {
+        IncludeInfo *in=includes;
+        includes = in->next;
+        delete in;
+    }
+
+    while (methods)
+    {
+        EspMethodInfo *meth=methods;
+        methods = meth->next;
+        delete meth;
+    }
+
+    while (versions)
+    {
+        VersionInfo *mes=versions;
+        versions = mes->next;
+        delete mes;
+    }
+
+    while (msgs)
+    {
+        EspMessageInfo *mi=msgs;
+        msgs = mi->next;
+        delete mi;
+    }
+
+    while (includes)
+    {
+        IncludeInfo *in=includes;
+        includes = in->next;
+        delete in;
+    }
 }
 
 void ESDLcompiler::Process()
@@ -1143,9 +1223,11 @@ void ESDLcompiler::Process()
     }
     write_esxdl();
 
+   // yy_delete_buffer (getCurrentBuffer() );
     fclose(yyin);
     close(esxdlo);
 
+    yyCleanupESDLGlobals();
     yylex_destroy();
 }
 
@@ -1192,9 +1274,6 @@ void ESDLcompiler::write_esxdl()
     outs("</esxdl>");
     gOutfile = -1;
 }
-
-//-------------------------------------------------------------------------------------------------------------
-// class EnumInfo
 
 // end
 //-------------------------------------------------------------------------------------------------------------
