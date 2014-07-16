@@ -743,7 +743,7 @@ void CSafeSocket::sendException(const char *source, unsigned code, const char *m
         response.startDataset("Exception", NULL, (unsigned) -1);
         response.appendf("<Source>%s</Source><Code>%d</Code>", source, code);
         response.append("<Message>");
-        response.encodeXML(message);
+        response.encodeString(message, strlen(message));
         response.append("</Message>");
     }
     catch(IException *EE)
@@ -873,11 +873,16 @@ void FlushingStringBuffer::appendf(const char *format, ...)
     append(t.length(), t.str());
 }
 
-void FlushingStringBuffer::encodeXML(const char *x, unsigned flags, unsigned len, bool utf8)
+void FlushingStringBuffer::encodeString(const char *x, unsigned len, bool utf8)
 {
-    StringBuffer t;
-    ::encodeXML(x, t, flags, len, utf8);
-    append(t.length(), t.str());
+    if (mlFmt==MarkupFmt_XML)
+    {
+        StringBuffer t;
+        ::encodeXML(x, t, 0, len, utf8);
+        append(t.length(), t.str());
+    }
+    else
+        append(len, x);
 }
 
 void FlushingStringBuffer::addPayload(StringBuffer &s, unsigned int reserve)
@@ -1096,7 +1101,7 @@ void FlushingStringBuffer::incrementRowCount()
     rowCount++;
 }
 
-void FlushingJsonBuffer::encodeXML(const char *x, unsigned flags, unsigned len, bool utf8)
+void FlushingJsonBuffer::encodeString(const char *x, unsigned len, bool utf8)
 {
     CriticalBlock b(crit);
     appendJSONStringValue(s, NULL, len, x, true);

@@ -3437,7 +3437,7 @@ public:
                 }
                 else
                 {
-                    r->encodeXML(str, 0, len);
+                    r->encodeString(str, len);
                 }
             }
         }
@@ -3488,7 +3488,7 @@ public:
                     rtlDataAttr buff;
                     unsigned bufflen = 0;
                     rtlUnicodeToCodepageX(bufflen, buff.refstr(), len, str, "utf-8");
-                    r->encodeXML(buff.getstr(), 0, bufflen, true); // output as UTF-8
+                    r->encodeString(buff.getstr(), bufflen, true); // output as UTF-8
                 }
             }
         }
