@@ -24,8 +24,8 @@
 #include "jlib.hpp"
 #include "errno.h"
 
-jlib_decl const char* SerializeMessageAudience(MessageAudience ma);
-jlib_decl MessageAudience DeserializeMessageAudience(const char* text);
+jlib_decl const char* serializeMessageAudience(MessageAudience ma);
+jlib_decl MessageAudience deserializeMessageAudience(const char* text);
 
 //the following interface to be thrown when a user command explicitly calls for a failure
 
@@ -59,7 +59,7 @@ interface jlib_thrown_decl IMultiException : extends IException
     virtual MessageAudience errorAudience() const = 0;
 };
 
-IMultiException jlib_decl *MakeMultiException(const char* source = NULL);
+IMultiException jlib_decl *makeMultiException(const char* source = NULL);
 
 interface IExceptionHandler
 {
@@ -76,6 +76,7 @@ void jlib_decl throwStringExceptionV(int code, const char *format, ...) __attrib
 
 // Macros for legacy names of above functions
 
+#define MakeMultiException makeMultiException
 #define MakeStringException makeStringExceptionV
 #define MakeStringExceptionVA makeStringExceptionVA
 #define MakeStringExceptionDirect makeStringException
@@ -111,31 +112,36 @@ interface jlib_thrown_decl IOutOfMemException: extends IException
 };
 
 
-void  jlib_decl EnableSEHtoExceptionMapping(); // return value can be used to disable
-void  jlib_decl DisableSEHtoExceptionMapping();         
+void  jlib_decl enableSEHtoExceptionMapping();
+void  jlib_decl disableSEHtoExceptionMapping();
 // NB only enables for current thread or threads started after call
 // requires /EHa option to be set in VC++ options (after /GX)
+// Macros for legacy names of above functions
+#define EnableSEHtoExceptionMapping enableSEHtoExceptionMapping
+#define DisableSEHtoExceptionMapping disableSEHtoExceptionMapping
 
 void jlib_decl *setSEHtoExceptionHandler(IExceptionHandler *handler); // sets handler and return old value
 
 
-void  jlib_decl setTerminateOnSEHInSystemDLLs(bool set=true);
+void jlib_decl setTerminateOnSEHInSystemDLLs(bool set=true);
 void jlib_decl setTerminateOnSEH(bool set=true);
 
 
-#define makeUnexpectedException()  MakeStringException(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
-#define throwUnexpected()          throw MakeStringException(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
-#define throwUnexpectedX(x)        throw MakeStringException(9999, "Internal Error '" x "' at %s(%d)", __FILE__, __LINE__)
+#define makeUnexpectedException()  makeStringExceptionV(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
+#define throwUnexpected()          throw makeStringExceptionV(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
+#define throwUnexpectedX(x)        throw makeStringExceptionV(9999, "Internal Error '" x "' at %s(%d)", __FILE__, __LINE__)
 #define assertThrow(x)             assertex(x)
 
-#define UNIMPLEMENTED throw MakeStringException(-1, "UNIMPLEMENTED feature at %s(%d)", __FILE__, __LINE__)
-#define UNIMPLEMENTED_X(reason) throw MakeStringException(-1, "UNIMPLEMENTED '" reason "' at %s(%d)", __FILE__, __LINE__)
-#define UNIMPLEMENTED_XY(a,b) throw MakeStringException(-1, "UNIMPLEMENTED " a " %s at %s(%d)", b, __FILE__, __LINE__)
+#define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", __FILE__, __LINE__)
+#define UNIMPLEMENTED_X(reason) throw makeStringExceptionV(-1, "UNIMPLEMENTED '" reason "' at %s(%d)", __FILE__, __LINE__)
+#define UNIMPLEMENTED_XY(a,b) throw makeStringExceptionV(-1, "UNIMPLEMENTED " a " %s at %s(%d)", b, __FILE__, __LINE__)
 
 IException jlib_decl * deserializeException(MemoryBuffer & in); 
 void jlib_decl serializeException(IException * e, MemoryBuffer & out); 
 
-void  jlib_decl PrintStackReport();
+void  jlib_decl printStackReport();
+// Macro for legacy name of above function
+#define PrintStackReport printStackReport
 
 #ifdef _DEBUG
 #define RELEASE_CATCH_ALL       int*********
@@ -145,11 +151,11 @@ void  jlib_decl PrintStackReport();
 
 //These are used in several places to wrap error reporting, to keep error numbers+text together.  E.g.,
 //#define XYZfail 99    #define XXZfail_Text "Failed"     throwError(XYZfail)
-#define throwError(x)                           ThrowStringException(x, (x ## _Text))
-#define throwError1(x,a)                        ThrowStringException(x, (x ## _Text), a)
-#define throwError2(x,a,b)                      ThrowStringException(x, (x ## _Text), a, b)
-#define throwError3(x,a,b,c)                    ThrowStringException(x, (x ## _Text), a, b, c)
-#define throwError4(x,a,b,c,d)                  ThrowStringException(x, (x ## _Text), a, b, c, d)
+#define throwError(x)                           throwStringExceptionV(x, (x ## _Text))
+#define throwError1(x,a)                        throwStringExceptionV(x, (x ## _Text), a)
+#define throwError2(x,a,b)                      throwStringExceptionV(x, (x ## _Text), a, b)
+#define throwError3(x,a,b,c)                    throwStringExceptionV(x, (x ## _Text), a, b, c)
+#define throwError4(x,a,b,c,d)                  throwStringExceptionV(x, (x ## _Text), a, b, c, d)
 
 #endif
 

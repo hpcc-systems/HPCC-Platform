@@ -118,7 +118,7 @@ void jlib_decl throwStringExceptionV(int code,const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IException *ret = MakeStringExceptionVA(code, format, args);
+    IException *ret = makeStringExceptionVA(code, format, args);
     va_end(args);
     throw ret;
 }
@@ -248,7 +248,7 @@ IErrnoException *makeErrnoExceptionV(MessageAudience aud, const char *msg, ...)
     return new ErrnoException(-1, eStr.str(), aud);
 }
 
-const char* SerializeMessageAudience(MessageAudience ma)
+const char* serializeMessageAudience(MessageAudience ma)
 {
     const char* ret;
     switch(ma)
@@ -267,7 +267,7 @@ const char* SerializeMessageAudience(MessageAudience ma)
     return ret;
 }
 
-MessageAudience DeserializeMessageAudience(const char* text)
+MessageAudience deserializeMessageAudience(const char* text)
 {
     MessageAudience ma = MSGAUD_unknown;
     if (text && *text)
@@ -344,7 +344,7 @@ public:
                 StringBuffer msg;
                 msg.appendf("[%s] ",source);
                 e.errorMessage(msg);
-                array_.append(*MakeStringException(e.errorAudience(), e.errorCode(), "%s", msg.str()));
+                array_.append(*makeStringExceptionV(e.errorAudience(), e.errorCode(), "%s", msg.str()));
             }
             else
                 array_.append(*LINK(&e));
@@ -378,7 +378,7 @@ public:
             buffer.appendf("<Code>%d</Code>", exception.errorCode());
             
             if (indent) buffer.append("\n\t\t");
-            buffer.appendf("<Audience>%s</Audience>", SerializeMessageAudience( exception.errorAudience() ));
+            buffer.appendf("<Audience>%s</Audience>", serializeMessageAudience( exception.errorAudience() ));
             
             if (simplified)
             {
@@ -412,7 +412,7 @@ public:
             xml = wrapper.appendf("<Exceptions>%s</Exceptions>", xml).str();
         Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml);
         if (!pTree)
-            throw MakeStringException(-1, "Failed to deserialize IMultiException!");
+            throw makeStringException(-1, "Failed to deserialize IMultiException!");
         Owned<IPropertyTreeIterator> i = pTree->getElements("Exception");
         
         if (pTree->hasProp("Source"))
@@ -431,10 +431,10 @@ public:
         {
             IPropertyTree* pNode = &i->query();
             IException* pException = 
-                MakeStringExceptionDirect(
-                DeserializeMessageAudience(pNode->queryProp("Audience")), 
-                pNode->getPropInt("Code", -1), 
-                pNode->queryProp("Message"));
+                makeStringException(
+                   deserializeMessageAudience(pNode->queryProp("Audience")),
+                   pNode->getPropInt("Code", -1),
+                   pNode->queryProp("Message"));
             array_.append(*pException);
         }
     }   
@@ -471,7 +471,7 @@ private:
     mutable Mutex        m_mutex;
 };
 
-IMultiException *MakeMultiException(const char* source/*=NULL*/)
+IMultiException *makeMultiException(const char* source/*=NULL*/)
 {
     return new CMultiException(source);
 }
@@ -497,9 +497,9 @@ void userBreakpoint()
 #endif
 }
 
-void RaiseAssertException(const char *assertion, const char *file, unsigned line)
+void raiseAssertException(const char *assertion, const char *file, unsigned line)
 {
-    PrintStackReport();
+    printStackReport();
     StringBuffer s;
     s.append("assert(");
     s.append(assertion);
@@ -525,12 +525,12 @@ void RaiseAssertException(const char *assertion, const char *file, unsigned line
 #endif
 #endif
 
-    throw MakeStringExceptionDirect(3000, s.toCharArray()); // 3000: internal error
+    throw makeStringException(3000, s.toCharArray()); // 3000: internal error
 }
 
-void RaiseAssertCore(const char *assertion, const char *file, unsigned line)
+void raiseAssertCore(const char *assertion, const char *file, unsigned line)
 {
-    PrintStackReport();
+    printStackReport();
     StringBuffer s;
     s.append("assert(");
     s.append(assertion);
@@ -1162,7 +1162,7 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
 #endif
 
 #ifdef _EXECINFO_H
-    PrintStackReport();
+    printStackReport();
 #endif  
     StringBuffer threadlist;
     PROGLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
@@ -1221,7 +1221,7 @@ void jlib_decl *setSEHtoExceptionHandler(IExceptionHandler *handler)
     return ret;
 }
 
-void jlib_decl EnableSEHtoExceptionMapping()
+void jlib_decl enableSEHtoExceptionMapping()
 {
 #ifdef NOSEH
     return;
@@ -1246,7 +1246,7 @@ void jlib_decl EnableSEHtoExceptionMapping()
 }
 
 
-void  jlib_decl DisableSEHtoExceptionMapping()
+void  jlib_decl disableSEHtoExceptionMapping()
 {
 #ifdef NOSEH
     return;
@@ -1311,7 +1311,7 @@ IException * deserializeException(MemoryBuffer & in)
     StringAttr text;
     in.read(code);
     in.read(text);
-    return MakeStringException(code, "%s", text.get());
+    return makeStringExceptionV(code, "%s", text.get());
 }
 
 void jlib_decl serializeException(IException * e, MemoryBuffer & out)
@@ -1328,7 +1328,7 @@ void jlib_decl serializeException(IException * e, MemoryBuffer & out)
 }
 
 
-void PrintStackReport()
+void printStackReport()
 {
 #ifdef _WIN32
     unsigned onstack=1234;
