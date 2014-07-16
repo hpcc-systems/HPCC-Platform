@@ -6330,7 +6330,7 @@ void EspServInfo::write_esp_client()
         outs("\t} while (0 != status && (errno == EINTR));\n");
         outs("\tif (status) {\n");
         outs("\t\tRelease();\n");
-        outs("\t\tthrow MakeOsException(errno);\n");
+        outs("\t\tthrow makeOsException(errno);\n");
         outs("\t}\n");
 
         outs("#endif\n");

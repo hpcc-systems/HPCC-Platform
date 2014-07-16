@@ -724,7 +724,7 @@ const LogMsgJobInfo thorJob(UnknownJob, UnknownUser); // may be improved later
 void ensureDirectoryForFile(const char *fName)
 {
     if (!recursiveCreateDirectoryForFile(fName))
-        throw MakeOsException(GetLastError(), "Failed to create directory for file: %s", fName);
+        throw makeOsExceptionV(GetLastError(), "Failed to create directory for file: %s", fName);
 }
 
 // Not recommended to be used from slaves as tend to be one or more trying at same time.

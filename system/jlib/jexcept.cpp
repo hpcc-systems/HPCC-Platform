@@ -72,49 +72,49 @@ protected:
 };  
 
 
-IException *MakeStringExceptionVA(int code, const char *format, va_list args)
+IException *makeStringExceptionVA(int code, const char *format, va_list args)
 {
     StringBuffer eStr;
     eStr.limited_valist_appendf(1024, format, args);
     return new StringException(code, eStr.str());
 }
 
-IException *MakeStringException(int code,const char *format, ...)
+IException *makeStringExceptionV(int code,const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IException *ret = MakeStringExceptionVA(code, format, args);
+    IException *ret = makeStringExceptionVA(code, format, args);
     va_end(args);
     return ret;
 }
 
-IException jlib_decl *MakeStringExceptionDirect(int code,const char *why)
+IException jlib_decl *makeStringException(int code,const char *why)
 {
     return new StringException(code,why);
 }
 
-IException *MakeStringExceptionVA(MessageAudience aud, int code, const char *format, va_list args)
+IException *makeStringExceptionVA(MessageAudience aud, int code, const char *format, va_list args)
 {
     StringBuffer eStr;
     eStr.limited_valist_appendf(1024, format, args);
     return new StringException(code, eStr.str(), aud);
 }
 
-IException *MakeStringException(MessageAudience aud, int code, const char *format, ...)
+IException *makeStringExceptionV(MessageAudience aud, int code, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IException *ret = MakeStringExceptionVA(aud, code, format, args);
+    IException *ret = makeStringExceptionVA(aud, code, format, args);
     va_end(args);
     return ret;
 }
 
-IException jlib_decl *MakeStringExceptionDirect(MessageAudience aud,int code,const char *why)
+IException jlib_decl *makeStringException(MessageAudience aud,int code,const char *why)
 {
     return new StringException(code,why,aud);
 }
 
-void jlib_decl ThrowStringException(int code,const char *format, ...)
+void jlib_decl throwStringExceptionV(int code,const char *format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -146,12 +146,17 @@ protected:
 };  
 
 
-IOSException *MakeOsException(int code)
+IOSException *makeOsException(int code)
 {
     return new OsException(code);
 }
 
-IOSException *MakeOsException(int code, const char *msg, ...)
+IOSException *makeOsException(int code, const char *msg)
+{
+    return new OsException(code, msg);
+}
+
+IOSException *makeOsExceptionV(int code, const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -188,12 +193,17 @@ protected:
 };  
 
 
-IErrnoException *MakeErrnoException(int errn)
+IErrnoException *makeErrnoException(int errn, const char *msg)
 {
-    return new ErrnoException(errn);
+    return new ErrnoException(errn, msg);
 }
 
-IErrnoException *MakeErrnoException(int errn, const char *msg, ...)
+IErrnoException *makeErrnoException(const char *msg)
+{
+    return new ErrnoException(-1, msg);
+}
+
+IErrnoException *makeErrnoExceptionV(int errn, const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -203,7 +213,7 @@ IErrnoException *MakeErrnoException(int errn, const char *msg, ...)
     return new ErrnoException(errn, eStr.str());
 }
 
-IErrnoException *MakeErrnoException(const char *msg, ...)
+IErrnoException *makeErrnoExceptionV(const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -213,12 +223,12 @@ IErrnoException *MakeErrnoException(const char *msg, ...)
     return new ErrnoException(-1, eStr.str());
 }
 
-IErrnoException *MakeErrnoException(MessageAudience aud, int errn)
+IErrnoException *makeErrnoException(MessageAudience aud, int errn, const char *msg)
 {
-    return new ErrnoException(errn, "", aud);
+    return new ErrnoException(errn, msg, aud);
 }
 
-IErrnoException *MakeErrnoException(MessageAudience aud, int errn, const char *msg, ...)
+IErrnoException *makeErrnoExceptionV(MessageAudience aud, int errn, const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -228,7 +238,7 @@ IErrnoException *MakeErrnoException(MessageAudience aud, int errn, const char *m
     return new ErrnoException(errn, eStr.str(), aud);
 }
 
-IErrnoException *MakeErrnoException(MessageAudience aud, const char *msg, ...)
+IErrnoException *makeErrnoExceptionV(MessageAudience aud, const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;

@@ -193,7 +193,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
 #endif
         if (verbose)
             PrintLog("SetCompilerPath - no compiler found");
-        throw MakeOsException(GetLastError(), "setCompilerPath could not locate compiler %s", fname.str());
+        throw makeOsExceptionV(GetLastError(), "setCompilerPath could not locate compiler %s", fname.str());
     }
 
     if(tmpdir && *tmpdir)

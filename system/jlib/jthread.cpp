@@ -354,7 +354,7 @@ void Thread::startRelease()
     if (!hThread || !threadid)
     {
         Release();
-        throw MakeOsException(GetLastError());
+        throw makeOsException(GetLastError());
     }
 #else
     int status;
@@ -397,7 +397,7 @@ void Thread::startRelease()
         StringBuffer s;
         getThreadList(s);
         ERRLOG("Running threads:\n %s",s.str());
-        throw MakeOsException(status);
+        throw makeOsException(status);
     }
     unsigned retryCount = 10;
     loop
@@ -1384,7 +1384,7 @@ public:
                 return 0;
             default:
                 aborted = true;
-                IException *e = MakeOsException(err, "Pipe: ReadFile failed (size %d)", sz);
+                IException *e = makeOsExceptionV(err, "Pipe: ReadFile failed (size %d)", sz);
                 PrintExceptionLog(e, NULL);
                 throw e;
             }
@@ -1411,7 +1411,7 @@ public:
                 return 0;
             default:
                 aborted = true;
-                IException *e = MakeOsException(err, "Pipe: ReadError failed (size %d)", sz);
+                IException *e = makeOsExceptionV(err, "Pipe: ReadError failed (size %d)", sz);
                 PrintExceptionLog(e, NULL);
                 throw e;
             }
@@ -1430,7 +1430,7 @@ public:
             if ((err==ERROR_HANDLE_EOF)||aborted)
                 sizeWritten = 0;
             else {
-                IException *e = MakeOsException(err, "Pipe: WriteFile failed (size %d)", sz);
+                IException *e = makeOsExceptionV(err, "Pipe: WriteFile failed (size %d)", sz);
                 PrintExceptionLog(e, NULL);
                 throw e;
             }
@@ -1845,14 +1845,15 @@ public:
         int errpipe[2];
         if (hasinput)
             if (::pipe(inpipe)==-1)
-                throw MakeOsException(errno);
+                throw makeOsException(errno);
         if (hasoutput)
             if (::pipe(outpipe)==-1)
-                throw MakeOsException(errno);
+                throw makeOsException(errno);
         if (haserror)
             if (::pipe(errpipe)==-1)
-                throw MakeOsException(errno);
-        loop {
+                throw makeOsException(errno);
+        loop
+        {
             pipeProcess = (HANDLE)fork();
             if (pipeProcess!=(HANDLE)-1) 
                 break;
@@ -1998,7 +1999,7 @@ public:
                 break;
             if (errno!=EINTR) {
                 aborted = true;
-                throw MakeErrnoException(errno,"Pipe: read failed (size %d)", sz);
+                throw makeErrnoExceptionV(errno,"Pipe: read failed (size %d)", sz);
             }
         }
         return aborted?((size32_t)-1):((size32_t)sizeRead);
@@ -2029,7 +2030,7 @@ public:
             if (aborted) 
                 break;
             if (errno!=EINTR) {
-                throw MakeErrnoException(errno,"Pipe: write failed (size %d)", sz);
+                throw makeErrnoExceptionV(errno, "Pipe: write failed (size %d)", sz);
             }
         }
         return aborted?((size32_t)-1):((size32_t)sizeWritten);
@@ -2056,7 +2057,7 @@ public:
                 break;
             if (errno!=EINTR) {
                 aborted = true;
-                throw MakeErrnoException(errno,"Pipe: readError failed (size %d)", sz);
+                throw makeErrnoExceptionV(errno, "Pipe: readError failed (size %d)", sz);
             }
         }
         return aborted?((size32_t)-1):((size32_t)sizeRead);

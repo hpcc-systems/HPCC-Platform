@@ -125,7 +125,7 @@ public:
 
         if (bytesRead < 0)
         {
-            throw MakeOsException(errno,"readInput");
+            throw makeOsException(errno, "readInput");
         }
 
         if (inputLen > 0)
@@ -160,7 +160,7 @@ public:
                 int bw = write(1, finger, len);
                 if (bw < 0)
                 {
-                    throw MakeOsException(errno,"writeOutput");
+                    throw makeOsException(errno, "writeOutput");
                 }
                 PROGLOG("Wrote %d bytes to stdout (tried to write %d)", bw, len);
                 len -= bw;

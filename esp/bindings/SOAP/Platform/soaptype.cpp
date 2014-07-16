@@ -1358,7 +1358,7 @@ void CClientWsTest::async_TestQuery(IClientTestRequest *request, IClientWsTestEv
     } while (0 != status && (errno == EINTR));
     if (status) {
         Release();
-        throw MakeOsException(errno);
+        throw makeOsException(errno);
     }
 #endif
 }

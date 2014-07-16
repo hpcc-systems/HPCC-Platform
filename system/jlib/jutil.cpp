@@ -1970,7 +1970,7 @@ public:
     void impersonate()
     {
         if (!ImpersonateLoggedOnUser(usertoken))
-            throw MakeOsException(GetLastError());
+            throw makeOsException(GetLastError());
     }
 
     void revert()
@@ -2332,7 +2332,7 @@ StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
     if (term!=stdin)
         fclose(term);
     if (err)
-        throw MakeOsException(err);
+        throw makeOsException(err);
 #endif
     return passwd;
 }
@@ -2626,7 +2626,7 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
                     }
                     if (c) {
                         if (argc==256) 
-                            throw MakeStringException(-1,"parseCommandLine: too many arguments");
+                            throw makeStringException(-1, "parseCommandLine: too many arguments");
                         arg[argc] = 0;
                     }
                 }

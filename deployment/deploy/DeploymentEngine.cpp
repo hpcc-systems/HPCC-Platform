@@ -1459,7 +1459,7 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
     {
         int nThreads = m_threadPool->runningCount();
         if (nThreads > 0)
-            throw MakeOsException(-1, "Unfinished threads detected!");
+            throw makeOsException(-1, "Unfinished threads detected!");
     }
 
     bool bCompare = m_compare;//save
@@ -1618,7 +1618,7 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
     {
         m_compare = bCompare;
         m_threadPool->joinAll();
-        throw MakeErrnoException("Error deploying %s", m_name.get());
+        throw makeErrnoExceptionV("Error deploying %s", m_name.get());
     }
 }
 
@@ -2174,7 +2174,7 @@ int CDeploymentEngine::determineInstallFiles(IPropertyTree& processNode, CInstal
     }
     catch (...)
     {
-        throw MakeErrnoException("Error creating file list for process %s", m_name.get());
+        throw makeErrnoExceptionV("Error creating file list for process %s", m_name.get());
     }
 
     m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, NULL);
