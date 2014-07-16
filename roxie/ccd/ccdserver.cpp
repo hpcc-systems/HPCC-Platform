@@ -21393,6 +21393,18 @@ public:
     {
         if (datafile)
             addXrefFileInfo(reply, datafile);
+        else
+        {
+            // Temporarily resolve the file
+            Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
+            if ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) == 0)
+            {
+                OwnedRoxieString fileName(helper->getFileName());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit());
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+        }
     }
 };
 
@@ -22490,6 +22502,17 @@ public:
     {
         if (indexfile)
             addXrefFileInfo(reply, indexfile);
+        else
+        {
+            Owned<IHThorIndexReadBaseArg> indexHelper = (IHThorIndexReadBaseArg *) helperFactory();
+            if ((indexHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) == 0)
+            {
+                OwnedRoxieString indexName(indexHelper->getFileName());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit());
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+        }
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -23467,6 +23490,19 @@ public:
     {
         if (datafile)
             addXrefFileInfo(reply, datafile);
+        else
+        {
+            // Temporarily resolve the file
+            Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
+            IHThorFetchContext *fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
+            if ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) == 0)
+            {
+                OwnedRoxieString fileName(fetchContext->getFileName());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit());
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+        }
     }
 };
 
@@ -23482,6 +23518,8 @@ class CRoxieServerDummyActivityFactory : public CRoxieServerActivityFactory  // 
 public:
     Owned<const IResolvedFile> indexfile;
     Owned<const IResolvedFile> datafile;
+    StringAttr fileName;
+    StringAttr indexName;
     Owned<IKeyArray> keySet;
     Owned<IFileIOArray> files;
     TranslatorArray layoutTranslators;
@@ -23497,16 +23535,16 @@ public:
             ThorActivityKind kind = getActivityKind(_graphNode);
             if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
             {
-                const char *fileName = queryNodeFileName(_graphNode, kind);
-                const char *indexName = queryNodeIndexName(_graphNode, kind);
-                if (indexName)
+                fileName.set(queryNodeFileName(_graphNode, kind));
+                indexName.set(queryNodeIndexName(_graphNode, kind));
+                if (indexName && !allFilesDynamic)
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
                     indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
                     if (indexfile)
                         keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, false));
                 }
-                if (fileName)
+                if (fileName && !allFilesDynamic)
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
                     datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit()));
@@ -23531,10 +23569,29 @@ public:
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {
-        if (datafile)
-            addXrefFileInfo(reply, datafile);
-        if (indexfile)
-            addXrefFileInfo(reply, indexfile);
+        if (!allFilesDynamic)
+        {
+            if (datafile)
+                addXrefFileInfo(reply, datafile);
+            if (indexfile)
+                addXrefFileInfo(reply, indexfile);
+        }
+        else
+        {
+            Owned<const IResolvedFile> temp;
+            if (fileName.length())
+            {
+                temp.setown(queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit()));
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+            if (indexName.length())
+            {
+                temp.setown(queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit()));
+                if (temp)
+                    addXrefFileInfo(reply, temp);
+            }
+        }
     }
 };
 
