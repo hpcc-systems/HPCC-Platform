@@ -1733,7 +1733,7 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
     }
 }
 
-void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster, 
+void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster,
     const char *description,IEspDFUFileDetail& FileDetails)
 {
     DBGLOG("CWsDfuEx::doGetFileDetails\n");
@@ -1757,7 +1757,15 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     FileDetails.setFilename(fname ? fname+1 : lname);
     FileDetails.setDir(df->queryDefaultDir());
     FileDetails.setPathMask(df->queryPartMask());
-
+    if (version >= 1.28)
+    {
+        StringBuffer buf;
+        FileDetails.setPrefix(getPrefixFromLogicalName(lname, buf));
+        if (cluster && *cluster)
+            FileDetails.setNodeGroup(cluster);
+        else if (clusters.length() == 1)
+            FileDetails.setNodeGroup(clusters.item(0));
+    }
     StringBuffer strDesc = df->queryAttributes().queryProp("@description");
     if (description)
     {
@@ -1819,10 +1827,13 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
             farray.append(subfileName.str());
         }
 
-        if(farray.length() > 0)
+        unsigned numSubFiles = farray.length();
+        if(numSubFiles > 0)
         {
             FileDetails.setSubfiles(farray);
         }
+        if ((version >= 1.28) && (numSubFiles > 1))
+            FileDetails.setBrowseData(false); //ViewKeyFile Cannot handle superfile with multiple subfiles
 
         FileDetails.setIsSuperfile(true);
         return;
@@ -1830,6 +1841,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     //#14280
 
     FileDetails.setWuid(df->queryAttributes().queryProp("@workunit"));
+    if (version >= 1.28)
+        FileDetails.setNumParts(df->numParts());
 
     //#17430
     {
@@ -3230,8 +3243,7 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
             }
         }
         bool isFileCompressed = false;
-        IPropertyTree* attr = file.queryBranch("Attr");
-        if (isKeyFile || (attr && isCompressed(*attr)))
+        if (isKeyFile || isCompressed(file))
         {
             isFileCompressed = true;
             if ((version >= 1.22) && file.hasProp(getDFUQResultFieldName(DFUQRFcompressedsize)))

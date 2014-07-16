@@ -810,7 +810,7 @@ public:
 
     virtual const char * queryLogicalFilename(const void * row) 
     { 
-        UNIMPLEMENTED;
+        return f->queryLogicalFilename(thisPartIdx);
     }
 
 };
