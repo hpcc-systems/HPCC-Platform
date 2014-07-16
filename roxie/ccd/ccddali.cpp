@@ -272,7 +272,8 @@ private:
     static void writeCache(const char *foundLoc, const char *newLoc, IPropertyTree *val)
     {
         CriticalBlock b(cacheCrit);
-        loadCache();
+        if (!cache)
+            initCache();
         cache->removeProp(foundLoc);
         if (val)
             cache->addPropTree(newLoc, LINK(val));
