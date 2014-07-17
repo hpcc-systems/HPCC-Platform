@@ -2365,7 +2365,7 @@ private:
                 const char *id = control->queryProp("Query/@id");
                 if (id)
                 {
-                    Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx); // MORE - slave too?
+                    Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx);
                     if (f)
                     {
                         Owned<const IPropertyTree> stats = f->getQueryStats(from, to);
@@ -2397,7 +2397,7 @@ private:
                 {
                     if (stricmp(action, "listGraphNames") == 0)
                     {
-                        Owned<IQueryFactory> query = getQuery(id, NULL, NULL, logctx); // MORE - slave too?
+                        Owned<IQueryFactory> query = getQuery(id, NULL, NULL, logctx);
                         if (query)
                         {
                             reply.appendf("<Query id='%s'>\n", id);
@@ -2538,18 +2538,6 @@ private:
             else if (stricmp(queryName, "control:steppingEnabled")==0)
             {
                 steppingEnabled = control->getPropBool("@val", true);
-            }
-            else if (stricmp(queryName, "control:suspend")==0)
-            {
-                StringBuffer id(control->queryProp("Query/@id"));
-                if (!id.length())
-                    badFormat();
-                {
-                    Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx); // MORE - slave too?
-                    if (f)
-                        id.clear().append(f->queryQueryName());  // use the spelling of the query stored with the query factory
-                }
-                UNIMPLEMENTED;
             }
             else if (stricmp(queryName, "control:suspendChannel")==0)
             {
