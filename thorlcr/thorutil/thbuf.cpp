@@ -1693,9 +1693,7 @@ public:
                             eos = true;
                             return NULL;
                         }
-                        const void **toRead = rows.getBlock(rowsToRead);
-                        memcpy(readRows, toRead, rowsToRead * sizeof(void *));
-                        rows.noteSpilled(rowsToRead);
+                        rows.readBlock(readRows, rowsToRead);
                         rowPos = 0;
                         if (writersBlocked)
                         {
