@@ -851,8 +851,8 @@ namespace sxt {
       nsColonCount = 0;
       if(!(ch >= 'A' && ch <= 'Z') && !(ch >= 'a' && ch <= 'z') 
         && ch != '_' && ch != ':')
-        throw XmlTokenizerException(string("expected name start not ")
-          +ch+getPosDesc(), getLineNumber(), getColumnNumber());
+          throw XmlTokenizerException("expected name start not ",
+            ch, getPosDesc(), getLineNumber(), getColumnNumber());
       do {
         ch = more();
         if(ch == ':') {
@@ -882,8 +882,8 @@ namespace sxt {
 
     char readS(char ch) throw (XmlTokenizerException) {
       if(!isS(ch))
-        throw XmlTokenizerException(string("expected white space not ")
-          +ch+getPosDesc(), getLineNumber(), getColumnNumber());
+          throw XmlTokenizerException("expected white space not ",
+          ch, getPosDesc(), getLineNumber(), getColumnNumber());
       while(ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r')
         ch = more();
       return ch;
