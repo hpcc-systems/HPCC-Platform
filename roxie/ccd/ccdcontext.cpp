@@ -3029,17 +3029,7 @@ public:
             if (r)
             {
                 r->startScalar(name, sequence);
-                if (isRaw)
-                    r->append(len, (const char *) data);
-                else
-                {
-                    const byte *field = (const byte *) data;
-                    for (int i = 0; i < len; i++)
-                    {
-                        r->append(hexchar[field[i] >> 4]);
-                        r->append(hexchar[field[i] & 0x0f]);
-                    }
-                }
+                r->encodeData(data, len);
             }
         }
         if (workUnit)
@@ -3437,7 +3427,7 @@ public:
                 }
                 else
                 {
-                    r->encodeXML(str, 0, len);
+                    r->encodeString(str, len);
                 }
             }
         }
@@ -3488,7 +3478,7 @@ public:
                     rtlDataAttr buff;
                     unsigned bufflen = 0;
                     rtlUnicodeToCodepageX(bufflen, buff.refstr(), len, str, "utf-8");
-                    r->encodeXML(buff.getstr(), 0, bufflen, true); // output as UTF-8
+                    r->encodeString(buff.getstr(), bufflen, true); // output as UTF-8
                 }
             }
         }

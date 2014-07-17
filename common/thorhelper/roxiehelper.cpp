@@ -743,7 +743,7 @@ void CSafeSocket::sendException(const char *source, unsigned code, const char *m
         response.startDataset("Exception", NULL, (unsigned) -1);
         response.appendf("<Source>%s</Source><Code>%d</Code>", source, code);
         response.append("<Message>");
-        response.encodeXML(message);
+        response.encodeString(message, strlen(message));
         response.append("</Message>");
     }
     catch(IException *EE)
@@ -873,11 +873,32 @@ void FlushingStringBuffer::appendf(const char *format, ...)
     append(t.length(), t.str());
 }
 
-void FlushingStringBuffer::encodeXML(const char *x, unsigned flags, unsigned len, bool utf8)
+void FlushingStringBuffer::encodeString(const char *x, unsigned len, bool utf8)
 {
-    StringBuffer t;
-    ::encodeXML(x, t, flags, len, utf8);
-    append(t.length(), t.str());
+    if (mlFmt==MarkupFmt_XML)
+    {
+        StringBuffer t;
+        ::encodeXML(x, t, 0, len, utf8);
+        append(t.length(), t.str());
+    }
+    else
+        append(len, x);
+}
+
+void FlushingStringBuffer::encodeData(const void *data, unsigned len)
+{
+    static char hexchar[] = "0123456789ABCDEF";
+    if (mlFmt==MarkupFmt_XML)
+    {
+        const byte *field = (const byte *) data;
+        for (int i = 0; i < len; i++)
+        {
+            append(hexchar[field[i] >> 4]);
+            append(hexchar[field[i] & 0x0f]);
+        }
+    }
+    else
+        append(len, (const char *) data);
 }
 
 void FlushingStringBuffer::addPayload(StringBuffer &s, unsigned int reserve)
@@ -1096,10 +1117,16 @@ void FlushingStringBuffer::incrementRowCount()
     rowCount++;
 }
 
-void FlushingJsonBuffer::encodeXML(const char *x, unsigned flags, unsigned len, bool utf8)
+void FlushingJsonBuffer::encodeString(const char *x, unsigned len, bool utf8)
 {
     CriticalBlock b(crit);
     appendJSONStringValue(s, NULL, len, x, true);
+}
+
+void FlushingJsonBuffer::encodeData(const void *data, unsigned len)
+{
+    CriticalBlock b(crit);
+    appendJSONDataValue(s, NULL, len, data);
 }
 
 void FlushingJsonBuffer::startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend, const IProperties *xmlns)
