@@ -31,8 +31,6 @@ from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress
 from hpcc.common.error import Error
 
-prog_version = "0.0.29"
-
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
     os.umask(0)
@@ -129,7 +127,6 @@ class RegressMain:
 
     def main(self):
         prog = "ecl-test"
-        versionStr = prog+' v:'+prog_version
         description = 'HPCC Platform Regression suite'
         pythonVer = getVersionNumbers()
 
@@ -149,8 +146,6 @@ class RegressMain:
             atexit.register(logging.shutdown)
 
         parser = argparse.ArgumentParser(prog=prog, description=description)
-        parser.add_argument('--version', '-v', action='version',
-                            version=versionStr)
         parser.add_argument('--config', help="config file to use. Default: ecl-test.json",
                             nargs='?', default="ecl-test.json")
         parser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
@@ -215,7 +210,6 @@ class RegressMain:
 
             self.regressionSuiteHpccMainDir = convertPath(regressionSuiteFullPath)+"::download"
             self.regress = Regression(self.args)
-            logging.debug("Suite version:%s",  versionStr)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
 
             self.targetClusters = []
