@@ -849,6 +849,18 @@ void FlushingStringBuffer::append(const char *data)
     append(strlen(data), data);
 }
 
+void FlushingStringBuffer::append(double data)
+{
+    if (mlFmt==MarkupFmt_XML)
+    {
+        StringBuffer v;
+        v.append(data);
+        appendf("%s", v.str());
+    }
+    else
+        append(sizeof(data), (char *)&data);
+}
+
 void FlushingStringBuffer::append(unsigned len, const char *data)
 {
     try
@@ -1115,6 +1127,12 @@ void FlushingStringBuffer::incrementRowCount()
 {
     CriticalBlock b(crit);
     rowCount++;
+}
+
+void FlushingJsonBuffer::append(double data)
+{
+    CriticalBlock b(crit);
+    appendJSONRealValue(s, NULL, data);
 }
 
 void FlushingJsonBuffer::encodeString(const char *x, unsigned len, bool utf8)
