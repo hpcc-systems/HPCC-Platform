@@ -409,11 +409,11 @@ public:
     void unregisterWriteCallback(IWritePosCallback &cb);
     inline void setAllowNulls(bool b) { CThorExpandingRowArray::setAllowNulls(b); }
     void kill();
-    void clearRows();
     void compact();
     void flush();
-    inline bool append(const void *row)
+    inline bool append(const void *row) __attribute__((warn_unused_result))
     {
+        //GH->JCS Should this really be inline?
         assertex(row || allowNulls);
         if (numRows >= maxRows)
         {
@@ -431,36 +431,26 @@ public:
     }
     bool appendRows(CThorExpandingRowArray &inRows, bool takeOwnership);
 
-    //The following can be accessed from the reader without any need to lock
+    //The following must either be accessed within a lock, or when no rows can be appended,
+    //(otherwise flush() might move all the rows, invalidating the indexes - or for query() the row)
     inline const void *query(rowidx_t i) const
     {
-        CThorArrayLockBlock block(*this);
         return CThorExpandingRowArray::query(i);
     }
     inline const void *get(rowidx_t i) const
     {
-        CThorArrayLockBlock block(*this);
         return CThorExpandingRowArray::get(i);
     }
     inline const void *getClear(rowidx_t i)
     {
-        CThorArrayLockBlock block(*this);
         return CThorExpandingRowArray::getClear(i);
     }
 
     //A thread calling the following functions must own the lock, or guarantee no other thread will access
     void sort(ICompare & compare, unsigned maxcores);
     rowidx_t save(IFile &file, bool useCompression, const char *tracingPrefix);
-    const void **getBlock(rowidx_t readRows);
-    inline void noteSpilled(rowidx_t spilledRows)
-    {
-        firstRow += spilledRows;
-    }
 
-    //The block returned is only valid until the critical section is released
-
-    inline rowidx_t firstCommitted() const { return firstRow; }
-    inline rowidx_t numCommitted() const { return commitRows - firstRow; }
+    inline rowidx_t numCommitted() const { return commitRows - firstRow; } //MORE::Not convinced this is very safe!
 
 // access to
     void swap(CThorSpillableRowArray &src);
@@ -490,11 +480,16 @@ public:
     void deserializeRow(IRowDeserializerSource &in) { CThorExpandingRowArray::deserializeRow(in); }
     bool ensure(rowidx_t requiredRows) { return CThorExpandingRowArray::ensure(requiredRows); }
     void transferRowsCopy(const void **outRows, bool takeOwnership);
+    void readBlock(const void **outRows, rowidx_t readRows);
 
     virtual IThorArrayLock &queryLock() { return *this; }
 // IThorArrayLock
     virtual void lock() const { cs.enter(); }
     virtual void unlock() const { cs.leave(); }
+
+private:
+    void clearRows();
+    const void **getBlock(rowidx_t readRows);
 };
 
 
