@@ -3,7 +3,7 @@
 '''
 /*#############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012-2014 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -30,8 +30,6 @@ from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress
 from hpcc.common.error import Error
-
-prog_version = "0.0.29"
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -129,7 +127,6 @@ class RegressMain:
 
     def main(self):
         prog = "ecl-test"
-        versionStr = prog+' v:'+prog_version
         description = 'HPCC Platform Regression suite'
         pythonVer = getVersionNumbers()
 
@@ -149,8 +146,6 @@ class RegressMain:
             atexit.register(logging.shutdown)
 
         parser = argparse.ArgumentParser(prog=prog, description=description)
-        parser.add_argument('--version', '-v', action='version',
-                            version=versionStr)
         parser.add_argument('--config', help="config file to use. Default: ecl-test.json",
                             nargs='?', default="ecl-test.json")
         parser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
@@ -187,8 +182,14 @@ class RegressMain:
         parser_run.set_defaults(func='run')
         parser_run.add_argument('--target', '-t', help="Run the cluster suite. If target = 'all' then run suite on all clusters. Default value is thor.",
                                 nargs='?', type=str,  default='thor', metavar="target_cluster | all")
+        parser_run.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
+                                action='store_true')
         parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )",
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
+        parser_run.add_argument('--runclass', '-r', help="Run subclass(es) of the suite. Default value is 'all'",
+                                nargs=1,  default = ['all'],   metavar="class[,class,...]")
+        parser_run.add_argument('--excludeclass', '-e', help="Exclude subclass(es) of the suite. Default value is 'none'",
+                                nargs=1,  default = ['none'],   metavar="class[,class,...]")
 
         parser_query = subparsers.add_parser('query', help='query help')
         parser_query.set_defaults(func='query')
@@ -215,7 +216,6 @@ class RegressMain:
 
             self.regressionSuiteHpccMainDir = convertPath(regressionSuiteFullPath)+"::download"
             self.regress = Regression(self.args)
-            logging.debug("Suite version:%s",  versionStr)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
 
             self.targetClusters = []
