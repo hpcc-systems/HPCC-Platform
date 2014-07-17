@@ -965,10 +965,32 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 #endif
 
 // AARCH32/64 Procedure Call Standard
-#elif defined(_ARCH_ARM32_) || defined(_ARCH_ARM64_)
-        // ARMFIX: ARM AAPCS is different than X86 in that it uses registers for
+#elif defined(_ARCH_ARM32_)
+        // ARM AAPCS is different than X86 in that it uses registers for
         // both arguments and returns values.
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0042e/IHI0042E_aapcs.pdf
+        register unsigned _intresult asm("r0");               // Specific register for result
+        register unsigned _intresulthigh asm("r1");           // Specific register for result
+        register unsigned _poplen asm("r4") = len-4*REGSIZE;  // Needs to survive the call
+        register void *_fh asm("r5") = fh;                     // Needs to survive until the call
+        __asm__ __volatile__ (
+            "subs sp, sp, %[len] \n\t"        // Make space on stack
+            "mov r2, sp \n\t"                 // r2 = destination for loop
+            ".repLoop: \n\t"
+            "ldrb r3, [%[strbuf]], #1 \n\t"   // copy a byte from src array to r3
+            "strb r3, [r2], #1 \n\t"          // and then from r3 onto stack
+            "subs %[len], %[len], #1 \n\t"    // decrement and repeat
+            "bne .repLoop \n\t"
+            "pop {r0,r1,r2,r3} \n\t"          // first 4 parameters go in registers
+            "blx %[fh] \n\t"                  // make the call
+            "adds sp, sp, %[poplen] \n\t"     // Restore stack pointer (note have popped 4 registers, so poplen is len - 16)
+            : "=r"(_intresult), "=r"(_intresulthigh)
+            : [len] "r"(len), [poplen] "r"(_poplen), [strbuf] "r"(strbuf), [fh] "r"(_fh)
+            : "r2","r3","lr"                  // function we call may corrupt lr
+            );
+        intresult = _intresult;
+        intresulthigh = _intresulthigh;
+#elif defined(_ARCH_ARM64_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
         UNIMPLEMENTED;
 #else
