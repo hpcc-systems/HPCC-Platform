@@ -31,6 +31,7 @@ extern jlib_decl void ThreadYield();
 #ifdef _DEBUG
 //#define SPINLOCK_USE_MUTEX // for testing
 //#define SPINLOCK_RR_CHECK     // checks for realtime threads
+#define _ASSERT_LOCK_SUPPORT
 #endif
 
 #ifdef SPINLOCK_USE_MUTEX
@@ -197,12 +198,45 @@ class jlib_decl CriticalSection
     // lightweight mutex within a single process
 private:
     CRITICAL_SECTION flags;
+#ifdef _ASSERT_LOCK_SUPPORT
+    ThreadId owner;
+#endif
     inline CriticalSection(CriticalSection & value) { assert(false); } // dummy to prevent inadvetant use as block
 public:
-    inline CriticalSection()  { InitializeCriticalSection(&flags); };
-    inline ~CriticalSection() { DeleteCriticalSection(&flags);     };
-    inline void enter()       { EnterCriticalSection(&flags);      };
-    inline void leave()       { LeaveCriticalSection(&flags);      };
+    inline CriticalSection()
+    {
+        InitializeCriticalSection(&flags);
+#ifdef _ASSERT_LOCK_SUPPORT
+        owner = 0;
+#endif
+    };
+    inline ~CriticalSection()
+    {
+#ifdef _ASSERT_LOCK_SUPPORT
+        assertex(owner==0);
+#endif
+        DeleteCriticalSection(&flags);
+    };
+    inline void enter()
+    {
+        EnterCriticalSection(&flags);
+#ifdef _ASSERT_LOCK_SUPPORT
+        owner = GetCurrentThreadId();
+#endif
+    };
+    inline void leave()
+    {
+#ifdef _ASSERT_LOCK_SUPPORT
+        owner = 0;
+#endif
+        LeaveCriticalSection(&flags);
+    };
+    inline void assertLocked()
+    {
+#ifdef _ASSERT_LOCK_SUPPORT
+        assertex(owner == GetCurrentThreadId());
+#endif
+    }
 #ifdef ENABLE_CHECKEDCRITICALSECTIONS
     bool wouldBlock()  { if (TryEnterCriticalSection(&flags)) { leave(); return false; } return true; } // debug only
 #endif
@@ -216,6 +250,9 @@ class CriticalSection
 {
 private:
     MutexId mutex;
+#ifdef _ASSERT_LOCK_SUPPORT
+    ThreadId owner;
+#endif
     CriticalSection (const CriticalSection &);  
 public:
     inline CriticalSection()
@@ -229,21 +266,39 @@ public:
 #endif
         pthread_mutex_init(&mutex, &attr);
         pthread_mutexattr_destroy(&attr);
+#ifdef _ASSERT_LOCK_SUPPORT
+        owner = 0;
+#endif
     }
 
     inline ~CriticalSection()
     {
+#ifdef _ASSERT_LOCK_SUPPORT
+        assertex(owner==0);
+#endif
         pthread_mutex_destroy(&mutex);
     }
 
     inline void enter()
     {
         pthread_mutex_lock(&mutex);
+#ifdef _ASSERT_LOCK_SUPPORT
+        owner = GetCurrentThreadId();
+#endif
     }
 
     inline void leave()
     {
+#ifdef _ASSERT_LOCK_SUPPORT
+        owner = 0;
+#endif
         pthread_mutex_unlock(&mutex);
+    }
+    inline void assertLocked()
+    {
+#ifdef _ASSERT_LOCK_SUPPORT
+        assertex(owner == GetCurrentThreadId());
+#endif
     }
 };
 #endif
