@@ -24,6 +24,7 @@
 #include "esdl_utils.hpp"
 #include "../../system/include/platform.h"
 #include "jmutex.hpp"
+#include "jstring.hpp"
 
 #undef YYSTYPE
 #define YYSTYPE attribute
@@ -352,7 +353,43 @@ public:
         }
     }
 
-
+    void toStringXmlAttr(StringBuffer & out)
+    {
+        switch (mttype_)
+        {
+        case mt_string:
+        case mt_const_id:
+        {
+            if (!str_val_)
+            {
+                out.appendf(" %s=\"\"", getName());
+            }
+            else
+            {
+                int len=strlen(str_val_);
+                StrBuffer val;
+                if (len>=2 && *str_val_=='\"')
+                    val.append(str_val_, 1, strlen(str_val_)-2);
+                else
+                    val.append(str_val_);
+                StrBuffer encoded;
+                encodeXML(val.str(), encoded);
+                out.appendf(" %s=\"%s\"", getName(), encoded.str());
+            }
+            break;
+        }
+        case mt_double:
+            out.appendf(" %s=\"%f\"", getName(), double_val_);
+            break;
+        case mt_int:
+            out.appendf(" %s=\"%d\"", getName(), int_val_);
+            break;
+        case mt_none:
+        default:
+            out.appendf(" %s=\"\"", getName());
+            break;
+        }
+    }
 };
 
 inline MetaTagInfo* findMetaTag(MetaTagInfo *list, const char *name)
@@ -548,6 +585,29 @@ public:
         }
     }
 
+    void toStringXmlAttr(StringBuffer & out)
+    {
+        const char *xsd_type = getMetaString("xsd_type", NULL);
+        if (xsd_type)
+        {
+            if (*xsd_type=='\"')
+                xsd_type++;
+            const char *finger = strchr(xsd_type, ':');
+            if (finger)
+                xsd_type=finger+1;
+            StrBuffer TypeName(xsd_type);
+            TypeName.replace('\"', 0);
+            out.appendf(" complex_type=\"%s\"", TypeName.str());
+        }
+        else
+        {
+            char typestr[256]={0};
+            cat_type(typestr, 0, 0);
+
+            out.appendf(" %s=\"%s\"", (kind==TK_ESPSTRUCT) ? "complex_type" : "type", typestr);
+        }
+    }
+
     void write_esxdl()
     {
         if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
@@ -580,6 +640,45 @@ public:
                 mtag->write_xml_attr();
             outs("/>\n");
         }
+    };
+
+    void toString(StringBuffer & out)
+    {
+        if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
+        {
+            out.appendf("\t\t<EsdlArray name=\"%s\" ", name);
+            toStringXmlAttr(out);
+            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+            {
+                mtag->toStringXmlAttr(out);
+            }
+        }
+        else if (kind==TK_ENUM)
+        {
+            out.appendf("\t\t<EsdlEnumItem name=\"%s\"", name);
+            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+            {
+                mtag->toStringXmlAttr(out);
+            }
+        }
+        else if (kind==TK_ESPENUM)
+        {
+            out.appendf("\t\t<EsdlEnum name=\"%s\" enum_type=\"%s\"", name, typname);
+            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+            {
+                mtag->toStringXmlAttr(out);
+            }
+        }
+        else
+        {
+            out.appendf("\t\t<EsdlElement name=\"%s\"", name);
+            toStringXmlAttr(out);
+            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+            {
+                mtag->toStringXmlAttr(out);
+            }
+        }
+        out.append("/>\n");
     };
 
     type_kind kind;
@@ -683,6 +782,11 @@ public:
        outf(1, "<EsdlInclude file=\"%s\"/>\n", pathstr.str());
    }
 
+   void toString(StringBuffer & out)
+   {
+      out.appendf("\t<EsdlInclude file=\"%s\"/>\n", pathstr.str());
+   }
+
    StrBuffer pathstr;
    IncludeInfo  *next;
 };
@@ -702,6 +806,11 @@ public:
    void write_esxdl()
    {
        outf(1, "<EsdlVersion name=\"%s\" version=\"%f\" />\n", version_name.str(), version_value);
+   }
+
+   void toString(StringBuffer & out)
+   {
+       out.appendf("\t<EsdlVersion name=\"%s\" version=\"%f\" />\n", version_name.str(), version_value);
    }
 
    StrBuffer version_name;
@@ -941,6 +1050,36 @@ public:
         }
     }
 
+    void toString(StringBuffer & out)
+    {
+        const char *esdltype = query_esxdl_type();
+        if (esdltype)
+        {
+            out.appendf("\t<%s name=\"%s\"", esdltype, name_);
+            if (base_ && *base_)
+            {
+                out.appendf(" base=\"%s\"", base_);
+            }
+            if (parent)
+            {
+                out.appendf(" base_type=\"%s\"", parent);
+            }
+            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+            {
+                mtag->toStringXmlAttr(out);
+            }
+
+            out.append(">\n");
+
+            for (ParamInfo *param=attrs_; param; param=param->next)
+            {
+                param->toString(out);
+            }
+
+            out.appendf("\t</%s>\n", esdltype);
+        }
+    }
+
     MetaTagInfo     *tags;
     EspMessageInfo  *next;
 
@@ -1077,6 +1216,16 @@ public:
         for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
             mtag->write_xml_attr();
         outs("/>\n");
+    }
+
+    void toString(StringBuffer & out)
+    {
+        out.appendf("\t<EsdlMethod name=\"%s\" request_type=\"%s\" response_type=\"%s\" ", name_, request_, response_);
+        for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+        {
+            mtag->toStringXmlAttr(out);
+        }
+        out.append("/>\n");
     }
 
     MetaTagInfo     *tags;
@@ -1258,6 +1407,22 @@ public:
         outs(2, "</EsdlService>");
     }
 
+    void toString(StringBuffer & out)
+    {
+        out.appendf("\t\t<EsdlService name=\"%s\" ", name_);
+        for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
+        {
+            mtag->toStringXmlAttr(out);
+        }
+        out.append(">\n");
+
+        for (EspMethodInfo *mth=methods; mth; mth=mth->next)
+        {
+            mth->toString(out);
+        }
+        out.append("\t\t</EsdlService>");
+    }
+
     EspStructInfo  *structs;
     EspMethodInfo   *methods;
     EspMountInfo    *mounts;
@@ -1270,7 +1435,7 @@ public:
 class ESDLcompiler
 {
 public:
-    ESDLcompiler(const char * sourceFile, const char * outDir);
+    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir);
     ~ESDLcompiler();
 
     void Process();
@@ -1279,6 +1444,11 @@ public:
     const char * getSrcDir() const
     {
         return srcDir.str();
+    }
+
+    const char * getEsxdlContent() const
+    {
+        return esxdlcontent.str();
     }
 
     const char* getPackageName()
@@ -1293,7 +1463,7 @@ private:
     int esxdlo;
     char* packagename;
     StrBuffer srcDir;
-    StrBuffer outBuffer;
+    StringBuffer esxdlcontent;
 
 public:
     static CriticalSection m_critSect;

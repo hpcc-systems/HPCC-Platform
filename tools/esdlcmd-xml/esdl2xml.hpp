@@ -44,7 +44,8 @@ public:
 
     void setVerbose(bool verbose){optVerbose = verbose;};
     bool getVerbose(){return optVerbose;};
-    void transform(const char * source, const char * outdir="")
+
+    void transform(const char * source, const char * outdir="" ,StringBuffer * out=NULL, bool generatefile=true)
     {
         if (added.getValue(source) == false)
         {
@@ -55,8 +56,11 @@ public:
                     fprintf(stdout, "Output directory not specified\n");
             }
 
-            ESDLcompiler hc(source, outdir);
+            ESDLcompiler hc(source, generatefile, outdir);
             hc.Process();
+            if (!generatefile && out)
+                out->append(hc.getEsxdlContent());
+
             added.setValue(source, true);
 
             if (optRecursive && hc.includes)
@@ -68,7 +72,7 @@ public:
                 for (ii=hc.includes;ii;ii=ii->next)
                 {
                    subfile.setf("%s%s.ecm", srcDir.str(), ii->pathstr.str());
-                   transform(subfile, outdir);
+                   transform(subfile, outdir, out, generatefile);
                 }
             }
         }

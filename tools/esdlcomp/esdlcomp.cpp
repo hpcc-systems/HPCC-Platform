@@ -1099,7 +1099,7 @@ char* getTargetBase(const char* outDir, const char* src)
         return strdup(src);
 }
 
-ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
+ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir)
 {
     //yydebug = 1;
     modules = NULL;
@@ -1126,14 +1126,17 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
 
     packagename = es_gettail(sourceFile);
 
-    if (!outDir || !*outDir)
-        outDir = srcDir.str();
+    if (generatefile)
+    {
+        if (!outDir || !*outDir)
+            outDir = srcDir.str();
 
-    char* targetBase = getTargetBase(outDir, sourceFile);
+        char* targetBase = getTargetBase(outDir, sourceFile);
 
-    esxdlo = es_createFile(targetBase,"xml");
+        esxdlo = es_createFile(targetBase,"xml");
 
-    free(targetBase);
+        free(targetBase);
+    }
 }
 
 ESDLcompiler::~ESDLcompiler()
@@ -1168,8 +1171,6 @@ ESDLcompiler::~ESDLcompiler()
         servs = ser->next;
         delete ser;
     }
-
-
 
     while (includes)
     {
@@ -1233,33 +1234,30 @@ void ESDLcompiler::Process()
 
 void ESDLcompiler::write_esxdl()
 {
-    //create the *.esp file
-    gOutfile = esxdlo;
-
-    outf("<esxdl name=\"%s\">\n", name.str());
+    esxdlcontent.clear();
 
     VersionInfo * vi;
     for (vi=versions;vi;vi=vi->next)
     {
-        vi->write_esxdl();
+        vi->toString(esxdlcontent);
     }
 
     IncludeInfo * ii;
     for (ii=hcp->includes;ii;ii=ii->next)
     {
-        ii->write_esxdl();
+        ii->toString(esxdlcontent);
     }
 
     EspMessageInfo * mi;
     for (mi=msgs;mi;mi=mi->next)
     {
-        mi->write_esxdl();
+        mi->toString(esxdlcontent);
     }
 
     EspServInfo *si;
     for (si=servs;si;si=si->next)
     {
-        si->write_esxdl();
+        si->toString(esxdlcontent);
     }
 
     if (methods)
@@ -1267,12 +1265,20 @@ void ESDLcompiler::write_esxdl()
         EspMethodInfo *sm;
         for (sm=methods;sm;sm=sm->next)
         {
-            sm->write_esxdl();
+            sm->toString(esxdlcontent);
         }
     }
 
-    outs("</esxdl>");
-    gOutfile = -1;
+
+    if (esxdlo)
+    {
+        //create the *.esp file
+        StringBuffer tmp;
+        tmp.setf("<esxdl name=\"%s\">\n%s</esxdl>", name.str(), esxdlcontent.str());
+        gOutfile = esxdlo;
+        outs(tmp.str());
+        gOutfile = -1;
+    }
 }
 
 // end
