@@ -28,12 +28,25 @@ namespace sxt {
 
   class XmlTokenizerException  : public exception{
   public:
-    //XmlTokenizerException() throw() : message(string("XmlTokenizerException")) {}
     XmlTokenizerException(string exMessage) throw() 
       : message(exMessage) {}
 
     XmlTokenizerException(string exMessage, int exRow, int exColumn) throw() 
       : message(exMessage), row(exRow), column(exColumn) {}
+
+    XmlTokenizerException(const char *exMessage, char ch, const string &posDesc, int exRow, int exColumn) throw()
+      : message(exMessage), row(exRow), column(exColumn)
+    {
+        if (ch)
+            message += ch;
+        message.append(posDesc);
+    }
+
+    XmlTokenizerException(const char *exMessage, const string &posDesc, int exRow, int exColumn) throw()
+      : message(exMessage), row(exRow), column(exColumn)
+    {
+        message.append(posDesc);
+    }
 
     XmlTokenizerException(const XmlTokenizerException& other) throw() 
       : exception (other)
