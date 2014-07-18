@@ -264,6 +264,17 @@ class ECLFile:
         logging.debug("%3d. testNoOutput() returns with: %s",  self.taskId,  retVal)
         return retVal
 
+    def testInClass(self,  classDefined):
+        retVal=False
+        for c in classDefined:
+            tag = b'//class='+c.encode()
+            logging.debug("%3d. testInClass (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+            retVal = self.__checkTag(tag)
+            if retVal:
+                break
+        logging.debug("%3d. testInClass() returns with: %s",  self.taskId,  retVal)
+        return retVal
+
     def getTimeout(self):
         timeout = 0
         # Standard string has a problem with unicode characters

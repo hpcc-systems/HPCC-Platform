@@ -112,8 +112,9 @@ Command:
 Result:
 
 |
-|       usage: ecl-test run [-h] [--target [target_cluster | all]] [--publish]
+|       usage: ecl-test run [-h] [--target [target_cluster | all]] [--publish] 
 |                           [--pq threadNumber]
+|                           [--runclass [class]] [--excludeclass [class]]
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
@@ -121,7 +122,10 @@ Result:
 |                                 target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
 |        --publish, -p            publish compiled query instead of run.
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
-|
+|        --runclass class[,class,...], -r class[,class,...]
+|                                 run subclass(es) of the suite. Default value is 'all'
+|        --excludeclass class[,class,...], -e class[,class,...]
+|                                 exclude subclass(es) of the suite. Default value is 'none'
 
 
 Parameters of Regression Suite query sub-command:
@@ -478,6 +482,10 @@ The format of the output is the same as 'run', except there is a log, result and
 
     If //nokey is present then the following tag prevents the output being stored in the result log file.
 //nooutput
+
+    To define a class to be executed/excluded in run mode.
+//class=<class_name>
+
 
 7. Key file handling:
 ---------------------
