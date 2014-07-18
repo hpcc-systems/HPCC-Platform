@@ -45,6 +45,16 @@ FuncCallStack::~FuncCallStack() {
     }
 }
 
+unsigned FuncCallStack::align(unsigned size)
+{
+#ifdef ALIGN_USES_ELEMENTSIZE
+    unsigned boundary = (size < ALIGNMENT) ? ALIGNMENT : size;
+#else
+    unsigned boundary = ALIGNMENT;
+#endif
+    return ((size + boundary - 1) & ~(boundary-1));
+}
+
 unsigned FuncCallStack::getSp(){ 
     return sp;
 }

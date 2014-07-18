@@ -861,6 +861,8 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
 // **** Linux/Mac ****
  #ifdef _ARCH_X86_64_
+        if ((len & 0x8) == 0)
+            len += 8;   // We need to make sure we add an ODD number of words to stack, so that it gets 16-byte aligned once pc is pushed by the call
 
         __int64 dummy1, dummy2,dummy3,dummy4;
 
@@ -900,7 +902,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         // Get real (float/double) return values;
         if(isRealvalue)
         {
-            if(len <= 4)
+            if(resultsize <= 4)
             {
                 __asm__  __volatile__(
                     "movss  %%xmm0,(%%rdi) \n\t"
@@ -940,7 +942,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         // Get real (float/double) return values;
         if(isRealvalue)
         {
-            if(len <= 4)
+            if(resultsize <= 4)
             {
                 __asm__  __volatile__(
                     "fstps (%%edi) \n\t"
@@ -966,6 +968,9 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             UNIMPLEMENTED;
         }
   #endif
+        if ((len & 0x4) == 0)
+           len += 4;   // We need to make sure we add an ODD number of words to stack, so that it gets 8-byte aligned once pc is pushed by the call
+        assertex((len & 7) == 4)
         register unsigned _intresult asm("r0");                       // Specific register for result
         register unsigned _intresulthigh asm("r1");                   // Specific register for result
         register unsigned _poplen asm("r4") = len-REGPARAMS*REGSIZE;  // Needs to survive the call
@@ -987,6 +992,8 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             );
         intresult = _intresult;
         intresulthigh = _intresulthigh;
+        if (isRealvalue)
+            UNIMPLMENTED;
  #elif defined(_ARCH_ARM64_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
         UNIMPLEMENTED;

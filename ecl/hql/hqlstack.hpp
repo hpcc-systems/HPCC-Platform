@@ -40,8 +40,9 @@
  #define REGSIZE 4
 #elif defined (_ARCH_ARM64_)
  #define ALIGNMENT 8
+ #define ALIGN_USES_ELEMENTSIZE
  #define REGSIZE 8
- #define REGPARAMS 8  // MORE - check this
+ #define REGPARAMS 8
  #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)) \
      && defined(__ARM_EABI__) && !defined(__ARM_PCS_VFP) && !defined(__ARM_PCS)
   #error "Can't identify floating point calling conventions.\nPlease ensure that your toolchain defines __ARM_PCS or __ARM_PCS_VFP."
@@ -50,7 +51,8 @@
   #define MAXFPREGS 8 // d0-d7
  #endif
 #elif defined (_ARCH_ARM32_)
- #define ALIGNMENT 8
+ #define ALIGNMENT 4
+ #define ALIGN_USES_ELEMENTSIZE
  #define REGSIZE 4
  #define REGPARAMS 4
  #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)) \
@@ -61,8 +63,6 @@
   #define MAXFPREGS 8 // Floating point parameters passed in v0-v7
  #endif
 #endif
-
-#define align(x)  ((x + ALIGNMENT - 1) & ~(ALIGNMENT-1))
 
 class FuncCallStack {
 private:
@@ -83,6 +83,7 @@ private:
  #endif
     unsigned    numFpRegs;
 #endif
+    unsigned align(unsigned size);
 public:
     FuncCallStack(int size = DEFAULTSTACKSIZE);
     virtual ~FuncCallStack();
