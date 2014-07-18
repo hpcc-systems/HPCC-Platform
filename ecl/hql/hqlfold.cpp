@@ -147,6 +147,7 @@ static IHqlExpression * optimizeCast(node_operator compareOp, IHqlExpression * c
         else
         {
             OwnedIValue recast(uncastValue->castTo(castType));
+            if (recast)
             {
                 int test = recast->compare(castValue);
                 //test = newValue <=> oldValue
