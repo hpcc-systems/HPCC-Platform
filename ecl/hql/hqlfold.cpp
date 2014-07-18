@@ -147,7 +147,6 @@ static IHqlExpression * optimizeCast(node_operator compareOp, IHqlExpression * c
         else
         {
             OwnedIValue recast(uncastValue->castTo(castType));
-            if (recast)
             {
                 int test = recast->compare(castValue);
                 //test = newValue <=> oldValue
@@ -773,11 +772,8 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
     // Get the length and address of the stack
     unsigned len = fstack.getSp();
-// ARMFIX: All 5 __64BIT__ usages in this file could be replaced by one at the top
-// regarding the type of a few local variables via typedef
-#ifdef __64BIT__
-    // ARMFIX: This will have to change for ARM. See info below.
-    while (len<6*REGSIZE) 
+#ifdef REGPARAMS
+    while (len < REGPARAMS*REGSIZE)
         len = fstack.pushPtr(NULL);         // ensure enough to fill 6 registers
 #endif
     char* strbuf = fstack.getMem();
@@ -796,8 +792,6 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 #endif
 
     try{
-// X86/X86_64 Procedure Call Standard
-#if defined (_ARCH_X86_) || defined(_ARCH_X86_64_)
     // Assembly code that does the dynamic function call. The calling convention is a combination of 
     // Pascal and C, that is the parameters are pushed from left to right, the stack goes downward(i.e.,
     // the stack pointer decreases as you push), and the caller is responsible for restoring the 
@@ -805,9 +799,10 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
 // **** Windows ****
 #ifdef _WIN32
-#ifdef _WIN64
+ // Note - we assume X86/X86_64 Procedure Call Standard
+ #if defined (_ARCH_X86_64_)
         UNIMPLEMENTED;
-#else
+ #elif defined (_ARCH_X86_32_)
         _asm{
         ;save registers that will be used
         push   ecx
@@ -859,11 +854,13 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         pop    esi
         pop    ecx
     }
-#endif
+ #else
+    UNIMPLEMENTED;
+ #endif
 #else // WIN32
 
 // **** Linux/Mac ****
-#ifdef _ARCH_X86_64_
+ #ifdef _ARCH_X86_64_
 
         __int64 dummy1, dummy2,dummy3,dummy4;
 
@@ -895,9 +892,9 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             "pop %%r8 \n\t"
             "pop %%r9 \n\t"
             "call   *%%rax \n\t"
-            "add    %%rbx, %%rsp \n\t" // Restore stack opinter (note have popped 6 registers)
+            "add    %%rbx, %%rsp \n\t" // Restore stack pointer (note have popped 6 registers)
             : "=a"(int64result),"=d"(dummy1),"=c"(dummy1),"=S"(dummy3),"=D"(dummy4)
-            : "c"(len),"b"(len-6*REGSIZE),"S"(strbuf),"a"(fh)
+            : "c"(len),"b"(len-REGPARAMS*REGSIZE),"S"(strbuf),"a"(fh)
             );
         
         // Get real (float/double) return values;
@@ -923,7 +920,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         else {
             intresult = (int)int64result;
         }
-#else // _ARCH_X86_
+ #elif defined(_ARCH_X86_)
         int dummy1, dummy2,dummy3;
         __asm__ __volatile__(
             "push   %%ebx \n\t"
@@ -960,19 +957,19 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
                 );
             }
         }
-#endif
-
-#endif
-
-// AARCH32/64 Procedure Call Standard
-#elif defined(_ARCH_ARM32_)
-        // ARM AAPCS is different than X86 in that it uses registers for
-        // both arguments and returns values.
+ #elif defined(_ARCH_ARM32_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0042e/IHI0042E_aapcs.pdf
-        register unsigned _intresult asm("r0");               // Specific register for result
-        register unsigned _intresulthigh asm("r1");           // Specific register for result
-        register unsigned _poplen asm("r4") = len-4*REGSIZE;  // Needs to survive the call
-        register void *_fh asm("r5") = fh;                     // Needs to survive until the call
+  #ifdef MAXFPREGS
+        void * floatstack = fstack.getFloatMem();
+        if (floatstack) {
+            // Would need to write code that tests the various sizes to decide whether to load into s0 or d0
+            UNIMPLEMENTED;
+        }
+  #endif
+        register unsigned _intresult asm("r0");                       // Specific register for result
+        register unsigned _intresulthigh asm("r1");                   // Specific register for result
+        register unsigned _poplen asm("r4") = len-REGPARAMS*REGSIZE;  // Needs to survive the call
+        register void *_fh asm("r5") = fh;                             // Needs to survive until the call
         __asm__ __volatile__ (
             "subs sp, sp, %[len] \n\t"        // Make space on stack
             "mov r2, sp \n\t"                 // r2 = destination for loop
@@ -990,13 +987,14 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             );
         intresult = _intresult;
         intresulthigh = _intresulthigh;
-#elif defined(_ARCH_ARM64_)
+ #elif defined(_ARCH_ARM64_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
         UNIMPLEMENTED;
-#else
+ #else
         // Unknown architecture
         UNIMPLEMENTED;
-#endif
+ #endif
+#endif //win32
     }
     catch (...) {
         FreeSharedObject(hDLL);
