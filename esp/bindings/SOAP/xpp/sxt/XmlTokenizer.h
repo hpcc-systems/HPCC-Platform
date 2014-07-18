@@ -319,9 +319,7 @@ namespace sxt {
             if(!seenContent) {
               seenContent = true;
               if(paramNoMixContent && !mixInElement)
-                throw XmlTokenizerException(
-                   string("mixed content disallowed outside element")                   
-                   +getPosDesc(), getLineNumber(), getColumnNumber());
+                throw XmlTokenizerException("mixed content disallowed outside element", getPosDesc(), getLineNumber(), getColumnNumber());
             }
             state = STATE_SEEN_AMP;
             previousState = STATE_CONTENT_CONTINUED;
@@ -367,9 +365,7 @@ namespace sxt {
               //cerr << "ALEK EXC " << " mix=" << seenContent << endl;
               state = STATE_SCAN_STAG_NAME;
               if(paramNoMixContent && seenContent)
-                throw XmlTokenizerException(
-          "mixed content disallowed inside element and before start tag"
-                +getPosDesc(), getLineNumber(), getColumnNumber());
+                throw XmlTokenizerException("mixed content disallowed inside element and before start tag", getPosDesc(), getLineNumber(), getColumnNumber());
               mixInElement = true;
             }
             if(paramPC /*&& (pcStart != pcEnd || posEnd != posStart)*/) {
@@ -399,50 +395,40 @@ namespace sxt {
           if(ch == '-') {
             ch = more();
             if(ch != '-')
-              throw XmlTokenizerException(
-                "expected - for start of comment <!-- not "
-                +ch+getPosDesc(), getLineNumber(), getColumnNumber());
+                throw XmlTokenizerException("expected - for start of comment <!-- not ", ch, getPosDesc(), getLineNumber(), getColumnNumber());
             state = STATE_COMMENT;
             posStart = pos;
           } else if(ch == '[') {
-            ch = more(); if(ch != 'C') throw XmlTokenizerException(
-              "expected <![CDATA"+getPosDesc(), getLineNumber(), getColumnNumber());
-            ch = more(); if(ch != 'D') throw XmlTokenizerException(
-              "expected <![CDATA"+getPosDesc(), getLineNumber(), getColumnNumber());
-            ch = more(); if(ch != 'A') throw XmlTokenizerException(
-              "expected <![CDATA"+getPosDesc(), getLineNumber(), getColumnNumber());
-            ch = more(); if(ch != 'T') throw XmlTokenizerException(
-              "expected <![CDATA"+getPosDesc(), getLineNumber(), getColumnNumber());
-            ch = more(); if(ch != 'A') throw XmlTokenizerException(
-              "expected <![CDATA"+getPosDesc(), getLineNumber(), getColumnNumber());
-            ch = more(); if(ch != '[') throw XmlTokenizerException(
-              "expected <![CDATA"+getPosDesc(), getLineNumber(), getColumnNumber());
+            ch = more(); if(ch != 'C') throw XmlTokenizerException("expected <![CDATA", getPosDesc(), getLineNumber(), getColumnNumber());
+            ch = more(); if(ch != 'D') throw XmlTokenizerException("expected <![CDATA", getPosDesc(), getLineNumber(), getColumnNumber());
+            ch = more(); if(ch != 'A') throw XmlTokenizerException("expected <![CDATA", getPosDesc(), getLineNumber(), getColumnNumber());
+            ch = more(); if(ch != 'T') throw XmlTokenizerException("expected <![CDATA", getPosDesc(), getLineNumber(), getColumnNumber());
+            ch = more(); if(ch != 'A') throw XmlTokenizerException("expected <![CDATA", getPosDesc(), getLineNumber(), getColumnNumber());
+            ch = more(); if(ch != '[') throw XmlTokenizerException("expected <![CDATA", getPosDesc(), getLineNumber(), getColumnNumber());
             posStart = pos;
             if(!seenContent) {
               seenContent = true;
               if(paramNoMixContent && !mixInElement)
-                throw XmlTokenizerException(
-                  "mixed content disallowed outside element"+getPosDesc(), getLineNumber(), getColumnNumber());
+                throw XmlTokenizerException("mixed content disallowed outside element", getPosDesc(), getLineNumber(), getColumnNumber());
             }
             state = STATE_CDSECT;
           } else if(ch == 'D') {
             ch = more(); if(ch != 'O') throw XmlTokenizerException(
-              "expected <![DOCTYPE"+getPosDesc(), getLineNumber(), getColumnNumber());
+              "expected <![DOCTYPE", getPosDesc(), getLineNumber(), getColumnNumber());
             ch = more(); if(ch != 'C') throw XmlTokenizerException(
-              "expected <![DOCTYPE"+getPosDesc(), getLineNumber(), getColumnNumber());
+              "expected <![DOCTYPE", getPosDesc(), getLineNumber(), getColumnNumber());
             ch = more(); if(ch != 'T') throw XmlTokenizerException(
-              "expected <![DOCTYPE"+getPosDesc(), getLineNumber(), getColumnNumber());
+              "expected <![DOCTYPE", getPosDesc(), getLineNumber(), getColumnNumber());
             ch = more(); if(ch != 'Y') throw XmlTokenizerException(
-              "expected <![DOCTYPE"+getPosDesc(), getLineNumber(), getColumnNumber());
+              "expected <![DOCTYPE", getPosDesc(), getLineNumber(), getColumnNumber());
             ch = more(); if(ch != 'P') throw XmlTokenizerException(
-              "expected <![DOCTYPE"+getPosDesc(), getLineNumber(), getColumnNumber());
+              "expected <![DOCTYPE", getPosDesc(), getLineNumber(), getColumnNumber());
             ch = more(); if(ch != 'E') throw XmlTokenizerException(
-              "expected <![DOCTYPE"+getPosDesc(), getLineNumber(), getColumnNumber());
+              "expected <![DOCTYPE", getPosDesc(), getLineNumber(), getColumnNumber());
             posStart = pos;
             state = STATE_DOCTYPE;
           } else {
-            throw XmlTokenizerException("unknown markup after <! "
-              +ch+getPosDesc(), getLineNumber(), getColumnNumber());
+            throw XmlTokenizerException("unknown markup after <! ", ch, getPosDesc(), getLineNumber(), getColumnNumber());
           }
           break;
 
@@ -481,8 +467,7 @@ namespace sxt {
                 pc[pcEnd++] = '"';
               } else {
                 //String s = new String(buf, i, j - i);
-                throw XmlTokenizerException("undefined entity "
-                  +getPosDesc(), getLineNumber(), getColumnNumber());
+                throw XmlTokenizerException("undefined entity ", getPosDesc(), getLineNumber(), getColumnNumber());
               }
             }
             if(paramNotifyEntityRef)
@@ -518,8 +503,7 @@ namespace sxt {
           } else if(charRefHex && ch >= 'a' && ch <= 'f') {
               charRefValue = (char)(charRefValue * 16 + (ch - 'a' + 10));
           } else {
-            throw XmlTokenizerException(
-              "character reference may not contain "+ch+getPosDesc(), getLineNumber(), getColumnNumber());
+            throw XmlTokenizerException("character reference may not contain ", ch, getPosDesc(), getLineNumber(), getColumnNumber());
           }
           break;
 
@@ -531,7 +515,7 @@ namespace sxt {
           posEnd = pos - 1;
           ch = skipS(ch);
           if(ch != '>')
-            throw XmlTokenizerException("expected > for end tag not "+ch+getPosDesc(), getLineNumber(), getColumnNumber());
+            throw XmlTokenizerException("expected > for end tag not ", ch, getPosDesc(), getLineNumber(), getColumnNumber());
           state = STATE_CONTENT_INIT;
           return ETAG_NAME;
         case STATE_SCAN_STAG_NAME:
@@ -561,8 +545,7 @@ namespace sxt {
             posEnd = pos;
             return STAG_END;
           } else {
-            throw XmlTokenizerException(
-              "expected > for end of start tag not "+ch+getPosDesc(), getLineNumber(), getColumnNumber());
+            throw XmlTokenizerException("expected > for end of start tag not ", ch, getPosDesc(), getLineNumber(), getColumnNumber());
           }
         case STATE_SCAN_ATTR_NAME:
           //pcStart = pcEnd;
@@ -590,15 +573,15 @@ namespace sxt {
           ch = skipS(ch);
           if(ch != '=')
             throw XmlTokenizerException(
-              "expected = after attribute name not "+ch+getPosDesc(), getLineNumber(), getColumnNumber());
+              "expected = after attribute name not ", ch, getPosDesc(), getLineNumber(), getColumnNumber());
           state = STATE_SCAN_ATTR_VALUE;
           break;
         case STATE_SCAN_ATTR_VALUE: // [10] AttValue
           ch = skipS(ch);
           if(ch != '\'' && ch != '"')
             throw XmlTokenizerException(
-       "attribute value must start with double quote or apostrophe not "
-              +ch+getPosDesc(), getLineNumber(), getColumnNumber());
+       "attribute value must start with double quote or apostrophe not ",
+              ch, getPosDesc(), getLineNumber(), getColumnNumber());
           attrMarker = ch;
           state = STATE_SCAN_ATTR_VALUE_CONTINUE;
           break;
@@ -632,7 +615,7 @@ namespace sxt {
               return ATTR_CHARACTERS;
           } else if(ch == '<') {
             throw XmlTokenizerException(
-              "attribute value can not contain "+ch+getPosDesc(), getLineNumber(), getColumnNumber());
+              "attribute value can not contain ", ch, getPosDesc(), getLineNumber(), getColumnNumber());
           } else {
             posEnd = pos;
             //if(paramPC && pcStart != pcEnd)
@@ -730,8 +713,8 @@ namespace sxt {
             if(paramNotifyDoctype)
               return DOCTYPE;
           } else {
-            throw XmlTokenizerException("expected > for DOCTYPE end not "
-              +ch+getPosDesc(), getLineNumber(), getColumnNumber());
+            throw XmlTokenizerException("expected > for DOCTYPE end not ",
+              ch, getPosDesc(), getLineNumber(), getColumnNumber());
           }
           break;
 
@@ -749,9 +732,12 @@ namespace sxt {
           }
           break;
         default:
-          throw XmlTokenizerException("invalid internal state "
-            +state+getPosDesc(), getLineNumber(), getColumnNumber());
+        {
+            string msg("invalid internal state");
+            msg.append(to_string(state)).append(getPosDesc());
+            throw XmlTokenizerException(msg, getLineNumber(), getColumnNumber());
         }
+      }
     }
   }
 
@@ -865,8 +851,8 @@ namespace sxt {
       nsColonCount = 0;
       if(!(ch >= 'A' && ch <= 'Z') && !(ch >= 'a' && ch <= 'z') 
         && ch != '_' && ch != ':')
-        throw XmlTokenizerException(string("expected name start not ")
-          +ch+getPosDesc(), getLineNumber(), getColumnNumber());
+          throw XmlTokenizerException("expected name start not ",
+            ch, getPosDesc(), getLineNumber(), getColumnNumber());
       do {
         ch = more();
         if(ch == ':') {
@@ -896,8 +882,8 @@ namespace sxt {
 
     char readS(char ch) throw (XmlTokenizerException) {
       if(!isS(ch))
-        throw XmlTokenizerException(string("expected white space not ")
-          +ch+getPosDesc(), getLineNumber(), getColumnNumber());
+          throw XmlTokenizerException("expected white space not ",
+          ch, getPosDesc(), getLineNumber(), getColumnNumber());
       while(ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r')
         ch = more();
       return ch;

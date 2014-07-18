@@ -149,12 +149,39 @@ class Regression:
         report = Report(name)
         curTime = time.strftime("%y-%m-%d-%H-%M-%S")
         logName = name + "." + curTime + ".log"
+        self.args.testId=curTime
         logHandler = os.path.join(self.logDir, logName)
+        self.args.testFile=logHandler
+        self.saveConfig()
         self.log.addHandler(logHandler, 'DEBUG')
         return (report, logHandler)
 
     def closeLogging(self):
         self.log.removeHandler()
+
+    def saveConfig(self):
+        confLogName = 'environment-'+self.args.testId + ".conf"
+        logFileName = os.path.join(self.logDir, confLogName)
+        try:
+            log = open(logFileName, "w");
+            log.write("Environment info\n")
+            log.write("Args:\n")
+            for arg in self.args.__dict__:
+                argStr = arg +'=\"'+str(self.args.__dict__[arg])+'\"'
+                log.write(argStr+"\n")
+
+            log.write("\nConfigs:\n")
+            for conf in self.config.__dict__:
+                if conf != '_dict__d':
+                    confStr = conf +'=\"'+str(self.config.__dict__[conf])+'\"'
+                    log.write(confStr+"\n")
+                else:
+                    for subConf in self.config.__dict__[conf]:
+                        confStr = subConf +'=\"'+str(self.config.__dict__[conf][subConf])+'\"'
+                        log.write(confStr+"\n")
+            log.close()
+        except IOError:
+            logging.error("Can't open %s file to write!" %(logFileName))
 
     @staticmethod
     def displayReport(report,  elapsTime=0):
