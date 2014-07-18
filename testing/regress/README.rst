@@ -117,16 +117,16 @@ Result:
 |                           [--runclass [class]] [--excludeclass [class]]
 |
 |       optional arguments:
-|         -h, --help         show this help message and exit
-|         --target [target_cluster | all], -t [target_cluster | all]
-|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
+|        -h, --help               show this help message and exit
+|        --target [target_cluster | all], -t [target_cluster | all]
+|                                 target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
 |        --publish, -p            publish compiled query instead of run.
-|        --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
-|
+
 
 Parameters of Regression Suite query sub-command:
 -------------------------------------------------
