@@ -225,7 +225,8 @@ const void *CHThorNullAggregateActivity::nextInGroup()
 class CHThorNullCountActivity : public CHThorNullActivity
 {
 public:
-    CHThorNullCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind) : CHThorNullActivity(agent, _activityId, _subgraphId, _arg, _kind) {}
+    CHThorNullCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind)
+        : CHThorNullActivity(agent, _activityId, _subgraphId, _arg, _kind), finished(false) {}
 
     //interface IHThorInput
     virtual void ready();
@@ -804,11 +805,9 @@ CHThorIndexReadActivity::CHThorIndexReadActivity(IAgentContext &_agent, unsigned
 {
     steppedExtra = static_cast<IHThorSteppedSourceExtra *>(helper.selectInterface(TAIsteppedsourceextra_1));
     needTransform = helper.needTransform();
-    keyedLimit = helper.getKeyedLimit();
-    rowLimit = helper.getRowLimit();
-    if (helper.getFlags() & TIRlimitskips)
-        rowLimit = (unsigned __int64) -1;
-    stopAfter = helper.getChooseNLimit();
+    keyedLimit = (unsigned __int64)-1;
+    rowLimit = (unsigned __int64)-1;
+    stopAfter = (unsigned __int64)-1;
     keyedLimitReached = false;
     keyedLimitSkips = ((helper.getFlags() & TIRkeyedlimitskips) != 0);
     keyedLimitCreates = ((helper.getFlags() & TIRkeyedlimitcreates) != 0);
@@ -844,6 +843,11 @@ void CHThorIndexReadActivity::ready()
 {
     keyedLimitReached = false;
     keyedLimitRowCreated = false;
+    keyedLimit = helper.getKeyedLimit();
+    rowLimit = helper.getRowLimit();
+    if (helper.getFlags() & TIRlimitskips)
+        rowLimit = (unsigned __int64) -1;
+    stopAfter = helper.getChooseNLimit();
     keyedProcessed = 0;
     if(!gotLayoutTrans)
     {
@@ -1117,13 +1121,12 @@ protected:
 
 CHThorIndexNormalizeActivity::CHThorIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &_arg, ThorActivityKind _kind, IDistributedFile * _df) : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _df), helper(_arg), outBuilder(NULL)
 {
-    keyedLimit = helper.getKeyedLimit();
+    keyedLimit = (unsigned __int64)-1;
     skipLimitReached = false;
     keyedProcessed = 0;
-    rowLimit = helper.getRowLimit();
-    if (helper.getFlags() & TIRlimitskips)
-        rowLimit = (unsigned __int64) -1;
-    stopAfter = helper.getChooseNLimit();
+    rowLimit = (unsigned __int64)-1;
+    stopAfter = (unsigned __int64)-1;
+    expanding = false;
 }
 
 CHThorIndexNormalizeActivity::~CHThorIndexNormalizeActivity()
@@ -1132,8 +1135,13 @@ CHThorIndexNormalizeActivity::~CHThorIndexNormalizeActivity()
 
 void CHThorIndexNormalizeActivity::ready()
 {
+    keyedLimit = helper.getKeyedLimit();
     skipLimitReached = false;
     keyedProcessed = 0;
+    rowLimit = helper.getRowLimit();
+    if (helper.getFlags() & TIRlimitskips)
+        rowLimit = (unsigned __int64) -1;
+    stopAfter = helper.getChooseNLimit();
     expanding = false;
     CHThorIndexReadActivityBase::ready();
     outBuilder.setAllocator(rowAllocator);
@@ -1406,6 +1414,8 @@ protected:
 CHThorIndexCountActivity::CHThorIndexCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &_arg, ThorActivityKind _kind, IDistributedFile * _df) 
     : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _df), helper(_arg)
 {
+    choosenLimit = (unsigned __int64)-1;
+    finished = false;
 }
 
 void CHThorIndexCountActivity::ready()
@@ -1514,6 +1524,8 @@ protected:
 
 CHThorIndexGroupAggregateActivity::CHThorIndexGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &_arg, ThorActivityKind _kind, IDistributedFile * _df) : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _df), helper(_arg), aggregated(_arg, _arg)
 {
+    eof = false;
+    gathered = false;
 }
 
 void CHThorIndexGroupAggregateActivity::ready()
