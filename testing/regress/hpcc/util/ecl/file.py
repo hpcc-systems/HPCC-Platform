@@ -59,8 +59,11 @@ class ECLFile:
         self.jobname = self.basename
         self.diff = ''
         self.abortReason =''
+
         #If there is a --publish CL parameter then force publish this ECL file
-        self.forcePublish=args.publish
+        self.forcePublish=False
+        if 'publish' in args:
+            self.forcePublish=args.publish
 
         self.optX =[]
         self.optXHash={}
