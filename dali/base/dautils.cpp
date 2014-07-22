@@ -532,7 +532,7 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
     normalizeName(name, lfn, false);
     if (removeForeign)
     {
-        const char *_lfn = get(true);
+        StringAttr _lfn = get(true);
         lfn.clear();
         lfn.set(_lfn);
     }
