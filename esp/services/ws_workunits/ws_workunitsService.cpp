@@ -1466,7 +1466,6 @@ void getArchivedWUInfo(IEspContext &context, const char* sashaServerIP, unsigned
         getSashaNode(ep);
     if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
     {
-        resp.setAutoRefresh(WUDETAILS_REFRESH_MINS);
         resp.setCanCompile(false);
         return;
     }
