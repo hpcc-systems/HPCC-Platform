@@ -164,6 +164,7 @@ public:
     {
         filesInUse.unsubscribe();
         filesInUse.abort();
+        clusterQueryStatePool.clear();
     };
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     virtual void setContainer(IEspContainer * container)
@@ -179,6 +180,7 @@ public:
     bool getQueryFiles(const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *superFiles);
     void getGraphsByQueryId(const char *target, const char *queryId, const char *graphName, const char *subGraphId, IArrayOf<IEspECLGraphEx>& ECLGraphs);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries);
+    void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries);
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp);
@@ -271,6 +273,7 @@ private:
     unsigned short port;
     Owned<IPropertyTree> directories;
     int maxRequestEntityLength;
+    Owned<IThreadPool> clusterQueryStatePool;
 public:
     QueryFilesInUse filesInUse;
 };
@@ -313,6 +316,63 @@ public:
 private:
     bool batchWatchFeaturesOnly;
     CWsWorkunitsEx *wswService;
+};
+
+class CClusterQueryStateParam : public CInterface
+{
+    Linked<CWsWorkunitsEx>          wsWorkunitsService;
+    IEspContext&                    context;
+    StringAttr                      cluster;
+    StringAttr                      querySetId;
+    IArrayOf<IEspQuerySetQuery>&    queries;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CClusterQueryStateParam(CWsWorkunitsEx* _service, IEspContext& _context, const char* _cluster, const char* _querySetId, IArrayOf<IEspQuerySetQuery>& _queries )
+       : wsWorkunitsService(_service), context(_context), cluster(_cluster), querySetId(_querySetId), queries(_queries)
+    {
+    }
+
+    virtual void doWork()
+    {
+        wsWorkunitsService->checkAndSetClusterQueryState(context, cluster.get(), querySetId.get(), queries);
+    }
+};
+
+class CClusterQueryStateThreadFactory : public CInterface, public IThreadFactory
+{
+    class CClusterQueryStateThread : public CInterface, implements IPooledThread
+    {
+        Owned<CClusterQueryStateParam> param;
+    public:
+        IMPLEMENT_IINTERFACE;
+        CClusterQueryStateThread() {}
+
+        void init(void *_param)
+        {
+            param.setown((CClusterQueryStateParam *)_param);
+        }
+        void main()
+        {
+            param->doWork();
+            param.clear();
+        }
+        bool canReuse()
+        {
+            return true;
+        }
+        bool stop()
+        {
+            return true;
+        }
+    };
+
+public:
+    IMPLEMENT_IINTERFACE;
+    IPooledThread *createNew()
+    {
+        return new CClusterQueryStateThread();
+    }
 };
 
 #endif

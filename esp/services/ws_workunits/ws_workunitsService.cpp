@@ -49,6 +49,7 @@
 #define ESP_WORKUNIT_DIR "workunits/"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
+const unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 40;
 
 class ExecuteExistingQueryInfo
 {
@@ -460,6 +461,13 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     m_sched.start();
     filesInUse.subscribe();
+
+    //Start thread pool
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ClusterQueryStateThreadPoolSize", process, service);
+    CClusterQueryStateThreadFactory* threadFactory = new CClusterQueryStateThreadFactory();
+    clusterQueryStatePool.setown(createThreadPool("CheckAndSetClusterQueryState Thread Pool", threadFactory, NULL,
+            cfg->getPropInt(xpath.str(), CHECK_QUERY_STATUS_THREAD_POOL_SIZE)));
+    threadFactory->Release();
 }
 
 void CWsWorkunitsEx::refreshValidClusters()

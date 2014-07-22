@@ -1233,6 +1233,30 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
     }
 }
 
+void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries)
+{
+    UnsignedArray threadHandles;
+    ForEachItemIn(i, querySetIds)
+    {
+        const char* querySetId = querySetIds.item(i);
+        if(!querySetId || !*querySetId)
+            continue;
+
+        Owned<CClusterQueryStateParam> threadReq = new CClusterQueryStateParam(this, context, cluster, querySetId, queries);
+        PooledThreadHandle handle = clusterQueryStatePool->start( threadReq.getClear() );
+        threadHandles.append(handle);
+    }
+
+    //block for worker theads to finish, if necessary and then collect results
+    PooledThreadHandle* threadHandle = threadHandles.getArray();
+    unsigned ii=threadHandles.ordinality();
+    while (ii--)
+    {
+        clusterQueryStatePool->join(*threadHandle);
+        threadHandle++;
+    }
+}
+
 bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequest & req, IEspWUListQueriesResponse & resp)
 {
     bool descending = req.getDescending();
@@ -1370,12 +1394,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         queries.append(*q.getClear());
     }
 
-    ForEachItemIn(i, querySetIds)
-    {
-        const char* querySetId = querySetIds.item(i);
-        if(querySetId && *querySetId)
-            checkAndSetClusterQueryState(context, clusterReq, querySetId, queries);
-    }
+    checkAndSetClusterQueryState(context, clusterReq, querySetIds, queries);
 
     resp.setQuerysetQueries(queries);
     resp.setNumberOfQueries(numberOfQueries);
