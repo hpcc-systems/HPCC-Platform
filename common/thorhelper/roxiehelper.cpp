@@ -851,14 +851,14 @@ void FlushingStringBuffer::append(const char *data)
 
 void FlushingStringBuffer::append(double data)
 {
-    if (mlFmt==MarkupFmt_XML)
+    if (isRaw)
+        append(sizeof(data), (char *)&data);
+    else
     {
         StringBuffer v;
         v.append(data);
-        appendf("%s", v.str());
+        append(v.length(), v.str());
     }
-    else
-        append(sizeof(data), (char *)&data);
 }
 
 void FlushingStringBuffer::append(unsigned len, const char *data)
@@ -900,7 +900,9 @@ void FlushingStringBuffer::encodeString(const char *x, unsigned len, bool utf8)
 void FlushingStringBuffer::encodeData(const void *data, unsigned len)
 {
     static char hexchar[] = "0123456789ABCDEF";
-    if (mlFmt==MarkupFmt_XML)
+    if (isRaw)
+        append(len, (const char *) data);
+    else
     {
         const byte *field = (const byte *) data;
         for (int i = 0; i < len; i++)
@@ -909,8 +911,6 @@ void FlushingStringBuffer::encodeData(const void *data, unsigned len)
             append(hexchar[field[i] & 0x0f]);
         }
     }
-    else
-        append(len, (const char *) data);
 }
 
 void FlushingStringBuffer::addPayload(StringBuffer &s, unsigned int reserve)
