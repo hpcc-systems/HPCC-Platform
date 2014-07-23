@@ -113,7 +113,7 @@ void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
     if (getSize() != keyedSize)
     {
         StringBuffer err;
-        err.appendf("Key size mismatch on key %s - size was %u, expected %u", keyname, getSize(), keyedSize);
+        err.appendf("Key size mismatch on key %s - key size is %u, expected %u", keyname, keyedSize, getSize());
         IException *e = MakeStringExceptionDirect(1000, err.str());
         EXCLOG(e, err.str());
         throw e;

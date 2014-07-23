@@ -60,6 +60,11 @@ class ECLFile:
         self.diff = ''
         self.abortReason =''
 
+        #If there is a --publish CL parameter then force publish this ECL file
+        self.forcePublish=False
+        if 'publish' in args:
+            self.forcePublish=args.publish
+
         self.optX =[]
         self.optXHash={}
         self.config = getConfig()
@@ -233,11 +238,14 @@ class ECLFile:
         return retVal
 
     def testPublish(self):
-        # Standard string has a problem with unicode characters
-        # use byte arrays and binary file open instead
-        tag = b'//publish'
-        logging.debug("%3d. testPublish (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
-        retVal = self.__checkTag(tag)
+        if self.forcePublish:
+            retVal=True
+        else:
+            # Standard string has a problem with unicode characters
+            # use byte arrays and binary file open instead
+            tag = b'//publish'
+            logging.debug("%3d. testPublish (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+            retVal = self.__checkTag(tag)
         logging.debug("%3d. testPublish() returns with: %s",  self.taskId,  retVal)
         return retVal
 
@@ -257,6 +265,17 @@ class ECLFile:
         logging.debug("%3d. testNoOutput (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
         retVal = self.__checkTag(tag)
         logging.debug("%3d. testNoOutput() returns with: %s",  self.taskId,  retVal)
+        return retVal
+
+    def testInClass(self,  classDefined):
+        retVal=False
+        for c in classDefined:
+            tag = b'//class='+c.encode()
+            logging.debug("%3d. testInClass (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+            retVal = self.__checkTag(tag)
+            if retVal:
+                break
+        logging.debug("%3d. testInClass() returns with: %s",  self.taskId,  retVal)
         return retVal
 
     def getTimeout(self):

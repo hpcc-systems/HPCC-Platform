@@ -1277,7 +1277,6 @@ bool CFileSprayEx::getArchivedWUInfo(IEspContext &context, IEspGetDFUWorkunit &r
         }
 
         getInfoFromSasha(context, sashaAddress.str(), wuid, &resp.updateResult());
-        resp.setAutoRefresh(WUDETAILS_REFRESH_MINS);
         return true;
     }
 

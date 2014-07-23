@@ -387,7 +387,7 @@ double getCycleToNanoScale()
 
 void display_time(const char *title, cycle_t diff)
 {
-    DBGLOG("Time taken for %s: %"I64F"d cycles (%"I64F"dM) = %"I64F"d msec\n", title, diff, diff/1000000, cycle_to_nanosec(diff)/1000000);
+    DBGLOG("Time taken for %s: %"I64F"d cycles (%"I64F"dM) = %"I64F"d msec", title, diff, diff/1000000, cycle_to_nanosec(diff)/1000000);
 }
 
 TimeSection::TimeSection(const char * _title) : title(_title)

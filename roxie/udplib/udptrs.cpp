@@ -90,7 +90,7 @@ public:
                 minUdpSequence = maxUdpSequence;
         }
 
-        UdpRequestToSendMsg msg = {sizeof(UdpRequestToSendMsg), cmd, myNodeIndex, 0, minUdpSequence, maxUdpSequence};
+        UdpRequestToSendMsg msg = {sizeof(UdpRequestToSendMsg), static_cast<unsigned short>(cmd), static_cast<unsigned short>(myNodeIndex), 0, minUdpSequence, maxUdpSequence};
         try 
         {
             send_flow_socket->write(&msg, msg.length);
@@ -995,7 +995,8 @@ class CSendManager : public CInterface, implements ISendManager
 
         void send_sniff(bool busy)
         {
-            sniff_msg msg = {sizeof(sniff_msg), busy ? flow_t::busy : flow_t::idle, parent.myNodeIndex};
+            unsigned short castCmd = static_cast<unsigned short>(busy ? flow_t::busy : flow_t::idle);
+            sniff_msg msg = {sizeof(sniff_msg), castCmd, static_cast<unsigned short>(parent.myNodeIndex)};
             try 
             {
                 if (!sniffer_socket) 

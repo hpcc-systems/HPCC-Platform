@@ -524,7 +524,7 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 <row>
                   <entry>--no-files</entry>
 
-                  <entry>Does not copy DFU file information for files
+                  <entry>Specifies to not copy DFS file information for files
                   referenced by the query</entry>
                 </row>
 
@@ -1353,8 +1353,8 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>--no-files</entry>
 
-                  <entry>Specifies to NOT copy files referenced by the
-                  query</entry>
+                  <entry>Specifies to not copy DFS file information for files
+                  referenced by the query</entry>
                 </row>
 
                 <row>
@@ -1522,8 +1522,8 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 <row>
                   <entry>--no-files</entry>
 
-                  <entry>Specifies to NOT copy files referenced by the
-                  query.</entry>
+                  <entry>Specifies to not copy DFS file information for files
+                  referenced by the query</entry>
                 </row>
 
                 <row>

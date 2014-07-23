@@ -1028,7 +1028,8 @@ StringBuffer& CHttpMessage::getHeader(const char* headername, StringBuffer& head
         const char* colon = strchr(header, ':');
         if(colon == NULL)
             continue;
-        if(strncmp(headername, header, colon - header) == 0)
+        unsigned len = colon - header;
+        if((strlen(headername) == len) && (strncmp(headername, header, len) == 0))
         {
             headerval.append(colon + 2);
             break;
