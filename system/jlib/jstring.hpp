@@ -440,6 +440,7 @@ jlib_decl StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *va
 jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name);
 jlib_decl StringBuffer &appendfJSONName(StringBuffer &s, const char *format, ...);
 jlib_decl StringBuffer &appendJSONDataValue(StringBuffer& s, const char *name, unsigned len, const void *_value);
+jlib_decl StringBuffer &appendJSONRealValue(StringBuffer& s, const char *name, double value);
 
 inline StringBuffer &appendJSONNameOrDelimit(StringBuffer &s, const char *name)
 {
@@ -495,6 +496,18 @@ inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, long val
 {
     appendJSONNameOrDelimit(s, name);
     return s.appendlong(value);
+}
+
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, double value)
+{
+    return ::appendJSONRealValue(s, name, value);
+}
+
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, float value)
+{
+    return ::appendJSONRealValue(s, name,  value);
 }
 
 template <>

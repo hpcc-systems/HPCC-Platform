@@ -1963,6 +1963,18 @@ jlib_decl StringBuffer &appendJSONDataValue(StringBuffer& s, const char *name, u
     return s.append('"');
 }
 
+StringBuffer &appendJSONRealValue(StringBuffer& s, const char *name, double value)
+{
+    appendJSONNameOrDelimit(s, name);
+    bool quoted = isnan(value) || isinf(value);
+    if (quoted)
+        s.append('"');
+    s.append(value);
+    if (quoted)
+        s.append('"');
+    return s;
+}
+
 inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch)
 {
     switch (*ch)
