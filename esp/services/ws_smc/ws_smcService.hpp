@@ -195,7 +195,7 @@ private:
     void readWUsAndStateFromJobQueue(IEspContext& context, CWsSMCTargetCluster& targetCluster, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void readWUsAndStateFromJobQueue(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void setESPTargetClusters(IEspContext& context, const CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetCluster>& respTargetClusters);
-    ActivityInfo* createActivityInfo(IEspContext &context, IEspActivityRequest &req);
+    ActivityInfo* createActivityInfo(IEspContext &context);
     void clearActivityInfoCache();
     ActivityInfo* getActivityInfo(IEspContext &context, IEspActivityRequest &req);
     void setActivityResponse(IEspContext &context, ActivityInfo* activityInfo, IEspActivityRequest &req, IEspActivityResponse& resp);

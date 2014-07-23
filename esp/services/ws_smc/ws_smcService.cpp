@@ -660,12 +660,15 @@ ActivityInfo* CWsSMCEx::getActivityInfo(IEspContext &context, IEspActivityReques
         return activityInfoCache.getLink();
 
     DBGLOG("CWsSMCEx::getActivityInfo - rebuild cached information");
+    {
+        EspTimeSection timer("createActivityInfo");
+        activityInfoCache.setown(createActivityInfo(context));
+    }
 
-    activityInfoCache.setown(createActivityInfo(context, req));
     return activityInfoCache.getLink();
 }
 
-ActivityInfo* CWsSMCEx::createActivityInfo(IEspContext &context, IEspActivityRequest &req)
+ActivityInfo* CWsSMCEx::createActivityInfo(IEspContext &context)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> env = factory->openEnvironment();
