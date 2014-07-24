@@ -300,8 +300,6 @@ void getAllPackageListInfo(IPropertyTree *mapTree, StringBuffer &info)
 
 void listPkgInfo(double version, const char *target, const char *process, const IPropertyTree* packageMaps, IPropertyTree* pkgSetRegistry, IArrayOf<IConstPackageListMapData>* results)
 {
-    if (!packageMaps)
-        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process");
     StringBuffer xpath("PackageMap");
     if (target && *target)
         xpath.appendf("[@querySet='%s']", target);
@@ -343,8 +341,6 @@ void listPkgInfo(double version, const char *target, const char *process, const 
 
 void getPkgInfo(const IPropertyTree *packageMaps, const char *target, const char *process, StringBuffer &info)
 {
-    if (!packageMaps)
-        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process");
     Owned<IPropertyTree> tree = createPTree("PackageMaps");
     Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(process, true);
     if (!pkgSetRegistry)
@@ -482,7 +478,7 @@ void PackageMapAndSet::load(const char* path, IPropertyTree* t)
 
     IPropertyTree *root = globalLock->queryRoot();
     if (root)
-        t->addPropTree(path, LINK(root));
+        t->addPropTree(path, createPTreeFromIPT(root));
 }
 
 void PackageMapAndSet::load(unsigned flags)
@@ -518,7 +514,7 @@ void CWsPackageProcessEx::getPkgInfoById(const char *packageMapId, IPropertyTree
     if (!packageMapId || !*packageMapId)
         return;
 
-    IPropertyTree *packageMaps = packageMapAndSet.getPackageMaps();
+    Owned<IPropertyTree> packageMaps = packageMapAndSet.getPackageMaps();
     if (!packageMaps)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process");
 
@@ -649,27 +645,34 @@ bool CWsPackageProcessEx::onDeActivatePackage(IEspContext &context, IEspDeActiva
 
 bool CWsPackageProcessEx::onListPackage(IEspContext &context, IEspListPackageRequest &req, IEspListPackageResponse &resp)
 {
+    Owned<IPropertyTree> packageMaps = packageMapAndSet.getPackageMaps();
+    if (!packageMaps)
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process");
+
     resp.updateStatus().setCode(0);
     IArrayOf<IConstPackageListMapData> results;
     StringAttr process(req.getProcess());
-    listPkgInfo(context.getClientVersion(), req.getTarget(), process.length() ? process.get() : "*", packageMapAndSet.getPackageMaps(), &results);
+    listPkgInfo(context.getClientVersion(), req.getTarget(), process.length() ? process.get() : "*", packageMaps, &results);
     resp.setPkgListMapData(results);
     return true;
 }
 
 bool CWsPackageProcessEx::onListPackages(IEspContext &context, IEspListPackagesRequest &req, IEspListPackagesResponse &resp)
 {
+    Owned<IPropertyTree> packageMaps = packageMapAndSet.getPackageMaps();
+    if (!packageMaps)
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process");
+
     double version = context.getClientVersion();
     const char* targetReq = req.getTarget();
     const char* processReq = req.getProcess();
     const char* processFilterReq = req.getProcessFilter();
-    IPropertyTree* packageMaps = packageMapAndSet.getPackageMaps();
     IArrayOf<IConstPackageListMapData> results;
     if ((!processReq || !*processReq) && (processFilterReq && *processFilterReq))
         listPkgInfo(version, targetReq, processFilterReq, packageMaps, &results);
     else
     {
-        IPropertyTree* pkgSetRegistryRoot = packageMapAndSet.getPackageSets();
+        Owned<IPropertyTree> pkgSetRegistryRoot = packageMapAndSet.getPackageSets();
         if (!pkgSetRegistryRoot)
             throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process");
         Owned<IPropertyTreeIterator> iter = pkgSetRegistryRoot->getElements("PackageSet");
@@ -722,10 +725,14 @@ bool CWsPackageProcessEx::onListPackages(IEspContext &context, IEspListPackagesR
 
 bool CWsPackageProcessEx::onGetPackage(IEspContext &context, IEspGetPackageRequest &req, IEspGetPackageResponse &resp)
 {
+    Owned<IPropertyTree> packageMaps = packageMapAndSet.getPackageMaps();
+    if (!packageMaps)
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process");
+
     resp.updateStatus().setCode(0);
     StringAttr process(req.getProcess());
     StringBuffer info;
-    getPkgInfo(packageMapAndSet.getPackageMaps(), req.getTarget(), process.length() ? process.get() : "*", info);
+    getPkgInfo(packageMaps, req.getTarget(), process.length() ? process.get() : "*", info);
     resp.setInfo(info);
     return true;
 }
@@ -916,7 +923,7 @@ bool CWsPackageProcessEx::onGetPackageMapSelectOptions(IEspContext &context, IEs
         {
             StringArray processFilters;
             processFilters.append("*");
-            IPropertyTree* pkgSets = packageMapAndSet.getPackageSets();
+            Owned<IPropertyTree> pkgSets = packageMapAndSet.getPackageSets();
             if (pkgSets)
             {
                 Owned<IPropertyTreeIterator> iter = pkgSets->getElements("PackageSet");

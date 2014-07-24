@@ -99,13 +99,13 @@ public:
     IPropertyTree *getPackageMaps()
     {
         Owned<IPropertyTree> root = getTree();
-        return root->queryPropTree("PackageMaps");
+        return root->getPropTree("PackageMaps");
     }
 
     IPropertyTree *getPackageSets()
     {
         Owned<IPropertyTree> root = getTree();
-        return root->queryPropTree("PackageSets");
+        return root->getPropTree("PackageSets");
     }
 
     StringBuffer &toStr(StringBuffer &s)
