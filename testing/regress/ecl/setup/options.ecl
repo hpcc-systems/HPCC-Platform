@@ -6,6 +6,6 @@ EXPORT options := MODULE
 EXPORT OriginalTextFilesIp := '.';
 
 //MORE: This is currently hard-wired - it really needs to be in a configuration file instead
-EXPORT OriginalTextFilesPath := 'home::gavin::dev::hpcc::testing::download';
+EXPORT OriginalTextFilesPath := '';
 
 END;

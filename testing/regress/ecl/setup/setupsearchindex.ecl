@@ -22,8 +22,8 @@ import $.Options;
 import Std.File;
 Files := $.Files(__PLATFORM__, false);
 
-string OriginalTextFilesIp := Options.OriginalTextFilesIp : STORED('OriginalTextFilesIp');
-string OriginalTextFilesPath := Options.OriginalTextFilesPath : STORED('OriginalTextFilesPath');
+string OriginalTextFilesIp := '.' : STORED('OriginalTextFilesIp');
+string OriginalTextFilesPath := '' : STORED('OriginalTextFilesEclPath');
 
 rebuildSearchIndex := OriginalTextFilesIp <> '' AND OriginalTextFilesPath <> '';
 

@@ -217,7 +217,7 @@ The result for thor:
 |            -------------------------------------------------
 |
 
-To setup the proper environment for text search test cases there is a new component called setuptext.ecl. It uses data files from other location and the default location stored into the options.ecl. RS generates location from the run-time environment and passes it to the setup via stored variable called 'OriginalTextFilesPath'.
+To setup the proper environment for text search test cases there is a new component called setuptext.ecl. It uses data files from another location and the default location stored into the options.ecl. RS generates location from the run-time environment and passes it to the setup via stored variable called 'OriginalTextFilesEclPath'.
 
 4. To run Regression Suite on a selected cluster (e.g. Thor):
 -------------------------------------------------------------
