@@ -7791,7 +7791,12 @@ void CHThorDiskReadBaseActivity::resolve()
 {
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
-    logicalFileName.set(mangledHelperFileName.str());
+
+    if (mangledHelperFileName.charAt(0) == '~')
+        logicalFileName.set(mangledHelperFileName.str()+1);
+    else
+        logicalFileName.set(mangledHelperFileName.str());
+
     if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;
@@ -7812,7 +7817,6 @@ void CHThorDiskReadBaseActivity::resolve()
             if (dFile)  //only makes sense for distributed (non local) files
             {
                 persistent = dFile->queryAttributes().getPropBool("@persistent");
-                dfsParts.setown(dFile->getIterator());
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
                 if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
@@ -7907,7 +7911,6 @@ void CHThorDiskReadBaseActivity::close()
 {
     closepart();
     tempFileName.clear();
-    dfsParts.clear();
     if(ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -7934,122 +7937,141 @@ void CHThorDiskReadBaseActivity::closepart()
     inputfile.clear();
 }
 
+bool CHThorDiskReadBaseActivity::processOneCopy(StringBuffer &file)
+{
+    try
+    {
+        inputfile.setown(createIFile(file));
+        if(compressed)
+        {
+            Owned<IExpander> eexp;
+            if (encryptionkey.length()!=0)
+                eexp.setown(createAESExpander256(encryptionkey.length(),encryptionkey.bufferBase()));
+            inputfileio.setown(createCompressedFileReader(inputfile,eexp));
+            if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+            {
+                inputfileio.setown(inputfile->open(IFOread));
+                if(inputfileio)
+                    rowcompressed = true;
+            }
+        }
+        else
+            inputfileio.setown(inputfile->open(IFOread));
+        if (inputfileio)
+            return false;
+    }
+    catch (IException *E)
+    {
+        if (saveOpenExc.get())
+            E->Release();
+        else
+            saveOpenExc.setown(E);
+    }
+    return true;
+}
+
+bool CHThorDiskReadBaseActivity::processCopies(IDistributedFilePart * curPart, unsigned numCopies)
+{
+    bool retVal=false;
+    //MORE: Order of copies should be optimized at this point....
+    StringBuffer file, filelist;
+    closepart();
+    for (unsigned copy=0; copy < numCopies; copy++)
+    {
+        RemoteFilename rfilename;
+        if (curPart)
+            curPart->getFilename(rfilename,copy);
+        else
+            ldFile->getPartFilename(rfilename,partNum,copy);
+
+        rfilename.getPath(file.clear());
+        filelist.append('\n').append(file);
+
+        if (!processOneCopy(file))
+            break;
+
+        closepart();
+    }
+    if (checkOpenedFile(file.str(), filelist.str()))
+    {
+        opened = true;
+        retVal=true;
+    }
+
+    return retVal;
+}
+
 bool CHThorDiskReadBaseActivity::openNext()
 {
     offsetOfPart += localOffset;
     localOffset = 0;
     saveOpenExc.clear();
+    bool retVal=false;
 
-    if (dfsParts||ldFile)
+    if (dfIter && dfIter->isValid() )
     {
-        // open next part of a multipart, if there is one
-        while ((dfsParts&&dfsParts->isValid())||
-              (!dfsParts&&(partNum<ldFile->numParts())))
+        // Process files belong to a superfile
+        PROGLOG("CHThorDiskReadBaseActivity::openNext() subfiles.");
+        retVal=false;
+
+        IDistributedFile * distFile = dfIter ? &dfIter->query() : NULL;
+        if (distFile)
         {
-            IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
-            unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
-            //MORE: Order of copies should be optimized at this point....
-            StringBuffer file, filelist;
-            closepart();
-            for (unsigned copy=0; copy < numCopies; copy++)
-            {
-                RemoteFilename rfilename;
-                if (curPart)
-                {
-                    curPart->getFilename(rfilename,copy);
-                    IDistributedFile * distFile = dfIter ? &dfIter->query() : NULL;
-                    if (distFile)
-                    {
-                        logicalFileName.set(distFile->queryLogicalName());
-                        if (dfIter)
-                            dfIter->next();
-                    }
-                }
-                else
-                {
-                    ldFile->getPartFilename(rfilename,partNum,copy);
-                }
+            if ( distFile->queryLogicalName())
+                logicalFileName.set(distFile->queryLogicalName());
 
-                rfilename.getPath(file.clear());
-                filelist.append('\n').append(file);
-                try
-                {
-                    inputfile.setown(createIFile(rfilename));   
-                    if(compressed)
-                    {
-                        Owned<IExpander> eexp;
-                        if (encryptionkey.length()!=0) 
-                            eexp.setown(createAESExpander256(encryptionkey.length(),encryptionkey.bufferBase()));
-                        inputfileio.setown(createCompressedFileReader(inputfile,eexp));
-                        if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
-                        {
-                            inputfileio.setown(inputfile->open(IFOread));
-                            if(inputfileio)
-                                rowcompressed = true;
-                        }
-                    }
-                    else
-                        inputfileio.setown(inputfile->open(IFOread));
-                    if (inputfileio)
-                        break;
-                }
-                catch (IException *E)
-                {
-                    if (saveOpenExc.get())
-                        E->Release();
-                    else
-                        saveOpenExc.setown(E);
-                }
-                closepart();
+            Owned<IDistributedFilePartIterator> mydfsParts;
+            mydfsParts.setown(distFile->getIterator());
+            unsigned myNumOfParts = distFile->numParts();
+            partNum=0;
+
+            // open next part of a multipart, if there is one
+            while ( (mydfsParts && mydfsParts->isValid()) && (partNum<myNumOfParts) )
+            {
+                IDistributedFilePart * curPart = &mydfsParts->query();
+                unsigned numCopies = curPart->numCopies();
+
+                retVal = processCopies(curPart, numCopies);
+
+                partNum++;
             }
 
-            if (dfsParts)
-                dfsParts->next();
-            partNum++;
-            if (checkOpenedFile(file.str(), filelist.str()))
-            {
-                opened = true;
-                return true;
-            }
+            if (mydfsParts)
+                mydfsParts->next();
         }
-        return false;
+
+        if (dfIter)
+            dfIter->next();
+
+        return retVal;
+    }
+    else if (ldFile && ldFile->numParts() && (partNum == 0))
+    {
+        // Process a single file
+        PROGLOG("CHThorDiskReadBaseActivity::openNext() single file.");
+        retVal = false;
+
+        // open next part of a multipart, if there is one
+        while ( partNum<ldFile->numParts() )
+        {
+            unsigned numCopies = ldFile->numPartCopies(partNum);
+            retVal = processCopies( (IDistributedFilePart * )NULL, numCopies);
+
+            partNum++;
+        }
+        return retVal;
     }
     else if (!tempFileName.isEmpty())
     {
+        PROGLOG("CHThorDiskReadBaseActivity::openNext() temp file.");
         StringBuffer file(tempFileName.get());
         tempFileName.clear();
         closepart();
-        try
-        {
-            inputfile.setown(createIFile(file.str()));
-            if(compressed)
-            {
-                Owned<IExpander> eexp;
-                if (encryptionkey.length()) 
-                    eexp.setown(createAESExpander256(encryptionkey.length(),encryptionkey.bufferBase()));
-                inputfileio.setown(createCompressedFileReader(inputfile,eexp));
-                if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
-                {
-                    inputfileio.setown(inputfile->open(IFOread));
-                    if(inputfileio)
-                        rowcompressed = true;
-                }
-            }
-            else
-                inputfileio.setown(inputfile->open(IFOread));
-        }
-        catch (IException *E)
-        {
-            closepart();
-            StringBuffer msg;
-            WARNLOG("%s", E->errorMessage(msg).str());
-            if (saveOpenExc.get())
-                E->Release();
-            else
-                saveOpenExc.setown(E);
-        }
+        processOneCopy(file);
+
         partNum++;
-        if (checkOpenedFile(file.str(), NULL))
+
+        if (checkOpenedFile(file.str(), (const char*)NULL))
         {
             opened = true;
             return true;
@@ -8112,8 +8134,8 @@ void CHThorDiskReadBaseActivity::open()
 {
     assertex(!opened);
     partNum = 0;
-    if (dfsParts)
-        eofseen = !dfsParts->first() || !openNext();
+    if (dfIter)
+        eofseen = !dfIter->first() || !openNext();
     else if (ldFile||tempFileName.length())
         eofseen = !openNext();
     else
