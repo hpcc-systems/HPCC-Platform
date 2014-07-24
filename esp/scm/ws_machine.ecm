@@ -129,6 +129,8 @@ ESPstruct MachineInfoEx
    string UpTime;
    string ComponentName;
    string ComponentPath;
+   [min_ver("1.13")] string RoxieState;
+   [min_ver("1.13")] string RoxieStateDetails;
    int    OS;
    [min_ver("1.10")] int    ProcessNumber;
    ESParray<ESPstruct ProcessorInfo> Processors;
@@ -308,7 +310,7 @@ ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse
     [min_ver("1.12")] string AcceptLanguage;
 };
 //-------- service ---------
-ESPservice [version("1.12"), default_client_version("1.12")] ws_machine
+ESPservice [version("1.13"), default_client_version("1.13")] ws_machine
 {
     ESPuses ESPstruct RequestInfoStruct;
     ESPuses ESPstruct MachineInfoEx;

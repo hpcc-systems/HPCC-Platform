@@ -46,6 +46,7 @@ include_directories (
          ./../../../system/include 
          ./../../../common/remote 
          ./../../../common/environment
+         ./../../../common/workunit
          ./../../clients 
          ./../../../dali/base 
          ./../../bindings 
@@ -70,6 +71,7 @@ target_link_libraries ( ws_machine
          dalibase 
          environment 
          securesocket 
+         workunit
     )
 
 FOREACH ( iFILES
