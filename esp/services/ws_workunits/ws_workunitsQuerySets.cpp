@@ -1199,6 +1199,9 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
     return graphIds.length();
 }
 
+//This method is thread safe because a query belongs to a single queryset. The method may be called by different threads.
+//Since one thread is for one queryset and a query only belongs to a single queryset, it is impossible for different threads
+//to update the same query object.
 void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries)
 {
     try
@@ -1248,13 +1251,8 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
     }
 
     //block for worker theads to finish, if necessary and then collect results
-    PooledThreadHandle* threadHandle = threadHandles.getArray();
-    unsigned ii=threadHandles.ordinality();
-    while (ii--)
-    {
-        clusterQueryStatePool->join(*threadHandle);
-        threadHandle++;
-    }
+    ForEachItemIn(ii, threadHandles)
+        clusterQueryStatePool->join(threadHandles.item(ii));
 }
 
 bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequest & req, IEspWUListQueriesResponse & resp)

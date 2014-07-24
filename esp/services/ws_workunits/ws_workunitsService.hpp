@@ -346,7 +346,6 @@ class CClusterQueryStateThreadFactory : public CInterface, public IThreadFactory
         Owned<CClusterQueryStateParam> param;
     public:
         IMPLEMENT_IINTERFACE;
-        CClusterQueryStateThread() {}
 
         void init(void *_param)
         {
