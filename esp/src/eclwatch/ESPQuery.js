@@ -173,9 +173,13 @@ define([
     });
 
     return {
-        Get: function (QuerySetId, Id) {
+        Get: function (QuerySetId, Id, data) {
             var store = new Store();
-            return store.get(QuerySetId + ":" + Id);
+            var retVal = store.get(QuerySetId + ":" + Id);
+            if (data) {
+                retVal.updateData(data);
+            }
+            return retVal;
         },
 
         GetFromRequestXML: function (QuerySetId, requestXml) {
