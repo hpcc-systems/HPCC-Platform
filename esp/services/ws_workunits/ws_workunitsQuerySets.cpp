@@ -1250,7 +1250,9 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
         threadHandles.append(handle);
     }
 
-    //block for worker theads to finish, if necessary and then collect results
+    //block for worker threads to finish, if necessary and then collect results
+    //Not use joinAll() because multiple threads may call this method. Each call uses the pool to create
+    //its own threads of checking query state. Each call should only join the ones created by that call.
     ForEachItemIn(ii, threadHandles)
         clusterQueryStatePool->join(threadHandles.item(ii));
 }
