@@ -2143,7 +2143,6 @@ protected:
     OwnedIFileIO inputfileio;
     Owned<ISerialStream> inputstream;
     StringAttr tempFileName;
-    Owned<IDistributedFilePartIterator> dfsParts;
     Owned<ILocalOrDistributedFile> ldFile;
     Owned<IException> saveOpenExc;
     size32_t recordsize;
@@ -2180,6 +2179,9 @@ protected:
     {
         agent.reportProgress(NULL);
     }
+
+    bool processCopies(IDistributedFilePart * curPart, unsigned numCopies);
+    bool processOneCopy(StringBuffer &file);
 
 public:
     CHThorDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind);
