@@ -154,6 +154,7 @@ public:
     virtual void append(char data) {append(1, &data);}
     virtual void append(const char *data);
     virtual void append(unsigned len, const char *data);
+    virtual void append(double data);
     virtual void appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
     virtual void encodeString(const char *x, unsigned len, bool utf8=false);
     virtual void encodeData(const void *data, unsigned len);
@@ -174,6 +175,7 @@ public:
     {
     }
 
+    void append(double data);
     void encodeString(const char *x, unsigned len, bool utf8=false);
     void encodeData(const void *data, unsigned len);
     void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);

@@ -3293,16 +3293,11 @@ public:
         }
         else
         {
-            StringBuffer v;
-            v.append(value);
             FlushingStringBuffer *r = queryResult(sequence);
             if (r)
             {
                 r->startScalar(name, sequence);
-                if (r->isRaw)
-                    r->append(sizeof(value), (char *)&value);
-                else
-                    r->appendf("%s", v.str());
+                r->append(value);
             }
         }
         if (workUnit)

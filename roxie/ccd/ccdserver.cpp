@@ -19864,7 +19864,7 @@ public:
                 if (response)
                 {
                     if (response->isRaw)
-                        response->append(row == NULL);
+                        response->append((char)(row == NULL));
                     else
                     {
                         response->append("<Row __GroupBreak__=\"1\"/>");        // sensible, but need to handle on input

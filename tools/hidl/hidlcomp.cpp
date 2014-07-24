@@ -2097,35 +2097,40 @@ void ProcInfo::out_clarion_method()
 
 void ProcInfo::out_method(const char *classpfx, int omitvirt)
 {
-    if (virt&&!omitvirt) {
+    if (virt&&!omitvirt)
+    {
         if (callback) 
             outf("HRPCvirtualcallback ");
-        else {
+        else
             outf("virtual ");
-        }
-        if (rettype==NULL) 
-        {
-            outs("void");
-        }
+    }
+
+    if (rettype==NULL)
+        outs("void");
+    else
+        rettype->out_type();
+
+    if (classpfx)
+        outf(" %s::%s",classpfx,name);
+    else
+        outf(" %s",name);
+
+    out_parameter_list("");
+
+    if (constfunc)
+    {
+        if (isSCM)
+            outf(" const");
         else
-            rettype->out_type();
-        if (classpfx)
-            outf(" %s::%s",classpfx,name);
+            outf(" /* const (omitted by HIDL) */");
+    }
+
+    if ((virt==2)&&!omitvirt)
+    {
+        if (isSCM)
+            outf(" = 0");
         else
-            outf(" %s",name);
-        out_parameter_list("");
-        if (constfunc) {
-            if (isSCM)
-                outf(" const");
-            else
-                outf(" /* const (omitted by HIDL) */");
-        }
-        if ((virt==2)&&!omitvirt) {
-            if (isSCM)
-                outf(" = 0");
-            else
-                outf(" HRPCpure%s",callback?"callback":"");
-        }
+            outf(" HRPCpure%s", callback ? "callback" : "");
     }
 }
 
