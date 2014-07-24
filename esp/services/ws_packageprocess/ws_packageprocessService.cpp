@@ -231,12 +231,13 @@ void addPackageMapInfo(const char *xml, StringArray &filesNotFound, const char *
     }
 
     VStringBuffer xpath("PackageMap[@id='%s']", pmid);
-    Owned<IPropertyTree> pkgSet = getPkgSetRegistry(process, false);
-    IPropertyTree *psEntry = pkgSet->queryPropTree(xpath);
-
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     IPropertyTree *packageMaps = globalLock->queryRoot();
     IPropertyTree *pmExisting = packageMaps->queryPropTree(xpath);
+
+    xpath.appendf("[@querySet='%s']", target);
+    Owned<IPropertyTree> pkgSet = getPkgSetRegistry(process, false);
+    IPropertyTree *psEntry = pkgSet->queryPropTree(xpath);
 
     if (!overWrite && (psEntry || pmExisting))
         throw MakeStringException(PKG_NAME_EXISTS, "Package name %s already exists, either delete it or specify overwrite", pmid);
