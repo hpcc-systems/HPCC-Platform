@@ -698,23 +698,26 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
     out.append(true);
     out.append((size32_t)0);
 
-    size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
-    Owned<ICompressor> compressor = createLZWCompressor();
-    void *newData = out.reserve(newSize);
-    compressor->open(newData, newSize);
-    if (len>=32 && compressor->write(src, len)==len)
+    if (len >= 32)
     {
-        compressor->close();
-        size32_t compressedLen = compressor->buflen();
-        out.setWritePos(originalLength + sizeof(bool));
-        out.append(compressedLen);
-        out.setWritePos(originalLength + sizeof(bool) + sizeof(size32_t) + compressedLen);
+        size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
+        Owned<ICompressor> compressor = createLZWCompressor();
+        void *newData = out.reserve(newSize);
+        compressor->open(newData, newSize);
+        if (compressor->write(src, len)==len)
+        {
+            compressor->close();
+            size32_t compressedLen = compressor->buflen();
+            out.setWritePos(originalLength + sizeof(bool));
+            out.append(compressedLen);
+            out.setWritePos(originalLength + sizeof(bool) + sizeof(size32_t) + compressedLen);
+            return;
+        }
     }
-    else // all or don't compress
-    {
-        out.setWritePos(originalLength);
-        appendToBuffer(out, len, src);
-    }
+    
+    // all or don't compress
+    out.setWritePos(originalLength);
+    appendToBuffer(out, len, src);
 }
 
 void decompressToBuffer(MemoryBuffer & out, const void * src)
