@@ -379,20 +379,29 @@ class NewWsWorkunit : public Owned<IWorkUnit>
 public:
     NewWsWorkunit(IWorkUnitFactory *factory, IEspContext &context)
     {
-        create(factory, context);
+        create(factory, context, NULL);
     }
 
     NewWsWorkunit(IEspContext &context)
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        create(factory, context);
+        create(factory, context, NULL);
+    }
+
+    NewWsWorkunit(IEspContext &context, const char *wuid)
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        create(factory, context, wuid);
     }
 
     ~NewWsWorkunit() { if (get()) get()->commit(); }
 
-    void create(IWorkUnitFactory *factory, IEspContext &context)
+    void create(IWorkUnitFactory *factory, IEspContext &context, const char *wuid)
     {
-        setown(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+        if (wuid && *wuid)
+            setown(factory->createNamedWorkUnit(wuid, NULL, "ws_workunits", context.queryUserId()));
+        else
+            setown(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
         if(!get())
           throw MakeStringException(ECLWATCH_CANNOT_CREATE_WORKUNIT,"Could not create workunit.");
         get()->setUser(context.queryUserId());
