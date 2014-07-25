@@ -224,7 +224,7 @@ class RegressMain:
             self.args.config = str(os.path.join(regressionSuiteFullPath, self.args.config))
 
             self.regressionSuiteHpccMainOsDir = parentPath(regressionSuiteFullPath)
-            self.regressionSuiteHpccMainEclDir = convertPath(self.regressionSuiteHpccMainOsDir)+"::download"
+            self.regressionSuiteHpccMainEclDir = convertPath(regressionSuiteFullPath)+"::download"
             self.regress = Regression(self.args)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
 
