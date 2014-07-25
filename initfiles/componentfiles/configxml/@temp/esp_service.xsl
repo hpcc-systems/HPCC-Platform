@@ -942,6 +942,11 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                         </xsl:if>
                     </xsl:for-each>
                 </VIPS>
+                <Targets>
+                    <xsl:for-each select="Target">
+                        <Target><xsl:value-of select="@name"/></Target>
+                    </xsl:for-each>
+                </Targets>
             </xsl:when>
         </xsl:choose>
     </xsl:template>
