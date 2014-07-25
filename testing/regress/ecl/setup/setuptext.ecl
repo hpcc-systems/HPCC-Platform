@@ -21,11 +21,10 @@
 import Std.Str;
 import Std.File AS FileServices;
 import $;
-import $.Options;
 import $.TS;
 
-string OriginalTextFilesIp := Options.OriginalTextFilesIp : STORED('OriginalTextFilesIp');
-string OriginalTextFilesPath := Options.OriginalTextFilesPath : STORED('OriginalTextFilesPath');
+string OriginalTextFilesIp := '.' : STORED('OriginalTextFilesIp');
+string OriginalTextFilesPath := '' : STORED('OriginalTextFilesEclPath');
 
 EXPORT SetupText := FUNCTION
 
