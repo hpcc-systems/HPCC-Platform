@@ -1199,6 +1199,9 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
     return graphIds.length();
 }
 
+//This method is thread safe because a query belongs to a single queryset. The method may be called by different threads.
+//Since one thread is for one queryset and a query only belongs to a single queryset, it is impossible for different threads
+//to update the same query object.
 void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries)
 {
     try
@@ -1231,6 +1234,27 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
         EXCLOG(e, "CWsWorkunitsEx::checkAndSetClusterQueryState: Failed to read Query State On Cluster");
         e->Release();
     }
+}
+
+void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries)
+{
+    UnsignedArray threadHandles;
+    ForEachItemIn(i, querySetIds)
+    {
+        const char* querySetId = querySetIds.item(i);
+        if(!querySetId || !*querySetId)
+            continue;
+
+        Owned<CClusterQueryStateParam> threadReq = new CClusterQueryStateParam(this, context, cluster, querySetId, queries);
+        PooledThreadHandle handle = clusterQueryStatePool->start( threadReq.getClear() );
+        threadHandles.append(handle);
+    }
+
+    //block for worker threads to finish, if necessary and then collect results
+    //Not use joinAll() because multiple threads may call this method. Each call uses the pool to create
+    //its own threads of checking query state. Each call should only join the ones created by that call.
+    ForEachItemIn(ii, threadHandles)
+        clusterQueryStatePool->join(threadHandles.item(ii));
 }
 
 bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequest & req, IEspWUListQueriesResponse & resp)
@@ -1370,12 +1394,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         queries.append(*q.getClear());
     }
 
-    ForEachItemIn(i, querySetIds)
-    {
-        const char* querySetId = querySetIds.item(i);
-        if(querySetId && *querySetId)
-            checkAndSetClusterQueryState(context, clusterReq, querySetId, queries);
-    }
+    checkAndSetClusterQueryState(context, clusterReq, querySetIds, queries);
 
     resp.setQuerysetQueries(queries);
     resp.setNumberOfQueries(numberOfQueries);
