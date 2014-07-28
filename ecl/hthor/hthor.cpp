@@ -7948,23 +7948,23 @@ bool CHThorDiskReadBaseActivity::processOneCopy(StringBuffer &file)
     try
     {
         inputfile.setown(createIFile(file));
-        if(compressed)
+        if (compressed)
         {
             Owned<IExpander> eexp;
             if (encryptionkey.length()!=0)
                 eexp.setown(createAESExpander256(encryptionkey.length(),encryptionkey.bufferBase()));
             inputfileio.setown(createCompressedFileReader(inputfile,eexp));
-            if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+            if (!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
             {
                 inputfileio.setown(inputfile->open(IFOread));
-                if(inputfileio)
+                if (inputfileio)
                     rowcompressed = true;
             }
         }
         else
             inputfileio.setown(inputfile->open(IFOread));
         if (inputfileio)
-            return false;
+            return true;
     }
     catch (IException *E)
     {
@@ -7973,7 +7973,7 @@ bool CHThorDiskReadBaseActivity::processOneCopy(StringBuffer &file)
         else
             saveOpenExc.setown(E);
     }
-    return true;
+    return false;
 }
 
 bool CHThorDiskReadBaseActivity::processCopies(IDistributedFilePart * curPart, unsigned numCopies)
@@ -7993,7 +7993,7 @@ bool CHThorDiskReadBaseActivity::processCopies(IDistributedFilePart * curPart, u
         rfilename.getPath(file.clear());
         filelist.append('\n').append(file);
 
-        if (!processOneCopy(file))
+        if (processOneCopy(file))
             break;
 
         closepart();
@@ -8021,28 +8021,27 @@ bool CHThorDiskReadBaseActivity::openNext()
         retVal=false;
 
         IDistributedFile * distFile = &dfIter->query();
-        if (distFile)
+
+        logicalFileName.set(distFile->queryLogicalName());
+
+        Owned<IDistributedFilePartIterator> mydfsParts = distFile->getIterator();
+        unsigned myNumOfParts = distFile->numParts();
+        partNum=0;
+
+        // open next part of a multipart, if there is one
+        while ((mydfsParts && mydfsParts->isValid()) && (partNum < myNumOfParts) && (retVal == false))
         {
-            logicalFileName.set(distFile->queryLogicalName());
+            IDistributedFilePart * curPart = &mydfsParts->query();
+            unsigned numCopies = curPart->numCopies();
 
-            Owned<IDistributedFilePartIterator> mydfsParts = distFile->getIterator();
-            unsigned myNumOfParts = distFile->numParts();
-            partNum=0;
+            retVal = processCopies(curPart, numCopies);
 
-            // open next part of a multipart, if there is one
-            while ((mydfsParts && mydfsParts->isValid()) && (partNum < myNumOfParts) && (retVal == false))
-            {
-                IDistributedFilePart * curPart = &mydfsParts->query();
-                unsigned numCopies = curPart->numCopies();
-
-                retVal = processCopies(curPart, numCopies);
-
-                partNum++;
-            }
-
-            if (mydfsParts)
-                mydfsParts->next();
+            partNum++;
         }
+
+        if (mydfsParts)
+            mydfsParts->next();
+
 
         if (dfIter)
             dfIter->next();
