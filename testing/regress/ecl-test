@@ -75,10 +75,6 @@ class RegressMain:
         for cluster in self.targetClusters:
             try:
                 self.regress.config.ip = self.regress.config.IpAddress[cluster]
-                self.args.setupExtraX = []
-                self.args.setupExtraX.append('OriginalTextFilesOsPath='+self.regressionSuiteHpccMainOsDir)
-                self.args.setupExtraX.append('OriginalTextFilesEclPath='+self.regressionSuiteHpccMainEclDir)
-                self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
                 if len(eclfiles) > 1:
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
                     self.regress.bootstrap(cluster, self.args,  eclfiles)
@@ -108,10 +104,6 @@ class RegressMain:
     def setup(self):
         # Go through the cluster list
         for cluster in self.targetClusters:
-            self.args.setupExtraX = []
-            self.args.setupExtraX.append('OriginalTextFilesOsPath='+self.regressionSuiteHpccMainOsDir)
-            self.args.setupExtraX.append('OriginalTextFilesEclPath='+self.regressionSuiteHpccMainEclDir)
-            self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
             self.args.target = cluster
             self.regress.config.ip = self.regress.config.IpAddress[cluster]
             if  self.args.pq :
@@ -123,10 +115,6 @@ class RegressMain:
         # Go through the cluster list
         for cluster in self.targetClusters:
             self.regress.bootstrap(cluster, self.args)
-            self.args.setupExtraX = []
-            self.args.setupExtraX.append('OriginalTextFilesOsPath='+self.regressionSuiteHpccMainOsDir)
-            self.args.setupExtraX.append('OriginalTextFilesEclPath='+self.regressionSuiteHpccMainEclDir)
-            self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
             self.args.target = cluster
             self.regress.config.ip = self.regress.config.IpAddress[cluster]
             if  self.args.pq :
@@ -225,6 +213,11 @@ class RegressMain:
 
             self.regressionSuiteHpccMainOsDir = regressionSuiteFullPath
             self.regressionSuiteHpccMainEclDir = convertPath(regressionSuiteFullPath)+"::download"
+
+            self.args.setupExtraX = []
+            self.args.setupExtraX.append('OriginalTextFilesOsPath='+self.regressionSuiteHpccMainOsDir)
+            self.args.setupExtraX.append('OriginalTextFilesEclPath='+self.regressionSuiteHpccMainEclDir)
+            self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
 
             self.regress = Regression(self.args)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
