@@ -7792,11 +7792,6 @@ void CHThorDiskReadBaseActivity::resolve()
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
 
-    if (mangledHelperFileName.charAt(0) == '~')
-        logicalFileName.set(mangledHelperFileName.str()+1);
-    else
-        logicalFileName.set(mangledHelperFileName.str());
-
     if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;
@@ -8014,19 +8009,17 @@ bool CHThorDiskReadBaseActivity::openNext()
         PROGLOG("CHThorDiskReadBaseActivity::openNext() subfiles.");
         retVal=false;
 
-        IDistributedFile * distFile = dfIter ? &dfIter->query() : NULL;
+        IDistributedFile * distFile = &dfIter->query();
         if (distFile)
         {
-            if ( distFile->queryLogicalName())
-                logicalFileName.set(distFile->queryLogicalName());
+            logicalFileName.set(distFile->queryLogicalName());
 
-            Owned<IDistributedFilePartIterator> mydfsParts;
-            mydfsParts.setown(distFile->getIterator());
+            Owned<IDistributedFilePartIterator> mydfsParts = distFile->getIterator();
             unsigned myNumOfParts = distFile->numParts();
             partNum=0;
 
             // open next part of a multipart, if there is one
-            while ( (mydfsParts && mydfsParts->isValid()) && (partNum<myNumOfParts) )
+            while ((mydfsParts && mydfsParts->isValid()) && (partNum < myNumOfParts) && (retVal == false))
             {
                 IDistributedFilePart * curPart = &mydfsParts->query();
                 unsigned numCopies = curPart->numCopies();
@@ -8051,8 +8044,10 @@ bool CHThorDiskReadBaseActivity::openNext()
         PROGLOG("CHThorDiskReadBaseActivity::openNext() single file.");
         retVal = false;
 
+        logicalFileName.set(ldFile->queryLogicalName());
+
         // open next part of a multipart, if there is one
-        while ( partNum<ldFile->numParts() )
+        while ((partNum < ldFile->numParts()) && (retVal == false))
         {
             unsigned numCopies = ldFile->numPartCopies(partNum);
             retVal = processCopies( (IDistributedFilePart * )NULL, numCopies);
@@ -8071,7 +8066,7 @@ bool CHThorDiskReadBaseActivity::openNext()
 
         partNum++;
 
-        if (checkOpenedFile(file.str(), (const char*)NULL))
+        if (checkOpenedFile(file.str(), NULL))
         {
             opened = true;
             return true;

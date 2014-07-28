@@ -19,6 +19,7 @@ IMPORT STD;
 sf1 := '~data::test::sf';
 path1 := '~data::name1';
 path2 := '~data::name2';
+path3 := 'data::name3';
 
 nRecord := RECORD
     STRING20 name;
@@ -34,26 +35,35 @@ ds2 := DATASET([
         {'ddd'}
     ], nRecord);
 
+ds3 := DATASET([
+        {'eee'}
+    ], nRecord);
+
 IF(STD.File.SuperFileExists(sf1), STD.File.ClearSuperFile(sf1), STD.File.CreateSuperFile(sf1));
 
-ds3 := DATASET(sf1, {nRecord, string255 logicalFile{virtual(logicalfilename)}}, THOR);
-ds4 := DATASET(path1, {nRecord, string255 logicalFile{virtual(logicalfilename)}}, THOR);
+ds4 := DATASET(sf1, {nRecord, string255 logicalFile{virtual(logicalfilename)}}, THOR);
+ds5 := DATASET(path1, {nRecord, string255 logicalFile{virtual(logicalfilename)}}, THOR);
+ds6 := DATASET(path3, {nRecord, string255 logicalFile{virtual(logicalfilename)}}, THOR);
 
 SEQUENTIAL(
     // create
     OUTPUT(ds1,,path1, OVERWRITE),
     OUTPUT(ds2,,path2, OVERWRITE),
+    OUTPUT(ds3,,path3, OVERWRITE),
     STD.File.StartSuperFileTransaction(),
     STD.File.AddSuperFile(sf1, path1),
     STD.File.AddSuperFile(sf1, path2),
+    STD.File.AddSuperFile(sf1, path3),
     STD.File.FinishSuperFileTransaction(),
 
-    OUTPUT(ds3),
     OUTPUT(ds4),
-//    OUTPUT(FETCH(ds4, ds2, 0)); Gives internal error in compiler.
+    OUTPUT(ds5),
+    OUTPUT(ds6),
+//    OUTPUT(FETCH(ds5, ds2, 0)); Gives internal error in compiler.
 
     // clean-up
     STD.File.StartSuperFileTransaction(),
+    STD.File.RemoveSuperFile(sf1, path3),
     STD.File.RemoveSuperFile(sf1, path2),
     STD.File.RemoveSuperFile(sf1, path1),
     STD.File.FinishSuperFileTransaction(),
