@@ -275,15 +275,17 @@ protected:
     StableSortFlag stableSort;
     rowidx_t maxRows;  // Number of rows that can fit in the allocated memory.
     rowidx_t numRows;  // High water mark of rows added
+    unsigned defaultMaxSpillCost;
 
-    void init(rowidx_t initialSize, StableSortFlag stableSort);
+    void init(rowidx_t initialSize);
     const void *allocateRowTable(rowidx_t num);
     const void *allocateNewRows(rowidx_t requiredRows);
     rowidx_t getNewSize(rowidx_t requiredRows);
-    bool resizeRowTable(void **oldRows, memsize_t newCapacity, bool copy, roxiemem::IRowResizeCallback &callback);
+    bool resizeRowTable(void **oldRows, memsize_t newCapacity, bool copy, roxiemem::IRowResizeCallback &callback, unsigned maxSpillCost);
     void serialize(IRowSerializerTarget &out);
     void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);
     inline rowidx_t getRowsCapacity() const { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
+    bool _ensure(rowidx_t requiredRows, unsigned maxSpillCost);
 public:
     CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
@@ -291,6 +293,7 @@ public:
     // NB: throws error on OOM by default
     void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true);
     inline void setAllowNulls(bool b) { allowNulls = b; }
+    inline void setDefaultMaxSpillCost(unsigned _defaultMaxSpillCost) { defaultMaxSpillCost = _defaultMaxSpillCost; }
 
     void clearRows();
     void kill();
@@ -377,6 +380,7 @@ public:
     void deserialize(size32_t sz, const void *buf);
     void deserializeExpand(size32_t sz, const void *data);
     bool ensure(rowidx_t requiredRows);
+    bool ensure(rowidx_t requiredRows, unsigned maxSpillCost);
     void compact();
     virtual IThorArrayLock &queryLock() { return dummyLock; }
 

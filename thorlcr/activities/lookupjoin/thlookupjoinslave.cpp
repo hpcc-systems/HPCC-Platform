@@ -1312,13 +1312,13 @@ protected:
     mptag_t lhsDistributeTag, rhsDistributeTag, broadcast2MpTag;
 
     // Handling failover to a) hashed local lookupjoin b) hash distributed standard join
-    bool localLookupJoin, rhsCollated;
+    bool rhsCollated;
     bool failoverToLocalLookupJoin, failoverToStdJoin;
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
     UnsignedArray flushedRowMarkers;
 
-    atomic_t spiltBroadcastingRHS;
+    atomic_t performLocalLookup;
     CriticalSection broadcastSpillingLock;
     Owned<IJoinHelper> joinHelper;
 
@@ -1333,8 +1333,8 @@ protected:
         }
         return false;
     }
-    inline bool hasBroadcastSpilt() const { return 0 != atomic_read(&spiltBroadcastingRHS); }
-    inline void setBroadcastingSpilt(bool tf) { atomic_set(&spiltBroadcastingRHS, (int)tf); }
+    inline bool doPerformLocalLookup() const { return 0 != atomic_read(&performLocalLookup); }
+    inline void setPerformLocalLookup(bool tf) { atomic_set(&performLocalLookup, (int)tf); }
     rowidx_t clearNonLocalRows(CThorSpillableRowArray &rows, rowidx_t startPos)
     {
         rowidx_t clearedRows = 0;
@@ -1371,9 +1371,9 @@ protected:
         // This is likely to free memory, so block others (threads) until done
         // NB: This will not block appends
         CriticalBlock b(broadcastSpillingLock);
-        if (hasBroadcastSpilt())
+        if (doPerformLocalLookup())
             return false;
-        setBroadcastingSpilt(true);
+        setPerformLocalLookup(true);
         ActPrintLog("Clearing non-local rows - cause: %s", msg);
 
         rowidx_t clearedRows = 0;
@@ -1411,7 +1411,7 @@ protected:
             left.setown(lhsDistributor->connect(queryRowInterfaces(leftITDL), left.getClear(), leftHash, NULL));
         }
     }
-    void setupHT(rowidx_t size)
+    bool setupHT(rowidx_t size)
     {
         if (size < 10)
             size = 16;
@@ -1422,8 +1422,26 @@ protected:
                 throw MakeActivityException(this, 0, "Too many rows on RHS for hash table: %"RCPF"d", res);
             size = (rowidx_t)res;
         }
+        try
+        {
+            table.setup(this, size, leftHash, rightHash, compareLeftRight);
+        }
+        catch (IException *e)
+        {
+            if (!isSmart())
+                throw;
+            switch (e->errorCode())
+            {
+            case ROXIEMM_MEMORY_POOL_EXHAUSTED:
+            case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
+            case ROXIEMM_LARGE_MEMORY_EXHAUSTED:
+                return false;
+            default:
+                throw;
+            }
+        }
         rhsTableLen = size;
-        table.setup(this, size, leftHash, rightHash, compareLeftRight);
+        return true;
     }
     void getRHS(bool stopping)
     {
@@ -1459,16 +1477,37 @@ protected:
                 CriticalBlock b(broadcastSpillingLock);
                 rhsRows = getGlobalRHSTotal();
             }
-            if (!hasBroadcastSpilt())
+            if (!doPerformLocalLookup())
             {
                 if (stable && !rhsAlreadySorted)
                     rhs.setup(NULL, false, stableSort_earlyAlloc);
-                rhs.ensure(rhsRows);
+                try
+                {
+                    rhs.ensure(rhsRows, SPILL_PRIORITY_LOW); // NB: Could OOM, handled by exception handler
+                }
+                catch (IException *e)
+                {
+                    if (!isSmart())
+                        throw;
+                    switch (e->errorCode())
+                    {
+                    case ROXIEMM_MEMORY_POOL_EXHAUSTED:
+                    case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
+                    case ROXIEMM_LARGE_MEMORY_EXHAUSTED:
+                        break;
+                    default:
+                        throw;
+                    }
+                    ActPrintLog("Out of memory trying to size the global RHS row table for a SMART join, will now attempt a distributed local lookup join");
+                    clearAllNonLocalRows("OOM on sizing global row table"); // NB: someone else could have provoked callback already
+                    dbgassertex(doPerformLocalLookup());
+                }
             }
 
             // NB: no more rows can be added to rhsNodeRows at this point, but they could still be flushed
 
-            if (isSmart() && getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER))) // For testing purposes only
+            // For testing purposes only
+            if (isSmart() && getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)))
                 clearAllNonLocalRows("testing");
 
             rowidx_t uniqueKeys = 0;
@@ -1477,7 +1516,7 @@ protected:
                  * and need to protect rhsNodeRows access
                  */
                 CriticalBlock b(broadcastSpillingLock);
-                if (!hasBroadcastSpilt())
+                if (!doPerformLocalLookup())
                 {
                     // If spilt, don't size ht table now, if local rhs fits, ht will be sized later
                     ForEachItemIn(a, rhsNodeRows)
@@ -1491,40 +1530,19 @@ protected:
                     rhsCollated = true;
                 }
             }
-            if (!hasBroadcastSpilt()) // check again after processing above
+            if (!doPerformLocalLookup()) // check again after processing above
             {
-                // NB: This sizing could cause spilling callback to be triggered
-                try
+                if (!setupHT(uniqueKeys)) // NB: Sizing could cause spilling callback to be triggered and/or OOM
                 {
-                    setupHT(uniqueKeys);
-                }
-                catch (IException *e)
-                {
-                    /* JCS->GH - it would really be best I think, to avoid this alloc from causing memory to be evicted
-                     *           i.e. return fail to allocate without calling callbacks, then I can handle inability
-                     *           to perform full lookup join and failover to distributed local lookupjoin without
-                     *           necessarily having caused spillage by others.
-                     */
-                    switch (e->errorCode())
-                    {
-                    case ROXIEMM_MEMORY_POOL_EXHAUSTED:
-                    case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
-                    case ROXIEMM_LARGE_MEMORY_EXHAUSTED:
-                        if (!isSmart())
-                            throw;
-                        ActPrintLog("Out of memory trying to allocate hash table for a SMART join, will now attempt a distributed local lookup join");
-                        if (!hasBroadcastSpilt())
-                            throwUnexpected(); // OOM event *should* have triggered freeBufferedRows and set spiltBroadcastingRHS by now.
-                        /* Continue, now that spiltBroadcastingRHS is set, the code to follow
-                         * will handle via the hasBroadcastSpilt() branches.
-                         */
-                        break;
-                    }
+                    ActPrintLog("Out of memory trying to size the global hash table for a SMART join, will now attempt a distributed local lookup join");
+                    clearAllNonLocalRows("OOM on sizing global hash table"); // NB: someone else could have provoked callback already
+                    dbgassertex(doPerformLocalLookup());
                 }
             }
             if (failoverToLocalLookupJoin)
             {
                 /* NB: Potentially one of the slaves spilt late after broadcast and rowprocessor finished
+                 * NB2: This is also to let others know of this slaves spill state.
                  * Need to remove spill callback and broadcast one last message to know.
                  */
 
@@ -1535,7 +1553,7 @@ protected:
                 // NB: using a different tag from 1st broadcast, as 2nd on other nodes can start sending before 1st on this has quit receiving
                 broadcaster.start(this, broadcast2MpTag, false);
                 Owned<CSendItem> sendItem = broadcaster.newSendItem(bcast_stop);
-                if (hasBroadcastSpilt())
+                if (doPerformLocalLookup())
                     sendItem->setFlag(bcastflag_spilt);
                 broadcaster.send(sendItem); // signals stop to others
                 broadcaster.end();
@@ -1545,11 +1563,10 @@ protected:
              * If any have, still need to distribute rest of RHS..
              */
 
-            // flush spillable row arrays, and clear any non-locals if spiltBroadcastingRHS and compact
-            if (hasBroadcastSpilt())
+            // flush spillable row arrays, and clear any non-locals if performLocalLookup and compact
+            if (doPerformLocalLookup())
             {
                 ActPrintLog("Spilt whilst broadcasting, will attempt distribute local lookup join");
-                localLookupJoin = true;
 
                 // NB: lhs ordering and grouping lost from here on..
                 if (grouped)
@@ -1571,7 +1588,7 @@ protected:
                 }
 
                 /* NB: The collected broadcast rows thus far (in rhsNodeRows or rhs) were ordered/deterministic.
-                 * However, the rest of the rows received via the distributor and non-deterministic.
+                 * However, the rest of the rows received via the distributor are non-deterministic.
                  * Therefore the order overall is non-deterministic from this point on.
                  * For that reason, the rest of the RHS (distributed) rows will be processed ahead of the
                  * collected [broadcast] rows in the code below for efficiency reasons.
@@ -1609,10 +1626,10 @@ protected:
         {
             if (stopping) // if local can stop now
                 return;
-            localLookupJoin = true;
+            setPerformLocalLookup(true);
         }
 
-        if (localLookupJoin)
+        if (doPerformLocalLookup())
         {
             Owned<IThorRowLoader> rowLoader;
             ICompare *cmp = rhsAlreadySorted ? NULL : compareRight;
@@ -1651,15 +1668,15 @@ protected:
                 collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
                 collector->transferRowsIn(rhs); // can spill after this
 
-                // could cause spilling of 'rhs'
-                setupHT(uniqueKeys);
-                /* JCSMORE - failure to size should not be failure condition
-                 * If it failed, the 'collector' will have spilt and it will not need HT
-                 * JCS->GH: However, need to catch OOM somehow..
-                 */
-                rightStream.setown(collector->getStream(false, &rhs));
+                if (!setupHT(uniqueKeys))
+                {
+                    ActPrintLog("Out of memory trying to allocate the [LOCAL] hash table for a SMART join, will now failover to a std hash join");
+                    rightStream.setown(collector->getStream());
+                }
+                else
+                    rightStream.setown(collector->getStream(false, &rhs));
             }
-            if (rightStream) // NB: returned stream, implies spilt AND sorted, if not, 'rhs' is filled
+            if (rightStream) // NB: returned stream, implies (spilt or setupHT OOM'd) AND sorted, if not, 'rhs' is filled
             {
                 ActPrintLog("RHS spilt to disk. Standard Join will be used");
 
@@ -1726,9 +1743,9 @@ public:
     }
     CLookupJoinActivityBase(CGraphElementBase *_container) : PARENT(_container)
     {
-        localLookupJoin = rhsCollated = false;
+        rhsCollated = false;
         broadcast2MpTag = lhsDistributeTag = rhsDistributeTag = TAG_NULL;
-        setBroadcastingSpilt(false);
+        setPerformLocalLookup(false);
 
         leftHash = helper->queryHashLeft();
         rightHash = helper->queryHashRight();
@@ -1812,8 +1829,8 @@ public:
             dbgassertex(inputGrouped == grouped); // std. lookup join expects these to match
         }
 
-        setBroadcastingSpilt(false);
-        localLookupJoin = rhsCollated = false;
+        setPerformLocalLookup(false);
+        rhsCollated = false;
         flushedRowMarkers.kill();
 
         if (failoverToLocalLookupJoin)
@@ -1826,7 +1843,23 @@ public:
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
         if (!gotRHS)
+        {
             getRHS(false);
+            StringBuffer msg;
+            if (isSmart())
+            {
+                msg.append("SmartJoin - ");
+                if (joinHelper)
+                    msg.append("Failed over to hash distributed standard join");
+                else if (needGlobal && doPerformLocalLookup())
+                    msg.append("Failed over to hash distributed local lookup join");
+                else
+                    msg.append("Global all in memory lookup join");
+            }
+            else
+                msg.append("LookupJoin");
+            ActPrintLog("%s", msg.str());
+        }
         OwnedConstThorRow row;
         if (joinHelper) // regular join (hash join)
             row.setown(joinHelper->nextRow());
@@ -1892,7 +1925,7 @@ public:
     }
     virtual bool addLocalRHSRow(CThorSpillableRowArray &localRhsRows, const void *row)
     {
-        if (hasBroadcastSpilt())
+        if (doPerformLocalLookup())
         {
             // keep it only if it hashes to my node
             unsigned hv = rightHash->hash(row);
@@ -1929,8 +1962,12 @@ public:
     {
         reset();
     }
-    void setup(rowidx_t size, IHash *_leftHash, IHash *_rightHash, ICompare *_compareLeftRight)
+    void setup(CSlaveActivity *activity, rowidx_t size, IHash *_leftHash, IHash *_rightHash, ICompare *_compareLeftRight)
     {
+        size32_t sz = sizeof(const void *)*size;
+        void *ht = activity->queryJob().queryRowManager()->allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
+        memset(ht, 0, sz);
+        htMemory.setown(ht);
         htSize = size;
         leftHash = _leftHash;
         rightHash = _rightHash;
@@ -1985,12 +2022,9 @@ public:
     }
     void setup(CLookupJoinActivityBase<CLookupHT> *_activity, rowidx_t size, IHash *leftHash, IHash *rightHash, ICompare *compareLeftRight)
     {
-        CHTBase::setup(size, leftHash, rightHash, compareLeftRight);
         activity = _activity;
-        size32_t sz = sizeof(const void *)*size;
-        htMemory.setown(activity->queryJob().queryRowManager()->allocate(sz, activity->queryContainer().queryId()));
+        CHTBase::setup(activity, size, leftHash, rightHash, compareLeftRight);
         ht = (const void **)htMemory.get();
-        memset(ht, 0, sz);
     }
     void reset()
     {
@@ -2088,11 +2122,8 @@ public:
     void setup(CLookupJoinActivityBase<CLookupManyHT> *_activity, rowidx_t size, IHash *leftHash, IHash *rightHash, ICompare *compareLeftRight)
     {
         activity = _activity;
-        CHTBase::setup(size, leftHash, rightHash, compareLeftRight);
-        size32_t sz = sizeof(HtEntry)*size;
-        htMemory.setown(activity->queryJob().queryRowManager()->allocate(sz, activity->queryContainer().queryId()));
+        CHTBase::setup(activity, size, leftHash, rightHash, compareLeftRight);
         ht = (HtEntry *)htMemory.get();
-        memset(ht, 0, sz);
     }
     inline void addEntry(const void *row, unsigned hash, rowidx_t index, rowidx_t count)
     {
