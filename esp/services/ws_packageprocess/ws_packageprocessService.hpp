@@ -19,11 +19,101 @@
 #define _ESPWIZ_ws_packageprocess_HPP__
 
 #include "ws_packageprocess_esp.ipp"
+#include "dasds.hpp"
 
 #define THORCLUSTER "thor"
 #define HTHORCLUSTER "hthor"
 #define ROXIECLUSTER "roxie"
 
+#define PMAS_RELOAD_PACKAGE_SET 0x01
+#define PMAS_RELOAD_PACKAGE_MAP 0x02
+
+class PackageMapAndSet : public CInterface, implements ISDSSubscription
+{
+    Owned<IPropertyTree> tree;
+    SubscriptionId pmChange;
+    SubscriptionId psChange;
+    mutable CriticalSection crit;
+    mutable CriticalSection dirtyCrit; //if there were an atomic_or I would just use atomic
+    unsigned dirty;
+
+    void load(unsigned flags);
+    void load(const char* path, IPropertyTree* t);
+
+public:
+    IMPLEMENT_IINTERFACE;
+    PackageMapAndSet() : pmChange(0), psChange(0), dirty(PMAS_RELOAD_PACKAGE_SET | PMAS_RELOAD_PACKAGE_MAP)
+    {
+        tree.setown(createPTree("PackageMapAndSet"));
+    }
+
+    virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    {
+        Linked<PackageMapAndSet> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
+        CriticalBlock b(dirtyCrit);
+        if (subid == pmChange)
+            dirty |= PMAS_RELOAD_PACKAGE_MAP;
+        else if (subid == psChange)
+            dirty |= PMAS_RELOAD_PACKAGE_SET;
+    }
+
+    virtual void subscribe()
+    {
+        CriticalBlock b(crit);
+        pmChange = querySDS().subscribe("PackageMaps", *this, true);
+        psChange = querySDS().subscribe("PackageSets", *this, true);
+    }
+
+    virtual void unsubscribe()
+    {
+        CriticalBlock b(crit);
+        try
+        {
+            if (pmChange)
+                querySDS().unsubscribe(pmChange);
+            if (psChange)
+                querySDS().unsubscribe(psChange);
+        }
+        catch (IException *E)
+        {
+            E->Release();
+        }
+        pmChange = 0;
+        psChange = 0;
+    }
+
+    IPropertyTree *getTree()
+    {
+        CriticalBlock b(crit);
+        unsigned flags;
+        {
+            CriticalBlock b(dirtyCrit);
+            flags = dirty;
+            dirty = 0;
+        }
+        if (flags)
+            load(flags);
+        return LINK(tree);
+    }
+
+    IPropertyTree *getPackageMaps()
+    {
+        Owned<IPropertyTree> root = getTree();
+        return root->getPropTree("PackageMaps");
+    }
+
+    IPropertyTree *getPackageSets()
+    {
+        Owned<IPropertyTree> root = getTree();
+        return root->getPropTree("PackageSets");
+    }
+
+    StringBuffer &toStr(StringBuffer &s)
+    {
+        Owned<IPropertyTree> t = getTree();
+        return toXML(t, s);
+    }
+};
 
 class CWsPackageProcessSoapBindingEx : public CWsPackageProcessSoapBinding
 {
@@ -50,7 +140,10 @@ class CWsPackageProcessEx : public CWsPackageProcess
     void deletePackage(const char *packageMap, const char *target, const char *process, bool globalScope, StringBuffer &returnMsg, int &returnCode);
 public:
     IMPLEMENT_IINTERFACE;
-    virtual ~CWsPackageProcessEx(){};
+    virtual ~CWsPackageProcessEx()
+    {
+        packageMapAndSet.unsubscribe();
+    };
 
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
 
@@ -66,6 +159,7 @@ public:
     virtual bool onListPackages(IEspContext &context, IEspListPackagesRequest &req, IEspListPackagesResponse &resp);
     virtual bool onGetPackageMapSelectOptions(IEspContext &context, IEspGetPackageMapSelectOptionsRequest &req, IEspGetPackageMapSelectOptionsResponse &resp);
     virtual bool onGetPackageMapById(IEspContext &context, IEspGetPackageMapByIdRequest &req, IEspGetPackageMapByIdResponse &resp);
+    PackageMapAndSet packageMapAndSet;
 };
 
 #endif //_ESPWIZ_ws_packageprocess_HPP__
