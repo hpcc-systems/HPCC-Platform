@@ -60,12 +60,12 @@ class Suite:
         else:
                 allfiles = fileList
 
-        classIncluded=''
+        classIncluded='all'
         if 'runclass' in args:
             classIncluded=args.runclass[0].split(',')
             pass
 
-        classExcluded=''
+        classExcluded='none'
         if 'excludeclass' in args:
             classExcluded = args.excludeclass[0].split(',')
             pass
