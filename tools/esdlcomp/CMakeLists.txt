@@ -54,7 +54,6 @@ HPCC_ADD_LIBRARY ( esdlcomp SHARED ${SRCS} )
 # pre-req. But it is not distributed in CE packages.
 if ("${BUILD_LEVEL}" STREQUAL "ENTERPRISE" OR "${BUILD_LEVEL}" STREQUAL "INTERNAL")
     MESSAGE("----INSTALLING esdlcomp")
-    #install ( TARGETS esdlcomp RUNTIME DESTINATION bin )
     install ( TARGETS esdlcomp RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
 endif()
 

@@ -35,18 +35,9 @@ inline bool es_strieq(const char* s,const char* t) { return stricmp(s,t)==0; }
 
 extern FILE *yyin;
 extern int yyparse();
-//extern int yydebug;
-
-//#ifndef YY_TYPEDEF_YY_BUFFER_STATE
-//#define YY_TYPEDEF_YY_BUFFER_STATE
-//typedef struct yy_buffer_state *YY_BUFFER_STATE;
-//#endif
-
-//extern YY_BUFFER_STATE getCurrentBuffer();
 
 extern void yyrestart  (FILE * input_file );
 extern int  yylex_destroy  (void);
-//extern void yy_delete_buffer (YY_BUFFER_STATE  b );
 extern void yyInitESDLGlobals(ESDLcompiler * esdlcompiler);
 extern void yyCleanupESDLGlobals();
 
@@ -1101,7 +1092,6 @@ char* getTargetBase(const char* outDir, const char* src)
 
 ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir)
 {
-    //yydebug = 1;
     modules = NULL;
     enums = NULL;
     apis=NULL;
@@ -1224,7 +1214,6 @@ void ESDLcompiler::Process()
     }
     write_esxdl();
 
-   // yy_delete_buffer (getCurrentBuffer() );
     fclose(yyin);
     close(esxdlo);
 
@@ -1242,10 +1231,13 @@ void ESDLcompiler::write_esxdl()
         vi->toString(esxdlcontent);
     }
 
-    IncludeInfo * ii;
-    for (ii=hcp->includes;ii;ii=ii->next)
+    if (esxdlo > 0) // This only makes sense if outputting to file
     {
-        ii->toString(esxdlcontent);
+        IncludeInfo * ii;
+        for (ii=hcp->includes;ii;ii=ii->next)
+        {
+            ii->toString(esxdlcontent);
+        }
     }
 
     EspMessageInfo * mi;
@@ -1270,11 +1262,11 @@ void ESDLcompiler::write_esxdl()
     }
 
 
-    if (esxdlo)
+    if (esxdlo > 0)
     {
-        //create the *.esp file
+        //Populate the file
         StringBuffer tmp;
-        tmp.setf("<esxdl name=\"%s\">\n%s</esxdl>", name.str(), esxdlcontent.str());
+        tmp.setf("<esxdl name=\"%s\">\n", name.str()).append(esxdlcontent.str()).append("</esxdl>");
         gOutfile = esxdlo;
         outs(tmp.str());
         gOutfile = -1;
