@@ -279,7 +279,6 @@ protected:
 
     void init(rowidx_t initialSize);
     const void *allocateRowTable(rowidx_t num);
-    const void *allocateNewRows(rowidx_t requiredRows);
     rowidx_t getNewSize(rowidx_t requiredRows);
     bool resizeRowTable(void **oldRows, memsize_t newCapacity, bool copy, roxiemem::IRowResizeCallback &callback, unsigned maxSpillCost);
     void serialize(IRowSerializerTarget &out);
@@ -294,7 +293,7 @@ public:
     void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true);
     inline void setAllowNulls(bool b) { allowNulls = b; }
     inline void setDefaultMaxSpillCost(unsigned _defaultMaxSpillCost) { defaultMaxSpillCost = _defaultMaxSpillCost; }
-
+    inline unsigned queryDefaultMaxSpillCost() const { return defaultMaxSpillCost; }
     void clearRows();
     void kill();
 
@@ -412,6 +411,8 @@ public:
     void registerWriteCallback(IWritePosCallback &cb);
     void unregisterWriteCallback(IWritePosCallback &cb);
     inline void setAllowNulls(bool b) { CThorExpandingRowArray::setAllowNulls(b); }
+    inline void setDefaultMaxSpillCost(unsigned defaultMaxSpillCost) { CThorExpandingRowArray::setDefaultMaxSpillCost(defaultMaxSpillCost); }
+    inline unsigned queryDefaultMaxSpillCost() const { return CThorExpandingRowArray::queryDefaultMaxSpillCost(); }
     void kill();
     void clearRows();
     void compact();

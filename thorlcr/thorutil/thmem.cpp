@@ -332,7 +332,7 @@ public:
 
         // a small amount of rows to read from swappable rows
         roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
-        readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId()));
+        readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), inRows.queryDefaultMaxSpillCost()));
         activity.queryJob().queryRowManager()->addRowBuffer(this);
     }
     ~CSpillableStream()
@@ -411,11 +411,11 @@ void CThorExpandingRowArray::init(rowidx_t initialSize)
     stableTable = NULL;
     if (initialSize)
     {
-        rows = static_cast<const void * *>(rowManager->allocate(initialSize * sizeof(void*), activity.queryContainer().queryId()));
+        rows = static_cast<const void * *>(rowManager->allocate(initialSize * sizeof(void*), activity.queryContainer().queryId(), defaultMaxSpillCost));
         maxRows = getRowsCapacity();
         memset(rows, 0, maxRows * sizeof(void *));
         if (stableSort_earlyAlloc == stableSort)
-            stableTable = static_cast<void **>(rowManager->allocate(maxRows * sizeof(void*), activity.queryContainer().queryId()));
+            stableTable = static_cast<void **>(rowManager->allocate(maxRows * sizeof(void*), activity.queryContainer().queryId(), defaultMaxSpillCost));
         else
             stableTable = NULL;
     }
@@ -431,7 +431,7 @@ const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num)
 {
     try
     {
-        return rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId());
+        return rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId(), defaultMaxSpillCost);
     }
     catch (IException * e)
     {
@@ -491,25 +491,6 @@ bool CThorExpandingRowArray::resizeRowTable(void **oldRows, memsize_t newCapacit
     return true;
 }
 
-const void *CThorExpandingRowArray::allocateNewRows(rowidx_t requiredRows)
-{
-    rowidx_t newSize = maxRows;
-    //This condition must be <= at least 1/scaling factor below otherwise you'll get an infinite loop.
-    if (newSize <= 4)
-        newSize = requiredRows;
-    else
-    {
-        //What algorithm should we use to increase the size?  Trading memory usage against copying row pointers.
-        // adding 50% would reduce the number of allocations.
-        // anything below 32% would mean that blocks n,n+1 when freed have enough space for block n+3 which might
-        //   reduce fragmentation.
-        //Use 25% for the moment.  It should possibly be configurable - e.g., higher for thor global sort.
-        while (newSize < requiredRows)
-            newSize += newSize/4;
-    }
-    return allocateRowTable(newSize);
-}
-
 void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores)
 {
     // NB: will only be called if numRows>1
@@ -520,7 +501,7 @@ void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &com
         if (stableSort_lateAlloc == stableSort)
         {
             dbgassertex(NULL == stableTable);
-            tmpStableTable.setown(rowManager->allocate(getRowsCapacity() * sizeof(void *), activity.queryContainer().queryId()));
+            tmpStableTable.setown(rowManager->allocate(getRowsCapacity() * sizeof(void *), activity.queryContainer().queryId(), defaultMaxSpillCost));
             stableTablePtr = (void **)tmpStableTable.get();
         }
         else

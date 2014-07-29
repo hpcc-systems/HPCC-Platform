@@ -1435,6 +1435,7 @@ protected:
             case ROXIEMM_MEMORY_POOL_EXHAUSTED:
             case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
             case ROXIEMM_LARGE_MEMORY_EXHAUSTED:
+                e->Release();
                 return false;
             default:
                 throw;
@@ -1494,6 +1495,7 @@ protected:
                     case ROXIEMM_MEMORY_POOL_EXHAUSTED:
                     case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
                     case ROXIEMM_LARGE_MEMORY_EXHAUSTED:
+                        e->Release();
                         break;
                     default:
                         throw;
@@ -1850,11 +1852,11 @@ public:
             {
                 msg.append("SmartJoin - ");
                 if (joinHelper)
-                    msg.append("Failed over to hash distributed standard join");
+                    msg.append("Failed over to standard join");
                 else if (needGlobal && doPerformLocalLookup())
                     msg.append("Failed over to hash distributed local lookup join");
                 else
-                    msg.append("Global all in memory lookup join");
+                    msg.append("All in memory lookup join");
             }
             else
                 msg.append("LookupJoin");
