@@ -606,7 +606,7 @@ MemoryBuffer &MemoryBuffer::appendFile(const char *fileName)
     int r;
     while ((r = _read(h, buf, 1024)) != 0)
     {
-        if (-1==r) throw MakeErrnoException("MemoryBuffer::appendFile");
+        if (-1==r) throw makeErrnoException("MemoryBuffer::appendFile");
         append(r, buf); 
     }
     _close(h);

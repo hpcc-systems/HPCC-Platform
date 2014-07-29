@@ -322,7 +322,7 @@ int main( int argc, char *argv[]  )
             int err = _chdir(thorPath.str());
             if (err)
             {
-                IException *e = MakeErrnoException(-1, "Failed to change dir to '%s'",thorPath.str());
+                IException *e = makeErrnoExceptionV(-1, "Failed to change dir to '%s'", thorPath.str());
                 FLLOG(MCexception(e), thorJob, e);
                 throw e;
             }

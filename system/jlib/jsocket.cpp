@@ -260,7 +260,7 @@ public:
         case EINPROGRESS:           return str.append("EINPROGRESS - operation now in progress ");
 #endif
         }
-        IException *ose = MakeOsException(err);
+        IException *ose = makeOsException(err);
         ose->errorMessage(str);
         ose->Release();
         return str;
@@ -2960,7 +2960,7 @@ StringBuffer & IpAddress::getIpText(StringBuffer & out) const
     char tmp[INET6_ADDRSTRLEN];
     const char *res = _inet_ntop(AF_INET6, &netaddr, tmp, sizeof(tmp));
     if (!res) 
-        throw MakeOsException(errno);
+        throw makeOsException(errno);
     return out.append(res);
 }
 

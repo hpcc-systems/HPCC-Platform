@@ -821,7 +821,7 @@ processedProgress:
             StringBuffer localFilename;
             localTempFilename.getPath(localFilename);
             if (!recursiveCreateDirectoryForFile(localFilename))
-                throw MakeOsException(GetLastError(), "Failed to create directory for file: %s", localFilename.str());
+                throw makeOsExceptionV(GetLastError(), "Failed to create directory for file: %s", localFilename.str());
 
             OwnedIFile outFile = createIFile(localFilename.str());
             // if we want spray to not fill page cache use IFEnocache

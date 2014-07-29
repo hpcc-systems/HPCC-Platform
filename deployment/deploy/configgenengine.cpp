@@ -330,7 +330,7 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
     }
     catch (...)
     {
-        throw MakeErrnoException("Error creating file list for process %s", m_name.get());
+        throw makeErrnoExceptionV("Error creating file list for process %s", m_name.get());
     }
 
     m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, NULL);

@@ -860,7 +860,7 @@ unsigned getAffinityCpus()
     }
     else // fall back to legacy num system cpus
     {
-        Owned<IException> e = MakeOsException(GetLastError(), "Failed to get affinity");
+        Owned<IException> e = makeOsException(GetLastError(), "Failed to get affinity");
         EXCLOG(e, NULL);
         unsigned cpuSpeed;
         getCpuInfo(numCpus, cpuSpeed);
