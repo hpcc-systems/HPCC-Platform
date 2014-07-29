@@ -39,9 +39,12 @@ void CDiskReadMasterBase::init()
 {
     CMasterActivity::init();
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
-    fileName.setown(helper->getFileName());
+    OwnedRoxieString helperFileName = helper->getFileName();
+    StringBuffer expandedFileName;
+    queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
+    fileName.set(expandedFileName);
 
-    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
+    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
     if (file)
     {
         if (file->numParts() > 1)
