@@ -348,8 +348,6 @@ void CDiskWriteSlaveActivityBase::open()
             rwFlags |= rw_crc;
         out.setown(createRowWriter(stream, ::queryRowInterfaces(input), rwFlags));
     }
-    CDfsLogicalFileName dlfn;
-    dlfn.set(logicalFilename);
     if (extend || (external && !query))
         stream->seek(0,IFSend);
     ActPrintLog("Created output stream for %s", fName.get());
