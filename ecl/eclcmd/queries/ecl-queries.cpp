@@ -700,8 +700,8 @@ public:
             "\n"
             "ecl queries copy-set <source_target> <destination_target> [--clone-active-state]\n"
 
-            "ecl queries copy-set target1 target2\n"
-            "ecl queries copy-set //ip:port/target1 target2 --clone-active-state\n"
+            "ecl queries copy-set roxie1 roxie2\n"
+            "ecl queries copy-set //ip:port/roxie1 roxie2 --clone-active-state\n"
             "\n"
             " Options:\n"
             "   <source_target>        Name of local (or path to remote) target cluster to"
