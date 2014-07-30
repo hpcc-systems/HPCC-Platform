@@ -6264,3 +6264,95 @@ extern HQLFOLD_API void quickFoldExpressions(HqlExprArray & target, const HqlExp
     ForEachItemIn(i, source)
         target.append(*transformer.transform(&source.item(i)));
 }
+
+//--------------------------------------------------------------------------------------------------------------------
+
+static bool valueInList(IHqlExpression * search, IHqlExpression * list)
+{
+    if (list->getOperator() != no_list)
+        return false;
+
+    ForEachChild(i, list)
+    {
+        if (search == list->queryChild(i))
+            return true;
+    }
+    return false;
+}
+
+static bool valueNotInList(IHqlExpression * search, IHqlExpression * list)
+{
+    if (list->getOperator() != no_list)
+        return false;
+
+    IValue * value = search->queryValue();
+    if (!value)
+        return false; // can't tell
+
+    ForEachChild(i, list)
+    {
+        IHqlExpression * cur = list->queryChild(i);
+        IValue * curValue = cur->queryValue();
+        if (!curValue || value == curValue)
+            return false;
+    }
+    return true;
+}
+
+
+//Is it guaranteed that both conditions cannot be true at the same time.  Avoid false positivies.
+//Don't try and catch all examples, just the most common possibilities.
+//This could be improved over time....
+extern HQLFOLD_API bool areExclusiveConditions(IHqlExpression * left, IHqlExpression * right)
+{
+    node_operator leftOp = left->getOperator();
+    node_operator rightOp = right->getOperator();
+
+    // Check for x = constant1, x = constant2, constant1 != constant2
+    if ((leftOp == no_eq) && (rightOp == no_eq))
+    {
+        if (left->queryChild(0) == right->queryChild(0))
+        {
+            //Can only really be sure if comparing against constants.
+            IValue * leftValue = left->queryChild(1)->queryValue();
+            IValue * rightValue = right->queryChild(1)->queryValue();
+            return (leftValue && rightValue && leftValue != rightValue);
+        }
+        return false;
+    }
+
+    // Check for NOT x, x
+    if ((leftOp == no_not) && (left->queryChild(0) == right))
+        return true;
+
+    // Check for x, NOT x
+    if ((rightOp == no_not) && (right->queryChild(0) == left))
+        return true;
+
+    // two tests against the same condition (could also pass in here if both NULL..)
+    if (left->queryChild(0) == right->queryChild(0))
+    {
+        // Check for x <op> y, x !<op> y  - no need for y to be a constant.
+        if (leftOp == getInverseOp(rightOp))
+        {
+            return left->queryChild(1) == right->queryChild(1);
+        }
+
+        // Unusual, but occured in the main example I was trying to improve
+        // x = c1, x not in [c1, ....]
+        // x = c1, x in [c2, c3, c4, c5]
+        if ((leftOp == no_eq) && (rightOp == no_notin))
+            return valueInList(left->queryChild(1),  right->queryChild(1));
+
+        if ((leftOp == no_eq) && (rightOp == no_in))
+            return valueNotInList(left->queryChild(1),  right->queryChild(1));
+
+        if ((rightOp == no_eq) && (leftOp == no_notin))
+            return valueInList(right->queryChild(1),  left->queryChild(1));
+
+        if ((rightOp == no_eq) && (leftOp == no_in))
+            return valueNotInList(right->queryChild(1),  left->queryChild(1));
+    }
+
+    return false;
+}
