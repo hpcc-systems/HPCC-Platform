@@ -66,11 +66,14 @@ def getVersionNumbers():
         verNum['patch'] = int(version[2])
     return(verNum);
 
+def parentPath(osPath):
+    # remove current dir
+    [osPath, sep,  curDir] = osPath.rpartition(os.sep)
+    return osPath
+
 def convertPath(osPath):
     hpccPath = ''
     osPath = osPath.lstrip(os.sep)
-    # remove current dir
-    [osPath, sep,  curDir] = osPath.rpartition(os.sep)
     osPath = osPath.replace(os.sep,  '::')
     for i in range(0,  len(osPath)):
         if osPath[i] >= 'A' and osPath[i] <= 'Z':

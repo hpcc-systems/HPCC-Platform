@@ -28,7 +28,7 @@ import glob
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress
+from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath
 from hpcc.common.error import Error
 
 # For coverage
@@ -104,9 +104,6 @@ class RegressMain:
     def setup(self):
         # Go through the cluster list
         for cluster in self.targetClusters:
-            self.args.setupExtraX = []
-            self.args.setupExtraX.append('OriginalTextFilesPath='+self.regressionSuiteHpccMainDir)
-            self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
             self.args.target = cluster
             self.regress.config.ip = self.regress.config.IpAddress[cluster]
             if  self.args.pq :
@@ -214,7 +211,14 @@ class RegressMain:
             regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
             self.args.config = str(os.path.join(regressionSuiteFullPath, self.args.config))
 
-            self.regressionSuiteHpccMainDir = convertPath(regressionSuiteFullPath)+"::download"
+            self.regressionSuiteHpccMainOsDir = regressionSuiteFullPath
+            self.regressionSuiteHpccMainEclDir = convertPath(regressionSuiteFullPath)+"::download"
+
+            self.args.setupExtraX = []
+            self.args.setupExtraX.append('OriginalTextFilesOsPath='+self.regressionSuiteHpccMainOsDir)
+            self.args.setupExtraX.append('OriginalTextFilesEclPath='+self.regressionSuiteHpccMainEclDir)
+            self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
+
             self.regress = Regression(self.args)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
 

@@ -76,6 +76,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="clusterQueryStateThreadPoolSize" type="xs:nonNegativeInteger" use="optional" default="25">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Default thread pool size for checking query state on clusters</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="AWUsCacheTimeout" type="xs:nonNegativeInteger" use="optional" default="15">
                 <xs:annotation>
                     <xs:appinfo>

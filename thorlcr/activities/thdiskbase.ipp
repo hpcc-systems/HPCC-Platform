@@ -32,7 +32,7 @@ protected:
     Owned<CSlavePartMapping> mapping;
     IHash *hash;
     Owned<ProgressInfo> inputProgress;
-    OwnedRoxieString fileName;
+    StringAttr fileName;
 
 public:
     CDiskReadMasterBase(CMasterGraphElement *info);

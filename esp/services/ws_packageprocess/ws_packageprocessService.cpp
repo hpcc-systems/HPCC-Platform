@@ -161,106 +161,101 @@ void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const
     cloneFileInfoToDali(notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, overWrite, userdesc, allowForeignFiles);
 }
 
-
-void makePackageActive(IPropertyTree *pkgSetRegistry, IPropertyTree *pkgSetTree, const char *target, bool activate)
+void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const char *target, bool activate)
 {
     if (activate)
     {
         VStringBuffer xpath("PackageMap[@querySet='%s'][@active='1']", target);
-        Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements(xpath.str());
-        ForEach(*iter)
-            iter->query().setPropBool("@active", false);
+        Owned<IPropertyTreeIterator> psEntries = pkgSet->getElements(xpath.str());
+        ForEach(*psEntries)
+        {
+            IPropertyTree &entry = psEntries->query();
+            if (psEntryNew != &entry)
+                entry.setPropBool("@active", false);
+        }
     }
-    pkgSetTree->setPropBool("@active", activate);
+    if (psEntryNew->getPropBool("@active") != activate)
+        psEntryNew->setPropBool("@active", activate);
 }
 
 //////////////////////////////////////////////////////////
 
-void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, const char *srcCluster, const char *prefix, IPropertyTree *packageInfo, bool activate, bool overWrite, IUserDescriptor* userdesc, bool allowForeignFiles)
+void addPackageMapInfo(const char *xml, StringArray &filesNotFound, const char *process, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, const char *srcCluster, const char *prefix, bool activate, bool overWrite, IUserDescriptor* userdesc, bool allowForeignFiles)
 {
+    if (!xml || !*xml)
+        throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "PackageMap info not provided");
+
     if (srcCluster && *srcCluster)
     {
         if (!isProcessCluster(lookupDaliIp, srcCluster))
             throw MakeStringException(PKG_INVALID_CLUSTER_TYPE, "Process cluster %s not found on %s DALI", srcCluster, lookupDaliIp ? lookupDaliIp : "local");
     }
-    Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-
-    StringBuffer lcPmid(pmid);
-    pmid = lcPmid.toLowerCase().str();
-
-    VStringBuffer xpath("PackageMap[@id='%s']", pmid);
-
-    IPropertyTree *pkgRegTree = pkgSetRegistry->queryPropTree(xpath.str());
-    IPropertyTree *root = globalLock->queryRoot();
-    IPropertyTree *mapTree = root->queryPropTree(xpath);
-
-    if (!overWrite && (pkgRegTree || mapTree))
-        throw MakeStringException(PKG_NAME_EXISTS, "Package name %s already exists, either delete it or specify overwrite", pmid);
-
-    if (mapTree)
-        root->removeTree(mapTree);
-
-    if (pkgRegTree)
-        pkgSetRegistry->removeTree(pkgRegTree);
-
-
-    mapTree = root->addPropTree("PackageMap", createPTree());
-    Owned<IAttributeIterator> attributes = packageInfo->getAttributes();
-    ForEach(*attributes)
-        mapTree->setProp(attributes->queryName(), attributes->queryValue());
-    mapTree->setProp("@id", pmid);
 
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
 
-    IPropertyTree *baseInfo = createPTree();
-    Owned<IPropertyTreeIterator> iter = packageInfo->getElements("Package");
+    Owned<IPropertyTree> pmTree = createPTreeFromXMLString(xml);
+    if (!pmTree)
+        throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "Invalid PackageMap info");
+
+    StringBuffer lcPmid(pmid);
+    pmid = lcPmid.toLowerCase().str();
+    pmTree->setProp("@id", pmid);
+
+    Owned<IPropertyTreeIterator> iter = pmTree->getElements("Package");
     ForEach(*iter)
     {
         IPropertyTree &item = iter->query();
-        Owned<IPropertyTreeIterator> super_iter = item.getElements("SuperFile");
-        if (super_iter->first())
+        Owned<IPropertyTreeIterator> superFiles = item.getElements("SuperFile");
+        ForEach(*superFiles)
         {
-            ForEach(*super_iter)
-            {
-                IPropertyTree &supertree = super_iter->query();
-                StringBuffer lc(supertree.queryProp("@id"));
-                const char *id = lc.toLowerCase().str();
-                if (*id == '~')
-                    id++;
-                supertree.setProp("@id", id);
+            IPropertyTree &superFile = superFiles->query();
+            StringBuffer lc(superFile.queryProp("@id"));
+            const char *id = lc.toLowerCase().str();
+            if (*id == '~')
+                id++;
+            superFile.setProp("@id", id);
 
-                Owned<IPropertyTreeIterator> sub_iter = supertree.getElements("SubFile");
-                ForEach(*sub_iter)
+            Owned<IPropertyTreeIterator> subFiles = superFile.getElements("SubFile");
+            ForEach(*subFiles)
+            {
+                IPropertyTree &subFile = subFiles->query();
+                id = subFile.queryProp("@value");
+                if (id && *id == '~')
                 {
-                    IPropertyTree &subtree = sub_iter->query();
-                    const char *subid = subtree.queryProp("@value");
-                    if (subid && *subid == '~')
-                    {
-                        StringAttr value(subid+1);
-                        subtree.setProp("@value", value.get());
-                    }
+                    StringAttr value(id+1);
+                    subFile.setProp("@value", value.get());
                 }
             }
-            mapTree->addPropTree("Package", LINK(&item));
-        }
-        else
-        {
-            baseInfo->addPropTree("Package", LINK(&item));
         }
     }
 
-    mergePTree(mapTree, baseInfo);
-    cloneFileInfoToDali(filesNotFound, mapTree, lookupDaliIp, clusterInfo, srcCluster, prefix, overWrite, userdesc, allowForeignFiles);
+    VStringBuffer xpath("PackageMap[@id='%s']", pmid);
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    IPropertyTree *packageMaps = globalLock->queryRoot();
+    IPropertyTree *pmExisting = packageMaps->queryPropTree(xpath);
 
-    globalLock->commit();
+    xpath.appendf("[@querySet='%s']", target);
+    Owned<IPropertyTree> pkgSet = getPkgSetRegistry(process, false);
+    IPropertyTree *psEntry = pkgSet->queryPropTree(xpath);
 
-    IPropertyTree *pkgSetTree = pkgSetRegistry->addPropTree("PackageMap", createPTree("PackageMap"));
-    pkgSetTree->setProp("@id", pmid);
-    pkgSetTree->setProp("@querySet", target);
+    if (!overWrite && (psEntry || pmExisting))
+        throw MakeStringException(PKG_NAME_EXISTS, "Package name %s already exists, either delete it or specify overwrite", pmid);
 
-    makePackageActive(pkgSetRegistry, pkgSetTree, target, activate);
+    cloneFileInfoToDali(filesNotFound, pmTree, lookupDaliIp, clusterInfo, srcCluster, prefix, overWrite, userdesc, allowForeignFiles);
+
+    if (pmExisting)
+        packageMaps->removeTree(pmExisting);
+    packageMaps->addPropTree("PackageMap", pmTree.getClear());
+
+    if (!psEntry)
+    {
+        psEntry = pkgSet->addPropTree("PackageMap", createPTree("PackageMap"));
+        psEntry->setProp("@id", pmid);
+        psEntry->setProp("@querySet", target);
+    }
+    makePackageActive(pkgSet, psEntry, target, activate);
 }
 
 void getPackageListInfo(IPropertyTree *mapTree, IEspPackageListMapData *pkgList)
@@ -542,7 +537,6 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
         pmid.append(target).append("::");
     pmid.append(name.get());
 
-    StringBuffer info(req.getInfo());
     bool activate = req.getActivate();
     bool overWrite = req.getOverWrite();
     StringAttr processName(req.getProcess());
@@ -561,12 +555,11 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     StringBuffer prefix;
     splitDerivedDfsLocation(req.getDaliIp(), srcCluster, daliip, prefix, req.getSourceProcess(), req.getSourceProcess(), NULL, NULL);
 
-    Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
-    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(processName.get(), false);
-    StringArray filesNotFound;
     StringBuffer pkgSetId;
     buildPkgSetId(pkgSetId, processName.get());
-    addPackageMapInfo(filesNotFound, pkgSetRegistry, target.get(), pmid.str(), pkgSetId.str(), daliip.str(), srcCluster.str(), prefix.str(), LINK(packageTree), activate, overWrite, userdesc, req.getAllowForeignFiles());
+
+    StringArray filesNotFound;
+    addPackageMapInfo(req.getInfo(), filesNotFound, processName, target, pmid, pkgSetId, daliip, srcCluster, prefix, activate, overWrite, userdesc, req.getAllowForeignFiles());
     resp.setFilesNotFound(filesNotFound);
 
     StringBuffer msg;
