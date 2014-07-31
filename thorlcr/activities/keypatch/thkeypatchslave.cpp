@@ -79,8 +79,8 @@ public:
         StringBuffer originalFilePart, patchFilePart;
         OwnedRoxieString originalName(helper->getOriginalName());
         OwnedRoxieString patchName(helper->getPatchName());
-        locateFilePartPath(this, originalName, *originalIndexPart, originalFilePart);
-        locateFilePartPath(this, patchName, *patchPart, patchFilePart);
+        locateFilePartPath(*this, originalName, *originalIndexPart, originalFilePart);
+        locateFilePartPath(*this, patchName, *patchPart, patchFilePart);
 
         StringBuffer newIndexFilePath;
         getPartFilename(*newIndexPart, 0, newIndexFilePath);
@@ -97,8 +97,8 @@ public:
             if (!copyTlk)
             {
                 StringBuffer tmp;
-                locateFilePartPath(this, tmp.clear().append(originalName).append(" [TLK]").str(), *originalIndexTlkPart, originalFilePart);
-                locateFilePartPath(this, tmp.clear().append(patchName).append(" [TLK]").str(), *patchTlkPart, patchFilePart);
+                locateFilePartPath(*this, tmp.clear().append(originalName).append(" [TLK]").str(), *originalIndexTlkPart, originalFilePart);
+                locateFilePartPath(*this, tmp.clear().append(patchName).append(" [TLK]").str(), *patchTlkPart, patchFilePart);
                 getPartFilename(*newIndexTlkPart, 0, tmp.clear());
                 tlkPatchApplicator.setown(createKeyDiffApplicator(patchFilePart.str(), originalFilePart.str(), tmp.str(), NULL, true, true));
             }
@@ -120,18 +120,18 @@ public:
             try
             {
                 if (newIndexPart->numCopies() > 1)
-                    doReplicate(this, *newIndexPart);
+                    doReplicate(*this, *newIndexPart);
                 if (tlk && copyTlk)
                 {
                     StringBuffer newFilePathTlk, patchFilePathTlk, tmp;
                     getPartFilename(*newIndexTlkPart, 0, newFilePathTlk);
                     OwnedRoxieString patchName(helper->getPatchName());
-                    locateFilePartPath(this, tmp.append(patchName).append(" [TLK]").str(), *patchTlkPart, patchFilePathTlk);
+                    locateFilePartPath(*this, tmp.append(patchName).append(" [TLK]").str(), *patchTlkPart, patchFilePathTlk);
                     OwnedIFile newIFileTlk = createIFile(newFilePathTlk.str());
                     OwnedIFile patchIFileTlk = createIFile(patchFilePathTlk.str());
                     copyFile(newIFileTlk, patchIFileTlk);
                     if (newIndexTlkPart->numCopies() > 1)
-                        doReplicate(this, *newIndexTlkPart);
+                        doReplicate(*this, *newIndexTlkPart);
                 }
             }
             catch (IException *e)

@@ -145,7 +145,7 @@ public:
             s.append("INTERNAL ERROR ").append(e->errorCode()).append(": ");
             e->errorMessage(s);
             e->Release();
-            throw MakeActivityException(this, 0, "%s", s.str());
+            throw MakeActivityException(*this, 0, "%s", s.str());
         }
         catch (IException *e)
         {
@@ -154,7 +154,7 @@ public:
             s.append(") INTERNAL ERROR ").append(e->errorCode()).append(": ");
             e->errorMessage(s);
             e->Release();
-            throw MakeActivityException(this, 0, "%s", s.str());
+            throw MakeActivityException(*this, 0, "%s", s.str());
         }
         eogNext = false;
         anyThisGroup = false;

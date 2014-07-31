@@ -78,7 +78,6 @@ public:
     virtual void done();
     virtual void reset();
     virtual void abort(IException *e);
-    IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
@@ -171,6 +170,7 @@ public:
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
     virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
     virtual IBarrier *createBarrier(mptag_t tag);
+    virtual IThorGraphResults *createThorGraphResults(graph_id gid);
 
 // IExceptionHandler
     virtual bool fireException(IException *e);

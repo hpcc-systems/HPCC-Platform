@@ -125,6 +125,8 @@ const char * CThorCodeContextBase::cloneVString(size32_t len, const char * str) 
 
 IEclGraphResults *CThorCodeContextBase::resolveLocalQuery(__int64 gid)
 {
+    if (0 == gid)
+        return job.queryGlobalResults();
     IEclGraphResults *graph = job.getGraph((graph_id)gid);
     graph->Release(); // resolveLocalQuery doesn't own, can't otherwise will be circular ref.
     return graph;

@@ -388,7 +388,7 @@ public:
                 ret = createWhenActivityMaster(this);
                 break;
             default:
-                throw MakeActivityException(this, TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));
+                throw MakeActivityException(*this, TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));
         }
         return ret;
     }
@@ -638,12 +638,12 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned he
             if (super) fileStr.append("Superfile: ").append(file->queryLogicalName()).append(", subfile: ");
             else fileStr.append("File: ");
             fileStr.append(f->queryLogicalName());
-            Owned<IThorException> e = MakeActivityException(activity, TE_FormatCrcMismatch, "%s: Layout does not match published layout. %s", kindStr.str(), fileStr.str());
+            Owned<IThorException> e = MakeActivityException(*activity, TE_FormatCrcMismatch, "%s: Layout does not match published layout. %s", kindStr.str(), fileStr.str());
             if (index && !f->queryAttributes().hasProp("_record_layout")) // Cannot verify if _true_ crc mismatch if soft layout missing anymore
                 LOG(MCwarning, thorJob, e);
             else
             {
-                if (!activity->queryContainer().queryJob().getWorkUnitValueInt("skipFileFormatCrcCheck", 0))
+                if (!activity->queryJob().getWorkUnitValueInt("skipFileFormatCrcCheck", 0))
                     throw LINK(e);
                 e->setAction(tea_warning);
                 activity->fireException(e);

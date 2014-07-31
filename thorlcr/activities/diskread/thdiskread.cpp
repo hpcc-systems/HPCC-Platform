@@ -37,7 +37,7 @@ public:
         bool isGrouped = fileDesc->isGrouped();
         if (isGrouped != codeGenGrouped)
         {
-            Owned<IException> e = MakeActivityWarning(&container, TE_GroupMismatch, "DFS and code generated group info. differs: DFS(%s), CodeGen(%s), using DFS info", isGrouped?"grouped":"ungrouped", codeGenGrouped?"grouped":"ungrouped");
+            Owned<IException> e = MakeActivityWarning(container, TE_GroupMismatch, "DFS and code generated group info. differs: DFS(%s), CodeGen(%s), using DFS info", isGrouped?"grouped":"ungrouped", codeGenGrouped?"grouped":"ungrouped");
             container.queryJob().fireException(e);
         }
         IOutputMetaData *recordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta();
@@ -57,7 +57,7 @@ public:
                 if (isGrouped) rSz++;
                 if (rSz >= MIN_ROWCOMPRESS_RECSIZE)
                 {
-                    Owned<IException> e = MakeActivityWarning(&container, TE_CompressionMismatch, "Ignoring compression attribute on file '%s', which is not published as compressed in DFS", fileName.get());
+                    Owned<IException> e = MakeActivityWarning(container, TE_CompressionMismatch, "Ignoring compression attribute on file '%s', which is not published as compressed in DFS", fileName.get());
                     container.queryJob().fireException(e);
                 }
             }

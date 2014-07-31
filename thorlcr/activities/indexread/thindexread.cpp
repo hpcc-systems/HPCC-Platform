@@ -114,14 +114,14 @@ protected:
                     if (rowCrc || fileCrc)
                     {
                         checkTLKConsistency = false;
-                        Owned<IException> e = MakeActivityWarning(&container, 0, "Cannot validate that tlks in superfile %s match, some crc attributes are missing", super->queryLogicalName());
+                        Owned<IException> e = MakeActivityWarning(container, 0, "Cannot validate that tlks in superfile %s match, some crc attributes are missing", super->queryLogicalName());
                         container.queryJob().fireException(e);
                     }       
                 }
                 if (rowCrc && fileCrc)
                 {
                     checkTLKConsistency = false;
-                    Owned<IException> e = MakeActivityWarning(&container, 0, "Cannot validate that tlks in superfile %s match, due to mixed crc types.", super->queryLogicalName());
+                    Owned<IException> e = MakeActivityWarning(container, 0, "Cannot validate that tlks in superfile %s match, due to mixed crc types.", super->queryLogicalName());
                     container.queryJob().fireException(e);
                 }
                 if (checkTLKConsistency)
@@ -132,7 +132,7 @@ protected:
                         first = false;
                     }
                     else if (tlkCrc != _tlkCrc)
-                        throw MakeActivityException(this, 0, "Sorted output on super files comprising of non coparitioned sub keys is not supported (TLK's do not match)");
+                        throw MakeActivityException(*this, 0, "Sorted output on super files comprising of non coparitioned sub keys is not supported (TLK's do not match)");
                 }
             }
             if (!nofilter)
@@ -175,7 +175,7 @@ protected:
             superSubIndex++;
             f = &iter->query();
             if (width != f->numParts()-1)
-                throw MakeActivityException(this, 0, "Super key %s, with mixture of sub key width are not supported.", f->queryLogicalName());
+                throw MakeActivityException(*this, 0, "Super key %s, with mixture of sub key width are not supported.", f->queryLogicalName());
         }
     }
 
@@ -204,7 +204,7 @@ public:
             bool localKey = index->queryAttributes().getPropBool("@local");
 
             if (container.queryLocalData() && !localKey)
-                throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");
+                throw MakeActivityException(*this, 0, "Index Read cannot be LOCAL unless supplied index is local");
 
             nofilter = 0 != (TIRnofilter & indexBaseHelper->getFlags());
             if (index->queryAttributes().getPropBool("@local"))

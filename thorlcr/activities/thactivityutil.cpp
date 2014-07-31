@@ -106,7 +106,7 @@ public:
             }
             catch(IException * e)
             {
-                ActPrintLog(&activity, e, "ThorLookaheadCache starting input");
+                ActPrintLog(activity, e, "ThorLookaheadCache starting input");
                 startexception.setown(e);
                 if (asyncstart) 
                     notify->onInputStarted(startexception);
@@ -122,9 +122,9 @@ public:
                 GetTempName(temp,"lookahd",true);
             assertex(bufsize);
             if (allowspill)
-                smartbuf.setown(createSmartBuffer(&activity, temp.toCharArray(), bufsize, queryRowInterfaces(in)));
+                smartbuf.setown(createSmartBuffer(activity, temp.toCharArray(), bufsize, queryRowInterfaces(in)));
             else
-                smartbuf.setown(createSmartInMemoryBuffer(&activity, queryRowInterfaces(in), bufsize));
+                smartbuf.setown(createSmartInMemoryBuffer(activity, queryRowInterfaces(in), bufsize));
             if (notify) 
                 notify->onInputStarted(NULL);
             startsem.signal();
@@ -164,7 +164,7 @@ public:
         }
         catch(IException * e)
         {
-            ActPrintLog(&activity, e, "ThorLookaheadCache get exception");
+            ActPrintLog(activity, e, "ThorLookaheadCache get exception");
             getexception.setown(e);
         }
 
@@ -207,7 +207,7 @@ public:
         }
         catch(IException * e)
         {
-            ActPrintLog(&activity, e, "ThorLookaheadCache stop exception");
+            ActPrintLog(activity, e, "ThorLookaheadCache stop exception");
             if (!getexception.get())
                 getexception.setown(e);
         }
@@ -220,7 +220,7 @@ public:
         : thread(*this), activity(_activity), in(_in)
     {
 #ifdef _FULL_TRACE
-        ActPrintLog(&activity, "ThorLookaheadCache create %x",(unsigned)(memsize_t)this);
+        ActPrintLog(activity, "ThorLookaheadCache create %x",(unsigned)(memsize_t)this);
 #endif
         asyncstart = false;
         allowspill = _allowspill;
@@ -238,13 +238,13 @@ public:
     ~ThorLookaheadCache()
     {
         if (!thread.join(1000*60))
-            ActPrintLogEx(&activity.queryContainer(), thorlog_all, MCuserWarning, "ThorLookaheadCache join timedout");
+            ActPrintLogEx(activity, thorlog_all, MCuserWarning, "ThorLookaheadCache join timedout");
     }
 
     void start()
     {
 #ifdef _FULL_TRACE
-        ActPrintLog(&activity, "ThorLookaheadCache start %x",(unsigned)(memsize_t)this);
+        ActPrintLog(activity, "ThorLookaheadCache start %x",(unsigned)(memsize_t)this);
 #endif
         stopped = false;
         asyncstart = notify&&notify->startAsync();
@@ -259,7 +259,7 @@ public:
     void stop()
     {
 #ifdef _FULL_TRACE
-        ActPrintLog(&activity, "ThorLookaheadCache stop %x",(unsigned)(memsize_t)this);
+        ActPrintLog(activity, "ThorLookaheadCache stop %x",(unsigned)(memsize_t)this);
 #endif
         if (!stopped) {
             running = false;
@@ -279,7 +279,7 @@ public:
             throw getexception.getClear();
         if (!row) {
 #ifdef _FULL_TRACE
-            ActPrintLog(&activity, "ThorLookaheadCache eos %x",(unsigned)(memsize_t)this);
+            ActPrintLog(activity, "ThorLookaheadCache eos %x",(unsigned)(memsize_t)this);
 #endif
         }
         return row.getClear();
@@ -526,7 +526,7 @@ bool checkSavedFileCRC(IFile * ifile, bool & timesDiffer, unsigned & storedCrc)
 
 
 
-static void _doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress)
+static void _doReplicate(CActivityBase &activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress)
 {
     StringBuffer primaryName;
     getPartFilename(partDesc, 0, primaryName);;
@@ -554,7 +554,7 @@ static void _doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICo
             {
                 Owned<IThorException> re = MakeActivityWarning(activity, e, "Failed to create replicate file '%s'", dstName.str());
                 e->Release();
-                activity->fireException(re);
+                activity.fireException(re);
             }
         }
         else // another primary
@@ -594,7 +594,7 @@ static void _doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICo
             catch (IException *)
             {
                 try { tmpIFile->remove(); }
-                catch (IException *e) { ActPrintLog(&activity->queryContainer(), e); e->Release(); }
+                catch (IException *e) { ActPrintLog(activity, e); e->Release(); }
                 throw;
             }
         }
@@ -625,15 +625,15 @@ void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc)
             }
             catch (IException *e)
             {
-                Owned<IThorException> re = MakeActivityException(activity, e, "Error cancelling backup '%s'", dstName.str());
-                ActPrintLog(&activity->queryContainer(), e);
+                Owned<IThorException> re = MakeActivityException(*activity, e, "Error cancelling backup '%s'", dstName.str());
+                ActPrintLog(*activity, e);
                 e->Release();
             }
         }
     }
 }
 
-void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress)
+void doReplicate(CActivityBase &activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress)
 {
     try
     {
@@ -643,7 +643,7 @@ void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFilePr
     {
         Owned<IThorException> e2 = MakeActivityWarning(activity, e, "doReplicate");
         e->Release();
-        activity->fireException(e2);
+        activity.fireException(e2);
     }
 }
 
@@ -707,7 +707,7 @@ public:
                 catch (IException *)
                 {
                     try { tmpIFile->remove(); }
-                    catch (IException *e) { ActPrintLog(&activity.queryContainer(), e); e->Release(); }
+                    catch (IException *e) { ActPrintLog(activity.queryContainer(), e); e->Release(); }
                 }
             }
             else
@@ -730,14 +730,14 @@ public:
             catch (IException *)
             {
                 try { primary->remove(); }
-                catch (IException *e) { ActPrintLog(&activity.queryContainer(), e); e->Release(); }
+                catch (IException *e) { ActPrintLog(activity.queryContainer(), e); e->Release(); }
                 throw;
             }
             primary->remove();
             fipScope.clear();
         }
         if (partDesc.numCopies()>1)
-            _doReplicate(&activity, partDesc, iProgress);
+            _doReplicate(activity, partDesc, iProgress);
     }
 // IFileIO impl.
     virtual size32_t read(offset_t pos, size32_t len, void * data) { return primaryio->read(pos, len, data); }
@@ -749,7 +749,7 @@ public:
     virtual void close() { primaryio->close(); }
 };
 
-IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, bool &compress, bool extend, ICompressor *ecomp, ICopyFileProgress *iProgress, bool direct, bool renameToPrimary, bool *aborted, StringBuffer *_outLocationName)
+IFileIO *createMultipleWrite(CActivityBase &activity, IPartDescriptor &partDesc, unsigned recordSize, bool &compress, bool extend, ICompressor *ecomp, ICopyFileProgress *iProgress, bool direct, bool renameToPrimary, bool *aborted, StringBuffer *_outLocationName)
 {
     StringBuffer outLocationNameI;
     StringBuffer &outLocationName = _outLocationName?*_outLocationName:outLocationNameI;
@@ -787,7 +787,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
         {
             compress = false;
             Owned<IThorException> e = MakeActivityWarning(activity, TE_LargeBufferWarning, "Could not write file '%s' compressed", outLocationName.str());
-            activity->fireException(e);
+            activity.fireException(e);
             fileio.setown(file->open(extend&&file->exists()?IFOwrite:IFOcreate)); 
         }
     }
@@ -796,20 +796,20 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     if (!fileio)
         throw MakeActivityException(activity, TE_FileCreationFailed, "Failed to create file for write (%s) error = %d", outLocationName.str(), GetLastError());
     ActPrintLog(activity, "Writing to file: %s", file->queryFilename());
-    return new CWriteHandler(*activity, partDesc, file, fileio, iProgress, direct, renameToPrimary, aborted);
+    return new CWriteHandler(activity, partDesc, file, fileio, iProgress, direct, renameToPrimary, aborted);
 }
 
-StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFilename, IPartDescriptor &partDesc, StringBuffer &filePath)
+StringBuffer &locateFilePartPath(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, StringBuffer &filePath)
 {
     unsigned location;
     OwnedIFile ifile;
-    if (globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(activity, partDesc, ifile, location, filePath):getBestFilePart(activity, partDesc, ifile, location, filePath, activity))
+    if (globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(activity, partDesc, ifile, location, filePath):getBestFilePart(activity, partDesc, ifile, location, filePath, &activity))
         ActPrintLog(activity, "reading physical file '%s' (logical file = %s)", filePath.str(), logicalFilename);
     else
     {
         StringBuffer locations;
         IException *e = MakeActivityException(activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", logicalFilename, getFilePartLocations(partDesc, locations).str(), GetLastError());
-        ActPrintLog(&activity->queryContainer(), e);
+        ActPrintLog(activity, e);
         throw e;
     }
     return filePath;

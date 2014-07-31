@@ -60,7 +60,7 @@ public:
         dataLinkStart();
         input = inputs.item(0);
         unsigned spillPriority = container.queryGrouped() ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
-        iLoader.setown(createThorRowLoader(*this, queryRowInterfaces(input), iCompare, unstable ? stableSort_none : stableSort_earlyAlloc, rc_mixed, spillPriority));
+        iLoader.setown(createThorRowLoader(*this, ::queryRowInterfaces(input), iCompare, unstable ? stableSort_none : stableSort_earlyAlloc, rc_mixed, spillPriority));
         startInput(input);
         eoi = false;
         if (container.queryGrouped())
@@ -156,7 +156,7 @@ public:
         if (ret && prev && icompare->docompare(prev, ret) > 0)
         {
             // MORE - better to give mismatching rows than indexes?
-            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %"RCPF"d,  %"RCPF"d))", getDataLinkCount(), getDataLinkCount()+1);
+            throw MakeActivityException(*this, TE_NotSorted, "detected incorrectly sorted rows (row %"RCPF"d,  %"RCPF"d))", getDataLinkCount(), getDataLinkCount()+1);
         }
         prev.set(ret);
         if (ret)
@@ -175,7 +175,7 @@ public:
         if (ret && prev && stepCompare->docompare(prev, ret, numFields) > 0)
         {
             // MORE - better to give mismatching rows than indexes?
-            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %"RCPF"d,  %"RCPF"d))", getDataLinkCount(), getDataLinkCount()+1);
+            throw MakeActivityException(*this, TE_NotSorted, "detected incorrectly sorted rows (row %"RCPF"d,  %"RCPF"d))", getDataLinkCount(), getDataLinkCount()+1);
         }
         prev.set(ret);
         if (ret)

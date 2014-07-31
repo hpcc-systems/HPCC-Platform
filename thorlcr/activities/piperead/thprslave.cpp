@@ -59,7 +59,7 @@ protected:
                     toread=max_len-sizeRead;
                 size32_t numRead = stream->read(toread, target+sizeRead);
                 if (numRead==(size32_t)-1) {
-                    ::ActPrintLog(parent, "read aborted");
+                    ::ActPrintLog(*parent, "read aborted");
                     numRead = 0;
                     sizeRead = 0;
                 }
@@ -79,7 +79,7 @@ protected:
         pipeCommand.setown(cmd);
         ActPrintLog("open: %s", cmd);
         if (!pipe->run(pipeTrace, cmd, globals->queryProp("@externalProgDir"), true, true, true, 0x10000)) // 64K error buffer
-            throw MakeActivityException(this, TE_FailedToCreateProcess, "Failed to create process in %s for : %s", globals->queryProp("@externalProgDir"), cmd);
+            throw MakeActivityException(*this, TE_FailedToCreateProcess, "Failed to create process in %s for : %s", globals->queryProp("@externalProgDir"), cmd);
         pipeFinished = false;
         registerSelfDestructChildProcess(pipe->getProcessHandle());
         pipeStream->setStream(pipe->getOutputStream());
@@ -115,7 +115,7 @@ protected:
                         e->Release();
                     }
                 }
-                throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());
+                throw MakeActivityException(*this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());
             }
         }
     }
@@ -464,7 +464,7 @@ public:
         if (wrexc)
             throw wrexc.getClear();
         if (retcode!=0 && !(flags & TPFnofail))
-            throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d", retcode);
+            throw MakeActivityException(*this, TE_PipeReturnedFailure, "Process returned %d", retcode);
     }
     virtual void kill()
     {
@@ -544,7 +544,7 @@ int PipeWriterThread::run()
     }
     catch (IException *e)
     {
-        ActPrintLog(&activity,e,"PipeWriterThread.3");
+        ActPrintLog(activity,e,"PipeWriterThread.3");
         if (exc.get())
             e->Release();
         else

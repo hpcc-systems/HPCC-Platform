@@ -71,7 +71,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
 void initMetaInfo(ThorDataLinkMetaInfo &info);
 class CThorDataLink : implements IThorDataLink
 {
-    CActivityBase *owner;
+    CActivityBase &owner;
     rowcount_t count, icount;
     unsigned outputId;
     unsigned limit;
@@ -135,7 +135,7 @@ protected:
 
 
 public:
-    CThorDataLink(CActivityBase *_owner) : owner(_owner)
+    CThorDataLink(CActivityBase *_owner) : owner(*_owner)
     {
         icount = count = 0;
     }
@@ -155,7 +155,7 @@ public:
         mb.append(count);
     }
 
-    unsigned __int64 queryTotalCycles() const { return ((CSlaveActivity *)owner)->queryTotalCycles(); }
+    unsigned __int64 queryTotalCycles() const { return ((CSlaveActivity &)owner).queryTotalCycles(); }
 
     inline rowcount_t getDataLinkGlobalCount()
     {
@@ -166,7 +166,7 @@ public:
         return icount; 
     } 
 
-    CActivityBase *queryFromActivity() { return owner; }
+    CActivityBase *queryFromActivity() { return &owner; }
 
     void initMetaInfo(ThorDataLinkMetaInfo &info); // for derived children to call from getMetaInfo
     static void calcMetaInfoSize(ThorDataLinkMetaInfo &info,IThorDataLink *input); // for derived children to call from getMetaInfo
@@ -201,12 +201,12 @@ IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity,IThorDataLink *
 
 bool isSmartBufferSpillNeeded(CActivityBase *act);
 
-StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFilename, IPartDescriptor &partDesc, StringBuffer &filePath);
-void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress=NULL);
+StringBuffer &locateFilePartPath(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, StringBuffer &filePath);
+void doReplicate(CActivityBase &activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress=NULL);
 void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc);
 
 interface IPartDescriptor;
-IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, bool &compress, bool extend, ICompressor *ecomp, ICopyFileProgress *iProgress, bool direct, bool renameToPrimary, bool *aborted, StringBuffer *_locationName=NULL);
+IFileIO *createMultipleWrite(CActivityBase &activity, IPartDescriptor &partDesc, unsigned recordSize, bool &compress, bool extend, ICompressor *ecomp, ICopyFileProgress *iProgress, bool direct, bool renameToPrimary, bool *aborted, StringBuffer *_locationName=NULL);
 
 
 #endif

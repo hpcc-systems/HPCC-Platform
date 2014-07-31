@@ -112,30 +112,32 @@ graph_decl void setIThorResource(IThorResource &r);
 interface IRowWriterMultiReader;
 interface IThorResult : extends IInterface
 {
+    virtual void reset() = 0;
     virtual IRowWriter *getWriter() = 0;
     virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) = 0;
     virtual IRowStream *getRowStream() = 0;
-    virtual IRowInterfaces *queryRowInterfaces() = 0;
-    virtual CActivityBase *queryActivity() = 0;
+    virtual IRowInterfaces *queryRowInterfaces() const = 0;
+    virtual ILWActivity &queryActivity() const = 0;
     virtual bool isDistributed() const = 0;
     virtual void serialize(MemoryBuffer &mb) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
     virtual const void * getLinkedRowResult() = 0;
+    virtual rowcount_t getResultCount() = 0;
 };
 
 class CActivityBase;
 // JCSMORE - based on IHThorGraphResults
 interface IThorGraphResults : extends IEclGraphResults
 {
-    virtual void clear() = 0;
     virtual IThorResult *getResult(unsigned id, bool distributed=false) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
-    virtual unsigned addResult(IThorResult *result) = 0;
-    virtual void setResult(unsigned id, IThorResult *result) = 0;
-    virtual unsigned count() = 0;
-    virtual void setOwner(activity_id id) = 0;
-    virtual activity_id queryOwnerId() const = 0;
+    virtual IThorResult *createResult(ILWActivity &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false) = 0;
+    virtual IThorResult *createGraphLoopResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual void clearResults() = 0;
+    virtual void setResultsOwner(activity_id _ownerId) = 0;
+    virtual unsigned getResultCount() const = 0;
+    virtual graph_id queryGraphId() const = 0;
 };
 
 class CGraphBase;
@@ -244,8 +246,36 @@ typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGra
 typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> CGraphArrayCopyIterator;
 
 class CJobBase;
-class graph_decl CGraphElementBase : public CInterface, implements IInterface
+interface ILWActivity : extends IInterface
 {
+    virtual const activity_id &queryId() const = 0;
+    virtual ThorActivityKind queryKind() const = 0;
+    virtual graph_id queryGraphId() const = 0;
+    virtual CJobBase &queryJob() const = 0;
+    virtual bool doLogging() const = 0;
+    virtual bool isChild() const = 0;
+    virtual bool inGlobalGraph() const = 0;
+    virtual StringBuffer &getEclText(StringBuffer &ecl) const = 0;
+    virtual bool getOptBool(const char *prop, bool defVal=false) const = 0;
+    virtual int getOptInt(const char *prop, int defVal=0) const = 0;
+    virtual __int64 getOptInt64(const char *prop, __int64 defVal=0) const = 0;
+    virtual unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }
+    virtual unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return (unsigned __int64)getOptInt64(prop, defVal); }
+    virtual unsigned queryMaxCores() const = 0;
+    virtual IRowInterfaces *queryRowInterfaces() = 0;
+    virtual IPropertyTree &queryXGMML() const = 0;
+    virtual ILWActivity *clone() = 0;
+};
+
+class graph_decl CGraphElementBase : public CInterface, implements IRowInterfaces, implements ILWActivity
+{
+    Owned<IEngineRowAllocator> rowAllocator;
+    Owned<IOutputRowSerializer> rowSerializer;
+    Owned<IOutputRowDeserializer> rowDeserializer;
+    CSingletonLock CABallocatorlock;
+    CSingletonLock CABserializerlock;
+    CSingletonLock CABdeserializerlock;
+
 protected:
     CriticalSection crit;
     Owned<IHThorArg> baseHelper;
@@ -260,6 +290,7 @@ protected:
     Owned<IThorBoundLoopGraph> loopGraph; // really only here as master and slave derivatives set/use
     MemoryBuffer createCtxMb, startCtxMb;
     bool haveCreateCtx, haveStartCtx;
+    unsigned maxCores; // NB: only used by acts that sort at the moment
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -309,15 +340,13 @@ public:
     bool isPrepared() const { return prepared; }
 
     CGraphBase &queryOwner() const { return *owner; }
-    CGraphBase *queryResultsGraph() const { return resultsGraph; }
+    IThorGraphResults *queryGraphResults() const;
     IThorGraphIterator *getAssociatedChildGraphs() const;
     IGraphTempHandler *queryTempHandler() const;
-    CJobBase &queryJob() const;
     unsigned getInputs() const { return inputs.ordinality(); }
     unsigned getOutputs() const { return outputs.ordinality(); }
     bool isSource() const { return isActivitySource(kind); }
     bool isSink() const { return sink; }
-    inline bool doLogging() const { return log; }
     inline void setLogging(bool _log) { log = _log; }
 
     // NB: in almost all cases queryLocal() == queryLocalData()
@@ -335,25 +364,46 @@ public:
     }
     IHThorArg *queryHelper() const { return baseHelper; }
 
-    IPropertyTree &queryXGMML() const { return *xgmml; }
     CActivityBase *queryActivity() const { return activity; }
     const activity_id &queryOwnerId() const { return ownerId; }
     void createActivity(size32_t parentExtractSz, const byte *parentExtract);
 //
     const ThorActivityKind getKind() const { return kind; }
-    const activity_id &queryId() const { return id; }
-    StringBuffer &getEclText(StringBuffer& dst) const
-    {
-        dst.append(eclText.get());
-        return dst;
-    }
     virtual bool prepareContext(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
 //
     virtual void initActivity();
     virtual CActivityBase *factory(ThorActivityKind kind) { assertex(false); return NULL; }
     virtual CActivityBase *factory() { return factory(getKind()); }
     virtual CActivityBase *factorySet(ThorActivityKind kind) { CActivityBase *_activity = factory(kind); activity.setown(_activity); return _activity; }
+
+// IRowInterfaces
+    virtual IEngineRowAllocator * queryRowAllocator();
+    virtual IOutputRowSerializer * queryRowSerializer();
+    virtual IOutputRowDeserializer * queryRowDeserializer();
+    virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
+    virtual unsigned queryActivityId() { return (unsigned)queryId(); }
     virtual ICodeContext *queryCodeContext();
+
+// ILWActivity
+    virtual const activity_id &queryId() const { return id; }
+    virtual ThorActivityKind queryKind() const { return getKind(); }
+    virtual graph_id queryGraphId() const;
+    virtual CJobBase &queryJob() const;
+    virtual bool doLogging() const { return log; }
+    virtual bool isChild() const;
+    virtual bool inGlobalGraph() const;
+    virtual StringBuffer &getEclText(StringBuffer& dst) const
+    {
+        dst.append(eclText.get());
+        return dst;
+    }
+    virtual bool getOptBool(const char *prop, bool defVal=false) const;
+    virtual int getOptInt(const char *prop, int defVal=0) const;
+    virtual __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
+    virtual unsigned queryMaxCores() const { return maxCores; }
+    virtual IRowInterfaces *queryRowInterfaces() { return this; }
+    virtual IPropertyTree &queryXGMML() const { return *xgmml; }
+    virtual ILWActivity *clone();
 };
 
 typedef CIArrayOf<CGraphElementBase> CGraphElementArray;
@@ -424,7 +474,7 @@ interface IGraphCallback
 
 class CJobBase;
 interface IPropertyTree;
-class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, implements IThorChildGraph, implements IExceptionHandler
+class graph_decl CGraphBase : public CInterface, implements IThorGraphResults, implements IThorChildGraph, implements IExceptionHandler
 {
     mutable CriticalSection crit;
     CriticalSection evaluateCrit;
@@ -559,7 +609,7 @@ public:
     CGraphBase(CJobBase &job);
     ~CGraphBase();
 
-    const void *queryFindParam() const { return &queryGraphId(); } // for SimpleHashTableOf
+    const void *queryFindParam() const { return &graphId; } // for SimpleHashTableOf
 
     virtual void init() { }
     void GraphPrintLog(const char *msg, ...) __attribute__((format(printf, 2, 3)));
@@ -661,7 +711,6 @@ public:
         xgmml->setPropBool("att[@name=\"rootGraph\"]/@value", tf);
     }
     const activity_id &queryParentActivityId() const { return parentActivityId; }
-    const graph_id &queryGraphId() const { return graphId; }
     void addChildGraph(CGraphBase &graph);
     unsigned queryChildGraphCount() { return childGraphs.ordinality(); }
     CGraphBase *getChildGraph(graph_id gid)
@@ -670,6 +719,7 @@ public:
         return LINK(childGraphsTable.find(gid));
     }
     IThorGraphIterator *getChildGraphs() const;
+    IThorGraphResults *queryGraphResults() const { return localResults; }
 
     void executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract);
     void doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies);
@@ -687,21 +737,23 @@ public:
     virtual void done();
     virtual void end();
     virtual void abort(IException *e);
-    virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler
     virtual bool fireException(IException *e);
 
+// IThorGraphResults
+    virtual const void * getLinkedRowResult(unsigned id);
     virtual IThorResult *getResult(unsigned id, bool distributed=false);
     virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-
-// IEclGraphResults
+    virtual IThorResult *createResult(ILWActivity &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createGraphLoopResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
-    virtual const void * getLinkedRowResult(unsigned id);
+    virtual void setResultsOwner(activity_id _ownerId) { throwUnexpected(); }
+    virtual void clearResults() { throwUnexpected(); }
+    virtual unsigned getResultCount() const { throwUnexpected(); }
+    virtual graph_id queryGraphId() const { return graphId; }
 
 // IThorChildGraph
 //  virtual void getResult(size32_t & retSize, void * & ret, unsigned id);
@@ -763,6 +815,7 @@ protected:
     unsigned maxActivityCores, globalMemorySize;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
+    Owned<IThorGraphResults> globalResults;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -872,6 +925,8 @@ public:
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
+    IThorGraphResults *queryGlobalResults() const { return globalResults; }
+    virtual IThorGraphResults *createThorGraphResults(graph_id gid) = 0;
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
@@ -893,15 +948,8 @@ public:
 
 interface IOutputMetaData;
 
-class graph_decl CActivityBase : public CInterface, implements IExceptionHandler, implements IRowInterfaces
+class graph_decl CActivityBase : public CInterface, implements IExceptionHandler, implements IRowInterfaces, implements ILWActivity
 {
-    Owned<IEngineRowAllocator> rowAllocator;
-    Owned<IOutputRowSerializer> rowSerializer;
-    Owned<IOutputRowDeserializer> rowDeserializer;
-    CSingletonLock CABallocatorlock;
-    CSingletonLock CABserializerlock;
-    CSingletonLock CABdeserializerlock;
-
 protected:
     CGraphElementBase &container;
     Linked<IHThorArg> baseHelper;
@@ -911,7 +959,6 @@ protected:
     size32_t parentExtractSz;
     const byte *parentExtract;
     bool receiving, cancelledReceive, reInit;
-    unsigned maxCores; // NB: only used by acts that sort at the moment
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
 public:
@@ -919,7 +966,6 @@ public:
     CActivityBase(CGraphElementBase *container);
     ~CActivityBase();
     CGraphElementBase &queryContainer() const { return container; }
-    CJobBase &queryJob() const { return container.queryJob(); }
     CGraphBase &queryGraph() const { return container.queryOwner(); }
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline bool queryAbortSoon() const { return abortSoon; }
@@ -931,7 +977,6 @@ public:
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     bool firstNode() { return 1 == container.queryJob().queryMyRank(); }
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJob().queryMyRank(); }
-    unsigned queryMaxCores() const { return maxCores; }
     IRowInterfaces *getRowInterfaces();
 
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) { }
@@ -952,22 +997,35 @@ public:
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
     void ActPrintLog(IException *e);
 
-// IExceptionHandler
-    bool fireException(IException *e);
     void processAndThrowOwnedException(IException * e) __attribute__((noreturn));
 
-    virtual IEngineRowAllocator * queryRowAllocator();  
-    virtual IOutputRowSerializer * queryRowSerializer(); 
-    virtual IOutputRowDeserializer * queryRowDeserializer(); 
-    virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
-    virtual unsigned queryActivityId() { return (unsigned)container.queryId(); }
-    virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
+// ILWActivity
+    virtual const activity_id &queryId() const { return container.queryId(); }
+    virtual ThorActivityKind queryKind() const { return container.getKind(); }
+    virtual graph_id queryGraphId() const { return queryGraph().queryGraphId(); }
+    virtual CJobBase &queryJob() const { return container.queryJob(); }
+    virtual bool doLogging() const { return container.doLogging(); }
+    virtual bool isChild() const { return NULL != container.queryOwner().queryOwner(); }
+    virtual bool inGlobalGraph() const { return container.queryOwner().isGlobal(); }
+    virtual StringBuffer &getEclText(StringBuffer &ecl) const { return container.getEclText(ecl); }
+    virtual bool getOptBool(const char *prop, bool defVal=false) const;
+    virtual int getOptInt(const char *prop, int defVal=0) const;
+    virtual __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
+    virtual unsigned queryMaxCores() const { return container.queryMaxCores(); }
+    virtual IRowInterfaces *queryRowInterfaces() { return &container; }
+    virtual IPropertyTree &queryXGMML() const { return container.queryXGMML(); }
+    virtual ILWActivity *clone() { return container.clone(); }
 
-    bool getOptBool(const char *prop, bool defVal=false) const;
-    int getOptInt(const char *prop, int defVal=0) const;
-    unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }
-    __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
-    unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return (unsigned __int64)getOptInt64(prop, defVal); }
+// IExceptionHandler
+    bool fireException(IException *e);
+
+// IRowInterfaces
+    virtual IEngineRowAllocator * queryRowAllocator() { return container.queryRowAllocator(); }
+    virtual IOutputRowSerializer * queryRowSerializer() { return container.queryRowSerializer(); }
+    virtual IOutputRowDeserializer * queryRowDeserializer() { return container.queryRowDeserializer(); }
+    virtual IOutputMetaData *queryRowMetaData() { return container.queryRowMetaData(); }
+    virtual unsigned queryActivityId() { return container.queryActivityId(); }
+    virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
 };
 
 interface IFileInProgressHandler : extends IInterface
@@ -1030,55 +1088,30 @@ protected:
         IMPLEMENT_IINTERFACE
 
         CThorUninitializedGraphResults(unsigned _id) { id = _id; }
+        virtual void reset() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual IRowWriter *getWriter() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual IRowStream *getRowStream() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
-        virtual IRowInterfaces *queryRowInterfaces() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
-        virtual CActivityBase *queryActivity() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual IRowInterfaces *queryRowInterfaces() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual ILWActivity &queryActivity() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual bool isDistributed() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void serialize(MemoryBuffer &mb) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getResult(size32_t & retSize, void * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getLinkedResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getDictionaryResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual const void * getLinkedRowResult() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual rowcount_t getResultCount() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
     };
     IArrayOf<IThorResult> results;
     CriticalSection cs;
+    graph_id gid;
     activity_id ownerId;
     void ensureAtLeast(unsigned id)
     {
         while (results.ordinality() < id)
             results.append(*new CThorUninitializedGraphResults(results.ordinality()));
     }
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CThorGraphResults(unsigned _numResults) { ensureAtLeast(_numResults); ownerId = 0; }
-    virtual void clear()
-    {
-        CriticalBlock procedure(cs);
-        results.kill();
-    }
-    virtual IThorResult *getResult(unsigned id, bool distributed)
-    {
-        CriticalBlock procedure(cs);
-        ensureAtLeast(id+1);
-        // NB: stream static after this, i.e. nothing can be added to this result
-        return LINK(&results.item(id));
-    }
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)
-    {
-        return createResult(activity, results.ordinality(), rowIf, distributed, spillPriority);
-    }
-    virtual unsigned addResult(IThorResult *result)
-    {
-        CriticalBlock procedure(cs);
-        unsigned id = results.ordinality();
-        setResult(id, result);
-        return id;
-    }
-    virtual void setResult(unsigned id, IThorResult *result)
+    void setResult(unsigned id, IThorResult *result)
     {
         CriticalBlock procedure(cs);
         ensureAtLeast(id);
@@ -1086,6 +1119,22 @@ public:
             results.replace(*LINK(result), id);
         else
             results.append(*LINK(result));
+    }
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CThorGraphResults(graph_id _gid) : gid(_gid) { ownerId = 0; }
+    virtual IThorResult *getResult(unsigned id, bool distributed)
+    {
+        CriticalBlock procedure(cs);
+        ensureAtLeast(id+1);
+        // NB: stream static after this, i.e. nothing can be added to this result
+        return LINK(&results.item(id));
+    }
+    virtual IThorResult *createResult(ILWActivity &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)
+    {
+        return createResult(activity, results.ordinality(), rowIf, distributed, spillPriority);
     }
     virtual unsigned count() { return results.ordinality(); }
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
@@ -1103,12 +1152,19 @@ public:
         Owned<IThorResult> result = getResult(id, true);
         return result->getLinkedRowResult();
     }
-
-    virtual void setOwner(activity_id _ownerId) { ownerId = _ownerId; }
-    virtual activity_id queryOwnerId() const { return ownerId; }
+    virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false) { throwUnexpected(); }
+    virtual IThorResult *createGraphLoopResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)  { throwUnexpected(); }
+    virtual void setResultsOwner(activity_id _ownerId) { ownerId = _ownerId; }
+    virtual void clearResults()
+    {
+        CriticalBlock procedure(cs);
+        results.kill();
+    }
+    virtual unsigned getResultCount() const { return results.ordinality(); }
+    virtual graph_id queryGraphId() const { return gid; }
 };
 
-extern graph_decl IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+extern graph_decl IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 
 class CGraphElementBase;

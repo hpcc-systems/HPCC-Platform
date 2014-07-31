@@ -51,9 +51,9 @@ public:
         patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchName));
         
         if (originalIndexFile->numParts() != patchFile->numParts())
-            throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());
+            throw MakeActivityException(*this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());
         if (originalIndexFile->querySuperFile() || patchFile->querySuperFile())
-            throw MakeActivityException(this, 0, "Patching super files not supported");
+            throw MakeActivityException(*this, 0, "Patching super files not supported");
         
         addReadFile(originalIndexFile);
         addReadFile(patchFile);
@@ -70,7 +70,7 @@ public:
         if (!local && width > 1)
             width--; // 1 part == No n distributed / Monolithic key
         if (width > container.queryJob().querySlaves())
-            throw MakeActivityException(this, 0, "Unsupported: keypatch(%s, %s) - Cannot patch a key that's wider(%d) than the target cluster size(%d)", originalIndexFile->queryLogicalName(), patchFile->queryLogicalName(), width, container.queryJob().querySlaves());
+            throw MakeActivityException(*this, 0, "Unsupported: keypatch(%s, %s) - Cannot patch a key that's wider(%d) than the target cluster size(%d)", originalIndexFile->queryLogicalName(), patchFile->queryLogicalName(), width, container.queryJob().querySlaves());
 
         IArrayOf<IGroup> groups;
         OwnedRoxieString outputName(helper->getOutputName());
@@ -177,7 +177,7 @@ public:
             OwnedRoxieString outputName(helper->getOutputName());
             Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputName, false, true);
             if (file)
-                throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
+                throw MakeActivityException(*this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
         }
     }
 };

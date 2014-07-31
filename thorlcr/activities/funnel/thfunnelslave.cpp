@@ -118,7 +118,7 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
                 funnel.fireException(e);
                 e->Release();
             }
-            ActPrintLog(&funnel.activity.queryContainer(), "%s: Read %"I64F"d records", idStr.get(), readThisInput);
+            ActPrintLog(funnel.activity, "%s: Read %"I64F"d records", idStr.get(), readThisInput);
         }
     };
 
@@ -597,7 +597,7 @@ public:
             if (err) {
                 eog = true;
                 rows.kill();
-                throw MakeActivityException(this, -1, "mismatched input row count for Combine");
+                throw MakeActivityException(*this, -1, "mismatched input row count for Combine");
             }
             if (eog) 
                 break;

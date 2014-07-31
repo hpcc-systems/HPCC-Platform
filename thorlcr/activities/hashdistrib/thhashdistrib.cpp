@@ -130,19 +130,19 @@ public:
         queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
         Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName);
         if (!file)
-            throw MakeActivityException(this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
+            throw MakeActivityException(*this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
         if (0 == file->numParts())
-            throw MakeActivityException(this, 0, "KeyedDistribute: Can't distribute based on an empty key: %s", scoped.str());
+            throw MakeActivityException(*this, 0, "KeyedDistribute: Can't distribute based on an empty key: %s", scoped.str());
 
         checkFormatCrc(this, file, helper->getFormatCrc(), true);
         Owned<IFileDescriptor> fileDesc = file->getFileDescriptor();
         Owned<IPartDescriptor> tlkDesc = fileDesc->getPart(fileDesc->numParts()-1);
         if (!tlkDesc->queryProperties().hasProp("@kind") || 0 != stricmp("topLevelKey", tlkDesc->queryProperties().queryProp("@kind")))
-            throw MakeActivityException(this, 0, "Cannot distribute using a non-distributed key: '%s'", scoped.str());
+            throw MakeActivityException(*this, 0, "Cannot distribute using a non-distributed key: '%s'", scoped.str());
         unsigned location;
         OwnedIFile iFile;
         StringBuffer filePath;
-        if (!getBestFilePart(this, *tlkDesc, iFile, location, filePath))
+        if (!getBestFilePart(*this, *tlkDesc, iFile, location, filePath))
             throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", file->queryLogicalName());
         OwnedIFileIO iFileIO = iFile->open(IFOread);
         assertex(iFileIO);
@@ -226,7 +226,7 @@ public:
                 for (i=0;i<n;i++) {
                     double r = ((double)sizes[i]-(double)avg)/(double)avg;
                     if ((r>=maxskew)||(-r>maxskew)) {
-                        throw MakeActivityException(this, TE_DistributeFailedSkewExceeded, "DISTRIBUTE maximum skew exceeded (node %d has %"I64F"d, average is %"I64F"d)",i+1,sizes[i],avg);
+                        throw MakeActivityException(*this, TE_DistributeFailedSkewExceeded, "DISTRIBUTE maximum skew exceeded (node %d has %"I64F"d, average is %"I64F"d)",i+1,sizes[i],avg);
                     }               
                 }
             }

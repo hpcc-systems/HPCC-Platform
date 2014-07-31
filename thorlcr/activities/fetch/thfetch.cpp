@@ -67,12 +67,12 @@ public:
                 free(ekey);
                 if (!encrypted)
                 {
-                    Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", helper->getFileName());
+                    Owned<IException> e = MakeActivityWarning(container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", helper->getFileName());
                     container.queryJob().fireException(e);
                 }
             }
             else if (encrypted)
-                throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fname.get());
+                throw MakeActivityException(*this, 0, "File '%s' was published as encrypted but no encryption key provided", fname.get());
             mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, fetchFile->querySuperFile()));
             mapping->serializeFileOffsetMap(offsetMapMb);
             addReadFile(fetchFile);

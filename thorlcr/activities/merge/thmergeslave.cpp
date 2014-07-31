@@ -80,7 +80,7 @@ public:
         void load()
         {
             bufpos += bufsize;
-            if (rank==parent->queryContainer().queryJob().queryJobComm().queryGroup().rank()) {
+            if (rank==parent->queryJob().queryJobComm().queryGroup().rank()) {
 #ifdef _FULL_TRACE
                 ::ActPrintLog(parent, "Merge cRemoteStream::load, get chunk from node %d (local) pos = %"I64F"d",rank,bufpos);
 #endif
@@ -92,7 +92,7 @@ public:
 #endif
                 CMessageBuffer mb;
                 mb.append(bufpos);
-                parent->queryContainer().queryJob().queryJobComm().sendRecv(mb, rank, tag);
+                parent->queryJob().queryJobComm().sendRecv(mb, rank, tag);
                 bufsize = mb.length();
                 CThorStreamDeserializerSource dsz(bufsize,mb.bufferBase());
                 while (!dsz.eos()) {
@@ -145,7 +145,7 @@ public:
 #endif
                 CMessageBuffer mb;
                 rank_t sender;
-                if (parent->queryContainer().queryJob().queryJobComm().recv(mb, RANK_ALL, tag, &sender)&&!stopped)  {
+                if (parent->queryJob().queryJobComm().recv(mb, RANK_ALL, tag, &sender)&&!stopped)  {
                     offset_t pos;
                     mb.read(pos);
 #ifdef _FULL_TRACE
@@ -172,7 +172,7 @@ public:
                     ::ActPrintLog(parent, "Merge cProvider replying size %d",mb.length());
 #endif
                     if (!stopped)
-                        parent->queryContainer().queryJob().queryJobComm().reply(mb);
+                        parent->queryJob().queryJobComm().reply(mb);
                 }
             }
 #ifdef _FULL_TRACE
@@ -184,7 +184,7 @@ public:
         {
             if (!stopped) {
                 stopped = true;
-                parent->queryContainer().queryJob().queryJobComm().cancel(RANK_ALL, tag);
+                parent->queryJob().queryJobComm().cancel(RANK_ALL, tag);
                 join();
             }
         }
@@ -215,13 +215,13 @@ public:
         mptag_t *intertags = new mptag_t[width];
         mb.read(sizeof(mptag_t)*width,intertags);
 
-        CThorKeyArray partition(*this, queryRowInterfaces(this),helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
+        CThorKeyArray partition(*this, ::queryRowInterfaces(this),helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
         partition.deserialize(mb,false);
         partition.calcPositions(tmpfile,sample);
         partitionpos = new offset_t[width];
         unsigned i;
         for (i=0;i<width;i++) {
-            streams.append(*new cRemoteStream(queryRowInterfaces(this),i,intertags[i],this));
+            streams.append(*new cRemoteStream(::queryRowInterfaces(this),i,intertags[i],this));
             partitionpos[i] = partition.getFilePos(i);
 #ifdef _FULL_TRACE
             if (i<width-1) {
@@ -363,7 +363,7 @@ public:
         offset_t end = partitionpos[idx];
         if (pos>=end)
             return 0;
-        Owned<IExtRowStream> rs = createRowStreamEx(tmpfile, queryRowInterfaces(this), pos, end); // this is not good
+        Owned<IExtRowStream> rs = createRowStreamEx(tmpfile, ::queryRowInterfaces(this), pos, end); // this is not good
         offset_t so = rs->getOffset();
         size32_t len = 0;
         size32_t chunksize = chunkmaxsize;
@@ -375,7 +375,7 @@ public:
             if (!r)
                 break;
             if (pos+l>end) {
-                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "overrun in GlobalMergeSlaveActivity::getRows(%u,%"I64F"d,%"I64F"d)",l,rs->getOffset(),end);
+                ActPrintLogEx(*this, thorlog_null, MCwarning, "overrun in GlobalMergeSlaveActivity::getRows(%u,%"I64F"d,%"I64F"d)",l,rs->getOffset(),end);
                 break; // don't think should happen
             }
             len = l;

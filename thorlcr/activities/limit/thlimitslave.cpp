@@ -211,7 +211,7 @@ class CSkipLimitSlaveActivity : public CLimitSlaveActivityBase
 
             // We used to warn if excessive buffering. I think there should be callback to signal,
             // Alternatively, could do via IDiskUsage whish smart buffer used to take...
-            //throw MakeActivityException(this, 0, "SkipLimit(%"ACTPF"d) exceeded activity buffering limit", container.queryId());
+            //throw MakeActivityException(*this, 0, "SkipLimit(%"ACTPF"d) exceeded activity buffering limit", container.queryId());
         }
         buf->flush();
         stopInput(count);

@@ -301,11 +301,11 @@ public:
             if (!doglobaljoin())
             {
                 Sleep(1000); // let original error through
-                throw MakeActivityException(this, TE_BarrierAborted, "JOIN: Barrier Aborted");
+                throw MakeActivityException(*this, TE_BarrierAborted, "JOIN: Barrier Aborted");
             }
         }
         if (!leftStream.get()||!rightStream.get())
-            throw MakeActivityException(this, TE_FailedToStartJoinStreams, "Failed to start join streams");
+            throw MakeActivityException(*this, TE_FailedToStartJoinStreams, "Failed to start join streams");
         joinhelper->init(leftStream, rightStream, ::queryRowAllocator(inputs.item(0)),::queryRowAllocator(inputs.item(1)),::queryRowMetaData(inputs.item(0)), &abortSoon);
     }
     void stopLeftInput()
@@ -470,8 +470,8 @@ public:
             primaryCollate = collate;
             primaryCollateUpper = collateupper;
         }
-        primaryRowIf.set(queryRowInterfaces(primaryInput));
-        secondaryRowIf.set(queryRowInterfaces(secondaryInput));
+        primaryRowIf.set(::queryRowInterfaces(primaryInput));
+        secondaryRowIf.set(::queryRowInterfaces(secondaryInput));
 
         OwnedConstThorRow partitionRow;
         rowcount_t totalrows;

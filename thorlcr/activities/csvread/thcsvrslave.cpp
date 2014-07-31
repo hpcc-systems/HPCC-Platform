@@ -73,7 +73,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 if (minRequired == maxRowSize)
                 {
                     OwnedRoxieString fileName(activity.helper->getFileName());
-                    throw MakeActivityException(&activity, 0, "File %s contained a line of length greater than %d bytes.", fileName.get(), minRequired);
+                    throw MakeActivityException(activity, 0, "File %s contained a line of length greater than %d bytes.", fileName.get(), minRequired);
                 }
                 if (minRequired >= maxRowSize/2)
                     minRequired = maxRowSize;
@@ -106,7 +106,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             {
                 iFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
                 if (!iFileIO)
-                    throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+                    throw MakeActivityException(activity, 0, "Failed to open block compressed file '%s'", filename.get());
                 checkFileCrc = false;
             }
             else
@@ -337,7 +337,7 @@ public:
                 {
                     unsigned lnum;
                     if (!superFDesc->mapSubPart(pnum, subFile, lnum))
-                        throw MakeActivityException(this, 0, "mapSubPart failed, file=%s, partnum=%d", logicalFilename.get(), pnum);
+                        throw MakeActivityException(*this, 0, "mapSubPart failed, file=%s, partnum=%d", logicalFilename.get(), pnum);
                     pnum = lnum;
                 }
                 if (pnum > localLastPart[subFile]) // don't think they can really be out of order

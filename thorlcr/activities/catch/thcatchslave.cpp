@@ -167,7 +167,7 @@ class CSkipCatchSlaveActivity : public CCatchSlaveActivityBase
         try
         {
             gathered = true;
-            Owned<IRowWriterMultiReader> overflowBuf = createOverflowableBuffer(*this, queryRowInterfaces(input), true);
+            Owned<IRowWriterMultiReader> overflowBuf = createOverflowableBuffer(*this, ::queryRowInterfaces(input), true);
             running = true;
             while (running)
             {
@@ -238,7 +238,7 @@ public:
                 }
             }
             catch (IException *_e) { e.setown(_e); }
-            catch (...) { throw MakeActivityException(this, 0, "Unknown exception caught"); }
+            catch (...) { throw MakeActivityException(*this, 0, "Unknown exception caught"); }
             if (e.get())
             {
                 eos = true;

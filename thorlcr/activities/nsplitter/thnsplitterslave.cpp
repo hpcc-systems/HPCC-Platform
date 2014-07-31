@@ -333,13 +333,13 @@ public:
                     {
                         StringBuffer tempname;
                         GetTempName(tempname,"nsplit",true); // use alt temp dir
-                        smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), outputs.ordinality(), queryRowInterfaces(input), &container.queryJob().queryIDiskUsage()));
+                        smartBuf.setown(createSharedSmartDiskBuffer(*this, tempname.str(), outputs.ordinality(), ::queryRowInterfaces(input), &container.queryJob().queryIDiskUsage()));
                         ActPrintLog("Using temp spill file: %s", tempname.str());
                     }
                     else
                     {
                         ActPrintLog("Spill is 'balanced'");
-                        smartBuf.setown(createSharedSmartMemBuffer(this, outputs.ordinality(), queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
+                        smartBuf.setown(createSharedSmartMemBuffer(*this, outputs.ordinality(), ::queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
                     }
                     // mark any unconnected outputs of smartBuf as already stopped.
                     ForEachItemIn(o, outputs)

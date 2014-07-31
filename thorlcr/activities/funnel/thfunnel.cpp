@@ -63,7 +63,7 @@ public:
             for (s=0; s<slaves; s++)
             {
                 if (!container.queryJob().queryJobComm().send(msg, ((rank_t) s+1), (mptag_t) replyTags.item(s), LONGTIMEOUT))
-                    throw MakeActivityException(this, 0, "Failed to give result to slave");
+                    throw MakeActivityException(*this, 0, "Failed to give result to slave");
             }
             if (readSome) // got some, have told slaves to ignore rest, so finish
                 break;

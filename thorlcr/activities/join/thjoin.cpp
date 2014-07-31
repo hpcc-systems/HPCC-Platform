@@ -163,7 +163,7 @@ public:
                 if (!container.queryLocalOrGrouped() && container.getKind() == TAKselfjoin)
                 {
                     if (betweenjoin) {
-                        throw MakeActivityException(this, -1, "SELF BETWEEN JOIN not supported"); // Gavin shouldn't generate
+                        throw MakeActivityException(*this, -1, "SELF BETWEEN JOIN not supported"); // Gavin shouldn't generate
                     }
                     Owned<IRowInterfaces> rowif = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryActivityId(),queryCodeContext());
                     ICompare *cmpleft = helper->queryCompareLeft();
@@ -184,7 +184,7 @@ public:
                             if (TE_SkewError == e->errorCode())
                             {
                                 StringBuffer s;
-                                Owned<IThorException> e2 = MakeActivityException(this, TE_JoinFailedSkewExceeded, "SELFJOIN failed. %s", e->errorMessage(s).str());
+                                Owned<IThorException> e2 = MakeActivityException(*this, TE_JoinFailedSkewExceeded, "SELFJOIN failed. %s", e->errorMessage(s).str());
                                 e->Release();
                                 fireException(e2);
                             }
@@ -212,7 +212,7 @@ public:
                             if (TE_SkewError == e->errorCode())
                             {
                                 StringBuffer s;
-                                Owned<IThorException> e2 = MakeActivityException(this, TE_JoinFailedSkewExceeded, "JOIN failed, skewed %s. %s", rightpartition?"RHS":"LHS", e->errorMessage(s).str());
+                                Owned<IThorException> e2 = MakeActivityException(*this, TE_JoinFailedSkewExceeded, "JOIN failed, skewed %s. %s", rightpartition?"RHS":"LHS", e->errorMessage(s).str());
                                 e->Release();
                                 fireException(e2);
                             }
@@ -239,7 +239,7 @@ public:
                                     {
                                         VStringBuffer s("JOIN failed, %s skewed, based on distribution of %s partition points. ", rightpartition?"LHS":"RHS", rightpartition?"RHS":"LHS");
                                         e->errorMessage(s);
-                                        Owned<IThorException> e2 = MakeActivityException(this, TE_JoinFailedSkewExceeded, "%s", s.str());
+                                        Owned<IThorException> e2 = MakeActivityException(*this, TE_JoinFailedSkewExceeded, "%s", s.str());
                                         e->Release();
                                         fireException(e2);
                                     }
@@ -271,7 +271,7 @@ public:
                             {
                                 VStringBuffer s("JOIN failed. %s skewed, based on distribution of presorted %s partition points. ", rightpartition?"LHS":"RHS", rightpartition?"RHS":"LHS");
                                 e->errorMessage(s);
-                                Owned<IThorException> e2 = MakeActivityException(this, TE_JoinFailedSkewExceeded, "%s", s.str());
+                                Owned<IThorException> e2 = MakeActivityException(*this, TE_JoinFailedSkewExceeded, "%s", s.str());
                                 e->Release();
                                 fireException(e2);
                             }
@@ -289,7 +289,7 @@ public:
             {
                 if (e->errorCode()!=MPERR_link_closed) 
                     throw;
-                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "WARNING: MPERR_link_closed in SortDone");
+                ActPrintLogEx(*this, thorlog_null, MCwarning, "WARNING: MPERR_link_closed in SortDone");
                 e->Release();
             }
             ::Release(imaster);
@@ -338,13 +338,13 @@ public:
             if (count >= selfJoinWarnLevel)
             {
                 selfJoinWarnLevel *= 2;
-                Owned<IException> e = MakeActivityWarning(this, -1, "SELFJOIN: Warning %d preliminary matches, join will take some time", count);
+                Owned<IException> e = MakeActivityWarning(*this, -1, "SELFJOIN: Warning %d preliminary matches, join will take some time", count);
                 CMasterActivity::fireException(e);
                 lastMsgTime = msTick();
             }
             else if (msTick() > lastMsgTime + MSGTIME)
             {
-                Owned<IException> e = MakeActivityWarning(this, -1, "SELFJOIN: Warning %d preliminary matches, join will take some time", count);
+                Owned<IException> e = MakeActivityWarning(*this, -1, "SELFJOIN: Warning %d preliminary matches, join will take some time", count);
                 CMasterActivity::fireException(e);
                 lastMsgTime = msTick();
             }

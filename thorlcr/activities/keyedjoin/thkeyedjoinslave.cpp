@@ -752,7 +752,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                 assertex(0 == prevVal);
                                 // I will not get anymore from 'sender', tell sender I've processed all and there will be no more results.
                                 if (!comm.send(msg, sender, resultMpTag, LONGTIMEOUT))
-                                    throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {3} - comm send failed");
+                                    throw MakeActivityException(owner, 0, "CKeyedFetchRequestProcessor {3} - comm send failed");
                                 if (0 == --endRequestsCount)
                                     break;
                                 continue;
@@ -859,7 +859,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                     replyRows.serialize(replyMb);
                                     replyRows.kill();
                                     if (!comm.send(replyMb, sender, resultMpTag, LONGTIMEOUT))
-                                        throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {1} - comm send failed");
+                                        throw MakeActivityException(owner, 0, "CKeyedFetchRequestProcessor {1} - comm send failed");
                                     replyMb.rewrite(sizeof(retCount));
                                 }
                             }
@@ -870,7 +870,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                 replyRows.serialize(replyMb);
                                 replyRows.kill();
                                 if (!comm.send(replyMb, sender, resultMpTag, LONGTIMEOUT))
-                                    throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {2} - comm send failed");
+                                    throw MakeActivityException(owner, 0, "CKeyedFetchRequestProcessor {2} - comm send failed");
                                 replyMb.rewrite(sizeof(retCount));
                             }
                         }
@@ -1019,7 +1019,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             {
                 CMessageBuffer msg;
                 if (!owner.container.queryJob().queryJobComm().send(msg, n+1, requestMpTag, LONGTIMEOUT))
-                    throw MakeActivityException(&owner, 0, "CKeyedFetchHandler::stop - comm send failed");
+                    throw MakeActivityException(owner, 0, "CKeyedFetchHandler::stop - comm send failed");
             }
         }
         void decPendingReplies(unsigned c=1)
@@ -1097,7 +1097,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                             total -= requests;
                             { CriticalUnblock ub(crit);
                                 if (!owner.container.queryJob().queryJobComm().send(msg, n+1, requestMpTag, LONGTIMEOUT))
-                                    throw MakeActivityException(&owner, 0, "CKeyedFetchHandler - comm send failed");
+                                    throw MakeActivityException(owner, 0, "CKeyedFetchHandler - comm send failed");
                             }
                             if (0 == total)
                                 break;
@@ -1265,7 +1265,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             }
             catch (IException *e)
             {
-                ::ActPrintLog(&owner, e);
+                ::ActPrintLog(owner, e);
                 throw;
             }
             return NULL;
@@ -1315,7 +1315,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                     memcpy(joinFieldsPtr, &fJoinFieldsRow, sizeof(const void *));
                                 }
 #ifdef TRACE_JOINGROUPS
-                                ::ActPrintLog(&owner, "CJoinGroup [result] %x from %d", currentJG, __LINE__);
+                                ::ActPrintLog(owner, "CJoinGroup [result] %x from %d", currentJG, __LINE__);
 #endif
                                 noteStats(partManager->querySeeks(), partManager->queryScans());
                                 size32_t lorsz = owner.keyLookupAllocator->queryOutputMeta()->getRecordSize(lookupRow.getSelf());
@@ -1402,7 +1402,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                 memcpy(joinFieldsPtr, &fJoinFieldsRow, sizeof(const void *));
                             }
 #ifdef TRACE_JOINGROUPS
-                            ::ActPrintLog(&owner, "CJoinGroup [end marker returned] %x from %d", currentJG, __LINE__);
+                            ::ActPrintLog(owner, "CJoinGroup [end marker returned] %x from %d", currentJG, __LINE__);
 #endif
                             noteStats(partManager->querySeeks(), partManager->queryScans());
                             currentJG = NULL;
@@ -1449,7 +1449,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             }
             catch (IException *e)
             {
-                ::ActPrintLog(&owner, e);
+                ::ActPrintLog(owner, e);
                 throw;
             }
             noteStats(partManager->querySeeks(), partManager->queryScans());
@@ -1758,7 +1758,7 @@ public:
         {
             inputHelper->queryOutputMeta()->toXML((byte *) jg->queryLeft(), xmlwrite);
         }
-        throw MakeActivityException(this, 0, "More than %d match candidates in keyed join for row %s", abortLimit, xmlwrite.str());
+        throw MakeActivityException(*this, 0, "More than %d match candidates in keyed join for row %s", abortLimit, xmlwrite.str());
     }
     bool checkAbortLimit(CJoinGroup *jg)
     {

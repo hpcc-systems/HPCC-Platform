@@ -78,7 +78,7 @@ public:
     {
         pipeCommand.setown(cmd);
         if(!pipe->run("PIPEWRITE", cmd, globals->queryProp("@externalProgDir"), true, false, true, 0x10000 )) // 64K error buffer
-            throw MakeActivityException(this, TE_FailedToCreateProcess, "PIPEWRITE: Failed to create process in %s for : %s", globals->queryProp("@externalProgDir"), cmd);
+            throw MakeActivityException(*this, TE_FailedToCreateProcess, "PIPEWRITE: Failed to create process in %s for : %s", globals->queryProp("@externalProgDir"), cmd);
         pipeOpen = true;
         registerSelfDestructChildProcess(pipe->getProcessHandle());
         writeTransformer->writeHeader(pipe);
@@ -112,7 +112,7 @@ public:
                     e->Release();
                 }
             }
-            throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());    
+            throw MakeActivityException(*this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());
         }
     }
     void process()

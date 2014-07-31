@@ -98,14 +98,14 @@ public:
             }
             catch (CATCHALL)
             {
-                Owned<IException> e = MakeActivityException(this, 0, "Unknown exception starting sort input");
+                Owned<IException> e = MakeActivityException(*this, 0, "Unknown exception starting sort input");
                 fireException(e);
                 barrier->cancel();
                 throw;
             }
             dataLinkStart();
             
-            Linked<IRowInterfaces> rowif = queryRowInterfaces(input);
+            Linked<IRowInterfaces> rowif = ::queryRowInterfaces(input);
             Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryActivityId(),queryCodeContext());
             sorter->Gather(
                 rowif,
@@ -122,7 +122,7 @@ public:
             input = NULL;
             if (abortSoon)
             {
-                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "MSortSlaveActivity::start aborting");
+                ActPrintLogEx(*this, thorlog_null, MCwarning, "MSortSlaveActivity::start aborting");
                 barrier->cancel();
                 return;
             }
@@ -135,7 +135,7 @@ public:
         }
         catch (CATCHALL)
         {
-            Owned<IException> e = MakeActivityException(this, 0, "Unknown exception gathering sort input");
+            Owned<IException> e = MakeActivityException(*this, 0, "Unknown exception gathering sort input");
             fireException(e);
             barrier->cancel();
             throw;
@@ -202,7 +202,7 @@ public:
 
 CActivityBase *createMSortSlave(CGraphElementBase *container)
 {
-    ActPrintLog(container, "MSortSlaveActivity::createMSortSlave");
+    ActPrintLog(*container, "MSortSlaveActivity::createMSortSlave");
     return new MSortSlaveActivity(container);
 }
 

@@ -89,18 +89,17 @@ public:
     bool            overflow;
     unsigned        scale;     // num times overflowed
     
-    CActivityBase *activity;
+    CActivityBase &activity;
     
     
-    CSortNode(CActivityBase *_activity, ICommunicator *comm,rank_t _rank, SocketEndpoint &sep,mptag_t _mpTagRPC, CSortMaster &_sorter) 
-        : sorter(_sorter)
+    CSortNode(CActivityBase &_activity, ICommunicator *comm,rank_t _rank, SocketEndpoint &sep,mptag_t _mpTagRPC, CSortMaster &_sorter)
+        : sorter(_sorter), activity(_activity)
     { 
         endpoint = sep; 
         mpport = getFixedPort(comm->queryGroup().queryNode(_rank).endpoint().port,TPORT_mp); // this is a bit odd 
         mpTagRPC = _mpTagRPC;
         state = NS_null;
         beat=0; 
-        activity = _activity;
         overflow = false;
         scale = 1;
         numrecs = 0;
@@ -188,8 +187,8 @@ struct PartitionInfo
 {
     size32_t guard;
     Linked<IRowInterfaces> prowif;
-    PartitionInfo(CActivityBase *_activity, IRowInterfaces *rowif)
-        : splitkeys(*_activity, rowif, true), prowif(rowif)
+    PartitionInfo(CActivityBase &_activity, IRowInterfaces *rowif)
+        : splitkeys(_activity, rowif, true), prowif(rowif)
     {
         nodes = NULL;
         mpports = NULL;
@@ -271,7 +270,7 @@ class CSortMaster: public IThorSorterMaster, public CSimpleInterface
 { 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CActivityBase *activity;
+    CActivityBase &activity;
     NodeArray slaves;
     bool sorted;
     rowcount_t total;
@@ -357,7 +356,7 @@ public:
     }
 
 
-    CSortMaster(CActivityBase *_activity) : activity(_activity)
+    CSortMaster(CActivityBase &_activity) : activity(_activity)
     {
         resultorderset=false;
         numnodes = 0;
@@ -475,7 +474,7 @@ public:
     {
         ActPrintLog(activity, "Sort Done in");
         synchronized proc(slavemutex);
-        if (activity->queryAbortSoon())
+        if (activity.queryAbortSoon())
             return;
 #ifdef CLOSE_IN_PARALLEL
         class casyncfor: public CAsyncFor
@@ -496,9 +495,9 @@ public:
             bool wait;
         private:
             NodeArray &slaves;
-        } afor(*activity, slaves);
+        } afor(activity, slaves);
         afor.For(slaves.ordinality(), CLOSE_IN_PARALLEL);
-        if (activity->queryAbortSoon())
+        if (activity.queryAbortSoon())
             return;
         afor.wait = true;
         afor.For(slaves.ordinality(), CLOSE_IN_PARALLEL);
@@ -541,7 +540,7 @@ public:
             CSortNode &slave = slaves.item(i);
             if (slave.numrecs==0)
                 continue;
-            CThorExpandingRowArray minmax(*activity, rowif, true);
+            CThorExpandingRowArray minmax(activity, rowif, true);
             void *p = NULL;
             size32_t retlen = 0;
             size32_t avrecsize=0;
@@ -608,7 +607,7 @@ public:
         unsigned averagesamples = OVERSAMPLE*numnodes;  
         rowcount_t averagerecspernode = (rowcount_t)(total/numnodes);
         CriticalSection asect;
-        CThorExpandingRowArray sample(*activity, rowif, true);
+        CThorExpandingRowArray sample(activity, rowif, true);
 #ifdef ASYNC_PARTIONING
         class casyncfor1: public CAsyncFor
         {
@@ -669,8 +668,8 @@ public:
         unsigned numsamples = sample.ordinality();
         offset_t ts=sample.serializedSize();
         estrecsize = numsamples?((size32_t)(ts/numsamples)):100;
-        sample.sort(*icompare, activity->queryMaxCores());
-        CThorExpandingRowArray mid(*activity, rowif, true);
+        sample.sort(*icompare, activity.queryMaxCores());
+        CThorExpandingRowArray mid(activity, rowif, true);
         if (numsamples) { // could shuffle up empty nodes here
             for (unsigned i=0;i<numsplits;i++) {
                 unsigned pos = (unsigned)(((count_t)numsamples*(i+1))/((count_t)numsplits+1));
@@ -792,12 +791,12 @@ public:
             return splitmap.getClear();
         }
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray emin(*activity, rowif, true);
-        CThorExpandingRowArray emax(*activity, rowif, true);
-        CThorExpandingRowArray totmid(*activity, rowif, true);
+        CThorExpandingRowArray emin(activity, rowif, true);
+        CThorExpandingRowArray emax(activity, rowif, true);
+        CThorExpandingRowArray totmid(activity, rowif, true);
         ECFarray = &totmid;
         ECFcompare = icompare;
-        CThorExpandingRowArray mid(*activity, rowif, true);
+        CThorExpandingRowArray mid(activity, rowif, true);
         unsigned i;
         unsigned j;
         for(i=0;i<numsplits;i++) {
@@ -968,8 +967,8 @@ public:
                     }
                 }
 
-                CThorExpandingRowArray newmin(*activity, rowif, true);
-                CThorExpandingRowArray newmax(*activity, rowif, true);
+                CThorExpandingRowArray newmin(activity, rowif, true);
+                CThorExpandingRowArray newmax(activity, rowif, true);
                 unsigned __int64 maxerror=0;
                 unsigned __int64 nodewanted = (stotal/numnodes); // Note scaled total
                 unsigned __int64 variancelimit = estrecsize?maxdeviance/estrecsize:0;
@@ -1117,7 +1116,7 @@ public:
         // I think this dependant on row being same format as meta
 
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray splits(*activity, auxrowif, true);
+        CThorExpandingRowArray splits(activity, auxrowif, true);
         char *s=cosortfilenames;
         unsigned i;
         for(i=0;i<numnodes;i++) {
@@ -1149,7 +1148,7 @@ public:
     {
         ActPrintLog(activity, "Previous partition");
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray splits(*activity, auxrowif, true);
+        CThorExpandingRowArray splits(activity, auxrowif, true);
         unsigned i;
         for(i=1;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
@@ -1196,7 +1195,7 @@ public:
             else if (skewWarning && cSkew > skewWarning)
             {
                 Owned<IThorException> e = MakeActivityWarning(activity, TE_SkewWarning, "Exceeded skew warning limit: %f, estimated skew: %f", skewWarning, cSkew);
-                activity->fireException(e);
+                activity.fireException(e);
             }
         }
         return NULL;
@@ -1293,7 +1292,7 @@ public:
                     }
                     if (!partitioninfo->splitkeys.checkSorted(icompare)) {
                         ActPrintLog(activity, "ERROR: Split keys out of order!");
-                        partitioninfo->splitkeys.sort(*icompare, activity->queryMaxCores());
+                        partitioninfo->splitkeys.sort(*icompare, activity.queryMaxCores());
                     }
                 }
                 timer.stop("Calculating split map");
@@ -1403,7 +1402,7 @@ public:
 #endif
 #ifdef USE_SAMPLE_PARTITIONING
                     if (usesampling) {
-                        ActPrintLog(activity, "Partioning using sampling failed, trying iterative partitioning"); 
+                        ActPrintLog(activity, "Partioning using sampling failed, trying iterative partitioning");
                         usesampling = false;
                         continue;
                     }
@@ -1463,7 +1462,7 @@ CriticalSection CSortMaster::ECFcrit;
 
 IThorSorterMaster *CreateThorSorterMaster(CActivityBase *activity)
 {
-    return new CSortMaster(activity);
+    return new CSortMaster(*activity);
 }
 
 
