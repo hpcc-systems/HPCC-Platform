@@ -406,8 +406,7 @@ OUTPUT(GoodGuys,NAMED('GoodGuys'));
     Sample” in which a statistically “random” (different from simply using the
     RANDOM() function) sample of records is generated from any dataset. The
     algorithm inmplemented in the following code example was provided by a
-    customer in one of our government agencies in Washington,
-    DC.</emphasis></para>
+    customer.</emphasis></para>
 
     <para>This code is implemented as a MACRO to allow multiple samples to be
     produced in the same workunit (contained in the SimpleRandomSamples.ECL
