@@ -87,7 +87,7 @@ extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext
 
 IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    Owned<IHqlScope> parentScope;
+    Linked<IHqlScope> parentScope = ctx.queryRepository()->queryRootScope();
     const char * item = attrname;
     loop
     {
@@ -107,16 +107,7 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
         if (!moduleName)
             return NULL;
 
-        OwnedHqlExpr resolved;
-        if (parentScope)
-        {
-            resolved.setown(parentScope->lookupSymbol(moduleName, lookupFlags, ctx));
-        }
-        else
-        {
-            resolved.setown(ctx.queryRepository()->queryRootScope()->lookupSymbol(moduleName, lookupFlags, ctx));
-        }
-
+        OwnedHqlExpr resolved = parentScope->lookupSymbol(moduleName, lookupFlags, ctx);
         if (!resolved || !dot)
             return resolved.getClear();
         IHqlScope * scope = resolved->queryScope();

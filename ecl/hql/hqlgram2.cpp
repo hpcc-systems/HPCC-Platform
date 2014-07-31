@@ -10060,7 +10060,17 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
             if (matched)
                 return matched.getClear();
         }
-        reportError(ERR_CANNOT_ACCESS_CONTAINER, errpos, "Cannot access container for Object '%s'", parentName);
+        else
+        {
+            //A null parent must be because it is within the global scope, or is the global scope
+            if (parentName)
+                return LINK(lookupCtx.queryRepository()->queryRootScope()->queryExpression());
+        }
+
+        if (parentName)
+            reportError(ERR_CANNOT_ACCESS_CONTAINER, errpos, "Cannot access container for Object '%s'", parentName);
+        else
+            reportError(ERR_CANNOT_ACCESS_CONTAINER, errpos, "Cannot access container for the root module");
         return NULL;
     }
 
