@@ -104,7 +104,7 @@ protected:
     Owned<IExtRowWriter> out;
     Owned<IFileIOStream> outraw;
     Owned<IPartDescriptor> partDesc;
-    StringAttr logicalFilename, fName;
+    StringAttr fName;
     CRC32 fileCRC;
     bool compress, grouped, calcFileCrc, rfsQueryParallel;
     offset_t uncompressedBytesWritten;

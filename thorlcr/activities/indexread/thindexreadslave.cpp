@@ -44,7 +44,7 @@ static IKeyManager *getKeyManager(IKeyIndex *keyIndex, IHThorIndexReadBaseArg *h
     return klManager.getClear();
 }
 
-static IKeyIndex *openKeyPart(CActivityBase *activity, const char *logicalFilename, IPartDescriptor &partDesc)
+static IKeyIndex *openKeyPart(CActivityBase *activity, IPartDescriptor &partDesc)
 {
     RemoteFilename rfn;
     partDesc.getFilename(0, rfn);
@@ -244,7 +244,7 @@ void CIndexPartHandlerHelper::setPart(IPartDescriptor *_partDesc, unsigned partN
 {
     reset();
     partDesc.set(_partDesc);
-    keyIndex.setown(openKeyPart(&activity, activity.logicalFilename.get(), *partDesc));
+    keyIndex.setown(openKeyPart(&activity, *partDesc));
     recSize = keyIndex->keySize(); 
     klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
     activity.setManager(klManager);
@@ -336,7 +336,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
                 Owned<IKeyIndexSet> keyIndexSet = createKeyIndexSet();
                 ForEachItemIn(p, activity.partDescs)
                 {
-                    keyIndex.setown(openKeyPart(&activity, activity.logicalFilename.get(), activity.partDescs.item(p)));
+                    keyIndex.setown(openKeyPart(&activity, activity.partDescs.item(p)));
                     keyIndexSet->addIndex(keyIndex.getClear());
                 }
                 klManager.setown(createKeyMerger(keyIndexSet, activity.fixedDiskRecordSize, activity.seekGEOffset, NULL));
@@ -344,7 +344,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
             }
             else
             {
-                keyIndex.setown(openKeyPart(&activity, activity.logicalFilename.get(), activity.partDescs.item(0)));
+                keyIndex.setown(openKeyPart(&activity, activity.partDescs.item(0)));
                 klManager.setown(createKeyManager(keyIndex, activity.fixedDiskRecordSize, NULL));
             }
             activity.helper->createSegmentMonitors(klManager);
@@ -361,7 +361,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
             {
                 activity.callback.clearManager();
                 klManager->releaseSegmentMonitors();
-                Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.logicalFilename.get(), activity.partDescs.item(p));
+                Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.partDescs.item(p));
                 klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
                 activity.setManager(klManager);
                 count += klManager->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
@@ -395,7 +395,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
                 {
                     activity.callback.clearManager();
                     klManager->releaseSegmentMonitors();
-                    Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.logicalFilename.get(), activity.partDescs.item(currentPart));
+                    Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.partDescs.item(currentPart));
                     klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
                     activity.setManager(klManager);
                 }
@@ -820,7 +820,7 @@ public:
             ForEachItemIn(p, partDescs)
             {
                 IPartDescriptor &partDesc = partDescs.item(p);
-                Owned<IKeyIndex> keyIndex = openKeyPart(this, logicalFilename.get(), partDesc);
+                Owned<IKeyIndex> keyIndex = openKeyPart(this, partDesc);
                 Owned<IKeyManager> klManager = getKeyManager(keyIndex, helper, fixedDiskRecordSize);
                 setManager(klManager);
                 while (klManager->lookup(true))
@@ -933,7 +933,7 @@ public:
             ForEachItemIn(p, partDescs)
             {
                 IPartDescriptor &partDesc = partDescs.item(p);
-                Owned<IKeyIndex> keyIndex = openKeyPart(this, logicalFilename.get(), partDesc);
+                Owned<IKeyIndex> keyIndex = openKeyPart(this, partDesc);
                 Owned<IKeyManager> klManager = getKeyManager(keyIndex, helper, fixedDiskRecordSize);
                 setManager(klManager);
                 if (helper->hasFilter())
