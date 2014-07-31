@@ -51,6 +51,9 @@
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
+#define MAX_STAT_LEVELS 3
+static const char * statNames[MAX_STAT_LEVELS] = { "Statistics", "Stats1", "Stats2" };
+
 static int workUnitTraceLevel = 1;
 
 static StringBuffer &getXPath(StringBuffer &wuRoot, const char *wuid)
@@ -571,7 +574,7 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
     mutable IArrayOf<IWUTimer> timers;
     mutable CachedTags<CLocalWUTimeStamp,IConstWUTimeStamp> timestamps;
     mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
-    mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics;
+    mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics[MAX_STAT_LEVELS];
     mutable Owned<IUserDescriptor> userDesc;
     Mutex locked;
     Owned<ISecManager> secMgr;
@@ -662,7 +665,7 @@ public:
     virtual IStringIterator & getTimers() const;
     virtual IConstWUTimerIterator & getTimerIterator() const;
     virtual IConstWUTimeStampIterator & getTimeStamps() const;
-    virtual IConstWUStatisticIterator & getStatistics() const;
+    virtual IConstWUStatisticIterator & getStatistics(unsigned maxNestingLevel) const;
     virtual IConstWUStatistic * getStatistic(const char * name) const;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const;
@@ -1081,8 +1084,8 @@ public:
             { return c->getTimerIterator(); }
     virtual IConstWUTimeStampIterator & getTimeStamps() const
             { return c->getTimeStamps(); }
-    virtual IConstWUStatisticIterator & getStatistics() const
-            { return c->getStatistics(); }
+    virtual IConstWUStatisticIterator & getStatistics(unsigned maxNestingLevel) const
+            { return c->getStatistics(maxNestingLevel); }
     virtual IConstWUStatistic * getStatistic(const char * name) const
             { return c->getStatistic(name); }
 
@@ -3064,8 +3067,8 @@ CLocalWorkUnit::~CLocalWorkUnit()
         variables.kill();
         timestamps.kill();
         appvalues.kill();
-        statistics.kill();
-
+        for (unsigned i = 0; i < MAX_STAT_LEVELS; ++i)
+            statistics[i].kill();
         userDesc.clear();
         secMgr.clear();
         secUser.clear();
@@ -5729,15 +5732,28 @@ mapEnums queryStatMeasure[] =
     { SMEASURE_TIME_NS, "ns" },
     { SMEASURE_COUNT, "cnt" },
     { SMEASURE_MEM_KB, "kb" },
-    { SMEASURE_MAX, NULL},
+    { SMEASURE_TIMESTAMP, "s" },
+    { SMEASURE_SIZE, NULL},
 };
 
-void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, const char * stat, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
+void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, const char * stat, const char * description, StatisticMeasure kind,
+	unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
 {
+	//MORE: This needs to move so it is inside an updateStatistics() call, so that updates to dali are batched
+	//MORE: We need to incrementally update *some* of the stats every 30s from thor
+	//MORE: We need to probably use an in memory hash table, but we also want the serialized form to be efficiently compressed.
     if (!wuScope) wuScope = "workunit";
 
+	const char * finger = wuScope;
+	unsigned colons = 0;
+	while ((finger = strchr(finger,':')) != NULL)
+	{
+		colons++;
+		finger++;
+	}
+
     //creator. scope and name must all be present, and must not contain semi colons.
-    assertex(creator && wuScope && stat);
+    assertex(creator && stat && colons < MAX_STAT_LEVELS);
     dbgassertex(!strchr(creator, ';') && !strchr(wuScope, ';') && !strchr(stat, ';'));
     if (count == 1 && maxValue < value)
         maxValue = value;
@@ -5746,7 +5762,7 @@ void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, co
     fullname.append(creator).append(";").append(wuScope).append(";").append(stat);
 
     StringBuffer xpath;
-    xpath.append("Statistic[@name=\"").append(fullname).append("\"]");
+    xpath.append(statNames[colons]).append("[@name=\"").append(fullname).append("\"]");
 
     CriticalBlock block(crit);
     IPropertyTree * stats = p->queryPropTree("Statistics");
@@ -5782,8 +5798,8 @@ void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, co
         if (maxValue)
             statTree->setPropInt64("@max", maxValue);
 
-        if (statistics.cached)
-            statistics.append(LINK(statTree));
+        if (statistics[colons].cached)
+            statistics[colons].append(LINK(statTree));
     }
     else
     {
@@ -5843,11 +5859,23 @@ IConstWUTimeStampIterator& CLocalWorkUnit::getTimeStamps() const
     return *new CArrayIteratorOf<IConstWUTimeStamp,IConstWUTimeStampIterator> (timestamps, 0, (IConstWorkUnit *) this);
 }
 
-IConstWUStatisticIterator& CLocalWorkUnit::getStatistics() const
+IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(unsigned maxNestingLevel) const
 {
     CriticalBlock block(crit);
-    statistics.load(p,"Statistics/*");
-    return *new CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> (statistics, 0, (IConstWorkUnit *) this);
+    if(maxNestingLevel > MAX_STAT_LEVELS)
+        maxNestingLevel = MAX_STAT_LEVELS;
+
+    Owned<IConstWUStatisticIterator> result = new CNullIteratorOf<IConstWUStatistic,IConstWUStatisticIterator>();
+    for(unsigned i = 0; i < maxNestingLevel; ++i)
+    {
+        StringBuffer elements = statNames[i];
+        elements.append("/*");
+        statistics[i].load(p,elements);
+        IConstWUStatisticIterator * next = new CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> (statistics[i], 0, (IConstWorkUnit *) this);
+
+        result.setown(new CCompoundIteratorOf <IConstWUStatistic,IConstWUStatisticIterator> ( result.getClear(), next) );
+    }
+    return *result.getClear();
 }
 
 IConstWUStatistic * CLocalWorkUnit::getStatisticByDescription(const char * desc) const
@@ -6608,7 +6636,9 @@ IConstWUActivityIterator& CLocalWorkUnit::getActivities() const
 {
     CriticalBlock block(crit);
     loadActivities();
-    return *new CArrayIteratorOf<IConstWUActivity,IConstWUActivityIterator> (activities, 0, (IConstWorkUnit *) this);
+    IConstWUActivityIterator * l = new CArrayIteratorOf<IConstWUActivity,IConstWUActivityIterator> (activities, 0, (IConstWorkUnit *) this);
+    IConstWUActivityIterator * r = new CArrayIteratorOf<IConstWUActivity,IConstWUActivityIterator> (activities, 0, (IConstWorkUnit *) this);
+    return * new CCompoundIteratorOf<IConstWUActivity,IConstWUActivityIterator>(l, r);
 }
 
 //=================================================================================================

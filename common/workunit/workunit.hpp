@@ -924,7 +924,7 @@ interface IConstWorkUnit : extends IInterface
     virtual IStringIterator & getTimers() const = 0;
     virtual IConstWUTimerIterator & getTimerIterator() const = 0;
     virtual IConstWUTimeStampIterator & getTimeStamps() const = 0;
-    virtual IConstWUStatisticIterator & getStatistics() const = 0;
+    virtual IConstWUStatisticIterator & getStatistics(unsigned maxNestingLevel) const = 0;
     virtual IConstWUStatistic * getStatistic(const char * name) const = 0;
     virtual IStringVal & getUser(IStringVal & str) const = 0;
     virtual IStringVal & getWuScope(IStringVal & str) const = 0;
