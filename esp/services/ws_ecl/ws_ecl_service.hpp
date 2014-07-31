@@ -92,6 +92,7 @@ class CWsEclService : public CInterface,
 {
 public:
     MapStringToMyClass<ISmartSocketFactory> connMap;
+    StringArray targets;
     StringAttr auth_method;
     StringAttr portal_URL;
     unsigned roxieTimeout;
