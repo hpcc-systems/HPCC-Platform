@@ -17,19 +17,25 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> Please include
-      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
-      line and reference the document name, page numbers, and current Version
-      Number in the text of the message.</para>
+      email to <email>docfeedback@hpccsystems.com</email> </para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
-      registered trademark of LexisNexis Risk Data Management Inc.</para>
+      of Reed Elsevier Properties Inc., used under license.</para>
+
+      <para> HPCC Systems is a registered trademark of LexisNexis Risk Data
+      Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. All names and
-      example data used in this manual are fictitious. Any similarity to
-      actual persons, living or dead, is purely coincidental.</para>
+      registered trademarks of their respective companies. </para>
+
+      <para>All names and example data used in this manual are fictitious. Any
+      similarity to actual persons, living or dead, is purely
+      coincidental.</para>
 
       <para></para>
     </legalnotice>
@@ -318,6 +324,7 @@
       measurement are relevant to your needs.</para>
 
       <!--INCLUDE-VM_STEPS-as-Sect2-->
+
       <!--H11780-->
 
       <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
@@ -474,12 +481,11 @@
 
       <!--INCLUDE-VM_STEPS-as-Sect2-->
 
-                  
-        <sect2 id="hpcc-2id">
-    <xi:include  href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
-                 xpointer="xpointer(/sect2/node())"  
-                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
-         </sect2>            
+      <sect2 id="hpcc-2id">
+        <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
+                    xpointer="xpointer(/sect2/node())"
+                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+      </sect2>
 
       <sect2>
         <title>Nagios Interface</title>
@@ -575,38 +581,37 @@
       <para>The HPCC Nagios package provides tools and utilities for
       generating Nagios configurations. These configurations check HPCC and
       perform some of the HPCC specific checks. HPCC Nagios installation is
-      provided on the HPCC Systems portal. </para>
+      provided on the HPCC Systems portal.</para>
 
       <sect2 id="HPCC_Nagios_Installation">
         <title>HPCC Nagios Installation Package</title>
 
         <para>To get the HPCC Nagios monitoring on your system you need the
         Installation package. Download the installation package from the HPCC
-        Systems portal. </para>
+        Systems portal.</para>
 
         <para>The HPCC Systems web portal is where you can find HPCC
-        resources, downloads, plug-ins, as well as helpful information.
-        </para>
+        resources, downloads, plug-ins, as well as helpful information.</para>
 
         <para><ulink
         url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/</ulink></para>
 
         <para>You can find the HPCC Monitoring and Reporting Installation
-        packages at: </para>
+        packages at:</para>
 
         <para><ulink
         url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/download/free-community-edition/monitoring</ulink></para>
 
         <para>Download the appropriate installation package for your operating
-        system. </para>
+        system.</para>
       </sect2>
 
       <sect2>
         <title>Install Nagios</title>
 
         <para>To Install Nagios for HPCC, you must have HPCC System platform
-        installed and also have the open-source Nagios package installed.
-        </para>
+        installed and also have the open-source Nagios package
+        installed.</para>
 
         <para><orderedlist>
             <listitem>
@@ -640,7 +645,7 @@
 
         <para>You can use some or all of the configurations. You can use the
         generated configurations, or you could merge them into any existing
-        Nagios configuration as needed. </para>
+        Nagios configuration as needed.</para>
 
         <para><orderedlist continuation="continues">
             <listitem>
@@ -648,9 +653,9 @@
               the Nagios configuration folders.</para>
 
               <para>You must restart Nagios for the new configuration to take
-              effect. </para>
+              effect.</para>
             </listitem>
-          </orderedlist> </para>
+          </orderedlist></para>
 
         <sect3>
           <title>Help</title>

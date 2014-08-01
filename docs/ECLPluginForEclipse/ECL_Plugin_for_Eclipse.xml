@@ -17,21 +17,27 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> Please include
-      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
-      line and reference the document name, page numbers, and current Version
-      Number in the text of the message.</para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
-      registered trademark of LexisNexis Risk Data Management Inc.</para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>Other products and services may be trademarks or registered
-      trademarks of their respective companies. All names and example data
-      used in this manual are fictitious. Any similarity to actual persons,
-      living or dead, is purely coincidental.</para>
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      Management Inc.</para>
 
-      <para><emphasis role="redbold"></emphasis></para>
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies.</para>
+
+      <para>All names and example data used in this manual are fictitious. Any
+      similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para><emphasis role="redbold"> </emphasis></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -383,10 +389,10 @@
           <listitem>
             <para>Expand the <emphasis role="bold">Install/Update</emphasis>
             branch on the left, then select <emphasis role="bold">Automatic
-            Updates</emphasis>. </para>
+            Updates</emphasis>.</para>
 
             <para>Check the <emphasis role="bold">Automatically find new
-            updates and notify me</emphasis> button. </para>
+            updates and notify me</emphasis> button.</para>
 
             <figure>
               <title>Automatic Update Settings</title>
