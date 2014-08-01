@@ -278,6 +278,9 @@
                      <xsl:for-each select="../Columns/Item[text()='State']">
                         <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='State']"/></th>
                      </xsl:for-each>
+                     <xsl:for-each select="../Columns/Item[text()='Roxie State']">
+                        <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='RoxieState']"/></th>
+                     </xsl:for-each>
                      <xsl:for-each select="../Columns/Item[text()='UpTime']">
                         <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='UpTime']"/></th>
                      </xsl:for-each>
@@ -291,7 +294,7 @@
                         </th>
                      </xsl:for-each>
                      <!--process disk storage next-->
-                     <xsl:for-each select="../Columns/Item[text()!='Processes' and text()!='Up Time' and not(contains(text(), 'Memory')) and not(starts-with(text(), 'CPU')) and text()!='State' and text()!='Condition' and text()!='UpTime' and text()!='Swap']">
+                     <xsl:for-each select="../Columns/Item[text()!='Processes' and text()!='Up Time' and not(contains(text(), 'Memory')) and not(starts-with(text(), 'CPU')) and text()!='State' and text()!='Roxie State' and text()!='Condition' and text()!='UpTime' and text()!='Swap']">
                         <th align="center"><xsl:value-of select="."/></th>
                      </xsl:for-each>
                      <!--process physical memory and swap next-->      
@@ -435,6 +438,21 @@
                                     </xsl:choose>
                             </td>
                    </xsl:if>
+                   <xsl:if test="../../Columns/Item[text()='Roxie State']">
+                       <xsl:if test="RoxieState">
+                           <td align="center">
+                               <xsl:if test="RoxieState != '' and RoxieState != 'ok'">
+                                   <xsl:attribute name="bgcolor">#FF8800</xsl:attribute>
+                               </xsl:if>
+                               <xsl:if test="RoxieStateDetails">
+                                   <xsl:attribute name="title">
+                                       <xsl:value-of select="RoxieStateDetails"/>
+                                   </xsl:attribute>
+                               </xsl:if>
+                               <xsl:value-of select="RoxieState"/>
+                           </td> 
+                       </xsl:if>
+                   </xsl:if>
                    <xsl:if test="../../Columns/Item[text()='UpTime']">                  
                         <td id="uptime_{position()}">
                             <xsl:choose>
@@ -515,7 +533,8 @@
      
      <xsl:for-each select="/GetMachineInfoResponse/Columns/Item">
           <xsl:variable name="text" select="text()"/>
-          <xsl:if test="$text!='Processes' and $text!='Up Time' and $text!='State' and $text!='Condition' and $text!='UpTime' and not(contains($text, 'Memory')) and not(starts-with($text, 'CPU')) and $text!='Swap'">
+          <xsl:if test="$text!='Processes' and $text!='Up Time' and $text!='State' and $text!='Roxie State' and $text!='Condition'
+             and $text!='UpTime' and not(contains($text, 'Memory')) and not(starts-with($text, 'CPU')) and $text!='Swap'">
              <xsl:variable name="storageNode" select="$storageInfo[($OS!=0 and Description=$text) or ($OS=0 and starts-with(Description,$text))]"/>
              <xsl:choose>
                 <xsl:when test="$storageNode">

@@ -110,6 +110,7 @@
 <st id='Refresh'>Frissítés</st>
 <st id='Rows'>sorok</st>
 <st id='RoxieServer'>Roxie Szerver</st>
+<st id='RoxieState'>Roxie State</st>
 <st id='SashaServers'>Sasha Szerverek</st>
 <st id='SchedulerProcess'>Ütemező</st>
 <st id='SecurityString'>Biztonsági karakterlánc</st>
