@@ -328,13 +328,14 @@ public:
             {
                 if (str_val_)
                 {
-                    int len=strlen(str_val_);
-                    StrBuffer val;
-                    if (len>=2 && *str_val_=='\"')
-                        val.append(str_val_, 1, strlen(str_val_)-2);
-                    else
-                        val.append(str_val_);
-                    encodeXML(val.str(), out);
+                    const char *val = str_val_;
+                    int len=strlen(val);
+                    if (len>=2 && *val=='\"')
+                    {
+                        val++;
+                        len -= 2;
+                    }
+                    encodeXML(val, out, 0, len);
                 }
                 break;
             }
