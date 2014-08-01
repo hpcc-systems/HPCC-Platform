@@ -205,14 +205,13 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 timings.findstr(ave, 5);
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
                 {
-                    section.insert(0, "eclcc: ");
-
-                    unsigned __int64 mval = atoi64(total); // in milliseconds
-                    unsigned __int64 umax = atoi64(max); // in microseconds
+                    unsigned __int64 nval = atoi64(total) * 1000000; // in milliseconds
+                    unsigned __int64 nmax = atoi64(max) * 1000; // in microseconds
                     unsigned __int64 cnt = atoi64(count);
-                    const char * wuScope = section.str(); // should be different
-                    const char * description = section.str();
-                    updateWorkunitTiming(workunit, "eclcc", wuScope, description, milliToNano(mval), cnt, umax*1000);
+                    const char * scope = section.str();
+                    StatisticScopeType scopeType = SSTcompilestage;
+                    StatisticKind kind = StTimeElapsed;
+                    workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, false);
                 }
             }
             else
@@ -311,6 +310,8 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             return false;
         }
 
+        addTimeStamp(workunit, SSTglobal, NULL, StWhenCompiled);
+
         SCMStringBuffer mainDefinition;
         SCMStringBuffer eclQuery;
         query->getQueryText(eclQuery);
@@ -339,6 +340,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         }
         eclccCmd.appendf(" -o%s", wuid);
         eclccCmd.appendf(" -platform=%s", target);
+        eclccCmd.appendf(" --component=%s", queryStatisticsComponentName());
 
         Owned<IStringIterator> debugValues = &workunit->getDebugValues();
         ForEach (*debugValues)
@@ -354,7 +356,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         }
         try
         {
-            unsigned time = msTick();
+            cycle_t startCycles = get_cycles_now();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
             Owned<AbortWaiter> abortWaiter = new AbortWaiter(pipe, workunit);
             eclccCmd.insert(0, eclccProgName);
@@ -402,9 +404,10 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 Owned<IWUQuery> query = workunit->updateQuery();
                 associateLocalFile(query, FileTypeDll, realdllfilename, "Workunit DLL", crc);
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
-                time = msTick()-time;
+
+                cycle_t elapsedCycles = get_cycles_now() - startCycles;
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
-                    updateWorkunitTimeStat(workunit, "eclccserver", "workunit", "create workunit", NULL, milliToNano(time), 1, 0);
+                    updateWorkunitTimeStat(workunit, SSTcompilestage, "compile", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
 
                 workunit->commit();
                 return true;
@@ -740,6 +743,8 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
+    const char * processName = globals->queryProp("@name");
+    setStatisticsComponentName(SCTeclcc, processName, true);
     if (globals->getPropBool("@enableSysLog",true))
         UseSysLogForOperatorMessages();
 #ifndef _WIN32
@@ -761,7 +766,7 @@ int main(int argc, const char *argv[])
         initClientProcess(serverGroup, DCR_EclServer);
         openLogFile();
         SCMStringBuffer queueNames;
-        getEclCCServerQueueNames(queueNames, globals->queryProp("@name"));
+        getEclCCServerQueueNames(queueNames, processName);
         if (!queueNames.length())
             throw MakeStringException(0, "No clusters found to listen on");
         // The option has been renamed to avoid confusion with the similarly-named eclcc option, but

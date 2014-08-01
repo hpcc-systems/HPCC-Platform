@@ -1726,11 +1726,12 @@ public:
                 activityText.append("rowset");
             else
                 activityText.append("ac").append(allocatorId & MAX_ACTIVITY_ID);
-            target.addStatistic(NULL, activityText.str(), "roxiepeakmem", NULL, SMEASURE_MEM_KB, results[j]->usage / 1024, results[j]->allocations, 0, false);
+
+            target.addStatistic(SSTallocator, activityText.str(), StSizePeakMemory, NULL, results[j]->usage, results[j]->allocations, 0, false);
         }
         delete [] results;
 
-        target.addStatistic(NULL, NULL, "roxiepeakmem", NULL, SMEASURE_MEM_KB, totalUsed / 1024, 1, 0, false);
+        target.addStatistic(SSTglobal, NULL, StSizePeakMemory, NULL, totalUsed, 1, 0, false);
     }
 };
 
@@ -3266,7 +3267,7 @@ public:
         }
         if (map)
             map->reportStatistics(target, detail, allocatorCache);
-        target.addStatistic(NULL, NULL, "roxiehwm", NULL, SMEASURE_MEM_KB, peakPages * (HEAP_ALIGNMENT_SIZE / 1024), 1, 0, false);
+        target.addStatistic(SSTglobal, NULL, StSizePeakMemory, NULL, peakPages * HEAP_ALIGNMENT_SIZE, 1, 0, false);
     }
 
     void restoreLimit(unsigned numRequested)

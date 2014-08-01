@@ -1675,24 +1675,25 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     }
 
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         CompoundSourceTransformer transformer(*this, CSFpreload|csfFlags);
         resourced.setown(transformer.process(resourced));
         checkNormalized(ctx, resourced);
-        updateTimer("workunit;tree transform: optimize disk read", msTick()-time);
+        noteFinishedTiming("workunit;tree transform: optimize disk read", startCycles);
     }
 
     if (options.optimizeGraph)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         traceExpression("BeforeOptimizeSub", resourced);
         resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags()|HOOcompoundproject));
         traceExpression("AfterOptimizeSub", resourced);
-        updateTimer("workunit;optimize graph", msTick()-time);
+        noteFinishedTiming("workunit;optimize graph", startCycles);
     }
 
     traceExpression("BeforeResourcing Child", resourced);
-    unsigned time = msTick();
+
+    cycle_t startCycles = get_cycles_now();
     HqlExprCopyArray activeRows;
     gatherActiveCursors(ctx, activeRows);
     if (graphKind == no_loop)
@@ -1703,7 +1704,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     else
         resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
 
-    updateTimer("workunit;resource graph", msTick()-time);
+    noteFinishedTiming("workunit;resource graph", startCycles);
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
     

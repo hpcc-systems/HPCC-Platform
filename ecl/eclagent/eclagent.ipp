@@ -695,7 +695,7 @@ public:
     bool prepare(IAgentContext & agent, const byte * parentExtract, bool checkDependencies);
     IHThorInput * queryOutput(unsigned idx);
     void updateProgress(IAgentContext & agent);
-    void updateProgress(IWUGraphProgress &progress);
+    void updateProgress(IStatisticGatherer &progress);
 
     void ready() { if (!alreadyUpdated) activity->ready(); }
     void execute() { if (!alreadyUpdated) activity->execute(); }
@@ -850,6 +850,8 @@ private:
         IHThorInput  *in;
         EclSubGraph  *owner;
         size32_t    maxRowSize;
+        unsigned sourceId;
+        unsigned outputIndex;
 
         StringBuffer edgeId;
 
@@ -857,7 +859,7 @@ private:
         IMPLEMENT_IINTERFACE;
 
         LegacyInputProbe(IHThorInput *_in, EclSubGraph *_owner, unsigned _sourceId, int outputidx)
-            : in(_in), owner(_owner)
+            : in(_in), owner(_owner), sourceId(_sourceId), outputIndex(outputidx)
         {
             edgeId.append(_sourceId).append("_").append(outputidx);
             maxRowSize = 0;
@@ -899,10 +901,12 @@ private:
             return ret;
         }
 
-        virtual void updateProgress(IWUGraphProgress &progress) const
+        virtual void updateProgress(IStatisticGatherer &progress) const
         {
-            IPropertyTree &edge = progress.updateEdge(owner->id, edgeId);
-            edge.setPropInt64("@maxrowsize", maxRowSize);
+            {
+                StatsEdgeScope scope(progress, sourceId, outputIndex);
+                progress.addStatistic(StSizeMaxRowSize, maxRowSize);
+            }
             if (in)
                 in->updateProgress(progress);
         }   
@@ -941,7 +945,7 @@ public:
     void executeSubgraphs(const byte * parentExtract);
     EclGraphElement * idToActivity(unsigned id);
     void reset();
-    void updateProgress(IWUGraphProgress & progress);
+    void updateProgress(IStatisticGatherer & progress);
     void updateProgress();
     void doExecuteChild(const byte * parentExtract);
     IEclLoopGraph * resolveLoopGraph(unsigned id);
@@ -993,6 +997,8 @@ public:
     bool isSink;
     bool executed;
     bool created;
+    unsigned __int64 startGraphTime;
+    cycle_t elapsedGraphCycles;
     EclGraph &parent;
     EclSubGraph * owner;
     unsigned parentActivityId;

@@ -840,7 +840,7 @@ public:
         unsigned offset = 0;
 
 #ifdef _DEBUG
-        MTimeSection * mt = new MTimeSection(queryActiveTimer(), "ServerBroadcast", "SERVER BROADCAST"); // MORE is ServerBroadcast a scope (where) or a name (what)?
+        MTimeSection * mt = new MTimeSection(queryActiveTimer(), "ServerBroadcast"); // MORE is ServerBroadcast a scope (where) or a name (what)?
 #endif
 
         unsigned maxDataSz = MC_PACKET_SIZE-sizeof(MCPacketHeader);

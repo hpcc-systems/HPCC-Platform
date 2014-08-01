@@ -308,21 +308,18 @@ public:
             rhsProgress->set(node, rhsProgressCount);
         }
     }
-    virtual void getXGMML(unsigned idx, IPropertyTree *edge)
+    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
     {
-        CMasterActivity::getXGMML(idx, edge);
-
+        //This should be an activity stats
+        CMasterActivity::getEdgeStats(stats, idx);
         assertex(0 == idx);
-        StringBuffer label;
-        lhsProgress->processInfo();
-        label.append("@progressInput-").append(container.queryInput(0)->queryId());
-        edge->setPropInt64(label.str(), lhsProgress->queryTotal());
 
+        lhsProgress->processInfo();
+        stats.addStatistic(StNumLeftRows, lhsProgress->queryTotal());
         if (TAKselfjoin != container.getKind() && TAKselfjoinlight != container.getKind())
         {
             rhsProgress->processInfo();
-            label.clear().append("@progressInput-").append(container.queryInput(1)->queryId());
-            edge->setPropInt64(label.str(), rhsProgress->queryTotal());
+            stats.addStatistic(StNumRightRows, rhsProgress->queryTotal());
         }
     }
 #define MSGTIME (5*60*1000)

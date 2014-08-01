@@ -219,8 +219,8 @@ public:
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
     virtual unsigned queryOutputs() { return 1; }
-    virtual void updateProgress(IWUGraphProgress &progress) const;
-    virtual void updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph) const;
+    virtual void updateProgress(IStatisticGatherer &progress) const;
+    virtual void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const;
     unsigned __int64 queryProcessed() const { return processed; }
     virtual unsigned queryId() const { return activityId; }
     virtual ThorActivityKind getKind() const  { return kind; };
@@ -230,7 +230,7 @@ public:
     virtual bool isPassThrough();
 
 protected:
-    void updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const;
+    void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const;
 
 protected:
     ILocalEclGraphResults * resolveLocalQuery(__int64 graphId);
@@ -842,7 +842,7 @@ public:
     virtual void setInput(unsigned, IHThorInput *);
     virtual void ready();
     virtual void done();
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorSimpleActivityBase::updateProgress(progress);
         inputTrue->updateProgress(progress);
@@ -1270,7 +1270,7 @@ public:
     virtual bool isGrouped();
 
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorActivityBase::updateProgress(progress);
         if (input1)
@@ -1416,7 +1416,7 @@ public:
 
     //interface IHThorInput
     virtual const void * nextInGroup();
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorActivityBase::updateProgress(progress);
         if (input1)
@@ -1470,7 +1470,7 @@ public:
 
     //interface IHThorInput
     virtual const void * nextInGroup();
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorActivityBase::updateProgress(progress);
         if (input1)
@@ -1665,7 +1665,7 @@ public:
     virtual void setInput(unsigned, IHThorInput *);
 
     //interface IHThorInput
-    virtual void updateProgress(IWUGraphProgress &progress) const;
+    virtual void updateProgress(IStatisticGatherer &progress) const;
 };
 
 class CHThorCaseActivity : public CHThorMultiInputActivity
@@ -2668,7 +2668,7 @@ public:
 
     virtual void ready();
     virtual void done();
-    virtual void updateProgress(IWUGraphProgress &progress) const;
+    virtual void updateProgress(IStatisticGatherer &progress) const;
 
 protected:
     IMPLEMENT_IINTERFACE;
@@ -2705,7 +2705,7 @@ public:
     IHThorGraphResult * getResultRows(unsigned whichOutput);
 
 protected:
-    void updateOutputProgress(IWUGraphProgress &progress, const LibraryCallOutput & output, unsigned __int64 numProcessed) const;
+    void updateOutputProgress(IStatisticGatherer &progress, const LibraryCallOutput & output, unsigned __int64 numProcessed) const;
 
 protected:
     virtual void ready();

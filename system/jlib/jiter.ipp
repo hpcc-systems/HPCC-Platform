@@ -39,7 +39,7 @@ public:
   virtual IInterface &_query();
 };
 
-class jlib_decl CArrayIterator : public CArrayIteratorBase , implements IIterator
+class jlib_decl CArrayIterator : public CArrayIteratorBase, implements IIterator
 {
 public:
   IMPLEMENT_IINTERFACE;
@@ -72,16 +72,60 @@ public:
     ~COwnedArrayIterator();
 };
 
-class jlib_decl CNullIterator : public CInterface, public IIterator
+class jlib_decl CNullIterator : public CInterfaceOf<IIterator>
 {
 public:
-    IMPLEMENT_IINTERFACE
-
     virtual bool first() { return false; }
     virtual bool next()  { return false; }
     virtual bool isValid() { return false; }
     virtual IInterface & query() { IInterface * i = 0; return *i; }
     virtual IInterface & get()   { IInterface * i = 0; return *i; }
 };
+
+template<class X, class Y> class jlib_decl CNullIteratorOf : public CInterfaceOf<Y>
+{
+public:
+    virtual bool first() { return false; }
+    virtual bool next()  { return false; }
+    virtual bool isValid() { return false; }
+    virtual X & query() { X * i = 0; return *i; }
+    virtual X & get()   { X * i = 0; return *i; }
+};
+
+template<class X, class Y> class CCompoundIteratorOf : public CInterfaceOf<X>
+{
+public:
+    CCompoundIteratorOf(X * _left, X * _right) : left(_left), right(_right)
+    {
+        doneLeft = true;
+    }
+    virtual bool first()
+    {
+        doneLeft = false;
+        if (left->first())
+            return true;
+        doneLeft = true;
+        return right->first();
+    }
+    virtual bool next()
+    {
+        if (!doneLeft)
+        {
+            if (left->next())
+                return true;
+            doneLeft = true;
+            return right->first();
+        }
+        return right->next();
+    }
+    virtual bool isValid() { return doneLeft ? right->isValid() : left->isValid(); }
+    virtual Y & query() { return doneLeft ? right->query() : left->query();}
+
+protected:
+    Linked<X> left;
+    Linked<X> right;
+    bool doneLeft;
+};
+
 
 #endif

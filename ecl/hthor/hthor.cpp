@@ -211,27 +211,25 @@ void CHThorActivityBase::done()
         input->done();
 }
 
-void CHThorActivityBase::updateProgress(IWUGraphProgress &progress) const
+void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
 {
     updateProgressForOther(progress, activityId, subgraphId);
     if (input)
         input->updateProgress(progress);
 }
 
-void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph) const
+void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const
 {
     updateProgressForOther(progress, otherActivity, otherSubgraph, 0, processed);
 }
 
-void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const
+void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const
 {
-    StringBuffer path;
-    path.append(otherActivity).append("_").append(whichOutput);
-    IPropertyTree &edge = progress.updateEdge(otherSubgraph, path.str());
-    edge.setPropInt64("@count", numProcessed);
-    edge.setPropBool("@started", true);
-    edge.setPropBool("@stopped", true);
-    edge.setPropInt64("@slaves", 1);
+    StatsEdgeScope scope(progress, otherActivity, whichOutput);
+    progress.addStatistic(StNumRowsProcessed, numProcessed);
+    progress.addStatistic(StNumStarted, 1);  // wrong for an activity in a subquery
+    progress.addStatistic(StNumStopped, 1);
+    progress.addStatistic(StNumSlaves, 1);  // MORE: A bit pointless for an hthor graph
 }
 
 ILocalEclGraphResults * CHThorActivityBase::resolveLocalQuery(__int64 graphId)
@@ -6282,7 +6280,7 @@ void CHThorMultiInputActivity::setInput(unsigned index, IHThorInput *_input)
     }
 }
 
-void CHThorMultiInputActivity::updateProgress(IWUGraphProgress &progress) const
+void CHThorMultiInputActivity::updateProgress(IStatisticGatherer &progress) const
 {
     CHThorSimpleActivityBase::updateProgress(progress);
     ForEachItemIn(idx, inputs)
@@ -9545,7 +9543,7 @@ void LibraryCallOutput::done()
     result.clear();
 }
 
-void LibraryCallOutput::updateProgress(IWUGraphProgress &progress) const
+void LibraryCallOutput::updateProgress(IStatisticGatherer &progress) const
 {
     owner->updateOutputProgress(progress, *this, processed);
 }
@@ -9591,7 +9589,7 @@ IHThorInput * CHThorLibraryCallActivity::queryOutput(unsigned idx)
     return &outputs.item(idx);
 }
 
-void CHThorLibraryCallActivity::updateOutputProgress(IWUGraphProgress &progress, const LibraryCallOutput & _output, unsigned __int64 numProcessed) const
+void CHThorLibraryCallActivity::updateOutputProgress(IStatisticGatherer &progress, const LibraryCallOutput & _output, unsigned __int64 numProcessed) const
 {
     LibraryCallOutput & output = const_cast<LibraryCallOutput &>(_output);
     updateProgressForOther(progress, activityId, subgraphId, outputs.find(output), numProcessed);
@@ -9687,7 +9685,7 @@ public:
         throwUnexpected();
     }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
 //      CHThorSimpleActivityBase::updateProgress(progress);
         ForEachItemIn(i, inputs)

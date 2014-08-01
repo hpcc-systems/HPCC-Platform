@@ -39,8 +39,8 @@ public:
     virtual void init();
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave);
     virtual void validateFile(IDistributedFile *file) { }
-    void deserializeStats(unsigned node, MemoryBuffer &mb);
-    void getXGMML(unsigned idx, IPropertyTree *edge);
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb);
+    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx);
 };
 
 class CWriteMasterBase : public CMasterActivity
@@ -61,7 +61,7 @@ protected:
 public:
     CWriteMasterBase(CMasterGraphElement *info);
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb);
-    virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node);
+    virtual void getActivityStats(IStatisticGatherer & stats);
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void init();
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave);

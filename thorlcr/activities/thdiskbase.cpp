@@ -122,13 +122,12 @@ void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     inputProgress->set(node, progress);
 }
 
-void CDiskReadMasterBase::getXGMML(unsigned idx, IPropertyTree *edge)
+void CDiskReadMasterBase::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
 {
-    CMasterActivity::getXGMML(idx, edge);
+    //This should be an activity stats
+    CMasterActivity::getEdgeStats(stats, idx);
     inputProgress->processInfo();
-    StringBuffer label;
-    label.append("@inputProgress");
-    edge->setPropInt64(label.str(), inputProgress->queryTotal());
+    stats.addStatistic(StNumDiskRowsRead, inputProgress->queryTotal());
 }
 
 /////////////////
@@ -247,13 +246,13 @@ void CWriteMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     replicateProgress->set(node, repPerc);
 }
 
-void CWriteMasterBase::getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
+void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
 {
-    CMasterActivity::getXGMML(progress, node);
+    CMasterActivity::getActivityStats(stats);
     if (publishReplicatedDone)
     {
         replicateProgress->processInfo();
-        replicateProgress->addAttribute(node, "replicatedPercentage", replicateProgress->queryAverage());
+        stats.addStatistic(StPerReplicated, replicateProgress->queryAverage() * 10000);
     }
 }
 

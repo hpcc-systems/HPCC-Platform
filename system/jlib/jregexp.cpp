@@ -1300,6 +1300,23 @@ bool jlib_decl WildMatch(const char *src, const char *pat, bool nocase)
     return WildMatch(src,(size32_t)strlen(src),pat,(size32_t)strlen(pat),nocase);
 }
 
+bool jlib_decl containsWildcard(const char * pattern)
+{
+    loop
+    {
+        char c = *pattern++;
+        switch (c)
+        {
+        case 0:
+            return false;
+        case '?':
+        case '*':
+            return true;
+        }
+    }
+}
+
+
 static bool WildMatchNreplace ( const char *src, int srclen, int srcidx,
                                const char *pat, int patlen, int patidx,
                                int nocase,

@@ -486,7 +486,7 @@ void CMasterActivity::deserializeStats(unsigned node, MemoryBuffer &mb)
     CriticalBlock b(progressCrit); // don't think needed
     unsigned __int64 localTimeNs;
     mb.read(localTimeNs);
-    timingInfo.set(node, localTimeNs/1000000); // to milliseconds
+    timingInfo.set(node, localTimeNs);
     rowcount_t count;
     ForEachItemIn(p, progressInfo)
     {
@@ -495,16 +495,16 @@ void CMasterActivity::deserializeStats(unsigned node, MemoryBuffer &mb)
     }
 }
 
-void CMasterActivity::getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
+void CMasterActivity::getActivityStats(IStatisticGatherer & stats)
 {
-    timingInfo.getXGMML(node);
+    timingInfo.getStats(stats);
 }
 
-void CMasterActivity::getXGMML(unsigned idx, IPropertyTree *edge)
+void CMasterActivity::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
 {
     CriticalBlock b(progressCrit);
     if (progressInfo.isItem(idx))
-        progressInfo.item(idx).getXGMML(edge);
+        progressInfo.item(idx).getStats(stats);
 }
 
 void CMasterActivity::done()
@@ -2630,16 +2630,17 @@ void CMasterGraph::done()
                     {
                         wu.setown(&graph.queryJob().queryWorkUnit().lock());
                     }
-                    virtual void report(const char * stat, const char *description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
+                    virtual void report(const char * timerScope, const char *description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
                     {
                         StringBuffer timerStr(graph.queryJob().queryGraphName());
                         timerStr.append("(").append(graph.queryGraphId()).append("): ");
                         timerStr.append(description);
 
-                        StringBuffer wuScope;
-                        wuScope.append(graph.queryJob().queryGraphName()).append("(").append(graph.queryGraphId()).append(")");
-
-                        updateWorkunitTimeStat(wu, "thor", wuScope, stat, timerStr.str(), totaltime, count, maxtime);
+                        StringBuffer scope;
+                        //GH-.JCS is this correct queryGraphId() is a subgraph?
+                        formatGraphTimerScope(scope, graph.queryJob().queryGraphName(), graph.queryGraphId(), 0);
+                        scope.append(":").append(timerScope);
+                        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsection, scope, StTimeElapsed, timerStr.str(), totaltime, count, maxtime, false);
 
                     }
                 } wureport(*this);
@@ -2755,30 +2756,10 @@ IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowIn
 
 ///////////////////////////////////////////////////
 
-CThorStats::CThorStats(const char *_prefix)
+CThorStats::CThorStats(StatisticKind _kind) : kind(_kind)
 {
     unsigned c = queryClusterWidth();
     while (c--) counts.append(0);
-    if (_prefix)
-    {
-        prefix.set(_prefix);
-        StringBuffer tmp;
-        labelMin.set(tmp.append(_prefix).append("Min"));
-        labelMax.set(tmp.clear().append(_prefix).append("Max"));
-        labelMinSkew.set(tmp.clear().append(_prefix).append("MinSkew"));
-        labelMaxSkew.set(tmp.clear().append(_prefix).append("MaxSkew"));
-        labelMinEndpoint.set(tmp.clear().append(_prefix).append("MinEndpoint"));
-        labelMaxEndpoint.set(tmp.clear().append(_prefix).append("MaxEndpoint"));
-    }
-    else
-    {
-        labelMin.set("min");
-        labelMax.set("max");
-        labelMinSkew.set("minskew");
-        labelMaxSkew.set("maxskew");
-        labelMinEndpoint.set("minEndpoint");
-        labelMaxEndpoint.set("maxEndpoint");
-    }
 }
 
 void CThorStats::set(unsigned node, unsigned __int64 count)
@@ -2786,29 +2767,42 @@ void CThorStats::set(unsigned node, unsigned __int64 count)
     counts.replace(count, node);
 }
 
-void CThorStats::removeAttribute(IPropertyTree *node, const char *name)
-{
-    StringBuffer aName("@");
-    node->removeProp(aName.append(name).str());
-}
-
-void CThorStats::addAttribute(IPropertyTree *node, const char *name, unsigned __int64 val)
-{
-    StringBuffer aName("@");
-    node->setPropInt64(aName.append(name).str(), val);
-}
-
-void CThorStats::addAttribute(IPropertyTree *node, const char *name, const char *val)
-{
-    StringBuffer aName("@");
-    node->setProp(aName.append(name).str(), val);
-}
-
 void CThorStats::reset()
 {
     tot = max = avg = 0;
     min = (unsigned __int64) -1;
-    minNode = maxNode = hi = lo = maxNode = minNode = 0;
+    minNode = maxNode = maxSkew = minSkew = maxNode = minNode = 0;
+}
+
+void CThorStats::calculateSkew()
+{
+    if (max)
+    {
+        unsigned count = counts.ordinality();
+        double _avg = (double)tot/count;
+        if (_avg)
+        {
+            //MORE: Range protection on maxSkew?
+            maxSkew = (unsigned)(10000.0 * (((double)max-_avg)/_avg));
+            minSkew = (unsigned)(10000.0 * ((_avg-(double)min)/_avg));
+            avg = (unsigned __int64)_avg;
+        }
+    }
+}
+
+void CThorStats::tallyValue(unsigned __int64 thiscount, unsigned n)
+{
+    tot += thiscount;
+    if (thiscount > max)
+    {
+        max = thiscount;
+        maxNode = n;
+    }
+    if (thiscount < min)
+    {
+        min = thiscount;
+        minNode = n;
+    }
 }
 
 void CThorStats::processInfo()
@@ -2817,71 +2811,42 @@ void CThorStats::processInfo()
     ForEachItemIn(n, counts)
     {
         unsigned __int64 thiscount = counts.item(n);
-        tot += thiscount;
-        if (thiscount > max)
-        {
-            max = thiscount;
-            maxNode = n;
-        }
-        if (thiscount < min)
-        {
-            min = thiscount;
-            minNode = n;
-        }
+        tallyValue(thiscount, n);
     }
-    if (max)
-    {
-        unsigned count = counts.ordinality();
-        avg = tot/count;
-        if (avg)
-        {
-            hi = (unsigned)((100 * (max-avg))/avg);
-            lo = (unsigned)((100 * (avg-min))/avg);
-        }
-    }
+    calculateSkew();
 }
 
-void CThorStats::getXGMML(IPropertyTree *node, bool suppressMinMaxWhenEqual)
+void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual)
 {
     processInfo();
-    if (suppressMinMaxWhenEqual && (hi == lo))
+    //MORE: For most measures (not time stamps etc.) it would be sensible to output the total here....
+    if (!suppressMinMaxWhenEqual || (maxSkew != minSkew))
     {
-        removeAttribute(node, labelMin);
-        removeAttribute(node, labelMax);
+        stats.addStatistic((StatisticKind)(kind|StMinX), min);
+        stats.addStatistic((StatisticKind)(kind|StMaxX), max);
+        stats.addStatistic((StatisticKind)(kind|StAvgX), avg);
     }
-    else
+
+    if (maxSkew != minSkew)
     {
-        addAttribute(node, labelMin, min);
-        addAttribute(node, labelMax, max);
-    }
-    if (hi == lo)
-    {
-        removeAttribute(node, labelMinEndpoint);
-        removeAttribute(node, labelMaxEndpoint);
-        removeAttribute(node, labelMinSkew);
-        removeAttribute(node, labelMaxSkew);
-    }
-    else
-    {
-        addAttribute(node, labelMinSkew, lo);
-        addAttribute(node, labelMaxSkew, hi);
-        StringBuffer epStr;
-        addAttribute(node, labelMinEndpoint, querySlaveGroup().queryNode(minNode).endpoint().getUrlStr(epStr).str());
-        addAttribute(node, labelMaxEndpoint, querySlaveGroup().queryNode(maxNode).endpoint().getUrlStr(epStr.clear()).str());
+        stats.addStatistic((StatisticKind)(kind|StSkewMin), -(__int64)minSkew); // Save minimum as a negative value so consistent
+        stats.addStatistic((StatisticKind)(kind|StSkewMax), maxSkew);
+        stats.addStatistic((StatisticKind)(kind|StNodeMin), minNode);
+        stats.addStatistic((StatisticKind)(kind|StNodeMax), maxNode);
     }
 }
 
 ///////////////////////////////////////////////////
 
-CTimingInfo::CTimingInfo() : CThorStats("time")
+CTimingInfo::CTimingInfo() : CThorStats(StTimeLocalExecute)
 {
-    StringBuffer tmp;
-    labelMin.set(tmp.append(labelMin).append("Ms"));
-    labelMax.set(tmp.clear().append(labelMax).append("Ms"));
 }
 
 ///////////////////////////////////////////////////
 
+ProgressInfo::ProgressInfo() : CThorStats(StNumRowsProcessed)
+{
+}
 void ProgressInfo::processInfo() // reimplement as counts have special flags (i.e. stop/start)
 {
     reset();
@@ -2894,38 +2859,18 @@ void ProgressInfo::processInfo() // reimplement as counts have special flags (i.
         if (thiscount & THORDATALINK_STOPPED)
             stopcount++;
         thiscount = thiscount & THORDATALINK_COUNT_MASK;
-        tot += thiscount;
-        if (thiscount > max)
-        {
-            max = thiscount;
-            maxNode = n;
-        }
-        if (thiscount < min)
-        {
-            min = thiscount;
-            minNode = n;
-        }
+        tallyValue(thiscount, n);
     }
-    if (max)
-    {
-        unsigned count = counts.ordinality();
-        double _avg = (double)tot/count;
-        if (_avg)
-        {
-            hi = (unsigned)(100.0 * (((double)max-_avg)/_avg));
-            lo = (unsigned)(100.0 * ((_avg-(double)min)/_avg));
-            avg = (unsigned __int64)_avg;
-        }
-    }
+    calculateSkew();
 }
 
-void ProgressInfo::getXGMML(IPropertyTree *node)
+void ProgressInfo::getStats(IStatisticGatherer & stats)
 {
-    CThorStats::getXGMML(node, true);
-    addAttribute(node, "slaves", counts.ordinality());
-    addAttribute(node, "count", tot);
-    addAttribute(node, "started", startcount);
-    addAttribute(node, "stopped", stopcount);
+    CThorStats::getStats(stats, true);
+    stats.addStatistic(kind, tot);
+    stats.addStatistic(StNumSlaves, counts.ordinality());
+    stats.addStatistic(StNumStarted, startcount);
+    stats.addStatistic(StNumStopped, stopcount);
 }
 
 

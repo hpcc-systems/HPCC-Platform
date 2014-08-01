@@ -25,7 +25,9 @@ WsStatistic := RECORD
     unsigned8 value;
     unsigned8 count;
     unsigned8 maxValue;
+    string creatorType;
     string creator;
+    string scopeType;
     string scope;
     string name;
     string description;
@@ -158,8 +160,8 @@ EXPORT dataset(TimingRecord) WorkunitTimings(varstring wuid) :=
  * @param wuid          the name of the workunit
 */
 
-EXPORT dataset(StatisticRecord) WorkunitStatistics(varstring wuid, boolean includeActivities = false) :=
-  lib_workunitservices.WorkUnitServices.WorkunitStatistics(wuid, includeActivities);
+EXPORT dataset(StatisticRecord) WorkunitStatistics(varstring wuid, boolean includeActivities = false, varstring _filter = '') :=
+  lib_workunitservices.WorkUnitServices.WorkunitStatistics(wuid, includeActivities, _filter);
 
 
 END;

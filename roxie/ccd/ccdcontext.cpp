@@ -1242,17 +1242,27 @@ public:
             activityContext.getLogPrefix(prefix);
             CTXLOGa(LOG_TIMING, prefix.str(), text.str());
         }
-        if (graphProgress)
+        if (graphStats)
         {
-            IPropertyTree& nodeProgress = graphProgress->updateNode(activity->querySubgraphId(), activity->queryId());
-            nodeProgress.setPropInt64("@totalTime", (unsigned) (cycle_to_nanosec(_totalCycles)/1000));
-            nodeProgress.setPropInt64("@localTime", (unsigned) (cycle_to_nanosec(_localCycles)/1000));
+            IStatisticGatherer & builder = graphStats->queryStatsBuilder();
+            StatsSubgraphScope graphScope(builder, activity->querySubgraphId());
+
+            {
+                StatsActivityScope scope(builder, activity->queryId());
+                //MORE: This is potentially problematic if noteProcessed is called for multiple edges => check if totalCycles is 0.
+                //There should really be two separate functions - one to update activity statistics, and another for edge statistics
+                if (_totalCycles)
+                {
+                    builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(_totalCycles));
+                    builder.addStatistic(StTimeLocalExecute, cycle_to_nanosec(_localCycles));
+                }
+                //MORE: Should this be done via a callback instead - so the activity can add stats for when started + other interesting info
+            }
+
             if (_processed)
             {
-                StringBuffer edgeId;
-                edgeId.append(activity->queryId()).append('_').append(_idx);
-                IPropertyTree& edgeProgress = graphProgress->updateEdge(activity->querySubgraphId(), edgeId.str());
-                edgeProgress.setPropInt64("@count", _processed);
+                StatsEdgeScope scope(builder, activity->queryId(), _idx);
+                builder.addStatistic(StNumRowsProcessed, _processed);
             }
         }
     }
@@ -1395,7 +1405,7 @@ public:
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
     }
 
-    Owned<IWUGraphProgress> graphProgress; // could make local to endGraph and pass to reset - might be cleaner
+    Owned<IWUGraphStats> graphStats; // could make local to endGraph and pass to reset - might be cleaner
     virtual void endGraph(cycle_t startCycles, bool aborting)
     {
         if (graph)
@@ -1411,17 +1421,17 @@ public:
             {
                 progressWorkUnit.setown(&workUnit->lock());
                 progress.setown(progressWorkUnit->getGraphProgress(graph->queryName()));
-                graphProgress.setown(progress->update());
+                graphStats.setown(progress->update(SCTroxie, queryStatisticsComponentName(), 0));
 
                 const char * graphName = graph->queryName();
                 StringBuffer graphDesc;
                 formatGraphTimerLabel(graphDesc, graphName);
-                updateWorkunitTimeStat(progressWorkUnit, "roxie", graphName, "time", graphDesc, elapsedTime, 1, 0);
+                updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
             }
             graph->reset();
-            if (graphProgress)
+            if (graphStats)
             {
-                graphProgress.clear();
+                graphStats.clear();
                 progress.clear();
             }
             graph.clear();
@@ -2593,7 +2603,7 @@ protected:
     {
         WorkunitUpdate wu(&workUnit->lock());
         wu->subscribe(SubscribeOptionAbort);
-        wu->addTimeStamp("Roxie", GetCachedHostName(), "Started");
+        addTimeStamp(wu, SSTglobal, NULL, StWhenQueryStarted);
         if (!context->getPropBool("@outputToSocket", false))
             client = NULL;
         updateSuppliedXmlParams(wu);
@@ -2845,9 +2855,9 @@ public:
         {
             WorkunitUpdate w(&workUnit->lock());
             w->setState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
-            w->addTimeStamp("Roxie", GetCachedHostName(), "Finished");
+            addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
             ITimeReporter *timer = logctx.queryTimer();
-            updateWorkunitTimings(w, timer, "roxie");
+            updateWorkunitTimings(w, timer);
             logctx.dumpStats(w);
 
             WuStatisticTarget statsTarget(w, "roxie");

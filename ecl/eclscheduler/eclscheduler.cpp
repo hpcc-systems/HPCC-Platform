@@ -184,6 +184,7 @@ int main(int argc, const char *argv[])
     }
     openLogFile();
 
+    setStatisticsComponentName(SCThthor, globals->queryProp("@name"), true);
     if (globals->getPropBool("@enableSysLog",true))
         UseSysLogForOperatorMessages();
     const char *daliServers = globals->queryProp("@daliServers");

@@ -39,6 +39,8 @@
 #include "jstats.h"
 #include "jprop.hpp"
 
+#define GLOBAL_SCOPE "workunit"
+
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
 typedef wchar_t UChar;
@@ -710,8 +712,6 @@ enum WUSubscribeOptions
 
 
 
-interface IWUGraphProgress;
-interface IPropertyTree;
 enum WUGraphState
 {
     WUGraphUnknown = 0,
@@ -735,20 +735,28 @@ enum WUFileKind
 
 typedef unsigned __int64 WUGraphIDType;
 typedef unsigned __int64 WUNodeIDType;
+
+interface IWUGraphProgress;
+interface IWUGraphStats;
+interface IPropertyTree;
 interface IConstWUGraphProgress : extends IInterface
 {
-    virtual IPropertyTree * queryProgressTree() = 0;
+    virtual IPropertyTree * getProgressTree() = 0;
     virtual WUGraphState queryGraphState() = 0;
     virtual WUGraphState queryNodeState(WUGraphIDType nodeId) = 0;
     virtual IWUGraphProgress * update() = 0;
+    virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph) = 0;
     virtual unsigned queryFormatVersion() = 0;
 };
 
 
+interface IWUGraphStats : public IInterface
+{
+    virtual IStatisticGatherer & queryStatsBuilder() = 0;
+};
+
 interface IWUGraphProgress : extends IConstWUGraphProgress
 {
-    virtual IPropertyTree & updateEdge(WUGraphIDType nodeId, const char * edgeId) = 0;
-    virtual IPropertyTree & updateNode(WUGraphIDType nodeId, WUNodeIDType id) = 0;
     virtual void setGraphState(WUGraphState state) = 0;
     virtual void setNodeState(WUGraphIDType nodeId, WUGraphState state) = 0;
 };
@@ -781,17 +789,168 @@ interface IConstWUAppValueIterator : extends IScmIterator
     virtual IConstWUAppValue & query() = 0;
 };
 
+//More: Counts on files? optional target?
+/*
+ * Statistics are used to store timestamps, time periods, counts memory usage and any other interesting statistic
+ * which is collected as the query is built or executed.
+ *
+ * Each statistic has the following details:
+ *
+ * Creator      - Which component created the statistic.  This should be the name of the component instance i.e., "mythor_x_y" rather than the type ("thor").
+ *              - It can also be used to represent a subcomponent e.g., mythor:0 the master, mythor:10 means the 10th slave.
+ *              ?? Is the sub component always numeric ??
+ *
+ * Kind         - The specific kind of the statistic - uses a global enumeration.  (Engines can locally use different ranges of numbers and map them to the global enumeration).
+ *
+ * Measure      - What kind of statistic is it?  It can always be derived from the kind.  The following values are supported:
+ *                      time - elapsed time in nanoseconds
+ *                      timestamp/when - a point in time (?to the nanosecond?)
+ *                      count - a count of the number of occurrences
+ *                      memory/size - a quantity of memory (or disk) measured in kb
+ *                      load - measure of cpu activity (stored as 1/1000000 core)
+ *                      skew - a measure of skew. 10000 = perfectly balanced, range [0..infinity]
+ *
+ *Optional:
+ *
+ * Description  - Purely for display, calculated if not explicitly supplied.
+ * Scope        - Where in the execution of the task is statistic gathered?  It can have multiple levels (separated by colons), and statistics for
+ *                a given level can be retrieved independently.  The following scopes are supported:
+ *                "global" - the default if not specified.  Globally/within a workunit.
+ *                "wfid<n>" - within workflow item <n> (is this at all useful?)
+ *                "graphn[:sg<n>[:ac<n>"]"
+ *                Possibly additional levels to allow multiple instances of an activity when used in a graph etc.
+ *
+ * Target       - The target of the thing being monitored.  E.g., a filename.  ?? Is this needed?  Should this be combined with scope??
+ *
+ * Examples:
+ * creator(mythor),scope(),kind(TimeWall)            total time spend processing in thor            search ct(thor),scope(),kind(TimeWall)
+ * creator(mythor),scope(graph1),kind(TimeWall)    - total time spent processing a graph
+ * creator(mythor),scope(graph1:sg<subid>),kind(TimeElapsed)    - total time spent processing a subgraph
+ * creator(mythor),scope(graph1:sg<n>:ac<id>),kind(TimeElapsed) - time for activity from start to stop
+ * creator(mythor),scope(graph1:sg<n>:ac<id>),kind(TimeLocal)   - time spent locally processing
+ * creator(mythor),scope(graph1:sg<n>:ac<id>),kind(TimeWallRowRange) - time from first row to last row
+ * creator(mythor),scope(graph1:sg<n>:ac<id>),kind(WhenFirstRow) - timestamp for first row
+ * creator(myeclccserver@myip),scope(compile),kind(TimeWall)
+ * creator(myeclccserver@myip),scope(compile:transform),kind(TimeWall)
+ * creator(myeclccserver@myip),scope(compile:transform:fold),kind(TimeWall)
+ *
+ * Other possibilities
+ * creator(myesp),scope(filefile::abc::def),kind(NumAccesses)
+ *
+ * Configuring statistic collection:
+ * - Each engine allows the statistics being collected to be specified.  You need to configure the area (time/memory/disk/), the level of detail by component and location.
+ *
+ * Some background notes:
+ * - Start time and end time (time processing first and last record) is useful for detecting time skew/serial activities.
+ * - Information is lost if you only show final skew, rather than skew over time, but storing time series data is
+ *   prohibitive so we may need to create some derived metrics.
+ * - The engines need options to control what information is gathered.
+ * - Need to ensure clocks are synchronized for the timestamps to be useful.
+ *
+ * Some typical analysis we want to perform:
+ * - Activities that show significant skew between first (or last) record times between nodes.
+ * - Activities where the majority of the time is being spent.
+ *
+ * Filtering statistics - with control over who is creating it, what is being recorded, and
+ * [in order of importance]
+ * - which level of creator you are interested in [summary or individual nodes, or both]    (*;*:*)?
+ * - which level of scope (interested in activities, or just by graph, or both)
+ * - a particular kind of statistic
+ * - A particular creator (including fixed/wildcarded sub-component)
+ *
+ * => Provide a class for representing a filter, which can be used to filter when recording and retrieving.  Start simple and then extend.
+ * Text representation creator(*,*:*),creatordepth(n),creatorkind(x),scopedepth(n),scopekind(xxx,yyy),scope(*:23),kind(x).
+ *
+ * Examples
+ * kind(TimeElapsed),scopetype(subgraph)   - subgraph timings
+ * kind(Time*),scopedepth(1)&kind(TimeElapsed),scopedepth(2),scopetype(subgraph) - all legacy global timings.
+ * creatortype(thor),kind(TimeElapsed),scope("")   - how much time has been spent on thor? (Need to sum?)
+ * creator(mythor),kind(TimeElapsed),scope("")     - how much time has been spent on *this* thor.
+ * kind(TimeElapsed),scope("compiled")     - how much time has been spent on *this* thor.
+ *
+ * Need to efficiently
+ * - Get all (simple) stats for a graph/activities (creator(*),kind(*),scope(x:*)) - display in graph, finding hotspots
+ * - Get all stats for an activity (creator(*:*),measure(*:*),scope(x:y)) - providing details in a graph
+ * - Merge stats from multiple components
+ * - Merge stats from multiple runs?
+ *
+ * Bulk updates will tend to be for a given component and should only need minor processing (e.g. patch ids) or no processing to update/combine.
+ * - You need to be able to filter only a certain level of statistic - e.g., times for transforms, but not details of those transforms.
+ *
+ * => suggest store as
+ * stats[creatorDepth,scopeDepth][creator] { kind, scope, value, target }.  sorted by (scope, target, kind)
+ * - allows high level filtering by level
+ * - allows combining with minor updates.
+ * - possibly extra structure within each creator - maybe depending on the level of the scope
+ * - need to be sub-sorted to allow efficient merging between creators (e.g. for calculating skew)
+ * - possibly different structure when collecting [e.g., indexed by stat, or using a local stat mapping ] and storing.
+ *
+ * Use (local) tables to map scope->uid.  Possibly implicitly defined on first occurrence, or zip the entire structure.
+ *
+ * The progress information should be stored compressed, with min,max child ids to avoid decompressing
+ */
+
+// Should the statistics classes be able to be stored globally e.g., for esp and other non workunit contexts?
+
+/*
+ * Work out how to represent all of the existing statistics
+ *
+ * Counts of number of skips on an index:  kind(CountIndexSkips),measure(count),scope(workunit | filename | graph:activity#)
+ * Activity start time                     kind(WhenStart),measure(timestamp),scope(graph:activity#),creator(mythor)
+ *                                         kind(WhenFirstRow),measure(timestamp),scope(graph:activity#),creator(mythor:slave#)
+ * Number of times files accessed by esp:  kind(CountFileAccess),measure(count),scope(),target(filename);
+ * Elapsed/remaining time for sprays:
+ */
+
+/*
+ * Statistics and their kinds - prefixed indicates their type.  Note generally the same type won't be reused for two different things.
+ *
+ * TimeStamps:
+ *      StWhenGraphStart           - When a graph starts
+ *      StWhenFirstRow             - When the first row is processed by slave activity
+ *
+ * Time
+ *      StTimeParseQuery
+ *      StTimeTransformQuery
+ *      StTimeTransformQuery_Fold         - transformquery:fold?  effectively an extra level of detail on the kind.
+ *      StTimeTransformQuery_Normalize
+ *      StTimeElapsedExecuting      - Elapsed wall time between first row and last row.
+ *      StTimeExecuting             - Cpu time spent executing
+ *
+ *
+ * Memory
+ *      StSizeGeneratedCpp
+ *      StSizePeakMemory
+ *
+ * Count
+ *      StCountIndexSeeks
+ *      StCountIndexScans
+ *
+ * Load
+ *      StLoadWhileSorting          - Average load while processing a sort?
+ *
+ * Skew
+ *      StSkewRecordDistribution    - Skew on the records across the different nodes
+ *      StSkewExecutionTime         - Skew in the execution time between activities.
+ *
+ */
+
+
 interface IConstWUStatistic : extends IInterface
 {
-    virtual IStringVal & getFullName(IStringVal & str) const = 0;   // A unique name
-    virtual IStringVal & getCreator(IStringVal & str) const = 0;    // what component gathered the statistic e.g., roxie/eclcc/thorslave[ip]
-    virtual IStringVal & getDescription(IStringVal & str) const = 0;// Description suitable for displaying to the user
-    virtual IStringVal & getName(IStringVal & str) const = 0;       // what is the name of the statistic e.g., wall time
-    virtual IStringVal & getScope(IStringVal & str) const = 0;      // what scope is the statistic gathered over? e.g., workunit, wfid:n, graphn, graphn:m
-    virtual StatisticMeasure getKind() const = 0;
+    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const = 0;    // Description of the statistic suitable for displaying to the user
+    virtual IStringVal & getCreator(IStringVal & str) const = 0;        // what component gathered the statistic e.g., myroxie/eclserver_12/mythor:100
+    virtual IStringVal & getScope(IStringVal & str) const = 0;          // what scope is the statistic gathered over? e.g., workunit, wfid:n, graphn, graphn:m
+    virtual IStringVal & getFormattedValue(IStringVal & str) const = 0; // The formatted value for display
+    virtual StatisticMeasure getMeasure() const = 0;
+    virtual StatisticKind getKind() const = 0;
+    virtual StatisticCreatorType getCreatorType() const = 0;
+    virtual StatisticScopeType getScopeType() const = 0;
     virtual unsigned __int64 getValue() const = 0;
     virtual unsigned __int64 getCount() const = 0;
     virtual unsigned __int64 getMax() const = 0;
+    virtual unsigned __int64 getTimestamp() const = 0;  // time the statistic was created
+    virtual bool matches(const IStatisticsFilter * filter) const = 0;
 };
 
 interface IConstWUStatisticIterator : extends IScmIterator
@@ -862,17 +1021,10 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUResult * getTemporaryByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getTemporaries() const = 0;
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const = 0;
-    virtual unsigned getTimerCount(const char * timerName) const = 0;
-    virtual unsigned getTimerDuration(const char * timerName) const = 0;
-    virtual IStringVal & getTimerDescription(const char * timerName, IStringVal & str) const = 0;
-    virtual IStringVal & getTimeStamp(const char * name, const char * instance, IStringVal & str) const = 0;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const = 0;
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const = 0;
-    virtual IStringIterator & getTimers() const = 0;
-    virtual IConstWUTimerIterator & getTimerIterator() const = 0;
-    virtual IConstWUTimeStampIterator & getTimeStamps() const = 0;
-    virtual IConstWUStatisticIterator & getStatistics() const = 0;
-    virtual IConstWUStatistic * getStatistic(const char * name) const = 0;
+    virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
+    virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const = 0;
     virtual IStringVal & getUser(IStringVal & str) const = 0;
     virtual IStringVal & getWuScope(IStringVal & str) const = 0;
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;
@@ -906,7 +1058,6 @@ interface IConstWorkUnit : extends IInterface
     virtual unsigned getSourceFileCount() const = 0;
     virtual unsigned getResultCount() const = 0;
     virtual unsigned getVariableCount() const = 0;
-    virtual unsigned getTimerCount() const = 0;
     virtual unsigned getApplicationValueCount() const = 0;
     virtual unsigned getDebugAgentListenerPort() const = 0;
     virtual IStringVal & getDebugAgentListenerIP(IStringVal & ip) const = 0;
@@ -926,8 +1077,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void clearExceptions() = 0;
     virtual void commit() = 0;
     virtual IWUException * createException() = 0;
-    virtual void setTimeStamp(const char * name, const char * instance, const char * event) = 0;
-    virtual void addTimeStamp(const char * name, const char * instance, const char * event) = 0;
     virtual void addProcess(const char *type, const char *instance, unsigned pid, const char *log=NULL) = 0;
     virtual void setAction(WUAction action) = 0;
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite) = 0;
@@ -946,8 +1095,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setState(WUState state) = 0;
     virtual void setStateEx(const char * text) = 0;
     virtual void setAgentSession(__int64 sessionId) = 0;
-    virtual void setTimerInfo(const char * name, unsigned ms, unsigned count, unsigned __int64 max) = 0;
-    virtual void setStatistic(const char * creator_who, const char * wuScope_where, const char * stat_what, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge) = 0;
+    virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge) = 0;
     virtual void setTracingValue(const char * propname, const char * value) = 0;
     virtual void setTracingValueInt(const char * propname, int value) = 0;
     virtual void setUser(const char * value) = 0;
@@ -1156,10 +1304,9 @@ class WuStatisticTarget : implements IStatisticTarget
 public:
     WuStatisticTarget(IWorkUnit * _wu, const char * _defaultWho) : wu(_wu), defaultWho(_defaultWho) {}
 
-    virtual void addStatistic(const char * creator_who, const char * wuScope_where, const char * stat_what, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
+    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
     {
-        if (!creator_who) creator_who = defaultWho;
-        wu->setStatistic(creator_who, wuScope_where, stat_what, description, kind, value, count, maxValue, merge);
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, value, count, maxValue, merge);
     }
 
 protected:
@@ -1198,6 +1345,7 @@ extern WORKUNIT_API unsigned getEnvironmentHThorClusterNames(StringArray &eclAge
 extern WORKUNIT_API StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum=0, unsigned __int64 subId=0);
 extern WORKUNIT_API StringBuffer &formatGraphTimerScope(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId);
 extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphNum, unsigned &subId);
+extern WORKUNIT_API bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphNum);
 extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser);
@@ -1288,11 +1436,9 @@ extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unr
 extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc);
 
 interface ITimeReporter;
-extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, const char * component, const char * wuScope, const char * stat, const char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue);
-extern WORKUNIT_API void updateWorkunitTiming(IWorkUnit * wu, const char * component, const char * mangledScope, const char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue);
-extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer, const char * component);
-
-
+extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value);
+extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer);
+extern WORKUNIT_API IConstWUStatistic * getStatistic(IConstWorkUnit * wu, const IStatisticsFilter & filter);
 
 extern WORKUNIT_API const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name);
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid);
@@ -1301,5 +1447,7 @@ void WORKUNIT_API testWorkflow();
 #endif
 
 extern WORKUNIT_API const char * getWorkunitStateStr(WUState state);
+
+extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind);
 
 #endif

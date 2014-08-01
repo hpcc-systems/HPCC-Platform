@@ -158,6 +158,7 @@ public:
     void getApplicationValues(IEspECLWorkunit &info, unsigned flags);
     void getExceptions(IEspECLWorkunit &info, unsigned flags);
     void getSourceFiles(IEspECLWorkunit &info, unsigned flags);
+    unsigned getTimerCount();
     void getTimers(IEspECLWorkunit &info, unsigned flags);
     void getHelpers(IEspECLWorkunit &info, unsigned flags);
     void getGraphInfo(IEspECLWorkunit &info, unsigned flags);
@@ -187,7 +188,14 @@ public:
     void getEventScheduleFlag(IEspECLWorkunit &info);
     unsigned getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info);
     IDistributedFile* getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent);
-    void addTimerToList(SCMStringBuffer& name, unsigned count, unsigned duration, unsigned& totalThorTimerCount, StringBuffer& totalThorTimeValue, IArrayOf<IEspECLTimer>& timers);
+
+protected:
+    void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
+    unsigned getTotalThorTime();
+    unsigned getLegacyTotalThorTime();
+    bool hasSubGraphTimings();
+    bool legacyHasSubGraphTimings();
+    void legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
 
 public:
     IEspContext &context;

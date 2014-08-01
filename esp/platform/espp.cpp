@@ -21,6 +21,7 @@
 #endif
 //Jlib
 #include "jliball.hpp"
+#include "jstats.h"
 
 //CRT / OS
 #ifndef _WIN32
@@ -317,6 +318,9 @@ int init_main(int argc, char* argv[])
 
         const char* build_level = BUILD_LEVEL;
         setBuildLevel(build_level);
+
+        const char * processName = procpt->queryProp("@name");
+        setStatisticsComponentName(SCTesp, processName, true);
 
         openEspLogFile(envpt.get(), procpt.get());
 
