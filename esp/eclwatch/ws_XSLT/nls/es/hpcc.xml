@@ -110,6 +110,7 @@
 <st id='Refresh'>Actualizar</st>
 <st id='Rows'>Filas</st>
 <st id='RoxieServer'>Servidor de Roxie</st>
+<st id='RoxieState'>Roxie State</st>
 <st id='SashaServers'>Servidores de Sasha</st>
 <st id='SchedulerProcess'>Proceso de Planeador</st>
 <st id='SecurityString'>Texto de Seguridad</st>
