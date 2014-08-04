@@ -1966,7 +1966,7 @@ jlib_decl StringBuffer &appendJSONDataValue(StringBuffer& s, const char *name, u
 StringBuffer &appendJSONRealValue(StringBuffer& s, const char *name, double value)
 {
     appendJSONNameOrDelimit(s, name);
-    bool quoted = isnan(value) || isinf(value);
+    bool quoted = j_isnan(value) || j_isinf(value);
     if (quoted)
         s.append('"');
     s.append(value);
