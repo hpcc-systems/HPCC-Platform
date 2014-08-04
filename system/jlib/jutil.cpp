@@ -113,7 +113,7 @@ bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * dec
 
 bool j_isnan(double x)
 {
-#ifdef _WIN32
+#ifdef _MSC_VER
     return _isnan(x)!=0;
 #else
     return std::isnan(x);
@@ -122,9 +122,9 @@ bool j_isnan(double x)
 
 bool j_isinf(double x)
 {
-#ifdef _WIN32
+#ifdef _MSC_VER
     int fpv = _fpclass(x);
-    return (fpv==_FPCLASS_PINF || fpv==_FPCLASS_NINF)
+    return (fpv==_FPCLASS_PINF || fpv==_FPCLASS_NINF);
 #else
     return std::isinf(x);
 #endif
