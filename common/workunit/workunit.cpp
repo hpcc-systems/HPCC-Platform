@@ -10364,12 +10364,14 @@ void setQueryCommentForNamedQuery(const char *querySetName, const char *id, cons
     setQueryCommentForNamedQuery(queryRegistry, id, queryComment);
 }
 
-const char *queryIdFromQuerySetWuid(IPropertyTree *queryRegistry, const char *wuid, IStringVal &id)
+const char *queryIdFromQuerySetWuid(IPropertyTree *queryRegistry, const char *wuid, const char *queryName, IStringVal &id)
 {
     if (!queryRegistry)
         return NULL;
     StringBuffer xpath;
     xpath.appendf("Query[@wuid='%s']", wuid);
+    if (queryName && *queryName)
+        xpath.appendf("[@name='%s']", queryName);
     IPropertyTree *q = queryRegistry->queryPropTree(xpath.str());
     if (q)
     {
@@ -10378,10 +10380,10 @@ const char *queryIdFromQuerySetWuid(IPropertyTree *queryRegistry, const char *wu
     return id.str();
 }
 
-const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, IStringVal &id)
+const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, const char *queryName, IStringVal &id)
 {
     Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySetName, true);
-    return queryIdFromQuerySetWuid(queryRegistry, wuid, id);
+    return queryIdFromQuerySetWuid(queryRegistry, wuid, queryName, id);
 }
 
 extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unresolved, IWorkUnitFactory &workunitFactory, IConstWorkUnit &cw, IPropertyTree *queryset)
