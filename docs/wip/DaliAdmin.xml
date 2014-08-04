@@ -19,16 +19,24 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> Please include
-      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
-      line and reference the document name, page numbers, and current Version
-      Number in the text of the message.</para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. Other products,
-      logos, and services may be trademarks or registered trademarks of their
-      respective companies. All names and example data used in this manual are
-      fictitious. Any similarity to actual persons, living or dead, is purely
+      of Reed Elsevier Properties Inc., used under license.</para>
+
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      Management Inc.</para>
+
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies.</para>
+
+      <para>All names and example data used in this manual are fictitious. Any
+      similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
       <para></para>

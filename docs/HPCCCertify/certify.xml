@@ -17,19 +17,25 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> Please include
-      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
-      line and reference the document name, page numbers, and current Version
-      Number in the text of the message.</para>
+      email to <email>docfeedback@hpccsystems.com</email> </para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
-      registered trademark of LexisNexis Risk Data Management Inc.</para>
+      of Reed Elsevier Properties Inc., used under license. </para>
+
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. All names and
-      example data used in this manual are fictitious. Any similarity to
-      actual persons, living or dead, is purely coincidental.</para>
+      registered trademarks of their respective companies. </para>
+
+      <para>All names and example data used in this manual are fictitious. Any
+      similarity to actual persons, living or dead, is purely
+      coincidental.</para>
 
       <para><!--Release Information is used for running footers only. The ID attribute in version.xml is FooterInfo
 Date is used as the dateline/version number in the title page. The ID attribute in version.xml is DateVer--><!--
@@ -184,18 +190,15 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     </sect1>
   </chapter>
 
+  <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
+              xpointer="Cert_Prelight"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
-                xpointer="Cert_Prelight"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  <xi:include href="HPCCCertify/Cert-Mods/CertThorRox.xml"
+              xpointer="Generate_Certification_data_file"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="HPCCCertify/Cert-Mods/CertThorRox.xml"
-                xpointer="Generate_Certification_data_file"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-                
-   <xi:include href="HPCCCertify/Cert-Mods/CertSprayDespray.xml"
-                  xpointer="Cert_Spray_Despray"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
- 
+  <xi:include href="HPCCCertify/Cert-Mods/CertSprayDespray.xml"
+              xpointer="Cert_Spray_Despray"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>
