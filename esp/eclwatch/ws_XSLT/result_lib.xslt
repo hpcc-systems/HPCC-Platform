@@ -63,6 +63,7 @@
                         <xsl:with-param name="top" select="1"/>
                     </xsl:call-template>
                 </xsl:for-each>
+
             </xsl:when>
             <xsl:otherwise>
                 <xsl:if test="$wsecl">
@@ -238,10 +239,12 @@
         <xsl:param name="schema"/>
         <xsl:param name="node"/>
         <xsl:param name="height" select="1"/>
+        <xsl:param name="supportsAll" select="0"/>
             <xsl:variable name="name">
                 <xsl:call-template name="getMatchingName">
                     <xsl:with-param name="schema" select="."/>
                     <xsl:with-param name="parent" select="$node"/>
+                    <xsl:with-param name="supportsAll" select="$supportsAll"/>
                 </xsl:call-template>
             </xsl:variable>
             <xsl:choose>
@@ -289,12 +292,16 @@
                 <xsl:with-param name="height" select="$height"/>
             </xsl:call-template>
         </xsl:for-each>
+        <xsl:variable name="supportsAll" select="$schema/xs:complexType/xs:sequence/xs:element[not(@type) and not(node()) and @name='All']"/>
         <xsl:for-each select="$schema/xs:complexType/xs:sequence/xs:element">
-            <xsl:call-template name="grab-snodes-item">
-                <xsl:with-param name="schema" select="$schema"/>
-                <xsl:with-param name="node" select="$node"/>
-                <xsl:with-param name="height" select="$height"/>
-            </xsl:call-template>
+            <xsl:if test="@type or node() or @name!='All'">
+		    <xsl:call-template name="grab-snodes-item">
+		        <xsl:with-param name="schema" select="$schema"/>
+		        <xsl:with-param name="node" select="$node"/>
+		        <xsl:with-param name="height" select="$height"/>
+		        <xsl:with-param name="supportsAll" select="$supportsAll"/>
+		    </xsl:call-template>
+            </xsl:if>
         </xsl:for-each>
     </xsl:template>
     
@@ -389,10 +396,18 @@
             <xsl:param name="rowSchema"/>
             <xsl:param name="name"/>
             <xsl:param name="dname"/>
+            <xsl:param name="hasAll" select="0"/>
             <xsl:param name="matchingData"/>
             <xsl:param name="matchingData2"/>
             <xsl:choose>
-                <xsl:when test="$matchingData|$matchingData2">
+                <xsl:when test="$hasAll">
+                    <row level="{$level}" height="1">
+                        <data>
+                            <b>All</b>
+                       </data>
+                   </row>
+               </xsl:when>
+               <xsl:when test="$matchingData|$matchingData2">
                     <xsl:choose>
                         <xsl:when test="$rowSchema/@maxOccurs">
                               <xsl:call-template name="grab-dataset">
@@ -498,25 +513,30 @@
                         <xsl:with-param name="matchingData2" select="$data[not($matchingData)]/@*[name()=$dname]"/>
                     </xsl:call-template>
                 </xsl:for-each>
-                <xsl:for-each select="$schema/xs:complexType/xs:sequence/xs:element">
-                    <xsl:variable name="name" select="@name"/>
-                    <xsl:variable name="matchingData" select="$data/*[name()=$name]"/>
-                    <xsl:variable name="dname" select="translate($name, '_', '-')"/>
-                    <xsl:call-template name="grab-column">
-                        <xsl:with-param name="level" select="$level"/>
-                        <xsl:with-param name="schema" select="$schema"/>
-                        <xsl:with-param name="rowSchema" select="."/>
-                        <xsl:with-param name="name" select="$name"/>
-                        <xsl:with-param name="dname" select="$dname"/>
-                        <xsl:with-param name="matchingData" select="$matchingData"/>
-                        <xsl:with-param name="matchingData2" select="$data[not($matchingData)]/*[name()=$dname]"/>
-                    </xsl:call-template>
+                <xsl:for-each select="$schema/xs:complexType/xs:sequence">
+                  <xsl:variable name="supportsAll" select="xs:element[not(@type) and not(node()) and @name='All']"/>
+                  <xsl:variable name="hasAll" select="$supportsAll and $data/All"/>
+                  <xsl:for-each select="xs:element">
+                      <xsl:variable name="name" select="@name"/>
+                      <xsl:variable name="matchingData" select="$data/*[name()=$name]"/>
+                      <xsl:variable name="dname" select="translate($name, '_', '-')"/>
+                      <xsl:if test="not($supportsAll) or $name!='All'">
+                          <xsl:call-template name="grab-column">
+                              <xsl:with-param name="level" select="$level"/>
+                              <xsl:with-param name="schema" select="$schema"/>
+                              <xsl:with-param name="rowSchema" select="."/>
+                              <xsl:with-param name="name" select="$name"/>
+                              <xsl:with-param name="dname" select="$dname"/>
+                              <xsl:with-param name="hasAll" select="$hasAll"/>
+                              <xsl:with-param name="matchingData" select="$matchingData"/>
+                              <xsl:with-param name="matchingData2" select="$data[not($matchingData)]/*[name()=$dname]"/>
+                          </xsl:call-template>
+                       </xsl:if>
+                  </xsl:for-each>
                 </xsl:for-each>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
-    
     <xsl:template name="grab-data">
         <xsl:param name="schema"/>
         <xsl:param name="data"/>
@@ -578,6 +598,8 @@
     <xsl:template name="getMatchingName">
     <xsl:param name="schema"/>
     <xsl:param name="parent"/>
+    <xsl:param name="supportsAll" select="0"/>
+
         <xsl:variable name="sRowName" select="$schema/@name"/>
         <xsl:choose>
             <xsl:when test="$parent/*[name()=$sRowName][1]">
@@ -589,7 +611,7 @@
                     <xsl:when test="$parent/*[name()=$dashedName][1]">
                         <xsl:value-of select="$dashedName"/>
                     </xsl:when>
-                    <xsl:when test="$schema/@maxOccurs='unbounded'">
+                    <xsl:when test="$schema/@maxOccurs='unbounded' and (not($supportsAll) or name($parent/*[1])!='All')">
                         <xsl:value-of select="name($parent/*[1])"/>
                     </xsl:when>
                     <xsl:otherwise>
