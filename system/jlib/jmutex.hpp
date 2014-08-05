@@ -200,20 +200,22 @@ private:
     CRITICAL_SECTION flags;
 #ifdef _ASSERT_LOCK_SUPPORT
     ThreadId owner;
+    unsigned depth;
 #endif
-    inline CriticalSection(CriticalSection & value) { assert(false); } // dummy to prevent inadvetant use as block
+    inline CriticalSection(CriticalSection & value) { assert(false); } // dummy to prevent inadvertant use as block
 public:
     inline CriticalSection()
     {
         InitializeCriticalSection(&flags);
 #ifdef _ASSERT_LOCK_SUPPORT
         owner = 0;
+        depth = 0;
 #endif
     };
     inline ~CriticalSection()
     {
 #ifdef _ASSERT_LOCK_SUPPORT
-        assertex(owner==0);
+        assertex(owner==0 && depth==0);
 #endif
         DeleteCriticalSection(&flags);
     };
@@ -221,13 +223,23 @@ public:
     {
         EnterCriticalSection(&flags);
 #ifdef _ASSERT_LOCK_SUPPORT
-        owner = GetCurrentThreadId();
+        if (owner)
+        {
+            assertex(owner==GetCurrentThreadId());
+            depth++;
+        }
+        else
+            owner = GetCurrentThreadId();
 #endif
     };
     inline void leave()
     {
 #ifdef _ASSERT_LOCK_SUPPORT
-        owner = 0;
+        assertex(owner==GetCurrentThreadId());
+        if (depth)
+            depth--;
+        else
+            owner = 0;
 #endif
         LeaveCriticalSection(&flags);
     };
