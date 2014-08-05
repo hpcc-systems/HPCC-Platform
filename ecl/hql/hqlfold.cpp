@@ -1747,9 +1747,23 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             break;
         }
     case no_add:
-        return applyBinaryFold(expr, addValues);
+        {
+            IHqlExpression * left = expr->queryChild(0);
+            IHqlExpression * right = expr->queryChild(1);
+            if (isZero(left))
+                return ensureExprType(right, expr->queryType());
+            if (isZero(right))
+                return ensureExprType(left, expr->queryType());
+            return applyBinaryFold(expr, addValues);
+        }
     case no_sub:
+    {
+        IHqlExpression * left = expr->queryChild(0);
+        IHqlExpression * right = expr->queryChild(1);
+        if (isZero(right))
+            return ensureExprType(left, expr->queryType());
         return applyBinaryFold(expr, subtractValues);
+    }
     case no_hash32:
     case no_hash64:
         {
@@ -1760,15 +1774,28 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         }
     case no_mul:
         {
+            IHqlExpression * left = expr->queryChild(0);
+            IHqlExpression * right = expr->queryChild(1);
             //Multiply by zero (from constant folding count(ds)) can reduce a non-constant dataset to constant
-            if (isZero(expr->queryChild(0)) || isZero(expr->queryChild(1)))
+            if (isZero(left) || isZero(right))
             {
                 OwnedHqlExpr zero = getSizetConstant(0);
                 return ensureExprType(zero, expr->queryType());
             }
+            if (matchesConstantValue(left, 1))
+                return ensureExprType(right, expr->queryType());
+            if (matchesConstantValue(right, 1))
+                return ensureExprType(left, expr->queryType());
             return applyBinaryFold(expr, multiplyValues);
         }
     case no_div:
+        if (matchesConstantValue(expr->queryChild(1), 1))
+        {
+            IHqlExpression * left = expr->queryChild(0);
+            if (left->queryType()->isInteger())
+                return ensureExprType(left, expr->queryType());
+        }
+        //fall through
     case no_modulus:
         {
             IValue * leftValue = expr->queryChild(0)->queryValue();
