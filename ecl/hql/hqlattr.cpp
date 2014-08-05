@@ -394,6 +394,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_executewhen:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_xmlparse:
     case no_normalizegroup:
     case no_owned_ds:

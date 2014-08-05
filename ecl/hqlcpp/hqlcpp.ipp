@@ -1248,7 +1248,7 @@ public:
     void doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
 
     IReferenceSelector * doBuildRowDeserializeRow(BuildCtx & ctx, IHqlExpression * expr);
-    IReferenceSelector * doBuildRowFromXML(BuildCtx & ctx, IHqlExpression * expr);
+    IReferenceSelector * doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr, node_operator op);
     IReferenceSelector * doBuildRowIdToBlob(BuildCtx & ctx, IHqlExpression * expr, bool isNew);
     IReferenceSelector * doBuildRowIf(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * doBuildRowMatchAttr(BuildCtx & ctx, IHqlExpression * expr);

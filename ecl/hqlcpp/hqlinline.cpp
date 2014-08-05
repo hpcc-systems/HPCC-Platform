@@ -335,6 +335,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_matchrow:
     case no_libraryinput:
     case no_fromxml:
+    case no_fromjson:
         return RETevaluate;
     case no_apply:
         {

@@ -1046,6 +1046,11 @@ const void * EclAgent::fromXml(IEngineRowAllocator * rowAllocator, size32_t len,
     return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
 }
 
+const void * EclAgent::fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    return createRowFromJson(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+}
+
 
 bool EclAgent::getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * stepname, int sequence)
 {

@@ -144,3 +144,8 @@ const void * CThorCodeContextBase::fromXml(IEngineRowAllocator * rowAllocator, s
 {
     return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
 }
+
+const void * CThorCodeContextBase::fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    return createRowFromJson(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+}

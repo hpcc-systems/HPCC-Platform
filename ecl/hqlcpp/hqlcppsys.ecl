@@ -425,6 +425,7 @@ const char * cppSystemText[]  = {
     "   varunicode deserializeVUnicodeX(boolean o) :    eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeVUnicodeX';",
     "   _linkcounted_ row(dummyRecord) deserializeRow(boolean _deserializer, boolean _in) : eclrtl,include,entrypoint='rtlDeserializeBufferRow';",
     "   _linkcounted_ row(dummyRecord) createRowFromXml(utf8 _text, boolean xmltransformer, boolean _stripWhitespace) : ctxmethod,pure,entrypoint='fromXml';",
+    "   _linkcounted_ row(dummyRecord) createRowFromJson(utf8 _text, boolean xmltransformer, boolean _stripWhitespace) : ctxmethod,pure,entrypoint='fromJson';",
 
     "   _linkcounted_ dataset appendRowsToRowset(_array_ dataset _in) : pure,eclrtl,include,entrypoint='appendRowsToRowset';",
 

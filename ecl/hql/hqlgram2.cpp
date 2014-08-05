@@ -10352,6 +10352,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case FORWARD: msg.append("FORWARD"); break;
     case FROM: msg.append("FROM"); break;
     case FROMUNICODE: msg.append("FROMUNICODE"); break;
+    case FROMJSON: msg.append("FROMJSON"); break;
     case FROMXML: msg.append("FROMXML"); break;
     case FULL: msg.append("FULL"); break;
     case FUNCTION: msg.append("FULL"); break;

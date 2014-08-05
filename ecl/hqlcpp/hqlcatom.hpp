@@ -205,6 +205,7 @@ extern IIdAtom * createQuotedStringId;
 extern IIdAtom * createRangeLowId;
 extern IIdAtom * createRangeHighId;
 extern IIdAtom * createRealNullId;
+extern IIdAtom * createRowFromJsonId;
 extern IIdAtom * createRowFromXmlId;
 extern IIdAtom * createRowStreamId;
 extern IIdAtom * createStrRangeLowId;

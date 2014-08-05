@@ -1596,6 +1596,10 @@ public:
     {
         return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
     }
+    virtual const void * fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+    {
+        return createRowFromJson(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+    }
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual char *getDaliServers() { throwUnexpected(); }
 
