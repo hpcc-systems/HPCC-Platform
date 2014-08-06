@@ -889,8 +889,8 @@
         <xsl:param name="queue"/>
         <xsl:param name="thorlcr" select="'0'"/>
 
-        <xsl:variable name="active1" select="$workunits[State='running' and $queue = QueueName]"/>
-        <xsl:variable name="active2" select="$workunits[State='running' and $queue != QueueName]"/>
+        <xsl:variable name="active1" select="$workunits[starts-with(State,'running') and $queue = QueueName]"/>
+        <xsl:variable name="active2" select="$workunits[starts-with(State,'running') and $queue != QueueName]"/>
         <tbody>
             <xsl:choose>
                 <xsl:when test="$workunits[1]">
@@ -938,7 +938,7 @@
                         </tr>
                     </xsl:if>
 
-                    <xsl:for-each select="$workunits[State!='running']">
+                    <xsl:for-each select="$workunits[not(starts-with(State,'running'))]">
                         <tr>
                             <xsl:apply-templates select=".">
                                 <xsl:with-param name="cluster" select="$cluster"/>
@@ -1017,7 +1017,7 @@
         <xsl:variable name="active">
             <xsl:choose>
                 <xsl:when test="Priority='high'">highpriority</xsl:when>
-                <xsl:when test="State='running'">active</xsl:when>
+                <xsl:when test="starts-with(State,'running')">active</xsl:when>
                 <xsl:when test="Priority='normal'">normalpriority</xsl:when>
                 <xsl:when test="Priority='low'">lowpriority</xsl:when>
                 <xsl:otherwise></xsl:otherwise>
@@ -1044,7 +1044,7 @@
             </xsl:variable>
             <a href="javascript:go('{$href-method}?{$href-wuidparam}={Wuid}')">
                 <xsl:choose>
-                    <xsl:when test="State='running'">
+                    <xsl:when test="starts-with(State,'running')">
                         <b>
                             <xsl:value-of select="Wuid"/>
                         </b>
