@@ -632,7 +632,6 @@ interface ICodeContext : public IResourceContext
     // Called from generated code for FROMXML/TOXML
 
     virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
-    virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
 
     // Miscellaneous
@@ -642,6 +641,10 @@ interface ICodeContext : public IResourceContext
     virtual IEngineContext *queryEngineContext() = 0;
     virtual char *getDaliServers() = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
+
+    // Called from generated code for FROMJSON
+
+    virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
 };
 
 
