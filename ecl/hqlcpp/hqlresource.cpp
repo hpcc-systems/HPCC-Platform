@@ -4644,7 +4644,7 @@ IHqlExpression * EclResourcer::doCreateResourced(IHqlExpression * expr, Resource
                 {
                     args.append(*LINK(newDs));
                     unwindChildren(args, expr, 1);
-                    if (!expr->hasAttribute(newAtom) && isNewSelector(expr) && (newDs->getOperator() != no_select))
+                    if (!expr->hasAttribute(newAtom) && (newDs->getOperator() != no_select))
                         args.append(*LINK(queryNewSelectAttrExpr()));
                     same = false;
                 }
