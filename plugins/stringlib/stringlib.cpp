@@ -15,11 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
+#include <platform.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
+#include <eclrtl.hpp>
 
 #include "stringlib.hpp"
 #include "wildmatch.tpp"
@@ -488,10 +490,22 @@ STRINGLIB_API void STRINGLIB_CALL slStringRepad(unsigned & tgtLen, char * & tgt,
         srcLen--;
     if ( srcLen > tLen )
         srcLen = tLen;
-    tgt = (char *)CTXMALLOC(parentCtx, tLen);
-    tgtLen = tLen;
-    memcpy(tgt,base,srcLen);
-    memset(tgt+srcLen,' ',tLen-srcLen);
+    if ((int) tLen < 0)
+        rtlFail(0, "Invalid parameter to StringLib.StringRepad");
+    if (tLen)
+    {
+        tgt = (char *)CTXMALLOC(parentCtx, tLen);
+        if (!tgt)
+            rtlThrowOutOfMemory(0, "In StringLib.StringRepad");
+        tgtLen = tLen;
+        memcpy(tgt,base,srcLen);
+        memset(tgt+srcLen,' ',tLen-srcLen);
+    }
+    else
+    {
+        tgt = NULL;
+        tgtLen = 0;
+    }
 }
 
 STRINGLIB_API unsigned STRINGLIB_CALL slStringFind(unsigned srcLen, const char * src, unsigned hitLen, const char * hit, unsigned instance)
@@ -982,6 +996,8 @@ STRINGLIB_API void STRINGLIB_CALL slStringGetNthWord(unsigned & tgtLen, char * &
 STRINGLIB_API void STRINGLIB_CALL slStringRepeat(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned n)
 {
     char * buffer = NULL;
+    if ((int) n < 0)
+        rtlFail(0, "Invalid parameter to StringLib.StringRepeat");
     if (n == 0 || (srcLen == 0))
     {
         tgtLen = 0;
@@ -990,6 +1006,8 @@ STRINGLIB_API void STRINGLIB_CALL slStringRepeat(unsigned & tgtLen, char * & tgt
     {
         tgtLen = srcLen*n;
         buffer = (char *)CTXMALLOC(parentCtx, tgtLen);
+        if (!buffer)
+            rtlThrowOutOfMemory(0, "In StringLib.StringRepeat");
         if (srcLen == 1)
         {
             memset(buffer, *src, n);
