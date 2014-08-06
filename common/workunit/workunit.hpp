@@ -944,6 +944,7 @@ interface IConstWorkUnit : extends IInterface
     virtual bool isBilled() const = 0;
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned & day) = 0;
     virtual IPropertyTree * getDiskUsageStats() = 0;
+    virtual IPropertyTree * getFile(const char *fileName) const = 0;
     virtual IPropertyTreeIterator & getFileIterator() const = 0;
     virtual bool getCloneable() const = 0;
     virtual IUserDescriptor * queryUserDescriptor() const = 0;

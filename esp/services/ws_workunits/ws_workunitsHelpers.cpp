@@ -1323,6 +1323,32 @@ bool WsWuInfo::getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem
     return true;
 }
 
+StringBuffer& WsWuInfo::getResultNodeGroup(const char* fileName, StringBuffer& nodeGroup)
+{
+    if (!fileName || !*fileName)
+        return nodeGroup;
+    Owned<IPropertyTree> f = cw->getFile(fileName);
+    if (!f)
+        return nodeGroup;
+    const char* cluster = f->queryProp("@cluster");
+    if (!cluster || !*cluster)
+        return nodeGroup;
+
+    StringArray envClusters, envGroups, envTargets, envQueues;
+    getEnvironmentThorClusterNames(envClusters, envGroups, envTargets, envQueues);
+    getEnvironmentHThorClusterNames(envClusters, envGroups, envTargets);
+    ForEachItemIn(i, envClusters)
+    {
+        const char *clusterName = envClusters.item(i);
+        if (clusterName && strieq(clusterName, cluster))
+        {
+            nodeGroup.set(envGroups.item(i));
+            break;
+        }
+    }
+    return nodeGroup;
+}
+
 void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned flags)
 {
     SCMStringBuffer name;
@@ -1419,6 +1445,14 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
 
     if (filename.length())
         result->setShowFileContent(showFileContent);
+
+    if (filename.length() && (version >= 1.52))
+    {
+        StringBuffer nodeGroup;
+        getResultNodeGroup(filename.str(), nodeGroup);
+        if (nodeGroup.length())
+            result->setNodeGroup(nodeGroup.str());
+    }
 
     result->setName(name.str());
     result->setLink(link.str());

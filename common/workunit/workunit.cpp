@@ -699,6 +699,7 @@ public:
     virtual unsigned getWuidVersion() const;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const;
     virtual IPropertyTree * getDiskUsageStats();
+    virtual IPropertyTree * getFile(const char *fileName) const;
     virtual IPropertyTreeIterator & getFileIterator() const;
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned);
     virtual void packWorkUnit(bool pack=true);
@@ -1291,6 +1292,8 @@ public:
             { c->addDiskUsageStats(avgNodeUsage, minNode, minNodeUsage, maxNode, maxNodeUsage, graphId); }
     virtual IPropertyTree * getDiskUsageStats()
             { return c->getDiskUsageStats(); }
+    virtual IPropertyTree * getFile(const char *fileName) const
+            { return c->getFile(fileName); }
     virtual IPropertyTreeIterator & getFileIterator() const
             { return c->getFileIterator(); }
     virtual IPropertyTreeIterator & getFilesReadIterator() const
@@ -6563,6 +6566,14 @@ IPropertyTreeIterator & CLocalWorkUnit::getFilesReadIterator() const
 {
     CriticalBlock block(crit);
     return * p->getElements("FilesRead/File");
+}
+
+IPropertyTree* CLocalWorkUnit::getFile(const char *fileName) const
+{
+    StringBuffer path("Files/File[@name=\"");
+    path.append(fileName).append("\"]");
+    CriticalBlock block(crit);
+    return p->getPropTree(path.str());
 }
 
 //=================================================================================================
