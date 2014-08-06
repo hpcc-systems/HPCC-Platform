@@ -100,7 +100,8 @@ public:
     virtual unsigned getTotalMinimumSize();
     virtual unsigned getContainerTrailingFixed();
     virtual bool modifyColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value, node_operator op) { return false; }
-
+    virtual bool checkCompatibleIfBlock(HqlExprCopyArray & conditions);
+    
     void addVariableSize(size32_t varMinSize, SizeStruct & size);
     void getXPath(StringBuffer & out);
     StringBuffer & expandSelectPathText(StringBuffer & out, bool isLast) const;
@@ -202,9 +203,7 @@ public:
 
 protected:
     virtual void registerChild(CMemberInfo * child);
-    void calcCachedChildrenOffsets(SizeStruct & offset, SizeStruct & sizeSelf);
-//  void gatherChildrenFixedSize(SizeStruct & target);
-
+    void calcCachedChildrenOffsets(const SizeStruct & startOffset, SizeStruct & sizeSelf);
 
 protected:
     CMemberInfoArray    children;
@@ -251,6 +250,7 @@ public:
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
 
     virtual void calcCachedSize(const SizeStruct & offset, SizeStruct & sizeSelf);
+    virtual bool checkCompatibleIfBlock(HqlExprCopyArray & conditions);
     virtual IHqlExpression * getCondition(BuildCtx & ctx);
     virtual bool isConditional();
     virtual bool isFixedSize()              { return false; }

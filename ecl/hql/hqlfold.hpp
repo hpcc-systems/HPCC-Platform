@@ -58,4 +58,6 @@ extern HQLFOLD_API void foldHqlExpression(IErrorReceiver & errorProcessor, HqlEx
 extern HQLFOLD_API IHqlExpression * lowerCaseHqlExpr(IHqlExpression * expr);
 extern HQLFOLD_API IHqlExpression * foldExprIfConstant(IHqlExpression * expr);
 
+extern HQLFOLD_API bool areExclusiveConditions(IHqlExpression * left, IHqlExpression * right);
+
 #endif
