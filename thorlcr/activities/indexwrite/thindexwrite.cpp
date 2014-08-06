@@ -39,6 +39,7 @@ class IndexWriteActivityMaster : public CMasterActivity
     bool publishReplicatedDone;
     CDfsLogicalFileName dlfn;
     IHThorIndexWriteArg *helper;
+    StringAttr fileName;
 
 public:
     IndexWriteActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
@@ -59,8 +60,12 @@ public:
     virtual void init()
     {
         CMasterActivity::init();
-        OwnedRoxieString fname(helper->getFileName());
-        dlfn.set(fname);
+        OwnedRoxieString helperFileName = helper->getFileName();
+        StringBuffer expandedFileName;
+        bool mangle = 0 != (helper->getFlags() & (TDXtemporary|TDXjobtemp));
+        queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, mangle);
+        fileName.set(expandedFileName);
+        dlfn.set(fileName);
         isLocal = 0 != (TIWlocal & helper->getFlags());
         IOutputMetaData * diskSize = helper->queryDiskRecordSize();
         unsigned minSize = diskSize->getMinRecordSize();
@@ -99,7 +104,7 @@ public:
         else if (!isLocal || globals->getPropBool("@buildLocalTlks", true))
             buildTlk = true;
 
-        fillClusterArray(container.queryJob(), fname, clusters, groups);
+        fillClusterArray(container.queryJob(), fileName, clusters, groups);
         unsigned restrictedWidth = 0;
         if (TIWhaswidth & helper->getFlags())
         {
@@ -129,7 +134,7 @@ public:
         }
         else
             restrictedWidth = singlePartKey?1:container.queryJob().querySlaves();
-        fileDesc.setown(queryThorFileManager().create(container.queryJob(), fname, clusters, groups, 0 != (TIWoverwrite & helper->getFlags()), 0, buildTlk, restrictedWidth));
+        fileDesc.setown(queryThorFileManager().create(container.queryJob(), fileName, clusters, groups, 0 != (TIWoverwrite & helper->getFlags()), 0, buildTlk, restrictedWidth));
         if (buildTlk)
             fileDesc->queryPart(fileDesc->numParts()-1)->queryProperties().setProp("@kind", "topLevelKey");
 
@@ -144,7 +149,7 @@ public:
             if (!f) f = _f;
             Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);
             if (!existingTlk->queryAttributes().hasProp("@kind") || 0 != stricmp("topLevelKey", existingTlk->queryAttributes().queryProp("@kind")))
-                throw MakeActivityException(this, 0, "Cannot build new key '%s' based on non-distributed key '%s'", fname.get(), diName.get());
+                throw MakeActivityException(this, 0, "Cannot build new key '%s' based on non-distributed key '%s'", fileName.get(), diName.get());
             IPartDescriptor *tlkDesc = fileDesc->queryPart(fileDesc->numParts()-1);
             IPropertyTree &props = tlkDesc->queryProperties();
             if (existingTlk->queryAttributes().hasProp("@size"))
@@ -204,8 +209,7 @@ public:
         {
             dst.append(true);
             IPartDescriptor *partDesc = fileDesc->queryPart(slave);
-            OwnedRoxieString fname(helper->getFileName());
-            dst.append(fname.get());
+            dst.append(fileName);
             partDesc->serialize(dst);
         }
         else
@@ -250,13 +254,10 @@ public:
     virtual void done()
     {
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
-        StringBuffer scopedName;
-        OwnedRoxieString fname(helper->getFileName());
-        queryThorFileManager().addScope(container.queryJob(), fname, scopedName);
-        updateActivityResult(container.queryJob().queryWorkUnit(), helper->getFlags(), helper->getSequence(), scopedName.str(), recordsProcessed);
+        updateActivityResult(container.queryJob().queryWorkUnit(), helper->getFlags(), helper->getSequence(), fileName, recordsProcessed);
 
         // MORE - add in the extra entry somehow
-        if (fname.get())
+        if (fileName.get())
         {
             IPropertyTree &props = fileDesc->queryProperties();
             props.setPropInt64("@recordCount", recordsProcessed);
@@ -274,9 +275,9 @@ public:
             props.setPropInt("@formatCrc", helper->getFormatCrc());
             if (isLocal)
                 props.setPropBool("@local", true);
-            container.queryTempHandler()->registerFile(fname, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
+            container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
             if (!dlfn.isExternal())
-                queryThorFileManager().publish(container.queryJob(), fname, false, *fileDesc);
+                queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);
         }
         CMasterActivity::done();
     }

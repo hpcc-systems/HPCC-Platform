@@ -47,7 +47,7 @@ interface IThorFileManager : extends IInterface
     virtual void noteFileRead(CJobBase &job, IDistributedFile *file, bool extended=false) = 0;
     virtual IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false, bool updateAccessed=true) = 0;
     virtual IFileDescriptor *create(CJobBase &job, const char *logicalName, StringArray &groupNames, IArrayOf<IGroup> &groups, bool overwriteok, unsigned helperFlags=0, bool nonLocalIndex=false, unsigned restrictedWidth=0) = 0;
-    virtual void publish(CJobBase &job, const char *logicalName, bool mangle, IFileDescriptor &file, Owned<IDistributedFile> *publishedFile=NULL, unsigned partOffset=0, bool createMissingParts=true) = 0;
+    virtual void publish(CJobBase &job, const char *logicalName, IFileDescriptor &file, Owned<IDistributedFile> *publishedFile=NULL, unsigned partOffset=0, bool createMissingParts=true) = 0;
     virtual void clearCacheEntry(const char *name) = 0;
     virtual StringBuffer &mangleLFN(CJobBase &job, const char *lfn, StringBuffer &out) = 0;
     virtual StringBuffer &addScope(CJobBase &job, const char *logicalname, StringBuffer &ret, bool temporary=false, bool paused=false) = 0;

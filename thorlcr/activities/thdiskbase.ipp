@@ -49,7 +49,7 @@ class CWriteMasterBase : public CMasterActivity
     Owned<ProgressInfo> replicateProgress;
     __int64 recordsProcessed;
     bool published;
-    OwnedRoxieString filename;
+    StringAttr fileName;
     CDfsLogicalFileName dlfn;
 protected:
     StringArray clusters;

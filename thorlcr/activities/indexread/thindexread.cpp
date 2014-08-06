@@ -36,6 +36,7 @@ protected:
     ProgressInfoArray progressInfoArr;
     StringArray progressLabels;
     Owned<ProgressInfo> inputProgress;
+    StringBuffer fileName;
 
     rowcount_t aggregateToLimit()
     {
@@ -154,10 +155,7 @@ protected:
                     }
                 }
                 if (!keyIndex)
-                {
-                    OwnedRoxieString indexName(indexBaseHelper->getFileName());
-                    throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", indexName.get());
-                }
+                    throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", index->queryLogicalName());
             
                 unsigned fixedSize = indexBaseHelper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // used only if fixed
                 Owned <IKeyManager> tlk = createKeyManager(keyIndex, fixedSize, NULL);
@@ -197,8 +195,11 @@ public:
     {
         CMasterActivity::init();
         nofilter = false;
-        OwnedRoxieString indexName(indexBaseHelper->getFileName());
-        Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), indexName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true);
+        OwnedRoxieString helperFileName = indexBaseHelper->getFileName();
+        StringBuffer expandedFileName;
+        queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
+        fileName.set(expandedFileName);
+        Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true);
         if (index)
         {
             bool localKey = index->queryAttributes().getPropBool("@local");
@@ -230,8 +231,7 @@ public:
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        OwnedRoxieString indexName(indexBaseHelper->getFileName());
-        dst.append(indexName);
+        dst.append(fileName);
         if (!container.queryLocalOrGrouped())
             dst.append(mpTag);
         IArrayOf<IPartDescriptor> parts;

@@ -222,15 +222,9 @@ public:
             StringBuffer name(nameLen, nameBuff);
             StringBuffer value(valueLen, valueBuff);
             if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
-            {
-                OwnedRoxieString fname(helper->getFileName());
-                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
-            }
+                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), logicalFilename.get());
             if(!validateXMLTag(name.str()))
-            {
-                OwnedRoxieString fname(helper->getFileName());
-                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
-            }
+                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), logicalFilename.get());
             if(!metadata) metadata.setown(createPTree("metadata"));
             metadata->setProp(name.str(), value.str());
         }

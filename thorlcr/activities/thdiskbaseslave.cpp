@@ -420,6 +420,7 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
 {
     diskHelperBase = static_cast <IHThorDiskWriteArg *> (queryHelper());
 
+    StringAttr logicalFilename;
     data.read(logicalFilename);
     dlfn.set(logicalFilename);
     if (diskHelperBase->getFlags() & TDXtemporary)
