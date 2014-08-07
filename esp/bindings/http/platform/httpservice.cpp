@@ -903,6 +903,7 @@ static void httpGetDirectory(CHttpRequest* request, CHttpResponse* response, con
     response->setContent(out);
     response->send();
 }
+
 int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, const char *urlpath)
 {
         if (!request || !response || !urlpath)
@@ -923,10 +924,20 @@ int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, co
         else if (top)
             tail.set("./files");
 
-        StringBuffer fullpath(getCFD());
-        fullpath.append("files/").append(urlpath);
+        StringBuffer basedir(getCFD());
+        basedir.append("files/");
 
-        if (!checkFileExists(fullpath) && !checkDirExists(fullpath.toUpperCase()) && !checkDirExists(fullpath.toLowerCase()))
+        StringBuffer fullpath;
+        makeAbsolutePath(urlpath, basedir.str(), fullpath);
+        if (*urlpath && strncmp(basedir, fullpath, basedir.length()))
+        {
+            DBGLOG("Get File %s: attempted access outside of %s", urlpath, basedir.str());
+            response->setStatus(HTTP_STATUS_NOT_FOUND);
+            response->send();
+            return 0;
+        }
+
+        if (!checkFileExists(fullpath) && !checkFileExists(fullpath.toUpperCase()) && !checkFileExists(fullpath.toLowerCase()))
         {
             DBGLOG("Get File %s: file not found", urlpath);
             response->setStatus(HTTP_STATUS_NOT_FOUND);
