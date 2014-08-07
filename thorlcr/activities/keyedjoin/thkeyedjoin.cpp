@@ -218,12 +218,12 @@ public:
                                 free(ekey);
                                 if (!encrypted)
                                 {
-                                    Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", helper->getFileName());
+                                    Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", dataFile->queryLogicalName());
                                     container.queryJob().fireException(e);
                                 }
                             }
                             else if (encrypted)
-                                throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fetchFilename.get());
+                                throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", dataFile->queryLogicalName());
                             unsigned dataReadWidth = (unsigned)container.queryJob().getWorkUnitValueInt("KJDRR", 0);
                             if (!dataReadWidth || dataReadWidth>container.queryJob().querySlaves())
                                 dataReadWidth = container.queryJob().querySlaves();

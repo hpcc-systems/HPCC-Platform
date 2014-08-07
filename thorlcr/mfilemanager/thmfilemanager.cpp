@@ -80,8 +80,8 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
             clusters.append(groupName);
             IArrayOf<IGroup> groups;
             groups.append(*LINK(group));
-            Owned<IFileDescriptor> fileDesc = create(job, logicalName, clusters, groups, true, TDWnoreplicate);
-            publish(job, logicalName, false, *fileDesc, &file);
+            Owned<IFileDescriptor> fileDesc = create(job, scopedName, clusters, groups, true, TDWnoreplicate);
+            publish(job, scopedName, *fileDesc, &file);
         }
         else
         {
@@ -312,24 +312,22 @@ public:
         bool persistent = 0 != (helperFlags&TDWpersist);
         bool extend = 0 != (helperFlags&TDWextend);
         bool jobTemp = 0 != (helperFlags&TDXjobtemp);
-        StringBuffer scopedName;
-        addScope(job, logicalName, scopedName, temporary||jobTemp);
 
-        LOG(MCdebugInfo, thorJob, "createLogicalFile ( %s )", scopedName.str());
+        LOG(MCdebugInfo, thorJob, "createLogicalFile ( %s )", logicalName);
 
         Owned<IDistributedFile> efile;
         CDfsLogicalFileName dlfn;
         if (!temporary)
         {
-            if (!dlfn.setValidate(scopedName.str()))
-                throw MakeStringException(99, "Cannot publish %s, invalid logical name", scopedName.str());
+            if (!dlfn.setValidate(logicalName))
+                throw MakeStringException(99, "Cannot publish %s, invalid logical name", logicalName);
             if (dlfn.isForeign())
-                throw MakeStringException(99, "Cannot publish to a foreign Dali: %s", scopedName.str());
+                throw MakeStringException(99, "Cannot publish to a foreign Dali: %s", logicalName);
             efile.setown(queryDistributedFileDirectory().lookup(dlfn, job.queryUserDescriptor(), true));
             if (efile)
             {
                 if (!extend && !overwriteok)
-                    throw MakeStringException(TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", scopedName.str());
+                    throw MakeStringException(TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", logicalName);
             }
         }
 
@@ -347,7 +345,7 @@ public:
                 bool found=false;
                 ForEach (*fileIter)
                 {
-                    if (0 == stricmp(scopedName.str(), fileIter->query().queryProp("@name")))
+                    if (0 == stricmp(logicalName, fileIter->query().queryProp("@name")))
                     {
                         found = true;
                         break;
@@ -355,7 +353,7 @@ public:
                 }
                 if (found)
                 {
-                    workunit->releaseFile(scopedName.str());
+                    workunit->releaseFile(logicalName);
                     Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(dlfn, job.queryUserDescriptor());
                     if (f)
                     {
@@ -391,7 +389,7 @@ public:
                         LOG(daliAuditLogCat,",FileAccess,Thor,DELETED,%s,%s,%s,%s,%s,%"I64F"d,%s",
                                         globals->queryProp("@name"),
                                         userStr.str(),
-                                        scopedName.str(),
+                                        logicalName,
                                         wuidStr.str(),
                                         job.queryGraphName(),fs,clusters.item(c));
                     }
@@ -444,7 +442,7 @@ public:
                 ForEachItemIn(gn, groupNames)
                 {
                     if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "data", "thor", groupNames.item(gn), curDir))
-                        makePhysicalPartName(scopedName.str(), 0, 0, curDir, false, os); // legacy
+                        makePhysicalPartName(logicalName, 0, 0, curDir, false, os); // legacy
                     if (!dir.length())
                         dir.swapWith(curDir);
                     else
@@ -456,12 +454,12 @@ public:
                 }
                 curDir.swapWith(dir);
                 // places logical filename directory in 'dir'
-                makePhysicalPartName(scopedName.str(), 0, 0, dir, false, os, curDir.str());
+                makePhysicalPartName(logicalName, 0, 0, dir, false, os, curDir.str());
             }
             desc->setDefaultDir(dir.str());
 
             StringBuffer partmask;
-            getPartMask(partmask,scopedName.str(),total);
+            getPartMask(partmask,logicalName,total);
             desc->setNumParts(total);
             desc->setPartMask(partmask);
             // desc->setPartOffset(offset); // possible future requirement
@@ -482,16 +480,12 @@ public:
         return LINK(desc);
     }
 
-    void publish(CJobBase &job, const char *logicalName, bool mangle, IFileDescriptor &fileDesc, Owned<IDistributedFile> *publishedFile=NULL, unsigned partOffset=0, bool createMissingParts=true)
+    void publish(CJobBase &job, const char *logicalName, IFileDescriptor &fileDesc, Owned<IDistributedFile> *publishedFile=NULL, unsigned partOffset=0, bool createMissingParts=true)
     {
         IPropertyTree &props = fileDesc.queryProperties();
         bool temporary = props.getPropBool("@temporary");
-
-        StringBuffer scopedName;
-        addScope(job, logicalName, scopedName, mangle);
-        
         if (!temporary || job.queryUseCheckpoints())
-            queryDistributedFileDirectory().removeEntry(scopedName.str(), job.queryUserDescriptor());
+            queryDistributedFileDirectory().removeEntry(logicalName, job.queryUserDescriptor());
 
         if (!temporary && createMissingParts && !isFileKey(fileDesc.queryProperties()))
         {
@@ -559,7 +553,7 @@ public:
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(&fileDesc);
         if (temporary && !job.queryUseCheckpoints())
         {
-            fileMap.replace(*new CIDistributeFileMapping(scopedName.str(), *LINK(file))); // cache takes ownership
+            fileMap.replace(*new CIDistributeFileMapping(logicalName, *LINK(file))); // cache takes ownership
             return;
         }
         file->setAccessed();
@@ -574,7 +568,7 @@ public:
             if (fs!=-1)
                 file->queryAttributes().setPropInt64("@compressedSize",fs);
         }
-        file->attach(scopedName.str(), job.queryUserDescriptor());
+        file->attach(logicalName, job.queryUserDescriptor());
         unsigned c=0;
         for (; c<fileDesc.numClusters(); c++)
         {

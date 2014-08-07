@@ -27,13 +27,17 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
-      registered trademark of LexisNexis Risk Data Management Inc.</para>
+      of Reed Elsevier Properties Inc., used under license. </para>
+
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. All names and
-      example data used in this manual are fictitious. Any similarity to
-      actual persons, living or dead, is purely coincidental.</para>
+      registered trademarks of their respective companies. A</para>
+
+      <para>ll names and example data used in this manual are fictitious. Any
+      similarity to actual persons, living or dead, is purely
+      coincidental.</para>
 
       <para></para>
     </legalnotice>
@@ -2757,14 +2761,14 @@ OUTPUT(ValidWords)
                   <entry>-c</entry>
 
                   <entry>When specified, this option adds the target directory
-                  or jar file path to classpath in environment.conf. </entry>
+                  or jar file path to classpath in environment.conf.</entry>
                 </row>
 
                 <row>
                   <entry>-e</entry>
 
                   <entry>When specified, this denotes the target is to be
-                  removed from the classpath. </entry>
+                  removed from the classpath.</entry>
                 </row>
 
                 <row>
@@ -2817,7 +2821,7 @@ OUTPUT(ValidWords)
                   password to run ssh/scp. Without specifying this option you
                   will be prompted to supply a username and password. We
                   strongly recommend not using &lt;hpcc user&gt; to avoid
-                  security issues. </entry>
+                  security issues.</entry>
                 </row>
 
                 <row>
@@ -2927,7 +2931,7 @@ OUTPUT(ValidWords)
                   <entry>-S</entry>
 
                   <entry>When specified, the command runs sequentially, one
-                  host at a time. </entry>
+                  host at a time.</entry>
                 </row>
 
                 <row>

@@ -317,6 +317,10 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     else
         workunitTimeout = WAIT_FOREVER;
 
+    Owned<IPropertyTreeIterator> cfgTargets = serviceTree->getElements("Targets/Target");
+    ForEach(*cfgTargets)
+        targets.append(cfgTargets->query().queryProp(NULL));
+
     IPropertyTree *vips = serviceTree->queryPropTree(xpath.str());
     Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
     ForEach(*roxieTargets)
@@ -403,12 +407,15 @@ void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree
     data.addProp("@action", "NavMenuEvent");
     data.addProp("@appName", "WsECL 3.0");
 
-    Owned<IStringIterator> targets = getTargetClusters(NULL, NULL);
+    Owned<IStringIterator> envTargets = getTargetClusters(NULL, NULL);
 
     SCMStringBuffer target;
-    ForEach(*targets)
+    ForEach(*envTargets)
     {
-        VStringBuffer parms("queryset=%s", targets->str(target).str());
+        envTargets->str(target);
+        if (wsecl->targets.length() && !wsecl->targets.contains(target.str()))
+            continue;
+        VStringBuffer parms("queryset=%s", target.str());
         ensureNavDynFolder(data, target.str(), target.str(), parms.str(), NULL);
     }
 }

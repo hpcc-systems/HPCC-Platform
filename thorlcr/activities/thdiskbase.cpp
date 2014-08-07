@@ -39,9 +39,10 @@ void CDiskReadMasterBase::init()
 {
     CMasterActivity::init();
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
+    bool mangle = 0 != (helper->getFlags() & (TDXtemporary|TDXjobtemp));
     OwnedRoxieString helperFileName = helper->getFileName();
     StringBuffer expandedFileName;
-    queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
+    queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, mangle);
     fileName.set(expandedFileName);
 
     Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
@@ -132,18 +133,83 @@ void CDiskReadMasterBase::getXGMML(unsigned idx, IPropertyTree *edge)
 
 /////////////////
 
+void CWriteMasterBase::init()
+{
+    published = false;
+    recordsProcessed = 0;
+    bool mangle = 0 != (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp));
+    OwnedRoxieString helperFileName = diskHelperBase->getFileName();
+    StringBuffer expandedFileName;
+    queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, mangle);
+    fileName.set(expandedFileName);
+    dlfn.set(fileName);
+    if (diskHelperBase->getFlags() & TDWextend)
+    {
+        assertex(0 == (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)));
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, true);
+        if (file.get())
+        {
+            fileDesc.setown(file->getFileDescriptor());
+            queryThorFileManager().noteFileRead(container.queryJob(), file, true);
+        }
+    }
+    if (dlfn.isExternal())
+        mpTag = container.queryJob().allocateMPTag(); // used
+    if (NULL == fileDesc.get())
+    {
+        bool overwriteok = 0!=(TDWoverwrite & diskHelperBase->getFlags());
+
+        unsigned idx=0;
+        while (true)
+        {
+            OwnedRoxieString cluster(diskHelperBase->getCluster(idx));
+            if(!cluster)
+                break;
+            clusters.append(cluster);
+            idx++;
+        }
+        IArrayOf<IGroup> groups;
+        fillClusterArray(container.queryJob(), fileName, clusters, groups);
+        fileDesc.setown(queryThorFileManager().create(container.queryJob(), fileName, clusters, groups, overwriteok, diskHelperBase->getFlags()));
+        if (1 == groups.ordinality())
+            targetOffset = getGroupOffset(groups.item(0), container.queryJob().querySlaveGroup());
+        IPropertyTree &props = fileDesc->queryProperties();
+        if (diskHelperBase->getFlags() & (TDWowned|TDXjobtemp|TDXtemporary))
+            props.setPropBool("@owned", true);
+        if (diskHelperBase->getFlags() & TDWresult)
+            props.setPropBool("@result", true);
+        const char *rececl= diskHelperBase->queryRecordECL();
+        if (rececl&&*rececl)
+            props.setProp("ECL", rececl);
+        bool blockCompressed=false;
+        void *ekey;
+        size32_t ekeylen;
+        diskHelperBase->getEncryptKey(ekeylen,ekey);
+        if (ekeylen)
+        {
+            memset(ekey,0,ekeylen);
+            free(ekey);
+            props.setPropBool("@encrypted", true);
+            blockCompressed = true;
+        }
+        else if (0 != (diskHelperBase->getFlags() & TDWnewcompress) || 0 != (diskHelperBase->getFlags() & TDXcompress))
+            blockCompressed = true;
+        if (blockCompressed)
+            props.setPropBool("@blockCompressed", true);
+        props.setProp("@kind", "flat");
+        if (TAKdiskwrite == container.getKind() && (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
+        { // do early, because this will be local act. and will not come back to master until end of owning graph.
+            publish();
+        }
+    }
+}
 
 void CWriteMasterBase::publish()
 {
     if (published) return;
     published = true;
-    OwnedRoxieString fname(diskHelperBase->getFileName());
     if (!(diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)))
-    {
-        StringBuffer scopedName;
-        queryThorFileManager().addScope(container.queryJob(), fname, scopedName);
-        updateActivityResult(container.queryJob().queryWorkUnit(), diskHelperBase->getFlags(), diskHelperBase->getSequence(), scopedName.str(), recordsProcessed);
-    }
+        updateActivityResult(container.queryJob().queryWorkUnit(), diskHelperBase->getFlags(), diskHelperBase->getSequence(), fileName, recordsProcessed);
 
     IPropertyTree &props = fileDesc->queryProperties();
     props.setPropInt64("@recordCount", recordsProcessed);
@@ -160,12 +226,9 @@ void CWriteMasterBase::publish()
             props.setPropInt64("@totalCRC", totalCRC);
         }
     }
-    container.queryTempHandler()->registerFile(fname, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
+    container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
     if (!dlfn.isExternal())
-    {
-        bool mangle = 0 != (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp));
-        queryThorFileManager().publish(container.queryJob(), fname, mangle, *fileDesc, NULL, targetOffset);
-    }
+        queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc, NULL, targetOffset);
 }
 
 CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
@@ -213,77 +276,10 @@ void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtr
     }
 }
 
-void CWriteMasterBase::init()
-{
-    published = false;
-    recordsProcessed = 0;
-    OwnedRoxieString fname(diskHelperBase->getFileName());
-    dlfn.set(fname);
-    if (diskHelperBase->getFlags() & TDWextend)
-    {
-        assertex(0 == (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)));
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, false, true);
-        if (file.get())
-        {
-            fileDesc.setown(file->getFileDescriptor());
-            queryThorFileManager().noteFileRead(container.queryJob(), file, true);
-        }
-    }
-    if (dlfn.isExternal())
-        mpTag = container.queryJob().allocateMPTag(); // used 
-    if (NULL == fileDesc.get())
-    {
-        bool overwriteok = 0!=(TDWoverwrite & diskHelperBase->getFlags());
-        
-        unsigned idx=0;
-        while (true)
-        {
-            OwnedRoxieString cluster(diskHelperBase->getCluster(idx));
-            if(!cluster)
-                break;
-            clusters.append(cluster);
-            idx++;
-        }
-        IArrayOf<IGroup> groups;
-        fillClusterArray(container.queryJob(), fname, clusters, groups);
-        fileDesc.setown(queryThorFileManager().create(container.queryJob(), fname, clusters, groups, overwriteok, diskHelperBase->getFlags()));
-        if (1 == groups.ordinality())
-            targetOffset = getGroupOffset(groups.item(0), container.queryJob().querySlaveGroup());
-        IPropertyTree &props = fileDesc->queryProperties();
-        if (diskHelperBase->getFlags() & (TDWowned|TDXjobtemp|TDXtemporary))
-            props.setPropBool("@owned", true);
-        if (diskHelperBase->getFlags() & TDWresult)
-            props.setPropBool("@result", true);
-        const char *rececl= diskHelperBase->queryRecordECL();
-        if (rececl&&*rececl)
-            props.setProp("ECL", rececl);
-        bool blockCompressed=false;
-        void *ekey;
-        size32_t ekeylen;
-        diskHelperBase->getEncryptKey(ekeylen,ekey);
-        if (ekeylen)
-        {
-            memset(ekey,0,ekeylen);
-            free(ekey);
-            props.setPropBool("@encrypted", true);      
-            blockCompressed = true;
-        }
-        else if (0 != (diskHelperBase->getFlags() & TDWnewcompress) || 0 != (diskHelperBase->getFlags() & TDXcompress))
-            blockCompressed = true;
-        if (blockCompressed)
-            props.setPropBool("@blockCompressed", true);
-        props.setProp("@kind", "flat");
-        if (TAKdiskwrite == container.getKind() && (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
-        { // do early, because this will be local act. and will not come back to master until end of owning graph.
-            publish();
-        }
-    }
-}
-
 void CWriteMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 {
     OwnedRoxieString fname(diskHelperBase->getFileName());
-    dst.append(fname.get());
+    dst.append(fileName);
     if (diskHelperBase->getFlags() & TDXtemporary)
     {
         unsigned usageCount = container.queryJob().queryWorkUnit().queryFileUsage(fname);

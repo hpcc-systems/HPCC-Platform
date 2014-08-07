@@ -32,6 +32,7 @@ class CKeyDiffMaster : public CMasterActivity
     unsigned width;
     Owned<IFileDescriptor> patchDesc, originalDesc, newIndexDesc;
     StringArray clusters;
+    StringAttr originalName, updatedName, outputName;
 
 public:
     CKeyDiffMaster(CMasterGraphElement *info) : CMasterActivity(info)
@@ -45,12 +46,22 @@ public:
     {
         CMasterActivity::init();
         helper = (IHThorKeyDiffArg *)queryHelper();
-        OwnedRoxieString origName(helper->getOriginalName());
-        OwnedRoxieString updatedName(helper->getUpdatedName());
-        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), origName));
-        newIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), updatedName));
+        bool mangle = 0 != (helper->getFlags() & (TDXtemporary|TDXjobtemp));
+        OwnedRoxieString originalHelperName(helper->getOriginalName());
+        OwnedRoxieString updatedHelperName(helper->getUpdatedName());
+        OwnedRoxieString outputHelperName(helper->getOutputName());
+        StringBuffer expandedFileName;
+        queryThorFileManager().addScope(container.queryJob(), originalHelperName, expandedFileName, mangle);
+        originalName.set(expandedFileName);
+        queryThorFileManager().addScope(container.queryJob(), updatedHelperName, expandedFileName.clear(), mangle);
+        updatedName.set(expandedFileName);
+        queryThorFileManager().addScope(container.queryJob(), outputHelperName, expandedFileName.clear(), mangle);
+        outputName.set(expandedFileName);
+
+        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalHelperName));
+        newIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), updatedHelperName));
         if (originalIndexFile->numParts() != newIndexFile->numParts())
-            throw MakeActivityException(this, TE_KeyDiffIndexSizeMismatch, "Index %s and %s differ in width", origName.get(), updatedName.get());
+            throw MakeActivityException(this, TE_KeyDiffIndexSizeMismatch, "Index %s and %s differ in width", originalName.get(), updatedName.get());
         if (originalIndexFile->querySuperFile() || newIndexFile->querySuperFile())
             throw MakeActivityException(this, 0, "Diffing super files not supported");  
 
@@ -68,7 +79,6 @@ public:
             throw MakeActivityException(this, 0, "Unsupported: keydiff(%s, %s) - Cannot diff a key that's wider(%d) than the target cluster size(%d)", originalIndexFile->queryLogicalName(), newIndexFile->queryLogicalName(), width, container.queryJob().querySlaves());
 
         IArrayOf<IGroup> groups;
-        OwnedRoxieString outputName(helper->getOutputName());
         fillClusterArray(container.queryJob(), outputName, clusters, groups);
         patchDesc.setown(queryThorFileManager().create(container.queryJob(), outputName, clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));
         patchDesc->queryProperties().setProp("@kind", "keydiff");
@@ -148,13 +158,10 @@ public:
     }
     virtual void done()
     {
-        StringBuffer scopedName;
-        OwnedRoxieString outputName(helper->getOutputName());
-        queryThorFileManager().addScope(container.queryJob(), outputName, scopedName);
         Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
         Owned<IWUResult> r = wu->updateResultBySequence(helper->getSequence());
         r->setResultStatus(ResultStatusCalculated);
-        r->setResultLogicalName(scopedName.str());
+        r->setResultLogicalName(outputName);
         r.clear();
         wu.clear();
 
@@ -169,7 +176,7 @@ public:
         container.queryTempHandler()->registerFile(outputName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
         Owned<IDistributedFile> patchFile;
         // set part sizes etc
-        queryThorFileManager().publish(container.queryJob(), outputName, false, *patchDesc, &patchFile, 0, false);
+        queryThorFileManager().publish(container.queryJob(), outputName, *patchDesc, &patchFile, 0, false);
         try { // set file size
             if (patchFile) {
                 __int64 fs = patchFile->getFileSize(true,false);
@@ -185,10 +192,10 @@ public:
         DistributedFilePropertyLock lock(newIndexFile);
         IPropertyTree &fileProps = lock.queryAttributes();
         StringBuffer path("Patch[@name=\"");
-        path.append(scopedName.str()).append("\"]");
+        path.append(outputName).append("\"]");
         IPropertyTree *patch = fileProps.queryPropTree(path.str());
         if (!patch) patch = fileProps.addPropTree("Patch", createPTree());
-        patch->setProp("@name", scopedName.str());
+        patch->setProp("@name", outputName);
         unsigned checkSum;
         if (patchFile->getFileCheckSum(checkSum))
             patch->setPropInt64("@checkSum", checkSum);
@@ -206,8 +213,8 @@ public:
         if (0==(KDPoverwrite & helper->getFlags()))
         {
             if (KDPvaroutputname & helper->getFlags()) return;
-            OwnedRoxieString outputName(helper->getOutputName());
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputName, false, true);
+            OwnedRoxieString outputHelperName(helper->getOutputName());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputHelperName, false, true);
             if (file)
                 throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
         }

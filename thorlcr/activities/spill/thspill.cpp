@@ -26,6 +26,7 @@ class SpillActivityMaster : public CMasterActivity
     StringArray clusters;
     __int64 recordsProcessed;
     Owned<IDistributedFile> file;
+    StringAttr fileName;
 
 public:
     SpillActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
@@ -37,9 +38,13 @@ public:
         CMasterActivity::init();
         IHThorSpillArg *helper = (IHThorSpillArg *)queryHelper();
         IArrayOf<IGroup> groups;
-        OwnedRoxieString fname(helper->getFileName());
-        fillClusterArray(container.queryJob(), fname, clusters, groups);
-        fileDesc.setown(queryThorFileManager().create(container.queryJob(), fname, clusters, groups, true, TDWnoreplicate+TDXtemporary));
+        OwnedRoxieString helperFileName = helper->getFileName();
+        StringBuffer expandedFileName;
+        queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, true);
+        fileName.set(expandedFileName);
+
+        fillClusterArray(container.queryJob(), fileName, clusters, groups);
+        fileDesc.setown(queryThorFileManager().create(container.queryJob(), fileName, clusters, groups, true, TDWnoreplicate+TDXtemporary));
         IPropertyTree &props = fileDesc->queryProperties();
         bool blockCompressed=false;
         void *ekey;
@@ -61,8 +66,8 @@ public:
         props.setProp("@kind", "flat");
         if (container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
         { // do early, because this will be local act. and will not come back to master until end of owning graph.
-            container.queryTempHandler()->registerFile(fname, container.queryOwner().queryGraphId(), helper->getTempUsageCount(), TDXtemporary & helper->getFlags(), getDiskOutputKind(helper->getFlags()), &clusters);
-            queryThorFileManager().publish(container.queryJob(), fname, true, *fileDesc);
+            container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), helper->getTempUsageCount(), TDXtemporary & helper->getFlags(), getDiskOutputKind(helper->getFlags()), &clusters);
+            queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);
         }
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
@@ -78,9 +83,8 @@ public:
         if (!container.queryOwner().queryOwner() || container.queryOwner().isGlobal()) // I am in a child query
         {
             IHThorSpillArg *helper = (IHThorSpillArg *)queryHelper();
-            OwnedRoxieString fname(helper->getFileName());
-            container.queryTempHandler()->registerFile(fname, container.queryOwner().queryGraphId(), helper->getTempUsageCount(), TDXtemporary & helper->getFlags(), getDiskOutputKind(helper->getFlags()), &clusters);
-            queryThorFileManager().publish(container.queryJob(), fname, true, *fileDesc);
+            container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), helper->getTempUsageCount(), TDXtemporary & helper->getFlags(), getDiskOutputKind(helper->getFlags()), &clusters);
+            queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);
         }
     }
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)

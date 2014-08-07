@@ -29,6 +29,7 @@
 #include "jprop.hpp"
 #ifdef _WIN32
 #include <mmsystem.h> // for timeGetTime 
+#include <float.h> //for _isnan and _fpclass
 #else
 #include <unistd.h> // read()
 #include <sys/wait.h>
@@ -43,6 +44,7 @@
 #include <termios.h>
 #include <signal.h>
 #include <paths.h>
+#include <cmath>
 #include "build-config.h"
 #endif
 
@@ -108,6 +110,25 @@ bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * dec
 }
 
 //===========================================================================
+
+bool j_isnan(double x)
+{
+#ifdef _MSC_VER
+    return _isnan(x)!=0;
+#else
+    return std::isnan(x);
+#endif
+}
+
+bool j_isinf(double x)
+{
+#ifdef _MSC_VER
+    int fpv = _fpclass(x);
+    return (fpv==_FPCLASS_PINF || fpv==_FPCLASS_NINF);
+#else
+    return std::isinf(x);
+#endif
+}
 
 #ifdef _WIN32
 void MilliSleep(unsigned milli)

@@ -743,10 +743,8 @@ public:
     {
         if (!temp || job.queryUseCheckpoints())
         {
-            StringBuffer scopedName;
-            queryThorFileManager().addScope(job, name, scopedName, temp || fileKind==WUFileJobOwned);
             Owned<IWorkUnit> wu = &job.queryWorkUnit().lock();
-            wu->addFile(scopedName.str(), clusters, usageCount, fileKind, job.queryGraphName());
+            wu->addFile(name, clusters, usageCount, fileKind, job.queryGraphName());
         }
         else
             CGraphTempHandler::registerFile(name, graphId, usageCount, temp, fileKind, clusters);
@@ -755,10 +753,8 @@ public:
     {
         if (kept || job.queryUseCheckpoints())
         {
-            StringBuffer scopedName;
-            queryThorFileManager().addScope(job, name, scopedName, kept, kept);
             Owned<IWorkUnit> wu = &job.queryWorkUnit().lock();
-            wu->releaseFile(scopedName.str());
+            wu->releaseFile(name);
         }
         else
             CGraphTempHandler::deregisterFile(name);

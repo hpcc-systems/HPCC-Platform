@@ -55,6 +55,24 @@
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
+            <xs:sequence>
+              <xs:element name="Target" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                  <xs:appinfo>
+                    <title>Restrict To Target(s)</title>
+                  </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:attribute name="name" type="topologyClusterType" use="required">
+	                <xs:annotation>
+	                  <xs:appinfo>
+	                    <tooltip>WsEcl will only display specified targets, if none specified WsEcl will display all targets.</tooltip>
+	                  </xs:appinfo>
+	                </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
             <xs:attribute name="build" type="buildType" use="required">
                 <xs:annotation>
                     <xs:appinfo>

@@ -39,6 +39,9 @@ extern jlib_decl char * ltoa(long n, char *str, int b);
 extern jlib_decl char * ultoa(unsigned long n, char *str, int b);
 #define Sleep(milli) MilliSleep(milli)
 #endif
+bool jlib_decl j_isnan(double x);
+bool jlib_decl j_isinf(double x);
+
 void jlib_decl packNumber(char * target, const char * source, unsigned slen);
 void jlib_decl unpackNumber(char * target, const char * source, unsigned tlen);
 
