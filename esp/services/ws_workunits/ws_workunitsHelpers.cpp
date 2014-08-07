@@ -1604,7 +1604,7 @@ bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsign
         return true;
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
         if (wv)
         {
             if (flags & WUINFO_IncludeResultsViewNames)
@@ -1628,7 +1628,7 @@ unsigned WsWuInfo::getResourceURLCount()
 {
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
         if (wv)
             return wv->getResourceURLCount();
     }

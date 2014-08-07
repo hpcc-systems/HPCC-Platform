@@ -1602,7 +1602,7 @@ bool CWsWorkunitsEx::onWUResultView(IEspContext &context, IEspWUResultViewReques
 
     ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
 
-    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, getCFD(), true);
+    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true);
     StringBuffer html;
     wv->renderSingleResult(req.getViewName(), req.getResultName(), html);
     resp.setResult(html.str());
