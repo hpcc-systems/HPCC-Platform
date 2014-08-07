@@ -82,7 +82,7 @@ private:
         double d;
         float f;
     } fpRegs[MAXFPREGS];
-    unsigned fpsizes[MAXFPREGS];
+    unsigned fpSizes[MAXFPREGS];
  #endif
     unsigned    numFpRegs;
 #endif

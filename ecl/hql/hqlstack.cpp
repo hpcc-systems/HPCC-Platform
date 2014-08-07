@@ -28,7 +28,14 @@ FuncCallStack::FuncCallStack(int size) {
 #ifdef MAXFPREGS
     numFpRegs = 0;
     for (unsigned i=0;i<MAXFPREGS;i++)
+    {
+#ifdef FPREG_FIXEDSIZE
         fpRegs[i] = 0.0;
+#else
+        fpRegs[i].d = 0.0;
+        fpSizes[i] = 8;
+#endif
+    }
 #endif
 }
 
