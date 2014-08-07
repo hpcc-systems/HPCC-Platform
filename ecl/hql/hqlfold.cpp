@@ -997,7 +997,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         intresult = _intresult;
         intresulthigh = _intresulthigh;
         if (isRealvalue)
-            UNIMPLMENTED;
+            UNIMPLEMENTED;
  #elif defined(_ARCH_ARM64_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
         UNIMPLEMENTED;

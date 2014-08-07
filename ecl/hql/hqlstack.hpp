@@ -81,7 +81,7 @@ private:
     union {
         double d;
         float f;
-    } fpregs[MAXFPREGS];
+    } fpRegs[MAXFPREGS];
     unsigned fpsizes[MAXFPREGS];
  #endif
     unsigned    numFpRegs;
