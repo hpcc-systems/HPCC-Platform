@@ -775,7 +775,13 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     unsigned len = fstack.getSp();
 #ifdef REGPARAMS
     while (len < REGPARAMS*REGSIZE)
-        len = fstack.pushPtr(NULL);         // ensure enough to fill 6 registers
+        len = fstack.pushPtr(NULL);         // ensure enough to fill REGPARAMS registers
+#endif
+#ifdef EVEN_STACK_ALIGNMENT
+    // Some architectures (x64 and arm) require that the total amount pushed onto the stack for parameters is an odd number of words
+    // (so that the stack alignment is always an even number of words once the return IP is pushed)
+    if ((len & REGSIZE) == 0)
+        len = fstack.pushPtr(NULL);
 #endif
     char* strbuf = fstack.getMem();
 
@@ -862,8 +868,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
 // **** Linux/Mac ****
  #ifdef _ARCH_X86_64_
-        if ((len & 0x8) == 0)
-            len += 8;   // We need to make sure we add an ODD number of words to stack, so that it gets 16-byte aligned once pc is pushed by the call
+        assertex((len & 15) == 8);  // We need to make sure we add an ODD number of words to stack, so that it gets 16-byte aligned once pc is pushed by the call
 
         __int64 dummy1, dummy2,dummy3,dummy4;
 
@@ -969,9 +974,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             UNIMPLEMENTED;
         }
   #endif
-        if ((len & 0x4) == 0)
-           len += 4;   // We need to make sure we add an ODD number of words to stack, so that it gets 8-byte aligned once pc is pushed by the call
-        assertex((len & 7) == 4)
+        assertex((len & 7) == 4);  // We need to make sure we add an ODD number of words to stack, so that it gets 8-byte aligned once pc is pushed by the call
         register unsigned _intresult asm("r0");                       // Specific register for result
         register unsigned _intresulthigh asm("r1");                   // Specific register for result
         register unsigned _poplen asm("r4") = len-REGPARAMS*REGSIZE;  // Needs to survive the call
