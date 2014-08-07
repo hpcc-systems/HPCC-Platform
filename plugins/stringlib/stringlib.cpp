@@ -1005,6 +1005,8 @@ STRINGLIB_API void STRINGLIB_CALL slStringRepeat(unsigned & tgtLen, char * & tgt
     else
     {
         tgtLen = srcLen*n;
+        if (tgtLen/n != srcLen) // Check did not overflow
+            rtlFail(0, "Invalid parameter to StringLib.StringRepeat");
         buffer = (char *)CTXMALLOC(parentCtx, tgtLen);
         if (!buffer)
             rtlThrowOutOfMemory(0, "In StringLib.StringRepeat");
