@@ -264,6 +264,7 @@ private:
     MutexId mutex;
 #ifdef _ASSERT_LOCK_SUPPORT
     ThreadId owner;
+    unsigned depth;
 #endif
     CriticalSection (const CriticalSection &);  
 public:
@@ -280,13 +281,14 @@ public:
         pthread_mutexattr_destroy(&attr);
 #ifdef _ASSERT_LOCK_SUPPORT
         owner = 0;
+        depth = 0;
 #endif
     }
 
     inline ~CriticalSection()
     {
 #ifdef _ASSERT_LOCK_SUPPORT
-        assertex(owner==0);
+        assertex(owner==0 && depth==0);
 #endif
         pthread_mutex_destroy(&mutex);
     }
@@ -295,14 +297,24 @@ public:
     {
         pthread_mutex_lock(&mutex);
 #ifdef _ASSERT_LOCK_SUPPORT
-        owner = GetCurrentThreadId();
+        if (owner)
+        {
+            assertex(owner==GetCurrentThreadId());
+            depth++;
+        }
+        else
+            owner = GetCurrentThreadId();
 #endif
     }
 
     inline void leave()
     {
 #ifdef _ASSERT_LOCK_SUPPORT
-        owner = 0;
+        assertex(owner==GetCurrentThreadId());
+        if (depth)
+            depth--;
+        else
+            owner = 0;
 #endif
         pthread_mutex_unlock(&mutex);
     }
