@@ -429,22 +429,14 @@ void CThorExpandingRowArray::init(rowidx_t initialSize)
 
 const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num)
 {
-    try
-    {
-        return rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId(), defaultMaxSpillCost);
-    }
-    catch (IException * e)
-    {
-        //Pahological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
-        unsigned code = e->errorCode();
-        if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
-        {
-            e->Release();
-            return NULL;
-        }
-        throw;
-    }
+    return _allocateRowTable(num, defaultMaxSpillCost);
 }
+
+const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num, unsigned maxSpillCost)
+{
+    return _allocateRowTable(num, maxSpillCost);
+}
+
 
 rowidx_t CThorExpandingRowArray::getNewSize(rowidx_t requiredRows)
 {
@@ -520,6 +512,24 @@ void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &com
     }
     else
         parqsortvec((void **const)rows, n, compare, maxCores);
+}
+
+inline const void *CThorExpandingRowArray::_allocateRowTable(rowidx_t num, unsigned maxSpillCost)
+{
+    try
+    {
+        return rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId(), maxSpillCost);
+    }
+    catch (IException * e)
+    {
+        unsigned code = e->errorCode();
+        if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
+        {
+            e->Release();
+            return NULL;
+        }
+        throw;
+    }
 }
 
 inline bool CThorExpandingRowArray::_ensure(rowidx_t requiredRows, unsigned maxSpillCost)

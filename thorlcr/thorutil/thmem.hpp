@@ -257,6 +257,8 @@ class graph_decl CThorExpandingRowArray : public CSimpleInterface
         virtual void unlock() const {  }
     } dummyLock;
 
+    bool _ensure(rowidx_t requiredRows, unsigned maxSpillCost);
+    const void *_allocateRowTable(rowidx_t num, unsigned maxSpillCost);
 
 // for direct access by another CThorExpandingRowArray only
     inline void transferRowsCopy(const void **outRows, bool takeOwnership);
@@ -279,12 +281,12 @@ protected:
 
     void init(rowidx_t initialSize);
     const void *allocateRowTable(rowidx_t num);
+    const void *allocateRowTable(rowidx_t num, unsigned maxSpillCost);
     rowidx_t getNewSize(rowidx_t requiredRows);
     bool resizeRowTable(void **oldRows, memsize_t newCapacity, bool copy, roxiemem::IRowResizeCallback &callback, unsigned maxSpillCost);
     void serialize(IRowSerializerTarget &out);
     void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);
     inline rowidx_t getRowsCapacity() const { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
-    bool _ensure(rowidx_t requiredRows, unsigned maxSpillCost);
 public:
     CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
