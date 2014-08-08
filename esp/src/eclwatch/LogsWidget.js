@@ -152,7 +152,7 @@ define([
                             width: 117,
                             formatter: function (Type, row) {
                                 if (context.canShowContent(Type)) {
-                                    return "<a href='#' rowIndex=" + row.id + " class='" + context.id + "HelperClick'>" + Type + "</a>";
+                                    return "<a href='#' class='dgrid-row-url'>" + Type + "</a>";
                                 }
                                 return Type;
                             }
@@ -166,7 +166,7 @@ define([
                         }
                     }
                 }, domID);
-                on(document, "." + this.id + "HelperClick:click", function (evt) {
+                retVal.on(".dgrid-row-url:click", function (evt) {
                     if (context._onRowDblClick) {
                         var row = context.grid.row(evt).data;
                         context._onRowDblClick(row);

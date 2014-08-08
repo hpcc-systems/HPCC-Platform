@@ -123,7 +123,7 @@ define([
                     Name: {
                         label: this.i18n.Name, width: 72, sortable: true,
                         formatter: function (Name, row) {
-                            return "<a href='#' class='" + context.id + "GraphClick'>" + Name + "</a>";
+                            return "<a href='#' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     },
                     Label: { label: this.i18n.Label, sortable: true },
@@ -146,7 +146,7 @@ define([
                 context.syncSelectionFrom(context.grid);
             });
 
-            on(document, "." + this.id + "GraphClick:click", function (evt) {
+            retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
                     context._onRowDblClick(row);

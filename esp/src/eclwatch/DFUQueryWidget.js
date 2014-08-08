@@ -433,7 +433,7 @@ define([
                             if (row.__hpcc_isDir) {
                                 return name;
                             }
-                            return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#' rowIndex=" + row + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
+                            return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#' class='dgrid-row-url'>" + name + "</a>";
                         },
                         renderExpando: function (level, hasChildren, expanded, object) {
                             var dir = this.grid.isRTL ? "right" : "left";
@@ -457,7 +457,7 @@ define([
             }, this.id + "WorkunitsGrid");
 
             var context = this;
-            on(document, "." + context.id + "LogicalNameClick:click", function (evt) {
+            this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item);
