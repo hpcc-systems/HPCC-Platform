@@ -171,7 +171,7 @@ define([
         _onCheckUploadSubmit: function () {
             var context = this;
             var fileList = registry.byId(this.id + "Upload").getFileList();
-
+            var existingList = [];
             if (this.overwriteCheckbox.checked) {
                 this._onUploadSubmit();
                 this.fileListDialog.hide();
@@ -189,6 +189,7 @@ define([
                             arrayUtil.forEach(fileList, function (file,idx){
                                 if (item.name === file.name){
                                     fileName = file.name;
+                                    existingList.push(fileName);
                                 }
                             });
                         });
@@ -197,10 +198,21 @@ define([
                         context._onUploadSubmit();
                         context.fileListDialog.hide();
                     } else {
-                        alert(context.i18n.OverwriteMessage);
+                        alert(context.i18n.OverwriteMessage + "\n" + context.arrayStringToList(existingList));
                     }
                 });
             }
+        },
+
+        arrayStringToList: function (arr) {
+            var retVal = "";
+            arrayUtil.forEach(arr, function (item, idx) {
+                if (retVal.length) {
+                    retVal += "\n";
+                }
+                retVal += item;
+            });
+            return retVal;
         },
 
         _onUploadProgress: function (progress) {
