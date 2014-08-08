@@ -32,7 +32,6 @@
 #if defined (_ARCH_X86_64_)
  #define ALIGNMENT 8
  #define REGSIZE 8
- #define FPREG_FIXEDSIZE
  #define MAXFPREGS 8
  #define REGPARAMS 6
  #define EVEN_STACK_ALIGNMENT
@@ -44,7 +43,7 @@
  #define ALIGN_USES_ELEMENTSIZE
  #define REGSIZE 8
  #define REGPARAMS 8
- #define EVEN_STACK_ALIGNMENT
+ #define ODD_STACK_ALIGNMENT
  #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)) \
      && defined(__ARM_EABI__) && !defined(__ARM_PCS_VFP) && !defined(__ARM_PCS)
   #error "Can't identify floating point calling conventions.\nPlease ensure that your toolchain defines __ARM_PCS or __ARM_PCS_VFP."
@@ -57,7 +56,7 @@
  #define ALIGN_USES_ELEMENTSIZE
  #define REGSIZE 4
  #define REGPARAMS 4
- #define EVEN_STACK_ALIGNMENT
+ #define ODD_STACK_ALIGNMENT
  #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)) \
      && defined(__ARM_EABI__) && !defined(__ARM_PCS_VFP) && !defined(__ARM_PCS)
   #error "Can't identify floating point calling conventions.\nPlease ensure that your toolchain defines __ARM_PCS or __ARM_PCS_VFP."
@@ -95,6 +94,9 @@ public:
     char* getMem();
 #ifdef MAXFPREGS
     void * getFloatMem() { return numFpRegs?&fpRegs:NULL; }
+ #ifndef FPREG_FIXEDSIZE
+    unsigned *getFloatSizes() { return numFpRegs?fpSizes:NULL; }
+ #endif
 #endif
 
     int push(ITypeInfo* argType, IValue* paramValue);

@@ -777,10 +777,16 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     while (len < REGPARAMS*REGSIZE)
         len = fstack.pushPtr(NULL);         // ensure enough to fill REGPARAMS registers
 #endif
-#ifdef EVEN_STACK_ALIGNMENT
-    // Some architectures (x64 and arm) require that the total amount pushed onto the stack for parameters is an odd number of words
+#ifdef ODD_STACK_ALIGNMENT
+    // Some architectures (arm) require that the total amount pushed onto the stack for parameters is an odd number of words
     // (so that the stack alignment is always an even number of words once the return IP is pushed)
     if ((len & REGSIZE) == 0)
+        len = fstack.pushPtr(NULL);
+#endif
+#ifdef EVEN_STACK_ALIGNMENT
+    // Other architectures (x86) require that the total amount pushed onto the stack for parameters is an even number of words
+    // (so that the stack alignment is always an even number of words after the callq, which pushes an even number of words)
+    if ((len & REGSIZE) == REGSIZE)
         len = fstack.pushPtr(NULL);
 #endif
     char* strbuf = fstack.getMem();
@@ -868,23 +874,89 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
 // **** Linux/Mac ****
  #ifdef _ARCH_X86_64_
-        assertex((len & 15) == 8);  // We need to make sure we add an ODD number of words to stack, so that it gets 16-byte aligned once pc is pushed by the call
+        assertex((len & 15) == 0);  // We need to make sure we add an EVEN number of words to stack, so that it gets 16-byte aligned after the callq
 
         __int64 dummy1, dummy2,dummy3,dummy4;
 
         void * floatstack = fstack.getFloatMem(); 
         if (floatstack) { // sets xmm0-7
+            unsigned * floatSizes = fstack.getFloatSizes();
             __asm__ (
+            ".doparm0: \n\t"
+                "cmpl  $4,(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat0 \n\t"
                 "movsd  (%%rsi),%%xmm0 \n\t"
+                "jmp .doparm1 \n\t"
+            ".dofloat0: \n\t"
+                "movss  (%%rsi),%%xmm0 \n\t"
+
+            ".doparm1: \n\t"
+                "cmpl  $4,4(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat1 \n\t"
                 "movsd  8(%%rsi),%%xmm1 \n\t"
+                "jmp .doparm2 \n\t"
+            ".dofloat1: \n\t"
+                "movss  8(%%rsi),%%xmm1 \n\t"
+
+            ".doparm2: \n\t"
+                "cmpl  $4,8(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat2 \n\t"
                 "movsd  16(%%rsi),%%xmm2 \n\t"
+                "jmp .doparm3 \n\t"
+            ".dofloat2: \n\t"
+                "movss  16(%%rsi),%%xmm2 \n\t"
+
+            ".doparm3: \n\t"
+                "cmpl  $4,12(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat3 \n\t"
                 "movsd  24(%%rsi),%%xmm3 \n\t"
+                "jmp .doparm4 \n\t"
+            ".dofloat3: \n\t"
+                "movss  24(%%rsi),%%xmm3 \n\t"
+
+            ".doparm4: \n\t"
+                "cmpl  $4,16(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat4 \n\t"
                 "movsd  32(%%rsi),%%xmm4 \n\t"
+                "jmp .doparm5 \n\t"
+            ".dofloat4: \n\t"
+                "movss  32(%%rsi),%%xmm4 \n\t"
+
+            ".doparm5: \n\t"
+                "cmpl  $4,20(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat5 \n\t"
                 "movsd  40(%%rsi),%%xmm5 \n\t"
+                "jmp .doparm6 \n\t"
+            ".dofloat5: \n\t"
+                "movss  40(%%rsi),%%xmm5 \n\t"
+
+            ".doparm6: \n\t"
+                "cmpl  $4,24(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat6 \n\t"
                 "movsd  48(%%rsi),%%xmm6 \n\t"
+                "jmp .doparm7 \n\t"
+            ".dofloat6: \n\t"
+                "movss  48(%%rsi),%%xmm6 \n\t"
+
+            ".doparm7: \n\t"
+                "cmpl  $4,28(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat7 \n\t"
                 "movsd  56(%%rsi),%%xmm7 \n\t"
+                "jmp .floatdone \n\t"
+            ".dofloat7: \n\t"
+                "movss  56(%%rsi),%%xmm7 \n\t"
+
+            ".floatdone: \n\t"
             : 
-            : "S"(strbuf)
+            : "S"(floatstack),"D"(floatSizes)
             );
         }           
         __asm__ (

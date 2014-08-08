@@ -154,12 +154,12 @@ int FuncCallStack::push(ITypeInfo* argType, IValue* paramValue)
         else
             fpRegs[numFpRegs++] = *(double *)&tempbuf;
 #else
-        // Variable size FP registers as on arm
+        // Variable size FP registers as on arm/x64
         if (argType->getSize()<=4)
             fpRegs[numFpRegs].f = *(float *)&tempbuf;
         else
             fpRegs[numFpRegs].d = *(double *)&tempbuf;
-        fpSizes[numFpRegs] = argType->getSize();
+        fpSizes[numFpRegs++] = argType->getSize();
 #endif
         break;
 #else
