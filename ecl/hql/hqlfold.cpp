@@ -874,7 +874,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
 // **** Linux/Mac ****
  #ifdef _ARCH_X86_64_
-        assertex((len & 15) == 0);  // We need to make sure we add an EVEN number of words to stack, so that it gets 16-byte aligned after the callq
+        assertex((len & 15) == 0);  // We need to make sure we add an EVEN number of words to stack, so that it is 16-byte aligned before the callq
 
         __int64 dummy1, dummy2,dummy3,dummy4;
 
@@ -1042,8 +1042,93 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
   #ifdef MAXFPREGS
         void * floatstack = fstack.getFloatMem();
         if (floatstack) {
-            // Would need to write code that tests the various sizes to decide whether to load into s0 or d0
-            UNIMPLEMENTED;
+            unsigned * floatSizes = fstack.getFloatSizes();
+           __asm__ __volatile__ (
+           ".doparm0: \n\t"
+               "ldr  r0,[%[sizes],#0] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat0 \n\t"
+               "fldd  d0,[%[vals], #0] \n\t"
+               "b .doparm1 \n\t"
+           ".dofloat0: \n\t"
+               "flds  s0,[%[vals], #0] \n\t"
+
+           ".doparm1: \n\t"
+               "ldr  r0,[%[sizes],#4] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat1 \n\t"
+               "fldd  d1,[%[vals], #8] \n\t"
+               "b .doparm2 \n\t"
+           ".dofloat1: \n\t"
+               "flds  s2,[%[vals], #8] \n\t"
+
+           ".doparm2: \n\t"
+               "ldr  r0,[%[sizes],#8] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat2 \n\t"
+               "fldd  d2,[%[vals], #16] \n\t"
+               "b .doparm3 \n\t"
+           ".dofloat2: \n\t"
+               "flds  s4,[%[vals], #16] \n\t"
+
+           ".doparm3: \n\t"
+               "ldr  r0,[%[sizes],#12] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat3 \n\t"
+               "fldd  d3,[%[vals], #24] \n\t"
+               "b .doparm4 \n\t"
+           ".dofloat3: \n\t"
+               "flds  s6,[%[vals], #24] \n\t"
+
+           ".doparm4: \n\t"
+               "ldr  r0,[%[sizes],#16] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat4 \n\t"
+               "fldd  d4,[%[vals], #32] \n\t"
+               "b .doparm5 \n\t"
+           ".dofloat4: \n\t"
+               "flds  s8,[%[vals], #32] \n\t"
+
+           ".doparm5: \n\t"
+               "ldr  r0,[%[sizes],#20] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat4 \n\t"
+               "fldd  d5,[%[vals], #40] \n\t"
+               "b .doparm6 \n\t"
+           ".dofloat5: \n\t"
+               "flds  s10,[%[vals], #40] \n\t"
+
+           ".doparm6: \n\t"
+               "ldr  r0,[%[sizes],#24] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat6 \n\t"
+               "fldd  d6,[%[vals], #48] \n\t"
+               "b .doparm7 \n\t"
+           ".dofloat6: \n\t"
+               "flds  s12,[%[vals], #48] \n\t"
+
+           ".doparm7: \n\t"
+               "ldr  r0,[%[sizes],#28] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat7 \n\t"
+               "fldd  d7,[%[vals], #56] \n\t"
+               "b .floatdone \n\t"
+           ".dofloat7: \n\t"
+               "flds  s14,[%[vals], #56] \n\t"
+
+            ".floatdone: \n\t"
+            :
+            : [vals] "r"(floatstack), [sizes] "r"(floatSizes)
+            : "r0"
+           );
         }
   #endif
         assertex((len & 7) == 4);  // We need to make sure we add an ODD number of words to stack, so that it gets 8-byte aligned once pc is pushed by the call
@@ -1069,7 +1154,42 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         intresult = _intresult;
         intresulthigh = _intresulthigh;
         if (isRealvalue)
-            UNIMPLEMENTED;
+        {
+  #ifdef MAXFPREGS
+            if(resultsize <= 4)
+            {
+                __asm__  __volatile__(
+                    "fsts  s0,[%[fresult]] \n\t"
+                    :
+                    : [fresult] "r"(&(floatresult))
+                );
+            }
+            else
+            {
+                __asm__  __volatile__(
+                    "fstd  d0,[%[fresult]] \n\t"
+                    :
+                    : [fresult] "r"(&(doubleresult))
+                );
+            }
+  #else
+            if(resultsize <= 4)
+            {
+                floatresult = *(float*)&intresult;
+            }
+            else
+            {
+                union
+                {
+                    struct { int lo, int hi } i;
+                    double d;
+                } u;
+                u.lo = intresult;
+                u.hi = intresulthigh;
+                doubleresult = u.d;
+            }
+  #endif
+        }
  #elif defined(_ARCH_ARM64_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
         UNIMPLEMENTED;
