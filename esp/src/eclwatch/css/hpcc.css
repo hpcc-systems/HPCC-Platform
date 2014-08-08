@@ -229,6 +229,20 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+
+@media (max-width: 959px){
+    .claro .hpccTitlebar {
+        height:100px;
+    }
+    .searchUserMoreComponents{
+        width:100%;
+        margin-top:10px;
+    }
+    .seperator:first-child{
+        display:none;
+    }
+}
+
 #search-form{
     padding:0;
     margin:0;
@@ -620,6 +634,10 @@ hr.dashedLine {
 
 .hpccApp {
     height: 100%;
+}
+
+.searchUserMoreComponents{
+    float:right;
 }
 
 .navBarLoggedin{
