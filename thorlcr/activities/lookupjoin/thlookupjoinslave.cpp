@@ -1436,7 +1436,6 @@ protected:
             {
             case ROXIEMM_MEMORY_POOL_EXHAUSTED:
             case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
-            case ROXIEMM_LARGE_MEMORY_EXHAUSTED:
                 e->Release();
                 return false;
             default:
@@ -1496,7 +1495,6 @@ protected:
                     {
                     case ROXIEMM_MEMORY_POOL_EXHAUSTED:
                     case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
-                    case ROXIEMM_LARGE_MEMORY_EXHAUSTED:
                         e->Release();
                         break;
                     default:
