@@ -136,6 +136,7 @@ public:
     CopyArrayOf() { SELF::_init(); }
     ~CopyArrayOf();
     
+    void clear();
     inline PARAM item(aindex_t pos) const;
     PARAM tos(void) const;
     PARAM tos(aindex_t) const;
@@ -160,6 +161,7 @@ public:
     OwningArrayOf() { SELF::_init(); }
     ~OwningArrayOf();
     
+    void clear(bool nodel = false);                  /* Remove all items, don't free array */
     void kill(bool nodel = false);                   /* Remove all items        */
     void pop(bool nodel = false);
     void popn(aindex_t,bool nodel = false);

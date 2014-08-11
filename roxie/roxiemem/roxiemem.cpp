@@ -2302,8 +2302,8 @@ public:
     {
         //Possibly over the top, but calculate information so we can do a round robin at various
         //different levels of priority
-        callbackRanges.kill();
-        nextCallbacks.kill();
+        callbackRanges.clear();
+        nextCallbacks.clear();
         nextCallbacks.append(0);
         unsigned prevPriority = 0;
         ForEachItemIn(i, rowBufferCallbacks)
