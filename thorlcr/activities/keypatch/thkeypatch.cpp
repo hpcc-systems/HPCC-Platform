@@ -45,16 +45,15 @@ public:
     {
         CMasterActivity::init();
         helper = (IHThorKeyPatchArg *)queryHelper();
-        bool mangle = 0 != (helper->getFlags() & (TDXtemporary|TDXjobtemp));
         OwnedRoxieString originalHelperName(helper->getOriginalName());
         OwnedRoxieString patchHelperName(helper->getPatchName());
         OwnedRoxieString outputHelperName(helper->getOutputName());
         StringBuffer expandedFileName;
-        queryThorFileManager().addScope(container.queryJob(), originalHelperName, expandedFileName, mangle);
+        queryThorFileManager().addScope(container.queryJob(), originalHelperName, expandedFileName, false);
         originalName.set(expandedFileName);
-        queryThorFileManager().addScope(container.queryJob(), patchHelperName, expandedFileName.clear(), mangle);
+        queryThorFileManager().addScope(container.queryJob(), patchHelperName, expandedFileName.clear(), false);
         patchName.set(expandedFileName);
-        queryThorFileManager().addScope(container.queryJob(), outputHelperName, expandedFileName.clear(), mangle);
+        queryThorFileManager().addScope(container.queryJob(), outputHelperName, expandedFileName.clear(), false);
         outputName.set(expandedFileName);
 
         originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalHelperName));
