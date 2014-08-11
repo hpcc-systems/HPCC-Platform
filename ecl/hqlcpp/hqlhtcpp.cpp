@@ -10773,11 +10773,15 @@ void HqlCppTranslator::buildXmlSerializeSetValues(BuildCtx & ctx, IHqlExpression
         callProcedure(subctx, outputXmlSetAllId, args);
         subctx.selectElse(stmt);
     }
-    CHqlBoundExpr boundCurElement;
-    cursor->buildIterateLoop(subctx, boundCurElement, false);
-    OwnedHqlExpr curElement = boundCurElement.getTranslatedExpr();
-
-    buildXmlSerializeScalar(subctx, curElement, itemName);
+    buildXmlSerializeBeginArray(subctx, itemName);
+    {
+        BuildCtx loopctx(subctx);
+        CHqlBoundExpr boundCurElement;
+        cursor->buildIterateLoop(loopctx, boundCurElement, false);
+        OwnedHqlExpr curElement = boundCurElement.getTranslatedExpr();
+        buildXmlSerializeScalar(loopctx, curElement, itemName);
+    }
+    buildXmlSerializeEndArray(subctx, itemName);
 }
 
 void HqlCppTranslator::buildXmlSerializeBeginNested(BuildCtx & ctx, IHqlExpression * name, bool doIndent)
@@ -10832,9 +10836,7 @@ void HqlCppTranslator::buildXmlSerializeSet(BuildCtx & ctx, IHqlExpression * fie
 
     HqlExprArray args;
     buildXmlSerializeBeginNested(ctx, name, false);
-    buildXmlSerializeBeginArray(ctx, itemName);
     buildXmlSerializeSetValues(ctx, value, itemName, (name != NULL));
-    buildXmlSerializeEndArray(ctx, itemName);
     buildXmlSerializeEndNested(ctx, name);
 }
 
