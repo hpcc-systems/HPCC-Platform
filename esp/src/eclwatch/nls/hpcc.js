@@ -248,6 +248,7 @@ define({root:
     MonitorShotLimit: "Monitor Shot Limit",
     MonitorSub: "Monitor Sub",
     Month: "Month",
+    More: "more",
     MustContainUppercaseAndSymbol: "Must contain uppercase and symbol",
     NA: "N/A",
     Name: "Name",

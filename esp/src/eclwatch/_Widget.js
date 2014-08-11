@@ -1,6 +1,8 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/array",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
     "dojo/io-query",
     "dojo/dom",
     "dojo/dom-construct",
@@ -12,11 +14,12 @@ define([
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry"
 
-], function (declare, arrayUtil, ioQuery, dom, domConstruct, domAttr, domStyle,
+], function (declare, arrayUtil, i18n, nlsHPCC, ioQuery, dom, domConstruct, domAttr, domStyle,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry) {
 
     return declare("_Widget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         baseClass: "_Widget",
+        i18n: nlsHPCC,
 
         dojoConfig: dojoConfig,
         
@@ -228,12 +231,16 @@ define([
 
         arrayToList: function (arr, field) {
             var retVal = "";
-            arrayUtil.forEach(arr, function (item, idx) {
+            arrayUtil.some(arr, function (item, idx) {
                 if (retVal.length) {
                     retVal += "\n";
                 }
+                if (idx >= 10) {
+                    retVal += "..." + (arr.length - 10) + " " + this.i18n.More + "...";
+                    return true;                    
+                }
                 retVal += item[field];
-            });
+            }, this);
             return retVal;
         },
 
