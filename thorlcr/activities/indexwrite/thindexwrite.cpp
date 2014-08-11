@@ -61,8 +61,7 @@ public:
         CMasterActivity::init();
         OwnedRoxieString helperFileName = helper->getFileName();
         StringBuffer expandedFileName;
-        bool mangle = 0 != (helper->getFlags() & (TDXtemporary|TDXjobtemp));
-        queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, mangle);
+        queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, false);
         fileName.set(expandedFileName);
         dlfn.set(fileName);
         isLocal = 0 != (TIWlocal & helper->getFlags());
