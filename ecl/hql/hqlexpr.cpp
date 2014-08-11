@@ -3463,7 +3463,9 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_attr_link:
     case no_attr_expr:
         if (queryName() == onFailAtom)
-            infoFlags &= ~HEFonFailDependent;
+        {
+            infoFlags &= ~(HEFonFailDependent|HEFcontainsSkip); // ONFAIL(SKIP) - skip shouldn't extend any further
+        }
         infoFlags &= ~(HEFthrowscalar|HEFthrowds|HEFoldthrows);
         break;
     case no_clustersize:

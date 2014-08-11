@@ -251,6 +251,8 @@ private:
     static void writeCache(const char *foundLoc, const char *newLoc, IPropertyTree *val)
     {
         CriticalBlock b(cacheCrit);
+        if (!cache)
+            initCache();
         cache->removeProp(foundLoc);
         if (val)
             cache->addPropTree(newLoc, LINK(val));
@@ -692,12 +694,11 @@ public:
                     serverStatus = new CSDSServerStatus("RoxieServer");
                     serverStatus->queryProperties()->setProp("@cluster", roxieName.str());
                     serverStatus->commitProperties();
-                    initCache();
+                    isConnected = true; // Make sure this is set before the onReconnect calls, so that they refresh with info from Dali rather than from cache
                     ForEachItemIn(idx, watchers)
                     {
                         watchers.item(idx).onReconnect();
                     }
-                    isConnected = true;
                 }
                 catch(IException *e)
                 {
