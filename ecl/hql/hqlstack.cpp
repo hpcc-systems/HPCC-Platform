@@ -25,10 +25,17 @@ FuncCallStack::FuncCallStack(int size) {
     tos = size;
     stackbuf = (char*) malloc(tos);
     numToFree = 0;
-#ifdef __64BIT__
+#ifdef MAXFPREGS
     numFpRegs = 0;
     for (unsigned i=0;i<MAXFPREGS;i++)
+    {
+#ifdef FPREG_FIXEDSIZE
         fpRegs[i] = 0.0;
+#else
+        fpRegs[i].d = 0.0;
+        fpSizes[i] = 8;
+#endif
+    }
 #endif
 }
 
@@ -43,6 +50,16 @@ FuncCallStack::~FuncCallStack() {
             free(toFree[i]);
         }
     }
+}
+
+unsigned FuncCallStack::align(unsigned size)
+{
+#ifdef ALIGN_USES_ELEMENTSIZE
+    unsigned boundary = (size < ALIGNMENT) ? ALIGNMENT : size;
+#else
+    unsigned boundary = ALIGNMENT;
+#endif
+    return ((size + boundary - 1) & ~(boundary-1));
 }
 
 unsigned FuncCallStack::getSp(){ 
@@ -124,20 +141,29 @@ int FuncCallStack::push(ITypeInfo* argType, IValue* paramValue)
     case type_varunicode:
         UNIMPLEMENTED;
     case type_real:
-#ifdef __64BIT__
+#ifdef MAXFPREGS
         if (numFpRegs==MAXFPREGS) {
             PrintLog("Too many floating point registers needed in FuncCallStack::push");
             return -1;
         }
-        char tempbuf[MMXREGSIZE];
+        char tempbuf[sizeof(double)];
         castParam->toMem(tempbuf);
+#ifdef FPREG_FIXEDSIZE
         if (argType->getSize()<=4)
             fpRegs[numFpRegs++] = *(float *)&tempbuf;
         else
             fpRegs[numFpRegs++] = *(double *)&tempbuf;
+#else
+        // Variable size FP registers as on arm/x64
+        if (argType->getSize()<=4)
+            fpRegs[numFpRegs].f = *(float *)&tempbuf;
+        else
+            fpRegs[numFpRegs].d = *(double *)&tempbuf;
+        fpSizes[numFpRegs++] = argType->getSize();
+#endif
         break;
 #else
-    // fall through
+    // fall through if no hw regs used for params
 #endif
     case type_boolean:
     case type_int:
