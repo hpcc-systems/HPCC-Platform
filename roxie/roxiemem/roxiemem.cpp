@@ -439,7 +439,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                         return NULL;
                     VStringBuffer msg("Memory pool exhausted: Request for large memory denied (%u..%u)", heapLargeBlocks, largeBlocksRequired);
                     DBGLOG("%s", msg.str());
-                    throw MakeStringExceptionDirect(ROXIEMM_LARGE_MEMORY_EXHAUSTED, msg.str());
+                    throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
                 }
 
                 heapLargeBlocks = largeBlocksRequired;
