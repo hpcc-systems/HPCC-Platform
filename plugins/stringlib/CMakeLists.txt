@@ -34,11 +34,15 @@ set (    SRCS
 
 include_directories ( 
          ./../../system/include 
+         ./../../system/jlib
+         ./../../rtl/include
+         ./../../rtl/eclrtl
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DSTRINGLIB_EXPORTS )
 
 HPCC_ADD_LIBRARY( stringlib SHARED ${SRCS} )
 install ( TARGETS stringlib DESTINATION plugins )
-
-
+target_link_libraries ( stringlib
+         eclrtl
+    )

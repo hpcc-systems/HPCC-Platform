@@ -439,7 +439,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                         return NULL;
                     VStringBuffer msg("Memory pool exhausted: Request for large memory denied (%u..%u)", heapLargeBlocks, largeBlocksRequired);
                     DBGLOG("%s", msg.str());
-                    throw MakeStringException(ROXIEMM_LARGE_MEMORY_EXHAUSTED, "%s", msg.str());
+                    throw MakeStringExceptionDirect(ROXIEMM_LARGE_MEMORY_EXHAUSTED, msg.str());
                 }
 
                 heapLargeBlocks = largeBlocksRequired;
@@ -2055,7 +2055,7 @@ public:
     }
 
     void * doAllocate(memsize_t _size, unsigned allocatorId, unsigned maxSpillCost);
-    bool expandHeap(void * original, memsize_t copysize, memsize_t oldcapacity, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback);
+    void expandHeap(void * original, memsize_t copysize, memsize_t oldcapacity, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback);
 
 protected:
     HugeHeaplet * allocateHeaplet(memsize_t _size, unsigned allocatorId, unsigned maxSpillCost);
@@ -3040,7 +3040,7 @@ public:
         ptr = ret;
     }
 
-    virtual bool resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)
+    virtual void resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)
     {
         assertex(newsize);
         assertex(!HeapletBase::isShared(original));
@@ -3048,13 +3048,14 @@ public:
         if (newsize <= curCapacity)
         {
             //resizeRow never shrinks memory
-            return true;
+            return;
         }
         if (curCapacity > FixedSizeHeaplet::maxHeapSize())
         {
             try
             {
-                return hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, maxSpillCost, callback);
+                hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, maxSpillCost, callback);
+                return;
             }
             catch (IException *e)
             {
@@ -3065,13 +3066,10 @@ public:
         }
 
         void *ret = allocate(newsize, activityId, maxSpillCost);
-        if (!ret)
-            return false;
         memcpy(ret, original, copysize);
         memsize_t newCapacity = HeapletBase::capacity(ret);
         callback.atomicUpdate(newCapacity, ret);
         HeapletBase::release(original);
-        return true;
     }
 
     virtual void *finalizeRow(void * original, memsize_t initialSize, memsize_t finalSize, unsigned activityId)
@@ -3180,7 +3178,7 @@ public:
         return new CRoxieVariableRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags);
     }
 
-    bool checkLimit(unsigned numRequested, unsigned maxSpillCost)
+    void checkLimit(unsigned numRequested, unsigned maxSpillCost)
     {
         unsigned totalPages;
         releaseEmptyPages(false);
@@ -3228,14 +3226,16 @@ public:
                     releaseEmptyPages(true);
                     if (numHeapPages == atomic_read(&totalHeapPages))
                     {
-                        if (maxSpillCost != SpillAllCost)
-                            return false;
-
                         VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
                         logctx.CTXLOG("%s", msg.str());
-                        reportMemoryUsage(false);
-                        PrintStackReport();
-                        throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "%s", msg.str());
+
+                        //Avoid a stack trace if the allocation is optional
+                        if (maxSpillCost == SpillAllCost)
+                        {
+                            reportMemoryUsage(false);
+                            PrintStackReport();
+                        }
+                        throw MakeStringExceptionDirect(ROXIEMM_MEMORY_LIMIT_EXCEEDED, msg.str());
                     }
                 }
             }
@@ -3252,7 +3252,6 @@ public:
                 getPeakActivityUsage();
             peakPages = totalPages;
         }
-        return true;
     }
 
     virtual void reportPeakStatistics(IStatisticTarget & target, unsigned detail)
@@ -3544,8 +3543,7 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
 
     loop
     {
-        if (!rowManager->checkLimit(numPages, maxSpillCost))
-            return NULL;
+        rowManager->checkLimit(numPages, maxSpillCost);
 
         //If the allocation fails, then try and free some memory by calling the callbacks
         void * memory = suballoc_aligned(numPages, true);
@@ -3556,11 +3554,8 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
         {
             if (maxSpillCost == SpillAllCost)
-            {
                 rowManager->reportMemoryUsage(false);
-                throwHeapExhausted(numPages);
-            }
-            return NULL;
+            throwHeapExhausted(numPages);
         }
     }
 }
@@ -3568,15 +3563,6 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
 void * CHugeHeap::doAllocate(memsize_t _size, unsigned allocatorId, unsigned maxSpillCost)
 {
     HugeHeaplet *head = allocateHeaplet(_size, allocatorId, maxSpillCost);
-    if (!head)
-    {
-        if (memTraceLevel >= 2)
-        {
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %"I64F"u) failed to allocate a block - pageLimit=%u peakPages=%u rowMgr=%p",
-                (unsigned __int64) _size, rowManager->pageLimit, rowManager->peakPages, this);
-        }
-        return NULL;
-    }
 
     if (memTraceLevel >= 2 || (memTraceSizeLimit && _size >= memTraceSizeLimit))
     {
@@ -3591,7 +3577,7 @@ void * CHugeHeap::doAllocate(memsize_t _size, unsigned allocatorId, unsigned max
     return head->allocateHuge(_size);
 }
 
-bool CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcapacity, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)
+void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcapacity, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)
 {
     unsigned newPages = PAGES(newsize + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
     unsigned oldPages = PAGES(oldcapacity + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
@@ -3603,8 +3589,7 @@ bool CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
         // NOTE: we request permission only for the difference between the old
         // and new sizes, even though we may temporarily hold both. This not only
         // simplifies the code considerably, it's probably desirable
-        if (!rowManager->checkLimit(numPages, maxSpillCost))
-            return false;
+        rowManager->checkLimit(numPages, maxSpillCost);
 
         bool release = false;
         void *realloced = subrealloc_aligned(oldbase, oldPages, newPages);
@@ -3680,7 +3665,7 @@ bool CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
                 }
             }
 
-            return true;
+            return;
         }
 
         //If the allocation fails, then try and free some memory by calling the callbacks
@@ -3689,11 +3674,8 @@ bool CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
         {
             if (maxSpillCost == SpillAllCost)
-            {
                 rowManager->reportMemoryUsage(false);
-                throwHeapExhausted(newPages, oldPages);
-            }
-            return false;
+            throwHeapExhausted(newPages, oldPages);
         }
     }
 }
@@ -3732,19 +3714,14 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
 
     loop
     {
-        if (!rowManager->checkLimit(1, maxSpillCost))
-            return NULL;
+        rowManager->checkLimit(1, maxSpillCost);
 
         donorHeaplet = allocateHeaplet();
         if (donorHeaplet)
             break;
         rowManager->restoreLimit(1);
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
-        {
-            if (maxSpillCost == SpillAllCost)
-                throwHeapExhausted(1);
-            return NULL;
-        }
+            throwHeapExhausted(1);
     }
 
     if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
@@ -4308,7 +4285,15 @@ public:
 
     void costAllocate(unsigned allocCost)
     {
-        row.setown(rowManager->allocate(size, 0, allocCost));
+        try
+        {
+            row.setown(rowManager->allocate(size, 0, allocCost));
+        }
+        catch (IException * e)
+        {
+            row.clear();
+            e->Release();
+        }
     }
 
     inline bool hasRow() const { return row != NULL; }
@@ -4416,7 +4401,8 @@ protected:
         ASSERT(PackedFixedSizeHeaplet::dataOffset() >= sizeof(PackedFixedSizeHeaplet));
         ASSERT(HugeHeaplet::dataOffset() >= sizeof(HugeHeaplet));
 
-        initializeHeap(false, useLargeMemory ? largeMemory : smallMemory, 0, NULL);
+        memsize_t memory = (useLargeMemory ? largeMemory : smallMemory) * (unsigned __int64)0x100000U;
+        initializeHeap(false, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
     }
 
     void testCleanup()
@@ -4939,7 +4925,7 @@ protected:
     void testExhaust()
     {
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
-        rm1->setMemoryLimit(20*1024*1024);
+        rm1->setMemoryLimit(20*HEAP_ALIGNMENT_SIZE);
         try
         {
             unsigned i = 0;
@@ -4950,8 +4936,7 @@ protected:
         }
         catch (IException *E)
         {
-            StringBuffer s;
-            ASSERT(strcmp(E->errorMessage(s).str(), "memory limit exceeded")==0);
+            ASSERT(E->errorCode() == ROXIEMM_MEMORY_LIMIT_EXCEEDED);
             E->Release();
         }
         ASSERT(rm1->numPagesAfterCleanup(true)==20);
