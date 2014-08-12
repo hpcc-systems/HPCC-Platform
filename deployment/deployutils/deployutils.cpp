@@ -867,6 +867,35 @@ public:
               extraInfo = strBuf.str();
               //ret->m_bAddEmpty = true;
             }
+            else if (strcmp(type, "espprocessType")==0)
+            {
+              nCtrlType = 4;//LVC_COMBO;
+              bAddBlank = true;
+              LoadComboBox("Software/EspProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              extraInfo = strBuf.str();
+              //ret->m_bAddEmpty = true;
+            }
+            else if (strcmp(type, "mysqlloggingagentType")==0)
+            {
+              nCtrlType = 4;//LVC_COMBO;
+              bAddBlank = true;
+              LoadComboBox("Software/MySQLLoggingAgent", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              extraInfo = strBuf.str();
+            }
+            else if (strcmp(type, "esploggingagentType")==0)
+            {
+              nCtrlType = 4;//LVC_COMBO;
+              bAddBlank = true;
+              LoadComboBox("Software/ESPLoggingAgent", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              extraInfo = strBuf.str();
+            }
+            else if (strcmp(type, "loggingmanagerType")==0)
+            {
+              nCtrlType = 4;//LVC_COMBO;
+              bAddBlank = true;
+              LoadComboBox("Software/LoggingManager", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              extraInfo = strBuf.str();
+            }
             else if (strcmp(type, "ldapServerType")==0)
             {
               nCtrlType = 4;//LVC_COMBO;
@@ -1628,6 +1657,26 @@ public:
         else if(!strcmp(type,"mysqlType"))
         {
           tempPath.clear().append("./Software/MySQLProcess[1]/@name");
+          wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
+        }
+        else if(!strcmp(type,"espprocessType"))
+        {
+          tempPath.clear().append("./Software/EspProcess[1]/@name");
+          wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
+        }
+        else if(!strcmp(type,"mysqlloggingagentType"))
+        {
+          tempPath.clear().append("./Software/MySQLLoggingAgent[1]/@name");
+          wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
+        }
+        else if(!strcmp(type,"esploggingagentType"))
+        {
+          tempPath.clear().append("./Software/ESPLoggingAgent[1]/@name");
+          wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
+        }
+        else if(!strcmp(type,"loggingmanagerType"))
+        {
+          tempPath.clear().append("./Software/LoggingManager[1]/@name");
           wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
         }
         else if(!strcmp(type,"daliServersType"))
