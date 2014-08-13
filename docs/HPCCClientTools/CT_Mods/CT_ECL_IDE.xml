@@ -2794,7 +2794,7 @@ ENDMACRO;
         <para><graphic fileref="../../images/CT54.jpg" /></para>
       </sect2>
 
-      <sect2 id="Graph_Viewer">
+      <sect2 id="Graph_Viewer" role="brk">
         <title><emphasis>Graph Viewer </emphasis></title>
 
         <para>A workunit’s execution graph is displayed in the Graph
@@ -2819,10 +2819,13 @@ ENDMACRO;
             <para>Use the Ribbon bar Running buttons to watch the progress of
             a running workunit, refreshing the graph as it runs. Options are
             provided so you can Follow Active or Minimise Inactive areas of
-            the graph according to your preference .<graphic
-            fileref="../../images/CT55.jpg" scalefit="1" /></para>
+            the graph according to your preference .</para>
           </listitem>
         </itemizedlist>
+
+        <para></para>
+
+        <graphic fileref="../../images/CT55.jpg" scalefit="1" />
       </sect2>
     </sect1>
 
