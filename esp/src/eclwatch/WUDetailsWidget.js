@@ -421,6 +421,9 @@ define([
             } else if (name === "resourceURLCount" && newValue) {
                 this.widget._Resources.set("title", this.i18n.Resources + " (" + newValue + ")");
                 this.setDisabled(this.widget._Resources.id, false);
+            } else if (name === "helpersCount" && newValue) {
+                this.logsWidget.set("title", this.i18n.Helpers + " (" + newValue + ")");
+                this.setDisabled(this.logsWidget.id, false);
             } else if (name === "Archived") {
                 this.refreshActionState();
             } else if (name === "StateID") {
@@ -468,22 +471,6 @@ define([
             if (this.wu.isComplete()) {
                 this.wu.getInfo({
                     onGetVariables: function (response) {
-                    },
-
-                    onAfterSend: function (response) {
-                        var helpersCount = 0;
-                        if (response.Helpers && response.Helpers.ECLHelpFile) {
-                            helpersCount += response.Helpers.ECLHelpFile.length;
-                        }
-                        if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
-                            helpersCount += response.ThorLogList.ThorLogInfo.length;
-                        }
-                        if (response.HasArchiveQuery) {
-                            helpersCount += 1;
-                        }
-
-                        context.logsWidget.set("title", context.i18n.Helpers + " (" + helpersCount + ")");
-                        context.setDisabled(context.logsWidget.id, false);
                     }
                 });
             }
