@@ -1204,13 +1204,25 @@ public:
     {
         addArg(name, PyByteArray_FromStringAndSize((const char *) val, len));
     }
+    virtual void bindFloatParam(const char *name, float val)
+    {
+        addArg(name, PyFloat_FromDouble((double) val));
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         addArg(name, PyFloat_FromDouble(val));
     }
+    virtual void bindSignedSizeParam(const char *name, int size, __int64 val)
+    {
+        addArg(name, PyLong_FromLongLong(val));
+    }
     virtual void bindSignedParam(const char *name, __int64 val)
     {
         addArg(name, PyLong_FromLongLong(val));
+    }
+    virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
+    {
+        addArg(name, PyLong_FromUnsignedLongLong(val));
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
@@ -1435,7 +1447,7 @@ private:
 class Python27EmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
     {
         if (!threadContext)
         {
@@ -1444,7 +1456,7 @@ public:
             threadContext = new PythonThreadContext;
             threadHookChain = addThreadTermFunc(releaseContext);
         }
-        if (isImport)
+        if (flags & EFimport)
             return new Python27EmbedImportContext(threadContext, options);
         else
             return new Python27EmbedScriptContext(threadContext, options);

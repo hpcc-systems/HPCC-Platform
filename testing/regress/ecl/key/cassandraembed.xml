@@ -1,0 +1,46 @@
+<Dataset name='Result 1'>
+ <Row><name>; /* // ?</name><value>99999</value><boolval>true</boolval><r8>99.98999999999999</r8><r4>999.989990234375</r4><d>393939393939</d><ddd>9.99</ddd><u1>Straßßßßßße</u1><u2>9999 ßßß</u2></Row>
+ <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2></Row>
+ <Row><name>name2</name><value>2</value><boolval>false</boolval><r8>5.6</r8><r4>7.800000190734863</r4><d>3030</d><ddd>-1234567.89</ddd><u1>là</u1><u2>là      </u2></Row>
+ <Row><name>name3</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>8.76</ddd><u1>Straße</u1><u2>Straße  </u2></Row>
+ <Row><name>name4</name><value>3</value><boolval>true</boolval><r8>9.1</r8><r4>11.11999988555908</r4><d>6161353561613535</d><ddd>987.65</ddd><u1>Baße</u1><u2>Baße    </u2></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>name1</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>name1</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2></Row>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>1</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>true</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>1.2</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>3.400000095367432</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>6161353561613535</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>Straße</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>Straße  </Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2></Row>
+ <Row><name>name2</name><value>2</value><boolval>false</boolval><r8>5.6</r8><r4>7.800000190734863</r4><d>3030</d><ddd>-1234567.89</ddd><u1>là</u1><u2>là      </u2></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>25001</Result_14></Row>
+</Dataset>

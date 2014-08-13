@@ -7924,13 +7924,13 @@ public:
     ConstantRowCreator(MemoryBuffer & _out) : out(_out) { expectedIndex = 0; }
 
     bool buildTransformRow(IHqlExpression * transform);
+    bool processFieldValue(IHqlExpression * optField, ITypeInfo * lhsType, IHqlExpression * rhs);
 
 protected:
     bool expandAssignChildren(IHqlExpression * expr);
     bool expandAssignElement(IHqlExpression * expr);
 
     bool processElement(IHqlExpression * expr, IHqlExpression * parentSelector);
-    bool processFieldValue(IHqlExpression * optField, ITypeInfo * lhsType, IHqlExpression * rhs);
     bool processRecord(IHqlExpression * record, IHqlExpression * parentSelector);
 
     IHqlExpression * queryMatchingAssign(IHqlExpression * self, IHqlExpression * search);
@@ -8131,12 +8131,13 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
             }
             return true;
         }
+    case type_utf8:
     case type_unicode:
     case type_qstring:
         {
             if (lenLhs == UNKNOWN_LENGTH)
                 rtlWriteInt4(out.reserve(sizeof(size32_t)), lenValue);
-            castValue->toMem(out.reserve(castValueType->getSize()));
+            castValue->toMem(out.reserve(castValue->getSize()));
             return true;
         }
     //MORE:
@@ -8215,6 +8216,12 @@ bool createConstantRow(MemoryBuffer & target, IHqlExpression * transform)
 {
     ConstantRowCreator builder(target);
     return builder.buildTransformRow(transform);
+}
+
+bool createConstantField(MemoryBuffer & target, IHqlExpression * field, IHqlExpression * value)
+{
+    ConstantRowCreator builder(target);
+    return builder.processFieldValue(field, field->queryType(), value);
 }
 
 IHqlExpression * createConstantRowExpr(IHqlExpression * transform)
