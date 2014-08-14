@@ -263,6 +263,7 @@ define([
                                         this.graphViewHistory.getLatest().navigateTo(this);
                                     }
                                     deferred.resolve("Layout Complete.");
+                                    this.refreshRootState(context.selectedGlobalIDs);
                                 };
                                 if (this.svg) {
                                     targetGraphWidget.startCachedLayout(this.svg);
@@ -277,6 +278,7 @@ define([
                             targetGraphWidget.setSelectedAsGlobalID(context.selectedGlobalIDs);
                             targetGraphWidget.setMessage("");
                             deferred.resolve("XGMML Did Not Change.");
+                            targetGraphWidget.refreshRootState(context.selectedGlobalIDs);
                         }
                     }));
                 }));
@@ -594,6 +596,35 @@ define([
 
             mergeXGMML: function (xgmml) {
                 return this.loadXGMML(xgmml, true);
+            },
+
+            getTypeSummary: function (gloablIDs) {
+                var retVal = {
+                    Graph: 0,
+                    Cluster: 0,
+                    Vertex: 0,
+                    Edge: 0,
+                    Unknown: 0
+                };
+                arrayUtil.forEach(gloablIDs, function (item) {
+                    retVal[this.getGlobalType(item)]++;
+                }, this);
+                return retVal;
+            },
+
+            getGlobalType: function(globalID) {
+                if (this.hasPlugin()) {
+                    return this._plugin.getGlobalType(this._plugin.getItem(globalID));
+                }
+                return "Unknown";
+            },
+
+            getComplexityInfo: function () {
+                return {
+                    threshold: 200,
+                    activityCount: this.getVertices().length,
+                    isComplex: function () { return this.activityCount > this.threshold; }
+                };
             },
 
             centerOn: function (globalID) {
@@ -1103,6 +1134,13 @@ define([
                 return [];
             },
 
+            getVertices: function () {
+                if (this.hasPlugin()) {
+                    return this._plugin.getVertices();
+                }
+                return [];
+            },
+
             getVerticesWithProperties: function () {
                 if (this.hasPlugin()) {
                     return this._plugin.getVerticesWithProperties();
@@ -1152,6 +1190,18 @@ define([
                 this.setDisabled(this.id + "Next", !this.graphViewHistory.hasNext(), "iconRight", "iconRightDisabled");
                 var selection = this.getSelection();
                 this.setDisabled(this.id + "SyncSelection", !this.getSelection().length, "iconSync", "iconSyncDisabled");
+            },
+
+            refreshRootState: function (selectedGlobalIDs) {
+                var depthDisabled = false;
+                var distanceDisabled = false;
+                if (selectedGlobalIDs) {
+                    var typeSummary = this.getTypeSummary(selectedGlobalIDs);
+                    depthDisabled = !selectedGlobalIDs.length || !(typeSummary.Graph || typeSummary.Cluster);
+                    distanceDisabled = !(typeSummary.Vertex || typeSummary.Edge);
+                }
+                this.setDisabled(this.id + "Depth", depthDisabled);
+                this.setDisabled(this.id + "Distance", distanceDisabled);
             }
         });
     });

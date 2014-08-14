@@ -150,7 +150,9 @@ define([
             };
             this.overview.onDoubleClick = function (globalID, keyState) {
                 var mainItem = context.main.getItem(globalID);
-                context.main.centerOnItem(mainItem, true);
+                if (mainItem) {
+                    context.main.centerOnItem(mainItem, true);
+                }
             };
 
             this.main = registry.byId(this.id + "MainGraphWidget");
@@ -436,8 +438,15 @@ define([
                         initialSelection = [this.params.SubGraphId];
                     }
                 }
+                var mainRoot = [0];
                 this.setOverviewRootItems([0], initialSelection);
-                this.setMainRootItems(initialSelection);
+                var complexityInfo = this.global.getComplexityInfo();
+                if (complexityInfo.isComplex()) {
+                    if (confirm(lang.replace(this.i18n.ComplexityWarning, complexityInfo) + "\n" + this.i18n.ManualOverviewSelection)) {
+                        mainRoot = [];
+                    }
+                }
+                this.setMainRootItems(mainRoot, initialSelection);
                 this.setLocalRootItems([]);
                 this.loadSubgraphs();
                 this.loadVertices();
@@ -635,7 +644,13 @@ define([
                 }
             }
             if (sourceControl != this.local) {
-                this.setLocalRootItems(selectedGlobalIDs);
+                switch (sourceControl) {
+                    case this.overview:
+                        this.setLocalRootItems([]);
+                        break;
+                    default:
+                        this.setLocalRootItems(selectedGlobalIDs);
+                }
             }
 
             var propertiesDom = dom.byId(this.id + "Properties");
