@@ -326,12 +326,12 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     warnTimeLimit = defaultWarnTimeLimit[priority];
     updateFromWorkUnit(timeLimit, wu, "timeLimit");
     updateFromWorkUnit(warnTimeLimit, wu, "warnTimeLimit");
-    updateFromWorkUnit(memoryLimit, wu, "memoryLimit");
+    updateFromWorkUnitM(memoryLimit, wu, "memoryLimit");
     if (stateInfo)
     {
         updateFromContext(timeLimit, stateInfo, "@timeLimit");
         updateFromContext(warnTimeLimit, stateInfo, "@warnTimeLimit");
-        updateFromContext(memoryLimit, stateInfo, "@memoryLimit");
+        updateFromContextM(memoryLimit, stateInfo, "@memoryLimit");
     }
 
     updateFromWorkUnit(parallelJoinPreload, wu, "parallelJoinPreload");
@@ -350,7 +350,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(traceActivityTimes, wu, "traceActivityTimes");
 }
 
-void QueryOptions::updateFromWorkUnit(memsize_t &value, IConstWorkUnit &wu, const char *name)
+void QueryOptions::updateFromWorkUnitM(memsize_t &value, IConstWorkUnit &wu, const char *name)
 {
     value = (memsize_t) wu.getDebugValueInt64(name, value);
 }
@@ -377,7 +377,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(priority, ctx, "@priority", "_Priority");
         updateFromContext(timeLimit, ctx, "@timeLimit", "_TimeLimit");
         updateFromContext(warnTimeLimit, ctx, "@warnTimeLimit", "_WarnTimeLimit");
-        updateFromContext(memoryLimit, ctx, "@memoryLimit", "_MemoryLimit");
+        updateFromContextM(memoryLimit, ctx, "@memoryLimit", "_MemoryLimit");
         updateFromContext(parallelJoinPreload, ctx, "@parallelJoinPreload", "_ParallelJoinPreload");
         updateFromContext(fullKeyedJoinPreload, ctx, "@fullKeyedJoinPreload", "_FullKeyedJoinPreload");
         updateFromContext(keyedJoinPreload, ctx, "@keyedJoinPreload", "_KeyedJoinPreload");
@@ -405,7 +405,7 @@ const char * QueryOptions::findProp(const IPropertyTree *ctx, const char *name1,
         return NULL;
 }
 
-void QueryOptions::updateFromContext(memsize_t &value, const IPropertyTree *ctx, const char *name1, const char *name2)
+void QueryOptions::updateFromContextM(memsize_t &value, const IPropertyTree *ctx, const char *name1, const char *name2)
 {
     const char *name = findProp(ctx, name1, name2);
     if (name)

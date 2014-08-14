@@ -118,11 +118,11 @@ public:
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);
-    static void updateFromWorkUnit(memsize_t &value, IConstWorkUnit &wu, const char *name);
+    static void updateFromWorkUnitM(memsize_t &value, IConstWorkUnit &wu, const char *name); // Needs different name to ensure works in 32-bit where memsize_t and unsigned are same type
     static void updateFromWorkUnit(int &value, IConstWorkUnit &wu, const char *name);
     static void updateFromWorkUnit(unsigned &value, IConstWorkUnit &wu, const char *name);
     static void updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const char *name);
-    static void updateFromContext(memsize_t &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
+    static void updateFromContextM(memsize_t &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL); // Needs different name to ensure works in 32-bit where memsize_t and unsigned are same type
     static void updateFromContext(int &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
     static void updateFromContext(unsigned &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
     static void updateFromContext(bool &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
