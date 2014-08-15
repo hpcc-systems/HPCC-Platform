@@ -314,7 +314,7 @@ void HqlCppTranslator::buildNullRow(BuildCtx & ctx, IHqlExpression * expr, CHqlB
     bound.expr.setown(createValue(no_nullptr, makeRowReferenceType(expr)));
 }
 
-IReferenceSelector * HqlCppTranslator::doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr, node_operator op)
+IReferenceSelector * HqlCppTranslator::doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr)
 {
 //  assertex(supportsLinkCountedRows);
     Owned<ITypeInfo> overrideType = setLinkCountedAttr(expr->queryType(), true);
@@ -324,6 +324,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXMLorJSON(BuildCtx & ctx, I
 
     StringBuffer instanceName, factoryName, s;
     bool usesContents = false;
+    node_operator op = expr->getOperator();
     getUniqueId(instanceName.append(op==no_fromjson ? "json" : "xml"));
     buildXmlReadTransform(ds, factoryName, usesContents);
 
@@ -416,7 +417,7 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
         return buildActiveRow(ctx, expr);
     case no_fromxml:
     case no_fromjson:
-        return doBuildRowFromXMLorJSON(ctx, expr, op);
+        return doBuildRowFromXMLorJSON(ctx, expr);
     case no_serialize:
         {
             IHqlExpression * deserialized = expr->queryChild(0);

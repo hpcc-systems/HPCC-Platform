@@ -914,6 +914,7 @@ THRESHOLD           { RETURNSYM(THRESHOLD); }
 TIMEOUT             { RETURNSYM(TIMEOUT); }
 TIMELIMIT           { RETURNSYM(TIMELIMIT); }
 TOKEN               { RETURNSYM(TOKEN); }
+TOJSON              { RETURNSYM(TOJSON); }
 TOPN                { RETURNSYM(TOPN); }
 TOUNICODE           { RETURNSYM(TOUNICODE); }
 TOXML               { RETURNSYM(TOXML); }

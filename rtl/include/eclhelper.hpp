@@ -642,9 +642,8 @@ interface ICodeContext : public IResourceContext
     virtual char *getDaliServers() = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
 
-    // Called from generated code for FROMJSON
-
     virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
 };
 
 

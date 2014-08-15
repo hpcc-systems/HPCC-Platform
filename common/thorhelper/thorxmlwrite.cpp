@@ -1313,3 +1313,17 @@ extern thorhelper_decl void convertRowToXML(size32_t & lenResult, char * & resul
     rtlStrToStrX(sizeResult, result, writer.length(), writer.str());
     lenResult = rtlUtf8Length(sizeResult, result);
 }
+
+extern thorhelper_decl void convertRowToJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+{
+    const byte * self = (const byte *)row;
+    if (flags == (unsigned)-1)
+        flags = XWFtrim|XWFopt|XWFnoindent;
+
+    CommonJsonWriter writer(flags);
+    info.toXML(self, writer);
+    //could use detach...
+    unsigned sizeResult;
+    rtlStrToStrX(sizeResult, result, writer.length(), writer.str());
+    lenResult = rtlUtf8Length(sizeResult, result);
+}

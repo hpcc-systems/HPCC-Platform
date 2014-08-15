@@ -215,6 +215,7 @@ IIdAtom * createUnicodeRangeHighId;
 IIdAtom * createRegexId;
 IIdAtom * createWRegexId;
 IIdAtom * csvStr2BoolId;
+IIdAtom * ctxGetRowJsonId;
 IIdAtom * ctxGetRowXmlId;
 IIdAtom * data2BoolId;
 IIdAtom * dataset2DatasetXId;
@@ -864,6 +865,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(createUnicodeRangeHigh);
     MAKEID(createWRegex);
     MAKEID(csvStr2Bool);
+    MAKEID(ctxGetRowJson);
     MAKEID(ctxGetRowXml);
     MAKEID(data2Bool);
     MAKEID(dataset2DatasetX);

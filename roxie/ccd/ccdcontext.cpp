@@ -1664,6 +1664,10 @@ public:
     {
         convertRowToXML(lenResult, result, info, row, flags);
     }
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+    {
+        convertRowToJSON(lenResult, result, info, row, flags);
+    }
 
     virtual IWorkUnit *updateWorkUnit() const
     {

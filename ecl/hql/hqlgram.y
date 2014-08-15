@@ -428,6 +428,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TIMEOUT
   TIMELIMIT
   TOKEN
+  TOJSON
   TOPN
   TOUNICODE
   TOXML
@@ -5884,6 +5885,11 @@ primexpr1
                         {
                             //MORE Could allow ,NOTRIM,OPT,???flags
                             $$.setExpr(createValue(no_toxml, makeUtf8Type(UNKNOWN_LENGTH, NULL), $3.getExpr()));
+                        }
+    | TOJSON '(' dataRow ')'
+                        {
+                            //MORE Could allow ,NOTRIM,OPT,???flags
+                            $$.setExpr(createValue(no_tojson, makeUtf8Type(UNKNOWN_LENGTH, NULL), $3.getExpr()));
                         }
     | REGEXFIND '(' expression ',' expression regexOpt ')'
                         {

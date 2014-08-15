@@ -1462,6 +1462,7 @@ const char *getOpString(node_operator op)
     case no_merge_pending: return "no_merge_pending";
     case no_merge_nomatch: return "no_merge_nomatch";
     case no_toxml: return "TOXML";
+    case no_tojson: return "TOJSON";
     case no_catchds: return "CATCH";
     case no_readspill: return "no_readspill";
     case no_writespill: return "no_writespill";

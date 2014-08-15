@@ -1195,7 +1195,7 @@ public:
     void doBuildAssignUnicodeOrder(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignRegexFindReplace(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignSubString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
-    void doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
+    void doBuildAssignToXmlorJson(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignWhich(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignWuid(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
@@ -1248,7 +1248,7 @@ public:
     void doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
 
     IReferenceSelector * doBuildRowDeserializeRow(BuildCtx & ctx, IHqlExpression * expr);
-    IReferenceSelector * doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr, node_operator op);
+    IReferenceSelector * doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * doBuildRowIdToBlob(BuildCtx & ctx, IHqlExpression * expr, bool isNew);
     IReferenceSelector * doBuildRowIf(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * doBuildRowMatchAttr(BuildCtx & ctx, IHqlExpression * expr);

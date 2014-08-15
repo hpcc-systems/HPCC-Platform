@@ -603,6 +603,10 @@ public:
     {
         convertRowToXML(lenResult, result, info, row, flags);
     }
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+    {
+        convertRowToJSON(lenResult, result, info, row, flags);
+    }
     const void * fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
     {
         return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
