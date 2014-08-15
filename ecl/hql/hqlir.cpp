@@ -648,6 +648,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,definesideeffect);
     EXPAND_CASE(no,callsideeffect);
     EXPAND_CASE(no,fromxml);
+    EXPAND_CASE(no,fromjson);
     EXPAND_CASE(no,actionlist);
     EXPAND_CASE(no,preservemeta);
     EXPAND_CASE(no,normalizegroup);

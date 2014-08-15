@@ -737,6 +737,7 @@ enum _node_operator {
         no_merge_pending,
         no_httpcall,
         no_getenv,
+        no_fromjson,
         no_last_op,
 
 //These never get created as IHqlExpressions....

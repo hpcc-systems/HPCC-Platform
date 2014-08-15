@@ -5854,6 +5854,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_serialize:
     case no_typetransfer:
     case no_fromxml:
+    case no_fromjson:
     case no_httpcall:
         break;
 

@@ -205,6 +205,7 @@ IIdAtom * createQuotedStringId;
 IIdAtom * createRangeLowId;
 IIdAtom * createRangeHighId;
 IIdAtom * createRealNullId;
+IIdAtom * createRowFromJsonId;
 IIdAtom * createRowFromXmlId;
 IIdAtom * createRowStreamId;
 IIdAtom * createStrRangeLowId;
@@ -854,6 +855,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(createRangeHigh);
     MAKEID(createRealNull);
     MAKEID(createRegex);
+    MAKEID(createRowFromJson);
     MAKEID(createRowFromXml);
     MAKEID(createRowStream);
     MAKEID(createStrRangeLow);

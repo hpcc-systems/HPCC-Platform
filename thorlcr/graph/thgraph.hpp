@@ -521,6 +521,10 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         {
             return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
         }
+        virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+        {
+            return ctx->fromJson(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+        }
         virtual IEngineContext *queryEngineContext()
         {
             return ctx->queryEngineContext();

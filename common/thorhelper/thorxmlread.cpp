@@ -664,6 +664,27 @@ const void * createRowFromXml(IEngineRowAllocator * rowAllocator, size32_t len, 
     return rowBuilder.finalizeRowClear(newSize);
 }
 
+size32_t createRowFromJson(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    Owned<IPropertyTree> root = createPTreeFromJSONString(size, utf8, ipt_none, stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
+    if (!root)
+    {
+        throwError(THORCERR_InvalidJsonFromJson);
+        return 0;
+    }
+    Owned <XmlColumnProvider> columns = new XmlDatasetColumnProvider;
+    columns->setRow(root);
+    NullDiskCallback dummyCallback;
+    return xmlTransformer->transform(rowBuilder, columns, &dummyCallback);
+}
+
+const void * createRowFromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    size32_t newSize = createRowFromJson(rowBuilder, rtlUtf8Size(len, utf8), utf8, xmlTransformer, stripWhitespace);
+    return rowBuilder.finalizeRowClear(newSize);
+}
+
 //=====================================================================================================
 
 IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, const void * text, bool isDataSet)

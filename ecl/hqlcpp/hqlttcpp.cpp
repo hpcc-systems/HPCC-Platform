@@ -968,6 +968,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             switch (op)
             {
             case no_fromxml:
+            case no_fromjson:
                 return option;
             case no_createrow:
                 //MORE: There are more cases that could be evaluated outside of thor, but playing safe.

@@ -215,6 +215,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   FROM
   FORMAT_ATTR
   FORWARD
+  FROMJSON
   FROMUNICODE
   FROMXML
   FULL
@@ -7246,6 +7247,11 @@ simpleDataRow
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             $$.setExpr(createRow(no_fromxml, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())), $1);
+                        }
+    | FROMJSON '(' recordDef ',' expression optCommaTrim ')'
+                        {
+                            parser->normalizeExpression($5, type_stringorunicode, false);
+                            $$.setExpr(createRow(no_fromjson, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())), $1);
                         }
     | WHEN '(' dataRow ',' action ')'
                         {

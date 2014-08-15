@@ -314,7 +314,7 @@ void HqlCppTranslator::buildNullRow(BuildCtx & ctx, IHqlExpression * expr, CHqlB
     bound.expr.setown(createValue(no_nullptr, makeRowReferenceType(expr)));
 }
 
-IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExpression * expr)
+IReferenceSelector * HqlCppTranslator::doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr, node_operator op)
 {
 //  assertex(supportsLinkCountedRows);
     Owned<ITypeInfo> overrideType = setLinkCountedAttr(expr->queryType(), true);
@@ -322,10 +322,10 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExp
     IHqlExpression * record = expr->queryRecord();
     OwnedHqlExpr ds = createDataset(no_anon, LINK(record));
 
-    StringBuffer xmlInstanceName, xmlFactoryName, s;
+    StringBuffer instanceName, factoryName, s;
     bool usesContents = false;
-    getUniqueId(xmlInstanceName.append("xml"));
-    buildXmlReadTransform(ds, xmlFactoryName, usesContents);
+    getUniqueId(instanceName.append(op==no_fromjson ? "json" : "xml"));
+    buildXmlReadTransform(ds, factoryName, usesContents);
 
     OwnedHqlExpr curActivityId = getCurrentActivityId(ctx);
 
@@ -334,23 +334,27 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExp
     BuildCtx * initCtx = &ctx;
     if (!insideOnCreate(ctx) && getInvariantMemberContext(ctx, &declareCtx, &initCtx, false, false))
     {
-        declareCtx->addQuoted(s.clear().append("Owned<IXmlToRowTransformer> ").append(xmlInstanceName).append(";"));
-        s.clear().append(xmlInstanceName).append(".setown(").append(xmlFactoryName).append("(ctx,");
+        declareCtx->addQuoted(s.clear().append("Owned<IXmlToRowTransformer> ").append(instanceName).append(";"));
+        s.clear().append(instanceName).append(".setown(").append(factoryName).append("(ctx,");
         generateExprCpp(s, curActivityId).append("));");
         initCtx->addQuoted(s);
     }
     else
     {
-        s.append("Owned<IXmlToRowTransformer> ").append(xmlInstanceName).append(" = ").append(xmlFactoryName).append("(ctx,");
+        s.append("Owned<IXmlToRowTransformer> ").append(instanceName).append(" = ").append(factoryName).append("(ctx,");
         generateExprCpp(s, curActivityId).append(");");
         ctx.addQuoted(s);
     }
 
     HqlExprArray args;
     args.append(*ensureExprType(expr->queryChild(1), utf8Type));
-    args.append(*createQuoted(xmlInstanceName, makeBoolType()));
+    args.append(*createQuoted(instanceName, makeBoolType()));
     args.append(*createConstant(expr->hasAttribute(trimAtom)));
-    OwnedHqlExpr function = bindFunctionCall(createRowFromXmlId, args, overrideType);
+    OwnedHqlExpr function;
+    if (op==no_fromjson)
+        function.setown(bindFunctionCall(createRowFromJsonId, args, overrideType));
+    else
+        function.setown(bindFunctionCall(createRowFromXmlId, args, overrideType));
 
     CHqlBoundExpr bound;
     buildExpr(ctx, function, bound);
@@ -411,7 +415,8 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_activetable:
         return buildActiveRow(ctx, expr);
     case no_fromxml:
-        return doBuildRowFromXML(ctx, expr);
+    case no_fromjson:
+        return doBuildRowFromXMLorJSON(ctx, expr, op);
     case no_serialize:
         {
             IHqlExpression * deserialized = expr->queryChild(0);

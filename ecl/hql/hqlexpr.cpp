@@ -1473,6 +1473,7 @@ const char *getOpString(node_operator op)
     case no_executewhen: return "WHEN";
     case no_callsideeffect: return "no_callsideeffect";
     case no_fromxml: return "FROMXML";
+    case no_fromjson: return "FROMJSON";
     case no_preservemeta: return "order-tracking";
     case no_normalizegroup: return "NORMALIZE";
     case no_indirect: return "no_indirect";
@@ -1850,6 +1851,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_definesideeffect:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_dataset_from_transform:
         return childdataset_none;
     case no_group:
@@ -2258,6 +2260,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_definesideeffect:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_dataset_from_transform:
         return 0;
     case no_delayedselect:
@@ -2573,6 +2576,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_commonspill:
     case no_readspill:
     case no_fromxml:
+    case no_fromjson:
     case no_normalizegroup:
     case no_cogroup:
     case no_dataset_alias:
@@ -11658,6 +11662,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
     case no_typetransfer:
     case no_createrow:
     case no_fromxml:
+    case no_fromjson:
         {
             IHqlExpression & transform = args.item(0);
             type = makeRowType(LINK(transform.queryRecordType()));
