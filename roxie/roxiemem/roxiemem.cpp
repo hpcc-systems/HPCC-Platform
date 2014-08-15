@@ -2349,8 +2349,8 @@ public:
     {
         //Possibly over the top, but calculate information so we can do a round robin at various
         //different levels of cost
-        callbackRanges.kill();
-        nextCallbacks.kill();
+        callbackRanges.clear();
+        nextCallbacks.clear();
         nextCallbacks.append(0);
         unsigned prevCost = 0;
         ForEachItemIn(i, rowBufferCallbacks)

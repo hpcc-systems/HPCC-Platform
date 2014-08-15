@@ -124,15 +124,6 @@ bool actionOnAbort()
     return true;
 } 
 
-#ifdef _WIN32
-class CReleaseMutex : public CInterface, public Mutex
-{
-public:
-    CReleaseMutex(const char *name) : Mutex(name) { }
-    ~CReleaseMutex() { if (owner) unlock(); }
-}; 
-#endif
-
 USE_JLIB_ALLOC_HOOK;
 
 int main(int argc, char* argv[])
@@ -325,20 +316,17 @@ int main(int argc, char* argv[])
         }
         else
             serverConfig.setown(createPTree());
-#ifdef _WIN32
-        Owned<CReleaseMutex> globalNamedMutex;
+
+        NamedMutex globalNamedMutex("DASERVER");
         if (!serverConfig->getPropBool("allowMultipleDalis"))
         {
             PROGLOG("Checking for existing daserver instances");
-            StringBuffer s("DASERVER");
-            globalNamedMutex.setown(new CReleaseMutex(s.str()));
-            if (!globalNamedMutex->lockWait(10*1000)) // wait for 10 secs
+            if (!globalNamedMutex.lockWait(0))
             {
                 PrintLog("Another DASERVER process is currently running");
                 return 0;
             }
         }
-#endif
 
         SocketEndpoint ep;
         SocketEndpointArray epa;

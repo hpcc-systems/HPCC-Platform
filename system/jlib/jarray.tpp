@@ -124,6 +124,12 @@ void BaseArrayOf<MEMBER, PARAM>::sort(CompareFunc cf)
  ************************************************************************/
 
 template <class MEMBER, class PARAM>
+void CopyArrayOf<MEMBER, PARAM>::clear()
+{
+   SELF::used = 0;
+}
+
+template <class MEMBER, class PARAM>
 PARAM CopyArrayOf<MEMBER, PARAM>::item(aindex_t pos) const
 {
    assertex(SELF::isItem(pos)); return Array__Member2Param(((MEMBER *)AllocatorOf<sizeof(MEMBER)>::_head)[pos]);
@@ -217,6 +223,20 @@ bool CopyArrayOf<MEMBER, PARAM>::zap(PARAM sought)
 /************************************************************************
  *                            Master Lists                              *
  ************************************************************************/
+
+template <class MEMBER, class PARAM>
+void OwningArrayOf<MEMBER, PARAM>::clear(bool nodestruct)
+{
+    MEMBER * head= (MEMBER *)SELF::_head;
+    aindex_t count = SELF::used;
+
+    SELF::used = 0;
+    if (!nodestruct)
+    {
+       for (aindex_t i=0; i<count; i++)
+          Array__Destroy(head[i]);
+    }
+}
 
 template <class MEMBER, class PARAM>
 void OwningArrayOf<MEMBER, PARAM>::kill(bool nodestruct)

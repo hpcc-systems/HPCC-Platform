@@ -201,6 +201,7 @@ enum {
 graph_decl StringBuffer &getRecordString(const void *key, IOutputRowSerializer *serializer, const char *prefix, StringBuffer &out);
 
 //NB: low priorities are spilt 1st
+#define SPILL_PRIORITY_VERYLOW 50
 #define SPILL_PRIORITY_LOW  100
 #define SPILL_PRIORITY_HIGH 1000000
 #define SPILL_PRIORITY_DEFAULT SPILL_PRIORITY_LOW
@@ -211,7 +212,10 @@ graph_decl StringBuffer &getRecordString(const void *key, IOutputRowSerializer *
 #define SPILL_PRIORITY_RESULT SPILL_PRIORITY_LOW
 
 #define SPILL_PRIORITY_GROUPSORT SPILL_PRIORITY_LOW+1000
+
+#define SPILL_PRIORITY_HASHDEDUP_REHASH SPILL_PRIORITY_LOW+1900
 #define SPILL_PRIORITY_HASHDEDUP SPILL_PRIORITY_LOW+2000
+#define SPILL_PRIORITY_HASHDEDUP_BUCKET_POSTSPILL SPILL_PRIORITY_VERYLOW // very low, by this stage it's cheap to dispose of
 
 #define SPILL_PRIORITY_JOIN SPILL_PRIORITY_HIGH
 #define SPILL_PRIORITY_SELFJOIN SPILL_PRIORITY_HIGH
