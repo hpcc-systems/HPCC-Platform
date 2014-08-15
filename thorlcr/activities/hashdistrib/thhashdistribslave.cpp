@@ -2839,11 +2839,13 @@ CBucket::CBucket(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRo
 
 {
     spilt = false;
-    // ideally want rows in bucket to be contiguous, so when it spills, pages will be released
+    /* Although, using a unique allocator per bucket would mean on a spill event, the pages could be freed,
+     * it is too costly overall, because in effect it means a roxieimem page for each bucket is reserved.
+     * Sharing an allocator, will likely mean that pages are not be freed on spill events, but freed row space will be shared.
+     */
     if (extractKey)
-    {   // use own allocator
-        unsigned flags = owner.allocFlags | roxiemem::RHFunique;
-        _keyAllocator.setown(owner.queryJob().getRowAllocator(keyIf->queryRowMetaData(), owner.queryActivityId(), (roxiemem::RoxieHeapFlags)flags));
+    {
+        _keyAllocator.setown(owner.queryJob().getRowAllocator(keyIf->queryRowMetaData(), owner.queryActivityId(), owner.allocFlags));
         keyAllocator = _keyAllocator;
     }
     else
@@ -3165,8 +3167,10 @@ CBucketHandler *CBucketHandler::getNextBucketHandler(Owned<IRowStream> &nextInpu
         if (bucket->isSpilt())
         {
             rowcount_t keyCount, count;
-            // JCSMORE ideally, each key and row stream, would use a unique allocator per destination bucket
-            // thereby keeping rows/keys together in pages, making it easier to free pages on spill requests
+            /* If each key and row stream were to use a unique allocator per destination bucket
+             * thereby keeping rows/keys together in pages, it would make it easier to free pages on spill requests.
+             * However, it would also mean a lot of allocators with at least one page per allocate, which ties up a lot of memory
+             */
             Owned<IRowStream> keyStream = bucket->getKeyStream(&keyCount);
             Owned<CBucketHandler> newBucketHandler = new CBucketHandler(owner, rowIf, keyIf, iRowHash, iKeyHash, iCompare, extractKey, depth+1, div*numBuckets);
             ActPrintLog(&owner, "Created bucket handler %d, depth %d", currentBucket, depth+1);
