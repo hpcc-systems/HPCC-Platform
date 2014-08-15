@@ -2999,7 +2999,7 @@ bool CActivityBase::getOptBool(const char *prop, bool defVal) const
 {
     bool def = queryJob().getOptBool(prop, defVal);
     VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropBool(path.str(), def);
+    return container.queryXGMML().getPropBool(path.toLowerCase().str(), def);
 }
 
 int CActivityBase::getOptInt(const char *prop, int defVal) const
@@ -3013,5 +3013,5 @@ __int64 CActivityBase::getOptInt64(const char *prop, __int64 defVal) const
 {
     __int64 def = queryJob().getOptInt64(prop, defVal);
     VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropInt64(path.str(), def);
+    return container.queryXGMML().getPropInt64(path.toLowerCase().str(), def);
 }
