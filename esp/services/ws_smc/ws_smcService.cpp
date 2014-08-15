@@ -676,6 +676,7 @@ ActivityInfo* CWsSMCEx::createActivityInfo(IEspContext &context)
     Owned<ActivityInfo> activityInfo = new ActivityInfo();
     readTargetClusterInfo(context, clusters, serverStatusRoot, activityInfo);
     readRunningWUsAndQueuedWUs(context, envRoot, serverStatusRoot, dfuRecoveryRoot, activityInfo);
+    activityInfo->timeCached.setNow();
     return activityInfo.getClear();
 }
 
