@@ -780,7 +780,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1>
-      <title>Envrionment.conf</title>
+      <title>Environment.conf</title>
 
       <para>Another component of HPCC system configuration is the
       environment.conf file. Environment.conf contains some global definitions
