@@ -199,7 +199,7 @@ define([
             var retVal = this.filter.toObject();
             if (retVal.StartDate && retVal.FromTime) {
                 lang.mixin(retVal, {
-                    StartDate: this.getISOString("FromDate", "FromTime"),
+                    StartDate: this.getISOString("FromDate", "FromTime")
                 });
             }
             if (retVal.EndDate && retVal.ToTime) {
