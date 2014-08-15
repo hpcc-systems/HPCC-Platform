@@ -155,6 +155,7 @@ define([
                         onGetTimers: function (timers) {
                             context.store.setData(timers);
                             context.grid.refresh();
+                            context.timingTreeMap.loadTimers(timers);
                         }
                     });
                 }
