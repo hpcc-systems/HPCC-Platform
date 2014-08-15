@@ -93,7 +93,7 @@ struct ActivityInfo : public CInterface, implements IInterface
 {
     IMPLEMENT_IINTERFACE;
 
-    ActivityInfo() { timeCached.setNow(); };
+    ActivityInfo() {};
     bool isCachedActivityInfoValid(unsigned timeOutSeconds);
 
     CDateTime timeCached;
