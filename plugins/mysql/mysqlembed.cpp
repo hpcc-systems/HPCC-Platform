@@ -342,6 +342,8 @@ static bool isInteger(enum_field_types type)
 
 static bool getBooleanResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 {
+    if (*bound.is_null)
+        return false;
     if (!isInteger(bound.buffer_type))
         typeError("boolean", field);
     return rtlReadUInt(bound.buffer, *bound.length) != 0;
@@ -349,6 +351,12 @@ static bool getBooleanResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 
 static void getDataResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, size32_t &chars, void * &result)
 {
+    if (*bound.is_null)
+    {
+        result = NULL;
+        chars = 0;
+        return;
+    }
     if (bound.buffer_type == MYSQL_TYPE_TINY_BLOB ||
         bound.buffer_type == MYSQL_TYPE_MEDIUM_BLOB ||
         bound.buffer_type == MYSQL_TYPE_LONG_BLOB ||
@@ -366,6 +374,8 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const MYSQL
 
 static double getRealResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 {
+    if (*bound.is_null)
+        return 0;
     if (isInteger(bound.buffer_type))
     {
         if (bound.is_unsigned)
@@ -383,6 +393,8 @@ static double getRealResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 
 static __int64 getSignedResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 {
+    if (*bound.is_null)
+        return 0;
     if (isInteger(bound.buffer_type))
     {
         if (bound.is_unsigned)
@@ -396,6 +408,8 @@ static __int64 getSignedResult(const RtlFieldInfo *field, const MYSQL_BIND &boun
 
 static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 {
+    if (*bound.is_null)
+        return 0;
     if (!isInteger(bound.buffer_type))
         typeError("integer", field);
     if (bound.is_unsigned)
@@ -406,6 +420,12 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const MYSQL
 
 static void getStringResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, size32_t &chars, char * &result)
 {
+    if (*bound.is_null)
+    {
+        result = NULL;
+        chars = 0;
+        return;
+    }
     if (bound.buffer_type != MYSQL_TYPE_STRING && bound.buffer_type != MYSQL_TYPE_VAR_STRING)
         typeError("string", field);
     const char *text = (const char *) bound.buffer;
@@ -416,6 +436,12 @@ static void getStringResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, 
 
 static void getUTF8Result(const RtlFieldInfo *field, const MYSQL_BIND &bound, size32_t &chars, char * &result)
 {
+    if (*bound.is_null)
+    {
+        result = NULL;
+        chars = 0;
+        return;
+    }
     if (bound.buffer_type != MYSQL_TYPE_STRING && bound.buffer_type != MYSQL_TYPE_VAR_STRING)
         typeError("string", field);
     const char *text = (const char *) bound.buffer;
@@ -426,6 +452,12 @@ static void getUTF8Result(const RtlFieldInfo *field, const MYSQL_BIND &bound, si
 
 static void getUnicodeResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, size32_t &chars, UChar * &result)
 {
+    if (*bound.is_null)
+    {
+        result = NULL;
+        chars = 0;
+        return;
+    }
     if (bound.buffer_type != MYSQL_TYPE_STRING && bound.buffer_type != MYSQL_TYPE_VAR_STRING)
         typeError("string", field);
     const char *text = (const char *) bound.buffer;
@@ -436,6 +468,11 @@ static void getUnicodeResult(const RtlFieldInfo *field, const MYSQL_BIND &bound,
 
 static void getDecimalResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, Decimal &value)
 {
+    if (*bound.is_null)
+    {
+        value.setInt(0);
+        return;
+    }
     size32_t chars;
     rtlDataAttr result;
     mysqlembed::getStringResult(field, bound, chars, result.refstr());
