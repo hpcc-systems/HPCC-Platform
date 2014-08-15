@@ -66,9 +66,11 @@ MODULE_EXIT()
 // Miscellaneous string functions...
 ECLRTL_API void * rtlMalloc(size32_t size)
 {
-    void * retVal = malloc(size);
+    if (!size)
+        return NULL;
 
-    if( size && !retVal)
+    void * retVal = malloc(size);
+    if (!retVal)
     {
         PrintStackReport();
         rtlThrowOutOfMemory(0, "Memory allocation error!");
