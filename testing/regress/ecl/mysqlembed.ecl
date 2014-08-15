@@ -52,6 +52,10 @@ initialize(dataset(childrec) values) := EMBED(mysql : user('rchapman'),database(
   INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?);
 ENDEMBED;
 
+initializeNulls() := EMBED(mysql : user('rchapman'),database('test'))
+  INSERT INTO tbl1 (name) values ('nulls');
+ENDEMBED;
+
 dataset(childrec) testMySQLDS() := EMBED(mysql : user('rchapman'),database('test'))
   SELECT * from tbl1;
 ENDEMBED;
@@ -116,6 +120,7 @@ sequential (
   drop(),
   create(),
   initialize(init),
+  initializeNulls(),
   OUTPUT(testMySQLDS()),
   OUTPUT(testMySQLRow().name),
   OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),

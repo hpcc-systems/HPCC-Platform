@@ -1,6 +1,7 @@
 <Dataset name='Result 1'>
  <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2></Row>
  <Row><name>name2</name><value>2</value><boolval>false</boolval><r8>5.6</r8><r4>7.800000190734863</r4><d>3030</d><ddd>-1234567.89</ddd><u1>là</u1><u2>là      </u2></Row>
+ <Row><name>nulls</name><value>0</value><boolval>false</boolval><r8>0.0</r8><r4>0.0</r4><d></d><ddd>0</ddd><u1></u1><u2>        </u2></Row>
 </Dataset>
 <Dataset name='Result 2'>
  <Row><Result_2>name1</Result_2></Row>
@@ -9,10 +10,10 @@
  <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2></Row>
 </Dataset>
 <Dataset name='Result 4'>
- <Row><Result_4>name2</Result_4></Row>
+ <Row><Result_4>nulls</Result_4></Row>
 </Dataset>
 <Dataset name='Result 5'>
- <Row><name>name2</name><value>2</value><boolval>false</boolval><r8>5.6</r8><r4>7.800000190734863</r4><d>3030</d><ddd>-1234567.89</ddd><u1>là</u1><u2>là      </u2></Row>
+ <Row><name>nulls</name><value>0</value><boolval>false</boolval><r8>0.0</r8><r4>0.0</r4><d></d><ddd>0</ddd><u1></u1><u2>        </u2></Row>
 </Dataset>
 <Dataset name='Result 6'>
  <Row><name>name1</name><value>1</value><boolval>true</boolval><r8>1.2</r8><r4>3.400000095367432</r4><d>6161353561613535</d><ddd>1234567.89</ddd><u1>Straße</u1><u2>Straße  </u2></Row>
