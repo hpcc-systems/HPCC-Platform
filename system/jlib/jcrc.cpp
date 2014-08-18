@@ -157,22 +157,9 @@ unsigned crc32(const char *buf, unsigned len, unsigned crc)
   typedef unsigned __int32 uint32_t;
 #else
 # include <stdint.h>
-# include <endian.h>
 #endif
 
 const uint32_t Polynomial = 0xEDB88320;
-
-static inline uint32_t swap_bytes(uint32_t x)
-{
-#if defined(__GNUC__) || defined(__clang__)
-  return __builtin_bswap32(x);
-#else
-  return (x >> 24) |
-        ((x >>  8) & 0x0000FF00) |
-        ((x <<  8) & 0x00FF0000) |
-         (x << 24);
-#endif
-}
 
 const static uint32_t Crc32Lookup[8][256] =
 {
@@ -478,7 +465,9 @@ uint32_t crc32(const char *data, uint32_t length, uint32_t previousCrc32 = 0)
   while (length >= 8)
   {
 #if __BYTE_ORDER == __BIG_ENDIAN
-    uint32_t one = *current++ ^ swap_bytes(crc);
+    uint32_t crcs = crc;
+    _REV4(crcs);
+    uint32_t one = *current++ ^ crcs;
     uint32_t two = *current++;
     crc  = Crc32Lookup[0][ two      & 0xFF] ^
            Crc32Lookup[1][(two>> 8) & 0xFF] ^
