@@ -5,17 +5,19 @@ IMPORT mysql;
  */
 
 // This is the record structure in ECL that will correspond to the rows in the MySQL dataset
+// Note that the default values specified in the fields will be used when a NULL value is being
+// returned from MySQL
 
 childrec := RECORD
    string name,
-   integer value,
-   boolean boolval,
-   real8 r8,
-   real4 r4,
-   DATA d,
-   DECIMAL10_2 ddd,
-   UTF8 u1,
-   UNICODE8 u2
+   integer4 value { default(99999) },
+   boolean boolval { default(true) },
+   real8 r8 {default(99.99)},
+   real4 r4 {default(999.99)},
+   DATA d {default (D'999999')},
+   DECIMAL10_2 ddd {default(9.99)},
+   UTF8 u1 {default(U'9999 ß')},
+   UNICODE8 u2 {default(U'9999 ßßßß')}
 END;
 
 // Some data we will use to initialize the MySQL table
@@ -45,6 +47,12 @@ initializeNulls() := EMBED(mysql : user('rchapman'),database('test'))
   INSERT INTO tbl1 (name) values ('nulls');
 ENDEMBED;
 
+// Note that the query string is encoded in utf8
+
+initializeUtf8() := EMBED(mysql : user('rchapman'),database('test'))
+  INSERT INTO tbl1 values ('utf8test', 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße');
+ENDEMBED;
+
 // Returning a dataset
 
 dataset(childrec) testMySQLDS() := EMBED(mysql : user('rchapman'),database('test'))
@@ -60,6 +68,7 @@ ENDEMBED;
 // Passing in parameters
 
 childrec testMySQLParms(
+
    string name,
    integer value,
    boolean boolval,
@@ -128,6 +137,7 @@ sequential (
   create(),
   initialize(init),
   initializeNulls(),
+  initializeUtf8(),
   OUTPUT(testMySQLDS()),
   OUTPUT(testMySQLRow().name),
   OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),

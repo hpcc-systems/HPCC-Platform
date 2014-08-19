@@ -17,6 +17,14 @@
 
 IMPORT cassandra;
 
+/*
+ This example illustrates various calls to embdded Cassandra CQL code
+ */
+
+// This is the record structure in ECL that will correspond to the rows in the Cassabdra dataset
+// Note that the default values specified in the fields will be used when a NULL value is being
+// returned from Cassandra
+
 childrec := RECORD
    string name,
    integer4 value { default(99999) },
@@ -29,18 +37,16 @@ childrec := RECORD
    UNICODE8 u2 {default(U'9999 ßßßß')}
 END;
 
-stringrec := RECORD
-   string name
-END;
+// Some data we will use to initialize the Cassandra table
 
-stringrec extractName(childrec l) := TRANSFORM
-  SELF := l;
-END;
-
-init := DATASET([{'name1' , 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
+init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
                  {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là'}], childrec);
 
 init2 := ROW({'name4' , 3, true, 9.10, 11.12, D'aa55aa55', 987.65, U'Baße', U'Baße'}, childrec);
+
+// Set up the Cassandra database
+// Note that we can execute multiple statements in a single embed, provided that there are
+// no parameters and no result type
 
 createks() := EMBED(cassandra : user('rchapman'))
   CREATE KEYSPACE IF NOT EXISTS test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3' } ;
@@ -49,11 +55,17 @@ ENDEMBED;
 createTables() := EMBED(cassandra : user('rchapman'),keyspace('test'))
   DROP TABLE IF EXISTS tbl1;
 
-  CREATE TABLE tbl1 ( name VARCHAR, value INT, boolval boolean , r8 DOUBLE, r4 FLOAT, d BLOB, ddd VARCHAR, u1 VARCHAR, u2 VARCHAR,   PRIMARY KEY (name) );
+  CREATE TABLE tbl1 ( name VARCHAR, value INT, boolval boolean , r8 DOUBLE, r4 FLOAT, d BLOB, ddd VARCHAR, u1 VARCHAR, u2 VARCHAR, PRIMARY KEY (name) );
   CREATE INDEX tbl1_value  ON tbl1 (value);
   CREATE INDEX tbl1_boolval  ON tbl1 (boolval);
-  INSERT INTO tbl1 (name,u1) values ('; /* // ?', 'Straßßßßßße');
+  INSERT INTO tbl1 (name, u1) values ('nulls', 'ß');  // Creates some null fields. Also note that query is utf8
 ENDEMBED;
+
+// Initialize the Cassandra table, passing in the ECL dataset to provide the rows
+// Note the batch option to control how cassandra inserts are batched
+// If not supplied, each insert is executed individually - because Cassandra
+// has restrictions about what can be done in a batch, we can't default to using batch
+// unless told to...
 
 initialize(dataset(childrec) values) := EMBED(cassandra : user('rchapman'),keyspace('test'),batch('unlogged'))
   INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2) values (?,?,?,?,?,?,?,?,?);
@@ -63,13 +75,19 @@ initialize2(row(childrec) values) := EMBED(cassandra : user('rchapman'),keyspace
   INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2) values (?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
+// Returning a dataset
+
 dataset(childrec) testCassandraDS() := EMBED(cassandra : user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1;
 ENDEMBED;
 
+// Returning a single row
+
 childrec testCassandraRow() := EMBED(cassandra : user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 LIMIT 1;
 ENDEMBED;
+
+// Passing in parameters
 
 testCassandraParms(
    string name,
@@ -84,15 +102,13 @@ testCassandraParms(
   INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2) values (?,?,?,?,?,?,'8.76543',?,?);
 ENDEMBED;
 
+// Returning scalars
+
 string testCassandraString() := EMBED(cassandra : user('rchapman'),keyspace('test'))
   SELECT name from tbl1 LIMIT 1;
 ENDEMBED;
 
 dataset(childrec) testCassandraStringParam(string filter) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 where name = ?;
-ENDEMBED;
-
-dataset(childrec) testCassandraDSParam(dataset(stringrec) inrecs) := EMBED(cassandra : user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 where name = ?;
 ENDEMBED;
 
@@ -124,22 +140,32 @@ UNICODE testCassandraUnicode() := EMBED(cassandra : user('rchapman'),keyspace('t
   SELECT u2 from tbl1 WHERE name='name1';
 ENDEMBED;
 
-searchrec := RECORD
-  STRING name;
+// Coding a TRANSFORM to call Cassandra - this ends up acting a little like a join
+
+stringrec := RECORD
+   string name
 END;
 
-TRANSFORM(childrec) t(searchrec L) := EMBED(cassandra : user('rchapman'),keyspace('test'))
+TRANSFORM(childrec) t(stringrec L) := EMBED(cassandra : user('rchapman'),keyspace('test'))
   SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 where name = ?;
 ENDEMBED;
 
-integer testCassandraCount() := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT COUNT(*) from tbl1;
-ENDEMBED;
-
 init3 := DATASET([{'name1'},
-                  {'name2'}], searchrec);
+                  {'name2'}], stringrec);
 
 testCassandraTransform := PROJECT(init3, t(LEFT));
+
+// Passing in AND returning a dataset - this also ends up acting a bit like a keyed join...
+
+stringrec extractName(childrec l) := TRANSFORM
+  SELF := l;
+END;
+
+dataset(childrec) testCassandraDSParam(dataset(stringrec) inrecs) := EMBED(cassandra : user('rchapman'),keyspace('test'))
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 where name = ?;
+ENDEMBED;
+
+// Testing performance of batch inserts
 
 s1 :=DATASET(25000, TRANSFORM(childrec, SELF.name := 'name'+COUNTER,
                                          SELF.value:=COUNTER,
@@ -149,6 +175,15 @@ s1 :=DATASET(25000, TRANSFORM(childrec, SELF.name := 'name'+COUNTER,
                                          SELF:=[]));
 
 testCassandraBulk := initialize(s1);
+
+// Check that 25000 got inserted
+
+integer testCassandraCount() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+  SELECT COUNT(*) from tbl1;
+ENDEMBED;
+
+
+// Execute the tests
 
 sequential (
   createks(),
@@ -161,7 +196,6 @@ sequential (
   OUTPUT(testCassandraRow().name),
   OUTPUT(testCassandraString()),
   OUTPUT(testCassandraStringParam(testCassandraString())),
-  OUTPUT(testCassandraDSParam(PROJECT(init, extractName(LEFT)))),
   OUTPUT(testCassandraInt()),
   OUTPUT(testCassandraBool()),
   OUTPUT(testCassandraReal8()),
@@ -170,6 +204,7 @@ sequential (
   OUTPUT(testCassandraUtf8()),
   OUTPUT(testCassandraUnicode()),
   OUTPUT(testCassandraTransform()),
+  OUTPUT(testCassandraDSParam(PROJECT(init, extractName(LEFT)))),
   testCassandraBulk,
   OUTPUT(testCassandraCount())
 );
