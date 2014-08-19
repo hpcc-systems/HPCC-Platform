@@ -3619,8 +3619,22 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
         else
             xpathCppText.append("NULL");
 
+        StringBuffer defaultInitializer;
+        IHqlExpression *defaultValue = queryAttributeChild(field, defaultAtom, 0);
+        if (defaultValue)
+        {
+            MemoryBuffer target;
+            if (createConstantField(target, field, defaultValue))
+                appendStringAsQuotedCPP(defaultInitializer, target.length(), target.toByteArray(), false);
+            else
+                throwError1(HQLERR_CouldNotGenerateDefault, field->queryName()->str());
+        }
+
         StringBuffer definition;
-        definition.append("const RtlFieldStrInfo ").append(name).append("(\"").append(lowerName).append("\",").append(xpathCppText).append(",&").append(typeName).append(");");
+        definition.append("const RtlFieldStrInfo ").append(name).append("(\"").append(lowerName).append("\",").append(xpathCppText).append(",&").append(typeName);
+        if (defaultInitializer.length())
+            definition.append(',').append(defaultInitializer);
+        definition.append(");");
 
         BuildCtx fieldctx(declarectx);
         fieldctx.setNextPriority(TypeInfoPrio);

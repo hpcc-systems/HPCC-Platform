@@ -1229,10 +1229,10 @@ void EclAgent::setResultUnicode(const char * name, unsigned sequence, int len, U
     {
         if (outputFmt == ofSTD)
         {
-            char * buff = 0;
+            rtlDataAttr buff;
             unsigned bufflen = 0;
-            rtlUnicodeToCodepageX(bufflen, buff, len, val, "utf-8");
-            outputSerializer->fwrite(sequence, (const void*)buff, 1, bufflen);
+            rtlUnicodeToCodepageX(bufflen, buff.refstr(), len, val, "utf-8");
+            outputSerializer->fwrite(sequence, buff.getdata(), 1, bufflen);
             outputSerializer->close(sequence, true);
         }
         else

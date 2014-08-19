@@ -211,6 +211,7 @@
 #define HQLERR_UserCodeNotAllowed               4191
 #define HQLERR_StreamInputUsedDirectly          4192
 #define HQLERR_MaxlengthExceedsLimit            4193
+#define HQLERR_CouldNotGenerateDefault          4194
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -580,6 +581,7 @@
 #define HQLERR_DependencyWithinGraph_Text       "INTERNAL: Dependency within a graph incorrectly generated for hThor (%u)"
 #define HQLERR_UnknownCompoundAssign_Text       "INTERNAL: Unrecognised compound assign %s"
 #define HQLERR_ReadSpillBeforeWriteFix_Text     "INTERNAL: Attempt to read spill file %s before it is written.  Try adding #option ('allowThroughSpill', false); to the query."
+#define HQLERR_CouldNotGenerateDefault_Text     "INTERNAL: Could not generate default value for field %s"
 
 #define WARNINGAT(cat, e, x)                 reportWarning(cat, e, x, x##_Text)
 #define WARNINGAT1(cat, e, x, a)             reportWarning(cat, e, x, x##_Text, a)

@@ -76,6 +76,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
 
   option(USE_MYSQL "Enable MySQL support" ON)
+  option(USE_CASSANDRA "Enable Cassandra support" ON)
   option(USE_SQLITE3 "Enable SqLite3 support" ON)
   option(USE_PYTHON "Enable Python support" ON)
   option(USE_V8 "Enable V8 JavaScript support" ON)
@@ -84,7 +85,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
-  if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE OR USE_SQLITE3 OR USE_MYSQL)
+  if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE OR USE_SQLITE3 OR USE_MYSQL OR USE_CASSANDRA)
       set( WITH_PLUGINS ON )
   endif()
 

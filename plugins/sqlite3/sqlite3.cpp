@@ -26,6 +26,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlfield_imp.hpp"
+#include "rtlembed.hpp"
 #include "nbcd.hpp"
 
 #ifdef _WIN32
@@ -87,12 +88,6 @@ public:
 
 // Conversions from SqLite3 values to ECL data
 
-static void checkSqliteError(int rc)
-{
-    if (rc != SQLITE_OK)
-        rtlFail(rc, "SqLite3 error");
-}
-
 static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
 
 static void typeError(const char *expected, const RtlFieldInfo *field)
@@ -103,9 +98,19 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
     rtlFail(0, msg.str());
 }
 
+static inline bool isNull(sqlite3_value *val)
+{
+    return sqlite3_value_type(val) == SQLITE_NULL;
+}
+
 static bool getBooleanResult(const RtlFieldInfo *field, sqlite3_value *val)
 {
     assertex(val);
+    if (isNull(val))
+    {
+        NullFieldProcessor p(field);
+        return p.boolResult;
+    }
     if (sqlite3_value_type(val) != SQLITE_INTEGER)
         typeError("boolean", field);
     return sqlite3_value_int64(val) != 0;
@@ -114,7 +119,13 @@ static bool getBooleanResult(const RtlFieldInfo *field, sqlite3_value *val)
 static void getDataResult(const RtlFieldInfo *field, sqlite3_value *val, size32_t &chars, void * &result)
 {
     assertex(val);
-    if (sqlite3_value_type(val) != SQLITE_BLOB)
+    if (isNull(val))
+    {
+        NullFieldProcessor p(field);
+        rtlStrToDataX(chars, result, p.resultChars, p.stringResult);
+        return;
+    }
+    if (sqlite3_value_type(val) != SQLITE_BLOB && sqlite3_value_type(val) != SQLITE_TEXT)
         typeError("blob", field);
     const void *blob = sqlite3_value_blob(val);
     int bytes = sqlite3_value_bytes(val);
@@ -124,6 +135,11 @@ static void getDataResult(const RtlFieldInfo *field, sqlite3_value *val, size32_
 static double getRealResult(const RtlFieldInfo *field, sqlite3_value *val)
 {
     assertex(val);
+    if (isNull(val))
+    {
+        NullFieldProcessor p(field);
+        return p.doubleResult;
+    }
     if (sqlite3_value_type(val) != SQLITE_FLOAT)
         typeError("real", field);
     return sqlite3_value_double(val);
@@ -132,6 +148,11 @@ static double getRealResult(const RtlFieldInfo *field, sqlite3_value *val)
 static __int64 getSignedResult(const RtlFieldInfo *field, sqlite3_value *val)
 {
     assertex(val);
+    if (isNull(val))
+    {
+        NullFieldProcessor p(field);
+        return p.intResult;
+    }
     if (sqlite3_value_type(val) != SQLITE_INTEGER)
         typeError("integer", field);
     return sqlite3_value_int64(val);
@@ -140,6 +161,11 @@ static __int64 getSignedResult(const RtlFieldInfo *field, sqlite3_value *val)
 static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, sqlite3_value *val)
 {
     assertex(val);
+    if (isNull(val))
+    {
+        NullFieldProcessor p(field);
+        return p.uintResult;
+    }
     if (sqlite3_value_type(val) != SQLITE_INTEGER)
         typeError("integer", field);
     return (unsigned __int64) sqlite3_value_int64(val);
@@ -148,6 +174,12 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, sqlite3_val
 static void getStringResult(const RtlFieldInfo *field, sqlite3_value *val, size32_t &chars, char * &result)
 {
     assertex(val);
+    if (isNull(val))
+    {
+        NullFieldProcessor p(field);
+        rtlStrToStrX(chars, result, p.resultChars, p.stringResult);
+        return;
+    }
     if (sqlite3_value_type(val) != SQLITE_TEXT)
         typeError("string", field);
     const char *text = (const char *) sqlite3_value_text(val);
@@ -159,6 +191,12 @@ static void getStringResult(const RtlFieldInfo *field, sqlite3_value *val, size3
 static void getUTF8Result(const RtlFieldInfo *field, sqlite3_value *val, size32_t &chars, char * &result)
 {
     assertex(val);
+    if (isNull(val))
+    {
+        NullFieldProcessor p(field);
+        rtlUtf8ToUtf8X(chars, result, p.resultChars, p.stringResult);
+        return;
+    }
     if (sqlite3_value_type(val) != SQLITE_TEXT)
         typeError("string", field);
     const char *text = (const char *) sqlite3_value_text(val);
@@ -170,10 +208,16 @@ static void getUTF8Result(const RtlFieldInfo *field, sqlite3_value *val, size32_
 static void getUnicodeResult(const RtlFieldInfo *field, sqlite3_value *val, size32_t &chars, UChar * &result)
 {
     assertex(val);
+    if (isNull(val))
+    {
+        NullFieldProcessor p(field);
+        rtlUnicodeToUnicodeX(chars, result, p.resultChars, p.unicodeResult);
+        return;
+    }
     if (sqlite3_value_type(val) != SQLITE_TEXT)
         typeError("string", field);
     const UChar *text = (const UChar *) sqlite3_value_text16(val);
-    int bytes = sqlite3_value_bytes(val);
+    int bytes = sqlite3_value_bytes16(val);
     unsigned numchars = bytes / sizeof(UChar);
     rtlUnicodeToUnicodeX(chars, result, numchars, text);
 }
@@ -319,7 +363,8 @@ protected:
 class SqLite3EmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    SqLite3EmbedFunctionContext(const char *options) : db(NULL)
+    SqLite3EmbedFunctionContext(unsigned _flags, const char *options)
+    : flags(_flags), db(NULL)
     {
         const char *dbname = NULL;
         StringArray opts;
@@ -345,6 +390,15 @@ public:
     {
         if (db)
             sqlite3_close(db);
+    }
+
+    void checkSqliteError(int rc)
+    {
+        if (rc != SQLITE_OK)
+        {
+            VStringBuffer msg("sqlite: error %d - %s", rc, sqlite3_errmsg(db));
+            rtlFail(rc, msg.str());
+        }
     }
 
     virtual bool getBooleanResult()
@@ -427,13 +481,25 @@ public:
     {
         checkSqliteError(sqlite3_bind_blob(stmt, findParameter(name), val, len, SQLITE_TRANSIENT));
     }
+    virtual void bindFloatParam(const char *name, float val)
+    {
+        checkSqliteError(sqlite3_bind_double(stmt, findParameter(name), (double) val));
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         checkSqliteError(sqlite3_bind_double(stmt, findParameter(name), val));
     }
+    virtual void bindSignedSizeParam(const char *name, int size, __int64 val)
+    {
+        bindSignedParam(name, val);
+    }
     virtual void bindSignedParam(const char *name, __int64 val)
     {
         checkSqliteError(sqlite3_bind_int64(stmt, findParameter(name), val));
+    }
+    virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
+    {
+        bindUnsignedParam(name, val);
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
@@ -469,8 +535,9 @@ public:
     {
         throwUnexpected();
     }
-    virtual void compileEmbeddedScript(size32_t len, const char *script)
+    virtual void compileEmbeddedScript(size32_t chars, const char *script)
     {
+        size32_t len = rtlUtf8Size(chars, script);
         int rc = sqlite3_prepare_v2(db, script, len, stmt.ref(), NULL);
         checkSqliteError(rc);
     }
@@ -479,6 +546,12 @@ public:
         assertex(stmt);
         int rc = sqlite3_reset(stmt);
         checkSqliteError(rc);
+        if (flags & EFnoreturn)
+        {
+            rc = sqlite3_step(stmt);
+            if (rc != SQLITE_DONE)
+                checkSqliteError(rc);
+        }
     }
 protected:
     sqlite3_value *getScalarResult()
@@ -501,17 +574,18 @@ protected:
     }
     OwnedStatement stmt;
     sqlite3 *db;
+    unsigned flags;
 };
 
 class SqLite3EmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
     {
-        if (isImport)
+        if (flags & EFimport)
             UNSUPPORTED("IMPORT");
         else
-            return new SqLite3EmbedFunctionContext(options);
+            return new SqLite3EmbedFunctionContext(flags, options);
     }
 };
 

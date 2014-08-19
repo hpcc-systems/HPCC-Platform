@@ -11590,6 +11590,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
 {
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     IHqlExpression * outofline = funcdef->queryChild(0);
+    IHqlExpression * formals = funcdef->queryChild(1);
     assertex(outofline->getOperator() == no_outofline);
     IHqlExpression * bodyCode = outofline->queryChild(0);
     IHqlExpression *language = queryAttributeChild(bodyCode, languageAtom, 0);
@@ -11603,7 +11604,11 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
     StringBuffer createParam;
     createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContext(");
-    createParam.append(isImport ? "true" : "false");
+    createParam.append(isImport ? "EFimport" : "EFembed");
+    if (returnType->getTypeCode()==type_void)
+        createParam.append("|EFnoreturn");
+    if (formals->numChildren()==0)
+        createParam.append("|EFnoparams");
     StringBuffer attrParam;
     ForEachChild(idx, bodyCode)
     {
@@ -11632,7 +11637,6 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     scriptArgs.append(*LINK(ctxVar));
     scriptArgs.append(*LINK(bodyCode->queryChild(0)));
     buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
-    IHqlExpression *formals = funcdef->queryChild(1);
     ForEachChild(i, formals)
     {
         HqlExprArray args;
@@ -11648,7 +11652,13 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         switch (paramType->getTypeCode())
         {
         case type_int:
-            bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
+            if (paramType->getSize()<8)
+            {
+                bindFunc = paramType->isSigned() ? bindSignedSizeParamId : bindUnsignedSizeParamId;
+                args.append(*createIntConstant(paramType->getSize()));
+            }
+            else
+                bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
             break;
         case type_varstring:
             bindFunc = bindVStringParamId;
@@ -11657,7 +11667,10 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             bindFunc = bindStringParamId;
             break;
         case type_real:
-            bindFunc = bindRealParamId;
+            if (paramType->getSize()==4)
+                bindFunc = bindFloatParamId;
+            else
+                bindFunc = bindRealParamId;
             break;
         case type_boolean:
             bindFunc = bindBooleanParamId;

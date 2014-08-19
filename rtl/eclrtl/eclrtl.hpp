@@ -811,11 +811,17 @@ interface IEmbedFunctionContext : extends IInterface
     virtual size32_t getTransformResult(ARowBuilder & builder) = 0;
     virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val) = 0;
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val) = 0;
+
+    virtual void bindFloatParam(const char *name, float val) = 0;
+    virtual void bindSignedSizeParam(const char *name, int size, __int64 val) = 0;
+    virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val) = 0;
 };
+
+enum EmbedFlags { EFembed = 1, EFimport = 2, EFnoreturn = 4, EFnoparams = 8 }; // For createFunctionContext flags
 
 interface IEmbedContext : extends IInterface
 {
-    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options) = 0;
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) = 0;
     // MORE - add syntax checked here!
 };
 

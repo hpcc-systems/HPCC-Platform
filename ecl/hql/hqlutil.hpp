@@ -648,6 +648,7 @@ extern HQL_API IHqlExpression * createSizeof(IHqlExpression * expr);
 extern HQL_API bool allParametersHaveDefaults(IHqlExpression * function);
 extern HQL_API bool expandMissingDefaultsAsStoreds(HqlExprArray & args, IHqlExpression * function);
 
+extern HQL_API bool createConstantField(MemoryBuffer & target, IHqlExpression * field, IHqlExpression * value);
 extern HQL_API bool createConstantRow(MemoryBuffer & target, IHqlExpression * transform);
 extern HQL_API bool createConstantNullRow(MemoryBuffer & target, IHqlExpression * record);
 extern HQL_API IHqlExpression * createConstantRowExpr(IHqlExpression * transform);
