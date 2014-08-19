@@ -60,11 +60,12 @@
 #define CANCELTIMEOUT       1000        // 1 sec
 
 #define CONNECT_TIMEOUT         (5*60*1000) // 5 mins
+
 #define CONNECT_READ_TIMEOUT    (3*60*1000) // 3 mins
-#define CONNECT_TIMEOUT_INTERVAL 5000 // 5 secs
+#define CONNECT_TIMEOUT_INTERVAL 3000 // 3 secs
 #define CONFIRM_TIMEOUT         (CONNECT_READ_TIMEOUT/2) // 1.5 mins
 #define CONFIRM_TIMEOUT_INTERVAL 5000 // 5 secs
-#define CONFIRM_TRACESLOW_THRESHOLD 1000 // 1 sec
+#define TRACESLOW_THRESHOLD      1000 // 1 sec
 
 #define VERIFY_DELAY            (1*60*1000)  // 1 Minute
 #define VERIFY_TIMEOUT          (1*60*1000)  // 1 Minute
@@ -90,6 +91,27 @@ struct SocketEndpointV4
             IPV6_NOT_IMPLEMENTED();
     }
     void get(SocketEndpoint &val)   
+    {
+        val.setNetAddress(sizeof(ip),&ip);
+        val.port = port;
+    }
+};
+
+struct SocketEndpointV4A
+{
+    byte ip[4];
+    unsigned short port;
+    unsigned short random;
+    SocketEndpointV4A() { };
+    SocketEndpointV4A(const SocketEndpoint &val) { set(val); }
+    void set(const SocketEndpoint &val)
+    {
+        port = val.port;
+        random = (getRandom() % USHRT_MAX);
+        if (val.getNetAddress(sizeof(ip),&ip)!=sizeof(ip))
+            IPV6_NOT_IMPLEMENTED();
+    }
+    void get(SocketEndpoint &val)
     {
         val.setNetAddress(sizeof(ip),&ip);
         val.port = port;
@@ -642,7 +664,7 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
             WARNLOG("%s %s, stalled for %d ms so far", msg, epStr.str(), elapsedMs);
         }
     }
-    if (readTmsTimer.elapsedMs() >= CONFIRM_TRACESLOW_THRESHOLD)
+    if (readTmsTimer.elapsedMs() >= TRACESLOW_THRESHOLD)
     {
         if (0 == epStr.length())
         {
@@ -669,6 +691,10 @@ class CMPChannel: public CInterface
     mptag_t multitag;                   // current multi send in progress
     bool closed;
     IArrayOf<ISocket> keptsockets;
+    CriticalSection attachsect;
+    unsigned short attachrand;
+    SocketEndpoint attachep;
+    atomic_t attachchk;
 
 protected: friend class CMPServer;
     SocketEndpoint remoteep;
@@ -689,6 +715,7 @@ protected: friend class CMPPacketReader;
         ISocket *newsock=NULL;
         unsigned retrycount = 10;
         unsigned remaining;
+
         while (!channelsock) {
             try {
                 StringBuffer str;
@@ -708,15 +735,17 @@ protected: friend class CMPPacketReader;
                 newsock = ISocket::connect_timeout(remoteep,remaining);
                 newsock->set_keep_alive(true);
 #ifdef _FULLTRACE
-                LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket connect");
+                LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket connect, retrycount = %d", retrycount);
 #endif
 
-                SocketEndpointV4 id[2];
+                SocketEndpointV4A id[2];
                 SocketEndpoint hostep;
                 hostep.setLocalHost(parent->getPort());
                 id[0].set(hostep);
                 id[1].set(remoteep);
+
                 newsock->write(&id[0],sizeof(id)); 
+
 #ifdef _FULLTRACE
                 StringBuffer tmp1;
                 id[0].getUrlStr(tmp1);
@@ -724,15 +753,122 @@ protected: friend class CMPPacketReader;
                 id[1].getUrlStr(tmp1);
                 LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket write %s",tmp1.str());
 #endif
-                size32_t reply;
-                size32_t rd;
-                traceSlowReadTms("MP: connect to", newsock, &reply, sizeof(reply), sizeof(reply), rd, CONNECT_READ_TIMEOUT, CONNECT_TIMEOUT_INTERVAL);
-#ifdef _FULLTRACE
-                LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket read %d",reply);
+
+                size32_t reply = 0;
+                size32_t rd = 0;
+
+#ifdef _TRACE
+                LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket write, waiting for read");
 #endif
+
+                // wait for connection reply but also check for A<->B deadlock (where both processes are here
+                // waiting for other side to send confirm) and decide who stops waiting based on random number sent.
+                StringBuffer epStr;
+                unsigned startMs = msTick();
+                int loopCnt = (CONNECT_READ_TIMEOUT / CONNECT_TIMEOUT_INTERVAL) + 1;
+                while(loopCnt-- > 0)
+                {
+                    {
+                        CriticalBlock block(attachsect);
+#ifdef _TRACE
+                        PROGLOG("MP: connect got attachsect, attachchk = %d, loopCnt = %d", atomic_read(&attachchk), loopCnt);
+#endif
+                        if (atomic_read(&attachchk) > 0)
+                        {
+                            if (remoteep.equals(attachep))
+                            {
+#ifdef _TRACE
+                                PROGLOG("MP: deadlock situation [] attachrand = %u rand = %u", attachrand, id[0].random);
+#endif
+                                if (attachrand == id[0].random)
+                                {
+                                    // if by small chance both randoms are equal then keep trying for an additional
+                                    // [hopefully] different amount of time so that one gives up before the other
+                                    loopCnt = (getRandom() % 30) + 1;
+#ifdef _TRACE
+                                    PROGLOG("MP: rand numbers are equal ! - changing timeout, loopCnt now equals %d", loopCnt);
+#endif
+                                }
+                                else if (attachrand < id[0].random)
+                                    break;
+                            }
+                        }
+                    }
+
+                    rd = 0;
+
+                    try
+                    {
+                        newsock->readtms(&reply,sizeof(reply),sizeof(reply),rd,CONNECT_TIMEOUT_INTERVAL);
+                    }
+                    catch (IException *e)
+                    {
+#ifdef _TRACE
+                        PROGLOG("MP: loop exception code = %d, loopCnt = %d", e->errorCode(), loopCnt);
+#endif
+                        if ( (e->errorCode() != JSOCKERR_timeout_expired) ||
+                             ((e->errorCode() == JSOCKERR_timeout_expired) && (loopCnt == 0)) )
+                        {
+                                if (tm.timedout(&remaining)) {
+#ifdef _FULLTRACE
+                                    EXCLOG(e,"MP: connect timed out 3");
+#endif
+                                    e->Release();
+                                    newsock->Release();
+                                    return false;
+                                }
+#ifdef _TRACE
+                                EXCLOG(e, "MP: Failed to connect");
+#endif
+                                e->Release();
+                                if ((retrycount--==0)||(tm.timeout==MP_ASYNC_SEND)) {   // don't bother retrying on async send
+                                    IMP_Exception *e=new CMPException(MPERR_connection_failed,remoteep);
+                                    throw e;
+                                }
+#ifdef _TRACE
+                                LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).toCharArray(),retrycount+1);
+#endif
+                        }
+                        else if (e->errorCode() == JSOCKERR_timeout_expired)
+                        {
+                            if (0 == epStr.length())
+                            {
+                                SocketEndpoint ep;
+                                newsock->getPeerEndpoint(ep);
+                                ep.getUrlStr(epStr);
+                            }
+                            WARNLOG("MP: connect to: %s, stalled for %d ms so far", epStr.str(), msTick()-startMs);
+                        }
+                        else
+                            e->Release();
+                    }
+#ifdef _FULLTRACE
+                    PROGLOG("MP: rd = %d", rd);
+#endif
+                    if (rd != 0)
+                        break;
+                }
+
+#ifdef _TRACE
+                LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket read rd=%u, reply=%u, sizeof(id)=%lu", rd, reply, sizeof(id));
+#endif
+
                 if (reply!=0) {
+
+                    unsigned elapsedMs = msTick() - startMs;
+                    if (elapsedMs >= TRACESLOW_THRESHOLD)
+                    {
+                        if (0 == epStr.length())
+                        {
+                            SocketEndpoint ep;
+                            newsock->getPeerEndpoint(ep);
+                            ep.getUrlStr(epStr);
+                        }
+                        WARNLOG("MP: connect to: %s, took: %d ms", epStr.str(), elapsedMs);
+                    }
+
                     assertex(reply==sizeof(id));    // how can this fail?
-                    if (attachSocket(newsock,remoteep,hostep,true, NULL)) {
+                    if (attachSocket(newsock,remoteep,hostep,true,NULL,id[0].random)) {
                         newsock->Release();
 #ifdef _TRACE
                         LOG(MCdebugInfo(100), unknownJob, "MP: connected to %s",str.toCharArray());
@@ -742,6 +878,7 @@ protected: friend class CMPPacketReader;
                         break;
                     }
                 }
+
             }
             catch (IException *e)
             {
@@ -752,7 +889,6 @@ protected: friend class CMPPacketReader;
                     e->Release();
                     return false;
                 }
-                StringBuffer str;
 #ifdef _TRACE
                 EXCLOG(e, "MP: Failed to connect");
 #endif
@@ -762,20 +898,23 @@ protected: friend class CMPPacketReader;
                     throw e;
                 }
 #ifdef _TRACE
+                StringBuffer str;
                 str.clear();
                 LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).toCharArray(),retrycount+1);
 #endif
             }
+
             ::Release(newsock);
             newsock = NULL;
+
             {
                 CriticalUnblock unblock(connectsect); // to avoid connecting philosopher problem
 #ifdef _FULLTRACE
-                    PROGLOG("MP: before sleep");
+                PROGLOG("MP: before sleep");
 #endif
                 Sleep(2000+getRandom()%3000);
 #ifdef _FULLTRACE
-                    PROGLOG("MP: after sleep");
+                PROGLOG("MP: after sleep");
 #endif
             }
         }
@@ -792,8 +931,7 @@ public:
 
     void reset();
 
-    bool attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,const SocketEndpoint &_localep,bool ismaster, size32_t *confirm);
-
+    bool attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,const SocketEndpoint &_localep,bool ismaster,size32_t *confirm, unsigned short rand);
 
     bool writepacket(const void *hdr,size32_t hdrsize,const void *hdr2,size32_t hdr2size,const void *body,size32_t bodysize,CTimeMon &tm)
     {
@@ -939,6 +1077,12 @@ public:
                 parent->checkclosed = true;
             s=channelsock;
             channelsock = NULL;
+            {
+                CriticalBlock block(attachsect);
+                attachrand = 0;
+                attachep.set("0.0.0.0", 0);
+                atomic_set(&attachchk, 0);
+            }
             if (!keepsocket) {
                 try {
                     s->shutdown();
@@ -1382,6 +1526,9 @@ CMPChannel::CMPChannel(CMPServer *_parent,SocketEndpoint &_remoteep)
     closed = false;
     master = false;
     sendwaiting = 0;
+    attachrand = 0;
+    attachep.set("0.0.0.0", 0);
+    atomic_set(&attachchk, 0);
 }
 
 void CMPChannel::reset()
@@ -1395,6 +1542,9 @@ void CMPChannel::reset()
     closed = false;
     master = false;
     sendwaiting = 0;
+    attachrand = 0;
+    attachep.set("0.0.0.0", 0);
+    atomic_set(&attachchk, 0);
 }
 
 
@@ -1405,24 +1555,45 @@ CMPChannel::~CMPChannel()
     reader->Release();
 }
 
-bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &remoteep,const SocketEndpoint &_localep,bool ismaster, size32_t *confirm) // takes ownership if succeeds
+bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,const SocketEndpoint &_localep,bool ismaster,size32_t *confirm, unsigned short rand) // takes ownership if succeeds
 {
+    struct attachdTor
+    {
+        atomic_t &attchk;
+        attachdTor(atomic_t &_attchk) : attchk(_attchk) { }
+        ~attachdTor() { atomic_dec(&attchk); }
+    } attachChk (attachchk);
+
 #ifdef _FULLTRACE       
-    PROGLOG("MP: attachSocket on entry");
+    PROGLOG("MP: attachSocket on entry, ismaster = %d, confirm = %p, channelsock = %p, rand = %u", ismaster, confirm, channelsock, rand);
 #endif
-    CriticalBlock block(connectsect); 
+
+    {
+        CriticalBlock block(attachsect);
+        attachrand = rand;
+        attachep = _remoteep;
+        atomic_inc(&attachchk);
+    }
+
+    CriticalBlock block(connectsect);
+
 #ifdef _FULLTRACE       
-    PROGLOG("MP: attachSocket got connectsect");
+    PROGLOG("MP: attachSocket got connectsect, channelsock = %p", channelsock);
 #endif
+
     // resolution to stop clash i.e. A sends to B at exactly same time B sends to A
+
     if (channelsock) {
-        if (remoteep.port==0)
+
+        if (_remoteep.port==0)
             return false;
+
         StringBuffer ep1;
         StringBuffer ep2;
         _localep.getUrlStr(ep1);
-        remoteep.getUrlStr(ep2);
+        _remoteep.getUrlStr(ep2);
         LOG(MCdebugInfo(100), unknownJob, "MP: Possible clash between %s->%s %d(%d)",ep1.str(),ep2.str(),(int)ismaster,(int)master);
+
         try {
             if (ismaster!=master) {
                 if (ismaster) {
@@ -1459,20 +1630,27 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &remoteep,co
         }
 
     }
+
     if (confirm)
         newsock->write(confirm,sizeof(*confirm)); // confirm while still in connectsect
+
     closed = false;
     reader->init(this);
     channelsock = LINK(newsock);
+
 #ifdef _FULLTRACE       
     PROGLOG("MP: attachSocket before select add");
 #endif
+
     parent->querySelectHandler().add(channelsock,SELECTMODE_READ,reader);
+
 #ifdef _FULLTRACE       
     PROGLOG("MP: attachSocket after select add");
 #endif
+
     localep = _localep;
     master = ismaster;
+
     return true;
 }
 
@@ -1686,7 +1864,7 @@ void CMPConnectThread::start(unsigned short port)
 int CMPConnectThread::run()
 {
 #ifdef _TRACE
-    LOG(MCdebugInfo(100), unknownJob, "MP: Connect Thread Starting");
+    LOG(MCdebugInfo(100), unknownJob, "MP: Connect Thread Starting - accept loop");
 #endif
     while (running) {
         ISocket *sock=NULL;
@@ -1710,7 +1888,7 @@ int CMPConnectThread::run()
                 size32_t rd;
                 SocketEndpoint remoteep;
                 SocketEndpoint hostep;
-                SocketEndpointV4 id[2];
+                SocketEndpointV4A id[2];
                 traceSlowReadTms("MP: initial accept packet from", sock, &id[0], sizeof(id), sizeof(id), rd, CONFIRM_TIMEOUT, CONFIRM_TIMEOUT_INTERVAL);
                 if (rd != sizeof(id))
                 {
@@ -1743,7 +1921,7 @@ int CMPConnectThread::run()
                 PROGLOG("MP: Connect Thread: after read %s",tmp1.str());
 #endif
                 checkSelfDestruct(&id[0],sizeof(id));
-                if (!parent->lookup(remoteep).attachSocket(sock,remoteep,hostep,false, &rd)) {
+                if (!parent->lookup(remoteep).attachSocket(sock,remoteep,hostep,false,&rd,id[0].random)) {
 #ifdef _FULLTRACE       
                     PROGLOG("MP Connect Thread: lookup failed");
 #endif
@@ -2118,7 +2296,7 @@ void CMPServer::notifyClosed(SocketEndpoint &ep)
 {
 #ifdef _TRACE
     StringBuffer url;
-    LOG(MCdebugInfo(100), unknownJob, "CMPServer::notifyClosed %s",ep.getUrlStr(url).str());
+    LOG(MCdebugInfo(100), unknownJob, "MP: CMPServer::notifyClosed %s",ep.getUrlStr(url).str());
 #endif
     notifyclosedthread->notify(ep);
 }
@@ -2408,6 +2586,57 @@ public:
         return true;
     }
 
+    void barrier(void)
+    {
+#ifdef _TRACE
+        PrintLog("MP: barrier enter");
+#endif
+
+        /*
+         * Use the dissemination algorithm described in:
+         * Debra Hensgen, Raphael Finkel, and Udi Manbet, "Two Algorithms for Barrier Synchronization,"
+         * International Journal of Parallel Programming, 17(1):1-17, 1988.
+         * It uses ceiling(lgp) steps. In step k, 0 <= k <= (ceiling(lgp)-1),
+         * process i sends to process (i + 2^k) % p and receives from process (i - 2^k + p) % p.
+         */
+
+        int myrank = group->rank();
+        int numranks = group->ordinality();
+        CMessageBuffer mb;
+        rank_t r;
+
+        int mask = 0x1;
+        while (mask < numranks)
+        {
+            int dst = (myrank + mask) % numranks;
+            int src = (myrank - mask + numranks) % numranks;
+
+#ifdef _TRACE
+            PrintLog("MP: barrier: send to %d, recv from %d", dst, src);
+#endif
+
+            // NOTE: MPI method MUST use sendrecv so as to not send/recv deadlock ...
+
+            mb.clear();
+            mb.append("MPTAG_BARRIER");
+            bool oks = send(mb,dst,MPTAG_BARRIER,120000);
+            mb.clear();
+            bool okr = recv(mb,src,MPTAG_BARRIER,&r);
+
+            if (!oks && !okr)
+            {
+                PrintLog("MP: barrier: Error sending or recving");
+                break;
+            }
+
+            mask <<= 1;
+        }
+
+#ifdef _TRACE
+        PrintLog("MP: barrier leave");
+#endif
+    }
+
     bool verifyConnection(rank_t rank,  unsigned timeout)
     {
         CriticalBlock block(verifysect);
@@ -2653,7 +2882,7 @@ void stopMPServer()
     if (--CMPServer::servernest==0) {
         stopLogMsgReceivers();
 #ifdef _TRACE
-        LOG(MCdebugInfo(100), unknownJob, "Stopping MP Server");
+        LOG(MCdebugInfo(100), unknownJob, "MP: Stopping MP Server");
 #endif
         CriticalUnblock unblock(CMPServer::serversect);
         assertex(MPserver!=NULL);
@@ -2664,7 +2893,7 @@ void stopMPServer()
         worldcomm = NULL;
         initMyNode(0);
 #ifdef _TRACE
-        LOG(MCdebugInfo(100), unknownJob, "Stopped MP Server");
+        LOG(MCdebugInfo(100), unknownJob, "MP: Stopped MP Server");
 #endif
     }
 }
