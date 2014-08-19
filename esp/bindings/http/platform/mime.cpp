@@ -250,7 +250,7 @@ void CMimeMultiPart::serialize(StringBuffer& contenttype, StringBuffer & buffer)
     }
 }
 
-void CMimeMultiPart::unserialize(const char* contenttype, int text_length, const char* text)
+void CMimeMultiPart::unserialize(const char* contenttype, __int64 text_length, const char* text)
 {
     char* typebuf = new char[strlen(contenttype) + 1];
     strcpy(typebuf, contenttype);
@@ -315,8 +315,8 @@ void CMimeMultiPart::unserialize(const char* contenttype, int text_length, const
     delete [] typebuf;
 
     int oneline_len = 0;
-    int cur_pos = 0;
-    int next_pos = Utils::getLine(text_length, 0, text, oneline_len);
+    __int64 cur_pos = 0;
+    __int64 next_pos = Utils::getLine(text_length, cur_pos, text, oneline_len);
     const char* curline = text;
     int boundarylen = m_boundary.length();
 
@@ -399,7 +399,7 @@ void CMimeMultiPart::unserialize(const char* contenttype, int text_length, const
 
         // Read in the content of one mime part
         cur_pos = next_pos;
-        int bb = cur_pos;
+        __int64 bb = cur_pos;
         next_pos = Utils::getLine(text_length, next_pos, text, oneline_len);
         const char* curline = text + cur_pos;
         while(next_pos < text_length && !(oneline_len >= 2 && !Utils::strncasecmp(m_boundary.get(), curline + 2, boundarylen)))
@@ -410,7 +410,7 @@ void CMimeMultiPart::unserialize(const char* contenttype, int text_length, const
         }
 
         // Get rid of CR/LF at the end of the content
-        int be = cur_pos - 1;
+        __int64 be = cur_pos - 1;
         if(be >0 && (text[be] == '\r' || text[be] == '\n'))
             be--;
 

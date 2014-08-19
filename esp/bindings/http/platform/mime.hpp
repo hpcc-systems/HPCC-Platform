@@ -80,7 +80,7 @@ public:
     void readUploadFileName(MemoryBuffer& fileContent, StringBuffer& fileName);
 
     void serialize(StringBuffer& contenttype, StringBuffer & buffer);
-    void unserialize(const char* contenttype, int text_length, const char* text);
+    void unserialize(const char* contenttype, __int64 text_length, const char* text);
 };
 
 #endif

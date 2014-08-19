@@ -487,10 +487,10 @@ int CEspHttpServer::processRequest()
     catch (...)
     {
         StringBuffer content_type;
-        unsigned len = m_request->getContentLength();
+        __int64 len = m_request->getContentLength();
         DBGLOG("Unknown Exception - processing request");
-        DBGLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
-        if (len)
+        DBGLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %"I64F"d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
+        if (len > 0)
             m_request->logMessage(LOGCONTENT, "HTTP request content received:\n");
         return 0;
     }
@@ -637,7 +637,7 @@ inline void make_env_var(StringArray &env, StringBuffer &var, const char *name, 
     env.append(var.clear().append(name).append('=').append(value).str());
 }
 
-inline void make_env_var(StringArray &env, StringBuffer &var, const char *name, int value)
+inline void make_env_var(StringArray &env, StringBuffer &var, const char *name, __int64 value)
 {
     env.append(var.clear().append(name).append('=').append(value).str());
 }

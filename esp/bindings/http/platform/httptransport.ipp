@@ -54,8 +54,7 @@ protected:
     Owned<IBufferedSocket> m_bufferedsocket;
 
     StringAttr   m_content_type;
-    int          m_content_length;
-    __int64      m_content_length64;
+    __int64      m_content_length;
     StringBuffer m_content;
     StringBuffer m_header;
     OwnedIFileIOStream m_content_stream;
@@ -107,7 +106,7 @@ public:
     virtual int close();
 
     virtual bool supportClientXslt();
-    unsigned getContentLength(){return m_content_length;}
+    __int64 getContentLength(){return m_content_length;}
     const char *queryContent(){return m_content.str();}
     const char *queryHeader() { return m_header.str(); }
     void logSOAPMessage(const char* message, const char* prefix = NULL);
@@ -166,7 +165,7 @@ public:
         if (type==NULL || *type==0)
             return (m_content_type.length()==0);
 
-        return ( (m_content_length > 0 || m_content_length64 > 0 || Utils::strncasecmp(HTTP_TYPE_FORM_ENCODED,type,sizeof(HTTP_TYPE_FORM_ENCODED)-1)==0)
+        return ( (m_content_length > 0 || Utils::strncasecmp(HTTP_TYPE_FORM_ENCODED,type,sizeof(HTTP_TYPE_FORM_ENCODED)-1)==0)
             && Utils::strncasecmp(m_content_type.get(), type, strlen(type)) == 0);
     }
 
