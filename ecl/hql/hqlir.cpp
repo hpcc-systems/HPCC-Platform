@@ -639,6 +639,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,catchds);
     EXPAND_CASE(no,file_logicalname);
     EXPAND_CASE(no,toxml);
+    EXPAND_CASE(no,tojson);
     EXPAND_CASE(no,sectioninput);
     EXPAND_CASE(no,forcegraph);
     EXPAND_CASE(no,eventextra);

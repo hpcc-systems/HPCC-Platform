@@ -2456,7 +2456,8 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
         doBuildAssignToFromUnicode(ctx, target, expr);
         break;
     case no_toxml:
-        doBuildAssignToXml(ctx, target, expr);
+    case no_tojson:
+        doBuildAssignToXmlorJson(ctx, target, expr);
         break;
     case no_wuid:
         doBuildAssignWuid(ctx, target, expr);
@@ -3139,6 +3140,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_eventextra:
     case no_loopcounter:
     case no_toxml:
+    case no_tojson:
         buildTempExpr(ctx, expr, tgt);
         return;
     case no_asstring:
@@ -7363,7 +7365,7 @@ void HqlCppTranslator::doBuildAssignFormat(IIdAtom * func, BuildCtx & ctx, const
 
 //---------------------------------------------------------------------------
 
-void HqlCppTranslator::doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+void HqlCppTranslator::doBuildAssignToXmlorJson(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     IHqlExpression * row = expr->queryChild(0);
 
@@ -7371,7 +7373,8 @@ void HqlCppTranslator::doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget 
     args.append(*buildMetaParameter(row));
     args.append(*LINK(row));
     args.append(*getSizetConstant(XWFtrim|XWFopt|XWFnoindent));
-    OwnedHqlExpr call = bindFunctionCall(ctxGetRowXmlId, args);
+    node_operator op = expr->getOperator();
+    OwnedHqlExpr call = bindFunctionCall((op==no_tojson) ? ctxGetRowJsonId : ctxGetRowXmlId, args);
     buildExprAssign(ctx, target, call);
 }
 

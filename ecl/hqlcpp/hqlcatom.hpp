@@ -215,6 +215,7 @@ extern IIdAtom * createUnicodeRangeHighId;
 extern IIdAtom * createRegexId;
 extern IIdAtom * createWRegexId;
 extern IIdAtom * csvStr2BoolId;
+extern IIdAtom * ctxGetRowJsonId;
 extern IIdAtom * ctxGetRowXmlId;
 extern IIdAtom * data2BoolId;
 extern IIdAtom * dataset2DatasetXId;

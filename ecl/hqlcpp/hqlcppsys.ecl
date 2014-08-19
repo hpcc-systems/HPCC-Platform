@@ -700,6 +700,7 @@ const char * cppSystemText[]  = {
     "   unsigned4 countToSize(unsigned4 numRows, const data1 raw, boolean iRecordSize) : eclrtl,pure,include,entrypoint='rtlCountToSize';",
     
     "   utf8 ctxGetRowXml(boolean _meta, const row _row, unsigned4 flags) : ctxmethod,entrypoint='getRowXML';",
+    "   utf8 ctxGetRowJson(boolean _meta, const row _row, unsigned4 flags) : ctxmethod,entrypoint='getRowJSON';",
 
     "   boolean getMatched(unsigned4 idx) : method,pure,include,entrypoint='getMatched';",
     "   unsigned4 getMatchLength(unsigned4 idx) : method,pure,include,entrypoint='getMatchLength';",
