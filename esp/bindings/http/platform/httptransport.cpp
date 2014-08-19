@@ -603,6 +603,19 @@ int CHttpMessage::readContentTillSocketClosed()
     return 0;
 }
 
+StringBuffer& CHttpMessage::appendContentLength(StringBuffer& headerbuf, bool inclLength)
+{
+    if(!inclLength || ((m_content_length < 1) && (m_content_length64 < 1)))
+        return headerbuf;
+
+    if ((m_content_length64 > m_content_length))
+        headerbuf.append("Content-Length: ").append(m_content_length64).append("\r\n");
+    else
+        headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
+
+    return headerbuf;
+}
+
 int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
 {
     if (processHeaders(me)==-1)
@@ -1766,8 +1779,7 @@ StringBuffer& CHttpRequest::constructHeaderBuffer(StringBuffer& headerbuf, bool 
 
     headerbuf.append("\r\n");
 
-    if(inclLength && m_content_length > 0) 
-        headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
+    appendContentLength(headerbuf, inclLength);
 
     if(m_cookies.length() > 0)
     {
@@ -2053,8 +2065,7 @@ StringBuffer& CHttpResponse::constructHeaderBuffer(StringBuffer& headerbuf, bool
         headerbuf.append("text/xml; charset=UTF-8");
     headerbuf.append("\r\n");
 
-    if(inclLen && m_content_length > 0) 
-        headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
+    appendContentLength(headerbuf, inclLen);
 
     headerbuf.append("Connection: close\r\n");
     

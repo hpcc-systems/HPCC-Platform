@@ -85,6 +85,7 @@ protected:
     virtual void addParameter(const char* paramname, const char *value);
     virtual void addAttachment(const char* name, StringBuffer& value);
 
+    StringBuffer& appendContentLength(StringBuffer& headerbuf, bool inclLength);
     virtual StringBuffer& constructHeaderBuffer(StringBuffer& headerbuf, bool inclLength);
     virtual int processHeaders(IMultiException *me);
 
