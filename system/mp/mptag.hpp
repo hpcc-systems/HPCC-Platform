@@ -55,6 +55,7 @@ TAGENUM
     DEFTAG ( MPTAG_THORRESOURCELOCK )
     DEFTAG ( MPTAG_MPTX )
     DEFTAG ( MPTAG_THORWATCHDOG )
+    DEFTAG ( MPTAG_BARRIER )
 
     // new static tags go above here
 
