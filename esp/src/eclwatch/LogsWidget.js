@@ -226,17 +226,17 @@ define([
                             Type: "Workunit XML",
                             FileSize: response.WUXMLSize
                         });
-                        if (response.HasArchiveQuery) {
+                        if (response.hasArchiveQuery) {
                             context.logData.push({
                                 id: "A:0",
                                 Type: "Archive Query"
                             });
                         }
-                        if (response.Helpers && response.Helpers.ECLHelpFile) {
-                            context.loadHelpers(response.Helpers.ECLHelpFile);
+                        if (response.helpers) {
+                            context.loadHelpers(response.helpers);
                         }
-                        if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
-                            context.loadThorLogInfo(response.ThorLogList.ThorLogInfo);
+                        if (response.thorLogList) {
+                            context.loadThorLogInfo(response.thorLogList);
                         }
                         context.store.setData(context.logData);
                         context.grid.refresh();
