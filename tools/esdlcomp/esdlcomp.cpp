@@ -36,13 +36,18 @@ inline bool es_strieq(const char* s,const char* t) { return stricmp(s,t)==0; }
 extern FILE *yyin;
 extern int yyparse();
 
+extern void yyrestart  (FILE * input_file );
+extern int  yylex_destroy  (void);
+extern void yyInitESDLGlobals(ESDLcompiler * esdlcompiler);
+extern void yyCleanupESDLGlobals();
+
 extern ESDLcompiler * hcp;
 extern char *esp_def_export_tag;
+
 // --- globals -----
-
-
 int gOutfile = -1;
 
+CriticalSection ESDLcompiler::m_critSect;
 //-------------------------------------------------------------------------------------------------------------
 // Utility struct and function
 
@@ -406,11 +411,19 @@ ParamInfo::~ParamInfo()
         free(xsdtype);
     if (m_arrayImplType)
         delete m_arrayImplType;
+
     while (layouts)
     {
         LayoutInfo *l=layouts;
         layouts = l->next;
         delete l;
+    }
+
+    while (tags)
+    {
+        MetaTagInfo *t=tags;
+        tags = t->next;
+        delete t;
     }
 }
 
@@ -464,8 +477,6 @@ bool ParamInfo::simpleneedsswap()
         return false;
     }
 }
-
-
 
 void ParamInfo::cat_type(char *s,int deref,int var)
 {
@@ -787,7 +798,6 @@ void ParamInfo::setXsdType(const char *value)
     xsdtype = (newValue!=NULL) ? strdup(newValue) : NULL;
 }
 
-
 const char *ParamInfo::getXsdType()
 {
     if (xsdtype==NULL)
@@ -855,10 +865,6 @@ const char* ParamInfo::getArrayItemXsdType()
     }
 }
 
-
-
-
-
 //-------------------------------------------------------------------------------------------------------------
 // class ProcInfo
 
@@ -890,10 +896,6 @@ ProcInfo::~ProcInfo()
     }
 }
 
-
-
-
-
 //-------------------------------------------------------------------------------------------------------------
 // class ApiInfo
 
@@ -907,15 +909,16 @@ ApiInfo::ApiInfo(const char *n)
 
 ApiInfo::~ApiInfo()
 {
-    if (name)
-        free(name);
-    if (proc)
-        delete proc;
-    if (group)
-        free(group);
+    free (group);
+    free (name);
+
+    while (proc)
+    {
+        ProcInfo *pr=proc;
+        proc = pr->next;
+        delete pr;
+    }
 }
-
-
 
 //-------------------------------------------------------------------------------------------------------------
 // class ModuleInfo
@@ -932,21 +935,19 @@ ModuleInfo::ModuleInfo(const char *n)
 
 ModuleInfo::~ModuleInfo()
 {
-    free(name);
     while (procs)
     {
-        ProcInfo *p=procs;
-        procs = p->next;
-        delete p;
+       ProcInfo *proc=procs;
+       procs = proc->next;
+       delete proc;
     }
+
+    free (name);
+    free (base);
 }
-
-
-
 
 //-------------------------------------------------------------------------------------------------------------
 // class EspMessageInfo
-
 
 bool EspMessageInfo::hasMapInfo()
 {
@@ -970,7 +971,6 @@ EspMessageInfo *EspMessageInfo::find_parent()
     return NULL;
 }
 
-
 char* makeXsdType(const char* s)
 {
     if (!s)
@@ -992,9 +992,6 @@ char* makeXsdType(const char* s)
     else
         return NULL;
 }
-
-
-
 
 EspMessageInfo *EspMethodInfo::getRequestInfo()
 {
@@ -1093,7 +1090,7 @@ char* getTargetBase(const char* outDir, const char* src)
         return strdup(src);
 }
 
-ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
+ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir)
 {
     modules = NULL;
     enums = NULL;
@@ -1104,40 +1101,111 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
     methods=NULL;
     versions = NULL;
 
-    splitFilename(sourceFile, NULL, NULL, &name, NULL);
+    splitFilename(sourceFile, NULL, &srcDir, &name, NULL);
 
 
     filename = strdup(sourceFile);
     size_t l = strlen(filename);
-    //sourceFile = es_changeext(sourceFile, "scm");
+
     yyin = fopen(sourceFile, "rt");
-    if (!yyin) {
-        printf("Fatal Error: Cannot read %s\n",sourceFile);
+    if (!yyin)
+    {
+        fprintf(stderr, "Fatal Error: Cannot read %s\n",sourceFile);
         exit(1);
     }
+
     packagename = es_gettail(sourceFile);
 
-    char* targetBase = getTargetBase(outDir, sourceFile);
+    if (generatefile)
+    {
+        if (!outDir || !*outDir)
+            outDir = srcDir.str();
 
-    esxdlo = es_createFile(targetBase,"xml");
+        char* targetBase = getTargetBase(outDir, sourceFile);
 
-    free(targetBase);
+        esxdlo = es_createFile(targetBase,"xml");
+
+        free(targetBase);
+    }
 }
 
 ESDLcompiler::~ESDLcompiler()
 {
-    fclose(yyin);
-    close(esxdlo);
     free(packagename);
     free(filename);
+
+    while (modules)
+    {
+        ModuleInfo *mo=modules;
+        modules = mo->next;
+        delete mo;
+    }
+
+    while (enums)
+    {
+        EnumInfo *en=enums;
+        enums = en->next;
+        delete en;
+    }
+
+    while (apis)
+    {
+        ApiInfo *api=apis;
+        apis = api->next;
+        delete api;
+    }
+
+    while (servs)
+    {
+        EspServInfo *ser=servs;
+        servs = ser->next;
+        delete ser;
+    }
+
+    while (includes)
+    {
+        IncludeInfo *in=includes;
+        includes = in->next;
+        delete in;
+    }
+
+    while (methods)
+    {
+        EspMethodInfo *meth=methods;
+        methods = meth->next;
+        delete meth;
+    }
+
+    while (versions)
+    {
+        VersionInfo *mes=versions;
+        versions = mes->next;
+        delete mes;
+    }
+
+    while (msgs)
+    {
+        EspMessageInfo *mi=msgs;
+        msgs = mi->next;
+        delete mi;
+    }
+
+    while (includes)
+    {
+        IncludeInfo *in=includes;
+        includes = in->next;
+        delete in;
+    }
 }
 
 void ESDLcompiler::Process()
 {
-    hcp = this;
+    CriticalBlock block(m_critSect);
 
-    nCommentStartLine = -1;
+    yyInitESDLGlobals(this);
+    yyrestart (yyin);
     yyparse();
+
     if (nCommentStartLine > -1)
     {
         char tempBuf[256];
@@ -1145,37 +1213,43 @@ void ESDLcompiler::Process()
         yyerror(tempBuf);
     }
     write_esxdl();
+
+    fclose(yyin);
+    close(esxdlo);
+
+    yyCleanupESDLGlobals();
+    yylex_destroy();
 }
 
 void ESDLcompiler::write_esxdl()
 {
-    //create the *.esp file
-    gOutfile = esxdlo;
-
-    outf("<esxdl name=\"%s\">\n", name.str());
+    esxdlcontent.clear();
 
     VersionInfo * vi;
     for (vi=versions;vi;vi=vi->next)
     {
-        vi->write_esxdl();
+        vi->toString(esxdlcontent);
     }
 
-    IncludeInfo * ii;
-    for (ii=includes;ii;ii=ii->next)
+    if (esxdlo > 0) // This only makes sense if outputting to file
     {
-        ii->write_esxdl();
+        IncludeInfo * ii;
+        for (ii=hcp->includes;ii;ii=ii->next)
+        {
+            ii->toString(esxdlcontent);
+        }
     }
 
     EspMessageInfo * mi;
     for (mi=msgs;mi;mi=mi->next)
     {
-        mi->write_esxdl();
+        mi->toString(esxdlcontent);
     }
 
     EspServInfo *si;
     for (si=servs;si;si=si->next)
     {
-        si->write_esxdl();
+        si->toString(esxdlcontent);
     }
 
     if (methods)
@@ -1183,19 +1257,21 @@ void ESDLcompiler::write_esxdl()
         EspMethodInfo *sm;
         for (sm=methods;sm;sm=sm->next)
         {
-            sm->write_esxdl();
+            sm->toString(esxdlcontent);
         }
     }
 
-    outs("</esxdl>");
 
-
+    if (esxdlo > 0)
+    {
+        //Populate the file
+        StringBuffer tmp;
+        tmp.setf("<esxdl name=\"%s\">\n", name.str()).append(esxdlcontent.str()).append("</esxdl>");
+        gOutfile = esxdlo;
+        outs(tmp.str());
+        gOutfile = -1;
+    }
 }
-
-
-
-//-------------------------------------------------------------------------------------------------------------
-// class EnumInfo
 
 // end
 //-------------------------------------------------------------------------------------------------------------
