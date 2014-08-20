@@ -2197,8 +2197,18 @@ public:
     {
         StringBuffer wuidStr(wuid);
         wuidStr.trim();
-        if (!wuidStr.length())
+        if ('w' == wuidStr.charAt(0))
+        {
+            wuidStr.setCharAt(0, 'W');
+        }
+
+        if (!wuidStr.length() || ('W' != wuidStr.charAt(0)))
+        {
+            if (workUnitTraceLevel > 1)
+                PrintLog("openWorkUnit %s wrong WUID", (!wuidStr.length() ? "(null)":wuidStr.str()) );
+
             return NULL;
+        }
 
         if (workUnitTraceLevel > 1)
             PrintLog("openWorkUnit %s", wuidStr.str());
@@ -2216,7 +2226,10 @@ public:
                     return NULL;
                 }
             }
-            return wu;
+            if (wu)
+                return wu;
+            else
+                return NULL;
         }
         else
         {
