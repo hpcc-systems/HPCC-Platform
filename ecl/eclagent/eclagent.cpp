@@ -742,7 +742,6 @@ IConstWUResult *EclAgent::getExternalResult(const char * wuid, const char *name,
     else
     {
         fail(0, "Missing or invalid workunit name in getExternalResult()");
-        return NULL;
     }
 }
 

@@ -2197,15 +2197,13 @@ public:
     {
         StringBuffer wuidStr(wuid);
         wuidStr.trim();
-        if ('w' == wuidStr.charAt(0))
-        {
+        if (wuidStr.length() && ('w' == wuidStr.charAt(0)))
             wuidStr.setCharAt(0, 'W');
-        }
 
         if (!wuidStr.length() || ('W' != wuidStr.charAt(0)))
         {
             if (workUnitTraceLevel > 1)
-                PrintLog("openWorkUnit %s invalid WUID", (!wuidStr.length() ? "(null)":wuidStr.str()) );
+                PrintLog("openWorkUnit %s invalid WUID", nullText(wuidStr.str()));
 
             return NULL;
         }
