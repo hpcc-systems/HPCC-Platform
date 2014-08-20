@@ -2205,7 +2205,7 @@ public:
         if (!wuidStr.length() || ('W' != wuidStr.charAt(0)))
         {
             if (workUnitTraceLevel > 1)
-                PrintLog("openWorkUnit %s wrong WUID", (!wuidStr.length() ? "(null)":wuidStr.str()) );
+                PrintLog("openWorkUnit %s invalid WUID", (!wuidStr.length() ? "(null)":wuidStr.str()) );
 
             return NULL;
         }
@@ -2226,10 +2226,7 @@ public:
                     return NULL;
                 }
             }
-            if (wu)
-                return wu;
-            else
-                return NULL;
+            return wu;
         }
         else
         {
