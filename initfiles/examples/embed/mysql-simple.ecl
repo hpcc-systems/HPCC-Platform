@@ -24,36 +24,37 @@ init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße
                  {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là'}], childrec);
 
 // Set up the MySQL database
+// Enable remote access to your MySQL DB Server to use its IP, else use localhost
 
-drop() := EMBED(mysql : user('rchapman'),database('test'))
+drop() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   DROP TABLE IF EXISTS tbl1;
 ENDEMBED;
 
-create() := EMBED(mysql : user('rchapman'),database('test'))
+create() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   CREATE TABLE tbl1 ( name VARCHAR(20), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10) );
 ENDEMBED;
 
 // Initialize the MySQL table, passing in the ECL dataset to provide the rows
 
-initialize(dataset(childrec) values) := EMBED(mysql : user('rchapman'),database('test'))
+initialize(dataset(childrec) values) := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?);
 ENDEMBED;
 
 // Add an additional row containing NULL values, to test that they are handled properly when read in ECL
 
-initializeNulls() := EMBED(mysql : user('rchapman'),database('test'))
+initializeNulls() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   INSERT INTO tbl1 (name) values ('nulls');
 ENDEMBED;
 
 // Returning a dataset
 
-dataset(childrec) testMySQLDS() := EMBED(mysql : user('rchapman'),database('test'))
+dataset(childrec) testMySQLDS() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT * from tbl1;
 ENDEMBED;
 
 // Returning a single row
 
-childrec testMySQLRow() := EMBED(mysql : user('rchapman'),database('test'))
+childrec testMySQLRow() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT * from tbl1 LIMIT 1;
 ENDEMBED;
 
@@ -67,45 +68,45 @@ childrec testMySQLParms(
    real4 r4,
    DATA d,
    UTF8 u1,
-   UNICODE8 u2) := EMBED(mysql : user('rchapman'),database('test'))
+   UNICODE8 u2) := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT * from tbl1 WHERE name=? AND value=? AND boolval=? AND r8=? AND r4=? AND d=? AND u1=? AND u2=?;
 ENDEMBED;
 
 // Returning scalars
 
-string testMySQLString() := EMBED(mysql : user('rchapman'),database('test'))
+string testMySQLString() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT max(name) from tbl1;
 ENDEMBED;
 
-dataset(childrec) testMySQLStringParam(string filter) := EMBED(mysql : user('rchapman'),database('test'))
+dataset(childrec) testMySQLStringParam(string filter) := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT * from tbl1 where name = ?;
 ENDEMBED;
 
-integer testMySQLInt() := EMBED(mysql : user('rchapman'),database('test'))
+integer testMySQLInt() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT max(value) from tbl1;
 ENDEMBED;
 
-boolean testMySQLBool() := EMBED(mysql : user('rchapman'),database('test'))
+boolean testMySQLBool() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT max(boolval) from tbl1;
 ENDEMBED;
 
-real8 testMySQLReal8() := EMBED(mysql : user('rchapman'),database('test'))
+real8 testMySQLReal8() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT max(r8) from tbl1;
 ENDEMBED;
 
-real4 testMySQLReal4() := EMBED(mysql : user('rchapman'),database('test'))
+real4 testMySQLReal4() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT max(r4) from tbl1;
 ENDEMBED;
 
-data testMySQLData() := EMBED(mysql : user('rchapman'),database('test'))
+data testMySQLData() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT max(d) from tbl1;
 ENDEMBED;
 
-UTF8 testMySQLUtf8() := EMBED(mysql : user('rchapman'),database('test'))
+UTF8 testMySQLUtf8() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT max(u1) from tbl1;
 ENDEMBED;
 
-UNICODE testMySQLUnicode() := EMBED(mysql : user('rchapman'),database('test'))
+UNICODE testMySQLUnicode() := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT max(u2) from tbl1;
 ENDEMBED;
 
@@ -119,7 +120,7 @@ stringrec extractName(childrec l) := TRANSFORM
   SELF := l;
 END;
 
-dataset(childrec) testMySQLDSParam(dataset(stringrec) inrecs) := EMBED(mysql : user('rchapman'),database('test'))
+dataset(childrec) testMySQLDSParam(dataset(stringrec) inrecs) := EMBED(mysql : user('rchapman'),database('test'),server('192.168.56.120'))
   SELECT * from tbl1 where name = ?;
 ENDEMBED;
 
