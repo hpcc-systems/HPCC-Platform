@@ -92,13 +92,13 @@ Command:
 Result:
 
 |
-|       usage: ecl-test setup [-h] [--target [target_cluster | all]]
+|       usage: ecl-test setup [-h] [--target [target_cluster_list | all]]
 |                             [--pq threadNumber]
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
-|        --target [target_cluster | all], -t [target_cluster | all]
-|                                 target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
+|        --target [target_cluster_list | all], -t [target_cluster_list | all]
+|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
@@ -112,14 +112,14 @@ Command:
 Result:
 
 |
-|       usage: ecl-test run [-h] [--target [target_cluster | all]] [--publish] 
+|       usage: ecl-test run [-h] [--target [target_cluster_list | all]] [--publish]
 |                           [--pq threadNumber]
 |                           [--runclass [class]] [--excludeclass [class]]
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
-|        --target [target_cluster | all], -t [target_cluster | all]
-|                                 target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
+|        --target [target_cluster_list | all], -t [target_cluster_list | all]
+|                                 run the cluster(s) suite. If target = 'all' then run suite on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).
 |        --publish, -p            publish compiled query instead of run.
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |        --runclass class[,class,...], -r class[,class,...]
@@ -138,7 +138,7 @@ Command:
 Result:
 
 |
-|       usage: ecl-test query [-h] [--target [target_cluster | all]] [--publish]
+|       usage: ecl-test query [-h] [--target [target_cluster_list | all]] [--publish]
 |                             [--pq threadNumber]
 |                             ECL_query [ECL_query ...]
 |
@@ -147,8 +147,8 @@ Result:
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
-|        --target [target_cluster | all], -t [target_cluster | all]
-|                                 target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
+|        --target [target_cluster_list | all], -t [target_cluster_list | all]
+|                                 target cluster(s) for query to run. If target = 'all' then run query on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).
 |        --publish, -p            publish compiled query instead of run.
 |        --pq threadNumber        parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )
 |
@@ -596,7 +596,21 @@ So if you have a new test case and it works well on all clusters (or some of the
         "timeout":"720",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
         "maxAttemptCount":"3"                           - Max retry count to reset timeout if a testcase in any early stage (compiled, blocked) of execution pipeline.
 
-Optionally the config file can contain a section of default values for stored parameters like this:
+Optionally the config file can contain some sections of default values:
+
+If -t | --target command line parameter omitted then the regression test engine try to read default target(s) from the relevant array of these two. (If the array doesn't exists then the engine uses 'thor' target as default.)
+
+        "defaultSetupClusters": [
+            "hthor",
+            "thor3"
+        ]
+
+        "defaultTargetClusters": [
+            "thor",
+            "thor3"
+        ]
+
+For stored parameters:
 
     "Params":[
                 "querya.ecl:param1=value1,param2=value2",
