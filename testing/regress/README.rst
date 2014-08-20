@@ -98,7 +98,7 @@ Result:
 |       optional arguments:
 |        -h, --help               show this help message and exit
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).
+|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
@@ -119,7 +119,7 @@ Result:
 |       optional arguments:
 |        -h, --help               show this help message and exit
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the cluster(s) suite. If target = 'all' then run suite on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).
+|                                 run the suite on target cluster(s). If target = 'all' then run suite on all clusters. If undefined the config 'defaultTargetClusters' value will be used.
 |        --publish, -p            publish compiled query instead of run.
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |        --runclass class[,class,...], -r class[,class,...]
@@ -148,7 +148,7 @@ Result:
 |       optional arguments:
 |        -h, --help               show this help message and exit
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 target cluster(s) for query to run. If target = 'all' then run query on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).
+|                                 run the query on target cluster(s). If target = 'all' then run query on all clusters. If undefined the config 'defaultTargetClusters' value will be used.
 |        --publish, -p            publish compiled query instead of run.
 |        --pq threadNumber        parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )
 |
@@ -598,7 +598,7 @@ So if you have a new test case and it works well on all clusters (or some of the
 
 Optionally the config file can contain some sections of default values:
 
-If -t | --target command line parameter omitted then the regression test engine try to read default target(s) from the relevant array of these two. (If the array doesn't exists then the engine uses the first cluster from Clusters array as default.)
+If the -t | --target command line parameter is omitted then the regression test engine uses the default target(s) from one of these default definitions. If undefined, then the engine uses the first cluster from the Cluster array.
 
         "defaultSetupClusters": [
             "hthor",

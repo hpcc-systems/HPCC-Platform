@@ -161,12 +161,16 @@ def getRealIPAddress():
 
 def checkClusters(clusters,  targetSet):
     targetClusters =[]
-    for cluster in clusters:
-        cluster = cluster.strip()
-        if cluster in gConfig.Clusters:
-            targetClusters.append(cluster)
-        else:
-            logging.error("%s. Unknown cluster:'%s' in %s:'%s'!" % (1,  cluster,  targetSet,  clusters))
-            raise Error("4000")
+    if 'all' in clusters:
+        for cluster in gConfig.Clusters:
+            targetClusters.append(str(cluster))
+    else:
+        for cluster in clusters:
+            cluster = cluster.strip()
+            if cluster in gConfig.Clusters:
+                targetClusters.append(cluster)
+            else:
+                logging.error("%s. Unknown cluster:'%s' in %s:'%s'!" % (1,  cluster,  targetSet,  clusters))
+                raise Error("4000")
 
     return  targetClusters
