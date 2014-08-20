@@ -25,6 +25,10 @@ IMPORT cassandra;
 // Note that the default values specified in the fields will be used when a NULL value is being
 // returned from Cassandra
 
+maprec := RECORD
+   string fromVal => string toVal
+ END;
+
 childrec := RECORD
    string name,
    integer4 value { default(99999) },
@@ -34,28 +38,48 @@ childrec := RECORD
    DATA d {default (D'999999')},
    DECIMAL10_2 ddd {default(9.99)},
    UTF8 u1 {default(U'9999 ß')},
-   UNICODE8 u2 {default(U'9999 ßßßß')}
+   UNICODE u2 {default(U'9999 ßßßß')},
+   SET OF STRING set1,
+   SET OF INTEGER4 list1,
+   LINKCOUNTED DICTIONARY(maprec) map1{linkcounted};
 END;
 
 // Some data we will use to initialize the Cassandra table
 
-init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
-                 {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là'}], childrec);
+init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße',['one','two','two','three'],[5,4,4,3],[{'a'=>'apple'},{'b'=>'banana'}]},
+                 {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là',[],[],[]}], childrec);
 
-init2 := ROW({'name4' , 3, true, 9.10, 11.12, D'aa55aa55', 987.65, U'Baße', U'Baße'}, childrec);
+init2 := ROW({'name4' , 3, true, 9.10, 11.12, D'aa55aa55', 987.65, U'Baße', U'Baße',[],[],[]}, childrec);
 
 // Set up the Cassandra database
 // Note that we can execute multiple statements in a single embed, provided that there are
 // no parameters and no result type
 
-createks() := EMBED(cassandra : user('rchapman'))
+// Note that server will default to localhost if not specified...
+
+createks() := EMBED(cassandra : server('127.0.0.1'),user('rchapman'))
   CREATE KEYSPACE IF NOT EXISTS test WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3' } ;
 ENDEMBED;
 
-createTables() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+createTables() := EMBED(cassandra : server('127.0.0.1'),user('rchapman'),keyspace('test'))
   DROP TABLE IF EXISTS tbl1;
 
-  CREATE TABLE tbl1 ( name VARCHAR, value INT, boolval boolean , r8 DOUBLE, r4 FLOAT, d BLOB, ddd VARCHAR, u1 VARCHAR, u2 VARCHAR, PRIMARY KEY (name) );
+  // Note that an ECL SET can map to either a SET or a LIST in Cassandra (it's actually closer to a LIST since repeated values are allowed and order is preserved)
+  // When stored in a Cassandra SET field, duplicates will be discarded and order lost.
+  // You can also use an ECL child dataset (with a single field) to map to a Cassandra SET or LIST.
+  CREATE TABLE tbl1 ( name VARCHAR,
+                      value INT,
+                      boolval boolean,
+                      r8 DOUBLE,
+                      r4 FLOAT,
+                      d BLOB,
+                      ddd VARCHAR,
+                      u1 VARCHAR,
+                      u2 VARCHAR,
+                      set1 SET<varchar>,
+                      list1 LIST<INT>,
+                      map1 MAP<VARCHAR, VARCHAR>,
+                      PRIMARY KEY (name) );
   CREATE INDEX tbl1_value  ON tbl1 (value);
   CREATE INDEX tbl1_boolval  ON tbl1 (boolval);
   INSERT INTO tbl1 (name, u1) values ('nulls', 'ß');  // Creates some null fields. Also note that query is utf8
@@ -68,26 +92,30 @@ ENDEMBED;
 // unless told to...
 
 initialize(dataset(childrec) values) := EMBED(cassandra : user('rchapman'),keyspace('test'),batch('unlogged'))
-  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2) values (?,?,?,?,?,?,?,?,?);
+  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
 initialize2(row(childrec) values) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2) values (?,?,?,?,?,?,?,?,?);
+  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
 // Returning a dataset
 
 dataset(childrec) testCassandraDS() := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1;
 ENDEMBED;
 
 // Returning a single row
 
 childrec testCassandraRow() := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 LIMIT 1;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1 LIMIT 1;
 ENDEMBED;
 
 // Passing in parameters
+
+mapwrapper := RECORD
+  LINKCOUNTED DICTIONARY(maprec) map1;
+END;
 
 testCassandraParms(
    string name,
@@ -98,8 +126,14 @@ testCassandraParms(
    DATA d,
 //   DECIMAL10_2 ddd,
    UTF8 u1,
-   UNICODE8 u2) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2) values (?,?,?,?,?,?,'8.76543',?,?);
+   UNICODE u2,
+   SET OF STRING set1,
+   SET OF INTEGER4 list1,
+   // Note we can't pass a dataset as a paramter to bind to a collection field - it would be interpreted as 'execute once per value in the dataset'
+   // You have to pass a record containing the field as a child dataset
+   ROW(mapwrapper) map1
+   ) := EMBED(cassandra : user('rchapman'),keyspace('test'))
+  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1) values (?,?,?,?,?,?,'8.76543',?,?,?,?,?);
 ENDEMBED;
 
 // Returning scalars
@@ -109,7 +143,7 @@ string testCassandraString() := EMBED(cassandra : user('rchapman'),keyspace('tes
 ENDEMBED;
 
 dataset(childrec) testCassandraStringParam(string filter) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 where name = ?;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
 integer testCassandraInt() := EMBED(cassandra : user('rchapman'),keyspace('test'))
@@ -140,6 +174,21 @@ UNICODE testCassandraUnicode() := EMBED(cassandra : user('rchapman'),keyspace('t
   SELECT u2 from tbl1 WHERE name='name1';
 ENDEMBED;
 
+SET OF STRING testCassandraSet() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+  SELECT set1 from tbl1 WHERE name='name1';
+ENDEMBED;
+
+SET OF INTEGER4 testCassandraList() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+  SELECT list1 from tbl1 WHERE name='name1';
+ENDEMBED;
+
+// Just as you can't pass a dataset parameter to bind to a map column (only a child dataset of a record),
+// if you wanted to return just a map column you have to do so via a child dataset
+
+MapWrapper testCassandraMap() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+  SELECT map1 from tbl1 WHERE name='name1';
+ENDEMBED;
+
 // Coding a TRANSFORM to call Cassandra - this ends up acting a little like a join
 
 stringrec := RECORD
@@ -147,7 +196,7 @@ stringrec := RECORD
 END;
 
 TRANSFORM(childrec) t(stringrec L) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 where name = ?;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
 init3 := DATASET([{'name1'},
@@ -162,7 +211,7 @@ stringrec extractName(childrec l) := TRANSFORM
 END;
 
 dataset(childrec) testCassandraDSParam(dataset(stringrec) inrecs) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2 from tbl1 where name = ?;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
 // Testing performance of batch inserts
@@ -190,7 +239,7 @@ sequential (
   createTables(),
   initialize(init),
 
-  testCassandraParms('name3', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße'),
+  testCassandraParms('name3', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße', ['four','five'], [2,2,3,1], ROW({[{'f'=>'fish'}]},MapWrapper)),
   initialize2(init2),
   OUTPUT(SORT(testCassandraDS(), name)),
   OUTPUT(testCassandraRow().name),
@@ -203,8 +252,12 @@ sequential (
   OUTPUT(testCassandraData()),
   OUTPUT(testCassandraUtf8()),
   OUTPUT(testCassandraUnicode()),
+  OUTPUT(testCassandraSet()),
+  OUTPUT(testCassandraList()),
+  OUTPUT(testCassandraMap().map1),
   OUTPUT(testCassandraTransform()),
   OUTPUT(testCassandraDSParam(PROJECT(init, extractName(LEFT)))),
   testCassandraBulk,
-  OUTPUT(testCassandraCount())
+  OUTPUT(testCassandraCount()),
+  OUTPUT('Done');
 );
