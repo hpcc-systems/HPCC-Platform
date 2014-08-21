@@ -2288,6 +2288,8 @@ mapEnums workunitSortFields[] =
    { WUSFfileread, "FilesRead/File/@name" },
    { WUSFroxiecluster, "RoxieQueryInfo/@roxieClusterName" },
    { WUSFtotalthortime, "Statistics/Statistic[@c='summary'][@creator='thor'][@kind='TimeElapsed']/@value|"
+                        "Statistics/Statistic[@c='summary'][@creator='hthor'][@kind='TimeElapsed']/@value|"
+                        "Statistics/Statistic[@c='summary'][@creator='roxie'][@kind='TimeElapsed']/@value|"
                         "Statistics/Statistic[@desc='Total thor time']/@value|"
                         "Timings/Timing[@name='Total thor time']/@duration"                                 //Use Statistics first. If not found, use Timings
    },
@@ -10581,6 +10583,17 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *ti
         StatisticKind kind = timer->getTimerType(i);
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, timer->getTime(i), timer->getCount(i), timer->getMaxTime(i), StatsMergeReplace);
     }
+}
+
+extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const char* creator, unsigned& totalTimeNs, unsigned& totalThisTimeNs)
+{
+    StatisticsFilter summaryTimeFilter(SCTsummary, creator, SSTglobal, GLOBAL_SCOPE, SMeasureTimeNs, StTimeElapsed);
+    Owned<IConstWUStatistic> totalThorTime = getStatistic(workunit, summaryTimeFilter);
+    Owned<IConstWUStatistic> totalThisThorTime = workunit->getStatistic(queryStatisticsComponentName(), GLOBAL_SCOPE, StTimeElapsed);
+    if (totalThorTime)
+        totalTimeNs = totalThorTime->getValue();
+    if (totalThisThorTime)
+        totalThisTimeNs = totalThisThorTime->getValue();
 }
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind)

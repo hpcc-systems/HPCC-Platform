@@ -392,12 +392,13 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
                 cur.getDescription(name, true);
                 cur.getScope(scope);
 
-                bool isThorTiming = false;
+                bool isThorTiming = false;//Should it be renamed as isClusterTiming?
                 if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && streq(scope.str(), GLOBAL_SCOPE))
                 {
                     SCMStringBuffer creator;
                     cur.getCreator(creator);
-                    if (streq(creator.str(), "thor"))
+                    if (streq(creator.str(), "thor") || streq(creator.str(), "hthor") ||
+                        streq(creator.str(), "roxie"))
                         isThorTiming = true;
                 }
                 else if (strieq(name.str(), TOTALTHORTIME)) // legacy
@@ -419,7 +420,10 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
             formatStatistic(totalThorTimeText, totalThorTimeValue, SMeasureTimeNs);
 
             Owned<IEspECLTimer> t= createECLTimer("","");
-            t->setName(TOTALTHORTIME);
+            if (version > 1.52)
+                t->setName(TOTALCLUSTERTIME);
+            else
+                t->setName(TOTALTHORTIME);
             t->setValue(totalThorTimeText.str());
             t->setCount(totalThorTimerCount);
             timers.append(*t.getLink());
@@ -975,7 +979,10 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
         {
             StringBuffer totalThorTimeStr;
             formatDuration(totalThorTimeStr, totalThorTimeMS);
-            info.setTotalThorTime(totalThorTimeStr.str());
+            if (version > 1.52)
+                info.setTotalClusterTime(totalThorTimeStr.str());
+            else
+                info.setTotalThorTime(totalThorTimeStr.str());
         }
     }
 

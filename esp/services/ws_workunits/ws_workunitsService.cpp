@@ -1799,7 +1799,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             sortorder[0] = WUSFprotected;
         else if (strieq(sortby, "State"))
             sortorder[0] = WUSFstate;
-        else if (strieq(sortby, "ThorTime"))
+        else if (strieq(sortby, "ClusterTime"))
             sortorder[0] = (WUSortField) (WUSFtotalthortime+WUSFnumeric);
         else
             sortorder[0] = WUSFwuid;

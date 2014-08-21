@@ -1424,11 +1424,18 @@ public:
                 graph->abort();
             if (workUnit)
             {
+                unsigned totalTimeNs = 0;
+                unsigned totalThisTimeNs = 0;
+                const char *totalTimeStr = "Total cluster time";
+                getWorkunitTotalTime(workUnit, "roxie", totalTimeNs, totalThisTimeNs);
+
                 const char * graphName = graph->queryName();
                 StringBuffer graphDesc;
                 formatGraphTimerLabel(graphDesc, graphName);
                 WorkunitUpdate progressWorkUnit(&workUnit->lock());
                 updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
+                updateWorkunitTimeStat(progressWorkUnit, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedTime);
+                progressWorkUnit->setStatistic(SCTsummary, "roxie", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedTime, 1, 0, StatsMergeReplace);
             }
             graph->reset();
             graph.clear();

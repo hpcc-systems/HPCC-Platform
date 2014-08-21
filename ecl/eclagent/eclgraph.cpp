@@ -1231,7 +1231,15 @@ void EclGraph::execute(const byte * parentExtract)
         StringBuffer description;
         formatGraphTimerLabel(description, queryGraphName(), 0, 0);
 
-        updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), milliToNano(elapsed));
+        unsigned totalTimeNs = 0;
+        unsigned totalThisTimeNs = 0;
+        unsigned elapsedNs = milliToNano(elapsed);
+        const char *totalTimeStr = "Total cluster time";
+        getWorkunitTotalTime(wu, "hthor", totalTimeNs, totalThisTimeNs);
+
+        updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs);
+        updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedNs);
+        wu->setStatistic(SCTsummary, "hthor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedNs, 1, 0, StatsMergeReplace);
     }
 
     if (run)

@@ -46,6 +46,7 @@ namespace ws_workunits {
 #define    File_ArchiveQuery "ArchiveQuery"
 
 #define    TOTALTHORTIME    "Total thor time"
+#define    TOTALCLUSTERTIME "Total cluster time" //for roxie and hthor
 
 #define    TEMPZIPDIR "tempzipfiles"
 
