@@ -429,12 +429,10 @@ startCmd() {
        if [ ${RCSTART} -ne 0 ];then
           if [ ${DEBUG} != "NO_DEBUG" ]; then
               log_failure_msg "Pid or lock file exists, but process is not running"
-              removePid ${PIDPATH}
-              unlock ${LOCKPATH}
-          else
-              removePid ${PIDPATH}
-              unlock ${LOCKPATH}
           fi
+          cleanup_component
+          removePid ${PIDPATH}
+          unlock ${LOCKPATH}
        else
           if [ ${DEBUG} != "NO_DEBUG" ]; then
               log_failure_msg "Lock or Pid file already exists"
@@ -532,12 +530,12 @@ stop_component() {
     if [ $RCSTOP -ne 0 ];then
        if [ ${DEBUG} != "NO_DEBUG" ]; then
           log_failure_msg "Failed: Process is not running"
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
        else
           log_failure_msg "Already Stopped"
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
+       fi
+       cleanup_component
+       removePid ${PIDPATH}
+       unlock ${LOCKPATH}
        fi
        return 0
     fi
@@ -980,4 +978,101 @@ cluster_tools_init() {
    cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
    [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
    
+}
+##
+## Cleanup component
+##
+##
+cleanup_component() {
+
+  local cpidpath=${COMPPIDPATH}
+  if [ "${compType}" = "thor" ] && [ ! -f "${cpidpath}" ]; then
+    cpidpath=$( echo $cpidpath | sed 's/.pid/_master.pid/' )
+  fi
+  getPid ${cpidpath}
+  local cpid=$__pidValue
+  getPid ${PIDPATH}
+  local pid=$__pidValue
+  local mpid=0
+
+  if [ $cpid -ne 0 ]; then
+    mpid=$cpid
+  elif [ $pid -ne 0 ]; then
+    mpid=$pid
+  else
+   if [ ${DEBUG} != "NO_DEBUG" ]; then
+     echo "No valid pid found"
+   fi
+   return 1
+  fi
+
+  local pgid=$( ps -p $mpid -o pid,pgid | grep $mpid | awk '{ print $2 }' )
+
+  # ensure we save the slave list before killing off the thormaster process group
+  if [ "${compType}" = "thor" ]; then
+   local slave_list=$( cat ${runtime}/${compName}/slaves )
+  fi
+
+  # start with SIGTERM and then follow up with SIGKILL if unsuccessful
+  if [ $pgid -ne 0 ] ; then
+    kill -15 -$pgid
+    if [ "${compType}" != "thor" ]; then
+      sleep 1
+    else
+      sleep 5
+    fi
+    kill -0 -$pgid &> /dev/null
+    if [ $? -eq 0 ];then
+      kill -9 -$pgid
+      sleep 1
+    fi
+
+    # take care of thor slaves on remote nodes
+    if [ "${compType}" = "thor" ]; then
+      ssh_pids=()
+      OIFS=$IFS
+      IFS=$'\n'
+      for address in ${slave_list[*]};do
+        local slave_ip=$( echo $address )
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+          echo "cleaning up orphaned thorslaves for ${compName} on ${slave_ip}"
+        fi
+        sudo -u $USER ssh $USER@${slave_ip} "$(declare -f cleanup_thorslaves);cleanup_thorslaves thorslave_${compName}" &
+        ssh_pids+=($!)
+      done
+      if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo "waiting for jobs to finish"
+        wait
+        for element in ${ssh_pids[*]};do
+          kill -0 $element &> /dev/null
+          if [ $? -eq 0 ];then
+          echo "Warning: ${element} is still running"
+          fi
+        done
+      else
+        wait
+      fi
+      IFS=$OIFS
+    fi
+  fi
+}
+
+##
+## Cleanup all thorslaves found for thormaster component
+##
+cleanup_thorslaves() {
+
+  slavename=$1
+
+  # check if orphans exist
+  killall -0 $slavename &> /dev/null
+  if [ $? -eq 0 ];then
+    killall $slavename
+    sleep 5
+    kill -0 $slavename &> /dev/null
+    if [ $? -eq 0 ];then
+      killall -9 $slavename
+      sleep 1
+    fi
+  fi
 }
