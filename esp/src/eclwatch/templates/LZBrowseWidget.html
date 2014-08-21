@@ -33,7 +33,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}SprayFixedForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}SprayFixedDestination" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
                                         <input id="${id}SprayFixedDestinationNamePrefix" title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
@@ -42,7 +42,7 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
@@ -62,7 +62,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}SprayDelimitedForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}SprayDelimitedDestination" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
                                         <input title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
@@ -71,7 +71,7 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <select id="${id}sourceFormat" title="${i18n.Format}:" name="sourceFormat" colspan="2" data-dojo-type="dijit.form.Select">
                                             <option value="1">ASCII</option>
@@ -110,7 +110,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}SprayXmlForm" style="width: 530px;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}SprayXmlDestinationSelect" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
                                         <input title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
@@ -119,7 +119,7 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <select id="${id}xmlsourceFormat" title="${i18n.Format}:" name="sourceFormat" colspan="2" data-dojo-type="dijit.form.Select">
                                             <option value="1">ASCII</option>
@@ -151,7 +151,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}SprayVariableForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}SprayVariableDestination" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
                                         <input title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
@@ -160,7 +160,7 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <select title="${i18n.VariableSourceType}:" name="sourceFormat" colspan="2" data-dojo-type="dijit.form.Select">
                                             <option value="recfmv" selected="true">recfmv</option>
@@ -186,7 +186,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}SprayBlobForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}SprayBlobDestination" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
                                         <input title="${i18n.TargetName}:" style="width: 95%;" name="destLogicalName" data-dojo-props="trim: true, placeHolder:'${i18n.TargetNamePlaceholder}'" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
@@ -195,7 +195,7 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <input title="${i18n.BlobPrefix}:" style="width: 95%;" name="prefix" data-dojo-props="trim: true, placeHolder:'${i18n.PrefixPlaceholder}'" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />

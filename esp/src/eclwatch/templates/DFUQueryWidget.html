@@ -13,7 +13,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}ImportForm" style="width: 460px;" onsubmit="return false;" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Source</legend>
+                                    <legend>${i18n.Source}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input name="sourceDali" title="${i18n.Dali}:" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                         <input name="srcusername" title="${i18n.UserID}:" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
@@ -22,14 +22,14 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}ImportTargetSelect" title="${i18n.Group}:" name="destGroup" style="width:100%" data-dojo-type="TargetSelectWidget" />
                                         <input name="destLogicalName" title="${i18n.LogicalName}:" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
@@ -51,7 +51,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}CopyForm" style="width: 460px;" onsubmit="return false;" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}CopyTargetSelect" title="${i18n.Group}:" name="destGroup" style="width:100%;" data-dojo-type="TargetSelectWidget" style="display: inline-block; vertical-align: middle" />
                                     </div>
@@ -59,7 +59,7 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}CopyTargetOverwrite" title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}CopyTargetNoSplit" title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
@@ -79,12 +79,12 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}RenameForm" style="width: 460px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div id="${id}RenameGrid" data-dojo-type="SelectionGridWidget">
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:1" data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}RenameTargetOverwrite" title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
@@ -100,7 +100,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}AddToSuperfileForm" style="width:480px" onsubmit="return false;" data-dojo-type="dijit.form.Form" >
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div class="dijitDialogPaneContentArea" data-dojo-props="cols:1" data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}AddToSuperfileTargetName" name="Superfile" title="${i18n.SuperFile}:" style="width:100%;" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                     </div>
@@ -108,7 +108,7 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div class="dijitDialogPaneContentArea" data-dojo-props="cols:1" data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}AddToSuperfileTargetAppend" name="ExistingFile" title="${i18n.Append}:" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
@@ -124,7 +124,7 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}DesprayForm" style="width: 460px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Target</legend>
+                                    <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}DesprayTargetSelect" title="${i18n.DropZone}:" name="destGroup" style="width: 100%;" data-dojo-type="TargetSelectWidget" />
                                         <input id="${id}DesprayTargetIPAddress" title="${i18n.IPAddress}:" name="destIP" style="width: 100%;" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
@@ -135,7 +135,7 @@
                                     </div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
-                                    <legend>Options</legend>
+                                    <legend>${i18n.Options}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}DesprayTargetOverwrite" title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}DesprayTargetUseSingleConnection" title="${i18n.UseSingleConnection}:" name="SingleConnection" data-dojo-type="dijit.form.CheckBox" />
