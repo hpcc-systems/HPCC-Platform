@@ -27,8 +27,12 @@
 project( cassandraembed )
 
 if (USE_CASSANDRA)
+  # There is not yet a standard package for cassandra cpp client, and only very modern distros have libuv-dev
+  # When there is (and the distros catch up) we may want to add them as dependencies here
   ADD_PLUGIN(cassandraembed PACKAGES OPTION MAKE_CASSANDRAEMBED)
   if ( MAKE_CASSANDRAEMBED )
+
+    # until then, we build the required libraries from source
 
     # Build libuv, required by the cassandra driver but not available on all distros
     add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/libuv.so
