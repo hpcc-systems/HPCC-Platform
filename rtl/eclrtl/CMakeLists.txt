@@ -45,6 +45,7 @@ set (    SRCS
          rtlbcd.hpp
          rtldistr.hpp
          rtlds_imp.hpp
+         rtlembed.hpp
          rtlfield_imp.hpp
          rtlkey2.hpp
          rtlkey.hpp

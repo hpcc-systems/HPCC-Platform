@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef rtlfield_hpp
-#define rtlfield_hpp
+#ifndef rtlembed_hpp
+#define rtlembed_hpp
 
 // NOTE - not included from generated code (see rtlfield_imp.hpp)
 
