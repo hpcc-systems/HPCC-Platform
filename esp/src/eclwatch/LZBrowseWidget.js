@@ -475,10 +475,12 @@ define([
                         label: this.i18n.Name,
                         collapseOnRefresh: true,
                         sortable: false,
-                        formatter: function (name, row) {
+                        formatter: function (_name, row) {
                             var img = "";
+                            var name = _name;
                             if (row.isDir === undefined) {
                                 img = dojoConfig.getImageHTML("server.png");
+                                name += " [//" + row.NetAddress + row.Path + "]";
                             } else if (row.isDir) {
                                 img = dojoConfig.getImageHTML("folder.png");
                             } else {
