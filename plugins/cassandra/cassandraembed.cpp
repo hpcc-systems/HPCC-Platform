@@ -666,7 +666,7 @@ class CassandraRowBuilder : public CInterfaceOf<IFieldSource>
 {
 public:
     CassandraRowBuilder(const CassandraStatementInfo *_stmtInfo)
-    : stmtInfo(_stmtInfo), colIdx(0),numIteratorFields(0),nextIteratedField(0)
+    : stmtInfo(_stmtInfo), colIdx(0), numIteratorFields(0), nextIteratedField(0)
     {
     }
     virtual bool getBooleanResult(const RtlFieldInfo *field)
@@ -819,7 +819,7 @@ public:
         rtlStrToUtf8X(utf8chars, utfText.refstr(), len, value);
         if (collection)
             checkBind(cass_collection_append_string(*collection,
-                                                 cass_string_init2(utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()))),
+                                                    cass_string_init2(utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()))),
                       field);
         else
             checkBind(cass_statement_bind_string(stmtInfo->queryStatement(),
@@ -899,12 +899,12 @@ public:
         rtlUnicodeToUtf8X(utf8chars, utfText.refstr(), chars, value);
         if (collection)
             checkBind(cass_collection_append_string(*collection,
-                                                        cass_string_init2(utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()))),
+                                                    cass_string_init2(utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()))),
                       field);
         else
             checkBind(cass_statement_bind_string(stmtInfo->queryStatement(),
-                                                     checkNextParam(field),
-                                                     cass_string_init2(utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()))),
+                                                 checkNextParam(field),
+                                                 cass_string_init2(utfText.getstr(), rtlUtf8Size(utf8chars, utfText.getstr()))),
                       field);
     }
     virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
