@@ -188,6 +188,9 @@ define([
         isComplete: function () {
             return this.hasCompleted;
         },
+        isDeleted: function () {
+            return this.StateID === 999;
+        },
         monitor: function (callback) {
             if (callback) {
                 callback(this);

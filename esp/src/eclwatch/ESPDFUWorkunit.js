@@ -154,6 +154,9 @@ define([
         isComplete: function () {
             return this.hasCompleted;
         },
+        isDeleted: function () {
+            return this.State === 999;
+        },
         monitor: function (callback) {
             if (callback) {
                 callback(this);
@@ -257,7 +260,7 @@ define([
             return dojoConfig.getImageURL("unlocked.png");
         },
         getStateIconClass: function () {
-            switch (this.StateID) {
+            switch (this.State) {
                 case 1:
                     return "iconWarning";
                 case 2:

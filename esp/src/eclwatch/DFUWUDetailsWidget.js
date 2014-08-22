@@ -283,13 +283,13 @@ define([
 
         refreshActionState: function () {
             this.setDisabled(this.id + "AutoRefresh", this.wu.isComplete(), "iconAutoRefresh", "iconAutoRefreshDisabled");
-            registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete());
-            registry.byId(this.id + "Delete").set("disabled", !this.wu.isComplete());
-            registry.byId(this.id + "Abort").set("disabled", this.wu.isComplete());
-            registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete());
+            registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete() || this.wu.isDeleted());
+            registry.byId(this.id + "Delete").set("disabled", !this.wu.isComplete() || this.wu.isDeleted());
+            registry.byId(this.id + "Abort").set("disabled", this.wu.isComplete() || this.wu.isDeleted());
+            registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "Modify").set("disabled", true);  //TODO
-            registry.byId(this.id + "JobName").set("readOnly", !this.wu.isComplete());
-            registry.byId(this.id + "isProtected").set("readOnly", !this.wu.isComplete());
+            registry.byId(this.id + "JobName").set("readOnly", !this.wu.isComplete() || this.wu.isDeleted());
+            registry.byId(this.id + "isProtected").set("readOnly", !this.wu.isComplete() || this.wu.isDeleted());
 
             this.summaryWidget.set("iconClass", this.wu.getStateIconClass());
             dom.byId(this.id + "StateIdImage").src = this.wu.getStateImage();

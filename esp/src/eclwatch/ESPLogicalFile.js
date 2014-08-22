@@ -380,6 +380,9 @@ define([
         },
         getStateImageHTML: function () {
             return dojoConfig.getImageHTML(this.getStateImageName());
+        },
+        isDeleted: function () {
+            return this.StateID === 999;
         }
     });
 
