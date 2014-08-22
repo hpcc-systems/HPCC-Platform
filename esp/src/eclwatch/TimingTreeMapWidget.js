@@ -94,16 +94,13 @@ define([
                 var context = this;
                 if (params.Wuid) {
                     this.wu = ESPWorkunit.Get(params.Wuid);
-
-                    this.wu.fetchTimers(function (timers) {
-                        context.timers = timers;
-                        context.loadTimers(timers, params.query);
+                    var monitorCount = 4;
+                    this.wu.monitor(function () {
+                        if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
+                            context.refreshTreeMap();
+                        }
                     });
                 }
-            },
-
-            setQuery: function (query) {
-                this.loadTimers(this.timers, query);
             },
 
             getSelected: function () {
@@ -158,13 +155,21 @@ define([
                 }
             },
 
-            loadTimers: function (timers, query) {
+            refreshTreeMap: function () {
+                var context = this;
+                this.wu.fetchTimers(function (timers) {
+                    context.timers = timers;
+                    context.loadTimers(timers);
+                });
+            },
+
+            loadTimers: function (timers) {
                 this.largestValue = 0;
                 var timerData = [];
                 if (timers) {
                     for (var i = 0; i < timers.length; ++i) {
-                        if (query.graphsOnly) {
-                            if (timers[i].SubGraphId && (query.graphName === "*" || query.graphName === timers[i].GraphName) && (query.subGraphId === "*" || query.subGraphId === timers[i].SubGraphId)) {
+                        if (this.params.query.graphsOnly) {
+                            if (timers[i].SubGraphId && (this.params.query.graphName === "*" || this.params.query.graphName === timers[i].GraphName) && (this.params.query.subGraphId === "*" || this.params.query.subGraphId === timers[i].SubGraphId)) {
                                 timerData.push(lang.mixin({
                                     __hpcc_prefix: timers[i].GraphName
                                 }, timers[i]));
