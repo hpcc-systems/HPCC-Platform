@@ -341,7 +341,7 @@ define([
                     Id: {
                         label: this.i18n.ID,
                         formatter: function (Id, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "IdClick'>" + Id + "</a>";
+                            return "<a href='#' class='dgrid-row-url'>" + Id + "</a>";
                         }
                     },
                     Name: {
@@ -357,7 +357,7 @@ define([
                         width: 180,
                         label: this.i18n.WUID,
                         formatter: function (Wuid, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                            return "<a href='#' class='dgrid-row-url2'>" + Wuid + "</a>";
                         }
                     },
                     Dll: {
@@ -376,13 +376,13 @@ define([
                     }
                 }
             }, this.id + "QuerySetGrid");
-            on(document, "." + context.id + "IdClick:click", function (evt) {
+            this.querySetGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.querySetGrid.row(evt).data;
                     context._onRowDblClick(item);
                 }
             });
-            on(document, "." + context.id + "WuidClick:click", function (evt) {
+            this.querySetGrid.on(".dgrid-row-url2:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.querySetGrid.row(evt).data;
                     context._onRowDblClick(item, true);

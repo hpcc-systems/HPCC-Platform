@@ -290,12 +290,12 @@ define([
                             var img = row.getStateImage();
                             if (context.activity.isInstanceOfQueue(row)) {
                                 if (row.ClusterType === 3) {
-                                    return "<img src='" + img + "'/>&nbsp;<a href='#' class='" + context.id + "RowClick'>" + _name + "</a>";
+                                    return "<img src='" + img + "'/>&nbsp;<a href='#' class='dgrid-row-url'>" + _name + "</a>";
                                 } else {
                                     return "<img src='" + img + "'/>&nbsp;" + _name;
                                 }
                             }
-                            return "<img src='" + img + "'/>&nbsp;<a href='#' class='" + context.id + "RowClick'>" + row.Wuid + "</a>";
+                            return "<img src='" + img + "'/>&nbsp;<a href='#' class='dgrid-row-url'>" + row.Wuid + "</a>";
                         }
                     }),
                     GID: {
@@ -303,7 +303,7 @@ define([
                         formatter: function (_gid, row) {
                             if (context.activity.isInstanceOfWorkunit(row)) {
                                 if (row.GraphName) {
-                                    return "<a href='#' class='" + context.id + "GraphClick'>" + row.GraphName + "-" + row.GID + "</a>";
+                                    return "<a href='#' class='dgrid-row-url2'>" + row.GraphName + "-" + row.GID + "</a>";
                                 }
                             }
                             return "";
@@ -339,7 +339,7 @@ define([
                 }
             }, domID);
 
-            on(document, "." + this.id + "RowClick:click", function (evt) {
+            retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
                     context._onRowDblClick(row, {
@@ -348,7 +348,7 @@ define([
                 }
             });
 
-            on(document, "." + this.id + "GraphClick:click", function (evt) {
+            retVal.on(".dgrid-row-url2:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
                     context._onRowDblClick(row, {

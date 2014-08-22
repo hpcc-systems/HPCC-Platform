@@ -377,7 +377,7 @@ define([
                         label: this.i18n.WUID, width: 180,
                         formatter: function (Wuid, idx) {
                             var wu = ESPWorkunit.Get(Wuid);
-                            return wu.getStateImageHTML() + "&nbsp;<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                            return wu.getStateImageHTML() + "&nbsp;<a href='#' class='dgrid-row-url'>" + Wuid + "</a>";
                         }
                     },
                     Owner: { label: this.i18n.Owner, width: 90 },
@@ -390,7 +390,7 @@ define([
             }, this.id + "WorkunitsGrid");
 
             var context = this;
-            on(document, "." + context.id + "WuidClick:click", function (evt) {
+            this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item.Wuid);
