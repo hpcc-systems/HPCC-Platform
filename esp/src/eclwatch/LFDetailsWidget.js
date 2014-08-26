@@ -298,6 +298,7 @@ define([
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                 domClass.remove(this.id + "StateIdImage");
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
+                this.refreshActionState();
             }
         },
 
@@ -316,7 +317,14 @@ define([
                 this.addChild(retVal);
             }
             return retVal;
-        }
+        },
 
+        refreshActionState: function () {
+            registry.byId(this.id + "Save").set("disabled", this.logicalFile.isDeleted());
+            registry.byId(this.id + "Delete").set("disabled", this.logicalFile.isDeleted());
+            registry.byId(this.id + "CopyDropDown").set("disabled", this.logicalFile.isDeleted());
+            registry.byId(this.id + "RenameDropDown").set("disabled", this.logicalFile.isDeleted());
+            registry.byId(this.id + "DesprayDropDown").set("disabled", this.logicalFile.isDeleted());
+        }
     });
 });
