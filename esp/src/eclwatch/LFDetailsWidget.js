@@ -51,7 +51,8 @@ define([
     "dijit/TooltipDialog",
     "dijit/form/ValidationTextBox",
     "dijit/form/CheckBox",
-    
+    "dijit/Fieldset",
+
     "hpcc/TableContainer"
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
@@ -153,8 +154,13 @@ define([
         _onDesprayOk: function (event) {
             if (this.desprayForm.validate()) {
                 var context = this;
+                var request = domForm.toObject(this.id + "DesprayForm");
+                if (!context.endsWith(request.destPath, "/")) {
+                    request.destPath += "/";
+                }
+                request.destPath += registry.byId(this.id + "DesprayTargetName").get("value");
                 this.logicalFile.despray({
-                    request: domForm.toObject(this.id + "DesprayForm")
+                    request: request
                 }).then(function (response) {
                     context._handleResponse("DesprayResponse.wuid", response);
                 });
@@ -186,7 +192,8 @@ define([
                 DropZones: true,
                 callback: function (value, item) {
                     context.updateInput("DesprayTargetIPAddress", null, item.machine.Netaddress);
-                    context.updateInput("DesprayTargetPath", null, item.machine.Directory + "/" + context.logicalFile.getLeaf());
+                    context.updateInput("DesprayTargetPath", null, item.machine.Directory);
+                    context.updateInput("DesprayTargetName", null, context.logicalFile.getLeaf());
                 }
             });
         },
