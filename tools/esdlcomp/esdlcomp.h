@@ -1285,7 +1285,7 @@ public:
 class ESDLcompiler
 {
 public:
-    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir);
+    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes);
     ~ESDLcompiler();
 
     void Process();
@@ -1310,6 +1310,7 @@ public:
     StrBuffer name;
 
 private:
+    bool outputIncludes;
     int esxdlo;
     char* packagename;
     StrBuffer srcDir;
