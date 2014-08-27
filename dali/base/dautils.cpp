@@ -1930,7 +1930,8 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
     if (hint&&*hint)
     {
         elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem)); // NB: removes from cache in process, added back at end
-        postfilter = elem->postFilter; // reuse cached postfilter
+        if (elem)
+            postfilter = elem->postFilter; // reuse cached postfilter
     }
     if (!elem)
         elem.setown(new CPECacheElem(owner, postfilter));

@@ -691,7 +691,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                     throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
                 else
                 {
-                    if (traceLevel > 2)
+                    if (traceLevel >= 2)
                     {
                         DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
                         ForEachItemIn(local_idx, localLocations)
