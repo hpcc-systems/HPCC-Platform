@@ -95,12 +95,6 @@ MODULE_EXIT()
 
 //-----------------------------------------------------------------------------------------------------
 
-inline const char * nullText(const char * text)
-{
-    if (text) return text;
-    return "(null)";
-}
-
 inline const char * ensureText(const char * text)
 {
     if (text) return text;
@@ -741,7 +735,7 @@ IConstWUResult *EclAgent::getExternalResult(const char * wuid, const char *name,
     }
     else
     {
-        fail(0, "Missing or invalid workunit name in getExternalResult()");
+        failv(0, "Missing or invalid workunit name %s in getExternalResult()", nullText(wuid));
     }
 }
 
