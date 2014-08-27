@@ -394,12 +394,6 @@ define([
                 }
             }, this.id + "GroupsGrid");
             var context = this;
-            on(document, ".WuidClick:click", function (evt) {
-                if (context._onGroupsRowDblClick) {
-                    var item = context.groupsGrid.row(evt).data;
-                    context._onGroupsRowDblClick(item.name);
-                }
-            });
             this.groupsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onGroupsRowDblClick) {
                     var item = context.groupsGrid.row(evt).data;
@@ -492,12 +486,6 @@ define([
                 }
             }, this.id + "UsersGrid");
             var context = this;
-            on(document, ".WuidClick:click", function (evt) {
-                if (context._onUsersRowDblClick) {
-                    var item = context.usersGrid.row(evt).data;
-                    context._onUsersRowDblClick(item.username,item.fullname,item.passwordexpiration);
-                }
-            });
             this.usersGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
@@ -606,12 +594,6 @@ define([
                 }
             }, this.id + "PermissionsGrid");
             var context = this;
-            on(document, ".WuidClick:click", function (evt) {
-                if (context._onPermissionsRowDblClick) {
-                    var item = context.permissionsGrid.row(evt).data;
-                    context._onPermissionsRowDblClick(item.username, item.fullname, item.passwordexpiration);
-                }
-            });
             this.permissionsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onPermissionsRowDblClick) {
                     var item = context.permissionsGrid.row(evt).data;

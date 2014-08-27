@@ -140,7 +140,7 @@ define([
                     Wuid: {
                         label: this.i18n.Workunit, width: 180, sortable: true,
                         formatter: function (Wuid) {
-                            return "<a href='#' class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                            return "<a href='#' class='dgrid-row-url'>" + Wuid + "</a>";
                         }
                     },
                     Cluster: { label: this.i18n.Cluster, width: 100, sortable: true },
@@ -152,7 +152,7 @@ define([
                 }
             }, this.id + "EventGrid");
 
-            on(document, "." + context.id + "WuidClick:click", function (evt) {
+            this.eventGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.eventGrid.row(evt).data;
                     context._onRowDblClick(item);

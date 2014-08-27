@@ -171,6 +171,34 @@ define([
         _GraphsSetter: function (Graphs) {
             this.set("graphs", Graphs.ECLGraph);
         },
+
+        //  Calculated "Helpers"  ---
+        _HelpersSetter: function (Helpers) {
+            this.set("helpers", Helpers.ECLHelpFile);
+            this.refreshHelpersCount();
+        },
+        _ThorLogListSetter: function (ThorLogList) {
+            this.set("thorLogInfo", ThorLogList.ThorLogInfo);
+            this.refreshHelpersCount();
+        },
+        _HasArchiveQuerySetter: function (HasArchiveQuery) {
+            this.set("hasArchiveQuery", HasArchiveQuery);
+            this.refreshHelpersCount();
+        },
+        refreshHelpersCount: function () {
+            var helpersCount = 2;   //  ECL + Workunit XML are also helpers...
+            if (this.helpers) {
+                helpersCount += this.helpers.length;
+            }
+            if (this.thorLogList) {
+                helpersCount += this.thorLogList.length;
+            }
+            if (this.hasArchiveQuery) {
+                helpersCount += 1;
+            }
+            this.set("helpersCount", helpersCount);
+        },
+
         //  ---  ---  ---
         onCreate: function () {
         },
@@ -187,6 +215,9 @@ define([
         },
         isComplete: function () {
             return this.hasCompleted;
+        },
+        isDeleted: function () {
+            return this.StateID === 999;
         },
         monitor: function (callback) {
             if (callback) {

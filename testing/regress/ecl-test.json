@@ -24,6 +24,12 @@
         ],
         "timeout":"720",
         "maxAttemptCount":"3",
+        "defaultSetupClusters": [
+            "all"
+        ],
+        "defaultTargetClusters": [
+            "all"
+        ],
         "Params":[
             "PassTest.ecl:bla='A value'"
         ]

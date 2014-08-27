@@ -152,7 +152,7 @@ define([
                             width: 117,
                             formatter: function (Type, row) {
                                 if (context.canShowContent(Type)) {
-                                    return "<a href='#' rowIndex=" + row.id + " class='" + context.id + "HelperClick'>" + Type + "</a>";
+                                    return "<a href='#' class='dgrid-row-url'>" + Type + "</a>";
                                 }
                                 return Type;
                             }
@@ -166,7 +166,7 @@ define([
                         }
                     }
                 }, domID);
-                on(document, "." + this.id + "HelperClick:click", function (evt) {
+                retVal.on(".dgrid-row-url:click", function (evt) {
                     if (context._onRowDblClick) {
                         var row = context.grid.row(evt).data;
                         context._onRowDblClick(row);
@@ -226,17 +226,17 @@ define([
                             Type: "Workunit XML",
                             FileSize: response.WUXMLSize
                         });
-                        if (response.HasArchiveQuery) {
+                        if (response.hasArchiveQuery) {
                             context.logData.push({
                                 id: "A:0",
                                 Type: "Archive Query"
                             });
                         }
-                        if (response.Helpers && response.Helpers.ECLHelpFile) {
-                            context.loadHelpers(response.Helpers.ECLHelpFile);
+                        if (response.helpers) {
+                            context.loadHelpers(response.helpers);
                         }
-                        if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
-                            context.loadThorLogInfo(response.ThorLogList.ThorLogInfo);
+                        if (response.thorLogList) {
+                            context.loadThorLogInfo(response.thorLogList);
                         }
                         context.store.setData(context.logData);
                         context.grid.refresh();

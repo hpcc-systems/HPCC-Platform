@@ -132,14 +132,14 @@ define([
                     Summary: {
                         label: this.i18n.Who, sortable: true,
                         formatter: function (summary, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "SearchResultClick'>" + summary + "</a>";
+                            return "<a href='#' class='dgrid-row-url'>" + summary + "</a>";
                         }
                     }
                 }
             }, domID);
 
             var context = this;
-            on(document, "." + this.id + "SearchResultClick:click", function (evt) {
+            retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
                     context._onRowDblClick(row);

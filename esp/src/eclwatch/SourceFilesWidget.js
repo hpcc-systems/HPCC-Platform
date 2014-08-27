@@ -67,7 +67,7 @@ define([
                     Name: {
                         label: "Name", sortable: true,
                         formatter: function (Name, row) {
-                            return dojoConfig.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' rowIndex=" + row + " class='" + context.id + "SourceFileClick'>" + Name + "</a>";
+                            return dojoConfig.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     },
                     Count: { label: "Usage", width: 72, sortable: true }
@@ -75,7 +75,7 @@ define([
             }, domID);
 
             var context = this;
-            on(document, "." + this.id + "SourceFileClick:click", function (evt) {
+            retVal.on("." + this.id + "dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
                     context._onRowDblClick(row);

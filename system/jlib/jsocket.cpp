@@ -2664,7 +2664,7 @@ IpAddress & queryHostIP()
     if (cachehostip.isNull()) {
         if (!cachehostip.ipset(GetCachedHostName())) {
             cachehostip.ipset(queryLocalIP());          
-            printf("hostname %s not resolved, using localhost\n",GetCachedHostName()); // don't use jlog in case recursive
+            // printf("hostname %s not resolved, using localhost\n",GetCachedHostName()); // don't use jlog in case recursive
         }
     }
     return cachehostip;

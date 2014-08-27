@@ -97,13 +97,13 @@ define([
                     Name: {
                         label: this.i18n.Name, width: 180, sortable: true,
                         formatter: function (Name, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "ResultClick'>" + Name + "</a>";
+                            return "<a href='#' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     },
                     FileName: {
                         label: this.i18n.FileName, sortable: true,
                         formatter: function (FileName, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "FileClick'>" + FileName + "</a>";
+                            return "<a href='#' class='dgrid-row-url2'>" + FileName + "</a>";
                         }
                     },
                     Value: {
@@ -116,7 +116,7 @@ define([
                         formatter: function (ResultViews, idx) {
                             var retVal = "";
                             arrayUtil.forEach(ResultViews, function (item, idx) {
-                                retVal += "<a href='#' viewName=" + encodeURIComponent(item) + " class='" + context.id + "ViewClick'>" + item + "</a>&nbsp;";
+                                retVal += "<a href='#' viewName=" + encodeURIComponent(item) + " class='dgrid-row-url3'>" + item + "</a>&nbsp;";
                             });
                             return retVal;
                         }
@@ -125,19 +125,19 @@ define([
             }, domID);
 
             var context = this;
-            on(document, "." + this.id + "ResultClick:click", function (evt) {
+            retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
                     context._onRowDblClick(row);
                 }
             });
-            on(document, "." + this.id + "FileClick:click", function (evt) {
+            retVal.on(".dgrid-row-url2:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
                     context._onRowDblClickFile(row);
                 }
             });
-            on(document, "." + this.id + "ViewClick:click", function (evt) {
+            retVal.on(".dgrid-row-url3:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
                     context._onRowDblClickView(row, evt.srcElement.getAttribute("viewName"));

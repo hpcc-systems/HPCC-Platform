@@ -731,10 +731,18 @@ IConstWUResult *EclAgent::getResultForGet(const char *name, unsigned sequence)
 
 IConstWUResult *EclAgent::getExternalResult(const char * wuid, const char *name, unsigned sequence)
 {
+    LOG(MCsetresult, unknownJob, "EclAgent::getExternalResult(wuid:'%s',name='%s',sequence:%d)", nullText(wuid), nullText(name), sequence);
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> externalWU = factory->openWorkUnit(wuid, false);
-    externalWU->remoteCheckAccess(queryUserDescriptor(), false);
-    return getWorkUnitResult(externalWU, name, sequence);
+    if (externalWU)
+    {
+        externalWU->remoteCheckAccess(queryUserDescriptor(), false);
+        return getWorkUnitResult(externalWU, name, sequence);
+    }
+    else
+    {
+        fail(0, "Missing or invalid workunit name in getExternalResult()");
+    }
 }
 
 void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool close)

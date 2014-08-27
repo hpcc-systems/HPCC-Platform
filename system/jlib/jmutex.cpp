@@ -20,6 +20,7 @@
 #include "jmutex.hpp"
 #include "jsuperhash.hpp"
 #include "jmisc.hpp"
+#include "jfile.hpp"
 
 #include <stdio.h>
 #include <assert.h>
@@ -210,14 +211,25 @@ static void unlock_file(const char *lfpath)
     ERRLOG("NamedMutex cannot unlock file (%d)",errno);
 }
 
+static CriticalSection lockPrefixCS;
+static StringBuffer lockPrefix;
 NamedMutex::NamedMutex(const char *name)
 {
-    const char * pfx = "/var/lock/JLIBMUTEX_";
-    mutexfname = (char *)malloc(strlen(name)+strlen(pfx)+1);
-    strcpy(mutexfname,pfx);
-    strcat(mutexfname,name);
+    {
+        CriticalBlock b(lockPrefixCS);
+        if (0 == lockPrefix.length())
+        {
+            if (!getConfigurationDirectory(NULL, "lock", NULL, NULL, lockPrefix))
+                throw MakeStringException(0, "Failed to get lock directory from environment");
+        }
+        addPathSepChar(lockPrefix);
+        lockPrefix.append("JLIBMUTEX_");
+    }
+    StringBuffer tmp(lockPrefix);
+    tmp.append("JLIBMUTEX_").append(name);
+    mutexfname = tmp.detach();
 }
-    
+
 NamedMutex::~NamedMutex()
 {
     free(mutexfname);

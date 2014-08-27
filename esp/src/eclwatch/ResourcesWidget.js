@@ -87,13 +87,13 @@ define([
                     DisplayPath: {
                         label: this.i18n.Name, sortable: true,
                         formatter: function (url, row) {
-                            return "<a href='#' class='" + context.id + "URLClick'>" + url + "</a>";
+                            return "<a href='#' class='dgrid-row-url'>" + url + "</a>";
                         }
                     }
                 }
             }, domID);
 
-            on(document, "." + this.id + "URLClick:click", function (evt) {
+            retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
                     context._onRowDblClick(row);

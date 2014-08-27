@@ -58,13 +58,6 @@ define([
                     State: { label: this.i18n.State, width: 108, sortable: false }
                 }
             }, domID);
-
-            on(document, "." + this.id + "WuidClick:click", function (evt) {
-                if (context._onRowDblClick) {
-                    var row = retVal.row(evt).data;
-                    context._onRowDblClick(row);
-                }
-            });
             return retVal;
         },
 

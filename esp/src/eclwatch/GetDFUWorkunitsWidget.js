@@ -333,7 +333,7 @@ define([
                         width: 180,
                         formatter: function (ID, idx) {
                             var wu = ESPDFUWorkunit.Get(ID);
-                            return "<img src='" + wu.getStateImage() + "'>&nbsp;<a href='#' rowIndex=" + idx + " class='" + context.id + "IDClick'>" + ID + "</a>";
+                            return "<img src='" + wu.getStateImage() + "'>&nbsp;<a href='#' class='dgrid-row-url'>" + ID + "</a>";
                         }
                     },
                     Command: {
@@ -355,7 +355,7 @@ define([
             }, this.id + "WorkunitsGrid");
 
             var context = this;
-            on(document, "." + context.id + "IDClick:click", function (evt) {
+            this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item.ID);

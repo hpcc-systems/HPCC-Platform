@@ -431,7 +431,14 @@ define([
             if (this.global.loadXGMML(xgmml, false, this.graphTimers)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
                 var initialSelection = [];
-                this.setMainRootItems(initialSelection);
+                var mainRoot = [0];
+                var complexityInfo = this.global.getComplexityInfo();
+                if (complexityInfo.isComplex()) {
+                    if (confirm(lang.replace(this.i18n.ComplexityWarning, complexityInfo) + "\n" + this.i18n.ManualTreeSelection)) {
+                        mainRoot = [];
+                    }
+                }
+                this.setMainRootItems(mainRoot, initialSelection);
                 this.loadTree();
                 this.loadSubgraphs();
                 this.loadVertices();
