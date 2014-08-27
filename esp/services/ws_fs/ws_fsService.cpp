@@ -3010,11 +3010,6 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                 aDropZone->setPath(dir.str());
                 aDropZone->setName(pszName);
                 aDropZone->setNetAddress(sNetAddr.str());
-                if (netAddressStr.length() < 1)
-                {
-                    netAddressStr = sNetAddr;
-                    directoryStr = dir;
-                }
 
                 dropZoneList.append(*aDropZone.getClear());
             }
@@ -3022,6 +3017,9 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
 
         if (dropZoneList.ordinality())
             resp.setDropZones(dropZoneList);
+
+        if (netAddressStr.length() < 1)
+            return true;
 
         char pathSep = '/';
         if (osStr && *osStr)

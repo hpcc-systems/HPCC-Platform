@@ -41,6 +41,7 @@
         <title>EclWatch</title>
         <script language="JavaScript1.2">
           var initialPath = '<xsl:value-of select="/DropZoneFilesResponse/Path"/>';
+          var currentNetAddress = '<xsl:value-of select="/DropZoneFilesResponse/NetAddress"/>';
           <xsl:text disable-output-escaping="yes"><![CDATA[
             var intervalId = 0;
             var hideLoading = 1;
@@ -49,7 +50,7 @@
             function onChangeMachine(resetPath)
             {
               machineDropDown = document.forms['DropZoneForm'].machine;
-              if (machineDropDown.selectedIndex >=0)
+              if (machineDropDown.selectedIndex > 0)
               {
                 selected=machineDropDown.options[machineDropDown.selectedIndex];               
                 document.forms['DropZoneForm'].NetAddress.value=selected.value;
@@ -68,6 +69,18 @@
                 }
 
                 document.location.href = "/FileSpray/DropZoneFiles?NetAddress=" + selected.value + "&OS=" + sourceOS+ "&Path=" + directory;
+              }
+              else
+              {
+                document.forms['DropZoneForm'].NetAddress.value = "";
+                document.forms['DropZoneForm'].Directory.value = "";
+                var chooseFileButton = document.getElementById('FilesToUpload');
+                var uploadBtn = document.getElementById('UploadBtn');
+                if (chooseFileButton)
+                  chooseFileButton.disabled =  true;
+                if (uploadBtn)
+                  uploadBtn.disabled =  true;
+                document.forms['DropZoneFileForm'].style.display="none";
               }
             }         
 
@@ -187,12 +200,26 @@
             function getSelectedDropZone()
             {
               machineDropDown = document.forms['DropZoneForm'].machine;
-              if (machineDropDown.selectedIndex >=0)
+              if ((machineDropDown.selectedIndex < 1) && (machineDropDown.length > 1) && (currentNetAddress != ""))
+              {
+                for (i=1; i<machineDropDown.length; i++)
+                {
+                  if (machineDropDown.options[i].value == currentNetAddress)
+                  {
+                    machineDropDown.selectedIndex = i;
+                    break;
+                  }
+                }
+              }
+              if (machineDropDown.selectedIndex > 0)
               {
                 selected=machineDropDown.options[machineDropDown.selectedIndex];               
                 document.forms['DropZoneForm'].NetAddress.value=selected.value;
                 pos = selected.title.indexOf(';');
-                directory = selected.title.substring(0, pos);
+                if (initialPath == '')
+                  directory = selected.title.substring(0, pos);
+                else
+                  directory = initialPath;
                 linux = selected.title.substring(pos+1);
                 sourceOS = linux == 'true' ? 1: 0;
 
@@ -203,6 +230,16 @@
                 document.forms['DropZoneFileForm'].OS.value=sourceOS;
 
                 url0 = "/FileSpray/UploadFile?upload_&NetAddress=" + selected.value + "&OS=" + sourceOS + "&Path=" + directory;
+              }
+              else
+              {
+                document.forms['DropZoneForm'].Directory.value = "";
+                var chooseFileButton = document.getElementById('FilesToUpload');
+                var uploadBtn = document.getElementById('UploadBtn');
+                if (chooseFileButton)
+                  chooseFileButton.disabled =  true;
+                if (uploadBtn)
+                  uploadBtn.disabled =  true;
               }
             }
 
@@ -216,9 +253,6 @@
               }
 
               getSelectedDropZone();
-              document.forms['DropZoneForm'].Directory.value = initialPath;
-              document.forms['DropZoneFileForm'].Path.value = initialPath;
-              url0 = "/FileSpray/UploadFile?upload_&NetAddress=" + selected.value + "&OS=" + sourceOS + "&Path=" + initialPath;
             }   
           ]]></xsl:text>
         </script>
@@ -241,6 +275,7 @@
                         <td>Machine/dropzone:</td>
                         <td>
                           <select name="machine" id="machine" onchange="onChangeMachine(true)" onblur="onChangeMachine(true)">
+                            <option>(Select a dropzone.)</option>
                             <xsl:for-each select="DropZones/DropZone">
                               <option>
                                 <xsl:variable name="curip" select="NetAddress"/>
@@ -293,19 +328,21 @@
               </tr>
               <tr>
                 <td>
-                  <form id="DropZoneFileForm" action="/FileSpray/DeleteDropZoneFiles" method="post">
-                    <input type="hidden" name="NetAddress" value="{$netAddress0}"/>
-                    <input type="hidden" name="Path" value="{$path0}"/>
-                    <input type="hidden" name="OS" value="{$os0}"/>
-                    <xsl:choose>
-                      <xsl:when test="not(Files/PhysicalFileStruct[1])">
-                        <br/><br/>No file found in this dropzone.<br/><br/>
-                      </xsl:when>
-                      <xsl:otherwise>
-                        <xsl:apply-templates select="Files"/>
-                      </xsl:otherwise>
-                    </xsl:choose>
-                  </form>
+                  <xsl:if test="string-length($netAddress0)">
+                    <form id="DropZoneFileForm" action="/FileSpray/DeleteDropZoneFiles" method="post">
+                      <input type="hidden" name="NetAddress" value="{$netAddress0}"/>
+                      <input type="hidden" name="Path" value="{$path0}"/>
+                      <input type="hidden" name="OS" value="{$os0}"/>
+                      <xsl:choose>
+                        <xsl:when test="not(Files/PhysicalFileStruct[1])">
+                          <br/><br/>No file found in this dropzone.<br/><br/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                          <xsl:apply-templates select="Files"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
+                    </form>
+                  </xsl:if>
                 </td>
               </tr>
             </table>
