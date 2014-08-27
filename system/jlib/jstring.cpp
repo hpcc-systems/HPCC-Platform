@@ -2350,3 +2350,9 @@ StringBuffer & elideString(StringBuffer & s, unsigned maxLength)
     }
     return s;
 }
+
+const char * nullText(const char * text)
+{
+    if (text) return text;
+    return "(null)";
+}

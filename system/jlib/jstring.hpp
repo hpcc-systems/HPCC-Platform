@@ -540,4 +540,6 @@ extern jlib_decl char *j_strtok_r(char *str, const char *delim, char **saveptr);
 extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len); 
 extern jlib_decl size32_t memcount(size32_t len, const char * str, char search);
 
+extern jlib_decl const char * nullText(const char * text);
+
 #endif
