@@ -1734,9 +1734,8 @@ void EclAgent::loadDependencies(IConstWorkUnit * wu)
     for (plugins->first();plugins->isValid();plugins->next())
     {
         IConstWUPlugin &thisplugin = plugins->query();
-        SCMStringBuffer name, version;
+        SCMStringBuffer name;
         thisplugin.getPluginName(name);
-        thisplugin.getPluginVersion(version);
 
         StringBuffer plugIn;
         plugIn.append(pluginDirectory).append(name);

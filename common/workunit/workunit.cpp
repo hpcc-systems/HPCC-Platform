@@ -560,7 +560,6 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
     mutable bool webServicesInfoCached;
     mutable bool roxieQueryInfoCached;
     mutable bool timersCached;
-    mutable IArrayOf<IWUActivity> activities;
     mutable IArrayOf<IWUPlugin> plugins;
     mutable IArrayOf<IWULibrary> libraries;
     mutable IArrayOf<IWUException> exceptions;
@@ -645,8 +644,6 @@ public:
     virtual IConstWUResult * getResultBySequence(unsigned seq) const;
     virtual unsigned getResultLimit() const;
     virtual IConstWUResultIterator & getResults() const;
-    virtual IConstWUActivityIterator& getActivities() const;
-    virtual IConstWUActivity*   getActivity(__int64 id) const;
     virtual IStringVal & getScope(IStringVal & str) const;
     virtual IStringVal & getSecurityToken(IStringVal & str) const;
     virtual WUState getState() const;
@@ -765,7 +762,6 @@ public:
     IWUQuery * updateQuery();
     IWUWebServicesInfo* updateWebServicesInfo(bool create);
     IWURoxieQueryInfo* updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName);
-    IWUActivity* updateActivity(__int64 id);
     IWUPlugin * updatePluginByName(const char * name);
     IWULibrary * updateLibraryByName(const char * name);
     IWUResult * updateResultByName(const char * name);
@@ -1047,10 +1043,6 @@ public:
             { return c->getResultLimit(); }
     virtual IConstWUResultIterator & getResults() const
             { return c->getResults(); }
-    virtual IConstWUActivityIterator & getActivities() const
-            { return c->getActivities(); }
-    virtual IConstWUActivity * getActivity(__int64 id) const
-            { return c->getActivity(id); }
     virtual IStringVal & getScope(IStringVal & str) const
             { return c->getScope(str); }
     virtual IStringVal & getSecurityToken(IStringVal & str) const
@@ -1259,8 +1251,6 @@ public:
         { return c->updateWebServicesInfo(create); }
     virtual IWURoxieQueryInfo * updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName)
         { return c->updateRoxieQueryInfo(wuid, roxieClusterName); }
-    virtual IWUActivity * updateActivity(__int64 id) 
-            { return c->updateActivity(id); }
     virtual IWUPlugin * updatePluginByName(const char * name)
             { return c->updatePluginByName(name); }
     virtual IWULibrary * updateLibraryByName(const char * name)
@@ -1656,13 +1646,9 @@ public:
 
     virtual IStringVal& getPluginName(IStringVal &str) const;
     virtual IStringVal& getPluginVersion(IStringVal &str) const;
-    virtual bool        getPluginThor() const;
-    virtual bool        getPluginHole() const;
 
     virtual void        setPluginName(const char *str);
     virtual void        setPluginVersion(const char *str);
-    virtual void        setPluginThor(bool on);
-    virtual void        setPluginHole(bool on);
 };
 
 class CLocalWULibrary : public CInterface, implements IWULibrary
@@ -1674,10 +1660,7 @@ public:
     CLocalWULibrary(IPropertyTree *p);
 
     virtual IStringVal & getName(IStringVal & str) const;
-    virtual IConstWULibraryActivityIterator * getActivities() const;
-
     virtual void setName(const char * str);
-    virtual void addActivity(unsigned id);
 };
 
 class CLocalWUGraph : public CInterface, implements IWUGraph
@@ -1696,7 +1679,6 @@ public:
     CLocalWUGraph(const CLocalWorkUnit &owner, IPropertyTree *p);
 
     virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const;
-    virtual IStringVal & getDOT(IStringVal & ret) const;
     virtual IStringVal & getName(IStringVal & ret) const;
     virtual IStringVal & getLabel(IStringVal & ret) const;
     virtual IStringVal & getTypeName(IStringVal & ret) const;
@@ -1710,22 +1692,6 @@ public:
     virtual void setType(WUGraphType type);
     virtual void setXGMML(const char *str);
     virtual void setXGMMLTree(IPropertyTree * tree, bool compress=true);
-};
-
-class CLocalWUActivity : public CInterface, implements IWUActivity
-{
-    Owned<IPropertyTree> p;
-
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWUActivity(IPropertyTree *p, __int64 id = 0);
-
-    virtual __int64 getId() const;
-    virtual unsigned getKind() const;
-    virtual IStringVal & getHelper(IStringVal & ret) const;
-
-    virtual void setKind(unsigned id);
-    virtual void setHelper(const char * str);
 };
 
 class CLocalWUException : public CInterface, implements IWUException
@@ -3013,7 +2979,6 @@ void CLocalWorkUnit::init()
     variables.kill();
     plugins.kill();
     libraries.kill();
-    activities.kill();
     exceptions.kill();
     temporaries.kill();
     timers.kill();
@@ -3062,7 +3027,6 @@ CLocalWorkUnit::~CLocalWorkUnit()
         roxieQueryInfo.clear();
         workflowIterator.clear();
 
-        activities.kill();
         plugins.kill();
         libraries.kill();
         exceptions.kill();
@@ -6567,60 +6531,6 @@ IPropertyTreeIterator & CLocalWorkUnit::getFilesReadIterator() const
 
 //=================================================================================================
 
-IWUActivity * CLocalWorkUnit::updateActivity(__int64 id)
-{
-    CriticalBlock block(crit);
-    IConstWUActivity *existing = getActivity(id);
-    if (existing)
-        return (IWUActivity *) existing;
-    if (!activities.length())
-        p->addPropTree("Activities", createPTree("Activities"));
-    IPropertyTree *pl = p->queryPropTree("Activities");
-    IPropertyTree *s = pl->addPropTree("Activity", createPTree("Activity"));
-    IWUActivity * q = new CLocalWUActivity(LINK(s), id); 
-    activities.append(*LINK(q));
-    return q;
-}
-
-IConstWUActivity * CLocalWorkUnit::getActivity(__int64 id) const
-{
-    CriticalBlock block(crit);
-    loadActivities();
-    ForEachItemIn(idx, activities)
-    {
-        IConstWUActivity &cur = activities.item(idx);
-        if (cur.getId() == id)
-            return &OLINK(cur);
-    }
-    return NULL;
-}
-
-void CLocalWorkUnit::loadActivities() const
-{
-    CriticalBlock block(crit);
-    if (!activitiesCached)
-    {
-        assertex(activities.length() == 0);
-        Owned<IPropertyTreeIterator> r = p->getElements("Activities/Activity");
-        for (r->first(); r->isValid(); r->next())
-        {
-            IPropertyTree *rp = &r->query();
-            rp->Link();
-            activities.append(*new CLocalWUActivity(rp));
-        }
-        activitiesCached = true;
-    }
-}
-
-IConstWUActivityIterator& CLocalWorkUnit::getActivities() const
-{
-    CriticalBlock block(crit);
-    loadActivities();
-    return *new CArrayIteratorOf<IConstWUActivity,IConstWUActivityIterator> (activities, 0, (IConstWorkUnit *) this);
-}
-
-//=================================================================================================
-
 
 bool CLocalWorkUnit::switchThorQueue(const char *cluster, IQueueSwitcher *qs)
 {
@@ -6968,11 +6878,6 @@ IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *name) const
 {
     CriticalBlock block(crit);
     return new CConstGraphProgress(p->queryName(), name);
-}
-
-IStringVal& CLocalWUGraph::getDOT(IStringVal &str) const
-{
-    UNIMPLEMENTED;
 }
 
 void CLocalWUGraph::setName(const char *str)
@@ -8456,16 +8361,6 @@ IStringVal& CLocalWUPlugin::getPluginVersion(IStringVal &str) const
     return str;
 }
 
-bool CLocalWUPlugin::getPluginThor() const
-{
-    return p->getPropInt("@thor") != 0;
-}
-
-bool CLocalWUPlugin::getPluginHole() const
-{
-    return p->getPropInt("@hole") != 0;
-}
-
 void CLocalWUPlugin::setPluginName(const char *str)
 {
     p->setProp("@dllname", str);
@@ -8476,30 +8371,7 @@ void CLocalWUPlugin::setPluginVersion(const char *str)
     p->setProp("@version", str);
 }
 
-void CLocalWUPlugin::setPluginThor(bool on)
-{
-    p->setPropInt("@thor", (int) on);
-}
-
-void CLocalWUPlugin::setPluginHole(bool on)
-{
-    p->setPropInt("@hole", (int) on);
-}
-
 //==========================================================================================
-
-class WULibraryActivityIterator : public CInterface, implements IConstWULibraryActivityIterator
-{
-public:
-    WULibraryActivityIterator(IPropertyTree * tree) { iter.setown(tree->getElements("activity")); }
-    IMPLEMENT_IINTERFACE;
-    bool                first() { return iter->first(); }
-    bool                isValid() { return iter->isValid(); }
-    bool                next() { return iter->next(); }
-    unsigned            query() const { return iter->query().getPropInt("@id"); }
-private:
-    Owned<IPropertyTreeIterator> iter;
-};
 
 CLocalWULibrary::CLocalWULibrary(IPropertyTree *props) : p(props)
 {
@@ -8511,57 +8383,9 @@ IStringVal& CLocalWULibrary::getName(IStringVal &str) const
     return str;
 }
 
-IConstWULibraryActivityIterator * CLocalWULibrary::getActivities() const 
-{ 
-    return new WULibraryActivityIterator(p); 
-}
-
 void CLocalWULibrary::setName(const char *str)
 {
     p->setProp("@name", str);
-}
-
-void CLocalWULibrary::addActivity(unsigned id)
-{
-    StringBuffer s;
-    s.append("activity[@id=\"").append(id).append("\"]");
-    if (!p->hasProp(s.str()))
-        p->addPropTree("activity", createPTree())->setPropInt("@id", id);
-}
-
-//==========================================================================================
-
-CLocalWUActivity::CLocalWUActivity(IPropertyTree *props, __int64 id) : p(props)
-{
-    if (id)
-        p->setPropInt64("@id", id);
-}
-
-__int64 CLocalWUActivity::getId() const
-{
-    return p->getPropInt64("@id");
-}
-
-unsigned CLocalWUActivity::getKind() const
-{
-    return (unsigned)p->getPropInt("@kind");
-}
-
-IStringVal & CLocalWUActivity::getHelper(IStringVal & str) const
-{
-    str.set(p->queryProp("@helper"));
-    return str;
-}
-
-
-void CLocalWUActivity::setKind(unsigned kind)
-{
-    p->setPropInt64("@kind", kind);
-}
-
-void CLocalWUActivity::setHelper(const char * str)
-{
-    p->setProp("@helper", str);
 }
 
 //==========================================================================================

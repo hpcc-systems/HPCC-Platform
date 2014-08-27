@@ -145,7 +145,7 @@ public:
     void addHint(const char * hintXml, ICodegenContextCallback * ctxCallback);
 
     void processIncludes();
-    void addPlugin(const char *plugin, const char *version, bool inThor);
+    void addPlugin(const char *plugin, const char *version);
         
 private:
     void addPluginsAsResource();

@@ -203,7 +203,6 @@ interface IPropertyTreeIterator;
 interface IConstWUGraph : extends IInterface
 {
     virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const = 0;
-    virtual IStringVal & getDOT(IStringVal & ret) const = 0;
     virtual IStringVal & getName(IStringVal & ret) const = 0;
     virtual IStringVal & getLabel(IStringVal & ret) const = 0;
     virtual IStringVal & getTypeName(IStringVal & ret) const = 0;
@@ -454,8 +453,6 @@ interface IConstWUPlugin : extends IInterface
 {
     virtual IStringVal & getPluginName(IStringVal & str) const = 0;
     virtual IStringVal & getPluginVersion(IStringVal & str) const = 0;
-    virtual bool getPluginThor() const = 0;
-    virtual bool getPluginHole() const = 0;
 };
 
 
@@ -463,8 +460,6 @@ interface IWUPlugin : extends IConstWUPlugin
 {
     virtual void setPluginName(const char * str) = 0;
     virtual void setPluginVersion(const char * str) = 0;
-    virtual void setPluginThor(bool flag) = 0;
-    virtual void setPluginHole(bool flag) = 0;
 };
 
 
@@ -473,53 +468,21 @@ interface IConstWUPluginIterator : extends IScmIterator
     virtual IConstWUPlugin & query() = 0;
 };
 
-
-interface IConstWULibraryActivityIterator : extends IScmIterator
-{
-    virtual unsigned query() const = 0;
-};
-
-
 interface IConstWULibrary : extends IInterface
 {
     virtual IStringVal & getName(IStringVal & str) const = 0;
-    virtual IConstWULibraryActivityIterator * getActivities() const = 0;
 };
 
 
 interface IWULibrary : extends IConstWULibrary
 {
     virtual void setName(const char * str) = 0;
-    virtual void addActivity(unsigned id) = 0;
 };
 
 
 interface IConstWULibraryIterator : extends IScmIterator
 {
     virtual IConstWULibrary & query() = 0;
-};
-
-
-//! IWUActivity
-
-interface IConstWUActivity : extends IInterface
-{
-    virtual __int64 getId() const = 0;
-    virtual unsigned getKind() const = 0;
-    virtual IStringVal & getHelper(IStringVal & ret) const = 0;
-};
-
-
-interface IWUActivity : extends IConstWUActivity
-{
-    virtual void setKind(unsigned id) = 0;
-    virtual void setHelper(const char * str) = 0;
-};
-
-
-interface IConstWUActivityIterator : extends IScmIterator
-{
-    virtual IConstWUActivity & query() = 0;
 };
 
 
@@ -903,8 +866,6 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUResult * getResultBySequence(unsigned seq) const = 0;
     virtual unsigned getResultLimit() const = 0;
     virtual IConstWUResultIterator & getResults() const = 0;
-    virtual IConstWUActivityIterator & getActivities() const = 0;
-    virtual IConstWUActivity * getActivity(__int64 id) const = 0;
     virtual IStringVal & getScope(IStringVal & str) const = 0;
     virtual IStringVal & getSecurityToken(IStringVal & str) const = 0;
     virtual WUState getState() const = 0;
@@ -1022,7 +983,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual IWUQuery * updateQuery() = 0;
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create) = 0;
     virtual IWURoxieQueryInfo * updateRoxieQueryInfo(const char * wuid, const char * roxieClusterName) = 0;
-    virtual IWUActivity * updateActivity(__int64 id) = 0;
     virtual IWUPlugin * updatePluginByName(const char * name) = 0;
     virtual IWULibrary * updateLibraryByName(const char * name) = 0;
     virtual IWUResult * updateResultByName(const char * name) = 0;

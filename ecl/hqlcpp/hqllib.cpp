@@ -551,8 +551,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     if (nameValue)
     {
         instance->addAttribute("libname", libraryName.str());
-        Owned<IWULibrary> wulib = wu()->updateLibraryByName(libraryName.str());
-        wulib->addActivity((unsigned)instance->activityId);
     }
 
     instance->addAttributeInt("_interfaceHash", library->getInterfaceHash());

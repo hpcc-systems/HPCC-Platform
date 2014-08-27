@@ -1146,7 +1146,7 @@ HqlStmts * HqlCppInstance::querySection(IAtom * section)
     return NULL;
 }
 
-void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inThor)
+void HqlCppInstance::addPlugin(const char *plugin, const char *version)
 {
     if (!plugin || !*plugin)
         return;
@@ -1160,10 +1160,6 @@ void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inT
 
         if (version && *version)
             p->setPluginVersion(version);
-        if (inThor)
-            p->setPluginThor(true);
-        else
-            p->setPluginHole(true);
     }
     if (!plugins)
         plugins.setown(createPTree("Plugins"));
@@ -1216,7 +1212,7 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
         StringBuffer plugin, version;
         getStringValue(plugin, pluginAttr->queryChild(0));
         getStringValue(version, pluginAttr->queryChild(1));
-        addPlugin(plugin.str(), version.str(), false);
+        addPlugin(plugin.str(), version.str());
         if (!libname.length())
         {
             getStringValue(libname, pluginAttr->queryChild(0));
