@@ -829,34 +829,126 @@ int CEspHttpServer::onRunCGI(CHttpRequest* request, CHttpResponse* response, con
     return 0;
 }
 
-int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, const char *path)
+static void httpGetFile(CHttpRequest* request, CHttpResponse* response, const char *urlpath, const char *filepath)
 {
-        if (!request || !response || !path)
-            return -1;
-        
-        int pathlen=strlen(path);
-        if (pathlen>5 && !stricmp(path+pathlen-4, ".php"))
-            return onRunCGI(request, response, path);
-        
-        StringBuffer mimetype, etag, lastModified;
-        MemoryBuffer content;
-        bool modified = true;
-        request->getHeader("If-None-Match", etag);
-        request->getHeader("If-Modified-Since", lastModified);
+    StringBuffer mimetype, etag, lastModified;
+    MemoryBuffer content;
+    bool modified = true;
+    request->getHeader("If-None-Match", etag);
+    request->getHeader("If-Modified-Since", lastModified);
 
-        StringBuffer filepath(getCFD());
-        filepath.append("files/");
-        filepath.append(path);
-        if (httpContentFromFile(filepath.str(), mimetype, content, modified, lastModified, etag))
+    if (httpContentFromFile(filepath, mimetype, content, modified, lastModified, etag))
+    {
+        response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), mimetype.str(), content);
+    }
+    else
+    {
+        DBGLOG("Get File %s: file not found", filepath);
+        response->setStatus(HTTP_STATUS_NOT_FOUND);
+    }
+    response->send();
+}
+
+static void httpGetDirectory(CHttpRequest* request, CHttpResponse* response, const char *urlpath, const char *dirpath, bool top, const StringBuffer &tail)
+{
+    Owned<IPropertyTree> tree = createPTree("directory", ipt_none);
+    tree->setProp("@path", urlpath);
+    Owned<IDirectoryIterator> dir = createDirectoryIterator(dirpath, NULL);
+    ForEach(*dir)
+    {
+        IPropertyTree *entry = tree->addPropTree(dir->isDir() ? "directory" : "file", createPTree(ipt_none));
+        StringBuffer s;
+        entry->setProp("name", dir->getName(s));
+        if (!dir->isDir())
+            entry->setPropInt("size", dir->getFileSize());
+        CDateTime cdt;
+        dir->getModifiedTime(cdt);
+        entry->setProp("modified", cdt.getString(s.clear(), false));
+    }
+
+    const char *fmt = request->queryParameters()->queryProp("format");
+    StringBuffer out;
+    StringBuffer contentType;
+    if (!fmt || strieq(fmt,"html"))
+    {
+        contentType.set("text/html");
+        out.append("<!DOCTYPE html><html><body>");
+        if (!top)
+            out.appendf("<a href='%s'>..</a><br/>", tail.length() ? "." : "..");
+
+        Owned<IPropertyTreeIterator> it = tree->getElements("*");
+        ForEach(*it)
         {
-            response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), mimetype.str(), content);
+            IPropertyTree &e = it->query();
+            const char *href=e.queryProp("name");
+            if (tail.length())
+                out.appendf("<a href='%s/%s'>%s</a><br/>", tail.str(), href, href);
+            else
+                out.appendf("<a href='%s'>%s</a><br/>", href, href);
         }
-        else
+        out.append("</body></html>");
+    }
+    else if (strieq(fmt, "json"))
+    {
+        contentType.set("application/json");
+        toJSON(tree, out);
+    }
+    else if (strieq(fmt, "xml"))
+    {
+        contentType.set("application/xml");
+        toXML(tree, out);
+    }
+    response->setStatus(HTTP_STATUS_OK);
+    response->setContentType(contentType);
+    response->setContent(out);
+    response->send();
+}
+
+int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, const char *urlpath)
+{
+        if (!request || !response || !urlpath)
+            return -1;
+
+        StringBuffer ext;
+        StringBuffer tail;
+        splitFilename(urlpath, NULL, NULL, &tail, &ext);
+
+        if (strieq(ext, ".php"))
+            return onRunCGI(request, response, urlpath);
+
+        bool top = !urlpath || !*urlpath;
+        StringBuffer httpPath;
+        request->getPath(httpPath).str();
+        if (httpPath.charAt(httpPath.length()-1)=='/')
+            tail.clear();
+        else if (top)
+            tail.set("./files");
+
+        StringBuffer basedir(getCFD());
+        basedir.append("files/");
+
+        StringBuffer fullpath;
+        makeAbsolutePath(urlpath, basedir.str(), fullpath);
+        if (*urlpath && strncmp(basedir, fullpath, basedir.length()))
         {
-            DBGLOG("Get File %s: file not found", filepath.str());
+            DBGLOG("Get File %s: attempted access outside of %s", urlpath, basedir.str());
             response->setStatus(HTTP_STATUS_NOT_FOUND);
+            response->send();
+            return 0;
         }
-        response->send();
+
+        if (!checkFileExists(fullpath) && !checkFileExists(fullpath.toUpperCase()) && !checkFileExists(fullpath.toLowerCase()))
+        {
+            DBGLOG("Get File %s: file not found", urlpath);
+            response->setStatus(HTTP_STATUS_NOT_FOUND);
+            response->send();
+            return 0;
+        }
+
+        if (isDirectory(fullpath))
+            httpGetDirectory(request, response, urlpath, fullpath, top, tail);
+        else
+            httpGetFile(request, response, urlpath, fullpath);
         return 0;
 }
 
