@@ -22,12 +22,13 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/store/util/QueryResults",
+    "dojo/store/util/SimpleQueryEngine",
     "dojo/topic",
 
     "hpcc/ESPRequest",
     "hpcc/ESPUtil"
 
-], function (declare, lang, arrayUtil, Deferred, all, Memory, Observable, QueryResults, topic,
+], function (declare, lang, arrayUtil, Deferred, all, Memory, Observable, QueryResults, SimpleQueryEngine, topic,
     ESPRequest, ESPUtil) {
 
     var UsersStore = declare([Memory], {
@@ -66,10 +67,9 @@ define([
                         isMember: groupUsers[item.username] ? true : false
                     }));
                 }, this);
-                this.setData(data);
-                return arrayUtil.map(data, function (item) {
-                    return item;
-                });
+                options = options || {};
+                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
+                return this.data;
             }));
             return QueryResults(results);
         },
@@ -147,10 +147,9 @@ define([
                         }));
                     }
                 }, this);
-                this.setData(data);
-                return arrayUtil.map(data, function (item) {
-                    return item;
-                });
+                options = options || {};
+                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
+                return this.data;
             }));
             return QueryResults(results);
         },
@@ -232,10 +231,9 @@ define([
                         deny_full: accountPermission ? accountPermission.deny_full : false
                     }));
                 }, this);
-                this.setData(data);
-                return arrayUtil.map(data, function (item) {
-                    return item;
-                });
+                options = options || {};
+                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
+                return this.data;
             }));
             return QueryResults(results);
         },
@@ -331,10 +329,9 @@ define([
                         }));
                     }, this);
                 }
-                this.setData(data);
-                return arrayUtil.map(data, function (item) {
-                    return item;
-                });
+                options = options || {};
+                this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
+                return this.data;
             }));
             return QueryResults(results);
         }
