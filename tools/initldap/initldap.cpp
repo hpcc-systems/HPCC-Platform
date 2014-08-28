@@ -155,7 +155,9 @@ int main(int argc, char* argv[])
 
         //Create HPCC Admin user
         Owned<ISecUser> user = secMgr->createUser(hpccUser.str());
-        user->credentials().setPassword(hpccPwd.str());
+        StringBuffer pwd;
+        decrypt(pwd, hpccPwd.str());
+        user->credentials().setPassword(pwd.str());
         bool ok = secMgr->addUser(*user.get());
         if (!ok)
         {
