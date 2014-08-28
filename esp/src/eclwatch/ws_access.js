@@ -464,16 +464,22 @@ define([
             });
         },
 
-        CreateUsersStore: function (groupname) {
+        CreateUsersStore: function (groupname, observable) {
             var store = new UsersStore();
             store.groupname = groupname;
-            return Observable(store);
+            if (observable) {
+                return Observable(store);
+            }
+            return store;
         },
 
-        CreateGroupsStore: function (username) {
+        CreateGroupsStore: function (username, observable) {
             var store = new GroupsStore();
             store.username = username;
-            return Observable(store);
+            if (observable) {
+                return Observable(store);
+            }
+            return store;
         },
 
         CreatePermissionsStore: function (groupname, username) {
