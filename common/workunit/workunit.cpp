@@ -1884,15 +1884,6 @@ mapEnums workunitSortFields[] =
    { WUSFecl, "Query/Text" },
    { WUSFfileread, "FilesRead/File/@name" },
    { WUSFroxiecluster, "RoxieQueryInfo/@roxieClusterName" },
-   { WUSFbatchloginid, "Application/Dispatcher/FTPUserID" },
-   { WUSFbatchcustomername, "Application/Dispatcher/CustomerName" },
-   { WUSFbatchpriority, "Application/Dispatcher/JobPriority" },
-   { WUSFbatchinputreccount, "Application/Dispatcher/InputRecords" },
-   { WUSFbatchtimeuploaded, "Application/Dispatcher/TimeUploaded" },
-   { WUSFbatchtimecompleted, "Application/Dispatcher/TimeCompleted" },
-   { WUSFbatchmachine, "Application/Dispatcher/Machine" },
-   { WUSFbatchinputfile, "Application/Dispatcher/InputFileName" },
-   { WUSFbatchoutputfile, "Application/Dispatcher/OutputFileName" },
    { WUSFtotalthortime, "Statistics/Statistic[@desc='Total thor time']/@value|Timings/Timing[@name='Total thor time']/@duration" },//Use Statistics first. If not found, use Timings
    { WUSFterm, NULL }
 };
