@@ -47,7 +47,7 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.store = WsAccess.CreateGroupsStore(params.username);
+            this.store = WsAccess.CreateGroupsStore(params.username, false);
             this.grid.setStore(this.store);
             this._refreshActionState();
         },

@@ -379,7 +379,7 @@ define([
         //  Groups  ---
         initGroupsGrid: function () {
             this.initGroupsContextMenu();
-            var store = WsAccess.CreateGroupsStore();
+            var store = WsAccess.CreateGroupsStore(null, true);
             this.groupsGrid = declare([ESPUtil.Grid(false, true)])({
                 store: store,
                 columns: {
@@ -460,7 +460,7 @@ define([
         //  Users  ---
         initUsersGrid: function () {
             this.initUsersContextMenu();
-            this.usersStore = WsAccess.CreateUsersStore();
+            this.usersStore = WsAccess.CreateUsersStore(null, true);
             this.usersGrid = declare([ESPUtil.Grid(false, true)])({
                 store: this.usersStore,
                 query: this.filter.toObject(),
