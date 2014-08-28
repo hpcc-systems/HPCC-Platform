@@ -80,6 +80,7 @@ public:
     virtual IXmlWriterExt & clear();
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
+    virtual void rewindTo(unsigned int prevlen)                     { if (prevlen < out.length()) out.setLength(prevlen); }
 
 protected:
     bool checkForAttribute(const char * fieldname);
@@ -139,6 +140,7 @@ public:
     virtual IXmlWriterExt & clear();
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
+    virtual void rewindTo(unsigned int prevlen)                     { if (prevlen < out.length()) out.setLength(prevlen); }
 
     void outputBeginRoot(){out.append('{');}
     void outputEndRoot(){out.append('}');}

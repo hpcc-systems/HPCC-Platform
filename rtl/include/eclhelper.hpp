@@ -181,7 +181,6 @@ public:
     inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
 };
 
-
 interface IFieldProcessor : public IInterface
 {
 public:

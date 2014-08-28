@@ -1451,6 +1451,8 @@ void CHttpRequest::parseEspPathInfo()
                     m_sstype=sub_serv_soap_builder;
                 else if (m_queryparams && (m_queryparams->hasProp("roxie_builder_")))
                     m_sstype=sub_serv_roxie_builder;
+                else if (m_queryparams && (m_queryparams->hasProp("json_builder_")))
+                    m_sstype=sub_serv_json_builder;
                 else if (m_queryparams && m_queryparams->hasProp("config_"))
                     m_sstype=sub_serv_config;
                 else if (m_espServiceName.length()==0)

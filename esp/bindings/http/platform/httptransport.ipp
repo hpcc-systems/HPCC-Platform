@@ -264,6 +264,7 @@ typedef enum sub_service_
     sub_serv_instant_query,
     sub_serv_soap_builder,
     sub_serv_roxie_builder,
+    sub_serv_json_builder,
     sub_serv_wsdl,
     sub_serv_xsd,
     sub_serv_config,
