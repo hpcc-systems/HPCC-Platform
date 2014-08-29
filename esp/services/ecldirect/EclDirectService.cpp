@@ -163,10 +163,10 @@ bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspR
     Owned <IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned <IWorkUnit> workunit;
     if (!user.length())
-        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", ""));
+        workunit.setown(factory->createWorkUnit("ECL-Direct", ""));
     else
     {
-        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", user.str()));
+        workunit.setown(factory->createWorkUnit("ECL-Direct", user.str()));
         workunit->setUser(user.str());
     }
 
@@ -247,10 +247,10 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
     Owned <IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned <IWorkUnit> workunit;
     if (!user.length())
-        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", ""));
+        workunit.setown(factory->createWorkUnit("ECL-Direct", ""));
     else
     {
-        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", user.str()));
+        workunit.setown(factory->createWorkUnit("ECL-Direct", user.str()));
         workunit->setUser(user.str());
     }
 

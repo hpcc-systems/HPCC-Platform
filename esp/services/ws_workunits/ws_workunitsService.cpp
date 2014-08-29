@@ -1637,9 +1637,7 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
     if (getWsWorkunitAccess(context, *cw) < SecAccess_Read)
         throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED,"Cannot access the workunit for file %s.",logicalFile);
 
-    SCMStringBuffer parent;
-    if (!cw->getParentWuid(parent).length())
-        doWUQueryBySingleWuid(context, wuid.str(), resp);
+    doWUQueryBySingleWuid(context, wuid.str(), resp);
 
     resp.setFirst(false);
     resp.setPageSize(1);
@@ -1867,21 +1865,18 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             continue;
         }
 
-        SCMStringBuffer parent;
-        if (!cw.getParentWuid(parent).length())
+        SCMStringBuffer wuidStr;
+        const char* wuid = cw.getWuid(wuidStr).str();
+        if (!looksLikeAWuid(wuid))
         {
-            const char* wuid = cw.getWuid(parent).str();
-            if (!looksLikeAWuid(wuid))
-            {
-                numWUs--;
-                continue;
-            }
-            actualCount++;
-            Owned<IEspECLWorkunit> info = createECLWorkunit("","");
-            WsWuInfo winfo(context, wuid);
-            winfo.getCommon(*info, 0);
-            results.append(*info.getClear());
+            numWUs--;
+            continue;
         }
+        actualCount++;
+        Owned<IEspECLWorkunit> info = createECLWorkunit("","");
+        WsWuInfo winfo(context, wuid);
+        winfo.getCommon(*info, 0);
+        results.append(*info.getClear());
     }
 
     if (version > 1.02)
@@ -2370,11 +2365,11 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
     if (!filterBy || !filterBy->length())
-        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryXmlns());
+        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
-        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryXmlns());
+        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
     }
 }
 

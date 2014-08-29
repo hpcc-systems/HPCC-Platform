@@ -399,9 +399,9 @@ public:
     void create(IWorkUnitFactory *factory, IEspContext &context, const char *wuid)
     {
         if (wuid && *wuid)
-            setown(factory->createNamedWorkUnit(wuid, NULL, "ws_workunits", context.queryUserId()));
+            setown(factory->createNamedWorkUnit(wuid, "ws_workunits", context.queryUserId()));
         else
-            setown(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+            setown(factory->createWorkUnit("ws_workunits", context.queryUserId()));
         if(!get())
           throw MakeStringException(ECLWATCH_CANNOT_CREATE_WORKUNIT,"Could not create workunit.");
         get()->setUser(context.queryUserId());

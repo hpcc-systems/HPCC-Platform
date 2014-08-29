@@ -2777,7 +2777,7 @@ public:
         {
             Owned<IConstWUResult> result = cw->getResultBySequence(seqNo);
             if (result)
-                return result->queryXmlns();
+                return result->queryResultXmlns();  // This is not safe - result is (theoretically, if not actually) freed!
         }
         return NULL;
     }

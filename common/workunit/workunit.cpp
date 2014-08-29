@@ -581,10 +581,10 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser, const char *parentWuid = NULL);
+    CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser);
     CLocalWorkUnit(IRemoteConnection *_conn, IPropertyTree* root, ISecManager *secmgr, ISecUser *secuser);
     ~CLocalWorkUnit();
-    CLocalWorkUnit(const char *dummyWuid, const char *parentWuid, ISecManager *secmgr, ISecUser *secuser);
+    CLocalWorkUnit(const char *dummyWuid, ISecManager *secmgr, ISecUser *secuser);
     IPropertyTree *getUnpackedTree(bool includeProgress) const;
 
     ISecManager *querySecMgr(){return secMgr.get();}
@@ -608,9 +608,6 @@ public:
     virtual bool requiresLocalFileUpload() const;
     virtual bool getIsQueryService() const;
     virtual IStringVal & getClusterName(IStringVal & str) const;
-    virtual unsigned getCombineQueries() const;
-    virtual WUCompareMode getCompareMode() const;
-    virtual IStringVal & getCustomerId(IStringVal & str) const;
     virtual bool hasDebugValue(const char * propname) const;
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const;
     virtual IStringIterator & getDebugValues() const;
@@ -631,7 +628,6 @@ public:
     virtual IConstWUGraph * getGraph(const char *name) const;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const;
     virtual IStringVal & getJobName(IStringVal & str) const;
-    virtual IStringVal & getParentWuid(IStringVal & str) const;
     virtual IConstWUPlugin * getPluginByName(const char * name) const;
     virtual IConstWUPluginIterator & getPlugins() const;
     virtual IConstWULibraryIterator & getLibraries() const;
@@ -682,7 +678,6 @@ public:
     virtual bool getRunningGraph(IStringVal &graphName, WUGraphIDType &subId) const;
     virtual bool isProtected() const;
     virtual bool isPausing() const;
-    virtual bool isBilled() const;
     virtual IWorkUnit& lock();
     virtual bool reload();
     virtual void requestAbort();
@@ -721,9 +716,6 @@ public:
     void setIsClone(bool value);
     void setClusterName(const char * value);
     void setCodeVersion(unsigned version, const char * buildVersion, const char * eclVersion);
-    void setCombineQueries(unsigned combine);
-    void setCompareMode(WUCompareMode value);
-    void setCustomerId(const char * value);
     void setDebugValue(const char * propname, const char * value, bool overwrite);
     void setDebugValueInt(const char * propname, int value, bool overwrite);
     void setJobName(const char * value);
@@ -741,7 +733,6 @@ public:
     void setTracingValueInt(const char * propname, int value);
     void setUser(const char * value);
     void setWuScope(const char * value);
-    void setBilled(bool billed);
     void setSnapshot(const char * value);
     void setTimeStamp(const char *application, const char *instance, const char *event, bool add);
     void setDebugAgentListenerPort(unsigned port);
@@ -967,12 +958,6 @@ public:
             { return c->getWuidVersion(); }
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const
             { c->getBuildVersion(buildVersion, eclVersion); }
-    virtual unsigned getCombineQueries() const
-            { return c->getCombineQueries(); }
-    virtual WUCompareMode getCompareMode() const
-            { return c->getCompareMode(); }
-    virtual IStringVal & getCustomerId(IStringVal & str) const
-            { return c->getCustomerId(str); }
     virtual bool hasDebugValue(const char * propname) const
             { return c->hasDebugValue(propname); }
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const
@@ -1011,8 +996,6 @@ public:
             { return c->getGraphProgress(name); }
     virtual IStringVal & getJobName(IStringVal & str) const
             { return c->getJobName(str); }
-    virtual IStringVal & getParentWuid(IStringVal & str) const
-            { return c->getParentWuid(str); }
     virtual IConstWUPlugin * getPluginByName(const char * name) const
             { return c->getPluginByName(name); }
     virtual IConstWUPluginIterator & getPlugins() const
@@ -1103,8 +1086,6 @@ public:
             { return c->isProtected(); }
     virtual bool isPausing() const
             { return c->isPausing(); }
-    virtual bool isBilled() const
-            { return c->isBilled(); }
     virtual IWorkUnit & lock()
             { ((CInterface *)this)->Link(); return (IWorkUnit &) *this; }
     virtual bool reload()
@@ -1156,8 +1137,6 @@ public:
             { c->addProcess(type, instance, pid, log); }
     virtual void protect(bool protectMode)
             { c->protect(protectMode); }
-    virtual void setBilled(bool billed)
-            { c->setBilled(billed); }
     virtual void setAction(WUAction action)
             { c->setAction(action); }
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite)
@@ -1176,12 +1155,6 @@ public:
             { c->setClusterName(value); }
     virtual void setCodeVersion(unsigned version, const char * buildVersion, const char * eclVersion)
             { c->setCodeVersion(version, buildVersion, eclVersion); }
-    virtual void setCombineQueries(unsigned combine)
-            { c->setCombineQueries(combine); }
-    virtual void setCompareMode(WUCompareMode value)
-            { c->setCompareMode(value); }
-    virtual void setCustomerId(const char * value)
-            { c->setCustomerId(value); }
     virtual void setDebugValue(const char * propname, const char * value, bool overwrite)
             { c->setDebugValue(propname, value, overwrite); }
     virtual void setDebugValueInt(const char * propname, int value, bool overwrite)
@@ -1600,7 +1573,7 @@ public:
     virtual WUResultFormat getResultFormat() const;
     virtual unsigned    getResultHash() const;
     virtual bool        getResultIsAll() const;
-    virtual IProperties *queryXmlns();
+    virtual IProperties *queryResultXmlns();
 
     // interface IWUResult
     virtual void        setResultStatus(WUResultStatus status);
@@ -1633,7 +1606,7 @@ public:
     virtual void        setResultFormat(WUResultFormat format);
     virtual void        setResultXML(const char *val);
     virtual void        setResultRow(unsigned len, const void * data);
-    virtual void        setXmlns(const char *prefix, const char *uri);
+    virtual void        setResultXmlns(const char *prefix, const char *uri);
 };
 
 class CLocalWUPlugin : public CInterface, implements IWUPlugin
@@ -2027,11 +2000,11 @@ public:
         getXPath(wuRoot, name);
         IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager *)NULL, NULL, (const char *)NULL);
+        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager *)NULL, NULL);
         return &cw->lockRemote(false);
     }
 
-    virtual IWorkUnit* createNamedWorkUnit(const char *wuid,const char *parentWuid, const char *app, const char *user)
+    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
     {
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
@@ -2042,7 +2015,7 @@ public:
             conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
         conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
-        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager*)NULL, NULL, parentWuid);
+        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager*)NULL, NULL);
         IWorkUnit* ret = &cw->lockRemote(false);
         ret->setDebugValue("CREATED_BY", app, true);
         ret->setDebugValue("CREATED_FOR", user, true);
@@ -2050,7 +2023,7 @@ public:
             cw->setWuScope(user);
         return ret;
     }
-    virtual IWorkUnit* createWorkUnit(const char *parentWuid, const char *app, const char *user)
+    virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
     {
         StringBuffer wuid("W");
         char result[32];
@@ -2063,7 +2036,7 @@ public:
             wuid.append('-').append(startSession());
         if (workUnitTraceLevel > 1)
             PrintLog("createWorkUnit created %s", wuid.str());
-        IWorkUnit* ret = createNamedWorkUnit(wuid.str(),parentWuid, app, user);
+        IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user);
         if (workUnitTraceLevel > 1)
         {
             SCMStringBuffer wuidName;
@@ -2122,7 +2095,6 @@ public:
     }
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner)
     {
-        // Not sure what to do about customerID vs user etc
         StringBuffer path("*");
         if (owner && *owner)
             path.append("[@submitID=\"").append(owner).append("\"]");
@@ -2762,10 +2734,10 @@ public:
         secMgr.set(&secmgr);
         secUser.set(&secuser);
     }
-    virtual IWorkUnit* createNamedWorkUnit(const char *wuid,const char *parentWuid, const char *app, const char *user)
+    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
     {
         checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        IWorkUnit *wu=factory->createNamedWorkUnit(wuid, parentWuid, app, user);
+        IWorkUnit *wu=factory->createNamedWorkUnit(wuid, app, user);
         if (wu)
         {
             CLockedWorkUnit* lw = dynamic_cast<CLockedWorkUnit*>(wu);
@@ -2774,10 +2746,10 @@ public:
         }
         return wu;
     }
-    virtual IWorkUnit* createWorkUnit(const char *parentWuid, const char *app, const char *user)
+    virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
     {
         checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        IWorkUnit *wu=factory->createWorkUnit(parentWuid, app, user);
+        IWorkUnit *wu=factory->createWorkUnit(app, user);
         if (wu)
         {
             CLockedWorkUnit* lw = dynamic_cast<CLockedWorkUnit*>(wu);
@@ -2806,7 +2778,6 @@ public:
     //make cached workunits a non secure pass through for now.
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner)
     {
-        // Not sure what to do about customerID vs user etc
         StringBuffer path("*");
         if (owner && *owner)
             path.append("[@submitID=\"").append(owner).append("\"]");
@@ -2939,13 +2910,11 @@ public:
 };
 //==========================================================================================
 
-CLocalWorkUnit::CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser, const char *parentWuid) : connection(_conn)
+CLocalWorkUnit::CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser) : connection(_conn)
 {
     connectAtRoot = true;
     init();
     p.setown(connection->getRoot());
-    if (parentWuid)
-        p->setProp("@parent", parentWuid);
     secMgr.set(secmgr);
     secUser.set(secuser);
 }
@@ -2992,14 +2961,12 @@ void CLocalWorkUnit::init()
 }
 
 // Dummy workunit support
-CLocalWorkUnit::CLocalWorkUnit(const char *_wuid, const char *parentWuid, ISecManager *secmgr, ISecUser *secuser)
+CLocalWorkUnit::CLocalWorkUnit(const char *_wuid, ISecManager *secmgr, ISecUser *secuser)
 {
     connectAtRoot = true;
     init();
     p.setown(createPTree(_wuid));
     p->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-    if (parentWuid)
-        p->setProp("@parentWuid", parentWuid);
     secMgr.set(secmgr);
     secUser.set(secuser);
 }
@@ -3821,13 +3788,6 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
 }
 
 
-IStringVal& CLocalWorkUnit::getParentWuid(IStringVal &str) const 
-{
-    CriticalBlock block(crit);
-    str.set(p->queryProp("@parent"));
-    return str;
-}
-
 void CLocalWorkUnit::setUser(const char * value) 
 { 
     CriticalBlock block(crit);
@@ -3851,19 +3811,6 @@ IStringVal& CLocalWorkUnit::getWuScope(IStringVal &str) const
 {
     CriticalBlock block(crit);
     str.set(p->queryProp("@scope"));
-    return str;
-}
-
-void CLocalWorkUnit::setCustomerId(const char * value) 
-{ 
-    CriticalBlock block(crit);
-    p->setProp("CustomerID", value); 
-}
-
-IStringVal& CLocalWorkUnit::getCustomerId(IStringVal &str) const 
-{
-    CriticalBlock block(crit);
-    str.set(p->queryProp("CustomerID"));
     return str;
 }
 
@@ -4918,18 +4865,6 @@ IUserDescriptor *CLocalWorkUnit::queryUserDescriptor() const
     return userDesc;
 }
 
-void CLocalWorkUnit::setCombineQueries(unsigned combine) 
-{
-    CriticalBlock block(crit);
-    p->setPropInt("COMBINE_QUERIES", combine);
-}
-
-unsigned CLocalWorkUnit::getCombineQueries() const 
-{
-    CriticalBlock block(crit);
-    return p->getPropInt("COMBINE_QUERIES");
-}
-
 bool CLocalWorkUnit::isProtected() const
 {
     CriticalBlock block(crit);
@@ -4957,18 +4892,6 @@ void CLocalWorkUnit::protect(bool protectMode)
     p->setPropBool("@protected", protectMode);
 }
 
-bool CLocalWorkUnit::isBilled() const
-{
-    CriticalBlock block(crit);
-    return p->getPropBool("@billed", false);
-}
-
-void CLocalWorkUnit::setBilled(bool value)
-{
-    CriticalBlock block(crit);
-    p->setPropBool("@billed", value);
-}
-
 void CLocalWorkUnit::setResultLimit(unsigned value)
 {
     CriticalBlock block(crit);
@@ -4979,18 +4902,6 @@ unsigned CLocalWorkUnit::getResultLimit() const
 {
     CriticalBlock block(crit);
     return p->getPropInt("resultLimit");
-}
-
-void CLocalWorkUnit::setCompareMode(WUCompareMode value)
-{
-    CriticalBlock block(crit);
-    p->setPropInt("comparemode", (int)value);
-}
-
-WUCompareMode CLocalWorkUnit::getCompareMode() const
-{
-    CriticalBlock block(crit);
-    return (WUCompareMode) p->getPropInt("comparemode");
 }
 
 IStringVal & CLocalWorkUnit::getSnapshot(IStringVal & str) const
@@ -5138,7 +5049,6 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     updateProp(p, fromP, "@clusterName");
     updateProp(p, fromP, "allowedclusters");
     updateProp(p, fromP, "@submitID");
-    updateProp(p, fromP, "CustomerID");
     updateProp(p, fromP, "SNAPSHOT");
 
     //MORE: This is very adhoc.  All options that should be cloned should really be in a common branch
@@ -7775,7 +7685,7 @@ IStringVal& CLocalWUResult::getResultXml(IStringVal &str) const
     return str;
 }
 
-IProperties *CLocalWUResult::queryXmlns()
+IProperties *CLocalWUResult::queryResultXmlns()
 {
     CriticalBlock block(crit);
     if (xmlns)
@@ -7885,7 +7795,7 @@ void CLocalWUResult::setResultSchemaRaw(unsigned size, const void *schema)
 {
     p->setPropBin("SchemaRaw", size, schema);
 }
-void CLocalWUResult::setXmlns(const char *prefix, const char *uri)
+void CLocalWUResult::setResultXmlns(const char *prefix, const char *uri)
 {
     StringBuffer xpath("@xmlns");
     if (prefix && *prefix)
@@ -8597,7 +8507,7 @@ unsigned __int64 CLocalWUStatistic::getMax() const
 
 extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit()
 {
-    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit("W_LOCAL", NULL, (ISecManager*)NULL, NULL);
+    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit("W_LOCAL", (ISecManager*)NULL, NULL);
     ILocalWorkUnit* ret = QUERYINTERFACE(&cw->lockRemote(false), ILocalWorkUnit);
     return ret;
 }

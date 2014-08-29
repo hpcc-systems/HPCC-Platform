@@ -3346,7 +3346,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 //Stand alone program, but dali is specified => create a workunit in dali, and store the results there....
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                Owned<IWorkUnit> daliWu = factory->createWorkUnit(NULL, "eclagent", "eclagent");
+                Owned<IWorkUnit> daliWu = factory->createWorkUnit("eclagent", "eclagent");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
                 extendedWu->copyWorkUnit(standAloneWorkUnit, true);
                 daliWu->getWuid(wuid);

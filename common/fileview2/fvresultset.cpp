@@ -3334,7 +3334,7 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
                     SCMStringBuffer name;
                     ds.getResultName(name);
                     Owned<INewResultSet> nr = factory->createNewResultSet(&ds, wuid.str());
-                    const IProperties *xmlns = ds.queryXmlns();
+                    const IProperties *xmlns = ds.queryResultXmlns();
                     writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
                 }
             }
