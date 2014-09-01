@@ -815,7 +815,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
  // Note - we assume X86/X86_64 Procedure Call Standard
  #if defined (_ARCH_X86_64_)
         UNIMPLEMENTED;
- #elif defined (_ARCH_X86_32_)
+ #elif defined (_ARCH_X86_)
         _asm{
         ;save registers that will be used
         push   ecx
