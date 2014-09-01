@@ -148,17 +148,6 @@ enum WUAction
 };
 
 
-
-enum WUCompareMode
-{
-    CompareModeOff = 0,
-    CompareModeHole = 1,
-    CompareModeThor = 2,
-    CompareModeSize = 3
-};
-
-
-
 enum WUResultStatus
 {
     ResultStatusUndefined = 0,
@@ -203,7 +192,6 @@ interface IPropertyTreeIterator;
 interface IConstWUGraph : extends IInterface
 {
     virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const = 0;
-    virtual IStringVal & getDOT(IStringVal & ret) const = 0;
     virtual IStringVal & getName(IStringVal & ret) const = 0;
     virtual IStringVal & getLabel(IStringVal & ret) const = 0;
     virtual IStringVal & getTypeName(IStringVal & ret) const = 0;
@@ -301,7 +289,7 @@ interface IConstWUResult : extends IInterface
     virtual unsigned getResultHash() const = 0;
     virtual void getResultDecimal(void * val, unsigned length, unsigned precision, bool isSigned) const = 0;
     virtual bool getResultIsAll() const = 0;
-    virtual const IProperties *queryXmlns() = 0;
+    virtual const IProperties *queryResultXmlns() = 0;
 };
 
 
@@ -337,7 +325,7 @@ interface IWUResult : extends IConstWUResult
     virtual void setResultFormat(WUResultFormat format) = 0;
     virtual void setResultXML(const char * xml) = 0;
     virtual void setResultRow(unsigned len, const void * data) = 0;
-    virtual void setXmlns(const char *prefix, const char *uri) = 0;
+    virtual void setResultXmlns(const char *prefix, const char *uri) = 0;
 };
 
 
@@ -454,8 +442,6 @@ interface IConstWUPlugin : extends IInterface
 {
     virtual IStringVal & getPluginName(IStringVal & str) const = 0;
     virtual IStringVal & getPluginVersion(IStringVal & str) const = 0;
-    virtual bool getPluginThor() const = 0;
-    virtual bool getPluginHole() const = 0;
 };
 
 
@@ -463,8 +449,6 @@ interface IWUPlugin : extends IConstWUPlugin
 {
     virtual void setPluginName(const char * str) = 0;
     virtual void setPluginVersion(const char * str) = 0;
-    virtual void setPluginThor(bool flag) = 0;
-    virtual void setPluginHole(bool flag) = 0;
 };
 
 
@@ -473,53 +457,21 @@ interface IConstWUPluginIterator : extends IScmIterator
     virtual IConstWUPlugin & query() = 0;
 };
 
-
-interface IConstWULibraryActivityIterator : extends IScmIterator
-{
-    virtual unsigned query() const = 0;
-};
-
-
 interface IConstWULibrary : extends IInterface
 {
     virtual IStringVal & getName(IStringVal & str) const = 0;
-    virtual IConstWULibraryActivityIterator * getActivities() const = 0;
 };
 
 
 interface IWULibrary : extends IConstWULibrary
 {
     virtual void setName(const char * str) = 0;
-    virtual void addActivity(unsigned id) = 0;
 };
 
 
 interface IConstWULibraryIterator : extends IScmIterator
 {
     virtual IConstWULibrary & query() = 0;
-};
-
-
-//! IWUActivity
-
-interface IConstWUActivity : extends IInterface
-{
-    virtual __int64 getId() const = 0;
-    virtual unsigned getKind() const = 0;
-    virtual IStringVal & getHelper(IStringVal & ret) const = 0;
-};
-
-
-interface IWUActivity : extends IConstWUActivity
-{
-    virtual void setKind(unsigned id) = 0;
-    virtual void setHelper(const char * str) = 0;
-};
-
-
-interface IConstWUActivityIterator : extends IScmIterator
-{
-    virtual IConstWUActivity & query() = 0;
 };
 
 
@@ -874,9 +826,6 @@ interface IConstWorkUnit : extends IInterface
     virtual bool requiresLocalFileUpload() const = 0;
     virtual bool getIsQueryService() const = 0;
     virtual IStringVal & getClusterName(IStringVal & str) const = 0;
-    virtual unsigned getCombineQueries() const = 0;
-    virtual WUCompareMode getCompareMode() const = 0;
-    virtual IStringVal & getCustomerId(IStringVal & str) const = 0;
     virtual bool hasDebugValue(const char * propname) const = 0;
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const = 0;
     virtual int getDebugValueInt(const char * propname, int defVal) const = 0;
@@ -891,7 +840,6 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUGraph * getGraph(const char * name) const = 0;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const = 0;
     virtual IStringVal & getJobName(IStringVal & str) const = 0;
-    virtual IStringVal & getParentWuid(IStringVal & str) const = 0;
     virtual IConstWUPlugin * getPluginByName(const char * name) const = 0;
     virtual IConstWUPluginIterator & getPlugins() const = 0;
     virtual IConstWULibraryIterator & getLibraries() const = 0;
@@ -903,8 +851,6 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUResult * getResultBySequence(unsigned seq) const = 0;
     virtual unsigned getResultLimit() const = 0;
     virtual IConstWUResultIterator & getResults() const = 0;
-    virtual IConstWUActivityIterator & getActivities() const = 0;
-    virtual IConstWUActivity * getActivity(__int64 id) const = 0;
     virtual IStringVal & getScope(IStringVal & str) const = 0;
     virtual IStringVal & getSecurityToken(IStringVal & str) const = 0;
     virtual WUState getState() const = 0;
@@ -941,7 +887,6 @@ interface IConstWorkUnit : extends IInterface
     virtual unsigned getCodeVersion() const = 0;
     virtual unsigned getWuidVersion() const  = 0;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const = 0;
-    virtual bool isBilled() const = 0;
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned & day) = 0;
     virtual IPropertyTree * getDiskUsageStats() = 0;
     virtual IPropertyTreeIterator & getFileIterator() const = 0;
@@ -989,9 +934,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void incEventScheduledCount() = 0;
     virtual void setIsQueryService(bool cached) = 0;
     virtual void setClusterName(const char * value) = 0;
-    virtual void setCombineQueries(unsigned combine) = 0;
-    virtual void setCompareMode(WUCompareMode value) = 0;
-    virtual void setCustomerId(const char * value) = 0;
     virtual void setDebugValue(const char * propname, const char * value, bool overwrite) = 0;
     virtual void setDebugValueInt(const char * propname, int value, bool overwrite) = 0;
     virtual void setJobName(const char * value) = 0;
@@ -1022,7 +964,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual IWUQuery * updateQuery() = 0;
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create) = 0;
     virtual IWURoxieQueryInfo * updateRoxieQueryInfo(const char * wuid, const char * roxieClusterName) = 0;
-    virtual IWUActivity * updateActivity(__int64 id) = 0;
     virtual IWUPlugin * updatePluginByName(const char * name) = 0;
     virtual IWULibrary * updateLibraryByName(const char * name) = 0;
     virtual IWUResult * updateResultByName(const char * name) = 0;
@@ -1032,7 +973,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void addFile(const char * fileName, StringArray * clusters, unsigned usageCount, WUFileKind fileKind, const char * graphOwner) = 0;
     virtual void releaseFile(const char * fileName) = 0;
     virtual void setCodeVersion(unsigned version, const char * buildVersion, const char * eclVersion) = 0;
-    virtual void setBilled(bool value) = 0;
     virtual void deleteTempFiles(const char * graph, bool deleteOwned, bool deleteJobOwned) = 0;
     virtual void deleteTemporaries() = 0;
     virtual void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId) = 0;
@@ -1091,7 +1031,7 @@ interface IWUTimers : extends IInterface
 //! IWUFactory
 //! Used to instantiate WorkUnit components.
 
-class MemoryBuffer; // should define an SCMinterface for it
+class MemoryBuffer;
 
 interface ILocalWorkUnit : extends IWorkUnit
 {
@@ -1114,19 +1054,10 @@ enum WUSortField
     WUSFfileread = 8,
     WUSFroxiecluster = 9,
     WUSFprotected = 10,
-    WUSFbatchloginid = 11,
-    WUSFbatchcustomername = 12,
-    WUSFbatchpriority = 13,
-    WUSFbatchinputreccount = 14,
-    WUSFbatchtimeuploaded = 15,
-    WUSFbatchtimecompleted = 16,
-    WUSFbatchmachine = 17,
-    WUSFbatchinputfile = 18,
-    WUSFbatchoutputfile = 19,
-    WUSFtotalthortime = 20,
-    WUSFwildwuid = 21,
-    WUSFecl = 22,
-    WUSFcustom = 23,
+    WUSFtotalthortime = 11,
+    WUSFwildwuid = 12,
+    WUSFecl = 13,
+    WUSFcustom = 14,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,
@@ -1171,13 +1102,13 @@ typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 interface IWorkUnitFactory : extends IInterface
 {
-    virtual IWorkUnit * createWorkUnit(const char * parentWuid, const char * app, const char * user) = 0;
+    virtual IWorkUnit * createWorkUnit(const char * app, const char * user) = 0;
     virtual bool deleteWorkUnit(const char * wuid) = 0;
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner) = 0;
     virtual IWorkUnit * updateWorkUnit(const char * wuid) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * parentWuid, const char * app, const char * user) = 0;
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster) = 0;

@@ -1229,7 +1229,7 @@ public:
 // CJobMaster
 //
 
-void loadPlugin(SafePluginMap *pluginMap, const char *_path, const char *name, const char *version)
+void loadPlugin(SafePluginMap *pluginMap, const char *_path, const char *name)
 {
     StringBuffer path(_path);
     path.append(name);
@@ -1265,13 +1265,9 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
     ForEach(*pluginIter)
     {
         IConstWUPlugin &plugin = pluginIter->query();
-        if (plugin.getPluginHole() || plugin.getPluginThor()) // JCSMORE ..Hole..
-        {
-            SCMStringBuffer name, version;
-            plugin.getPluginName(name);
-            plugin.getPluginVersion(version);
-            loadPlugin(pluginMap, pluginsDir.str(), name.str(), version.str());
-        }
+        SCMStringBuffer name;
+        plugin.getPluginName(name);
+        loadPlugin(pluginMap, pluginsDir.str(), name.str());
     }
     querySo.setown(createDllEntry(_querySo, false, NULL));
     codeCtx = new CThorCodeContextMaster(*this, *workunit, *querySo, *userDesc); 
@@ -1438,15 +1434,12 @@ IPropertyTree *CJobMaster::prepareWorkUnitInfo()
     ForEach(*pluginIter)
     {
         IConstWUPlugin &thisplugin = pluginIter->query();
-        if (thisplugin.getPluginThor() || thisplugin.getPluginHole()) // JCSMORE ..Hole..
-        {
-            if (!plugins)
-                plugins = workUnitInfo->addPropTree("plugins", createPTree());
-            SCMStringBuffer name;
-            thisplugin.getPluginName(name);
-            IPropertyTree *plugin = plugins->addPropTree("plugin", createPTree());
-            plugin->setProp("@name", name.str());
-        }
+        if (!plugins)
+            plugins = workUnitInfo->addPropTree("plugins", createPTree());
+        SCMStringBuffer name;
+        thisplugin.getPluginName(name);
+        IPropertyTree *plugin = plugins->addPropTree("plugin", createPTree());
+        plugin->setProp("@name", name.str());
     }
     IPropertyTree *debug = workUnitInfo->addPropTree("Debug", createPTree(ipt_caseInsensitive));
     SCMStringBuffer debugStr, valueStr;

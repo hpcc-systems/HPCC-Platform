@@ -5111,7 +5111,7 @@ void addDatasetResultXmlNamespaces(IWUResult &result, HqlExprArray &xmlnsAttrs, 
         getUTF8Value(xmlnsURI, xmlns.queryChild(1));
         if (xmlnsURI.length())
         {
-            result.setXmlns(xmlnsPrefix, xmlnsURI);
+            result.setResultXmlns(xmlnsPrefix, xmlnsURI);
             if (xmlnsPrefix.length() && declaredPrefixes.find(xmlnsPrefix)==NotFound)
                 declaredPrefixes.append(xmlnsPrefix);
         }
@@ -5126,7 +5126,7 @@ void addDatasetResultXmlNamespaces(IWUResult &result, HqlExprArray &xmlnsAttrs, 
         {
             StringBuffer uri("urn:hpccsystems:ecl:unknown:");
             uri.append(prefix);
-            result.setXmlns(prefix, uri);
+            result.setResultXmlns(prefix, uri);
         }
     }
 }

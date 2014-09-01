@@ -2097,7 +2097,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     IConstWorkUnit *sourceWorkUnit = wsinfo.ensureWorkUnit();
 
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
-    Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "wsecl", context.queryUserId());
+    Owned <IWorkUnit> workunit = factory->createWorkUnit("wsecl", context.queryUserId());
 
     IExtendedWUInterface *ext = queryExtendedWU(workunit);
     ext->copyWorkUnit(sourceWorkUnit, false);

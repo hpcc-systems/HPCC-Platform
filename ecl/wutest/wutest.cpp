@@ -47,12 +47,11 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     const char *action = globals->queryProp("#action");
     if (!action || stricmp(action, "list")==0)
     {
-        SCMStringBuffer wuid, jobname, state, parent;
+        SCMStringBuffer wuid, jobname, state;
         w.getWuid(wuid);
-        w.getParentWuid(parent);
         w.getStateDesc(state);
         w.getJobName(jobname);
-        printf("%-30s %-20s %-10s %-30s\n", wuid.str(), jobname.str(), state.str(), parent.str());
+        printf("%-30s %-20s %-10s\n", wuid.str(), jobname.str(), state.str());
     }
     else if (stricmp(action, "results")==0)
     {
@@ -320,37 +319,6 @@ int main(int argc, const char *argv[])
                 }
             }
 #endif
-            Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsByOwner(globals->queryProp("OWNER"));
-            ForEach(*it)
-            {
-                IConstWorkUnit& w = it->query();
-                SCMStringBuffer pw;
-                w.getParentWuid(pw);
-                if (pw.length())
-                {
-                    Owned<IConstWorkUnit> p = factory->openWorkUnit(pw.str(), false);
-                    if (!p)
-                    {
-                        SCMStringBuffer wuidstr;
-                        w.getWuid(wuidstr);
-                        const char *wuid = wuidstr.str();
-                        printf("Orphaned child workunit %s\n", wuid);
-                        if (globals->getPropInt("remove", 0))
-                        {
-                            Owned<IWorkUnit> lw = &w.lock();
-                            lw->setState(WUStateArchived);  // we are killing anyway so it's irrelevent, but this will allow us to be sure we can kill it...
-                            lw->protect(false);
-                            lw.clear();
-                            killWuids.append(wuid);
-                        }
-                    }
-                }
-                ForEachItemIn(idx, killWuids)
-                {
-                    factory->deleteWorkUnit(killWuids.item(idx));
-                }
-                killWuids.kill();
-            }
         }
         else if (globals->hasProp("WUID"))
         {

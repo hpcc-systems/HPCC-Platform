@@ -2068,12 +2068,7 @@ WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,
                 continue;
         }
 
-        SCMStringBuffer parent;
-        if (!cw.getParentWuid(parent).length())
-        {
-            parent.clear();
-            wuids.push_back(cw.getWuid(parent).str());
-        }
+        wuids.push_back(wuid.str());
     }
     std::sort(wuids.begin(),wuids.end(),std::greater<std::string>());
 }

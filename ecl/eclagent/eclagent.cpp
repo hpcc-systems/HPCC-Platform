@@ -1734,9 +1734,8 @@ void EclAgent::loadDependencies(IConstWorkUnit * wu)
     for (plugins->first();plugins->isValid();plugins->next())
     {
         IConstWUPlugin &thisplugin = plugins->query();
-        SCMStringBuffer name, version;
+        SCMStringBuffer name;
         thisplugin.getPluginName(name);
-        thisplugin.getPluginVersion(version);
 
         StringBuffer plugIn;
         plugIn.append(pluginDirectory).append(name);
@@ -3347,7 +3346,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 //Stand alone program, but dali is specified => create a workunit in dali, and store the results there....
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                Owned<IWorkUnit> daliWu = factory->createWorkUnit(NULL, "eclagent", "eclagent");
+                Owned<IWorkUnit> daliWu = factory->createWorkUnit("eclagent", "eclagent");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
                 extendedWu->copyWorkUnit(standAloneWorkUnit, true);
                 daliWu->getWuid(wuid);
