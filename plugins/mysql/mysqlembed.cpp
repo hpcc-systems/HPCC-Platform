@@ -861,6 +861,7 @@ public:
         const char *user = "";
         const char *password = "";
         const char *database = "";
+        unsigned port = 0;
         StringArray opts;
         opts.appendList(options, ",");
         ForEachItemIn(idx, opts)
@@ -873,6 +874,8 @@ public:
                 val++;
                 if (stricmp(optName, "server")==0)
                     server = val;   // Note that lifetime of val is adequate for this to be safe
+                else if (stricmp(optName, "port")==0)
+                    port = atoi(val);
                 else if (stricmp(optName, "user")==0)
                     user = val;
                 else if (stricmp(optName, "password")==0)
@@ -882,7 +885,7 @@ public:
             }
         }
         conn.setown(new MySQLConnection(mysql_init(NULL)));
-        if (!mysql_real_connect(*conn, server, user, password, database, 0, NULL, 0))
+        if (!mysql_real_connect(*conn, server, user, password, database, port, NULL, 0))
         {
             VStringBuffer err("mysql: failed to connect (%s)", mysql_error(*conn));
             rtlFail(0, err.str());
