@@ -1025,11 +1025,11 @@ class MultiPacketHandler // TAG_SYS_MULTI
         {
             StringBuffer errorMsg("sender=");
             msg.getSender().getUrlStr(errorMsg).newline();
-            msg.append("This header: ");
+            errorMsg.append("This header: ");
             mhdr.getDetails(errorMsg).newline();
             if (otherMhdr)
             {
-                msg.append("Other header: ");
+                errorMsg.append("Other header: ");
                 otherMhdr->getDetails(errorMsg).newline();
             }
             msg.getDetails(errorMsg);
