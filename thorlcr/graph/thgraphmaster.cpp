@@ -551,6 +551,7 @@ bool CMasterGraphElement::checkUpdate()
         case TAKdiskwrite:
         case TAKcsvwrite:
         case TAKxmlwrite:
+        case TAKjsonwrite:
         {
             IHThorDiskWriteArg *helper = (IHThorDiskWriteArg *)queryHelper();
             doCheckUpdate = 0 != (helper->getFlags() & TDWupdate);

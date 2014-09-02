@@ -3224,7 +3224,7 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
                 //Needs the grouping to be saved in the same way.  Could cope with compressed matching, but not
                 //much point - since fairly unlikely.
                 IHqlExpression * filename = expr->queryChild(1);
-                if (filename && (filename->getOperator() == no_constant) && !expr->hasAttribute(xmlAtom) && !expr->hasAttribute(csvAtom))
+                if (filename && (filename->getOperator() == no_constant) && !expr->hasAttribute(xmlAtom) && !expr->hasAttribute(jsonAtom) && !expr->hasAttribute(csvAtom))
                 {
                     IHqlExpression * dataset = expr->queryChild(0);
                     if (expr->hasAttribute(groupedAtom) == isGrouped(dataset))

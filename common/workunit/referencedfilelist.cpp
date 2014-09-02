@@ -610,7 +610,7 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
                 continue;
             ThorActivityKind kind = (ThorActivityKind) node.getPropInt("att[@name='_kind']/@value", TAKnone);
             //not likely to be part of roxie queries, but for forward compatibility:
-            if(kind==TAKdiskwrite || kind==TAKindexwrite || kind==TAKcsvwrite || kind==TAKxmlwrite)
+            if(kind==TAKdiskwrite || kind==TAKindexwrite || kind==TAKcsvwrite || kind==TAKxmlwrite || kind==TAKjsonwrite)
                 continue;
             if (node.getPropBool("att[@name='_isSpill']/@value") ||
                 node.getPropBool("att[@name='_isTransformSpill']/@value"))

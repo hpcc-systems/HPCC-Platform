@@ -37,16 +37,12 @@ interface IXmlStreamFlusher
     virtual void flushXML(StringBuffer &current, bool isClose) = 0;
 };
 
-class thorhelper_decl CommonXmlWriter : public CInterface, implements IXmlWriter
+class thorhelper_decl CommonXmlWriter : public CInterface, implements IXmlWriterExt
 {
 public:
     CommonXmlWriter(unsigned _flags, unsigned initialIndent=0,  IXmlStreamFlusher *_flusher=NULL);
     ~CommonXmlWriter();
     IMPLEMENT_IINTERFACE;
-
-    CommonXmlWriter & clear();
-    unsigned length() const                                 { return out.length(); }
-    const char * str() const                                { return out.str(); }
 
     void outputBeginNested(const char *fieldname, bool nestChildren, bool doIndent);
     void outputEndNested(const char *fieldname, bool doIndent);
@@ -73,6 +69,11 @@ public:
     virtual void outputSetAll();
     virtual void outputXmlns(const char *name, const char *uri);
 
+    //IXmlWriterExt
+    virtual IXmlWriterExt & clear();
+    virtual unsigned length() const                                 { return out.length(); }
+    virtual const char * str() const                                { return out.str(); }
+
 protected:
     bool checkForAttribute(const char * fieldname);
     void closeTag();
@@ -91,16 +92,13 @@ protected:
     bool tagClosed;
 };
 
-class thorhelper_decl CommonJsonWriter : public CInterface, implements IXmlWriter
+class thorhelper_decl CommonJsonWriter : public CInterface, implements IXmlWriterExt
 {
 public:
     CommonJsonWriter(unsigned _flags, unsigned initialIndent=0,  IXmlStreamFlusher *_flusher=NULL);
     ~CommonJsonWriter();
     IMPLEMENT_IINTERFACE;
 
-    CommonJsonWriter & clear();
-    unsigned length() const                                 { return out.length(); }
-    const char * str() const                                { return out.str(); }
     void checkDelimit(int inc=0);
     void checkFormat(bool doDelimit, bool needDelimiter=true, int inc=0);
 
@@ -130,6 +128,11 @@ public:
     virtual void outputSetAll();
     virtual void outputXmlns(const char *name, const char *uri){}
 
+    //IXmlWriterExt
+    virtual IXmlWriterExt & clear();
+    virtual unsigned length() const                                 { return out.length(); }
+    virtual const char * str() const                                { return out.str(); }
+
     void outputBeginRoot(){out.append('{');}
     void outputEndRoot(){out.append('}');}
 
@@ -153,6 +156,8 @@ protected:
     const char *checkItemName(const char *name, bool simpleType=true);
     const char *checkItemNameBeginNested(const char *name);
     const char *checkItemNameEndNested(const char *name);
+    bool checkUnamedArrayItem(bool begin);
+
 
     IXmlStreamFlusher *flusher;
     CIArrayOf<CJsonWriterItem> arrays;
@@ -162,6 +167,9 @@ protected:
     unsigned nestLimit;
     bool needDelimiter;
 };
+
+thorhelper_decl StringBuffer &buildJsonHeader(StringBuffer  &header, const char *suppliedHeader, const char *rowTag);
+thorhelper_decl StringBuffer &buildJsonFooter(StringBuffer  &footer, const char *suppliedFooter, const char *rowTag);
 
 //Writes type encoded XML strings  (xsi:type="xsd:string", xsi:type="xsd:boolean" etc)
 class thorhelper_decl CommonEncodedXmlWriter : public CommonXmlWriter
@@ -192,7 +200,7 @@ public:
 
 enum XMLWriterType{WTStandard, WTEncoding, WTEncodingData64, WTJSON} ;
 thorhelper_decl CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
-thorhelper_decl IXmlWriter * createIXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
+thorhelper_decl IXmlWriterExt * createIXmlWriterExt(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 
 class thorhelper_decl SimpleOutputWriter : public CInterface, implements IXmlWriter
 {

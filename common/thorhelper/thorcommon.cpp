@@ -659,6 +659,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKlimit:                  return "Limit";
     case TAKcsvfetch:               return "Csv Fetch";
     case TAKxmlwrite:               return "Xml Write";
+    case TAKjsonwrite:              return "Json Write";
     case TAKparse:                  return "Parse";
     case TAKsideeffect:             return "Simple Action";
     case TAKtopn:                   return "Top N";
@@ -839,6 +840,7 @@ extern bool isActivitySink(ThorActivityKind kind)
     case TAKcsvwrite:
     case TAKindexwrite:
     case TAKxmlwrite:
+    case TAKjsonwrite:
     case TAKsoap_rowaction:
     case TAKsoap_datasetaction:
     case TAKkeydiff:

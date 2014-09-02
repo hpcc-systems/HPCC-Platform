@@ -658,6 +658,8 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
                 temp.append("Output");
                 if (expr->hasAttribute(xmlAtom))
                     temp.append(" XML");
+                if (expr->hasAttribute(jsonAtom))
+                    temp.append(" JSON");
                 else if (expr->hasAttribute(csvAtom))
                     temp.append(" CSV");
                 queryExpandFilename(temp, filename);

@@ -10336,7 +10336,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     OwnedHqlExpr filename = foldHqlExpression(rawFilename);
     IHqlExpression * program  = queryRealChild(expr, 2);
     IHqlExpression * csvAttr = expr->queryAttribute(csvAtom);
+    bool isJson = false;
     IHqlExpression * xmlAttr = expr->queryAttribute(xmlAtom);
+    if (!xmlAttr)
+    {
+        xmlAttr = expr->queryAttribute(jsonAtom);
+        if (xmlAttr)
+            isJson=true;
+    }
     LinkedHqlExpr expireAttr = expr->queryAttribute(expireAtom);
     IHqlExpression * seq = querySequence(expr);
 
@@ -10354,30 +10361,30 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     ThorActivityKind kind = TAKdiskwrite;
-    const char * activity = "DiskWrite";
+    const char * activityArgName = "DiskWrite";
     if (expr->getOperator() == no_spill)
     {
         kind = TAKspill;
-        activity = "Spill";
+        activityArgName = "Spill";
     }
     else if (pipe)
     {
         kind = TAKpipewrite;
-        activity = "PipeWrite";
+        activityArgName = "PipeWrite";
     }
     else if (csvAttr)
     {
         kind = TAKcsvwrite;
-        activity = "CsvWrite";
+        activityArgName = "CsvWrite";
     }
     else if (xmlAttr)
     {
-        kind = TAKxmlwrite;
-        activity = "XmlWrite";
+        kind = (isJson) ? TAKjsonwrite : TAKxmlwrite;
+        activityArgName = "XmlWrite";
     }
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie() && expr->hasAttribute(_spill_Atom);
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activity);
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activityArgName);
     //Output to a variable filename is either a user result, or a computed workflow spill, both need evaluating.
 
     if (useImplementationClass)
@@ -10535,7 +10542,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         OwnedHqlExpr outputDs = createDataset(no_null, LINK(outputRecord));
         HqlExprArray xmlnsAttrs;
         gatherAttributes(xmlnsAttrs, xmlnsAtom, expr);
-        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), outputRecord, xmlnsAttrs, (kind != TAKcsvwrite) && (kind != TAKxmlwrite), true);
+        bool createTransformer = (kind != TAKcsvwrite) && (kind != TAKxmlwrite) && (kind != TAKjsonwrite);
+        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), outputRecord, xmlnsAttrs, createTransformer, true);
         if (expr->hasAttribute(resultAtom))
             result->setResultRowLimit(-1);
 

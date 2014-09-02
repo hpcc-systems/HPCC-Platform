@@ -22,7 +22,7 @@
 #include "thdiskbase.ipp"
 
 
-CActivityBase *createXmlWriteActivityMaster(CMasterGraphElement *container);
+CActivityBase *createXmlWriteActivityMaster(CMasterGraphElement *container, ThorActivityKind kind);
 
 
 #endif

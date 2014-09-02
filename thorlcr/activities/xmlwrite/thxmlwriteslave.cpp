@@ -31,9 +31,10 @@
 class CXmlWriteSlaveActivity : public CDiskWriteSlaveActivityBase
 {
     IHThorXmlWriteArg *helper;
+    ThorActivityKind kind;
 
 public:
-    CXmlWriteSlaveActivity(CGraphElementBase *container) : CDiskWriteSlaveActivityBase(container)
+    CXmlWriteSlaveActivity(CGraphElementBase *container, ThorActivityKind _kind) : CDiskWriteSlaveActivityBase(container), kind(_kind)
     {
         helper = static_cast <IHThorXmlWriteArg *> (queryHelper());
     }
@@ -53,50 +54,55 @@ public:
             rowTag.append(path);
         }
 
-        StringBuffer xmlOutput;
-        CommonXmlWriter xmlWriter(helper->getXmlFlags());
+        StringBuffer out;
         if (!dlfn.isExternal() || firstNode()) // if external, 1 header,footer
         {
-            OwnedRoxieString header(helper->getHeader());
-            if (header)
-                xmlOutput.clear().append(header);
+            OwnedRoxieString suppliedHeader(helper->getHeader());
+            if (kind==TAKjsonwrite)
+                buildJsonHeader(out, suppliedHeader, rowTag);
+            else if (suppliedHeader)
+                out.set(suppliedHeader);
             else
-                xmlOutput.clear().append("<Dataset>").newline();
-            outraw->write(xmlOutput.length(), xmlOutput.toCharArray());
+                out.set("<Dataset>").newline();
+            outraw->write(out.length(), out.toCharArray());
             if (calcFileCrc)
-                fileCRC.tally(xmlOutput.length(), xmlOutput.toCharArray());
+                fileCRC.tally(out.length(), out.toCharArray());
         }
+        Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper->getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
+        writer->outputBeginArray(rowTag); //need this to format rows, even if not outputting it below
         while(!abortSoon)
         {
             OwnedConstThorRow row = input->ungroupedNextRow();
             if (!row)
                 break;
-            xmlWriter.clear().outputBeginNested(rowTag, false);
-            helper->toXML((const byte *)row.get(), xmlWriter);
-            xmlWriter.outputEndNested(rowTag);
-            outraw->write(xmlWriter.length(), xmlWriter.str());
+            writer->clear().outputBeginNested(rowTag, false);
+            helper->toXML((const byte *)row.get(), *writer);
+            writer->outputEndNested(rowTag);
+            outraw->write(writer->length(), writer->str());
             if (calcFileCrc)
-                fileCRC.tally(xmlWriter.length(), xmlWriter.str());
+                fileCRC.tally(writer->length(), writer->str());
             processed++;
         }
         if (!dlfn.isExternal() || lastNode()) // if external, 1 header,footer
         {
-            OwnedRoxieString footer(helper->getFooter());
-            if (footer)
-                xmlOutput.clear().append(footer);
+            OwnedRoxieString suppliedFooter(helper->getFooter());
+            if (kind==TAKjsonwrite)
+                buildJsonFooter(out.clear().newline(), suppliedFooter, rowTag);
+            else if (suppliedFooter)
+                out.set(suppliedFooter);
             else
-                xmlOutput.clear().append("</Dataset>").newline();
-            outraw->write(xmlOutput.length(), xmlOutput.toCharArray());
+                out.set("</Dataset>").newline();
+            outraw->write(out.length(), out.toCharArray());
             if (calcFileCrc)
-                fileCRC.tally(xmlOutput.length(), xmlOutput.toCharArray());
+                fileCRC.tally(out.length(), out.toCharArray());
         }
     }
     virtual bool wantRaw() { return true; }
 };
 
-CActivityBase *createXmlWriteSlave(CGraphElementBase *container)
+CActivityBase *createXmlWriteSlave(CGraphElementBase *container, ThorActivityKind kind)
 {
-    return new CXmlWriteSlaveActivity(container);
+    return new CXmlWriteSlaveActivity(container, kind);
 }
 
 

@@ -140,6 +140,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKcsvwrite:
         return createCsvWriteActivity(agent, activityId, subgraphId, (IHThorCsvWriteArg &)arg, kind);
     case TAKxmlwrite:
+    case TAKjsonwrite:
         return createXmlWriteActivity(agent, activityId, subgraphId, (IHThorXmlWriteArg &)arg, kind);
     case TAKpipethrough:
         return createPipeThroughActivity(agent, activityId, subgraphId, (IHThorPipeThroughArg &)arg, kind);
@@ -371,6 +372,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
     case TAKdiskwrite:
     case TAKcsvwrite:
     case TAKxmlwrite:
+    case TAKjsonwrite:
         {
             IHThorDiskWriteArg * helper = static_cast<IHThorDiskWriteArg *>(arg.get());
             filename.set(helper->getFileName());
@@ -578,6 +580,7 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
         case TAKdiskwrite:
         case TAKcsvwrite:
         case TAKxmlwrite:
+        case TAKjsonwrite:
             alreadyUpdated = alreadyUpToDate(agent);
             if (alreadyUpdated)
                 return false;

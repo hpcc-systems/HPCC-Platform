@@ -348,6 +348,8 @@ class CHThorXmlWriteActivity : public CHThorDiskWriteActivity
 {
     IHThorXmlWriteArg &helper;
     StringBuffer rowTag;
+    unsigned headerLength;
+    unsigned footerLength;
 
     virtual bool isOutputTransformed() { return true; }
     virtual void setFormat(IFileDescriptor * desc);
