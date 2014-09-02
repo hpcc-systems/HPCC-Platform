@@ -25,13 +25,15 @@
       <title>Command Line Interface</title>
 
       <sect2 id="DFUPlusexe">
-        <title><emphasis>dfuplus.exe</emphasis></title>
+        <title><emphasis
+        role="bold">dfuplus</emphasis><emphasis></emphasis><emphasis
+        role="bold">[--version] action=</emphasis><emphasis>operation
+        </emphasis><emphasis
+        role="bold">[</emphasis><emphasis>@filename</emphasis><emphasis
+        role="bold">|</emphasis><emphasis>options</emphasis><emphasis
+        role="bold">]</emphasis></title>
 
-        <para><emphasis role="bold">dfuplus </emphasis><emphasis>
-        </emphasis><emphasis role="bold">action=</emphasis><emphasis>operation
-        </emphasis><emphasis role="bold">[</emphasis><emphasis> @filename
-        </emphasis><emphasis role="bold">| </emphasis><emphasis>options
-        </emphasis><emphasis role="bold">]</emphasis></para>
+        <para></para>
 
         <informaltable colsep="0" frame="none" rowsep="0">
           <tgroup cols="2">
@@ -40,6 +42,12 @@
             <colspec />
 
             <tbody>
+              <row>
+                <entry><emphasis>--version</emphasis></entry>
+
+                <entry>displays version info</entry>
+              </row>
+
               <row>
                 <entry><emphasis>operation</emphasis></entry>
 
@@ -72,14 +80,33 @@
           </tgroup>
         </informaltable>
 
-        <para>The <emphasis role="bold">dfuplus.exe</emphasis> application
-        accepts command line parameters to send to the Distributed File
-        Utility (DFU) engine via the ESP server. These
-        <emphasis>options</emphasis> can be specified on the command line, in
-        the <emphasis>@filename</emphasis>, in the dfuplus.ini file, or any
-        combination. Command line <emphasis>options</emphasis> override any in
-        the nominated <emphasis>@filename</emphasis>, which in turn override
-        any in the dfuplus.ini file.</para>
+        <para>The <emphasis role="bold">dfuplus</emphasis> executable accepts
+        command line parameters to send to the Distributed File Utility (DFU)
+        engine via the ESP server. These <emphasis>options</emphasis> can be
+        specified on the command line, in the <emphasis>@filename</emphasis>,
+        in the dfuplus.ini file, or any combination. </para>
+
+        <para>Evaluation of options follows this order of precedence:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>command line</para>
+          </listitem>
+
+          <listitem>
+            <para>@filename file</para>
+          </listitem>
+
+          <listitem>
+            <para>ini file</para>
+          </listitem>
+
+          <listitem>
+            <para>default value</para>
+          </listitem>
+        </itemizedlist>
+
+        <para></para>
 
         <sect3>
           <title>General Options:</title>
