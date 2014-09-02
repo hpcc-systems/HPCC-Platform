@@ -718,10 +718,12 @@ public:
     virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data)
     {
         UNSUPPORTED("SET fields");
+        return false;
     }
     virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows)
     {
         UNSUPPORTED("Nested datasets");
+        return false;
     }
     virtual bool processBeginRow(const RtlFieldInfo * field)
     {
