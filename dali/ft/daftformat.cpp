@@ -564,7 +564,7 @@ size32_t CRECFMvbPartitioner::getTransformRecordSize(const byte * record, unsign
 
 unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor & cursor)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CRECFMvbPartitioner::transformBlock(offset_t endOffset: %"I64F"d (0x%"I64F"016x), TransformCursor & cursor)", endOffset ,endOffset);
+    LOG(MCdebugProgressDetail, unknownJob, "CRECFMvbPartitioner::transformBlock(offset_t endOffset: %"I64F"d (0x%016"I64F"x), TransformCursor & cursor)", endOffset ,endOffset);
     const byte *buffer = bufferBase();
     offset_t startOffset = cursor.inputOffset;
     offset_t inputOffset = startOffset;
@@ -581,10 +581,12 @@ unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor
         size32_t size = getTransformRecordSize(buffer+bufferOffset, readSize);
 
         if (!ensureBuffered(size))
+        {
             if (isBlocked)
                 throwError1(DFTERR_WrongRECFMvbBlockSize, size);
             else
                 throwError1(DFTERR_WrongRECFMvRecordSize, size);
+        }
         assertex((numInBuffer != bufferOffset));
         const byte * r;
         if (isBlocked) {
