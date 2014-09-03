@@ -388,7 +388,6 @@ define([
                         label: " "
                     }, "checkbox"),
                     name: {
-                        sortable: false,
                         label: this.i18n.GroupName
                     }
                 }
@@ -471,16 +470,13 @@ define([
                     },"checkbox"),
                     username: {
                         width: 180,
-                        sortable: false,
                         label: this.i18n.Username
                     },
                     fullname: {
-                        sortable: false,
                         label: this.i18n.FullName
                     },
                     passwordexpiration: {
                         width: 180,
-                        sortable: false,
                         label: this.i18n.PasswordExpiration
                     }
                 }
