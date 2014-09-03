@@ -379,7 +379,7 @@ define([
         //  Groups  ---
         initGroupsGrid: function () {
             this.initGroupsContextMenu();
-            var store = WsAccess.CreateGroupsStore();
+            var store = WsAccess.CreateGroupsStore(null, true);
             this.groupsGrid = declare([ESPUtil.Grid(false, true)])({
                 store: store,
                 columns: {
@@ -388,7 +388,6 @@ define([
                         label: " "
                     }, "checkbox"),
                     name: {
-                        sortable: false,
                         label: this.i18n.GroupName
                     }
                 }
@@ -460,7 +459,7 @@ define([
         //  Users  ---
         initUsersGrid: function () {
             this.initUsersContextMenu();
-            this.usersStore = WsAccess.CreateUsersStore();
+            this.usersStore = WsAccess.CreateUsersStore(null, true);
             this.usersGrid = declare([ESPUtil.Grid(false, true)])({
                 store: this.usersStore,
                 query: this.filter.toObject(),
@@ -471,16 +470,13 @@ define([
                     },"checkbox"),
                     username: {
                         width: 180,
-                        sortable: false,
                         label: this.i18n.Username
                     },
                     fullname: {
-                        sortable: false,
                         label: this.i18n.FullName
                     },
                     passwordexpiration: {
                         width: 180,
-                        sortable: false,
                         label: this.i18n.PasswordExpiration
                     }
                 }

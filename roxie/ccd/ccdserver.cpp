@@ -23149,6 +23149,7 @@ public:
         CRoxieServerIndexReadBaseActivity::start(parentExtractSize, parentExtract, paused);
         rowLimit = readHelper.getRowLimit();
         keyedLimit = readHelper.getKeyedLimit();
+        choosenLimit = readHelper.getChooseNLimit();
         if (!paused)
             processAllKeys();
     }
@@ -23174,6 +23175,8 @@ public:
                 Owned<CRowArrayMessageResult> result = new CRowArrayMessageResult(ctx->queryRowManager(), meta.isVariableSize());
                 do
                 {
+                    if (accepted>=choosenLimit)
+                        break;
                     rowBuilder.ensureRow();
                     try
                     {
@@ -23195,6 +23198,8 @@ public:
                 } while (readHelper.next());
                 remote.injectResult(result.getClear());
                 callback.finishedRow();
+                if (accepted>=choosenLimit)
+                    return true;
             }
         }
         return false;

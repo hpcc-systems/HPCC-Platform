@@ -1314,10 +1314,17 @@ public:
             {
                 if (*finger == '<')
                 {
-                    javaSignature.append("Ljava/util/Iterator;");
-                    finger = strchr(finger, ';');
-                    if (!finger)
-                        throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid java function signature %s", signature);
+                    // If there is a corresponding >, assume it's the 'extended' form and just strip out the bit from < to >
+                    const char *close = strchr(finger, '>');
+                    if (close)
+                        finger = close;
+                    else
+                    {
+                        javaSignature.append("Ljava/util/Iterator;");
+                        finger = strchr(finger, ';');
+                        if (!finger)
+                            throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid java function signature %s", signature);
+                    }
                 }
                 else
                     javaSignature.append(*finger);
@@ -2123,18 +2130,40 @@ public:
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
     {
         jvalue v;
-        if (*argsig == '[')
+        char argsigStart = *argsig;
+        switch (argsigStart)
         {
+        case '[':
+        case '<':
             ++argsig;
-            // At present, dataset parameters have to map to arrays. May support iterators later
-            if (*argsig != 'L')  // should tell us the type of the object we need to create to pass in
+            break;
+        case 'L':
+            if (strncmp(argsig, "Ljava/util/Iterator<", 20) == 0)
+            {
+                argsig += 20;
+                break;
+            }
+            /* no break */
+        default:
+            typeError("DATASET");
+        }
+        if (*argsig != 'L')  // should tell us the type of the object we need to create to pass in
+            typeError("DATASET");
+        // Class name is from the char after the L up to the first ;
+        const char *tail = strchr(argsig, ';');
+        if (!tail)
+            typeError("RECORD");
+        StringAttr className(argsig+1, tail - (argsig+1));
+        argsig = tail+1;
+        if (argsigStart=='L')
+        {
+            if (argsig[0] != '>' || argsig[1] != ';')
                 typeError("DATASET");
-            // Class name is from the char after the L up to the first ;
-            const char *tail = strchr(argsig, ';');
-            if (!tail)
-                typeError("RECORD");
-            StringAttr className(argsig+1, tail - (argsig+1));
-            argsig = tail+1;
+            argsig += 2;
+        }
+        if (argsigStart=='[')
+        {
+            // Pass in an array of objects
             PointerArrayOf<_jobject> allRows;
             const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
             assertex(typeInfo);
@@ -2156,18 +2185,9 @@ public:
             }
             v.l = array;
         }
-        else if (*argsig == '<') // An extension to the Java signatures, used to indicate
-                                  // that we will pass an iterator that generates objects of the specified type
+        else
         {
-            ++argsig;
-            if (*argsig != 'L')  // should tell us the type of the object we need to create to pass in
-                typeError("DATASET");
-            // Class name is from the char after the L up to the first ;
-            const char *tail = strchr(argsig, ';');
-            if (!tail)
-                typeError("RECORD");
-            StringAttr className(argsig+1, tail - (argsig+1));
-            argsig = tail+1;
+            // Pass in an iterator
             // Create a java object of type com.HPCCSystems.HpccUtils - this acts as a proxy for the iterator
             sharedCtx->JNIenv->ExceptionClear();
             jclass proxyClass = sharedCtx->JNIenv->FindClass("com/HPCCSystems/HpccUtils");
@@ -2183,8 +2203,6 @@ public:
             sharedCtx->checkException();
             v.l = proxy;
         }
-        else
-            typeError("DATASET");
         addArg(v);
     }
 

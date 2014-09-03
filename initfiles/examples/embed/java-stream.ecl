@@ -47,11 +47,14 @@ OUTPUT(jpassrec(ret));  // Passes an ECL record to a Java function
 // where the fields of the object in question are mapped by name to the fields in the ECL record.
 // When passing an iterator, we use a modified form of the function signature in the IMPORT statement, using a < to indicate "Iterator of"
 // followed by the name of the class of the objects that the iterator is to return. This is the one case where the output of javap -s cannot be used
-// directly to provide the signature of the java function being called.
+// directly to provide the signature of the java function being called. We can also use the "extended" signature of the method that is output by
+// javap -s -v, of the form 'JavaCat.passDataset:(Ljava/util/Iterator<LJavaCat;>;)I'
+//
 // To return a dataset, an iterator must be returned.
 
 INTEGER passDataset(LINKCOUNTED DATASET(jret) d) :=
   IMPORT(java, 'JavaCat.passDataset:(<LJavaCat;)I'); // Calls int passDataset(Iterator<JavaCat> d)
+// Note we could also use 'Ljava/util/Iterator<LJavaCat;>;)I' as the signature, but not 'Ljava/util/Iterator;)I' which is the signature output by javap -s
 
 DATASET(jret) passDataset2(LINKCOUNTED DATASET(jret) d) :=
   IMPORT(java, 'JavaCat.passDataset2:([LJavaCat;)Ljava/util/Iterator;'); // Calls Iterator<JavaCat> passDataset2(JavaCat d[])

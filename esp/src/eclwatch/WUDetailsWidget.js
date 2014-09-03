@@ -84,8 +84,8 @@ define([
         graphsWidgetLoaded: false,
         logsWidget: null,
         logsWidgetLoaded: false,
-        playgroundWidget: null,
-        playgroundWidgetLoaded: false,
+        eclWidget: null,
+        eclWidgetLoaded: false,
         xmlWidget: null,
         xmlWidgetLoaded: false,
         publishForm: null,
@@ -108,7 +108,7 @@ define([
             this.timersWidget = registry.byId(this.id + "_Timers");
             this.graphsWidget = registry.byId(this.id + "_Graphs");
             this.logsWidget = registry.byId(this.id + "_Logs");
-            this.playgroundWidget = registry.byId(this.id + "_Playground");
+            this.eclWidget = registry.byId(this.id + "_ECL");
             this.xmlWidget = registry.byId(this.id + "_XML");
             this.publishForm = registry.byId(this.id + "PublishForm");
             this.zapDescription = registry.byId(this.id + "ZapDescription");
@@ -285,11 +285,10 @@ define([
                 this.logsWidget.init({
                     Wuid: this.wu.Wuid
                 });
-            } else if (currSel.id == this.playgroundWidget.id && !this.playgroundWidgetLoaded) {
-                this.playgroundWidgetLoaded = true;
-                this.playgroundWidget.init({
-                    Wuid: this.wu.Wuid,
-                    Target: this.wu.Cluster
+            } else if (currSel.id == this.eclWidget.id && !this.eclWidgetLoaded) {
+                this.eclWidgetLoaded = true;
+                this.eclWidget.init({
+                    Wuid: this.wu.Wuid
                 });
             } else if (currSel.id == this.xmlWidget.id && !this.xmlWidgetLoaded) {
                 this.xmlWidgetLoaded = true;
