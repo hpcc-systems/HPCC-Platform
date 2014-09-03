@@ -1326,25 +1326,14 @@ bool WsWuInfo::getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem
 StringBuffer& WsWuInfo::getResultNodeGroup(const char* fileName, StringBuffer& nodeGroup)
 {
     if (!fileName || !*fileName)
-        return nodeGroup;
-    Owned<IPropertyTree> f = cw->getFile(fileName);
-    if (!f)
-        return nodeGroup;
-    const char* cluster = f->queryProp("@cluster");
-    if (!cluster || !*cluster)
-        return nodeGroup;
+        throw MakeStringException(ECLWATCH_INVALID_INPUT,"Result file not specified");
 
-    StringArray envClusters, envGroups, envTargets, envQueues;
-    getEnvironmentThorClusterNames(envClusters, envGroups, envTargets, envQueues);
-    getEnvironmentHThorClusterNames(envClusters, envGroups, envTargets);
-    ForEachItemIn(i, envClusters)
+    Owned<IPropertyTree> f = cw->getFile(fileName);
+    if (f)
     {
-        const char *clusterName = envClusters.item(i);
-        if (clusterName && strieq(clusterName, cluster))
-        {
-            nodeGroup.set(envGroups.item(i));
-            break;
-        }
+        const char* cluster = f->queryProp("@cluster");
+        if (cluster && *cluster)
+            getEnvironmentClusterNodeGroup(cluster, nodeGroup);
     }
     return nodeGroup;
 }

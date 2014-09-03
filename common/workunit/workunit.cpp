@@ -4884,6 +4884,35 @@ unsigned getEnvironmentHThorClusterNames(StringArray &eclAgentNames, StringArray
     return eclAgentNames.ordinality();
 }
 
+StringBuffer& getEnvironmentClusterNodeGroup(const char* cluster, StringBuffer& nodeGroup)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+        return nodeGroup;
+
+    VStringBuffer path("Software/ThorCluster[@name=\"%s\"]", cluster);
+    Owned<IPropertyTree> root = &env->getPTree();
+    IPropertyTree *node = root->queryPropTree(path.str());
+    if (!node)
+    {
+        path.setf("Software/RoxieCluster[@name=\"%s\"]", cluster);
+        node = root->queryPropTree(path.str());
+    }
+    if (node)
+    {
+        const char *groupName = node->queryProp("@nodeGroup");
+        if (!groupName||!*groupName)
+            groupName = cluster;
+        nodeGroup.set(groupName);
+    }
+    else //HThor
+    {
+        nodeGroup.set("hthor__").append(cluster);
+    }
+    return nodeGroup;
+}
+
 
 IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const 
 {
