@@ -63,10 +63,6 @@ include_directories (
 if (WIN32)
     ADD_DEFINITIONS( -D_LIB )
     HPCC_ADD_LIBRARY( soaplib STATIC ${SRCS} )
-    add_dependencies (soaplib 
-        jlib
-        espscm
-        )
 else (WIN32)
     HPCC_ADD_LIBRARY( soaplib SHARED ${SRCS} )
     install ( TARGETS soaplib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
@@ -76,5 +72,6 @@ else (WIN32)
 endif (WIN32)
 add_dependencies (soaplib 
     jlib
+    espscm
     )
 
