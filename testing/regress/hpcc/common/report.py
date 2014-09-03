@@ -60,7 +60,7 @@ class Report:
             for result in self.report._pass:
                 try:
                     if result.Diff !=  '':
-                        passStr += repr(result.Diff)
+                        passStr += str(result.Diff)
                         passStr += "\n"
                 except AttributeError as ae:
                     logging.debug("AttributeError Exception:'%s'",  repr(ae))
