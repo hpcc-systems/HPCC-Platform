@@ -23242,6 +23242,8 @@ public:
                 } while (readHelper.next());
                 remote.injectResult(result.getClear());
                 callback.finishedRow();
+                if (accepted>=choosenLimit)
+                    return true;
             }
         }
         return false;
