@@ -1359,7 +1359,7 @@
         <title>Hex Preview</title>
 
         <para>The Hex Preview shows the contents of a file on the landing zone
-        in hexadecimal form. If the file large then only the first 32k
+        in hexadecimal form. If the file is large, then only the first 32k
         display. Hex preview is designed for fixed length files, although it
         can also work for delimited files but may be limited in that
         regards.</para>
@@ -1394,62 +1394,7 @@
         role="bold">EBCDIC:</emphasis> for it to display properly.</para>
       </sect2>
 
-      <sect2 id="LZ_Spray">
-        <title>Spray Files</title>
-
-        <para>You can spray files to your clusters from the Landing Zone page.
-        <orderedlist>
-            <listitem>
-              <para>Select the file from your drop zone by checking the box
-              next to it.</para>
-            </listitem>
-
-            <listitem>
-              <para>Select the appropriate drop menu option for the type of
-              spray you want.</para>
-
-              <para>For example, to spray a delimited file, select the
-              <emphasis role="bold">Delimited</emphasis> drop menu
-              option.</para>
-
-              <para><figure>
-                  <title>Landing Zone Spray</title>
-
-                  <mediaobject>
-                    <imageobject>
-                      <imagedata fileref="../../images/ECLWA441.jpg" />
-                    </imageobject>
-                  </mediaobject>
-                </figure></para>
-            </listitem>
-
-            <listitem>
-              <para>Fill in the values as appropriate for the spray.</para>
-            </listitem>
-
-            <listitem>
-              <para>Press the <emphasis role="bold">Spray</emphasis> button to
-              spray the file.</para>
-            </listitem>
-          </orderedlist></para>
-
-        <sect3 id="multi-fileSpray">
-          <title>Spray multiple files</title>
-
-          <para>You can choose to spray multiple files with the multi-file
-          spray feature. This feature is useful for spraying a number of files
-          of the same type and the same scope using the same spray
-          options.</para>
-
-          <para>Fixed (length) files can have different record lengths and XML
-          files can have different row tags which must be specified
-          individually for each file. To specify these differences select the
-          files you want to spray and the spray type. You will then see the
-          files listed. Enter the record length or row tag information for
-          each file if using the Fixed or XML spray types, then check all
-          other applicable options and Spray.</para>
-        </sect3>
-      </sect2>
+      <!-- ***Moved SPRAY Files Section over to DH-Mod1.xml: to avoid duplicate data*** -->
     </sect1>
 
     <sect1 id="Pub_Query">

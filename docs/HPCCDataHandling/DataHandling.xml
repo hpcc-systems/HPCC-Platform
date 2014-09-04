@@ -138,6 +138,10 @@
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="Data_Handling_Methods"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                xpointer="Data_Handling_Using_ECL-Watch"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />  
   </chapter>
 
   <chapter>
