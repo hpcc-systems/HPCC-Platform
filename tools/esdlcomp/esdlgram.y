@@ -387,7 +387,7 @@ EnumItemBare
     CurParam = new ParamInfo;
     CurParam->name = strdup($1.getName());
     CurParam->kind = TK_ENUM;
-    AddMetaTag(new MetaTagInfo("enum", VStrBuffer("\"%s\"", $1.getName()).str()));
+    AddMetaTag(new MetaTagInfo("enum", VStringBuffer("\"%s\"", $1.getName()).str()));
     CurParam->tags = getClearCurMetaTags();
 
     AddEspProperty();
@@ -1554,7 +1554,7 @@ MetaTagInfo* getClearCurMetaTags()
 
         if (tagNames.find(t->getName())!= tagNames.end())
         {
-            VStrBuffer msg("Attribute '%s' are declared more than once", t->getName());
+            VStringBuffer msg("Attribute '%s' are declared more than once", t->getName());
             yyerror(msg.str());
         }
         else

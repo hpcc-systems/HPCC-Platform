@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,29 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef __ESDL_UTILS_HPP__
-#define __ESDL_UTILS_HPP__
+#ifndef __ESDL_DECL_HPP__
+#define __ESDL_DECL_HPP__
 
-#include "esdldecl.hpp"
-#include "platform.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-
-// directory
-bool es_checkDirExists(const char * filename);
-void es_createDirectory(const char* dir);
-
-// create file
-int es_createFile(const char* src, const char* ext);
-int es_createFile(const char* src, const char* tail, const char* ext);
-
-// filenames
-char * es_changeext(const char *fn,const char *ext);
-char * es_changetail(const char *fn,const char *tail, const char *ext);
-bool es_hasext(const char *fn,const char *ext);
-char * es_gettail(const char *fn);
+#ifdef _WIN32
+ #ifdef ESDLCOMP_EXPORTS
+  #define esdl_decl __declspec(dllexport)
+ #else
+  #define esdl_decl __declspec(dllimport)
+ #endif
+#else
+ #define esdl_decl
+#endif
 
 #endif

@@ -21,10 +21,11 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include "esdl_utils.hpp"
 #include "platform.h"
 #include "jmutex.hpp"
 #include "jstring.hpp"
+#include "jfile.hpp"
+#include "esdldecl.hpp"
 
 #undef YYSTYPE
 #define YYSTYPE attribute
@@ -371,7 +372,7 @@ inline const char *getMetaString(MetaTagInfo *list, const char *tag, const char 
     return (mti!=NULL) ? mti->getString() : def_val;
 }
 
-inline bool getMetaStringValue(MetaTagInfo *list, StrBuffer &val, const char *tag)
+inline bool getMetaStringValue(MetaTagInfo *list, StringBuffer &val, const char *tag)
 {
     MetaTagInfo *mti=findMetaTag(list, tag);
     if (!mti)
@@ -403,7 +404,7 @@ inline const char* getMetaConstId(MetaTagInfo *list, const char *tag, const char
 
 // return: true if the ver tag is defined
 bool hasMetaVerInfo(MetaTagInfo *list, const char* tag);
-bool getMetaVerInfo(MetaTagInfo *list, const char* tag, StrBuffer& s);
+bool getMetaVerInfo(MetaTagInfo *list, const char* tag, StringBuffer& s);
 
 class ParamInfo
 {
@@ -476,7 +477,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -496,7 +497,7 @@ public:
         return ::hasMetaVerInfo(tags,tag);
     }
 
-    bool getMetaVerInfo(const char* tag, StrBuffer& s)
+    bool getMetaVerInfo(const char* tag, StringBuffer& s)
     {
         return ::getMetaVerInfo(tags,tag,s);
     }
@@ -534,7 +535,7 @@ public:
             const char *finger = strchr(xsd_type, ':');
             if (finger)
                 xsd_type=finger+1;
-            StrBuffer TypeName(xsd_type);
+            StringBuffer TypeName(xsd_type);
             TypeName.replace('\"', 0);
             out.appendf(" complex_type='%s'", TypeName.str());
         }
@@ -599,7 +600,7 @@ public:
 
 private:
     char      *xsdtype;
-    StrBuffer *m_arrayImplType;
+    StringBuffer *m_arrayImplType;
 };
 
 class ProcInfo
@@ -686,7 +687,7 @@ public:
       out.appendf("\t<EsdlInclude file='%s'/>\n", pathstr.str());
    }
 
-   StrBuffer pathstr;
+   StringBuffer pathstr;
    IncludeInfo  *next;
 };
 
@@ -707,7 +708,7 @@ public:
        out.appendf("\t<EsdlVersion name='%s' version='%f' />\n", version_name.str(), version_value);
    }
 
-   StrBuffer version_name;
+   StringBuffer version_name;
    double version_value;
    VersionInfo *next;
 };
@@ -872,7 +873,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1062,7 +1063,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1073,7 +1074,7 @@ public:
         return ::getMetaInt(tags, tag, def_val);
     }
 
-    bool getMetaVerInfo(const char* tag, StrBuffer& s)
+    bool getMetaVerInfo(const char* tag, StringBuffer& s)
     {
         return ::getMetaVerInfo(tags,tag,s);
     }
@@ -1131,7 +1132,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1177,7 +1178,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1247,7 +1248,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1282,7 +1283,7 @@ public:
 };
 
 
-class ESDLcompiler
+class esdl_decl ESDLcompiler
 {
 public:
     ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes);
@@ -1307,13 +1308,13 @@ public:
     }
 
     char* filename;
-    StrBuffer name;
+    StringBuffer name;
 
 private:
     bool outputIncludes;
     int esxdlo;
     char* packagename;
-    StrBuffer srcDir;
+    StringBuffer srcDir;
     StringBuffer esxdlcontent;
 
 public:
