@@ -1082,16 +1082,15 @@ char* getTargetBase(const char* outDir, const char* src)
         // copy the file name
         buf[len] = '/';
         strcpy(buf+len+1, p);
-        //printf("src: %s. dir: %s.\n", src,outDir);
-        //printf("buf: %s\n", buf);
         return buf;
     }
     else
         return strdup(src);
 }
 
-ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir)
+ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir, bool outputIncludes_)
 {
+    outputIncludes = outputIncludes_;
     modules = NULL;
     enums = NULL;
     apis=NULL;
@@ -1231,7 +1230,7 @@ void ESDLcompiler::write_esxdl()
         vi->toString(esxdlcontent);
     }
 
-    if (esxdlo > 0) // This only makes sense if outputting to file
+    if(outputIncludes)
     {
         IncludeInfo * ii;
         for (ii=hcp->includes;ii;ii=ii->next)

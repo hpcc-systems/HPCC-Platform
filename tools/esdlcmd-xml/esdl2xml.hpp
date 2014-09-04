@@ -45,7 +45,7 @@ public:
     void setVerbose(bool verbose){optVerbose = verbose;};
     bool getVerbose(){return optVerbose;};
 
-    void transform(const char * source, const char * outdir="" ,StringBuffer * out=NULL)
+    void transform(const char * source, const char * outdir="", StringBuffer * out=NULL, bool outputIncludes=true)
     {
         if (added.getValue(source) == false)
         {
@@ -56,7 +56,7 @@ public:
                     fprintf(stdout, "Output directory not specified\n");
             }
 
-            ESDLcompiler hc(source, out==NULL, outdir);
+            ESDLcompiler hc(source, out==NULL, outdir, outputIncludes);
             hc.Process();
             if (out != NULL)
                 out->append(hc.getEsxdlContent());
@@ -83,6 +83,7 @@ public:
 protected:
     bool      optRecursive;
     bool      optVerbose;
+
     AddedHash added;
 };
 
