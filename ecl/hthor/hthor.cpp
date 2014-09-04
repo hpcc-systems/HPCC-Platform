@@ -8977,7 +8977,10 @@ bool CHThorXmlReadActivity::openNext()
             inputfileiostream.setown(createIOStream(inputfileio));
 
         OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
-        xmlParser.setown(createXMLParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?ptr_noRoot:ptr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        if (kind==TAKjsonread)
+            xmlParser.setown(createJSONParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?ptr_noRoot:ptr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        else
+            xmlParser.setown(createXMLParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?ptr_noRoot:ptr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
         return true;
     }
     return false;

@@ -1674,7 +1674,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateCompound(IHqlExpression * tran
         return NULL;
     IHqlExpression * tableExpr = queryRoot(transformed);
     node_operator modeOp = queryTableMode(tableExpr);
-    if (modeOp == no_csv || modeOp == no_xml)
+    if (modeOp == no_csv || modeOp == no_xml || modeOp == no_json)
         return NULL;
 
     if (isLimitedDataset(child) && !isSimpleCountExistsAggregate(transformed, true, false))

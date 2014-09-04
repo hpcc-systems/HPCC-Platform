@@ -16428,12 +16428,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
 void HqlCppTranslator::doBuildXmlReadMember(ActivityInstance & instance, IHqlExpression * expr, const char * functionName, bool & usesContents)
 {
+    IHqlExpression * mode = expr->queryChild(2);
+    node_operator modeType = mode->getOperator();
+
     StringBuffer s, xmlInstanceName;
     usesContents = false;
     if (isValidXmlRecord(expr->queryRecord()))
     {
         StringBuffer xmlFactoryName;
-        getUniqueId(xmlInstanceName.append("xml"));
+        getUniqueId(xmlInstanceName.append((modeType==no_json) ? "json" : "xml"));
 
         buildXmlReadTransform(expr, xmlFactoryName, usesContents);
         instance.classctx.addQuoted(s.clear().append("Owned<IXmlToRowTransformer> ").append(xmlInstanceName).append(";"));

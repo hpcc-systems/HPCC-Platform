@@ -340,6 +340,7 @@ public:
                 ret = createTopNActivityMaster(this);
                 break;
             case TAKxmlread:
+            case TAKjsonread:
                 ret = createXmlReadActivityMaster(this);
                 break;
             case TAKxmlwrite:

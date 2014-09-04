@@ -15,16 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
+//noroxie
 phoneRecord :=
             RECORD
-string5         areaCode{xpath('areaCode')};
-udecimal12      number{xpath('number')};
+string5         areaCode{xpath('@areaCode')};
+udecimal12      number{xpath('@number')};
             END;
 
 contactrecord :=
             RECORD
 phoneRecord     phone;
-boolean         hasemail{xpath('hasEmail')};
+boolean         hasemail{xpath('@hasEmail')};
                 ifblock(self.hasemail)
 string              email;
                 end;
@@ -56,7 +57,15 @@ namesTable := dataset([
         {'Halliday','Abigail','09876',654321,false,'','',false,[{'The cat in the hat','Suess'},{'Wolly the sheep',''}], ['Red','Yellow']}
         ], personRecord);
 
-output(namesTable,,'REGRESS::TEMP::output.json',overwrite, json('jrow'));
+output(namesTable,,'REGRESS::TEMP::output_object_namedArray.json',overwrite, json);
+readObjectNamedArray := dataset('REGRESS::TEMP::output_object_namedArray.json', personRecord, json('*/Row'));
+output(readObjectNamedArray, named('ObjectNamedArray'));
 
-//will read back data and add workunit output when json read is implemented
+output(namesTable,,'REGRESS::TEMP::output_array.json',overwrite, json('', heading('[', ']')));
+readArrayOfRows := dataset('REGRESS::TEMP::output_array.json', personRecord, json('*/*'));
+output(readArrayOfRows, named('ArrayOfRows'));
+
+output(namesTable,,'REGRESS::TEMP::output_noroot.json',overwrite, json('', heading('','')));
+readNoRootRows := dataset('REGRESS::TEMP::output_noroot.json', personRecord, json('*', NOROOT));
+output(readNoRootRows, named('noRootRows'));
 

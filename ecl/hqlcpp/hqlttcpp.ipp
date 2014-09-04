@@ -242,7 +242,7 @@ public:
         return (splitCount == 1);
     }
     inline void noteUsage() { if (splitCount < 10) splitCount++; }
-    inline bool isBinary() const { return mode != no_csv && mode != no_xml; }
+    inline bool isBinary() const { return mode != no_csv && mode != no_xml && mode != no_json; }
     inline bool hasAnyLimit() const { return isLimited || hasChoosen; }
     void reset();
 

@@ -920,6 +920,7 @@ enum ThorActivityKind
     TAKunknowndenormalizegroup3,
     TAKlastdenormalizegroup,
     TAKjsonwrite,
+    TAKjsonread,
 
     TAKlast
 };

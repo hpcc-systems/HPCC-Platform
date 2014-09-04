@@ -6849,8 +6849,10 @@ public:
     }
     bool rootNext()
     {
-        if (!noRoot || !checkReadNext() || !checkSkipWS())
+        if (!noRoot)
             return false;
+        if (!checkReadNext() || !checkSkipWS())
+            return true;
         if (','!=nextChar)
             expecting(",");
         return true;
@@ -6901,7 +6903,7 @@ public:
 
     virtual bool next()
     {
-        skipWS();
+        checkSkipWS();
         switch (state)
         {
             case headerStart:

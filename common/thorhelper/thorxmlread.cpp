@@ -1614,7 +1614,7 @@ class CXMLParse : public CInterface, implements IXMLParse
     StringAttr xpath;
     IXMLSelect *iXMLSelect;  // NOTE - not linked - creates circular links
     PTreeReaderOptions xmlOptions;
-    bool step, contentRequired;
+    bool step, contentRequired, isJson;
 
     class CXMLMaker : public CInterface, implements IPTreeMaker
     {
@@ -1910,12 +1910,12 @@ class CXMLParse : public CInterface, implements IXMLParse
 public:
     IMPLEMENT_IINTERFACE;
 
-    CXMLParse(const char *fName, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(fName); }
-    CXMLParse(IFile &ifile, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(ifile); }
-    CXMLParse(IFileIO &fileio, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(fileio); }
-    CXMLParse(ISimpleReadStream &stream, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(stream); }
-    CXMLParse(const void *buffer, unsigned bufLen, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(buffer, bufLen); }
-    CXMLParse(const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); }
+    CXMLParse(const char *fName, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(fName); }
+    CXMLParse(IFile &ifile, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(ifile); }
+    CXMLParse(IFileIO &fileio, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(fileio); }
+    CXMLParse(ISimpleReadStream &stream, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(stream); }
+    CXMLParse(const void *buffer, unsigned bufLen, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(buffer, bufLen); }
+    CXMLParse(const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); }
     ~CXMLParse()
     {
         ::Release(iXMLMaker);
@@ -1946,6 +1946,7 @@ public:
         Owned<IIOStream> stream = createIOStream(&fileio);
         go(*stream);
     }
+
     void go(ISimpleReadStream &stream)
     {
         if (contentRequired)
@@ -1953,8 +1954,13 @@ public:
             // only need marking stream if fetching xml text content.
             Owned<CMarkReadStream> markingStream = new CMarkReadStream(*LINK(&stream));
             iXMLMaker->setMarkingStream(*markingStream);
-            xmlReader = createPullXMLStreamReader(*markingStream, *iXMLMaker, xmlOptions);
+            if (isJson)
+                xmlReader = createPullJSONStreamReader(*markingStream, *iXMLMaker, xmlOptions);
+            else
+                xmlReader = createPullXMLStreamReader(*markingStream, *iXMLMaker, xmlOptions);
         }
+        else if (isJson)
+            xmlReader = createPullJSONStreamReader(stream, *iXMLMaker, xmlOptions);
         else
             xmlReader = createPullXMLStreamReader(stream, *iXMLMaker, xmlOptions);
         if (!step)
@@ -1971,7 +1977,10 @@ public:
             Owned<CMarkReadBase> markingStream = new CMarkRead(buffer, bufLen);
             iXMLMaker->setMarkingStream(*markingStream);
         }
-        xmlReader = createPullXMLBufferReader(buffer, bufLen, *iXMLMaker, xmlOptions);
+        if (isJson)
+            xmlReader = createPullJSONBufferReader(buffer, bufLen, *iXMLMaker, xmlOptions);
+        else
+            xmlReader = createPullXMLBufferReader(buffer, bufLen, *iXMLMaker, xmlOptions);
         if (!step)
         {
             xmlReader->load();
@@ -1986,7 +1995,10 @@ public:
             Owned<CMarkReadBase> markingStream = new CMarkRead(str, strlen(str));
             iXMLMaker->setMarkingStream(*markingStream);
         }
-        xmlReader = createPullXMLStringReader(str, *iXMLMaker, xmlOptions);
+        if (isJson)
+            xmlReader = createPullJSONStringReader(str, *iXMLMaker, xmlOptions);
+        else
+            xmlReader = createPullXMLStringReader(str, *iXMLMaker, xmlOptions);
         if (!step)
         {
             xmlReader->load();
@@ -2025,6 +2037,27 @@ IXMLParse *createXMLParse(const void *buffer, unsigned bufLen, const char *xpath
 IXMLParse *createXMLParseString(const char *string, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
 {
     CXMLParse *parser = new CXMLParse(xpath, iselect, xmlOptions, contentRequired);
+    parser->provideXML(string);
+    return parser;
+}
+
+IXMLParse *createJSONParse(const char *filename, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
+{
+    return new CXMLParse(filename, xpath, iselect, xmlOptions, contentRequired, true, true);
+}
+IXMLParse *createJSONParse(ISimpleReadStream &stream, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
+{
+    return new CXMLParse(stream, xpath, iselect, xmlOptions, contentRequired, true, true);
+}
+
+IXMLParse *createJSONParse(const void *buffer, unsigned bufLen, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
+{
+    return new CXMLParse(buffer, bufLen, xpath, iselect, xmlOptions, contentRequired, true, true);
+}
+
+IXMLParse *createJSONParseString(const char *string, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
+{
+    CXMLParse *parser = new CXMLParse(xpath, iselect, xmlOptions, contentRequired, true, true);
     parser->provideXML(string);
     return parser;
 }

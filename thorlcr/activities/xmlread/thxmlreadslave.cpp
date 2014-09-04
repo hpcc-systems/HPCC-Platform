@@ -82,7 +82,10 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             }
             inputIOstream.setown(createBufferedIOStream(stream));
             OwnedRoxieString xmlIterator(activity.helper->getXmlIteratorPath());
-            xmlParser.setown(createXMLParse(*inputIOstream.get(), xmlIterator, *this, (0 != (TDRxmlnoroot & activity.helper->getFlags()))?ptr_noRoot:ptr_none, 0 != (TDRusexmlcontents & activity.helper->getFlags())));
+            if (activity.queryContainer().getKind()==TAKjsonread)
+                xmlParser.setown(createJSONParse(*inputIOstream.get(), xmlIterator, *this, (0 != (TDRxmlnoroot & activity.helper->getFlags()))?ptr_noRoot:ptr_none, 0 != (TDRusexmlcontents & activity.helper->getFlags())));
+            else
+                xmlParser.setown(createXMLParse(*inputIOstream.get(), xmlIterator, *this, (0 != (TDRxmlnoroot & activity.helper->getFlags()))?ptr_noRoot:ptr_none, 0 != (TDRusexmlcontents & activity.helper->getFlags())));
         }
         virtual void close(CRC32 &fileCRC)
         {
