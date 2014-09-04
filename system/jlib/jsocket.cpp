@@ -1543,7 +1543,8 @@ EintrRetry:
                 goto EintrRetry;
             }
             else {
-                LOGERR2(err,1,"readtms");
+                VStringBuffer errMsg("readtms(timeoutms=%d)", timeoutms);
+                LOGERR2(err,1,errMsg.str());
                 if ((err==ECONNRESET)||(err==EINTRCALL)||(err==ECONNABORTED)) {
                     errclose();
                     err = JSOCKERR_broken_pipe;
