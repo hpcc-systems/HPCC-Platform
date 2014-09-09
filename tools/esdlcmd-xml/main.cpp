@@ -34,7 +34,7 @@ void usage(const char* programName)
     printf("Output:       filename.xml\n");
 
     puts("Available options:");
-    puts(" -?/-h: show this usage page");
+    puts(" -?/-h/--help: show this usage page");
     exit(1);
 }
 
@@ -51,7 +51,7 @@ void parseCommandLine(int argc, char* argv[])
     {
         if (*argv[i]=='-')
         {
-            if (stricmp(argv[i], "-?")==0 || stricmp(argv[i], "-h")==0)
+            if (stricmp(argv[i], "-?")==0 || stricmp(argv[i], "-h")==0 || stricmp(argv[i], "--help")==0)
                 usage(argv[0]);
 
             else
