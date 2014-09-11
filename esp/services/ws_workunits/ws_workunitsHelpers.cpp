@@ -1687,9 +1687,9 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
 
     StringBuffer pidstr;
     if (agentPid && *agentPid)
-        pidstr.appendf(" %s ", agentPid);
+        pidstr.appendf("%s ", agentPid);
     else
-        pidstr.appendf(" %5d ", cw->getAgentPID());
+        pidstr.appendf("%d ", cw->getAgentPID());
     char const * pidchars = pidstr.str();
     while(!eof)
     {
@@ -1708,8 +1708,24 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
                 break;
         }
 
+        //Locate PID column index
+        int idxPID = 0;
+        const char * p = line.str();
+        for (int x = 0; *p && x < 3; x++)
+        {
+            p = strchr(p, ' ');
+            if (!p)
+                break;
+            do
+            {
+                p++;
+            } while (*p == ' ');
+            if (x == 2 && *p)
+                idxPID = p - line.str();
+        }
+
         //Retain all rows that match a unique program instance - by retaining all rows that match a pid
-        if(strstr(line.str(), pidchars))
+        if (idxPID && 0==strncmp(line.str() + idxPID, pidchars, strlen(pidchars)))
         {
             //Check if this is a new instance using line sequence number
             if (strncmp(line.str(), "00000000", 8) == 0)
