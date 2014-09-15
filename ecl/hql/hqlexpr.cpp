@@ -3951,7 +3951,8 @@ void CHqlExpression::setInitialHash(unsigned typeHash)
 {
     hashcode = op+typeHash;
     unsigned kids = operands.ordinality();
-    hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
+    if (kids)
+        hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
 }
 
 void CHqlExpression::sethash()
