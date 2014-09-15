@@ -750,7 +750,7 @@ bool hasMetaVerInfo(MetaTagInfo *list, const char* tag)
     return false;
 }
 
-bool getMetaVerInfo(MetaTagInfo *list, const char* tag, StrBuffer& s)
+bool getMetaVerInfo(MetaTagInfo *list, const char* tag, StringBuffer& s)
 {
     double ver = getMetaDouble(list,tag,-1);
     if (ver>0) {
@@ -823,14 +823,14 @@ const char* ParamInfo::getArrayImplType()
         metatype[0] = 0;
         cat_type(metatype);
         esp_xlate_info *xlation=esp_xlat(metatype, false);
-        m_arrayImplType = new StrBuffer(xlation->array_type);
+        m_arrayImplType = new StringBuffer(xlation->array_type);
     }
     else
     {
         if (kind == TK_ESPENUM)
-            m_arrayImplType = new VStrBuffer("%sArray", typname);
+            m_arrayImplType = new VStringBuffer("%sArray", typname);
         else
-            m_arrayImplType = new VStrBuffer("IArrayOf<IConst%s>", typname);
+            m_arrayImplType = new VStringBuffer("IArrayOf<IConst%s>", typname);
     }
 
     return m_arrayImplType->str();

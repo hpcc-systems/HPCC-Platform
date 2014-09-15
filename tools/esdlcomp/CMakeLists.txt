@@ -47,7 +47,7 @@ include_directories (
          ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-ADD_DEFINITIONS( -D_CONSOLE -O0 )
+ADD_DEFINITIONS( -D_CONSOLE -DESDLCOMP_EXPORTS -O0 )
 HPCC_ADD_LIBRARY ( esdlcomp SHARED ${SRCS} )
 
 # The library esdlcomp is built in HPCCPlatform as a build-time
