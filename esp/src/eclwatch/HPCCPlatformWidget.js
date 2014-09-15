@@ -239,7 +239,7 @@ define([
         },
 
         getTitle: function () {
-            return "HPCC Platform";
+            return "ECL Watch";
         },
 
         checkIfAdmin: function (user) {
