@@ -16023,6 +16023,14 @@ public:
     {
     }
 
+    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    {
+        CRoxieServerNaryActivity::onCreate(_ctx, _colocalParent);
+        ICodeContext * codectx = ctx->queryCodeContext();
+        inputAllocator.setown(codectx->getRowAllocator(helper.queryInputMeta(), activityId));
+        outputAllocator.setown(codectx->getRowAllocator(helper.queryOutputMeta(), activityId));
+    }
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerNaryActivity::start(parentExtractSize, parentExtract, paused);
@@ -16033,9 +16041,6 @@ public:
             processor.addInput(stepInput);
         }
 
-        ICodeContext * codectx = ctx->queryCodeContext();
-        Owned<IEngineRowAllocator> inputAllocator = codectx->getRowAllocator(helper.queryInputMeta(), activityId);
-        Owned<IEngineRowAllocator> outputAllocator = codectx->getRowAllocator(helper.queryOutputMeta(), activityId);
         processor.beforeProcessing(inputAllocator, outputAllocator);
     }
 
@@ -16081,6 +16086,8 @@ public:
 protected:
     IHThorNWayMergeJoinArg & helper;
     CMergeJoinProcessor & processor;
+    Owned<IEngineRowAllocator> inputAllocator;
+    Owned<IEngineRowAllocator> outputAllocator;
 };
 
 
