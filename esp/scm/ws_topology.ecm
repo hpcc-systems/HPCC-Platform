@@ -137,6 +137,13 @@ ESPStruct TpBinding
     string Protocol;
 
 };
+
+ESPStruct TpEspServicePlugin
+{
+    string Name;
+    string Type;
+};
+
 //  ===========================================================================
 ESPStruct TpEspServer
 {
@@ -565,6 +572,15 @@ ESPresponse [exceptions_inline,encode(0)] TpThorStatusResponse
     int AutoRefresh;
 };
 
+ESPrequest TpGetServicePluginsRequest
+{
+};
+
+ESPresponse [exceptions_inline,encode(0)] TpGetServicePluginsResponse
+{
+    ESParray<ESPstruct TpEspServicePlugin, Plugin> Plugins;
+};
+
 ESPservice [noforms, version("1.20"), default_client_version("1.20"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
@@ -603,6 +619,7 @@ ESPservice [noforms, version("1.20"), default_client_version("1.20"), exceptions
     ESPmethod [resp_xsl_default("/esp/xslt/tplog.xslt")] TpLogFile(TpLogFileRequest, TpLogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/tplogdisplay.xslt")] TpLogFileDisplay(TpLogFileRequest, TpLogFileResponse);
     ESPmethod TpGetComponentFile(TpGetComponentFileRequest, TpGetComponentFileResponse);
+    ESPmethod TpGetServicePlugins(TpGetServicePluginsRequest, TpGetServicePluginsResponse);
     ESPmethod TpListTargetClusters(TpListTargetClustersRequest, TpListTargetClustersResponse);
 
     ESPmethod SystemLog(SystemLogRequest, SystemLogResponse);
