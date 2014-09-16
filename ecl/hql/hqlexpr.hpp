@@ -900,6 +900,7 @@ public:
         expandCallsWhenBound = DEFAULT_EXPAND_CALL;
         ignoreUnknownImport = false;
         _clear(metaState);
+        aborting = false;
     }
 
     void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child);
@@ -918,6 +919,8 @@ public:
     inline IPropertyTree * getMetaTree() { return LINK(metaTree); }
     inline IPropertyTree * queryArchive() const { return archive; }
     inline IEclRepository * queryRepository() const { return eclRepository; }
+    inline bool isAborting() const { return aborting; }
+    inline void setAborting() { aborting = true; }
 
 public:
     Linked<IPropertyTree> archive;
@@ -929,6 +932,7 @@ public:
     CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;
     bool ignoreUnknownImport;
+    bool aborting;
 
 private:
     bool checkBeginMeta();
@@ -957,7 +961,7 @@ public:
     {
         errs.set(other.errs); 
         functionCache = other.functionCache; 
-        curAttrTree.set(other.curAttrTree); 
+        curAttrTree.set(other.curAttrTree);
     }
     HqlLookupContext(HqlParseContext & _parseCtx, IErrorReceiver * _errs)
     : parseCtx(_parseCtx), errs(_errs)
@@ -980,6 +984,8 @@ public:
     inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }
     inline HqlParseContext & queryParseContext() const { return parseCtx; }
     inline unsigned numErrors() const { return errs ? errs->errCount() : 0; }
+    inline bool isAborting() const { return parseCtx.isAborting(); }
+    inline void setAborting() { parseCtx.setAborting(); }
 
 protected:
 
