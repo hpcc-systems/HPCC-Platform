@@ -377,6 +377,16 @@
                                 </td>
                             </tr>
                         </xsl:if>
+                        <xsl:if test="count(Exceptions/ECLException[Severity='Alert'])">
+                            <tr>
+                                <th>Alert:</th>
+                                <td>
+                                    <table>
+                                        <xsl:apply-templates select="Exceptions/ECLException[Severity='Alert']"/>
+                                    </table>
+                                </td>
+                            </tr>
+                        </xsl:if>
                     </table>
                 </form>
                 <table>

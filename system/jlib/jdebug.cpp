@@ -1888,9 +1888,9 @@ public:
 #define KERN_NOTICE "<5>"   // normal but significant condition
 #define KERN_INFO   "<6>"   // informational
 #define KERN_DEBUG  "<7>"   // debug-level messages
-#define KMSGTEST(S) if (memcmp(p,S,3)==0) ln.append(#S)
+#define KMSGTEST(S) if (memcmp(p,S,3)==0) { ln.append(#S); level = p[1]-'0'; }
 
-    void printKLog()
+    void printKLog(IPerfMonHook *hook)
     {
         const char *p;
         size32_t sz = getKLog(p);
@@ -1899,14 +1899,15 @@ public:
         while (p!=e) {
             if (*p=='<') {
                 ln.clear();
-                KMSGTEST(KERN_EMERG);
-                else KMSGTEST(KERN_ALERT);
-                else KMSGTEST(KERN_CRIT);
-                else KMSGTEST(KERN_ERR);
-                else KMSGTEST(KERN_WARNING);
-                else KMSGTEST(KERN_NOTICE);
-                else KMSGTEST(KERN_INFO);
-                else KMSGTEST(KERN_DEBUG);
+                int level = -1;
+                KMSGTEST(KERN_EMERG)
+                else KMSGTEST(KERN_ALERT)
+                else KMSGTEST(KERN_CRIT)
+                else KMSGTEST(KERN_ERR)
+                else KMSGTEST(KERN_WARNING)
+                else KMSGTEST(KERN_NOTICE)
+                else KMSGTEST(KERN_INFO)
+                else KMSGTEST(KERN_DEBUG)
                 else {
                     ln.append("KERN_UNKNOWN");
                     p -= 3;
@@ -1915,7 +1916,10 @@ public:
                 ln.append(": ");
                 while ((p!=e)&&(*p!='\n'))
                     ln.append(*(p++));
-                PROGLOG("%s",ln.str());
+                if (hook)
+                    hook->log(level, ln.str());
+                else
+                    PROGLOG("%s",ln.str());
             }
             while ((p!=e)&&(*p!='\n'))
                 p++;
@@ -2279,7 +2283,7 @@ public:
                 if (traceMode&PerfMonExtended) {
                     if (extstats.getLine(str.clear()))
                         LOG(MCdebugInfo, unknownJob, "%s", str.str());
-                    extstats.printKLog();
+                    extstats.printKLog(hook);
                 }
 #endif
             }

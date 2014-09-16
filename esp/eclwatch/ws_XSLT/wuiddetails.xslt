@@ -88,7 +88,7 @@
                 if (parentSectionDiv)
                 {
                   parentSectionDiv.innerHTML = '<span class="loading">&nbsp;&nbsp;Workunit has no ' + Section + '.</span>';
-                  if (Section == 'Exceptions' || Section == 'Warnings' || Section == 'Info')
+                  if (Section == 'Exceptions' || Section == 'Warnings' || Section == 'Info' || Section == 'Alert')
                   {
                     parentSectionDiv.style.display = 'none';
                     parentSectionDiv.style.visibility = 'hidden';
@@ -115,6 +115,7 @@
                   {
                     updateSection('Warnings');
                     updateSection('Info');
+                    updateSection('Alert');
                   }
                 }
               }

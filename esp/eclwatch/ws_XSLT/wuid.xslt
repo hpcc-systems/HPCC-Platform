@@ -544,6 +544,7 @@
                   {
                     activeSections[activeSections.length] = 'Warnings';
                     activeSections[activeSections.length] = 'Info';
+                    activeSections[activeSections.length] = 'Alert';
                   }
                 }
               }
@@ -573,7 +574,7 @@
 
             function getSectionName(Section)
             {
-              if ('WarningsInfo'.indexOf(Section)>-1)
+              if ('WarningsInfoAlert'.indexOf(Section)>-1)
               {
                 return 'Exceptions';
               }

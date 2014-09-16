@@ -238,12 +238,12 @@ void jlib_decl enableMemLeakChecking(bool enable);
 
 // Hook to be called by the performance monitor, takes stats for processor, virtual memory, disk, and thread usage
 
-class IPerfMonHook : public IInterface
+interface IPerfMonHook : extends IInterface
 {
 public:
     virtual void processPerfStats(unsigned processorUsage, unsigned memoryUsage, unsigned memoryTotal, unsigned __int64 fistDiskUsage, unsigned __int64 firstDiskTotal, unsigned __int64 secondDiskUsage, unsigned __int64 secondDiskTotal, unsigned threadCount) = 0;
     virtual StringBuffer &extraLogging(StringBuffer &extra) = 0; // for extra periodic logging
-
+    virtual void log(int level, const char *msg) = 0;
 };
 
 enum
@@ -264,7 +264,7 @@ enum
 
 };
 
-interface IUserMetric : public IInterface
+interface IUserMetric : extends IInterface
 {
     virtual unsigned __int64 queryCount() const = 0;
     virtual const char *queryName() const = 0;
@@ -278,7 +278,7 @@ extern jlib_decl IUserMetric * createUserMetric(const char *name, const char *ma
 typedef unsigned PerfMonMode;
 
 void jlib_decl getSystemTraceInfo(StringBuffer &str, PerfMonMode mode = PerfMonProcMem);
-void jlib_decl startPerformanceMonitor(unsigned interval, PerfMonMode traceMode = PerfMonStandard, IPerfMonHook * hook = 0);
+void jlib_decl startPerformanceMonitor(unsigned interval, PerfMonMode traceMode = PerfMonStandard, IPerfMonHook * hook = NULL);
 void jlib_decl stopPerformanceMonitor();
 void jlib_decl setPerformanceMonitorPrimaryFileSystem(char const * fs); // for monitoring disk1, defaults to C: (win) or / (linux)
 void jlib_decl setPerformanceMonitorSecondaryFileSystem(char const * fs); // for monitoring disk2, no default

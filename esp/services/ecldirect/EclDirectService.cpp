@@ -61,6 +61,9 @@ EclDirectWUExceptions::EclDirectWUExceptions(IConstWorkUnit& cw)
             case ExceptionSeverityInformation:
                 e->setSeverity("Info");
                 break;
+            case ExceptionSeverityAlert:
+                e->setSeverity("Alert");
+                break;
         }
 
         errors.append(*e.getLink());

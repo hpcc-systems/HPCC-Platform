@@ -1688,7 +1688,7 @@ bool CJobMaster::go()
     unsigned concurrentSubGraphs = (unsigned)getWorkUnitValueInt("concurrentSubGraphs", globals->getPropInt("@concurrentSubGraphs", 1));
     try
     {
-        ClearTempDirs();
+        startJob();
         Owned<IWUGraphProgress> progress = graphProgress->update();
         progress->setGraphState(WUGraphRunning);
         progress.clear();

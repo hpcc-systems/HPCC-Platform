@@ -143,15 +143,13 @@ class graphslave_decl CJobSlave : public CJobBase
     CriticalSection graphRunCrit;
     size32_t oldNodeCacheMem;
 
-    void startJob();
-    void endJob();
-
 public:
     IMPLEMENT_IINTERFACE;
 
     CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *workUnitInfo, const char *graphName, const char *querySo, mptag_t _mptag, mptag_t _slavemptag);
     ~CJobSlave();
 
+    virtual void startJob();
     const char *queryFindString() const { return key.get(); } // for string HT
 
     ISlaveWatchdog *queryProgressHandler() { return watchdog; }
@@ -172,10 +170,21 @@ public:
         CMessageBuffer msg;
         msg.append((int)smt_errorMsg);
         IThorException *te = QUERYINTERFACE(e, IThorException);
+        bool userOrigin = false;
         if (te)
+        {
             te->setJobId(key);
+            te->setSlave(queryMyRank());
+            if (!te->queryOrigin())
+            {
+                VStringBuffer msg("SLAVE #%d", queryMyRank());
+                te->setOrigin(msg);
+            }
+            else if (0 == stricmp("user", te->queryOrigin()))
+                userOrigin = true;
+        }
         serializeThorException(e, msg);
-        if (te && te->queryOrigin() && 0 == stricmp("user", te->queryOrigin()))
+        if (userOrigin)
         {
             // wait for reply
             if (!queryJobComm().sendRecv(msg, 0, querySlaveMpTag(), LONGTIMEOUT))
