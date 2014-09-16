@@ -46,6 +46,13 @@ if (USE_CASSANDRA)
     set(LIBUV_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/libuv/include/)
 
     # Build the Cassandra cpp driver, only presently available as source
+    if( NOT EXISTS "${PROJECT_SOURCE_DIR}/cpp-driver/CMakeLists.txt" )
+     message( FATAL_ERROR
+"   The cpp-driver submodule is not available.
+   This normally indicates that the git submodule has not been fetched.
+   Please run git submodule update --init --recursive")
+    endif()
+
     option(CASS_INSTALL_HEADER "Install header file" OFF)
     option(CASS_BUILD_STATIC "Build static library" OFF)
     option(CASS_BUILD_EXAMPLES "Build examples" OFF)
