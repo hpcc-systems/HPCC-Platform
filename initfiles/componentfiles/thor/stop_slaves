@@ -15,28 +15,16 @@
 #    limitations under the License.
 ################################################################################
 
-hpcc_compname=$1
-hpcc_setenv=$2
-master=$3
+compName=$1
+PID=$2
 
-source ${hpcc_setenv}
-
+echo compName=${compName}
 echo PID=${PID}
-echo hpcc_compname=${hpcc_compname}
-echo master=${master}
 
-for file in $(ls $PID/${hpcc_compname}_slave_*.pid)
-do
-  apid=`cat ${file}`
-  echo pid = ${apid}
-  slavecmdline=`cat /proc/${apid}/cmdline`
-  psline=`echo ${slavecmdline} | grep ${master}`
-  if [ ! -z "${psline}" ]
-  then
-    echo Process cmdline = `cat /proc/${apid}/cmdline`
-    echo kill -9 ${apid}
-    kill -9 ${apid} # > /dev/null
-  fi
-done
-echo rm -f $PID/${hpcc_compname}_slave_*.pid
-rm -f $PID/${hpcc_compname}_slave_*.pid
+slavename=thorslave_${compName}
+
+killall -0 $slavename &> /dev/null
+if [ $? -eq 0 ];then
+  killall -9 $slavename
+fi
+rm -f $PID/${compName}_slave_*.pid
