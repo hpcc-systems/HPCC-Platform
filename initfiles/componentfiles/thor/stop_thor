@@ -69,29 +69,29 @@ echo --------------------------
 echo stopping thor slaves 
 
 if [ "$localthor" = "true" ]; then
-    SLAVE_PID_NAME="$PID/${comp_base}_slave_*.pid"
-    slavepid=`cat ${SLAVE_PID_NAME} 2> /dev/null`
-    kill -9 $slavepid 2> /dev/null
+  SLAVE_PID_NAME="$PID/${comp_base}_slave_*.pid"
+  slavepid=`cat ${SLAVE_PID_NAME} 2> /dev/null`
+  kill -9 $slavepid 2> /dev/null
 else
-    # use 20 threads
-    # timeout of 60 seconds (in case slave busy)
-    # hard kill (called after master down anyway so going to stall)
-    if [ ! -r $instancedir/slaves ]; then
-        if [ ! -z ${THORPRIMARY} ]; then
-            groupName=${THORPRIMARY}
-        else
-            groupName=${THORNAME}
-        fi
-        daliadmin $DALISERVER dfsgroup ${groupName} > $instancedir/slaves
-        errcode=$?
-        if [ 0 != ${errcode} ]; then
-            echo 'failed to lookup dali group for $groupName'
-            exit 1
-        fi
+  # use 20 threads
+  # timeout of 60 seconds (in case slave busy)
+  # hard kill (called after master down anyway so going to stall)
+  if [ ! -r $instancedir/slaves ]; then
+    if [ ! -z ${THORPRIMARY} ]; then
+        groupName=${THORPRIMARY}
+    else
+        groupName=${THORNAME}
     fi
-    sort $instancedir/slaves | uniq > $instancedir/uslaves
-    nslaves=`cat $instancedir/uslaves.start | wc -l`
-    $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${comp_base} $PATH_PRE $THORMASTER:$THORMASTERPORT'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
-    echo slaves stopped
+    daliadmin $DALISERVER dfsgroup ${groupName} > $instancedir/slaves
+    errcode=$?
+    if [ 0 != ${errcode} ]; then
+        echo 'failed to lookup dali group for $groupName'
+        exit 1
+    fi
+  fi
 fi
 
+sort $instancedir/slaves | uniq > $instancedir/uslaves
+nslaves=`cat $instancedir/uslaves.start | wc -l`
+$deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${THORNAME} ${PID}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
+echo slaves stopped
