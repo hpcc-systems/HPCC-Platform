@@ -288,9 +288,9 @@ public:
             }
             if (node)
             {
-                str.append("SLAVE ");
+                str.appendf("SLAVE #%d [", node);
                 queryClusterGroup().queryNode(node).endpoint().getUrlStr(str);
-                str.append(": ");
+                str.append("]: ");
             }
         }
         str.append(msg);
