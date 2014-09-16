@@ -16,11 +16,11 @@
 ################################################################################
 
 ip=$1
-prog=$2
-master=$3
-masterport=$4
-logpth=$5
-instancedir=$6
+master=$2
+masterport=$3
+logpth=$4
+instancedir=$5
+deploydir=$6
 hpcc_compname=$7
 hpcc_setenv=$8
 logredirect=$9
@@ -28,7 +28,7 @@ logredirect=$9
 source ${hpcc_setenv}
 
 if [ $# -lt 9 ]; then
-  echo usage: ip prog master masterport logdir workingdir hpcc_compname hpcc_setenv logredirect
+  echo usage: ip master masterport logdir workingdir deploydir hpcc_compname hpcc_setenv logredirect
   exit 1
 fi
 
@@ -69,6 +69,9 @@ ulimit -n $handlelimit
 
 echo "slave(s) starting `date`"
 
+# create symlink for easier identification of slaves by compName
+ln -s -f $deploydir/thorslave_lcr thorslave_${hpcc_compname}
+
 # sync to current master thorgroup
 echo rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
 rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
@@ -81,8 +84,8 @@ for slave in $(cat $instancedir/thorgroup.slave); do
     if [ "$slaveport" = "" ]; then
       slaveport=$THORSLAVEPORT
     fi
-    echo $prog master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth
-    $prog master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth 2>/dev/null 1>/dev/null &
+    echo master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth
+    ./thorslave_$hpcc_compname master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth 2>/dev/null 1>/dev/null &
     slavepid=$!
     PID_NAME="$PID/${hpcc_compname}_slave_${slavenum}.pid"
     echo $slavepid > $PID_NAME
