@@ -830,7 +830,8 @@ bool CWsWorkunitsEx::onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest 
 
 void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, const char *id, IArrayOf<IEspClusterQueryState>& clusterStates, double version)
 {
-    queriesOnCluster = queriesOnCluster->queryPropTree("Endpoint[1]/Queries[1]");
+    if (queriesOnCluster)
+        queriesOnCluster = queriesOnCluster->queryPropTree("Endpoint[1]/Queries[1]");
     if (!queriesOnCluster)
         return;
 
@@ -840,21 +841,24 @@ void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, 
     clusterState->setCluster(target);
 
     VStringBuffer xpath("Query[@id='%s']", id);
-    IPropertyTree *query = queriesOnCluster->getPropTree(xpath.str());
-    int suspended = query->getPropInt("@suspended");
-    const char* error = query->queryProp("@error");
+    IPropertyTree *query = queriesOnCluster->queryPropTree(xpath.str());
     if (!query)
         clusterState->setState("Not Found");
-    else if (suspended)
-    {
-        clusterState->setState("Suspended");
-        if (suspended<reporting)
-            clusterState->setMixedNodeStates(true);
-    }
     else
-        clusterState->setState("Available");
-    if ((version >=1.46) && error && *error)
-        clusterState->setErrors(error);
+    {
+        int suspended = query->getPropInt("@suspended");
+        const char* error = query->queryProp("@error");
+        if (0==suspended)
+            clusterState->setState("Available");
+        else
+        {
+            clusterState->setState("Suspended");
+            if (suspended<reporting)
+                clusterState->setMixedNodeStates(true);
+        }
+        if (error && *error)
+            clusterState->setErrors(error);
+    }
 
     clusterStates.append(*clusterState.getClear());
 }
