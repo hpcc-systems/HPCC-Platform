@@ -119,18 +119,17 @@ Mutex CMachineInfoThreadParam::s_mutex;
 class CRoxieStateInfoThreadParam : public CWsMachineThreadParam
 {
 public:
-    IEspContext&                    context;
     StringAttr                      clusterName;
     IArrayOf<IEspMachineInfoEx>&    machineInfoTable;     //For response
 
-    CRoxieStateInfoThreadParam(Cws_machineEx* pService, IEspContext& _context, const char* _clusterName, IArrayOf<IEspMachineInfoEx>& _machineInfoTable)
-       : CWsMachineThreadParam(pService), context(_context), clusterName(_clusterName), machineInfoTable(_machineInfoTable)
+    CRoxieStateInfoThreadParam(Cws_machineEx* pService, const char* _clusterName, IArrayOf<IEspMachineInfoEx>& _machineInfoTable)
+       : CWsMachineThreadParam(pService), clusterName(_clusterName), machineInfoTable(_machineInfoTable)
     {
     }
 
     virtual void doWork()
     {
-        m_pService->getRoxieStateInfo(context, this);
+        m_pService->getRoxieStateInfo(this);
     }
 };
 
@@ -960,7 +959,7 @@ void Cws_machineEx::readRoxieStatus(const Owned<IPropertyTree> controlResp, CIAr
     updateMajorRoxieStateHash(stateHashes, roxieStates);
 }
 
-void Cws_machineEx::getRoxieStateInfo(IEspContext& context, CRoxieStateInfoThreadParam* param)
+void Cws_machineEx::getRoxieStateInfo(CRoxieStateInfoThreadParam* param)
 {
     const char* clusterName = param->clusterName.get();
     if (!clusterName || !*clusterName)
@@ -1027,7 +1026,7 @@ void Cws_machineEx::getMachineInfo(IEspContext& context, bool getRoxieState, CGe
         StringArray& roxieClusters = machineInfoData.getRoxieClusters();
         ForEachItemIn(i, roxieClusters)
         {
-            Owned<CRoxieStateInfoThreadParam> pThreadReq = new CRoxieStateInfoThreadParam(this, context, roxieClusters.item(i),
+            Owned<CRoxieStateInfoThreadParam> pThreadReq = new CRoxieStateInfoThreadParam(this, roxieClusters.item(i),
                 machineInfoData.getMachineInfoTable());
             PooledThreadHandle handle = m_threadPool->start( pThreadReq.getClear());
             threadHandles.append(handle);
