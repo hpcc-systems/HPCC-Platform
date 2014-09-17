@@ -56,10 +56,7 @@
   Template language statements or symbols to act on. LOADXML must be the first
   line of code to function correctly.</para>
 
-  <para>A valid XML scope is required for most Template Language<indexterm>
-      <primary>Template Language</primary>
-    </indexterm> statements to work. This is also used in "drilldown" MACRO
-  code.</para>
+  <para>LOADXML is also used in "drilldown" MACRO code.</para>
 
   <para>Example:</para>
 
@@ -99,7 +96,7 @@ OUTPUT(FETCH(Files.TaxData,
 ENDMACRO;
 
 //This example uses #EXPORT to generate the XML
-LOADXML('&lt;xml/&gt;'); //"dummy" XML just to open an XML scope
+
 NamesRecord := RECORD
   STRING10 first;
   STRING20 last;

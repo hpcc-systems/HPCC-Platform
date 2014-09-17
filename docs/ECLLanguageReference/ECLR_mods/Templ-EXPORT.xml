@@ -59,9 +59,7 @@
 
   <para>Example:</para>
 
-  <programlisting>  LOADXML('&lt;xml/&gt;'); //"dummy" just to open an XML scope
-  
-  NamesRecord := RECORD
+  <programlisting>  NamesRecord := RECORD
     STRING10 first;
     STRING20 last;
   END;

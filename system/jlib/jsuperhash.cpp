@@ -457,6 +457,7 @@ void SuperHashTable::releaseAll(void)
         if (et)
             onRemove(et);
     }
+    tablecount = 0;
 }
 
 void SuperHashTable::kill(void)

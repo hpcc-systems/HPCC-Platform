@@ -6615,10 +6615,13 @@ void WorkflowTransformer::analyseExpr(IHqlExpression * expr)
                 translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
             }
 
+            bool wasConditional = isConditional;
+            isConditional = false;
             unsigned prevWfid = activeWfid;
             activeWfid = ++wfidCount;
             analyseExpr(expr->queryChild(0));
             activeWfid = prevWfid;
+            isConditional = wasConditional;
             return;
         }
     }
