@@ -138,7 +138,7 @@ class ECLcmd(Shell):
                         #output generation disabled with //nooutput tag
                         eclfile.diff = '-'
                     else:
-                        eclfile.diff = 'Output of '+eclfile.ecl +' test is:\n\t'+ data
+                        eclfile.diff = 'Output of '+eclfile.ecl +' test is:\n'+ data
                     test = True
                 else:
                     test = eclfile.testResults()
