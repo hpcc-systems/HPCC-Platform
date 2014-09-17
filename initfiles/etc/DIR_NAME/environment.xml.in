@@ -1019,6 +1019,34 @@
    <ThorMasterProcess computer="localhost" name="m1"/>
    <ThorSlaveProcess computer="localhost" name="s1"/>
   </ThorCluster>
+  <ThorCluster autoCopyBackup="false"
+               build="_"
+               buildSet="thor"
+               computer="localhost"
+               daliServers="mydali"
+               description="Thor process"
+               localThor="true"
+               masterport="22000"
+               monitorDaliFileServer="true"
+               name="mythor3way"
+               pluginsPath="${PLUGINS_PATH}"
+               replicateAsync="false"
+               replicateOutputs="false"
+               slaveport="22100"
+               slavesPerNode="3"
+               watchdogEnabled="true"
+               watchdogProgressEnabled="true">
+   <Debug/>
+   <SSH SSHidentityfile="$HOME/.ssh/id_rsa"
+        SSHpassword=""
+        SSHretries="3"
+        SSHtimeout="0"
+        SSHusername="${RUNTIME_USER}"/>
+   <Storage/>
+   <SwapNode/>
+   <ThorMasterProcess computer="localhost" name="m1"/>
+   <ThorSlaveProcess computer="localhost" name="s1"/>
+  </ThorCluster>
   <Topology build="_" buildSet="topology" name="topology">
    <Cluster name="hthor" prefix="hthor">
     <EclCCServerProcess process="myeclccserver"/>
@@ -1027,6 +1055,12 @@
    </Cluster>
    <Cluster name="thor" prefix="thor">
     <ThorCluster process="mythor"/>
+    <EclCCServerProcess process="myeclccserver"/>
+    <EclSchedulerProcess process="myeclscheduler"/>
+    <EclAgentProcess process="myeclagent"/>
+   </Cluster>
+   <Cluster name="thor3" prefix="thor">
+    <ThorCluster process="mythor3way"/>
     <EclCCServerProcess process="myeclccserver"/>
     <EclSchedulerProcess process="myeclscheduler"/>
     <EclAgentProcess process="myeclagent"/>
