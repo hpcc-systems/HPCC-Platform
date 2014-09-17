@@ -92,7 +92,7 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
         const char* servicePluginType = espService.queryProp("@servicePluginType");
         if (!servicePlugin || !*servicePlugin)
             continue;
-        Owned<IEspTpEspServicePlugin> espServicePlugin= createTpEspServicePlugin("","");
+        Owned<IEspTpEspServicePlugin> espServicePlugin= createTpEspServicePlugin();
         espServicePlugin->setName(servicePlugin);
         if (servicePluginType && *servicePluginType)
             espServicePlugin->setType(servicePluginType);
@@ -1745,7 +1745,7 @@ bool CWsTopologyEx::onTpGetServicePlugins(IEspContext &context, IEspTpGetService
         {
             IEspTpEspServicePlugin& servicePlugin = espServicePlugins.item(i);
 
-            Owned<IEspTpEspServicePlugin> plugin= createTpEspServicePlugin("","");
+            Owned<IEspTpEspServicePlugin> plugin= createTpEspServicePlugin();
             plugin->setName(servicePlugin.getName());
             plugin->setType(servicePlugin.getType());
             plugins.append(*plugin.getClear());
