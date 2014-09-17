@@ -181,21 +181,6 @@ interface ISmartBufferNotify
     virtual void onInputFinished(rowcount_t count) =0;
 };
 
-
-class CThorRowAggregator : public RowAggregator
-{
-    CActivityBase &activity;
-    
-public:
-    CThorRowAggregator(CActivityBase &_activity, IHThorHashAggregateExtra &extra, IHThorRowAggregator &helper) : RowAggregator(extra, helper), activity(_activity)
-    {
-    }
-
-// overloaded
-    AggregateRowBuilder &addRow(const void *row);
-    void mergeElement(const void *otherElement);
-};
-
 interface IDiskUsage;
 IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity,IThorDataLink *in,size32_t bufsize,bool spillenabled,bool preserveGrouping=true,rowcount_t maxcount=RCUNBOUND,ISmartBufferNotify *notify=NULL, bool inputstarted=false, IDiskUsage *_diskUsage=NULL); //maxcount is maximum rows to read set to RCUNBOUND for all
 
