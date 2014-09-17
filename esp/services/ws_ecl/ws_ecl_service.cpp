@@ -300,7 +300,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     else
         workunitTimeout = WAIT_FOREVER;
 
-    IPropertyTree *vips = serviceTree->queryPropTree(xpath.str());
+    IPropertyTree *vips = serviceTree->queryPropTree("VIPS");
     Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
     ForEach(*roxieTargets)
     {
