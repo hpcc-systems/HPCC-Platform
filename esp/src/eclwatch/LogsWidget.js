@@ -82,6 +82,7 @@ define([
                         break;
                     case "cpp":
                     case "hpp":
+                    case "xml":
                         params = "/WUFile?Wuid=" + this.wu.Wuid + "&Name=" + item.Orig.Name + "&IPAddress=" + item.Orig.IPAddress + "&Description=" + item.Orig.Description + "&Type=" + item.Orig.Type;
                         break;
                 }
