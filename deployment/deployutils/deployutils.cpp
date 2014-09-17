@@ -873,7 +873,6 @@ public:
               bAddBlank = true;
               LoadComboBox("Software/EspProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
               extraInfo = strBuf.str();
-              //ret->m_bAddEmpty = true;
             }
             else if (strcmp(type, "mysqlloggingagentType")==0)
             {
