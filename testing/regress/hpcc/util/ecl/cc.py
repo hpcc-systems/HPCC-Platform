@@ -34,9 +34,15 @@ class ECLCC(Shell):
     def __ECLCC(self):
         return self.command(self.cmd, *self.defaults)
 
-    def getArchive(self, file):
+    def getArchive(self, ecl):
         try:
-            return self.__ECLCC()('-E', file)
+            if ecl.testDynamicSource():
+                stub = ecl.getRealEclSource()
+                # do eclcc with stdin
+                return self.__ECLCC()('-E', stub)
+            else:
+                file = ecl.getEcl()
+                return self.__ECLCC()('-E', file)
         except Error as err:
             logging.debug("getArchive exception:'%s'",  repr(err))
             self.makeArchiveError = str(err)
@@ -50,7 +56,7 @@ class ECLCC(Shell):
             os.mkdir(dirname)
         if os.path.isfile(filename):
             os.unlink(filename)
-        result = self.getArchive(ecl.getEcl())
+        result = self.getArchive(ecl)
 
         if result.startswith( 'Error()'):
             retVal = False
@@ -68,6 +74,7 @@ class ECLCC(Shell):
                 ecl.diff += repr(self.makeArchiveError)
             self.makeArchiveError=''
         else:
+            logging.debug("%3d. makeArchive (filename:'%s')", ecl.getTaskId(), filename )
             FILE = open(filename, "w")
             FILE.write(result)
             FILE.close()
