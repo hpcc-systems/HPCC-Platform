@@ -1462,6 +1462,8 @@ inline void extractDate(tm & tm, unsigned date)
     tm.tm_year = (date / 10000) - 1900;
     tm.tm_mon = ((date / 100) % 100) - 1;
     tm.tm_mday = (date % 100);
+    // To proper initialisation of tm
+    mktime(&tm);
 }
 
 STRINGLIB_API unsigned STRINGLIB_CALL slStringToDate(size32_t lenS, const char * s, const char * fmtin)

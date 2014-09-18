@@ -39,9 +39,7 @@
 
   <para>Example:</para>
 
-  <programlisting>  LOADXML('&lt;xml/&gt;');
-  
-  NamesRecord := RECORD
+  <programlisting>  NamesRecord := RECORD
     STRING10 first;
     STRING20 last;
   END;

@@ -294,14 +294,14 @@
     <sect1 id="spray_and_despray">
       <title>Spray/Despray</title>
 
-      <para>This section details how to Spray and Despray a Data file to your
-      Thor cluster using ECL Watch. The spray function is integrated into the
+      <para>This section details how to Spray and Despray a data file to your
+      cluster using ECL Watch. The spray function is integrated into the
       Landing Zone page as detailed in the <link linkend="Upload_Files">Upload
       Files</link> section .</para>
 
-      <para>In order to spray a file to your Thor cluster you must first
-      upload the file to your landing zone. The file upload steps are detailed
-      in the preceding section.</para>
+      <para>In order to spray a file to your cluster you must first upload the
+      file to your landing zone. The file upload steps are detailed in the
+      preceding section.</para>
 
       <para>With the file successfully uploaded to the landing zone you can
       choose the file to spray from the Landing Zone page. Once selected the
@@ -317,30 +317,49 @@
           </mediaobject>
         </figure></para>
 
-      <sect2>
-        <title>Spray Data to Thor</title>
+      <sect2 id="Spray-to-cluster">
+        <title>Spray Data to a Cluster</title>
 
         <para>With the <emphasis role="bold">Spray:</emphasis> Action buttons
         enabled, you press the appropriate button for the Spray you wish to
         perform. Fill in the appropriate values when prompted to complete the
         spray.</para>
-
-        <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                    xpointer="Spray_Fixed"
-                    xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-        <?hard-pagebreak ?>
-
-        <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                    xpointer="Spray_Delimited"
-                    xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-        <?hard-pagebreak ?>
-
-        <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
-                    xpointer="Spray_XML"
-                    xmlns:xi="http://www.w3.org/2001/XInclude" />
       </sect2>
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="LZ_Spray"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Spray_Fixed"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Spray_Delimited"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Spray_XML"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Spray_Variable"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Spray_Blob"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Desprays"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml" xpointer="Copy"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Remote_Copy"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1>

@@ -34,7 +34,7 @@ void static usage(const char* programName)
     puts("Available options:");
     puts(" -r|--recursive: process all includes");
     puts(" -v|--verbose:   display information");
-    puts(" -?/-h:          show this usage page");
+    puts(" -?/-h/--help:   show this usage page");
     exit(1);
 }
 
@@ -48,7 +48,7 @@ void parseCommandLine(int argc, char* argv[], Esdl2Esxdl * cmd)
     {
         if (*argv[i]=='-')
         {
-            if (stricmp(argv[i], "-?")==0 || stricmp(argv[i], "-h")==0)
+            if (stricmp(argv[i], "-?")==0 || stricmp(argv[i], "-h")==0 || stricmp(argv[i], "--help")==0)
             {
                 usage(argv[0]);
             }

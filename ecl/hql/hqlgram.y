@@ -5460,6 +5460,9 @@ rangeOrIndices
 
 rangeExpr
     : expression        {
+                            IHqlExpression * expr = $1.queryExpr();
+                            if (expr->isConstant() && !expr->queryType()->isInteger())
+                                parser->reportWarning(CategoryMistake, WRN_INT_OR_RANGE_EXPECTED, $1.pos, "Floating point index used. Was an index range intended instead?");
                             parser->normalizeExpression($1, type_int, false);
                             parser->checkPositive($1);
                             $$.setExpr($1.getExpr());
@@ -6973,9 +6976,12 @@ globalValueAttribute
 
 dataRow
     : dataSet '[' expression ']'
-                        {   
+                        {
+                            IHqlExpression * expr = $3.queryExpr();
+                            if (expr->isConstant() && !expr->queryType()->isInteger())
+                                parser->reportWarning(CategoryMistake, WRN_INT_OR_RANGE_EXPECTED, $3.pos, "Floating point index used. Was an index range intended instead?");
                             parser->normalizeExpression($3, type_int, false);
-                            $$.setExpr(createRow(no_selectnth, $1.getExpr(), $3.getExpr()));    
+                            $$.setExpr(createRow(no_selectnth, $1.getExpr(), $3.getExpr()));
                         }
     | dictionary '[' expressionList ']'
                         {

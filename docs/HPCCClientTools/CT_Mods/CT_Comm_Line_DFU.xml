@@ -84,7 +84,7 @@
         command line parameters to send to the Distributed File Utility (DFU)
         engine via the ESP server. These <emphasis>options</emphasis> can be
         specified on the command line, in the <emphasis>@filename</emphasis>,
-        in the dfuplus.ini file, or any combination. </para>
+        in the dfuplus.ini file, or any combination.</para>
 
         <para>Evaluation of options follows this order of precedence:</para>
 
@@ -106,7 +106,25 @@
           </listitem>
         </itemizedlist>
 
-        <para></para>
+        <para><informaltable colsep="1" frame="all" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="../../images/caution.png"
+                  scale="noin" /></entry>
+
+                  <entry>The dfuplus utility does not upload files to a
+                  landing zone. You must first upload any file(s) to your
+                  landing zone using either ECL Watch or a tool that supports
+                  a secure copy protocol, such as SCP or SFTP.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
 
         <sect3>
           <title>General Options:</title>

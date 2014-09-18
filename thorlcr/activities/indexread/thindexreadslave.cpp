@@ -765,7 +765,7 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, public CTh
 {
     IHThorIndexGroupAggregateArg *helper;
     bool gathered, eoi, merging;
-    Owned<CThorRowAggregator> localAggTable;
+    Owned<RowAggregator> localAggTable;
     memsize_t maxMem;
     Owned<IHashDistributor> distributor;
 
@@ -799,7 +799,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
+        localAggTable.setown(new RowAggregator(*helper, *helper));
         localAggTable->start(queryRowAllocator());
         gathered = eoi = false;
         dataLinkStart();

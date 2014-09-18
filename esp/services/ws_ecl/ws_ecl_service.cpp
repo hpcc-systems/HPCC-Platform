@@ -321,7 +321,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     ForEach(*cfgTargets)
         targets.append(cfgTargets->query().queryProp(NULL));
 
-    IPropertyTree *vips = serviceTree->queryPropTree(xpath.str());
+    IPropertyTree *vips = serviceTree->queryPropTree("VIPS");
     Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
     ForEach(*roxieTargets)
     {

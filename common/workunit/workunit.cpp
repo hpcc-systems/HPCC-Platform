@@ -2417,9 +2417,11 @@ public:
             StringArray unknownAttributes;
             const MapStringTo<bool> *subset;
 
-            void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
+            void populateQueryTree(const IPropertyTree* querySetTree, IPropertyTree* queryTree)
             {
-                Owned<IPropertyTreeIterator> iter = querySetTree->getElements(xPath);
+                const char* querySetId = querySetTree->queryProp("@id");
+                VStringBuffer path("Query%s", xPath.get());
+                Owned<IPropertyTreeIterator> iter = querySetTree->getElements(path.str());
                 ForEach(*iter)
                 {
                     IPropertyTree &query = iter->query();
@@ -2434,8 +2436,8 @@ public:
                             if (!subset->getValue(match))
                                 continue;
                         }
-                        VStringBuffer xPath("Alias[@id='%s']", queryId);
-                        IPropertyTree *alias = queryRegistry->queryPropTree(xPath.str());
+                        VStringBuffer aliasXPath("Alias[@id='%s']", queryId);
+                        IPropertyTree *alias = querySetTree->queryPropTree(aliasXPath.str());
                         if (alias)
                             activated = true;
                     }
@@ -2448,40 +2450,30 @@ public:
                     if ((postFilters.suspendedByUserFilter == WUQFSYes) && !query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
                         continue;
 
-                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", LINK(&query));
-                    queryWithSetId->addProp("@querySetId", querySetId);
-                    queryWithSetId->addPropBool("@activated", activated);
+                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", createPTreeFromIPT(&query));
+                    queryWithSetId->setProp("@querySetId", querySetId);
+                    queryWithSetId->setPropBool("@activated", activated);
                 }
             }
-
-            IPropertyTree* getAllQuerySetQueries(IRemoteConnection* conn, const char *querySet, const char *xPath)
+            IRemoteConnection* populateQueryTree(IPropertyTree* queryTree)
             {
-                Owned<IPropertyTree> queryTree = createPTree("Queries");
-                IPropertyTree* root = conn->queryRoot();
-                if (querySet && *querySet)
+                StringBuffer querySetXPath("QuerySets");
+                if (!querySet.isEmpty())
+                    querySetXPath.appendf("/QuerySet[@id=\"%s\"]", querySet.get());
+                Owned<IRemoteConnection> conn = querySDS().connect(querySetXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+                if (!conn)
+                    return NULL;
+
+                if (querySet.isEmpty())
                 {
-                    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
-                    VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
-                    populateQueryTree(queryRegistry, querySet, root, path.str(), queryTree);
+                    Owned<IPropertyTreeIterator> querySetIter = conn->queryRoot()->getElements("*");
+                    ForEach(*querySetIter)
+                        populateQueryTree(&querySetIter->query(), queryTree);
                 }
                 else
-                {
-                    Owned<IPropertyTreeIterator> iter = root->getElements("QuerySet");
-                    ForEach(*iter)
-                    {
-                        IPropertyTree &querySetTree = iter->query();
-                        const char* id = querySetTree.queryProp("@id");
-                        if (id && *id)
-                        {
-                            Owned<IPropertyTree> queryRegistry = getQueryRegistry(id, false);
-                            VStringBuffer path("Query%s", xPath);
-                            populateQueryTree(queryRegistry, id, &querySetTree, path.str(), queryTree);
-                        }
-                    }
-                }
-                return queryTree.getClear();
+                    populateQueryTree(conn->queryRoot(), queryTree);
+                return conn.getClear();
             }
-
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -2495,11 +2487,9 @@ public:
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
             {
-                Owned<IRemoteConnection> conn = querySDS().connect("QuerySets", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+                Owned<IPropertyTree> elementTree = createPTree("Queries");
+                Owned<IRemoteConnection> conn = populateQueryTree(elementTree);
                 if (!conn)
-                    return NULL;
-                Owned<IPropertyTree> elementTree = getAllQuerySetQueries(conn, querySet.get(), xPath.get());
-                if (!elementTree)
                     return NULL;
                 Owned<IPropertyTreeIterator> iter = elementTree->getElements("*");
                 if (!iter)
@@ -9858,26 +9848,14 @@ void setQueryCommentForNamedQuery(IPropertyTree * queryRegistry, const char *id,
             throw MakeStringException(QUERRREG_COMMENT,  "Could not find query %s", id);
     }
 }
+
 extern WORKUNIT_API IPropertyTree * getQueryRegistryRoot()
-
 {
-      Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-
-      if (!globalLock)
-
-            return NULL;
-
-      //Only lock the branch for the target we're interested in.
-
-      StringBuffer xpath;
-
-      xpath.append("/QuerySets");
-
-      Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-      if (conn)
-            return conn->getRoot();
-      else
-            return NULL;
+    Owned<IRemoteConnection> conn = querySDS().connect("/QuerySets", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (conn)
+        return conn->getRoot();
+    else
+        return NULL;
 }
 
 extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWULibraryIterator *libraries)
@@ -9907,27 +9885,30 @@ extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree,
 
 extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool readonly)
 {
-    Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-
     //Only lock the branch for the target we're interested in.
     StringBuffer xpath;
     xpath.append("/QuerySets/QuerySet[@id=\"").append(wsEclId).append("\"]");
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (conn)
+        return conn->getRoot();
+    if (readonly)
+        return NULL;
+
+    //Lock the QuerySets in case another thread/client wants to check/add the same QuerySet.
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+
+    //Re-check if the QuerySet has been added between checking the 1st time and gaining the globalLock.
+    conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
+    if (conn)
+        return conn->getRoot();
+
+    conn.setown(querySDS().connect("/QuerySets/QuerySet", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, SDS_LOCK_TIMEOUT));
     if (!conn)
-    {
-        if (readonly)
-            return NULL;
-        Owned<IPropertyTree> querySet = createPTree();
-        querySet->setProp("@id", wsEclId);
-        globalLock->queryRoot()->addPropTree("QuerySet", querySet.getClear());
-        globalLock->commit();
-
-        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
-        if (!conn)
-            throwUnexpected();
-    }
-
-    return conn->getRoot();
+        throwUnexpected();
+    IPropertyTree * root = conn->queryRoot();
+    root->setProp("@id",wsEclId);
+    conn->commit();
+    return LINK(root);
 }
 
 IPropertyTree * addNamedPackageSet(IPropertyTree * packageRegistry, const char * name, IPropertyTree *packageInfo, bool overWrite)
@@ -9963,27 +9944,30 @@ void removeNamedPackage(IPropertyTree * packageRegistry, const char * id)
 
 extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, bool readonly)
 {
-    Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-
     //Only lock the branch for the target we're interested in.
     StringBuffer xpath;
     xpath.append("/PackageSets/PackageSet[@id=\"").append(wsEclId).append("\"]");
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (conn)
+        return conn->getRoot();
+    if (readonly)
+        return NULL;
+
+    //Lock the PackageSets in case another thread/client wants to check/add the same PackageSet.
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+
+    //Re-check if the PackageSet has been added between checking the 1st time and gaining the globalLock.
+    conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
+    if (conn)
+        return conn->getRoot();
+
+    conn.setown(querySDS().connect("/PackageSets/PackageSet", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, SDS_LOCK_TIMEOUT));
     if (!conn)
-    { 
-        if (readonly)
-            return NULL;
-        Owned<IPropertyTree> querySet = createPTree();
-        querySet->setProp("@id", wsEclId);
-        globalLock->queryRoot()->addPropTree("PackageSet", querySet.getClear());
-        globalLock->commit();
-
-        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
-        if (!conn)
-            throwUnexpected();
-    }
-
-    return conn->getRoot();
+        throwUnexpected();
+    IPropertyTree* root = conn->queryRoot();
+    root->setProp("@id",wsEclId);
+    conn->commit();
+    return LINK(root);
 }
 
 void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const char *queryName, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid)
