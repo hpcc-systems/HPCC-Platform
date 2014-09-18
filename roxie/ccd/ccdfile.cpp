@@ -141,6 +141,13 @@ public:
     virtual void setCopying(bool _copying)
     {
         CriticalBlock b(crit);
+        if (remote && currentIdx)
+        {
+            // The current location is not our preferred location. Recheck whether we can now access our preferred location
+            setFailure();
+            currentIdx = 0;
+            _checkOpen();
+        }
         copying = _copying; 
     }
 
@@ -645,6 +652,13 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                             DBGLOG("adding peer location %s", remoteName);
                         ret->addSource(remote.getClear());
                         addedOne = true;
+                    }
+                    else if (status==FileNotFound)
+                    {
+                        if (miscDebugTraceLevel > 5)
+                            DBGLOG("adding missing peer location %s", remoteName);
+                        ret->addSource(remote.getClear());
+                        // Don't set addedOne - we need to go to remote too
                     }
                     else if (miscDebugTraceLevel > 10)
                         DBGLOG("Checked peer roxie location %s, status=%d", remoteName, (int) status);
