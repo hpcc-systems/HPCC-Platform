@@ -11170,7 +11170,7 @@ public:
         if (kind==TAKjsonwrite)
         {
             buildJsonFooter(footer.newline(), suppliedFooter, rowTag);
-            footerLength=footer.length()-1;
+            footerLength=footer.length();
         }
         else if (suppliedFooter)
             footer.append(suppliedFooter);

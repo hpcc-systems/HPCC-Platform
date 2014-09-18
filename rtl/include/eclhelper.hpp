@@ -181,12 +181,6 @@ public:
     inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
 };
 
-interface IXmlWriterExt : extends IXmlWriter
-{
-    virtual IXmlWriterExt & clear() = 0;
-    virtual unsigned length() const = 0;
-    virtual const char *str() const = 0;
-};
 
 interface IFieldProcessor : public IInterface
 {
