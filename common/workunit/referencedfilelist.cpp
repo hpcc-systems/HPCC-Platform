@@ -533,7 +533,9 @@ void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *
     else
     {
         const char *refln = file->getLogicalName();
-        map.setValue(refln, file.getClear());
+        //Cannot clear the ownership for the file because the setValue() does not take the ownership.
+        //See MappingStringToIInterface.
+        map.setValue(refln, file);
     }
 }
 

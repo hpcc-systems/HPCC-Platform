@@ -1695,11 +1695,11 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
         Owned<IPartDescriptorIterator> pi = fdesc->getIterator();
         ForEach(*pi)
         {
-            IPartDescriptor *part = &pi->get();
-            unsigned partIndex = part->queryPartIndex();
-
+            IPartDescriptor& part = pi->query();
+            unsigned partIndex = part.queryPartIndex();
+                        
             StringBuffer partSizeStr;
-            IPropertyTree *partPropertyTree = part->getProperties();
+            IPropertyTree* partPropertyTree = &part.queryProperties();
             if (!partPropertyTree)
                 partSizeStr.set("<N/A>");
             else
@@ -1714,10 +1714,10 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
                 if(size<mn) mn=size;
             }
 
-            for (unsigned int i=0; i<part->numCopies(); i++)
+            for (unsigned int i=0; i<part.numCopies(); i++)
             {
                 StringBuffer b;
-                part->queryNode(i)->endpoint().getUrlStr(b);
+                part.queryNode(i)->endpoint().getUrlStr(b);
 
                 Owned<IEspDFUPart> FilePart = createDFUPart("","");
                 FilePart->setId(partIndex+1);
