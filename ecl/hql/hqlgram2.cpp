@@ -364,7 +364,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 
     outerScopeAccessDepth = 0;
     inType = false;
-    aborting = false;
+    aborting = lookupCtx.isAborting();
     errorHandler = NULL;
     moduleName = NULL;
     resolveSymbols = true;
@@ -3210,6 +3210,10 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
 #endif
     if (expectedUnknownId)
         return NULL;
+
+    //Check periodically if parsing a referenced identifier has caused the compile to abort.
+    if (lookupCtx.isAborting())
+        aborting = true;
 
     try
     {
@@ -10772,6 +10776,7 @@ void HqlGram::abortParsing()
 {
     // disable more error report
     disableError();
+    lookupCtx.setAborting();
     aborting = true;
 }
 
