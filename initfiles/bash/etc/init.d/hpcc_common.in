@@ -482,20 +482,23 @@ startCmd() {
     eval $startcmd
 
     if strstr ${compType} "thor" ; then
-        sleep 15
-        WAITTIME=30
+        WAITTIME=60
     else
-        sleep 1
-        WAITTIME=5
+        WAITTIME=6
     fi
 
     RCSTART=0
     WAITEDLONGENOUGH=0
     while [[ ${WAITEDLONGENOUGH} -lt ${WAITTIME} ]]
     do
-        WAITEDLONGENOUGH=`expr ${WAITEDLONGENOUGH}+1`
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0 
-        RCSTART=$?
+        WAITEDLONGENOUGH=`expr ${WAITEDLONGENOUGH} + 1`
+        if strstr ${compType} "thor" ; then
+            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+            RCSTART=$?
+        else
+            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+            RCSTART=$?
+        fi 
         if [ ${RCSTART} -eq 0 ]; then
           log_success_msg 
           return 0;
@@ -503,11 +506,17 @@ startCmd() {
         sleep 1
     done
 
-    if [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
+    if [ ${WAITEDLONGENOUGH} -ge ${WAITTIME} ]; then
+       if [ ${DEBUG} != "NO_DEBUG" ]; then
+          log_failure_msg "${compName} has timed out, but may still be starting"
+       else
+          log_failure_msg
+       fi
+    elif [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
        if [ ${DEBUG} != "NO_DEBUG" ]; then
           log_failure_msg "${compName} is not running, Pidfile exists"
        else
-          log_failure_msg 
+          log_failure_msg
        fi
     elif [ $RCSTART -eq 2 ];then
        if [ ${DEBUG} != "NO_DEBUG" ]; then
@@ -522,7 +531,7 @@ startCmd() {
           log_failure_msg
        fi
     fi
-   
+
     chmod 644 ${envfile}
 
     return ${RCSTART}
