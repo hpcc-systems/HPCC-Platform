@@ -171,7 +171,7 @@ define([
         _onCheckUploadSubmit: function () {
             var context = this;
             var fileList = registry.byId(this.id + "Upload").getFileList();
-
+            var list = this.arrayToList(fileList, "name");
             if (this.overwriteCheckbox.checked) {
                 this._onUploadSubmit();
                 this.fileListDialog.hide();
@@ -197,7 +197,7 @@ define([
                         context._onUploadSubmit();
                         context.fileListDialog.hide();
                     } else {
-                        alert(context.i18n.OverwriteMessage);
+                        alert(context.i18n.OverwriteMessage + "\n" + list );
                     }
                 });
             }
