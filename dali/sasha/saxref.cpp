@@ -1455,7 +1455,7 @@ public:
         basedir.setLength(bds);
     }
 
-    static int compareDirs(IInterface **t1,IInterface **t2)
+    static int compareDirs(IInterface * const *t1,IInterface * const *t2)
     {
         IPropertyTree *pt1 = *(IPropertyTree **)t1;
         IPropertyTree *pt2 = *(IPropertyTree **)t2;

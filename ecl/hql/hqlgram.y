@@ -12061,7 +12061,7 @@ beginPatternParameters
 
 endPatternParameters
     :                   {   
-                            parser->current_type = (ITypeInfo *)parser->savedType.pop();
+                            parser->current_type = (ITypeInfo *)parser->savedType.popGet();
                             $$.clear();
                         }
     ;

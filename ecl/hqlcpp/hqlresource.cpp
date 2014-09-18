@@ -5480,14 +5480,14 @@ void EclResourcer::createResourced(HqlExprArray & transformed)
         createResourced(&graphs.item(idx3), transformed);
 }
 
-static int compareGraphDepth(CInterface * * _l, CInterface * * _r)
+static int compareGraphDepth(CInterface * const * _l, CInterface * const * _r)
 {
     ResourceGraphInfo * l = (ResourceGraphInfo *)*_l;
     ResourceGraphInfo * r = (ResourceGraphInfo *)*_r;
     return l->getDepth() - r->getDepth();
 }
 
-static int compareLinkDepth(CInterface * * _l, CInterface * * _r)
+static int compareLinkDepth(CInterface * const * _l, CInterface * const * _r)
 {
     ResourceGraphLink * l = (ResourceGraphLink *)*_l;
     ResourceGraphLink * r = (ResourceGraphLink *)*_r;

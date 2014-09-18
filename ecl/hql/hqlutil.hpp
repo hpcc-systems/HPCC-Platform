@@ -57,9 +57,9 @@ extern HQL_API IHqlExpression * queryLastNonAttribute(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * recorhqlutid, unsigned & idx);
 extern HQL_API void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpression * expr);
 
-extern HQL_API int compareSymbolsByName(IInterface * * pleft, IInterface * * pright);
-extern HQL_API int compareScopesByName(IInterface * * pleft, IInterface * * pright);
-extern HQL_API int compareAtoms(IInterface * * pleft, IInterface * * pright);
+extern HQL_API int compareSymbolsByName(IInterface * const * pleft, IInterface * const * pright);
+extern HQL_API int compareScopesByName(IInterface * const * pleft, IInterface * const * pright);
+extern HQL_API int compareAtoms(IInterface * const * pleft, IInterface * const * pright);
 extern HQL_API IHqlExpression * getSizetConstant(unsigned size);
 extern HQL_API IHqlExpression * createIntConstant(__int64 val);
 extern HQL_API IHqlExpression * createUIntConstant(unsigned __int64 val);
@@ -624,8 +624,9 @@ extern HQL_API bool debugFindFirstDifference(IHqlExpression * left, IHqlExpressi
 extern HQL_API void debugTrackDifference(IHqlExpression * expr);
 
 extern HQL_API StringBuffer & convertToValidLabel(StringBuffer &out, const char * in, unsigned inlen);
-extern HQL_API bool arraysSame(CIArray & left, CIArray & right);
-extern HQL_API bool arraysSame(Array & left, Array & right);
+
+extern HQL_API bool arraysSame(HqlExprArray & left, HqlExprArray & right);
+extern HQL_API bool arraysSame(HqlExprCopyArray & left, HqlExprCopyArray & right);
 extern HQL_API bool isFailAction(IHqlExpression * expr);
 extern HQL_API bool isFailureGuard(IHqlExpression * expr);
 

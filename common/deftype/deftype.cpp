@@ -3846,7 +3846,7 @@ void XmlSchemaBuilder::endRecord(const char * name)
     attributes.pop();
     xml.append("</xs:complexType>").newline();
     xml.append("</xs:element>").newline();
-    optionalNesting = nesting.pop();
+    optionalNesting = nesting.popGet();
 }
 
 bool XmlSchemaBuilder::beginDataset(const char * name, const char * row, bool hasMixedContent, unsigned *updatePos)
@@ -3913,7 +3913,7 @@ void XmlSchemaBuilder::endDataset(const char * name, const char * row)
         xml.append("</xs:complexType>").newline();
         xml.append("</xs:element>").newline();
     }
-    optionalNesting = nesting.pop();
+    optionalNesting = nesting.popGet();
 }
 
 bool XmlSchemaBuilder::addSingleFieldDataset(const char * name, const char * childname, ITypeInfo & type)

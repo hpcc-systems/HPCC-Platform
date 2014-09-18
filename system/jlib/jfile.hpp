@@ -405,11 +405,7 @@ public:
     bool equals(const RemoteFilename & other) const;
 };
 
-inline RemoteFilename &Array__Member2Param(RemoteFilename &src)         { return src; }
-inline void Array__Assign(RemoteFilename & dest, RemoteFilename &src)   { RemoteFilename tmp; memcpy(&dest,&tmp,sizeof(dest)); dest.set(src); }
-inline bool Array__Equal(RemoteFilename &m, RemoteFilename &p)          { return m.equals(p); }
-inline void Array__Destroy(RemoteFilename &p)                           { p.clear(); }
-class RemoteFilenameArray : public ArrayOf<RemoteFilename, RemoteFilename &> { };
+class RemoteFilenameArray : public StructArrayOf<RemoteFilename> { };
 
 class jlib_decl RemoteMultiFilename: public RemoteFilenameArray
 {   // NB all entries must be on on the same node

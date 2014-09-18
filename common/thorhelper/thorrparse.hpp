@@ -28,7 +28,7 @@ struct RegexXmlState;
 
 typedef CIArrayOf<RegexPattern> RegexPatternArray;
 typedef CIArrayOf<RegexNamed> RegexNamedArray;
-typedef CopyCIArrayOf<RegexPattern> RegexPatternCopyArray;
+typedef CICopyArrayOf<RegexPattern> RegexPatternCopyArray;
 
 
 //Used for serialization:

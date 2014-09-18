@@ -376,7 +376,7 @@ bool checkClusterRelicateDAFS(IGroup *grp)
     SocketEndpointArray epa;
     grp->getSocketEndpoints(epa);
     ForEachItemIn(i1,epa) {
-        epa.item(i1).port = getDaliServixPort();
+        epa.element(i1).port = getDaliServixPort();
     }
     SocketEndpointArray failures;
     UnsignedArray failedcodes;

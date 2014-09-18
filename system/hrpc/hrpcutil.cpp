@@ -119,7 +119,7 @@ static CriticalSection mcsect;
 bool FastMultipleConnect(unsigned n,HRPCmodule **modules,bool *done,int timeout)
 {
     CriticalSection sect;
-    PointerIArrayOf<ISocket> sockets;
+    IPointerArrayOf<ISocket> sockets;
     SocketEndpointArray eps;
     unsigned i;
     for (i=0;i<n;i++) {

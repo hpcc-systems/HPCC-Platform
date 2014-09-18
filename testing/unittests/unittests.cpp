@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 {
     InitModuleObjects();
     // These are the internal unit tests covered by other modules and libraries
-    Array objects;
+    IArray objects;
     objects.append(*(new LoadedObject ("jhtree")));
     objects.append(*(new LoadedObject ("roxiemem")));
     objects.append(*(new LoadedObject ("thorhelper")));

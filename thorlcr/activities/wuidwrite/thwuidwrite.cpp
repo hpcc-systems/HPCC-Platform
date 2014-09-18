@@ -222,7 +222,7 @@ class CWorkUnitWriteLocalActivityMaster : public CWorkUnitWriteMasterBase
                 }
                 if (stopped) break;
 
-                unsigned sender = senders.pop();
+                unsigned sender = senders.popGet();
                 act.getData(sender);
             }
         }

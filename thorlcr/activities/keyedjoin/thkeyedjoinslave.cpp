@@ -902,8 +902,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             blockRequestsAt = NEWFETCHPRBLOCKMEMLIMIT<perRowMin ? 1 : (NEWFETCHPRBLOCKMEMLIMIT / perRowMin);
             assertex(blockRequestsAt<=maxRequests);
 
-            requestMpTag = (mptag_t)owner.tags.pop();
-            resultMpTag = (mptag_t)owner.tags.pop();
+            requestMpTag = (mptag_t)owner.tags.popGet();
+            resultMpTag = (mptag_t)owner.tags.popGet();
             requestProcessor = new CKeyedFetchRequestProcessor(owner, owner.container.queryJob().queryJobComm(), requestMpTag, resultMpTag); // remote receive of fetch fpos'
             resultProcessor = new CKeyedFetchResultProcessor(owner, owner.container.queryJob().queryJobComm(), resultMpTag); // asynchronously receiving results back
 

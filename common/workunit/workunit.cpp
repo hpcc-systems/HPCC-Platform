@@ -4907,7 +4907,7 @@ void CLocalWorkUnit::setSnapshot(const char * val)
     p->setProp("SNAPSHOT", val);
 }
 
-static int comparePropTrees(IInterface **ll, IInterface **rr)
+static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
 {
     IPropertyTree *l = (IPropertyTree *) *ll;
     IPropertyTree *r = (IPropertyTree *) *rr;
@@ -5940,7 +5940,7 @@ IWURoxieQueryInfo* CLocalWorkUnit::updateRoxieQueryInfo(const char *wuid, const 
     return roxieQueryInfo.getLink();
 }
 
-static int compareResults(IInterface **ll, IInterface **rr)
+static int compareResults(IInterface * const *ll, IInterface * const *rr)
 {
     CLocalWUResult *l = (CLocalWUResult *) *ll;
     CLocalWUResult *r = (CLocalWUResult *) *rr;

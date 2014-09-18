@@ -870,7 +870,7 @@ inline const char *getnumorname(const char *s, unsigned &n,unsigned first,unsign
     return s;
 }       
 
-static int cmpval(unsigned *a,unsigned *b)
+static int cmpval(unsigned const *a,unsigned const *b)
 {
     if (*a>*b) return 1;
     if (*a<*b) return -1;

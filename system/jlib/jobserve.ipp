@@ -47,7 +47,7 @@ public:
     bool broadcast(INotification & notify);
 
 protected:
-    CopyArray                   observers;
+    ICopyArray                   observers;
 };
 
 

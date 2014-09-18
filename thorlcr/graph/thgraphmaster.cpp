@@ -1694,7 +1694,7 @@ bool CJobMaster::go()
         progress.clear();
         
         Owned<IThorGraphIterator> iter = getSubGraphs();
-        CopyCIArrayOf<CMasterGraph> toRun;
+        CICopyArrayOf<CMasterGraph> toRun;
         ForEach(*iter)
         {
             CMasterGraph &graph = (CMasterGraph &)iter->query();

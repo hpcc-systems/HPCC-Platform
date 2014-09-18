@@ -22,7 +22,7 @@
 
 //==============================================================================================================
 
-CArrayIteratorBase::CArrayIteratorBase(const Array &_values, aindex_t _start, IInterface *_owner) : owner(_owner), values (_values), start(_start)
+CArrayIteratorBase::CArrayIteratorBase(const IArray &_values, aindex_t _start, IInterface *_owner) : owner(_owner), values (_values), start(_start)
 {
     current = start;
     ::Link(_owner);
@@ -56,7 +56,7 @@ IInterface & CArrayIteratorBase::_query()
 }
 
 
-COwnedArrayIterator::COwnedArrayIterator(Array *_values, aindex_t _start) 
+COwnedArrayIterator::COwnedArrayIterator(IArray *_values, aindex_t _start) 
     : CArrayIterator(*_values, _start)
 {
 }

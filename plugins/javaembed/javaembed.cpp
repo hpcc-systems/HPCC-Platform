@@ -270,8 +270,8 @@ protected:
     }
     void pop()
     {
-        row = (jobject) stack.pop();
-        Class = (jclass) stack.pop();
+        row = (jobject) stack.popGet();
+        Class = (jclass) stack.popGet();
     }
     jfieldID getFieldId(const RtlFieldInfo * field, const char *sig, const char *expected)
     {
@@ -989,14 +989,14 @@ public:
     virtual void processEndDataset(const RtlFieldInfo * field)
     {
         inDataSet = false;
-        idx = idxStack.pop();
+        idx = idxStack.popGet();
         pop();
     }
     virtual void processEndRow(const RtlFieldInfo * field)
     {
         if (field != outerRow)
         {
-            constructor = (jmethodID) stack.pop();
+            constructor = (jmethodID) stack.popGet();
             JNIenv->DeleteLocalRef(row);
             pop();
         }

@@ -2098,7 +2098,7 @@ class CXMLSizesParser : public CInterface
         unsigned limit;
         __int64 totalSize;
 
-        static int _sortF(CInterface **_left, CInterface **_right)
+        static int _sortF(CInterface * const *_left, CInterface * const *_right)
         {
             CTreeItem **left = (CTreeItem **)_left;
             CTreeItem **right = (CTreeItem **)_right;

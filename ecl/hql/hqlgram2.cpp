@@ -505,7 +505,7 @@ void HqlGram::popTopScope()
     if(topScopes.length() > 0)
     {
         topScopes.pop();
-        insideEvaluate = wasInEvaluate.pop();
+        insideEvaluate = wasInEvaluate.popGet();
     }
 }                                       
 
@@ -578,7 +578,7 @@ void HqlGram::pushRecord(IHqlExpression *newRecord)
 
 IHqlExpression* HqlGram::popRecord()
 {
-    return &activeRecords.pop();
+    return &activeRecords.popGet();
 }                                       
 
 IHqlExpression* HqlGram::endRecordDef()
@@ -2600,8 +2600,8 @@ void HqlGram::enterCompoundObject()
 
 void HqlGram::leaveCompoundObject()
 {
-    current_id = (IIdAtom *)savedIds.pop();
-    lastpos = savedLastpos.pop();
+    current_id = (IIdAtom *)savedIds.popGet();
+    lastpos = savedLastpos.popGet();
 }
 
 void HqlGram::leaveType(const YYSTYPE & errpos)

@@ -1227,7 +1227,7 @@ int CWSCHelperThread::run()
                 {
                     if (master->aborted) {
                         while (inputRows.ordinality() > 0)
-                            master->rowProvider->releaseRow(inputRows.pop());
+                            master->rowProvider->releaseRow(inputRows.popGet());
                         return 0;
                     }
                     const void *r = master->rowProvider->getNextRow();
@@ -1247,7 +1247,7 @@ int CWSCHelperThread::run()
             }
 
             while (inputRows.ordinality() > 0)
-                master->rowProvider->releaseRow(inputRows.pop());
+                master->rowProvider->releaseRow(inputRows.popGet());
         }
     }
 

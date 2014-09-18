@@ -1264,7 +1264,7 @@ private:
             WARNLOG("Patch did not include TLK info in header, TLK has been generated but its CRC has not been verified");
     }
 
-    static int rowCompare(IInterface ** ll, IInterface ** rr)
+    static int rowCompare(IInterface * const * ll, IInterface * const * rr)
     {
         CNodeInfo * l = static_cast<CNodeInfo *>(*ll);
         CNodeInfo * r = static_cast<CNodeInfo *>(*rr);

@@ -1373,7 +1373,7 @@ public:
 class CFileCache : public CInterface, implements IThorFileCache
 {
     OwningStringSuperHashTableOf<CLazyFileIO> files;
-    CopyCIArrayOf<CLazyFileIO> openFiles;
+    CICopyArrayOf<CLazyFileIO> openFiles;
     unsigned limit, purgeN;
     CriticalSection crit;
 
@@ -1399,7 +1399,7 @@ class CFileCache : public CInterface, implements IThorFileCache
     {
         // will be ordered oldest first.
         unsigned count = 0;
-        CopyCIArrayOf<CLazyFileIO> toClose;
+        CICopyArrayOf<CLazyFileIO> toClose;
         ForEachItemIn(o, openFiles)
         {
             CLazyFileIO &lFile = openFiles.item(o);

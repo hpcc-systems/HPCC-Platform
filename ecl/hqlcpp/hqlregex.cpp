@@ -189,7 +189,7 @@ regexid_t RegexIdAllocator::queryID(IHqlExpression * expr, IAtom * name)
 }
 
 
-int compareUnsigned(unsigned * left, unsigned * right) 
+int compareUnsigned(unsigned const * left, unsigned const * right)
 { 
     return (*left < *right) ? -1 : (*left > *right) ? +1 : 0; 
 }
@@ -2119,7 +2119,7 @@ inline int compareHqlRegexExpr(HqlRegexExpr * left, HqlRegexExpr * right)
     return (idl < idr) ? -1 : (idl > idr) ? +1 : 0; 
 }
 
-int compareHqlRegexExpr(CInterface * * left, CInterface * * right) 
+static int compareHqlRegexExpr(CInterface * const * left, CInterface * const * right)
 { 
     return compareHqlRegexExpr((HqlRegexExpr *)*left, (HqlRegexExpr *)*right);
 }
@@ -2184,7 +2184,7 @@ static inline int compareState(HqlDfaState * left, HqlDfaState * right)
     return left->position.compare(right->position);
 }
 
-static int compareState(CInterface * * left, CInterface * * right) 
+static int compareState(CInterface * const * left, CInterface * const * right)
 { 
     return compareState((HqlDfaState *)*left, (HqlDfaState *)*right);
 }

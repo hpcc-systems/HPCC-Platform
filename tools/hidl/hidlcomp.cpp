@@ -5166,8 +5166,8 @@ void EspMessageInfo::write_cpp_interfaces()
         }
         outs("};\n");
 
-        // array
-        outf("MAKEValueArray(C%s, %sArray);\n", name_, name_);
+        // array of values
+        outf("typedef ArrayOf<C%s> %sArray;\n", name_, name_);
         return;
     }
 

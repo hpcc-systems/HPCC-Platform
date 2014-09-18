@@ -150,7 +150,7 @@ public:
 };
 
 typedef CIArrayOf<ResourceGraphInfo> ResourceGraphArray;
-typedef CopyCIArrayOf<ResourceGraphLink> GraphLinkArray;
+typedef CICopyArrayOf<ResourceGraphLink> GraphLinkArray;
 
 class ResourceGraphInfo : public CInterface
 {

@@ -153,7 +153,7 @@ private:
 
 public:
     CIArray             sections;
-    Array               helpers;
+    IArray               helpers;
     StringAttrArray     modules;
     StringAttrArray     includes;
     CIArray             extra;

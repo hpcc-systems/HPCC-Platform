@@ -462,7 +462,7 @@ protected:
     CIArrayOf<TomRule> rules;
     CIArrayOf<TomToken> tokens;
     CIArrayOf<TomFeature> features;
-    CopyCIArrayOf<TomRule> activeRules;
+    CICopyArrayOf<TomRule> activeRules;
     unsigned numTerminals;
     unsigned numSymbols;
     unsigned numProductions;

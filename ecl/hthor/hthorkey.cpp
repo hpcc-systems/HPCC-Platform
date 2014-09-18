@@ -372,7 +372,7 @@ protected:
 
 //for layout translation
     Owned<IRecordLayoutTranslator> layoutTrans;
-    PointerIArrayOf<IRecordLayoutTranslator> layoutTransArray;
+    IPointerArrayOf<IRecordLayoutTranslator> layoutTransArray;
     bool gotLayoutTrans;
 };
 

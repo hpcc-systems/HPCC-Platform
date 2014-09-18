@@ -207,6 +207,6 @@ private:
 };
 
 void associateRemoteInputs(CIArrayOf<OrderedInput> & orderedInputs, unsigned numPriorityInputs);
-int compareInitialInputOrder(CInterface * * _left, CInterface * * _right);
+int compareInitialInputOrder(CInterface * const * _left, CInterface * const * _right);
 
 #endif

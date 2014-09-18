@@ -29,7 +29,7 @@ ListHelper::~ListHelper()
 {
 }
 
-static int compareWUs(IInterface **ll, IInterface **rr)
+static int compareWUs(IInterface * const *ll, IInterface * const *rr)
 {
     IConstECLWorkunit *l = (IConstECLWorkunit *) *ll;
     IConstECLWorkunit *r = (IConstECLWorkunit *) *rr;

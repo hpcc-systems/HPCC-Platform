@@ -329,7 +329,7 @@ class CEnvironmentFactory : public CInterface,
 {
 public:
     IMPLEMENT_IINTERFACE;
-    MAKEValueArray(SubscriptionId, SubscriptionIDs);
+    typedef ArrayOf<SubscriptionId> SubscriptionIDs;
     SubscriptionIDs subIDs;
     Mutex mutex;
     Owned<CSdsSubscription> subscription;

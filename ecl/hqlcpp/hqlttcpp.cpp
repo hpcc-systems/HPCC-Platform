@@ -6806,7 +6806,7 @@ void groupThorGraphs(HqlExprArray & in)
 
     //Need to work out the best order to generate the statements in.  We want
     //to move non thor queries to the front, so we do a insertion sort on them
-    CopyCIArrayOf<StatementInfo> sorted;
+    CICopyArrayOf<StatementInfo> sorted;
     ForEachItemIn(idx1, stmts)
     {
         StatementInfo & cur = stmts.item(idx1);
@@ -6900,7 +6900,7 @@ bool moveUnconditionalEarlier(HqlExprArray & in)
 
     //For each block of unconditional statements which follow a conditional statement, see if they can be moved over the conditional statements.
     //(copies with no overhead if couldImprove is false)
-    CopyCIArrayOf<StatementInfo> sorted;
+    CICopyArrayOf<StatementInfo> sorted;
     unsigned max = stmts.ordinality();
     for (unsigned idx1 = 0; idx1 < max;)
     {

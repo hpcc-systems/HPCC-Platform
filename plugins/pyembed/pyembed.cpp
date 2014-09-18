@@ -771,9 +771,9 @@ public:
 protected:
     void pop()
     {
-        iter.setown((PyObject *) iterStack.pop());
-        parent.setown((PyObject *) parentStack.pop());
-        named = namedStack.pop();
+        iter.setown((PyObject *) iterStack.popGet());
+        parent.setown((PyObject *) parentStack.popGet());
+        named = namedStack.popGet();
         elem.clear();
     }
     void push()
@@ -941,7 +941,7 @@ protected:
     void pop()
     {
         addArg(args.getClear());
-        args.setown((PyObject *) stack.pop());
+        args.setown((PyObject *) stack.popGet());
     }
     void addArg(PyObject *arg)
     {

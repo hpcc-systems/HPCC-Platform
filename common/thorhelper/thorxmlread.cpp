@@ -1620,7 +1620,7 @@ class CXMLParse : public CInterface, implements IXMLParse
     {
         CXPath xpath;
         IXMLSelect *iXMLSelect;   // NOTE - not linked - creates circular links
-        CopyCIArrayOf<CParseStackInfo> stack, freeParseInfo;
+        CICopyArrayOf<CParseStackInfo> stack, freeParseInfo;
         IPTreeMaker *maker;
         Linked<CMarkReadBase> marking;
         Owned<COffsetNodeCreator> nodeCreator;
@@ -1679,7 +1679,7 @@ class CXMLParse : public CInterface, implements IXMLParse
             CParseStackInfo *stackInfo;
             if (freeParseInfo.ordinality())
             {
-                stackInfo = &freeParseInfo.pop();
+                stackInfo = &freeParseInfo.popGet();
                 stackInfo->reset();
             }
             else

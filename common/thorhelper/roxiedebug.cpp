@@ -212,7 +212,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
 
 //=======================================================================================
 
-MAKEValueArray(const RtlTypeInfo *, RtlTypeInfoArray);
+typedef ArrayOf<const RtlTypeInfo *> RtlTypeInfoArray;
 
 class SimpleFieldSearcher : public CInterface, implements IRowMatcher
 {

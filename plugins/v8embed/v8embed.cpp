@@ -189,8 +189,8 @@ public:
 protected:
     void pop()
     {
-        named = namedStack.pop();
-        idx = idxStack.pop();
+        named = namedStack.popGet();
+        idx = idxStack.popGet();
         row = stack.back();
         stack.pop_back();
     }
@@ -356,8 +356,8 @@ protected:
     }
     void pop(const RtlFieldInfo * field)
     {
-        inDataset = dsStack.pop();
-        idx = idxStack.pop();
+        inDataset = dsStack.popGet();
+        idx = idxStack.popGet();
         v8::Local<v8::Object> row = obj;
         obj = stack.back();
         stack.pop_back();

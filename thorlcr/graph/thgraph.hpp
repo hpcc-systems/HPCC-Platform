@@ -34,7 +34,7 @@
 #define MEDIUMTIMEOUT 30000
 
 #include "jlib.hpp"
-#include "jarray.tpp"
+#include "jarray.hpp"
 #include "jexcept.hpp"
 #include "jhash.hpp"
 #include "jsuperhash.hpp"
@@ -200,12 +200,6 @@ public:
     CIOConnection(CGraphElementBase *_activity, unsigned _index) : activity(_activity), index(_index) { }
 };
 
-inline CIOConnection *Array__Member2Param(CIOConnection * src)         { return src; }
-inline void Array__Assign(CIOConnection * & dest, CIOConnection * src) { dest = src; }
-inline void Array__Destroy(CIOConnection * & next)                           { if (next) next->Release(); }
-inline CIOConnection * Array__Member2ParamPtr(CIOConnection * src)     { return src; }
-MAKEArrayOf(CIOConnection *, CIOConnection *, _CIOConnectionArray);
-
 class COwningSimpleIOConnection : public CIOConnection
 {
 public:
@@ -213,7 +207,7 @@ public:
     ~COwningSimpleIOConnection() { ::Release(activity); }
 };
 
-class CIOConnectionArray : public _CIOConnectionArray
+class CIOConnectionArray : public OwnedPointerArrayOf<CIOConnection>
 {
 public:
     CIOConnection *queryItem(unsigned i)
@@ -238,7 +232,7 @@ public:
 typedef SimpleHashTableOf<CGraphBase, graph_id> CGraphTableCopy;
 typedef OwningSimpleHashTableOf<CGraphBase, graph_id> CGraphTable;
 typedef CIArrayOf<CGraphBase> CGraphArray;
-typedef CopyCIArrayOf<CGraphBase> CGraphArrayCopy;
+typedef CICopyArrayOf<CGraphBase> CGraphArrayCopy;
 typedef IIteratorOf<CGraphBase> IThorGraphIterator;
 typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGraphArrayIterator;
 typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> CGraphArrayCopyIterator;
@@ -357,7 +351,7 @@ public:
 };
 
 typedef CIArrayOf<CGraphElementBase> CGraphElementArray;
-typedef CopyCIArrayOf<CGraphElementBase> CGraphElementArrayCopy;
+typedef CICopyArrayOf<CGraphElementBase> CGraphElementArrayCopy;
 typedef OwningSimpleHashTableOf<CGraphElementBase, activity_id> CGraphElementTable;
 typedef IIteratorOf<CGraphElementBase> IThorActivityIterator;
 typedef ArrayIIteratorOf<const CGraphElementArray, CGraphElementBase, IThorActivityIterator> CGraphElementArrayIterator;

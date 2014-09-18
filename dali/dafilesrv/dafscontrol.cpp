@@ -115,7 +115,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
             ep.port = getDaliServixPort();
         eps.append(ep);
     }
-    PointerIArrayOf<ISocket> sockets;
+    IPointerArrayOf<ISocket> sockets;
     unsigned to=10*1000;
     unsigned n=eps.ordinality();    // use approx log scale (timeout is long but only for failure situation)
     while (n>1) {
@@ -129,14 +129,14 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
     class casyncfor: public CAsyncFor
     {
         SocketEndpointArray &eps;
-        PointerIArrayOf<ISocket> &sockets;
+        IPointerArrayOf<ISocket> &sockets;
         ApplyMode mode;
         unsigned ver;
         SocketEndpointArray &result;
         StringAttrArray &resultstr;
         CriticalSection &sect;
     public:
-        casyncfor(ApplyMode _mode, unsigned _ver,SocketEndpointArray &_eps,PointerIArrayOf<ISocket> &_sockets,SocketEndpointArray &_result, StringAttrArray &_resultstr,CriticalSection &_sect) 
+        casyncfor(ApplyMode _mode, unsigned _ver,SocketEndpointArray &_eps,IPointerArrayOf<ISocket> &_sockets,SocketEndpointArray &_result, StringAttrArray &_resultstr,CriticalSection &_sect) 
             : eps(_eps), sockets(_sockets), result(_result), resultstr(_resultstr), sect(_sect)
         { 
             mode = _mode;

@@ -62,7 +62,7 @@ public:
 class CXmlScopeIterator : public IIterator, public CInterface
 {
 protected:
-    Array subscopes;
+    IArray subscopes;
     unsigned index;
 public:
     IMPLEMENT_IINTERFACE;

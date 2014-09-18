@@ -500,7 +500,7 @@ public:
                 StringArray libnames, unresolvedLibs;
                 gatherLibraryNames(libnames, unresolvedLibs, *wufactory, *cw, qs);
 
-                PointerIArrayOf<IHpccPackage> libraries;
+                IPointerArrayOf<IHpccPackage> libraries;
                 ForEachItemIn(libitem, libnames)
                 {
                     const char *libname = libnames.item(libitem);

@@ -9287,7 +9287,7 @@ public:
                         }
                         // add remaining
                         ForEachItemIn(e, *eps) {
-                            SocketEndpoint &ep = eps->item(e);
+                            const SocketEndpoint &ep = eps->item(e);
                             StringBuffer ipStr;
                             ep.getIpText(ipStr);
                             IPropertyTree *node = createPTree();
@@ -9306,7 +9306,7 @@ public:
                         IPropertyTree *existing = root->queryPropTree(xpath.str());
                         if (existing) {
                             ForEachItemIn(e, *eps) {
-                                SocketEndpoint &ep = eps->item(e);
+                                const SocketEndpoint &ep = eps->item(e);
                                 StringBuffer ipStr;
                                 ep.getIpText(ipStr);
                                 VStringBuffer xpath("Node[@ip=\"%s\"]", ipStr.str());
@@ -11646,7 +11646,7 @@ bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &lo
         void Do(unsigned i)
         {
             UnsignedArray parts;
-            SocketEndpoint &ep = ips.item(i);
+            const SocketEndpoint &ep = ips.item(i);
             if (ep.isNull())
                 return;
             ForEachItemIn(j,ips) {

@@ -762,7 +762,7 @@ protected:
     bool isAborting() { return errorDisabled; }
     IIdAtom * fieldMapTo(IHqlExpression* expr, IIdAtom * name);
     IIdAtom * fieldMapFrom(IHqlExpression* expr, IIdAtom * name);
-    bool requireLateBind(IHqlExpression* funcdef, Array& actuals);
+    bool requireLateBind(IHqlExpression* funcdef, const HqlExprArray & actuals);
     IHqlExpression* createDefJoinTransform(IHqlExpression* left,IHqlExpression* right,attribute& errpos, IHqlExpression * seq, IHqlExpression * flags);
     IHqlExpression * createRowAssignTransform(const attribute & srcAttr, const attribute & tgtAttr, const attribute & seqAttr);
     IHqlExpression * createClearTransform(IHqlExpression * record, const attribute & errpos);

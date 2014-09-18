@@ -507,7 +507,7 @@ class CEnumeratedTypeInfo : public CTypeInfo, public IEnumeratedTypeBuilder
 private:
     size32_t numValues;
     KeptHashTable valueMap;
-    Array valueList;
+    IArray valueList;
     Owned<ITypeInfo> base;
 
 public:

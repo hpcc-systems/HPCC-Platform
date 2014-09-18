@@ -3728,7 +3728,7 @@ class CDirectoryDifferenceIterator : public CIArrayOf<CDirEntry>, extends CInter
 
     
     
-    static int compare(CInterface **_a, CInterface **_b)
+    static int compare(CInterface * const *_a, CInterface * const *_b)
     {
         CDirEntry *a = *(CDirEntry **)_a;
         CDirEntry *b = *(CDirEntry **)_b;
@@ -4859,21 +4859,21 @@ void RemoteMultiFilename::setIp(const IpAddress & ip)
 {
     ep.ipset(ip);
     ForEachItem(i)
-        item(i).setIp(ip);
+        element(i).setIp(ip);
 }
 
 void RemoteMultiFilename::setEp(const SocketEndpoint & _ep)
 {
     ep.set(_ep);
     ForEachItem(i)
-        item(i).setEp(_ep);
+        element(i).setEp(_ep);
 }
 
 void RemoteMultiFilename::setPort(unsigned short port)
 {
     ep.port = port;
     ForEachItem(i)
-        item(i).setPort(port);
+        element(i).setPort(port);
 }
 
 void RemoteMultiFilename::set(const RemoteMultiFilename & other)
@@ -5536,7 +5536,7 @@ public:
         StringBuffer locations;
         Owned<IException> exc;
         ForEachItemIn(copy,copies) {
-            RemoteFilename &rfn = copies.item(copy);
+            const RemoteFilename &rfn = copies.item(copy);
             try {
                 OwnedIFile iFile = createIFile(rfn);
                 if (iFile->exists())
@@ -6484,7 +6484,7 @@ class CLazyFileIOCache: public CInterface, implements IFileIOCache
 {
     CriticalSection sect;
     unsigned max;
-    PointerIArrayOf<CCachedFileIO> cache;
+    IPointerArrayOf<CCachedFileIO> cache;
 public:
     IMPLEMENT_IINTERFACE;
 

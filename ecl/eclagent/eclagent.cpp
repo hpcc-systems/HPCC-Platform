@@ -2677,7 +2677,7 @@ void EclAgent::checkPersistMatches(const char * logicalName, unsigned eclCRC)
     logException(ExceptionSeverityInformation, 0, msg.str(), false);
 }
 
-static int comparePersistAccess(IInterface **_a, IInterface **_b)
+static int comparePersistAccess(IInterface * const *_a, IInterface * const *_b)
 {
     IPropertyTree *a = *(IPropertyTree **)_a;
     IPropertyTree *b = *(IPropertyTree **)_b;

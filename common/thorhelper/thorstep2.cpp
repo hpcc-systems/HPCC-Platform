@@ -56,7 +56,7 @@ So the latest approach is as follows:
    occasionally skips a long way (e.g. state) it will get corrected/used. 
 
   */
-int compareInitialInputOrder(CInterface * * _left, CInterface * * _right)
+int compareInitialInputOrder(CInterface * const * _left, CInterface * const * _right)
 {
     OrderedInput * left = static_cast<OrderedInput *>(*_left);
     OrderedInput * right = static_cast<OrderedInput *>(*_right);

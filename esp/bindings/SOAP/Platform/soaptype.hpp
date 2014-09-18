@@ -66,7 +66,7 @@ union FieldValue
     bool   boolV;
     ISoapField* structV;
     StringArray* stringarrayV;
-    Array*       arrayV;
+    IArray*       arrayV;
 
     FieldValue() { }
     FieldValue(int v) { intV = v; }
@@ -78,7 +78,7 @@ union FieldValue
     FieldValue(bool v) { boolV = v; }
     FieldValue(ISoapField* v) {  structV = v; }
     FieldValue(StringArray* v) {  stringarrayV = v; }
-    FieldValue(Array* v) { arrayV = v; }
+    FieldValue(IArray* v) { arrayV = v; }
 };
 
 interface ISoapField : public IInterface

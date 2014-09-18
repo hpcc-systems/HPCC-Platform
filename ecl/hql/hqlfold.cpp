@@ -2966,7 +2966,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             {
                 //Transform this map to a case - it will be much more efficient.
                 HqlExprArray args2;
-                CopyArray alreadyDone;
+                ICopyArray alreadyDone;
                 args2.append(*LINK(allTestField));
                 ForEachItemIn(i, args)
                 {

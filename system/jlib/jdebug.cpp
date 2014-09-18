@@ -1323,7 +1323,7 @@ class CProcessMonitor
     bool busy;
 
 
-    static int compare(CInterface **i1, CInterface **i2)
+    static int compare(CInterface * const *i1, CInterface * const *i2)
     {
         CProcInfo *pi1 = QUERYINTERFACE(*i1,CProcInfo);
         CProcInfo *pi2 = QUERYINTERFACE(*i2,CProcInfo);

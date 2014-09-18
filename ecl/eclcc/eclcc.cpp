@@ -2223,7 +2223,7 @@ protected:
     Semaphore & fileReady;
 };
 
-int compareFilenames(IInterface * * pleft, IInterface * * pright)
+int compareFilenames(IInterface * const * pleft, IInterface * const * pright)
 {
     IFile * left = static_cast<IFile *>(*pleft);
     IFile * right = static_cast<IFile *>(*pright);

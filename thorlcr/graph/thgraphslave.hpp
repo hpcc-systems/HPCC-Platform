@@ -43,7 +43,7 @@ class graphslave_decl CSlaveActivity : public CActivityBase
     mutable CriticalSection crit;
 
 protected:
-    PointerIArrayOf<IThorDataLink> inputs, outputs;
+    IPointerArrayOf<IThorDataLink> inputs, outputs;
     unsigned __int64 totalCycles;
     MemoryBuffer startCtx;
 

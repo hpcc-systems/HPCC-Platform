@@ -1609,7 +1609,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     return true;
 }
 
-int EspQuerySuperFileCompareFunc(IInterface **i1, IInterface **i2)
+int EspQuerySuperFileCompareFunc(IInterface * const *i1, IInterface * const *i2)
 {
     if (!i1 || !*i1 || !i2 || !*i2)
         return 0;
