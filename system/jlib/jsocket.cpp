@@ -791,7 +791,14 @@ size32_t CSocket::avail_read()
 
 int CSocket::pre_connect (bool block)
 {
-    assertex(hostname);
+    if (NULL == hostname || NULL == (*hostname))
+    {
+        StringBuffer err;
+        err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",__FILE__, __LINE__);
+        IJSOCK_Exception *e = new SocketException(JSOCKERR_bad_netaddr,err.str());
+        throw e;
+    }
+
     DEFINE_SOCKADDR(u);
     if (targetip.isNull()) {
         set_return_addr(hostport,hostname);
