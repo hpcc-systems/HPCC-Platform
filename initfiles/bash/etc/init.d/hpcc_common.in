@@ -473,11 +473,9 @@ startCmd() {
     eval $startcmd
 
     if strstr ${compType} "thor" ; then
-        sleep 1
         WAITTIME=45
     else
-        sleep 1
-        WAITTIME=5
+        WAITTIME=6
     fi
 
     RCSTART=0
