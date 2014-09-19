@@ -7830,7 +7830,7 @@ void CHThorDiskReadBaseActivity::resolve()
 
                 IDistributedSuperFile * sf = dFile->querySuperFile();
                 if (sf)
-                     dfIter.setown(sf->getSubFileIterator());
+                    subFileIter.setown(sf->getSubFileIterator());
             }
         }
         if (!ldFile)
@@ -8014,41 +8014,51 @@ bool CHThorDiskReadBaseActivity::openNext()
     saveOpenExc.clear();
     bool retVal=false;
 
-    if (dfIter && dfIter->isValid() )
+    if (subFileIter && subFileIter->isValid() )
     {
         // Process files belong to a superfile
         PROGLOG("CHThorDiskReadBaseActivity::openNext() subfiles.");
         retVal=false;
 
-        IDistributedFile * distFile = &dfIter->query();
-
-        logicalFileName.set(distFile->queryLogicalName());
-
-        Owned<IDistributedFilePartIterator> mydfsParts = distFile->getIterator();
-        unsigned myNumOfParts = distFile->numParts();
-        partNum=0;
-
-        // open next part of a multipart, if there is one
-        while ((mydfsParts && mydfsParts->isValid()) && (partNum < myNumOfParts) && (retVal == false))
+        if (partNum == 0)
         {
-            IDistributedFilePart * curPart = &mydfsParts->query();
+            IDistributedFile * distFile = &subFileIter->query();
+
+            logicalFileName.set(distFile->queryLogicalName());
+            dfsParts.setown( distFile->getIterator());
+            myNumOfParts = distFile->numParts();
+        }
+        // open next part of a multipart, if there is one
+        if ((dfsParts && dfsParts->isValid()) && (partNum < myNumOfParts) )
+        {
+            IDistributedFilePart * curPart = &dfsParts->query();
             unsigned numCopies = curPart->numCopies();
 
             retVal = processCopies(curPart, numCopies);
-
             partNum++;
+            dfsParts->next();
         }
 
-        if (mydfsParts)
-            mydfsParts->next();
-
-
-        if (dfIter)
-            dfIter->next();
+        if ( partNum == myNumOfParts )
+        {
+            // all part of a subfile processed
+            partNum=0;
+            if (subFileIter)
+            {
+                subFileIter->next();
+                // Check the superfile processing is done
+                if (!subFileIter->isValid())
+                {
+                    // Yes, invalidate ldFile (which points same superfile) to avoid to process it as a single file
+                    ldFile.clear();
+                    ldFile.setown(NULL);
+                }
+            }
+        }
 
         return retVal;
     }
-    else if (ldFile && ldFile->numParts() && (partNum == 0))
+    else if (ldFile && ldFile->numParts() && (partNum < ldFile->numParts()) )
     {
         // Process a single file
         PROGLOG("CHThorDiskReadBaseActivity::openNext() single file.");
@@ -8056,14 +8066,11 @@ bool CHThorDiskReadBaseActivity::openNext()
 
         logicalFileName.set(ldFile->queryLogicalName());
 
-        // open next part of a multipart, if there is one
-        while ((partNum < ldFile->numParts()) && (retVal == false))
-        {
-            unsigned numCopies = ldFile->numPartCopies(partNum);
-            retVal = processCopies( (IDistributedFilePart * )NULL, numCopies);
+        unsigned numCopies = ldFile->numPartCopies(partNum);
+        retVal = processCopies( (IDistributedFilePart * )NULL, numCopies);
 
-            partNum++;
-        }
+        partNum++;
+
         return retVal;
     }
     else if (!tempFileName.isEmpty())
@@ -8139,8 +8146,8 @@ void CHThorDiskReadBaseActivity::open()
 {
     assertex(!opened);
     partNum = 0;
-    if (dfIter)
-        eofseen = !dfIter->first() || !openNext();
+    if (subFileIter)
+        eofseen = !subFileIter->first() || !openNext();
     else if (ldFile||tempFileName.length())
         eofseen = !openNext();
     else
