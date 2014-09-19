@@ -221,7 +221,7 @@ public:
             unsigned length = header->length;
             if (bucket)
             {
-                MTIME_SECTION(timer, "bucket_wait");
+                MTIME_SECTION(queryActiveTimer(), "bucket_wait");
                 bucket->wait((length / 1024)+1);
             }
             try

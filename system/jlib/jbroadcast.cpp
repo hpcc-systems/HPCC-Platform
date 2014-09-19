@@ -840,7 +840,7 @@ public:
         unsigned offset = 0;
 
 #ifdef _DEBUG
-        MTimeSection * mt = new MTimeSection(defaultTimer, "ServerBroadcast", "SERVER BROADCAST"); // MORE is ServerBroadcast a scope (where) or a name (what)?
+        MTimeSection * mt = new MTimeSection(queryActiveTimer(), "ServerBroadcast", "SERVER BROADCAST"); // MORE is ServerBroadcast a scope (where) or a name (what)?
 #endif
 
         unsigned maxDataSz = MC_PACKET_SIZE-sizeof(MCPacketHeader);
@@ -1067,7 +1067,8 @@ public:
         LOG(MCdebugProgress(10), unknownJob, "All %d packets from all %d nodes acknowledged", packets, nodes);
 #ifdef _DEBUG
         StringBuffer str;
-        defaultTimer->getTimings(str);
+        if (queryActiveTimer())
+            queryActiveTimer()->getTimings(str);
         LOG(MCdebugProgress(10), unknownJob, "%s", str.str());
 #endif
         return !stopped;

@@ -2636,11 +2636,11 @@ private:
             else if (stricmp(queryName, "control:timings")==0)
             {
                 reply.append("<Timings>");
-                timer->getTimings(reply);
+                queryActiveTimer()->getTimings(reply);
                 reply.append("</Timings>");
                 if (control->getPropBool("@reset", false))
                 {
-                    timer->reset();
+                    queryActiveTimer()->reset();
                 }
             }
             else if (stricmp(queryName, "control:topology")==0)

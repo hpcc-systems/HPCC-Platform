@@ -1139,7 +1139,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
     {
-        MTIME_SECTION(timer, "CKeyStore_load");
+        MTIME_SECTION(queryActiveTimer(), "CKeyStore_load");
         IKeyIndex *keyIndex;
 
         // MORE - holds onto the mutex way too long
@@ -1387,7 +1387,7 @@ CJHTreeNode *CMemKeyIndex::loadNode(offset_t pos)
         throw E;
     }
     char *nodeData = (char *) (io->base() + pos);
-    MTIME_SECTION(timer, "JHTREE read node");
+    MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     return CKeyIndex::loadNode(nodeData, pos, false);
 }
 
@@ -1407,7 +1407,7 @@ CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos)
     unsigned nodeSize = keyHdr->getNodeSize();
     MemoryAttr ma;
     char *nodeData = (char *) ma.allocate(nodeSize);
-    MTIME_SECTION(timer, "JHTREE read node");
+    MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     if (io->read(pos, nodeSize, nodeData) != nodeSize)
     {
         IException *E = MakeStringException(errno, "Error %d reading node at position %"I64F"x", errno, pos); 
@@ -1446,7 +1446,7 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
             throwUnexpected();
         }
         {
-            MTIME_SECTION(timer, "JHTREE load node");
+            MTIME_SECTION(queryActiveTimer(), "JHTREE load node");
             ret->load(keyHdr, nodeData, pos, true);
         }
         return ret.getClear();

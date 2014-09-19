@@ -89,11 +89,11 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         SCMStringBuffer wuid, jobname;
         {
-            MTIME_SECTION(timer, "getWUID");
+            MTIME_SECTION(queryActiveTimer(), "getWUID");
             w.getWuid(wuid);
         }
         {
-            MTIME_SECTION(timer, "deleteWorkunit");
+            MTIME_SECTION(queryActiveTimer(), "deleteWorkunit");
             factory->deleteWorkUnit(wuid.str());
         }
         printf("deleted %s\n", wuid.str());
@@ -362,11 +362,11 @@ int main(int argc, const char *argv[])
     closeDllServer();   
     closeEnvironment(); 
     closedownClientProcess();   // dali client closedown
-    if (timer)
+    if (queryActiveTimer())
     {
-        timer->printTimings();
-        timer->reset();
-        timer = NULL;
+        queryActiveTimer()->printTimings();
+        queryActiveTimer()->reset();
+        setActiveTimer(NULL);
     }
     releaseAtoms();
     return 0;

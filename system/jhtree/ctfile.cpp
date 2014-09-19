@@ -601,7 +601,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
     else if (isLeaf() && (keyType & HTREE_COMPRESSED_KEY))
     {
         {
-            MTIME_SECTION(timer, "Compressed node expand");
+            MTIME_SECTION(queryActiveTimer(), "Compressed node expand");
             expandedSize = keyHdr->getNodeSize();
             bool quick = (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;
 #ifndef _OLD_VERSION
@@ -621,7 +621,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         int i;
         if (keyType & COL_PREFIX)
         {
-            MTIME_SECTION(timer, "COL_PREFIX expand");
+            MTIME_SECTION(queryActiveTimer(), "COL_PREFIX expand");
             
             if (hdr.numKeys) {
                 bool handleVariable = isVariable && isLeaf();
@@ -718,7 +718,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         }
         else
         {
-            MTIME_SECTION(timer, "NO compression copy");
+            MTIME_SECTION(queryActiveTimer(), "NO compression copy");
             expandedSize = hdr.keyBytes + sizeof( __int64 );  // MORE - why is the +sizeof() there?
             keyBuf = (char *) allocMem(expandedSize);
             memcpy(keyBuf, keys, hdr.keyBytes + sizeof( __int64 ));
@@ -860,12 +860,12 @@ extern jhtree_decl void validateKeyFile(const char *filename, offset_t nodePos)
         MemoryAttr ma;
         char *buffer = (char *) ma.allocate(hdr.nodeSize);
         {
-            MTIME_SECTION(timer, "JHTREE read index node");
+            MTIME_SECTION(queryActiveTimer(), "JHTREE read index node");
             io->read(nodeOffset, hdr.nodeSize, buffer);
         }
         CJHTreeNode theNode;
         {
-            MTIME_SECTION(timer, "JHTREE load index node");
+            MTIME_SECTION(queryActiveTimer(), "JHTREE load index node");
             theNode.load(&keyHdr, buffer, nodeOffset, true);
         }
         NodeHdr *nodeHdr = (NodeHdr *) buffer;

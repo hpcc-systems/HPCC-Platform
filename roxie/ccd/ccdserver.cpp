@@ -26481,7 +26481,7 @@ protected:
         stateInfo.setown(createPTreeFromXMLString("<test memoryLimit='50000000'/>"));
         queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, stateInfo, false, false));
         ctx.setown(createSlaveContext(queryFactory, logctx, NULL));
-        timer->reset();
+        queryActiveTimer()->reset();
     }
 
     void testActivity(IRoxieServerActivity *activity, char const * const *input, char const * const *output)
