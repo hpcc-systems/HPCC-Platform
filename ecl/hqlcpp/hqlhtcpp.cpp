@@ -5293,7 +5293,10 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         gatherAttributes(xmlnsAttrs, xmlnsAtom, originalExpr);
         if (retType == type_row)
         {
-            Owned<IWUResult> result = createDatasetResultSchema(seq, name, ::queryRecord(schemaType), xmlnsAttrs, false, false);
+            OwnedHqlExpr record = LINK(::queryRecord(schemaType));
+            if (originalExpr->hasAttribute(noXpathAtom))
+                record.setown(removeAttributeFromFields(record, xpathAtom));
+            Owned<IWUResult> result = createDatasetResultSchema(seq, name, record, xmlnsAttrs, false, false);
             if (result)
                 result->setResultTotalRowCount(1);
         }
@@ -9785,13 +9788,15 @@ void HqlCppTranslator::buildClusterHelper(BuildCtx & ctx, IHqlExpression * expr)
 }
 
 
-void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName)
+void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName, bool removeXpath)
 {
     StringBuffer eclFuncName;
     StringBuffer s;
 
     //Ensure the ECL for the record reflects its serialized form, not the internal form
     OwnedHqlExpr record = getSerializedForm(dataset->queryRecord(), diskAtom);
+    if (removeXpath)
+        record.setown(removeAttributeFromFields(record, xpathAtom));
     appendUniqueId(eclFuncName.append("ecl"), getConsistentUID(record));
 
     BuildCtx declarectx(*code, declareAtom);
@@ -10213,7 +10218,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         instance->classctx.addQuoted(s.clear().append("virtual unsigned getKeyedSize() { return (unsigned) -1; }"));
 
     //virtual const char * queryRecordECL() = 0;
-    buildRecordEcl(instance->createctx, dataset, "queryRecordECL");
+    buildRecordEcl(instance->createctx, dataset, "queryRecordECL", false);
 
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
     HqlExprArray xmlnsAttrs;
@@ -10514,7 +10519,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
             //virtual const char * queryRecordECL() = 0;
-            buildRecordEcl(instance->createctx, dataset, "queryRecordECL");
+            buildRecordEcl(instance->createctx, dataset, "queryRecordECL", expr->hasAttribute(noXpathAtom));
 
             buildExpiryHelper(instance->createctx, expireAttr);
             buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);

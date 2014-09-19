@@ -1444,6 +1444,9 @@ IHqlExpression * SequenceNumberAllocator::attachSequenceNumber(IHqlExpression * 
                 args.append(*createAttribute(namedAtom, LINK(name)));
             args.append(*createAttribute(outputAtom));
             args.append(*createUniqueId());
+            IHqlExpression *noXpath = expr->queryAttribute(noXpathAtom);
+            if (noXpath)
+                args.append(*LINK(noXpath));
             gatherAttributes(args, xmlnsAtom, expr);
             return createSetResult(args);
         }
