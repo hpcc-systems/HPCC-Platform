@@ -386,12 +386,12 @@ ECLRTL_API unsigned rtlCrcVUnicode(UChar const * k, unsigned initval);
 
 ECLRTL_API unsigned rtlRandom();
 ECLRTL_API void rtlSeedRandom(unsigned value);
-ECLRTL_API void rtlFail(int code, const char *msg) __attribute__((noreturn));
-ECLRTL_API void rtlSysFail(int code, const char *msg) __attribute__((noreturn));
-ECLRTL_API void rtlFailUnexpected() __attribute__((noreturn));
-ECLRTL_API void rtlFailOnAssert() __attribute__((noreturn));
-ECLRTL_API void rtlFailDivideByZero() __attribute__((noreturn));
-ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg) __attribute__((noreturn));
+__declspec(noreturn) ECLRTL_API void rtlFail(int code, const char *msg) __attribute__((noreturn));
+__declspec(noreturn) ECLRTL_API void rtlSysFail(int code, const char *msg) __attribute__((noreturn));
+__declspec(noreturn) ECLRTL_API void rtlFailUnexpected() __attribute__((noreturn));
+__declspec(noreturn) ECLRTL_API void rtlFailOnAssert() __attribute__((noreturn));
+__declspec(noreturn) ECLRTL_API void rtlFailDivideByZero() __attribute__((noreturn));
+__declspec(noreturn) ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg) __attribute__((noreturn));
 
 ECLRTL_API void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name);
 ECLRTL_API void rtlReportRowOverflow(unsigned size, unsigned max);
