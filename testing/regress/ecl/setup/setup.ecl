@@ -14,6 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+IMPORT STD;
 
 import Std.File AS FileServices;
 import $;
@@ -137,3 +138,14 @@ n_bi2 := NORMALIZE(n_i3, 4, t_bi2(left, counter));
 n_bi3 := NORMALIZE(n_bi2, 4, t_bi3(left, counter));
 
 output(n_bi3,,C.DG_MemFileName,overwrite);
+
+
+// ------------ Create distributed file for issue10142.ecl ---------------------
+path4 := '~data::name4';
+VarString thorname := 'thorlcr' : STORED('thorname');
+platform := __PLATFORM__ : stored('platform');
+
+msg(UNSIGNED c) := 'Rec ' + (STRING)c ;
+
+ds62 := DATASET(6, TRANSFORM({STRING20 name}, SELF.name := msg(COUNTER)), DISTRIBUTED);
+IF ( platform = thorname, OUTPUT(ds62,,path4, OVERWRITE));

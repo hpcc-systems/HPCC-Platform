@@ -2161,7 +2161,9 @@ protected:
     unsigned __int64 offsetOfPart;
     StringBuffer mangledHelperFileName;
     StringAttr logicalFileName;
-    Owned<IDistributedFileIterator> dfIter;
+    Owned<IDistributedFileIterator> subFileIter;
+    Owned<IDistributedFilePartIterator> dfsParts;
+    unsigned myNumOfParts;
 
     void close();
     virtual void open();
