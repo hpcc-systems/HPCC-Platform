@@ -2933,11 +2933,15 @@ void FileSprayer::updateTargetProperties()
                      (stricmp(aname,"@description")==0)||
                      (stricmp(aname,"@eclCRC")==0)||
                      (stricmp(aname,"@formatCrc")==0)||
-                     (stricmp(aname,"@owner")==0)||
                      ((stricmp(aname,FArecordCount)==0)&&!gotrc))
                     )
                     curProps.setProp(aname,aiter->queryValue());
             }
+
+            //Set target Owner name
+            StringBuffer _owner;
+            if (srcAttr->getProp("@owner", _owner))
+                curProps.setProp("@owner",_owner.str());
 
             // and simple (top level) elements
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
