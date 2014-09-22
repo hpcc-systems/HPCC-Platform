@@ -210,6 +210,9 @@ public:
                 path.append("/");
             }
         }
+        IpAddress ipaddr(host);
+        if ( ipaddr.isNull())
+            throw MakeStringException(-1, "Invalid IP address %s", host.str());
     }
 };
 
