@@ -18,7 +18,7 @@
 
 #include "jlib.hpp"
 #include "jsuperhash.hpp"
-#include <assert.h>
+#include "jexcept.hpp"
 
 #ifndef HASHSIZE_POWER2
 #define HASHSIZE_POWER2
@@ -278,6 +278,8 @@ void SuperHashTable::expand()
     else
         newsize += newsize+1;
 #endif
+    if (newsize < tablesize)
+        throw MakeStringException(0, "HashTable expanded beyond 2^32 items");
     void * *newtable = (void * *) checked_malloc(newsize*sizeof(void *),-603);
     memset(newtable,0,newsize*sizeof(void *));
     void * *oldtable = table;
