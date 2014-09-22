@@ -46,6 +46,7 @@ ESPStruct [nil_remove] ECLResult
     string Value;
     string Link;
     string FileName;
+    [min_ver("1.52")] string NodeGroup;
     bool   IsSupplied;
     bool   ShowFileContent(true);
     int64  Total;
@@ -1562,7 +1563,7 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
 };
 
 ESPservice [
-    version("1.51"), default_client_version("1.51"),
+    version("1.52"), default_client_version("1.52"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

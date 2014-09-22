@@ -1323,6 +1323,21 @@ bool WsWuInfo::getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem
     return true;
 }
 
+StringBuffer& WsWuInfo::getResultNodeGroup(const char* fileName, StringBuffer& nodeGroup)
+{
+    if (!fileName || !*fileName)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT,"Result file not specified");
+
+    Owned<IPropertyTree> f = cw->getFile(fileName);
+    if (f)
+    {
+        const char* cluster = f->queryProp("@cluster");
+        if (cluster && *cluster)
+            getEnvironmentClusterNodeGroup(cluster, nodeGroup);
+    }
+    return nodeGroup;
+}
+
 void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned flags)
 {
     SCMStringBuffer name;
@@ -1419,6 +1434,14 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
 
     if (filename.length())
         result->setShowFileContent(showFileContent);
+
+    if (filename.length() && (version >= 1.52))
+    {
+        StringBuffer nodeGroup;
+        getResultNodeGroup(filename.str(), nodeGroup);
+        if (nodeGroup.length())
+            result->setNodeGroup(nodeGroup.str());
+    }
 
     result->setName(name.str());
     result->setLink(link.str());
