@@ -91,7 +91,7 @@ class Suite:
             if file.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
-                                  self.dir_r,  self.name, args)
+                                  self.dir_r,  self.args.target,  args)
                 if isSetup:
                     skipResult = eclfile.testSkip('setup')
                 else:
