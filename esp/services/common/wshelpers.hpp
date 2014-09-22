@@ -85,5 +85,4 @@ inline StringBuffer& operator<<(StringBuffer& buf, const JScript& j)
     return buf;
 }
 
-
 #endif // _ESPWIZ_WSHELPERS_HPP__

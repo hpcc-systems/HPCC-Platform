@@ -9,6 +9,7 @@
 #include "ws_ecl_wuinfo.hpp"
 #include "xsdparser.hpp"
 #include "httpclient.hpp"
+#include "jsonhelpers.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -192,92 +193,6 @@ static void appendServerAddress(StringBuffer &s, IPropertyTree &env, IPropertyTr
     if (s.length())
         s.append('|');
     s.append(netAddress).append(':').append(port ? port : "9876");
-}
-
-
-const char *nextParameterTag(StringBuffer &tag, const char *path)
-{
-    while (*path=='.')
-        path++;
-    const char *finger = strchr(path, '.');
-    if (finger)
-    {
-        tag.clear().append(finger - path, path);
-        finger++;
-    }
-    else
-        tag.set(path);
-    return finger;
-}
-
-void ensureParameter(IPropertyTree *pt, StringBuffer &tag, const char *path, const char *value, const char *fullpath)
-{
-    if (!tag.length())
-        return;
-
-    unsigned idx = 1;
-    if (path && isdigit(*path))
-    {
-        StringBuffer pos;
-        path = nextParameterTag(pos, path);
-        idx = (unsigned) atoi(pos.str())+1;
-        if (idx>25) //adf
-            throw MakeStringException(-1, "Array items above 25 not supported in WsECL HTTP parameters: %s", fullpath);
-    }
-
-    if (tag.charAt(tag.length()-1)=='$')
-    {
-        if (path && *path)
-            throw MakeStringException(-1, "'$' not allowed in parent node of parameter path: %s", fullpath);
-        tag.setLength(tag.length()-1);
-        StringArray values;
-        values.appendList(value, "\r");
-        ForEachItemIn(pos, values)
-        {
-            const char *itemValue = values.item(pos);
-            while (*itemValue=='\n')
-                itemValue++;
-            pt->addProp(tag, itemValue);
-        }
-        return;
-    }
-    unsigned count = pt->getCount(tag);
-    while (count++ < idx)
-        pt->addPropTree(tag, createPTree(tag));
-    StringBuffer xpath(tag);
-    xpath.append('[').append(idx).append(']');
-    pt = pt->queryPropTree(xpath);
-
-    if (!path || !*path)
-    {
-        pt->setProp(NULL, value);
-        return;
-    }
-
-    StringBuffer nextTag;
-    path = nextParameterTag(nextTag, path);
-    ensureParameter(pt, nextTag, path, value, fullpath);
-}
-
-void ensureParameter(IPropertyTree *pt, const char *path, const char *value)
-{
-    const char *fullpath = path;
-    StringBuffer tag;
-    path = nextParameterTag(tag, path);
-    ensureParameter(pt, tag, path, value, fullpath);
-}
-
-IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *parameters)
-{
-    Owned<IPropertyTree> pt = createPTree(name);
-    Owned<IPropertyIterator> props = parameters->getIterator();
-    ForEach(*props)
-    {
-        const char *key = props->getPropKey();
-        const char *value = parameters->queryProp(key);
-        ensureParameter(pt, key, value);
-    }
-    return pt.getClear();
 }
 
 bool CWsEclService::init(const char * name, const char * type, IPropertyTree * cfg, const char * process)
@@ -825,238 +740,6 @@ static void buildRestURL(StringArray& parentTypes, StringArray &path, IXmlType* 
         else
             appendRESTParameter(out, path, tag, parmval);
     }
-}
-
-
-IException *MakeJSONValueException(int code, const char *start, const char *pos, const char *tail, const char *intro="Invalid json format: ")
-{
-     StringBuffer s(intro);
-     s.append(pos-start, start).append('^').append(pos);
-     if (tail && *tail)
-         s.append(" - ").append(tail);
-     return MakeStringException(code, "%s", s.str());
-}
-
-inline StringBuffer &jsonNumericNext(StringBuffer &s, const char *&c, bool &allowDecimal, bool &allowExponent, const char *start)
-{
-    if (isdigit(*c))
-        s.append(*c++);
-    else if ('.'==*c)
-    {
-        if (!allowDecimal || !allowExponent)
-            throw MakeJSONValueException(-1, start, c, "Unexpected decimal");
-        allowDecimal=false;
-        s.append(*c++);
-    }
-    else if ('e'==*c || 'E'==*c)
-    {
-        if (!allowExponent)
-            throw MakeJSONValueException(-1, start, c, "Unexpected exponent");
-
-        allowDecimal=false;
-        allowExponent=false;
-        s.append(*c++);
-        if ('-'==*c || '+'==*c)
-            s.append(*c++);
-        if (!isdigit(*c))
-            throw MakeJSONValueException(-1, start, c, "Unexpected token");
-    }
-    else
-        throw MakeJSONValueException(-1, start, c, "Unexpected token");
-
-    return s;
-}
-
-inline StringBuffer &jsonNumericStart(StringBuffer &s, const char *&c, const char *start)
-{
-    if ('-'==*c)
-        return jsonNumericStart(s.append(*c++), c, start);
-    else if ('0'==*c)
-    {
-        s.append(*c++);
-        if (*c && '.'!=*c)
-            throw MakeJSONValueException(-1, start, c, "Unexpected token");
-    }
-    else if (isdigit(*c))
-        s.append(*c++);
-    else
-        throw MakeJSONValueException(-1, start, c, "Unexpected token");
-    return s;
-}
-
-StringBuffer &appendJSONNumericString(StringBuffer &s, const char *value, bool allowDecimal)
-{
-    if (!value || !*value)
-        return s.append("null");
-
-    bool allowExponent = allowDecimal;
-
-    const char *pos = value;
-    jsonNumericStart(s, pos, value);
-    while (*pos)
-        jsonNumericNext(s, pos, allowDecimal, allowExponent, value);
-    return s;
-}
-
-typedef enum _JSONFieldCategory
-{
-    JSONField_String,
-    JSONField_Integer,
-    JSONField_Real,
-    JSONField_Boolean,
-    JSONField_Present  //true or remove
-} JSONField_Category;
-
-JSONField_Category xsdTypeToJSONFieldCategory(const char *xsdtype)
-{
-    //map XML Schema types used in ECL generated schemas to basic JSON formatting types
-    if (streq(xsdtype, "integer") || streq(xsdtype, "nonNegativeInteger"))
-        return JSONField_Integer;
-    if (streq(xsdtype, "boolean"))
-        return JSONField_Boolean;
-    if (streq(xsdtype, "double"))
-        return JSONField_Real;
-    if (!strncmp(xsdtype, "decimal", 7)) //ecl creates derived types of the form decimal#_#
-        return JSONField_Real;
-    if (streq(xsdtype, "none")) //maps to an eml schema element with no type.  set to true or don't add
-        return JSONField_Present;
-    return JSONField_String;
-}
-
-static void buildJsonAppendValue(IXmlType* type, StringBuffer& out, const char* tag, const char *value, unsigned flags)
-{
-    JSONField_Category ct = xsdTypeToJSONFieldCategory(type->queryName());
-
-    if (ct==JSONField_Present && (!value || !*value))
-        return;
-
-    if (tag && *tag)
-        out.appendf("\"%s\": ", tag);
-    StringBuffer sample;
-    if ((!value || !*value) && (flags & REQSF_SAMPLE_DATA))
-    {
-        type->getSampleValue(sample, NULL);
-        value = sample.str();
-    }
-
-    if (value)
-    {
-        switch (ct)
-        {
-        case JSONField_String:
-            appendJSONValue(out, NULL, value);
-            break;
-        case JSONField_Integer:
-            appendJSONNumericString(out, value, false);
-            break;
-        case JSONField_Real:
-            appendJSONNumericString(out, value, true);
-            break;
-        case JSONField_Boolean:
-            if (strieq(value, "default"))
-                out.append("null");
-            else
-                appendJSONValue(out, NULL, strToBool(value));
-            break;
-        case JSONField_Present:
-            appendJSONValue(out, NULL, true);
-            break;
-        }
-    }
-    else
-        out.append("null");
-}
-
-static void buildJsonMsg(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *reqTree, unsigned flags)
-{
-    assertex(type!=NULL);
-
-    if (flags & REQSF_ROOT)
-        out.append("{");
-
-    const char* typeName = type->queryName();
-    if (type->isComplexType())
-    {
-        if (typeName && !parentTypes.appendUniq(typeName))
-            return; // recursive
-
-        int startlen = out.length();
-        if (tag)
-            appendJSONName(out, tag);
-        out.append('{');
-        int taglen=out.length()+1;
-        if (type->getSubType()==SubType_Complex_SimpleContent)
-        {
-            if (reqTree)
-            {
-                const char *attrval = reqTree->queryProp(NULL);
-                out.appendf("\"%s\" ", (attrval) ? attrval : "");
-            }
-            else if (flags & REQSF_SAMPLE_DATA)
-            {
-                out.append("\"");
-                type->queryFieldType(0)->getSampleValue(out,tag);
-                out.append("\" ");
-            }
-        }
-        else
-        {
-            int flds = type->getFieldCount();
-            for (int idx=0; idx<flds; idx++)
-            {
-                delimitJSON(out);
-                IPropertyTree *childtree = NULL;
-                const char *childname = type->queryFieldName(idx);
-                if (reqTree)
-                    childtree = reqTree->queryPropTree(childname);
-                buildJsonMsg(parentTypes, type->queryFieldType(idx), out, childname, childtree, flags & ~REQSF_ROOT);
-            }
-        }
-
-        if (typeName)
-            parentTypes.pop();
-        out.append("}");
-    }
-    else if (type->isArray())
-    {
-        if (typeName && !parentTypes.appendUniq(typeName))
-            return; // recursive
-
-        const char* itemName = type->queryFieldName(0);
-        IXmlType*   itemType = type->queryFieldType(0);
-        if (!itemName || !itemType)
-            throw MakeStringException(-1,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
-
-        int startlen = out.length();
-        if (tag)
-            out.appendf("\"%s\": ", tag);
-        out.append('{');
-        out.appendf("\"%s\": [", itemName);
-        int taglen=out.length();
-        if (reqTree)
-        {
-            Owned<IPropertyTreeIterator> items = reqTree->getElements(itemName);
-            ForEach(*items)
-                buildJsonMsg(parentTypes, itemType, delimitJSON(out), NULL, &items->query(), flags & ~REQSF_ROOT);
-        }
-        else
-            buildJsonMsg(parentTypes, itemType, out, NULL, NULL, flags & ~REQSF_ROOT);
-
-        out.append(']');
-
-        if (typeName)
-            parentTypes.pop();
-        out.append("}");
-    }
-    else // simple type
-    {
-        const char *parmval = (reqTree) ? reqTree->queryProp(NULL) : NULL;
-        buildJsonAppendValue(type, out, tag, parmval, flags);
-    }
-
-    if (flags & REQSF_ROOT)
-        out.append('}');
-
 }
 
 static inline StringBuffer &appendNamespaceSpecificString(StringBuffer &dest, const char *src)
@@ -1766,7 +1449,7 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
         return;
     }
 
-    Owned<IPropertyTree> reqTree = createPTreeFromHttpParameters(wsinfo.queryname, parameters);
+    Owned<IPropertyTree> reqTree = HttpParamHelpers::createPTreeFromHttpParameters(wsinfo.queryname, parameters);
 
     if (!validate)
         toXML(reqTree, soapmsg, 0, 0);
@@ -1792,56 +1475,13 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
     }
 }
 
-StringBuffer &appendJSONExceptionItem(StringBuffer &s, int code, const char *msg, const char *objname="Exceptions", const char *arrayName = "Exception")
-{
-    if (objname && *objname)
-        appendJSONName(s, objname).append('{');
-    if (arrayName && *arrayName)
-        appendJSONName(s, arrayName).append('[');
-    delimitJSON(s);
-    s.append('{');
-    appendJSONValue(s, "Code", code);
-    appendJSONValue(s, "Message", msg);
-    s.append('}');
-    if (arrayName && *arrayName)
-        s.append(']');
-    if (objname && *objname)
-        s.append('}');
-    return s;
-}
-
-StringBuffer &appendJSONException(StringBuffer &s, IException *e, const char *objname="Exceptions", const char *arrayName = "Exception")
-{
-    if (!e)
-        return s;
-    StringBuffer temp;
-    return appendJSONExceptionItem(s, e->errorCode(), e->errorMessage(temp).str(), objname, arrayName);
-}
-
-StringBuffer &appendJSONExceptions(StringBuffer &s, IMultiException *e, const char *objname="Exceptions", const char *arrayName = "Exception")
-{
-    if (!e)
-        return s;
-    if (objname && *objname)
-        appendJSONName(s, objname).append('{');
-    if (arrayName && *arrayName)
-        appendJSONName(s, arrayName).append('[');
-    ForEachItemIn(i, *e)
-        appendJSONException(s, &e->item(i), NULL, NULL);
-    if (arrayName && *arrayName)
-        s.append(']');
-    if (objname && *objname)
-        s.append('}');
-    return s;
-}
-
 void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags, bool validate)
 {
     size32_t start = jsonmsg.length();
     try
     {
         IProperties *parameters = context.queryRequestParameters();
-        Owned<IPropertyTree> reqTree = createPTreeFromHttpParameters(wsinfo.queryname, parameters);
+        Owned<IPropertyTree> reqTree = HttpParamHelpers::createPTreeFromHttpParameters(wsinfo.queryname, parameters);
 
         if (!validate)
         {
@@ -1866,14 +1506,14 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
             if (type)
             {
                 StringArray parentTypes;
-                buildJsonMsg(parentTypes, type, jsonmsg, wsinfo.queryname.sget(), reqTree, flags|REQSF_ROOT);
+                JsonHelpers::buildJsonMsg(parentTypes, type, jsonmsg, wsinfo.queryname.sget(), reqTree, flags|REQSF_ROOT);
             }
         }
     }
     catch (IException *e)
     {
         jsonmsg.setLength(start);
-        appendJSONException(jsonmsg.append('{'), e);
+        JsonHelpers::appendJSONException(jsonmsg.append('{'), e);
         jsonmsg.append('}');
     }
 }
@@ -2201,7 +1841,7 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         if (strieq(contentType, "application/json"))
         {
             resp.set("{").append("\"").append(query).append("Response\": {\"Results\": {");
-            appendJSONException(resp, e);
+            JsonHelpers::appendJSONException(resp, e);
             resp.append("}}}");
         }
         else
@@ -2687,7 +2327,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
             if (!wsecl->connMap.getValue(target.str()))
                 throw MakeStringException(-1, "Target cluster not mapped to roxie process!");
-            Owned<IPropertyTree> pt = createPTreeFromHttpParameters(qid.str(), parms);
+            Owned<IPropertyTree> pt = HttpParamHelpers::createPTreeFromHttpParameters(qid.str(), parms);
             StringBuffer soapreq(
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
@@ -2910,7 +2550,7 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
     }
     catch (IException *e)
     {
-        appendJSONException(jsonresp.set("{"), e);
+        JsonHelpers::appendJSONException(jsonresp.set("{"), e);
         jsonresp.append('}');
     }
 
