@@ -307,6 +307,7 @@ class Regression:
             logging.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
             suite.setEndTime(time.time())
             Regression.displayReport(report, suite.getElapsTime())
+            suite.close()
             self.closeLogging()
 
         except Exception as e:
@@ -385,6 +386,7 @@ class Regression:
 
             suite.setEndTime(time.time())
             Regression.displayReport(report, suite.getElapsTime())
+            suite.close()
             self.closeLogging()
 
         except Exception as e:
@@ -423,6 +425,7 @@ class Regression:
 
             self.StopTimeoutThread()
             Regression.displayReport(report,  time.time()-start)
+            eclfile.close()
             self.closeLogging()
 
         except Exception as e:
@@ -435,7 +438,7 @@ class Regression:
         self.exitmutexes[th].acquire()
 
         logging.debug("runQuery(cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( cluster, query.ecl, cnt, publish,  th))
-        logging.warn("%3d. Test: %s" % (cnt, query.ecl),  extra={'taskId':cnt})
+        logging.warn("%3d. Test: %s" % (cnt, query.getBaseEclRealName()),  extra={'taskId':cnt})
 
         self.loggermutex.release()
         res = 0
