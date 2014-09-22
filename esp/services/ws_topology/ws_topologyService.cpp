@@ -83,6 +83,23 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
             defaultTargetClusterPrefix.set(cfg->queryProp(xpath.str()));
     }
 
+    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@servicePlugin]", process);
+    Owned<IPropertyTreeIterator> it= cfg->getElements(xpath.str());
+    ForEach(*it)
+    {
+        IPropertyTree& espService = it->query();
+        const char* servicePlugin = espService.queryProp("@servicePlugin");
+        const char* servicePluginType = espService.queryProp("@servicePluginType");
+        if (!servicePlugin || !*servicePlugin)
+            continue;
+        Owned<IEspTpEspServicePlugin> espServicePlugin= createTpEspServicePlugin();
+        espServicePlugin->setName(servicePlugin);
+        if (servicePluginType && *servicePluginType)
+            espServicePlugin->setType(servicePluginType);
+
+        espServicePlugins.append(*espServicePlugin.getClear());
+    }
+
     m_enableSNMP = false;
 }
 
@@ -1708,6 +1725,32 @@ bool CWsTopologyEx::onTpThorStatus(IEspContext &context, IEspTpThorStatusRequest
             }
         }
         resp.setAutoRefresh(THORSTATUSDETAILS_REFRESH_MINS);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return false;
+}
+
+bool CWsTopologyEx::onTpGetServicePlugins(IEspContext &context, IEspTpGetServicePluginsRequest &req, IEspTpGetServicePluginsResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Service Plugins. Permission denied.");
+
+        IArrayOf<IEspTpEspServicePlugin> plugins;
+        ForEachItemIn(i,espServicePlugins)
+        {
+            IEspTpEspServicePlugin& servicePlugin = espServicePlugins.item(i);
+
+            Owned<IEspTpEspServicePlugin> plugin= createTpEspServicePlugin();
+            plugin->setName(servicePlugin.getName());
+            plugin->setType(servicePlugin.getType());
+            plugins.append(*plugin.getClear());
+        }
+        resp.setPlugins(plugins);
     }
     catch(IException* e)
     {
