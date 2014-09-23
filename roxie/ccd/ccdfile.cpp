@@ -141,6 +141,13 @@ public:
     virtual void setCopying(bool _copying)
     {
         CriticalBlock b(crit);
+        if (remote && currentIdx)
+        {
+            // The current location is not our preferred location. Recheck whether we can now access our preferred location
+            setFailure();
+            currentIdx = 0;
+            _checkOpen();
+        }
         copying = _copying; 
     }
 
@@ -559,6 +566,7 @@ typedef StringArray *StringArrayPtr;
 
 class CRoxieFileCache : public CInterface, implements ICopyFileProgress, implements IRoxieFileCache
 {
+    friend class CcdFileTest;
     mutable ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
     InterruptableSemaphore toCopy;
     InterruptableSemaphore toClose;
@@ -568,6 +576,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
     bool started;
     bool aborting;
     bool closing;
+    bool testMode;
     bool closePending[2];
     StringAttrMapping fileErrorList;
     Semaphore bctStarted;
@@ -615,7 +624,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                            offset_t size, const CDateTime &modified, unsigned crc)
     {
         Owned<IFile> local = createIFile(localLocation);
-        bool isCompressed = pdesc->queryOwner().isCompressed();
+        bool isCompressed = testMode ? false : pdesc->queryOwner().isCompressed();
         Owned<CLazyFileIO> ret = new CLazyFileIO(local.getLink(), size, modified, crc, isCompressed);
         RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, crc, isCompressed);
         if (fileStatus == FileIsValid)
@@ -631,7 +640,10 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
-            appendRemoteLocations(pdesc, localLocations, localLocation, roxieName, true);  // Adds all locations on the same cluster
+            if (testMode)
+                localLocations.append("test.buddy");
+            else
+                appendRemoteLocations(pdesc, localLocations, localLocation, roxieName, true);  // Adds all locations on the same cluster
             ForEachItemIn(roxie_idx, localLocations)
             {
                 try
@@ -646,6 +658,15 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                         ret->addSource(remote.getClear());
                         addedOne = true;
                     }
+                    else if (status==FileNotFound)
+                    {
+                        // Even though it's not on the buddy (yet), add it to the locations since it may well be there
+                        // by the time we come to copy (and if it is, we want to copy from there)
+                        if (miscDebugTraceLevel > 5)
+                            DBGLOG("adding missing peer location %s", remoteName);
+                        ret->addSource(remote.getClear());
+                        // Don't set addedOne - we need to go to remote too
+                    }
                     else if (miscDebugTraceLevel > 10)
                         DBGLOG("Checked peer roxie location %s, status=%d", remoteName, (int) status);
                 }
@@ -656,7 +677,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 }
             }
 
-            if (!addedOne && (copyResources || useRemoteResources))  // If no peer locations available, go to remote
+            if (!addedOne && (copyResources || useRemoteResources || testMode))  // If no peer locations available, go to remote
             {
                 ForEachItemIn(idx, remoteLocationInfo)
                 {
@@ -887,7 +908,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieFileCache(bool testmode = false) : bct(*this), hct(*this)
+    CRoxieFileCache(bool _testMode = false) : bct(*this), hct(*this), testMode(_testMode)
     {
         aborting = false;
         closing = false;
@@ -2558,3 +2579,105 @@ extern IRoxieWriteHandler *createRoxieWriteHandler(IRoxieDaliHelper *_daliHelper
 {
     return new CRoxieWriteHandler(_daliHelper, _dFile, _clusters);
 }
+
+//================================================================================================================
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+class CcdFileTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(CcdFileTest);
+        CPPUNIT_TEST(testCopy);
+    CPPUNIT_TEST_SUITE_END();
+protected:
+
+    class DummyPartDescriptor : public CInterfaceOf<IPartDescriptor>
+    {
+        virtual unsigned queryPartIndex() { UNIMPLEMENTED; }
+
+        virtual unsigned numCopies() { UNIMPLEMENTED; }
+        virtual INode *getNode(unsigned copy=0) { UNIMPLEMENTED; }
+        virtual INode *queryNode(unsigned copy=0) { UNIMPLEMENTED; }
+
+        virtual IPropertyTree &queryProperties() { UNIMPLEMENTED; }
+        virtual IPropertyTree *getProperties() { UNIMPLEMENTED; }
+
+        virtual RemoteFilename &getFilename(unsigned copy, RemoteFilename &rfn) { UNIMPLEMENTED; }
+        virtual StringBuffer &getTail(StringBuffer &name) { UNIMPLEMENTED; }
+        virtual StringBuffer &getDirectory(StringBuffer &name,unsigned copy = 0) { UNIMPLEMENTED; }
+        virtual StringBuffer &getPath(StringBuffer &name,unsigned copy = 0) { UNIMPLEMENTED; }
+
+        virtual void serialize(MemoryBuffer &tgt) { UNIMPLEMENTED; }
+
+        virtual bool isMulti() { UNIMPLEMENTED; }
+        virtual RemoteMultiFilename &getMultiFilename(unsigned copy, RemoteMultiFilename &rfn) { UNIMPLEMENTED; }
+
+        virtual bool getCrc(unsigned &crc) { UNIMPLEMENTED; }
+        virtual IFileDescriptor &queryOwner() { UNIMPLEMENTED; }
+        virtual const char *queryOverrideName() { UNIMPLEMENTED; }
+        virtual unsigned copyClusterNum(unsigned copy,unsigned *replicate=NULL) { UNIMPLEMENTED; }
+        virtual IReplicatedFile *getReplicatedFile() { UNIMPLEMENTED; }
+    };
+
+    void testCopy()
+    {
+        CRoxieFileCache cache(true);
+        StringArray remotes;
+        DummyPartDescriptor pdesc;
+        CDateTime dummy;
+        remotes.append("test.remote");
+
+        int f = open("test.remote", _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
+        int val = 1;
+        int wrote = write(f, &val, sizeof(int));
+        CPPUNIT_ASSERT(wrote==sizeof(int));
+        close(f);
+
+        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, "test.local", NULL, remotes, sizeof(int), dummy, 0);
+        CPPUNIT_ASSERT(io != NULL);
+
+        // Reading it should read 1
+        val = 0;
+        io->read(0, sizeof(int), &val);
+        CPPUNIT_ASSERT(val==1);
+
+        // Now create the buddy
+
+        f = open("test.buddy", _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
+        val = 2;
+        write(f, &val, sizeof(int));
+        close(f);
+
+        // Reading it should still read 1...
+        val = 0;
+        io->read(0, sizeof(int), &val);
+        CPPUNIT_ASSERT(val==1);
+
+        // Now copy it - should copy the buddy
+        cache.doCopy(io, false, false);
+
+        // Reading it should read 2...
+        val = 0;
+        io->read(0, sizeof(int), &val);
+        CPPUNIT_ASSERT(val==2);
+
+        // And the data in the file should be 2
+        f = open("test.local", _O_RDONLY);
+        val = 0;
+        read(f, &val, sizeof(int));
+        close(f);
+        CPPUNIT_ASSERT(val==2);
+
+        io.clear();
+        remove("test.local");
+        remove("test.remote");
+        remove("test.buddy");
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( CcdFileTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CcdFileTest, "CcdFileTest" );
+
+#endif
