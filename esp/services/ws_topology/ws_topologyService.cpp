@@ -83,19 +83,27 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
             defaultTargetClusterPrefix.set(cfg->queryProp(xpath.str()));
     }
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@servicePlugin]", process);
+    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService", process);
     Owned<IPropertyTreeIterator> it= cfg->getElements(xpath.str());
     ForEach(*it)
     {
         IPropertyTree& espService = it->query();
-        const char* servicePlugin = espService.queryProp("@servicePlugin");
-        const char* servicePluginType = espService.queryProp("@servicePluginType");
-        if (!servicePlugin || !*servicePlugin)
+        const char* shortName = espService.queryProp("@shortName");
+        const char* longName = espService.queryProp("@longName");
+        const char* folderName = espService.queryProp("@folderName");
+        const char* widgetName = espService.queryProp("@widgetName");
+        if ((!shortName || !*shortName) && (!longName || !*longName) &&
+            (!folderName || !*folderName) && (!widgetName || !*widgetName))
             continue;
         Owned<IEspTpEspServicePlugin> espServicePlugin= createTpEspServicePlugin();
-        espServicePlugin->setName(servicePlugin);
-        if (servicePluginType && *servicePluginType)
-            espServicePlugin->setType(servicePluginType);
+        if (shortName && *shortName)
+            espServicePlugin->setShortName(shortName);
+        if (longName && *longName)
+            espServicePlugin->setLongName(longName);
+        if (folderName && *folderName)
+            espServicePlugin->setFolderName(folderName);
+        if (widgetName && *widgetName)
+            espServicePlugin->setWidgetName(widgetName);
 
         espServicePlugins.append(*espServicePlugin.getClear());
     }
@@ -1746,8 +1754,10 @@ bool CWsTopologyEx::onTpGetServicePlugins(IEspContext &context, IEspTpGetService
             IEspTpEspServicePlugin& servicePlugin = espServicePlugins.item(i);
 
             Owned<IEspTpEspServicePlugin> plugin= createTpEspServicePlugin();
-            plugin->setName(servicePlugin.getName());
-            plugin->setType(servicePlugin.getType());
+            plugin->setWidgetName(servicePlugin.getWidgetName());
+            plugin->setShortName(servicePlugin.getShortName());
+            plugin->setLongName(servicePlugin.getLongName());
+            plugin->setFolderName(servicePlugin.getFolderName());
             plugins.append(*plugin.getClear());
         }
         resp.setPlugins(plugins);
