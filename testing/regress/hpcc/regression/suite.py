@@ -20,9 +20,11 @@
 import os
 import sys
 import time
+import glob
 
 from ..util.ecl.file import ECLFile
 from ..common.error import Error
+from ..util.util import checkClusters
 
 class Suite:
     def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir, args, isSetup=False,  fileList = None):
@@ -30,6 +32,7 @@ class Suite:
             self.name = 'setup_'+name
         else:
             self.name = name
+        self.args=args
         self.suite = []
         self.dir_ec = dir_ec
         self.dir_a = dir_a
@@ -38,6 +41,16 @@ class Suite:
         self.logDir = logDir
         self.exclude = []
         self.publish = []
+        self.isDynamicSource=False
+        if args.dynamic != 'None':
+            self.isDynamicSource=True
+            self.dynamicSources=args.dynamic[0].replace('source=', '').replace('\'','').split(',')
+            self.dynamicSources=checkClusters(self.dynamicSources,  "Dynamic source")
+            pass
+
+        # If there are some temprary files left, then remove them
+        for file in glob.glob(self.dir_ec+'/_tmp*.ecl'):
+            os.unlink(file)
 
         self.buildSuite(args, isSetup, fileList)
 
@@ -50,6 +63,10 @@ class Suite:
             for item in self.exclude:
                 self.log.write(item+"\n")
             self.log.close();
+
+    def __del__(self):
+        print "Suite destructor."
+        pass
 
     def buildSuite(self, args, isSetup,  fileList):
         if fileList == None:
@@ -74,7 +91,7 @@ class Suite:
             if file.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
-                                  self.dir_r,  self.name, args)
+                                  self.dir_r,  self.args.target,  args)
                 if isSetup:
                     skipResult = eclfile.testSkip('setup')
                 else:
@@ -99,7 +116,7 @@ class Suite:
                         exclusionReason=' ECL excluded'
 
                     if not exclude:
-                        self.suite.append(eclfile)
+                        self.addFileToSuite(eclfile)
                     else:
                         self.exclude.append(format(file, "30")+exclusionReason)
                 else:
@@ -107,6 +124,21 @@ class Suite:
 
                 if eclfile.testPublish():
                     self.publish.append(eclfile.getBaseEcl())
+
+    def addFileToSuite(self, eclfile):
+        if eclfile.testDynamicSource() and self.isDynamicSource:
+            # going through the source lists
+            basename = eclfile.getEcl()
+            for source in self.dynamicSources:
+                # generates ECLs based on sources
+                eclfile = ECLFile(basename, self.dir_a, self.dir_ex,
+                                  self.dir_r,  self.name, self.args)
+                eclfile.setDynamicSource(source)
+                # add newly generated ECL to suite
+                self.suite.append(eclfile)
+            pass
+        else:
+            self.suite.append(eclfile)
 
     def testPublish(self, ecl):
         if ecl in self.publish:
@@ -127,3 +159,7 @@ class Suite:
 
     def getSuiteName(self):
         return self.name
+
+    def close(self):
+        for ecl in self.suite:
+            ecl.close()

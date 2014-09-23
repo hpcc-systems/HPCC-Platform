@@ -89,6 +89,7 @@ private:
     bool                                m_enableSNMP;
     StringAttr                          defaultTargetClusterName;
     StringAttr                          defaultTargetClusterPrefix;
+    IArrayOf<IEspTpEspServicePlugin>    espServicePlugins;
 
     void getThorXml(const char *cluster,StringBuffer& strBuff);
     void getThorLog(const char *cluster,MemoryBuffer& returnbuff);
@@ -144,7 +145,7 @@ public:
     bool onTpLogFileDisplay(IEspContext &context,IEspTpLogFileRequest  &req, IEspTpLogFileResponse &resp);
 
     bool onTpServiceQuery(IEspContext &context, IEspTpServiceQueryRequest &req, IEspTpServiceQueryResponse &resp);
-
+    bool onTpGetServicePlugins(IEspContext &context, IEspTpGetServicePluginsRequest &req, IEspTpGetServicePluginsResponse &resp);
     bool onTpGetComponentFile(IEspContext &context, IEspTpGetComponentFileRequest &req, IEspTpGetComponentFileResponse &resp);
 
     bool onTpThorStatus(IEspContext &context, IEspTpThorStatusRequest &req, IEspTpThorStatusResponse &resp);

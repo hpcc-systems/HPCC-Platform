@@ -541,6 +541,7 @@ void CWsSMCEx::readDFUWUs(IEspContext &context, const char* queueName, const cha
 {
     StringAttrArray wulist;
     unsigned running = queuedJobs(queueName, wulist);
+    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     ForEachItemIn(i, wulist)
     {
         StringBuffer jname, uname, state, error;
@@ -552,7 +553,7 @@ void CWsSMCEx::readDFUWUs(IEspContext &context, const char* queueName, const cha
 
         try
         {
-            Owned<IConstDFUWorkUnit> dfuwu = getDFUWorkUnitFactory()->openWorkUnit(wuid, false);
+            Owned<IConstDFUWorkUnit> dfuwu = factory->openWorkUnit(wuid, false);
             dfuwu->getUser(uname);
             dfuwu->getJobName(jname);
         }

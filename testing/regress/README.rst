@@ -21,6 +21,7 @@ Result:
 |                       [--ignoreResult]
 |                       [-X name1=value1[,name2=value2...]]
 |                       [-f optionA=valueA[,optionB=valueB...]]
+|                       [--dynamic source=cluster_list|all]
 |                       {list,setup,run,query} ...
 | 
 |       HPCC Platform Regression suite
@@ -48,6 +49,8 @@ Result:
 |                                 sets the stored input value (stored('name')).
 |        -f optionA=valueA[,optionB=valueB...]
 |                                 set an ECL option (equivalent to #option).
+|        --dynamic source=cluster_list|all
+|                                 execute ECL query through a generated stub with source cluster(s).
 
 Important!
     There is a bug in Python argparse library whichis impacts the quoted parameters. So either in -X or -f or both contains a value with space(s) inside then the whole argument should be put in double quote!
@@ -461,7 +464,48 @@ The format of the output is the same as 'run', except there is a log, result and
 |
 |         End.
 
-6. Tags used in testcases:
+
+6. Use --dynamic parameter:
+---------------------------
+
+Example command:
+
+        ./ecl-test  --dynamic source='all' run -t hthor --runclass=dynamic,dfu
+
+This command executes all ECL tests which are belongs to dynamic and dfu classes. If any test contains //dynamic:source tag then that will executed with all sources via a generated stub for each.
+
+The format of the output is the same as 'run', except all dynamic executed ECL file marked with source:
+
+|         [Action] Suite: hthor
+|         [Action] Queries: 5
+|         [Action]   1. Test: dynamic_test2.ecl ( source: hthor )
+|         [Pass]   1. Pass W20140917-103147 (1 sec)
+|         [Pass]   1. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140917-103147
+|         [Action]   2. Test: dynamic_test2.ecl ( source: thor )
+|         [Pass]   2. Pass W20140917-103149 (1 sec)
+|         [Pass]   2. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140917-103149
+|         [Action]   3. Test: dynamic_test2.ecl ( source: roxie )
+|         [Pass]   3. Pass W20140917-103151 (1 sec)
+|         [Pass]   3. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140917-103151
+|         [Action]   4. Test: spray_test.ecl
+|         [Pass]   4. Pass W20140917-103153 (2 sec)
+|         [Pass]   4. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140917-103153
+|         [Action]   5. Test: spray_test2.ecl
+|         [Pass]   5. Pass W20140917-103156 (2 sec)
+|         [Pass]   5. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140917-103156
+|         [Action]
+|            Results
+|            -------------------------------------------------
+|             Passing: 5
+|             Failure: 0
+|             -------------------------------------------------
+|             Log: /home/ati/HPCCSystems-regression/log/hthor.14-09-17-10-31-46.log
+|             -------------------------------------------------
+|             Elapsed time: 14 sec  (00:00:14)
+|             -------------------------------------------------
+
+
+7. Tags used in testcases:
 --------------------------
 
     To exclude testcase from cluster or clusters, the tag is:
@@ -486,8 +530,11 @@ The format of the output is the same as 'run', except there is a log, result and
     To define a class to be executed/excluded in run mode.
 //class=<class_name>
 
+    To use dynamic source to execute same ECL with different source
+//dynamic:source
 
-7. Key file handling:
+
+8. Key file handling:
 ---------------------
 
 After an ECL test case execution finished and all output collected the result checking follows these steps:
@@ -555,7 +602,7 @@ If we execute setup on any other target:
 Then the RS executes all ecl files from setup directory and 
     - the test cases results compared with corresponding file in ecl/key directory.
 
-8. Key file generation:
+9. Key file generation:
 -----------------------
 
 The regression suite stores every test case output into ~/HPCCSystems-regression/result directory. This is the latest version of result. (The previous version can be found in ~/HPCCSystems-regression/archives directory.) When a test case execution finished Regression Suite compares this output file with the relevant key file to verify the result.
@@ -568,7 +615,7 @@ So if you have a new test case and it works well on all clusters (or some of the
 
 (To check everything is fine, repeat the step 1 and the query should now pass. )
 
-9. Configuration setting in ecl-test.json file:
+10. Configuration setting in ecl-test.json file:
 -------------------------------------------------------------
 
         "IpAddress":{
@@ -698,7 +745,7 @@ Important!
 
 
 
-10. Authentication:
+11. Authentication:
 -------------------
 
 If your HPCC System is configured to use LDAP authentication you should change value of "username" and "password" fields in ecl-test.json file to yours.
