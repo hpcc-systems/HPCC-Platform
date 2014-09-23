@@ -515,7 +515,7 @@ public:
     }
 
     virtual void fail(int code, char const * str);
-    void failv(int code, char const * fmt, ...) __attribute__((format(printf, 3, 4), noreturn));
+    __declspec(noreturn) void failv(int code, char const * fmt, ...) __attribute__((format(printf, 3, 4), noreturn));
     virtual int queryLastFailCode();
     virtual void getLastFailMessage(size32_t & outLen, char * & outStr, const char * tag);
     virtual void getEventName(size32_t & outLen, char * & outStr);
