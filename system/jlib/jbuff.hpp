@@ -620,8 +620,8 @@ class CLargeMemorySequentialReader
 
 
 interface IOutOfMemException;
-jlib_decl IOutOfMemException *createOutOfMemException(int errcode, size32_t wanted, memsize_t got=0,bool expected=false);
-jlib_decl void RaiseOutOfMemException(int errcode, size32_t wanted, size32_t got=0,bool expected=false);
+jlib_decl IOutOfMemException *createOutOfMemException(int errcode, size_t wanted, size_t got=0,bool expected=false);
+jlib_decl void RaiseOutOfMemException(int errcode, size_t wanted, size_t got=0,bool expected=false);
 
 interface ILargeMemLimitNotify: extends IInterface
 {
@@ -632,7 +632,7 @@ interface ILargeMemLimitNotify: extends IInterface
 
 extern jlib_decl void setLargeMemLimitNotify(memsize_t size,ILargeMemLimitNotify *notify);
 
-inline void *checked_malloc(size32_t len,int errcode)
+inline void *checked_malloc(size_t len,int errcode)
 {
     if (len==0)
         return NULL;
@@ -642,7 +642,7 @@ inline void *checked_malloc(size32_t len,int errcode)
     return ret;
 }
 
-jlib_decl void *checked_realloc(void *orig, size32_t newlen, size32_t origlen,int errcode);
+jlib_decl void *checked_realloc(void *orig, size_t newlen, size_t origlen,int errcode);
 
 class NonReentrantSpinLock;
 
