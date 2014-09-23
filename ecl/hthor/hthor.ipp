@@ -2143,7 +2143,6 @@ protected:
     OwnedIFileIO inputfileio;
     Owned<ISerialStream> inputstream;
     StringAttr tempFileName;
-    Owned<IDistributedFilePartIterator> dfsParts;
     Owned<ILocalOrDistributedFile> ldFile;
     Owned<IException> saveOpenExc;
     size32_t recordsize;
@@ -2161,6 +2160,10 @@ protected:
     unsigned __int64 localOffset;
     unsigned __int64 offsetOfPart;
     StringBuffer mangledHelperFileName;
+    StringAttr logicalFileName;
+    Owned<IDistributedFileIterator> subFileIter;
+    Owned<IDistributedFilePartIterator> dfsParts;
+    unsigned myNumOfParts;
 
     void close();
     virtual void open();
@@ -2179,6 +2182,9 @@ protected:
         agent.reportProgress(NULL);
     }
 
+    bool processCopies(IDistributedFilePart * curPart, unsigned numCopies);
+    bool processOneCopy(StringBuffer &file);
+
 public:
     CHThorDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind);
     ~CHThorDiskReadBaseActivity();
@@ -2196,7 +2202,7 @@ public:
 //interface IFilePositionProvider
     virtual unsigned __int64 getFilePosition(const void * row);
     virtual unsigned __int64 getLocalFilePosition(const void * row);
-    virtual const char * queryLogicalFilename(const void * row) { return "MORE!"; }
+    virtual const char * queryLogicalFilename(const void * row) { return logicalFileName.get(); }
 };
 
 class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements IIndexReadContext

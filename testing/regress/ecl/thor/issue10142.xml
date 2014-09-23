@@ -1,0 +1,35 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>aaa                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>bbb                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>ccc                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>ddd                 </name><logicalfile>data::name2                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>eee                 </name><logicalfile>thor::data::name3                                                                                                                                                                                                                                              </logicalfile></Row>
+ <Row><name>Rec 1               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 2               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 3               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 4               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 5               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 6               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><name>aaa                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>bbb                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>ccc                 </name><logicalfile>data::name1                                                                                                                                                                                                                                                    </logicalfile></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><name>eee                 </name><logicalfile>thor::data::name3                                                                                                                                                                                                                                              </logicalfile></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>Rec 1               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 2               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 3               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 4               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 5               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+ <Row><name>Rec 6               </name><logicalfile>data::name4                                                                                                                                                                                                                                                    </logicalfile></Row>
+</Dataset>
