@@ -93,5 +93,5 @@ fi
 
 sort $instancedir/slaves | uniq > $instancedir/uslaves
 nslaves=`cat $instancedir/uslaves.start | wc -l`
-$deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${THORNAME} ${PID}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
+$deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${THORNAME} ${PATH_PRE}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
 echo slaves stopped

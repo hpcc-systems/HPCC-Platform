@@ -16,7 +16,9 @@
 ################################################################################
 
 compName=$1
-PID=$2
+hpcc_setenv=$2
+
+source ${hpcc_setenv}
 
 echo compName=${compName}
 echo PID=${PID}
