@@ -563,21 +563,16 @@
     <title>Installing the Default Admin user</title>
 
     <para>After enabling your configuration for LDAP security, you need to run
-    <emphasis role="bold">ConfigGen</emphasis> to generate the configuration
-    file.</para>
-
-    <programlisting>sudo /opt/HPCCSystems/sbin/configgen -env /etc/HPCCSystems/environment.xml -c myesp</programlisting>
-
-    <para>This command starts the myesp component which allows you to run the
-    <emphasis role="bold">initldap</emphasis> utility that installs the
-    initial security components and the default users. </para>
+    the <emphasis role="bold">initldap</emphasis> utility that installs the
+    initial security components and the default users.</para>
 
     <sect3>
-      <title>the initldap utility</title>
+      <title>The initldap Utility</title>
 
-      <para>At this point you must run initldap.</para>
+      <para>Once you have enabled your configuration, you must run the
+      initldap utility.</para>
 
-      <programlisting>path initldap</programlisting>
+      <programlisting>sudo /opt/HPCCSystems/initldap</programlisting>
 
       <para>Initldap prompts you to enter the values for the System User, the
       default HPCC Admin account. System common name and some.</para>
