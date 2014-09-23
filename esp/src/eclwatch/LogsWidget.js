@@ -84,6 +84,10 @@ define([
                     case "hpp":
                         params = "/WUFile?Wuid=" + this.wu.Wuid + "&Name=" + item.Orig.Name + "&IPAddress=" + item.Orig.IPAddress + "&Description=" + item.Orig.Description + "&Type=" + item.Orig.Type;
                         break;
+                    case "xml":
+                        if (option !== undefined)
+                            params = "/WUFile?Wuid=" + this.wu.Wuid + "&Name=" + item.Orig.Name + "&IPAddress=" + item.Orig.IPAddress + "&Description=" + item.Orig.Description + "&Type=" + item.Orig.Type;
+                        break;
                 }
 
                 return ESPRequest.getBaseURL() + params + (option ? "&Option=" + option : "&Option=1");
