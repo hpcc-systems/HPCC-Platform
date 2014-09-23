@@ -407,7 +407,7 @@
 
         <para>To modify a users credentials you must have Administrator level
         access. To promote a user to an HPCC Administrator, add the user to
-        the <emphasis role="bold">Administrators</emphasis> group. </para>
+        the <emphasis role="bold">Administrators</emphasis> group.</para>
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -452,6 +452,19 @@
           <listitem>
             <para>Select <emphasis role="bold">Administrators</emphasis> by
             placing a check in box.</para>
+
+            <para><variablelist>
+                <varlistentry>
+                  <term>NOTE:</term>
+
+                  <listitem>
+                    <para>The name of the default Administrator group could
+                    vary. For example, in Active Directory, it is
+                    "Administrators", in Open LDAP it is "Directory
+                    Administrators".</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
           </listitem>
 
           <listitem>
