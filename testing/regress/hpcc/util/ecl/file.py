@@ -22,6 +22,7 @@ import logging
 import os
 import traceback
 import re
+import tempfile
 
 from ...util.util import isPositiveIntNum, getConfig
 
@@ -42,6 +43,16 @@ class ECLFile:
     abortReason = ''
     taskId = -1
     ignoreResult=False
+    isDynamicSource=None
+    dynamicSource='test'
+
+    def __del__(self):
+        logging.debug("%3d. File destructor (file:%s).", self.taskId, self.ecl )
+
+    def close(self):
+        if self.tempFile:
+            self.tempFile.close()
+            pass
 
     def __init__(self, ecl, dir_a, dir_ex, dir_r,  cluster, args):
         self.dir_ec = os.path.dirname(ecl)
@@ -49,16 +60,18 @@ class ECLFile:
         self.dir_r = dir_r
         self.dir_a = dir_a
         self.cluster = cluster;
-        baseEcl = os.path.basename(ecl)
-        self.basename = os.path.splitext(baseEcl)[0]
-        baseXml = self.basename + '.xml'
-        self.ecl = baseEcl
-        self.xml_e = baseXml
-        self.xml_r = baseXml
-        self.xml_a = 'archive_' + baseXml
+        self.baseEcl = os.path.basename(ecl)
+        self.basename = os.path.splitext(self.baseEcl)[0]
+        self.baseXml = self.basename + '.xml'
+        self.ecl = self.baseEcl
+        self.xml_e = self.baseXml
+        self.xml_r = self.baseXml
+        self.xml_a = 'archive_' + self.baseXml
         self.jobname = self.basename
         self.diff = ''
         self.abortReason =''
+        self.tags={}
+        self.tempFile=None
 
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
@@ -77,7 +90,7 @@ class ECLFile:
                     testSpec = testSpec.replace('*',  '\w+')
 
                 testSpec = testSpec.replace('.',  '\.')
-                match = re.match(testSpec,  baseEcl)
+                match = re.match(testSpec,  self.baseEcl)
                 if match:
                     optXs = ("-X"+val.replace(',',  ',-X')).split(',')
                     self.processKeyValPairs(optXs,  self.optXHash)
@@ -158,16 +171,42 @@ class ECLFile:
         return os.path.join(self.dir_r, self.xml_r)
 
     def getArchive(self):
-        return os.path.join(self.dir_a, self.xml_a)
+        logging.debug("%3d. getArchive (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
+        if self.isDynamicSource:
+            dynamicFilename='archive_' + self.basename + '_'+ self.dynamicSource+'.xml'
+            return os.path.join(self.dir_a, dynamicFilename)
+        else:
+            return os.path.join(self.dir_a, self.xml_a)
 
     def getEcl(self):
         return os.path.join(self.dir_ec, self.ecl)
+
+    def getRealEclSource(self):
+        logging.debug("%3d. getRealEclSource (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
+        if self.isDynamicSource:
+            # generate stub and return with it
+            self.tempFile = tempfile.NamedTemporaryFile(prefix='_temp',  suffix='.ecl', dir=self.dir_ec)
+            self.tempFile.write('import '+self.basename+';\n')
+            self.tempFile.write(self.basename+'.execute(source := \''+self.dynamicSource+'\');\n')
+            self.tempFile.flush()
+            # now return with the generated
+            return os.path.join(self.dir_ec, self.tempFile.name)
+        else:
+            return os.path.join(self.dir_ec, self.ecl)
 
     def getBaseEcl(self):
         return self.ecl
 
     def getBaseEclName(self):
         return self.basename
+
+    def getBaseEclRealName(self):
+        logging.debug("%3d. getBaseEclRealName (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
+        if self.isDynamicSource:
+            realName = self.basename + '.ecl ( source: ' + self.dynamicSource + ' )'
+        else:
+            realName = self.getBaseEcl()
+        return realName
 
     def getWuid(self):
         return self.wuid
@@ -278,6 +317,16 @@ class ECLFile:
         logging.debug("%3d. testInClass() returns with: %s",  self.taskId,  retVal)
         return retVal
 
+    def testDynamicSource(self):
+        if self.isDynamicSource == None:
+            # Standard string has a problem with unicode characters
+            # use byte arrays and binary file open instead
+            tag = b'//dynamic:source'
+            logging.debug("%3d. testDynamicSource (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+            self.isDynamicSource = self.__checkTag(tag)
+            logging.debug("%3d. testDynamicSource() returns with: %s",  self.taskId,  self.isDynamicSource)
+        return self.isDynamicSource
+
     def getTimeout(self):
         timeout = 0
         # Standard string has a problem with unicode characters
@@ -358,4 +407,11 @@ class ECLFile:
 
     def getFParameters(self):
         return self.optF
+
+    def setDynamicSource(self,  source):
+        self.dynamicSource = source
+        self.isDynamicSource=True
+
+    def getDynamicSource(self):
+        return self.dynamicSource
 

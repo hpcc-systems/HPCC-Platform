@@ -239,7 +239,7 @@ define([
                     retVal += "..." + (arr.length - 10) + " " + this.i18n.More + "...";
                     return true;                    
                 }
-                retVal += item[field];
+                retVal += field ? item[field] : item;
             }, this);
             return retVal;
         },

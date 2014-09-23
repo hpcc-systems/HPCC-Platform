@@ -160,6 +160,8 @@ class RegressMain:
                             nargs=1, type=checkXParam,  default='None',  metavar="name1=value1[,name2=value2...]")
         parser.add_argument('-f', help="set an ECL option (equivalent to #option).",
                             nargs=1, type=checkXParam,  default='None',  metavar="optionA=valueA[,optionB=valueB...]")
+        parser.add_argument('--dynamic', help="execute ECL query through a generated stub with source cluster(s).",
+                            nargs=1, type=checkXParam,  default='None',  metavar="source=cluster_list|all")
 
         subparsers = parser.add_subparsers(help='sub-command help')
 

@@ -916,7 +916,6 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
 
     if (!prepare(parentExtract, checkDependencies))
     {
-        throwUnexpected();
         executed = true;
         return;
     }

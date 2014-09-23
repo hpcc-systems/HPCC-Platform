@@ -67,7 +67,7 @@
 
 //-----------------------------------------------------------------------
 
-jlib_decl void *checked_realloc(void *orig, size32_t newlen, size32_t origlen,int errcode)
+jlib_decl void *checked_realloc(void *orig, size_t newlen, size_t origlen,int errcode)
 {
     if (newlen==0) {
         free(orig);
@@ -84,13 +84,13 @@ jlib_decl void *checked_realloc(void *orig, size32_t newlen, size32_t origlen,in
 class jlib_thrown_decl COutOfMemException: public CInterface, implements IOutOfMemException
 {
     int errcode;
-    size32_t wanted;
-    size32_t got;
+    size_t wanted;
+    size_t got;
     static int recursion;
     bool expected;
 public:
     IMPLEMENT_IINTERFACE;
-    COutOfMemException(int _errcode,size32_t _wanted,memsize_t _got,bool _expected) 
+    COutOfMemException(int _errcode,size_t _wanted,size_t _got,bool _expected)
     {
         errcode = _errcode;
         wanted = _wanted;
@@ -102,7 +102,7 @@ public:
 // Bit risky if *very* out of memory so protect against recursion and catch exceptions
             try { 
                 // try to log
-                PROGLOG("Jbuff: Out of Memory (%d,%d,%"I64F"dk)",_errcode,_wanted,(unsigned __int64) (got/1024));
+                PROGLOG("Jbuff: Out of Memory (%d,%"I64F"d,%"I64F"dk)",_errcode,(unsigned __int64)wanted,(unsigned __int64) (got/1024));
                 PrintStackReport();
                 PrintMemoryReport();
             }
@@ -115,9 +115,9 @@ public:
     int             errorCode() const { return errcode; }
     StringBuffer &  errorMessage(StringBuffer &str) const
     { 
-        str.append("Jbuff: Out of Memory (").append(wanted);
+        str.append("Jbuff: Out of Memory (").append((unsigned __int64)wanted);
         if (got) 
-            str.append(',').append(got/1024);
+            str.append(',').append((unsigned __int64)(got/1024));
         return str.append("k)");
     }
     MessageAudience errorAudience() const { return MSGAUD_user; }
@@ -125,12 +125,12 @@ public:
 
 int COutOfMemException::recursion=0;
 
-IOutOfMemException *createOutOfMemException(int errcode,size32_t wanted,memsize_t got,bool expected)
+IOutOfMemException *createOutOfMemException(int errcode,size_t wanted,size_t got,bool expected)
 {
     return new COutOfMemException(errcode,wanted,got,expected);
 }
 
-void RaiseOutOfMemException(int errcode, size32_t wanted, size32_t got,bool expected)
+void RaiseOutOfMemException(int errcode, size_t wanted, size_t got,bool expected)
 {
     throw createOutOfMemException(errcode, wanted, got,expected);
 }
