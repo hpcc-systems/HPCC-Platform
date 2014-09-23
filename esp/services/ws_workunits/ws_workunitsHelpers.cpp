@@ -800,7 +800,7 @@ void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
                 if (!r)
                     continue;
 
-                IWorkflowEvent *wfevent = r->getScheduleEvent();
+                Owned<IWorkflowEvent> wfevent = r->getScheduleEvent();
                 if (!wfevent)
                     continue;
 
