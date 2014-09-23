@@ -481,8 +481,12 @@ startCmd() {
     fi
     eval $startcmd
 
+    # TODO:
+    # eventually we will want to check all processes that use sentinel files.
+    # This will allow us to ensure that when we start a process, it is guaranteed
+    # to be in a healthy state.
     if strstr ${compType} "thor" ; then
-        WAITTIME=60
+        WAITTIME=120
     else
         WAITTIME=6
     fi
@@ -493,43 +497,34 @@ startCmd() {
     do
         WAITEDLONGENOUGH=`expr ${WAITEDLONGENOUGH} + 1`
         if strstr ${compType} "thor" ; then
-            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
-            RCSTART=$?
+          local SENTINELCHECK=1
         else
-            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
-            RCSTART=$?
-        fi 
+          local SENTINELCHECK=0
+        fi
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINELCHECK}
+        RCSTART=$?
         if [ ${RCSTART} -eq 0 ]; then
-          log_success_msg 
+          log_success_msg
           return 0;
         fi
         sleep 1
     done
 
     if [ ${WAITEDLONGENOUGH} -ge ${WAITTIME} ]; then
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "${compName} has timed out, but may still be starting"
-       else
-          log_failure_msg
-       fi
+      log_failure_msg "${compName} has timed out, but may still be starting"
     elif [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "${compName} is not running, Pidfile exists"
-       else
-          log_failure_msg
-       fi
-    elif [ $RCSTART -eq 2 ];then
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "${compName} is not running, lockfile exists"
-       else
-          log_failure_msg
-       fi
+      if [ ${DEBUG} != "NO_DEBUG" ]; then
+        log_failure_msg "${compName} is not running, Pidfile exists"
+      else
+        log_failure_msg
+      fi
     else
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "Failed : Could not bring up Component"
-       else
-          log_failure_msg
-       fi
+      # RCSTART -eq 2
+      if [ ${DEBUG} != "NO_DEBUG" ]; then
+        log_failure_msg "${compName} is not running, lockfile exists"
+      else
+        log_failure_msg
+      fi
     fi
 
     chmod 644 ${envfile}
