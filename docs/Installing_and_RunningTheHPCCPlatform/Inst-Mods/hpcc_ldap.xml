@@ -569,13 +569,21 @@
     <sect3>
       <title>The initldap Utility</title>
 
-      <para>Once you have enabled your configuration, you must run the
-      initldap utility.</para>
+      <para>The Initldap tool is used to create the HPCC Administrators user
+      account, and the HPCC OUs. Initldap uses the settings in the LDAPServer
+      component(s) in the environment.xml bound to the configured ESPs.</para>
 
-      <programlisting>sudo /opt/HPCCSystems/initldap</programlisting>
+      <para>Once you complete your configuration, (add the LDAPServer
+      components and distribute your environment.xml file) you must then run
+      the initldap utility.</para>
 
-      <para>Initldap prompts you to enter the values for the System User, the
-      default HPCC Admin account. System common name and some.</para>
+      <programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting>
+
+      <para>Initldap prompts you for an LDAP Administrator’s credentials, then
+      you can enter the values for the System User, the default HPCC
+      Administrator account and a System common name.</para>
+
+      <para>Enter the appropriate values when prompted to do so.</para>
     </sect3>
 
     <sect3>
