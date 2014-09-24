@@ -52,7 +52,8 @@ bool checkForeign(const char *lfn)
 }
 const char *skipForeign(const char *name, StringBuffer *ip)
 {
-    if (*name=='~')
+    unsigned maxTildas = 2;
+    while (maxTildas-- && *name=='~')
         name++;
     const char *d1 = strstr(name, "::");
      if (d1)
