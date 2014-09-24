@@ -98,12 +98,14 @@ struct WsWUExceptions
     int ErrCount() { return numerr; }
     int WrnCount() { return numwrn; }
     int InfCount() { return numinf; }
+    int AlertCount() { return numalert; }
 
 private:
     IArrayOf<IEspECLException> errors;
     int numerr;
     int numwrn;
     int numinf;
+    int numalert;
 };
 
 #define WUINFO_TruncateEclTo64k         0x0001

@@ -1064,6 +1064,8 @@ WUExceptionSeverity checkGetExceptionSeverity(CWUExceptionSeverity severity)
             return ExceptionSeverityWarning;
         case CWUExceptionSeverity_ERROR:
             return ExceptionSeverityError;
+        case CWUExceptionSeverity_ALERT:
+            return ExceptionSeverityAlert;
     }
 
     throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT,"invalid exception severity");
@@ -3960,7 +3962,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             sb.append("Thor:         ").append(req.getThorIPAddress()).append("\r\n");
         //Exceptions/Warnings/Info
         Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
-        StringBuffer info, warn, err;
+        StringBuffer info, warn, err, alert;
         ForEach(*exceptions)
         {
             switch (exceptions->query().getSeverity())
@@ -3974,6 +3976,9 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             case ExceptionSeverityError:
                 err.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
                 break;
+            case ExceptionSeverityAlert:
+                alert.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+                break;
             }
         }
         if (err.length())
@@ -3982,6 +3987,8 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             sb.append("Warnings:     ").append("\r\n").append(warn);
         if (info.length())
             sb.append("Information:  ").append("\r\n").append(info);
+        if (alert.length())
+            sb.append("Alert:        ").append("\r\n").append(alert);
 
         //User provided Information
 

@@ -238,6 +238,8 @@ public:
         mb.read(column);
         mb.read((int &)severity);
         mb.read(origin);
+        if (0 == origin.length()) // simpler to clear serialized 0 length terminated string here than check on query
+            origin.clear();
         size32_t sz;
         mb.read(sz);
         if (sz)
@@ -742,8 +744,9 @@ void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, WUExcepti
         if (te)
         {
             we->setSeverity(te->querySeverity());
-            if (te->queryOrigin())
-                we->setExceptionSource(te->queryOrigin());
+            if (!te->queryOrigin()) // will have an origin if from slaves already
+                te->setOrigin("master");
+            we->setExceptionSource(te->queryOrigin());
             StringAttr file;
             unsigned line, column;
             te->getAssert(file, line, column);
@@ -1228,4 +1231,41 @@ void logDiskSpace()
     const char *tempDir = globals->queryProp("@thorTempDirectory");
     diskSpaceMsg.append(tempDir).append(" = ").append(getFreeSpace(tempDir)/0x100000).append(" MB");
     PROGLOG("%s", diskSpaceMsg.str());
+}
+
+IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMonHook *chain)
+{
+    class CPerfMonHook : public CSimpleInterfaceOf<IPerfMonHook>
+    {
+        CJobBase &job;
+        int maxLevel;
+        Linked<IPerfMonHook> chain;
+    public:
+        CPerfMonHook(CJobBase &_job, unsigned _maxLevel, IPerfMonHook *_chain) : chain(_chain), maxLevel(_maxLevel), job(_job)
+        {
+        }
+        virtual void processPerfStats(unsigned processorUsage, unsigned memoryUsage, unsigned memoryTotal, unsigned __int64 firstDiskUsage, unsigned __int64 firstDiskTotal, unsigned __int64 secondDiskUsage, unsigned __int64 secondDiskTotal, unsigned threadCount)
+        {
+            if (chain)
+                chain->processPerfStats(processorUsage, memoryUsage, memoryTotal, firstDiskUsage,firstDiskTotal, secondDiskUsage, secondDiskTotal, threadCount);
+        }
+        virtual StringBuffer &extraLogging(StringBuffer &extra)
+        {
+            if (chain)
+                return chain->extraLogging(extra);
+            return extra;
+        }
+        virtual void log(int level, const char *msg)
+        {
+            PROGLOG("%s", msg);
+            if ((maxLevel != -1) && (level <= maxLevel)) // maxLevel of -1 means disabled
+            {
+                Owned<IThorException> e = MakeThorException(TE_KERN, "%s", msg);
+                e->setSeverity(ExceptionSeverityAlert);
+                e->setAction(tea_warning);
+                job.fireException(e);
+            }
+        }
+    };
+    return new CPerfMonHook(job, maxLevel, chain);
 }

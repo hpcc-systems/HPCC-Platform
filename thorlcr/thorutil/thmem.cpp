@@ -2384,10 +2384,3 @@ IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t s
 {
     return new COutputMetaWithExtra(meta, sz);
 }
-
-
-
-IPerfMonHook *createThorMemStatsPerfMonHook(IPerfMonHook *chain)
-{
-    return LINK(chain);
-}

@@ -141,7 +141,7 @@ void formatDuration(StringBuffer &s, unsigned ms)
 }
 
 
-WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf(0)
+WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf(0), numalert(0)
 {
     Owned<IConstWUExceptionIterator> it = &wu.getExceptions();
     ForEach(*it)
@@ -163,6 +163,7 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
             case ExceptionSeverityError: label = "Error"; numerr++; break;
             case ExceptionSeverityWarning: label = "Warning"; numwrn++; break;
             case ExceptionSeverityInformation: label = "Info"; numinf++; break;
+            case ExceptionSeverityAlert: label = "Alert"; numalert++; break;
         }
 
         e->setSeverity(label);
@@ -307,6 +308,7 @@ void WsWuInfo::getExceptions(IEspECLWorkunit &info, unsigned flags)
             info.setErrorCount(errors.ErrCount());
             info.setWarningCount(errors.WrnCount());
             info.setInfoCount(errors.InfCount());
+            info.setAlertCount(errors.AlertCount());
         }
         if ((flags & WUINFO_IncludeExceptions))
             info.setExceptions(errors);

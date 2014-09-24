@@ -312,12 +312,12 @@ IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain)
         {
         }
         
-        void processPerfStats(unsigned processorUsage, unsigned memoryUsage, unsigned memoryTotal, unsigned __int64 firstDiskUsage, unsigned __int64 firstDiskTotal, unsigned __int64 secondDiskUsage, unsigned __int64 secondDiskTotal, unsigned threadCount)
+        virtual void processPerfStats(unsigned processorUsage, unsigned memoryUsage, unsigned memoryTotal, unsigned __int64 firstDiskUsage, unsigned __int64 firstDiskTotal, unsigned __int64 secondDiskUsage, unsigned __int64 secondDiskTotal, unsigned threadCount)
         {
             if (chain)
                 chain->processPerfStats(processorUsage, memoryUsage, memoryTotal, firstDiskUsage,firstDiskTotal, secondDiskUsage, secondDiskTotal, threadCount);
         }
-        StringBuffer &extraLogging(StringBuffer &extra)
+        virtual StringBuffer &extraLogging(StringBuffer &extra)
         {
             unsigned totalPages;
             unsigned freePages;
@@ -332,7 +332,10 @@ IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain)
                 return chain->extraLogging(extra);
             return extra;
         }
-
+        virtual void log(int level, const char *message)
+        {
+            PROGLOG("%s", message);
+        }
     };
     return new memstatsPerfMonHook(chain);
 }

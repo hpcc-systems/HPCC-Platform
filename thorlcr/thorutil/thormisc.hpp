@@ -19,6 +19,7 @@
 #define _THORMISC_
 
 #include "jiface.hpp"
+#include "jdebug.hpp"
 #include "jthread.hpp"
 #include "jexcept.hpp"
 #include "jarray.hpp"
@@ -61,6 +62,7 @@
 #define THOROPT_JOINHELPER_THREADS    "joinHelperThreads"       // Number of threads to use in threaded variety of join helper
 #define THOROPT_LKJOIN_LOCALFAILOVER  "lkjoin_localfailover"    // Force SMART to failover to distributed local lookup join (for testing only)   (default = false)
 #define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover" // Force SMART to failover to hash join (for testing only)                     (default = false)
+#define THOROPT_MAX_KERNLOG           "max_kern_level"          // Max kernel logging level, to push to workunit, -1 to disable                  (default = 3)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
@@ -456,6 +458,9 @@ interface IRowInterfaces;
 extern graph_decl void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf);
 
 extern graph_decl void logDiskSpace();
+
+class CJobBase;
+extern graph_decl IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int minLevel, IPerfMonHook *chain=NULL); // for passing to jdebug startPerformanceMonitor
 
 #endif
 

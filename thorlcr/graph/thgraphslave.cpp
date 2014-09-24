@@ -1100,29 +1100,16 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     querySo.setown(createDllEntry(_querySo, false, NULL));
     codeCtx = new CThorCodeContextSlave(*this, *querySo, *userDesc, slavemptag);
     tmpHandler.setown(createTempHandler(true));
-    startJob();
 }
 
 CJobSlave::~CJobSlave()
 {
     graphExecutor->wait();
-    endJob();
 }
 
 void CJobSlave::startJob()
 {
-    LOG(MCdebugProgress, thorJob, "New Graph started : %s", graphName.get());
-    ClearTempDirs();
-    unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
-    if (pinterval)
-        startPerformanceMonitor(pinterval);
-    if (pinterval)
-    {
-        perfmonhook.setown(createThorMemStatsPerfMonHook());
-        startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
-    }
-    PrintMemoryStatusLog();
-    logDiskSpace();
+    CJobBase::startJob();
     unsigned minFreeSpace = (unsigned)getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
     if (minFreeSpace)
     {
@@ -1135,27 +1122,6 @@ void CJobSlave::startJob()
             throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
         }
     }
-    unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);
-    if (keyNodeCacheMB)
-    {
-        oldNodeCacheMem = setNodeCacheMem(keyNodeCacheMB * 0x100000);
-        PROGLOG("Key node cache size set to: %d MB", keyNodeCacheMB);
-    }
-    unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
-    if (!keyFileCacheLimit)
-        keyFileCacheLimit = (querySlaves()+1)*2;
-    setKeyIndexCacheSize(keyFileCacheLimit);
-    PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
-}
-
-void CJobSlave::endJob()
-{
-    stopPerformanceMonitor();
-    LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
-    clearKeyStoreCache(true);
-    if (oldNodeCacheMem)
-        setNodeCacheMem(oldNodeCacheMem);
-    PrintMemoryStatusLog();
 }
 
 __int64 CJobSlave::getWorkUnitValueInt(const char *prop, __int64 defVal) const

@@ -165,7 +165,8 @@ enum WUExceptionSeverity
     ExceptionSeverityInformation = 0,
     ExceptionSeverityWarning = 1,
     ExceptionSeverityError = 2,
-    ExceptionSeveritySize = 3
+    ExceptionSeverityAlert = 3,
+    ExceptionSeveritySize = 4
 };
 
 

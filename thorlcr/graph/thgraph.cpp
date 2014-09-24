@@ -2486,6 +2486,7 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     slaveGroup.setown(jobGroup->remove(0));
     myrank = jobGroup->rank(queryMyNode());
     globalMemorySize = globals->getPropInt("@globalMemorySize"); // in MB
+    oldNodeCacheMem = 0;
 }
 
 void CJobBase::init()
@@ -2531,6 +2532,11 @@ void CJobBase::init()
     graphExecutor.setown(new CGraphExecutor(*this));
 }
 
+void CJobBase::beforeDispose()
+{
+    endJob();
+}
+
 CJobBase::~CJobBase()
 {
     clean();
@@ -2549,6 +2555,41 @@ CJobBase::~CJobBase()
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
         PROGLOG("Heap usage : %"I64F"d bytes", (unsigned __int64)heapUsage);
+}
+
+void CJobBase::startJob()
+{
+    LOG(MCdebugProgress, thorJob, "New Graph started : %s", graphName.get());
+    ClearTempDirs();
+    unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
+    if (pinterval)
+    {
+        perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
+        startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
+    }
+    PrintMemoryStatusLog();
+    logDiskSpace();
+    unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);
+    if (keyNodeCacheMB)
+    {
+        oldNodeCacheMem = setNodeCacheMem(keyNodeCacheMB * 0x100000);
+        PROGLOG("Key node cache size set to: %d MB", keyNodeCacheMB);
+    }
+    unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
+    if (!keyFileCacheLimit)
+        keyFileCacheLimit = (querySlaves()+1)*2;
+    setKeyIndexCacheSize(keyFileCacheLimit);
+    PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
+}
+
+void CJobBase::endJob()
+{
+    stopPerformanceMonitor();
+    LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
+    clearKeyStoreCache(true);
+    if (oldNodeCacheMem)
+        setNodeCacheMem(oldNodeCacheMem);
+    PrintMemoryStatusLog();
 }
 
 bool CJobBase::queryForceLogging(graph_id graphId, bool def) const
@@ -2574,6 +2615,7 @@ IThorGraphIterator *CJobBase::getSubGraphs()
     CriticalBlock b(crit);
     return new CGraphTableIterator(subGraphs);
 }
+
 
 static void getGlobalDeps(CGraphBase &graph, CopyCIArrayOf<CGraphDependency> &deps)
 {

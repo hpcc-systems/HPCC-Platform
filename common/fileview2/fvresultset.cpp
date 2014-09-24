@@ -3275,6 +3275,8 @@ inline const char *getSeverityTagname(WUExceptionSeverity severity, unsigned fla
             return "Info";
         case ExceptionSeverityWarning:
             return "Warning";
+        case ExceptionSeverityAlert:
+            return "Alert";
         case ExceptionSeverityError:
         default:
             break;

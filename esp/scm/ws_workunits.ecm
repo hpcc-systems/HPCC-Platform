@@ -212,6 +212,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.17")] int ErrorCount;
     [min_ver("1.17")] int WarningCount;
     [min_ver("1.17")] int InfoCount;
+    [min_ver("1.52")] int AlertCount;
     [min_ver("1.17")] int GraphCount;
     [min_ver("1.17")] int SourceFileCount;
     [min_ver("1.17")] int ResultCount;
@@ -516,7 +517,8 @@ ESPenum WUExceptionSeverity : string
 {
     INFO("info"),
     WARNING("warning"),
-    ERROR("error")
+    ERROR("error"),
+    ALERT("alert")
 };
 
 ESPrequest WURunRequest
@@ -1562,7 +1564,7 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
 };
 
 ESPservice [
-    version("1.51"), default_client_version("1.51"),
+    version("1.52"), default_client_version("1.52"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

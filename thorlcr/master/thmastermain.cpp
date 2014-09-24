@@ -727,12 +727,6 @@ int main( int argc, char *argv[]  )
         connectLogMsgManagerToDali();
         if (globals->getPropBool("@cache_dafilesrv_master",false))
             setDaliServixSocketCaching(true); // speeds up deletes under linux
-
-        unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
-        if (pinterval) {
-            perfmonhook.setown(createThorMemStatsPerfMonHook());
-            startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
-        }
     }
     catch (IException *e)
     {
@@ -793,9 +787,6 @@ int main( int argc, char *argv[]  )
     disconnectLogMsgManagerFromDali();
     closeThorServerStatus();
     if (globals) globals->Release();
-    PROGLOG("Thor closing down 6");
-
-    stopPerformanceMonitor();
     PROGLOG("Thor closing down 5");
     PROGLOG("Thor closing down 4");
     closeDllServer();

@@ -397,6 +397,30 @@
         </p>
       </xsl:if>
       
+      <xsl:if test="AlertCount &gt; 0">
+        <p>
+          <div>
+            <div id="HdrAlert" class="wugroup">
+              <div class="WuGroupHdrLeft">
+                <A href="javascript:void(0)" onclick="toggleElement('Alert');" id="explinkalert" class="wusectionexpand">
+                  Alert: (<xsl:value-of select="AlertCount"/>)
+                </A>
+              </div>
+            </div>
+            <div id="Alert" class="wusectioncontent">
+              <xsl:if test="count(Exceptions/ECLException[Severity='Alert'])=0">
+                <span class="loading">&nbsp;&nbsp;Loading...</span>
+              </xsl:if>
+              <xsl:if test="count(Exceptions/ECLException[Severity='Alert'])">
+                <table id="AlertContent" class="wusectiontable">
+                  <xsl:apply-templates select="Exceptions/ECLException[Severity='Alert']"/>
+                </table>
+              </xsl:if>
+            </div>
+          </div>
+        </p>
+      </xsl:if>
+      
       <xsl:if test="ResultCount &gt; 0 or ResultsDesc != ''">
         <p>
           <div>

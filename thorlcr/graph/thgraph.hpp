@@ -768,6 +768,8 @@ protected:
     unsigned maxActivityCores, globalMemorySize;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
+    Owned<IPerfMonHook> perfmonhook;
+    size32_t oldNodeCacheMem;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -793,10 +795,12 @@ protected:
             removeAssociates(child);
         }
     }
+    void endJob();
 public:
     IMPLEMENT_IINTERFACE;
 
     CJobBase(const char *graphName);
+    virtual void beforeDispose();
     ~CJobBase();
     void clean();
     void init();
@@ -808,6 +812,7 @@ public:
     bool queryForceLogging(graph_id graphId, bool def) const;
     ITimeReporter &queryTimeReporter() { return *timeReporter; }
     const IContextLogger &queryContextLogger() const { return *logctx; }
+    virtual void startJob();
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     virtual CGraphBase *createGraph() = 0;
     void joinGraph(CGraphBase &graph);
