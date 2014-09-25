@@ -4427,12 +4427,13 @@ protected:
         for (i = 0; i < 2046; i++)
             pages[i] = dm.allocate();
         //printf("\n----Mid 1 DataBuffsActive=%d, DataBuffPages=%d ------ \n", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
-        ASSERT(atomic_read(&dataBufferPages)==2);
+
+        ASSERT(atomic_read(&dataBufferPages)==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         pages[1022]->Release(); // release from first page
         pages[1022] = 0;  
         pages[2100] = dm.allocate(); // allocate from first page 
         //printf("\n----Mid 2 DataBuffsActive=%d, DataBuffPages=%d ------ \n", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
-        ASSERT(atomic_read(&dataBufferPages)==2);
+        ASSERT(atomic_read(&dataBufferPages)==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         pages[2101] = dm.allocate(); // allocate from a new page (third)
         //printf("\n----Mid 3 DataBuffsActive=%d, DataBuffPages=%d ------ \n", atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
         // Release all blocks, which releases all pages, except active one
@@ -4455,7 +4456,7 @@ protected:
             pages[i]->Release();
         for (i = 0; i < 1000; i++)
             pages[i] = dm.allocate();
-        ASSERT(atomic_read(&dataBufferPages)==2);
+        ASSERT(atomic_read(&dataBufferPages)==PAGES(2000 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         for (i = 0; i < 1999; i++)
             pages[i]->Release();
         pages[1999]->Release();
@@ -4544,78 +4545,81 @@ protected:
     {
         HeapPreserver preserver;
 
-        initBitmap(32);
+        const unsigned bitmapSize = 32;
+        initBitmap(bitmapSize);
         unsigned i;
+        memsize_t minAddr = 0x80000000;
+        memsize_t maxAddr = minAddr + bitmapSize * UNSIGNED_BITS * HEAP_ALIGNMENT_SIZE;
         for (i=0; i < 100; i++)
         {
-            ASSERT(suballoc_aligned(1, false)==(void *)(memsize_t)(0x80000000 + 0x100000*i));
-            ASSERT(suballoc_aligned(3, false)==(void *)(memsize_t)(0xc0000000 - 0x300000*(i+1)));
+            ASSERT(suballoc_aligned(1, false)==(void *)(memsize_t)(minAddr + HEAP_ALIGNMENT_SIZE*i));
+            ASSERT(suballoc_aligned(3, false)==(void *)(memsize_t)(maxAddr - (3*HEAP_ALIGNMENT_SIZE)*(i+1)));
         }
         for (i=0; i < 100; i+=2)
         {
-            subfree_aligned((void *)(memsize_t)(0x80000000 + 0x100000*i), 1);
-            subfree_aligned((void *)(memsize_t)(0xc0000000 - 0x300000*(i+1)), 3);
+            subfree_aligned((void *)(memsize_t)(minAddr + HEAP_ALIGNMENT_SIZE*i), 1);
+            subfree_aligned((void *)(memsize_t)(maxAddr - (3*HEAP_ALIGNMENT_SIZE)*(i+1)), 3);
         }
         for (i=0; i < 100; i+=2)
         {
-            ASSERT(suballoc_aligned(1, false)==(void *)(memsize_t)(0x80000000 + 0x100000*i));
-            ASSERT(suballoc_aligned(3, false)==(void *)(memsize_t)(0xc0000000 - 0x300000*(i+1)));
+            ASSERT(suballoc_aligned(1, false)==(void *)(memsize_t)(minAddr + HEAP_ALIGNMENT_SIZE*i));
+            ASSERT(suballoc_aligned(3, false)==(void *)(memsize_t)(maxAddr - (3*HEAP_ALIGNMENT_SIZE)*(i+1)));
         }
         for (i=0; i < 100; i++)
         {
-            subfree_aligned((void *)(memsize_t)(0x80000000 + 0x100000*i), 1);
-            subfree_aligned((void *)(memsize_t)(0xc0000000 - 0x300000*(i+1)), 3);
+            subfree_aligned((void *)(memsize_t)(minAddr + HEAP_ALIGNMENT_SIZE*i), 1);
+            subfree_aligned((void *)(memsize_t)(maxAddr - 3*HEAP_ALIGNMENT_SIZE*(i+1)), 3);
         }
 
         // Try a realloc that can expand above only.
         void *t = suballoc_aligned(1, false);
-        ASSERT(t==(void *)(memsize_t)(0x80000000));
+        ASSERT(t==(void *)(memsize_t)(minAddr));
         void *r = subrealloc_aligned(t, 1, 50);
         ASSERT(r == t)
         void *t1 = suballoc_aligned(1, false);
-        ASSERT(t1==(void *)(memsize_t)(0x80000000 + 0x100000*50));
+        ASSERT(t1==(void *)(memsize_t)(minAddr + HEAP_ALIGNMENT_SIZE*50));
         subfree_aligned(r, 50);
         subfree_aligned(t1, 1);
 
         // Try a realloc that can expand below only.
         t = suballoc_aligned(2, false);
-        ASSERT(t==(void *)(memsize_t)(0xc0000000 - 0x200000));
+        ASSERT(t==(void *)(memsize_t)(maxAddr - 2*HEAP_ALIGNMENT_SIZE));
         r = subrealloc_aligned(t, 2, 50);
-        ASSERT(r==(void *)(memsize_t)(0xc0000000 - 0x100000*50));
+        ASSERT(r==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*50));
         t1 = suballoc_aligned(2, false);
-        ASSERT(t1==(void *)(memsize_t)(0xc0000000 - 0x100000*52));
+        ASSERT(t1==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*52));
         subfree_aligned(r, 50);
         subfree_aligned(t1, 2);
 
         // Try a realloc that has to do both.
         t = suballoc_aligned(20, false);
-        ASSERT(t==(void *)(memsize_t)(0xc0000000 - 0x100000*20));
+        ASSERT(t==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*20));
         t1 = suballoc_aligned(20, false);
-        ASSERT(t1==(void *)(memsize_t)(0xc0000000 - 0x100000*40));
+        ASSERT(t1==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*40));
         subfree_aligned(t, 20);
         r = subrealloc_aligned(t1, 20, 80);
-        ASSERT(r==(void *)(memsize_t)(0xc0000000 - 0x100000*80));
+        ASSERT(r==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*80));
         t1 = suballoc_aligned(2, false);
-        ASSERT(t1==(void *)(memsize_t)(0xc0000000 - 0x100000*82));
+        ASSERT(t1==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*82));
         subfree_aligned(r, 80);
         subfree_aligned(t1, 2);
 
         // Try a realloc that can't quite manage it.
         t = suballoc_aligned(20, false);
-        ASSERT(t==(void *)(memsize_t)(0xc0000000 - 0x100000*20));
+        ASSERT(t==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*20));
         t1 = suballoc_aligned(20, false);
-        ASSERT(t1==(void *)(memsize_t)(0xc0000000 - 0x100000*40));
+        ASSERT(t1==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*40));
         void * t2 = suballoc_aligned(20, false);
-        ASSERT(t2==(void *)(memsize_t)(0xc0000000 - 0x100000*60));
+        ASSERT(t2==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*60));
         void *t3 = suballoc_aligned(20, false);
-        ASSERT(t3==(void *)(memsize_t)(0xc0000000 - 0x100000*80));
+        ASSERT(t3==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*80));
         subfree_aligned(t, 20);
         subfree_aligned(t2, 20);
         r = subrealloc_aligned(t1, 20, 61);
         ASSERT(r==NULL);
         // Then one that just can
         r = subrealloc_aligned(t1, 20, 60);
-        ASSERT(r==(void *)(memsize_t)(0xc0000000 - 0x100000*60));
+        ASSERT(r==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*60));
         subfree_aligned(r, 60);
         subfree_aligned(t3, 20);
 
@@ -4633,7 +4637,7 @@ protected:
         }
         try
         {
-            subfree_aligned((void*)(memsize_t)0x80010000, 1);
+            subfree_aligned((void*)(minAddr + HEAP_ALIGNMENT_SIZE / 2), 1);
             ASSERT(false);
         }
         catch (IException *E)
@@ -4644,7 +4648,7 @@ protected:
         }
         try
         {
-            subfree_aligned((void*)(memsize_t)0xa0000000, 1);
+            subfree_aligned((void*)(memsize_t)(minAddr + 20 * HEAP_ALIGNMENT_SIZE), 1);
             ASSERT(false);
         }
         catch (IException *E)
@@ -4655,7 +4659,7 @@ protected:
         }
         try
         {
-            subfree_aligned((void*)(memsize_t)0xbfe00000, 3);
+            subfree_aligned((void*)(memsize_t)(maxAddr - 2 * HEAP_ALIGNMENT_SIZE), 3);
             ASSERT(false);
         }
         catch (IException *E)
@@ -4762,7 +4766,7 @@ protected:
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
         ReleaseRoxieRow(rm1->allocate(1800000, 0));
         ASSERT(rm1->numPagesAfterCleanup(false)==0); // page should be freed even if force not specified
-        ASSERT(rm1->getMemoryUsage()==2);
+        ASSERT(rm1->getMemoryUsage()== PAGES(1800000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE));
     }
 
     void testSizes()
@@ -4820,7 +4824,7 @@ protected:
         Owned<IRowManager> rm2 = createRowManager(0, NULL, logctx, NULL);
         ReleaseRoxieRow(rm2->allocate(4000000, 0));
         ASSERT(rm2->numPagesAfterCleanup(true)==0);
-        ASSERT(rm2->getMemoryUsage()==4);
+        ASSERT(rm2->getMemoryUsage()==PAGES(4000000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE));
 
         r1 = rm2->allocate(4000000, 0);
         r2 = rm2->allocate(4000000, 0);
@@ -4831,7 +4835,7 @@ protected:
         ReleaseRoxieRow(r1);
         ReleaseRoxieRow(r2);
         ASSERT(rm2->numPagesAfterCleanup(true)==0);
-        ASSERT(rm2->getMemoryUsage()==8);
+        ASSERT(rm2->getMemoryUsage()==2*PAGES(4000000+sizeof(HugeHeaplet), HEAP_ALIGNMENT_SIZE));
 
         for (unsigned d = 0; d < 50; d++)
         {
@@ -5024,11 +5028,11 @@ protected:
     void testCapacity(IRowManager * rm, unsigned size, unsigned expectedPages=1)
     {
         void * alloc1 = rm->allocate(size, 0);
-        unsigned capacity = RoxieRowCapacity(alloc1);
+        memsize_t capacity = RoxieRowCapacity(alloc1);
         memset(alloc1, 99, capacity);
         void * alloc2 = rm->allocate(capacity, 0);
-        ASSERT(RoxieRowCapacity(alloc2)==capacity);
-        ASSERT(rm->numPagesAfterCleanup(true)==expectedPages);
+        CPPUNIT_ASSERT_EQUAL(RoxieRowCapacity(alloc2), capacity);
+        CPPUNIT_ASSERT_EQUAL(rm->numPagesAfterCleanup(true), expectedPages);
         memset(alloc2, 99, capacity);
         ReleaseRoxieRow(alloc1);
         ReleaseRoxieRow(alloc2);
@@ -5039,7 +5043,7 @@ protected:
         Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL);
         testCapacity(rm, 1);
         testCapacity(rm, 32);
-        testCapacity(rm, 32768);
+        testCapacity(rm, 32768, PAGES(2 * 32768, (HEAP_ALIGNMENT_SIZE- sizeof(FixedSizeHeaplet))));
         testCapacity(rm, HEAP_ALIGNMENT_SIZE,4);
 
         void * alloc1 = rm->allocate(1, 0);
@@ -5423,7 +5427,7 @@ protected:
 
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
-        size32_t allocSize = (0x100000 - 0x200) / numPerPage;
+        size32_t allocSize = (HEAP_ALIGNMENT_SIZE - 0x200) / numPerPage;
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
         {
             Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(allocSize, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|flags);
