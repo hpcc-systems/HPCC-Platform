@@ -391,17 +391,17 @@ bool deletePkgInfo(const char *name, const char *target, const char *process, bo
     StringBuffer lcName(name);
     name = lcName.toLowerCase().str();
 
-    IPropertyTree *mapEntry = NULL;
+    Owned<IPropertyTree> mapEntry;
     StringBuffer xpath;
     if (!globalScope)
     {
         xpath.appendf("PackageMap[@id='%s::%s'][@querySet='%s']", target, name, target);
-        mapEntry = pkgSetRegistry->getPropTree(xpath.str());
+        mapEntry.setown(pkgSetRegistry->getPropTree(xpath.str()));
     }
     if (!mapEntry)
     {
         xpath.clear().appendf("PackageMap[@id='%s'][@querySet='%s']", name, target);
-        mapEntry = pkgSetRegistry->getPropTree(xpath.str());
+        mapEntry.setown(pkgSetRegistry->getPropTree(xpath.str()));
         if (!mapEntry)
             throw MakeStringException(PKG_DELETE_NOT_FOUND, "Unable to delete %s - information not found", lcName.str());
     }
