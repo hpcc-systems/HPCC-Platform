@@ -533,8 +533,7 @@ void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *
     else
     {
         const char *refln = file->getLogicalName();
-        //Cannot clear the ownership for the file because the setValue() does not take the ownership.
-        //See MappingStringToIInterface.
+        // NOTE: setValue links its parameter
         map.setValue(refln, file);
     }
 }
@@ -671,7 +670,8 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalF
         {
             file->resolve(process.get(), srcCluster, user, remote, remotePrefix, checkLocalFirst, &childSubFiles, resolveForeign);
             const char *ln = file->getLogicalName();
-            map.setValue(ln, file.getClear());
+            // NOTE: setValue links its parameter
+            map.setValue(ln, file);
         }
     }
     if (childSubFiles.length())
