@@ -990,7 +990,9 @@ cleanup_component() {
   set_environmentvars
   HOME=${home}/${user}
   instancedir=${runtime}/${compName}
-  source $instancedir/setvars
+  if [ -e $instancedir/setvars ]; then
+    source $instancedir/setvars
+  fi
 
   # grab the PID of our component, and in the case it doesn't exist, the pid of the init file (in case
   # it's somehow is still alive)
@@ -1007,12 +1009,11 @@ cleanup_component() {
     mpid=$__pidValue
   fi
 
-
-  # use the mpid we collected to grab the group pid of the process, to kill off all siblings at once
-  local pgid=$( ps -p $mpid -o pid,pgid | grep $mpid | awk '{ print $2 }' )
-
   # start with SIGTERM and then follow up with SIGKILL if unsuccessful
-  if [ $pgid -ne 0 ] ; then
+  if [ $mpid -ne 0 ] ; then
+    # use the mpid we collected to grab the group pid of the process, to kill off all siblings at once
+    local pgid=$( ps -p $mpid -o pid,pgid | grep $mpid | awk '{ print $2 }' )
+
     kill -15 -$pgid
     sleep 1
     local WAITTIME=5
