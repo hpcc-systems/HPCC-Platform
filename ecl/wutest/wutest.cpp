@@ -366,7 +366,6 @@ int main(int argc, const char *argv[])
     {
         queryActiveTimer()->printTimings();
         queryActiveTimer()->reset();
-        setActiveTimer(NULL);
     }
     releaseAtoms();
     return 0;

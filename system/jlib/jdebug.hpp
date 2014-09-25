@@ -157,7 +157,6 @@ protected:
 
 #if defined(TIMING)
 extern jlib_decl ITimeReporter * queryActiveTimer();
-extern jlib_decl void setActiveTimer(ITimeReporter * reporter);
 extern jlib_decl ITimeReporter *createStdTimeReporter();
 extern jlib_decl ITimeReporter *createStdTimeReporter(MemoryBuffer &mb);
 #define TIME_SECTION(title)   TimeSection   glue(_timer,__LINE__)(title);

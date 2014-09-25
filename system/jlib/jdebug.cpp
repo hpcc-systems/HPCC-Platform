@@ -613,12 +613,6 @@ ITimeReporter * queryActiveTimer()
 {
     return activeTimer;
 }
-void setActiveTimer(ITimeReporter * reporter)
-{
-    ::Release(activeTimer);
-    ::Link(reporter);
-    activeTimer = reporter;
-}
 
 
 ITimeReporter *createStdTimeReporter() { return new DefaultTimeReporter(); }
@@ -641,7 +635,8 @@ MODULE_INIT(INIT_PRIORITY_JDEBUG2)
 
 MODULE_EXIT()
 {
-    setActiveTimer(NULL);
+    ::Release(activeTimer);
+    activeTimer = NULL;
 }
 
 
