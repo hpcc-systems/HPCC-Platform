@@ -7791,11 +7791,13 @@ void CHThorDiskReadBaseActivity::resolve()
 {
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
+    logicalFileName.set(mangledHelperFileName.str());
     if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str());
         tempFileName.set(agent.queryTemporaryFile(mangledFilename.str()));
+        logicalFileName.set(tempFileName);
         gatherInfo(NULL);
     }
     else
@@ -7811,6 +7813,23 @@ void CHThorDiskReadBaseActivity::resolve()
             {
                 persistent = dFile->queryAttributes().getPropBool("@persistent");
                 dfsParts.setown(dFile->getIterator());
+                if (helper.getFlags() & TDRfilenamecallback)
+                {
+                    IDistributedSuperFile *super = dFile->querySuperFile();
+                    if (super)
+                    {
+                        unsigned numsubs = super->numSubFiles(true);
+                        unsigned s=0;
+                        for (; s<numsubs; s++)
+                        {
+                            IDistributedFile &subfile = super->querySubFile(s, true);
+                            subfileLogicalFilenames.append(subfile.queryLogicalName());
+                        }
+                        assertex(fdesc);
+                        superfile.set(fdesc->querySuperFileDescriptor());
+                        assertex(superfile);
+                    }
+                }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
                 if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
@@ -7941,11 +7960,17 @@ bool CHThorDiskReadBaseActivity::openNext()
               (!dfsParts&&(partNum<ldFile->numParts())))
         {
             IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
-
             unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
             //MORE: Order of copies should be optimized at this point....
             StringBuffer file, filelist;
             closepart();
+            if (dfsParts && superfile && curPart)
+            {
+                unsigned subfile;
+                unsigned lnum;
+                if (superfile->mapSubPart(partNum, subfile, lnum))
+                    logicalFileName.set(subfileLogicalFilenames.item(subfile));
+            }
             for (unsigned copy=0; copy < numCopies; copy++)
             {
                 RemoteFilename rfilename;
