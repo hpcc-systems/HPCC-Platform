@@ -1,8 +1,7 @@
 #include "platform.h"
 #include "wsexcept.hpp"
 
-class CWsException : public CInterface,
-implements IWsException
+class CWsException : public CInterface, implements IWsException
 {
 public:
     IMPLEMENT_IINTERFACE
@@ -10,18 +9,19 @@ public:
     CWsException (const char* source, WsErrorType errorType )
     {
         if (source)
-            source_.append(source);
-        errorType_ = errorType;
+            m_source.append(source);
+        m_errorType = errorType;
     }
+
     CWsException( IMultiException& me, WsErrorType errorType )
     {
         append(me);
-        errorType_ = errorType;
+        m_errorType = errorType;
 
         const char* source = me.source();
 
         if (source)
-            source_.append(source);
+            m_source.append(source);
     }
     CWsException( IException& e, const char* source, WsErrorType errorType )
     {
@@ -30,38 +30,38 @@ public:
             append(*me);
         } else
             append(e);
-        errorType_ = errorType;
+        m_errorType = errorType;
 
         if (source)
-            source_.append(source);
+            m_source.append(source);
     }
 
     //convenience methods for handling this as an array
     virtual aindex_t ordinality() const
     {
         synchronized block(m_mutex);
-        return array_.ordinality();
+        return m_array.ordinality();
     }
     virtual IException& item(aindex_t pos) const
     {
         synchronized block(m_mutex);
-        return array_.item(pos);
+        return m_array.item(pos);
     }
     virtual const char* source() const
     {
         synchronized block(m_mutex);
-        return source_.str();
+        return m_source.str();
     }
 
     //for complete control...caller is responsible for thread safety!
-    virtual IArrayOf<IException>& getArray()     { return array_;              }
+    virtual IArrayOf<IException>& getArray()     { return m_array;              }
 
     // add another exception. Pass ownership to this obj:
     // i.e., caller needs to make sure that e has one consumable ref count
     virtual void append(IException& e)
     {
         synchronized block(m_mutex);
-        array_.append(e);
+        m_array.append(e);
     }
     virtual void append(IMultiException& me)
     {
@@ -77,10 +77,10 @@ public:
                 StringBuffer msg;
                 msg.appendf("[%s] ",source);
                 e.errorMessage(msg);
-                array_.append(*MakeStringExceptionDirect(e.errorAudience(), e.errorCode(), msg));
+                m_array.append(*MakeStringExceptionDirect(e.errorAudience(), e.errorCode(), msg));
             }
             else
-                array_.append(*LINK(&e));
+                m_array.append(*LINK(&e));
         }
     }
 
@@ -95,12 +95,12 @@ public:
         if (!simplified)
         {
             if (indent) buffer.append("\n\t");
-            buffer.appendf("<Source>%s</Source>", source_.str());
+            buffer.appendf("<Source>%s</Source>", m_source.str());
         }
 
-        ForEachItemIn(i, array_)
+        ForEachItemIn(i, m_array)
         {
-            IException& exception = array_.item(i);
+            IException& exception = m_array.item(i);
 
             if (indent) buffer.append("\n\t");
             buffer.append("<Exception>");
@@ -115,7 +115,7 @@ public:
             {
                 if (indent) buffer.append("\n\t\t");
                 StringBuffer msg;
-                buffer.appendf("<Source>%s</Source>", source_.str());
+                buffer.appendf("<Source>%s</Source>", m_source.str());
             }
 
             if (indent) buffer.append("\n\t\t");
@@ -142,7 +142,7 @@ public:
     virtual StringBuffer& errorMessage(StringBuffer &msg) const
     {
         synchronized block(m_mutex);
-        ForEachItemIn(i, array_)
+        ForEachItemIn(i, m_array)
         {
             IException& e = item(i);
 
@@ -159,14 +159,14 @@ public:
     virtual WsErrorType errorType() const
     {
         synchronized block(m_mutex);
-        return errorType_;
+        return m_errorType;
     }
 private:
     CWsException( const CWsException& );
-    IArrayOf<IException> array_;
-    StringBuffer         source_;
+    IArrayOf<IException> m_array;
+    StringBuffer         m_source;
     mutable Mutex        m_mutex;
-    WsErrorType          errorType_;
+    WsErrorType          m_errorType;
 };
 
 IWsException esdl_decl *makeWsException(IMultiException& me, WsErrorType errorType)

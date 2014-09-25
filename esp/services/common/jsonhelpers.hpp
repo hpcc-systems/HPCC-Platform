@@ -31,9 +31,23 @@
 #define REQSF_ESCAPEFORMATTERS 0x0008
 #define REQSF_EXCLUSIVE (REQSF_SAMPLE_DATA | REQSF_TRIM)
 
-class HttpParamHelpers
+namespace HttpParamHelpers
 {
-public:
+    static const char * nextParameterTag(StringBuffer &tag, const char *path)
+    {
+        while (*path=='.')
+            path++;
+        const char *finger = strchr(path, '.');
+        if (finger)
+        {
+            tag.clear().append(finger - path, path);
+            finger++;
+        }
+        else
+            tag.set(path);
+        return finger;
+    }
+
     static void ensureParameter(IPropertyTree *pt, StringBuffer &tag, const char *path, const char *value, const char *fullpath)
     {
         if (!tag.length())
@@ -79,7 +93,7 @@ public:
         }
 
         StringBuffer nextTag;
-        path = nextParameterTag(nextTag, path);
+        path = HttpParamHelpers::nextParameterTag(nextTag, path);
         ensureParameter(pt, nextTag, path, value, fullpath);
     }
 
@@ -87,7 +101,7 @@ public:
     {
         const char *fullpath = path;
         StringBuffer tag;
-        path = nextParameterTag(tag, path);
+        path = HttpParamHelpers::nextParameterTag(tag, path);
         ensureParameter(pt, tag, path, value, fullpath);
     }
 
@@ -103,26 +117,10 @@ public:
         }
         return pt.getClear();
     }
-
-    static const char *nextParameterTag(StringBuffer &tag, const char *path)
-        {
-            while (*path=='.')
-                path++;
-            const char *finger = strchr(path, '.');
-            if (finger)
-            {
-                tag.clear().append(finger - path, path);
-                finger++;
-            }
-            else
-                tag.set(path);
-            return finger;
-        }
 };
 
-class JsonHelpers
+namespace JsonHelpers
 {
-public:
     static StringBuffer &appendJSONExceptionItem(StringBuffer &s, int code, const char *msg, const char *objname="Exceptions", const char *arrayName = "Exception")
     {
         if (objname && *objname)
