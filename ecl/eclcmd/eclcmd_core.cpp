@@ -458,7 +458,7 @@ public:
             "   -dp, --delete-prev     Delete previously active query\n"
             "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
-            "   --no-files             Do not copy files referenced by query\n"
+            "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
             "   --update-dfs           Update local DFS info if remote DALI has changed\n"
