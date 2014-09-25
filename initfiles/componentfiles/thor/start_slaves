@@ -85,7 +85,7 @@ for slave in $(cat $instancedir/thorgroup.slave); do
       slaveport=$THORSLAVEPORT
     fi
     echo master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth
-    $instancedir/thorslave_$hpcc_compname master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth 2>/dev/null 1>/dev/null &
+    ./thorslave_$hpcc_compname master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth 2>/dev/null 1>/dev/null &
     slavepid=$!
     PID_NAME="$PID/${hpcc_compname}_slave_${slavenum}.pid"
     echo $slavepid > $PID_NAME
