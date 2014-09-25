@@ -82,6 +82,10 @@ else
     else
         groupName=${THORNAME}
     fi
+    sort $instancedir/slaves | uniq > $instancedir/uslaves
+    nslaves=`cat $instancedir/uslaves.start | wc -l`
+    $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${THORNAME} ${PATH_PRE}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
+    echo slaves stopped
     daliadmin $DALISERVER dfsgroup ${groupName} > $instancedir/slaves
     errcode=$?
     if [ 0 != ${errcode} ]; then
@@ -90,8 +94,3 @@ else
     fi
   fi
 fi
-
-sort $instancedir/slaves | uniq > $instancedir/uslaves
-nslaves=`cat $instancedir/uslaves.start | wc -l`
-$deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${THORNAME} ${PATH_PRE}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
-echo slaves stopped
