@@ -1847,7 +1847,7 @@ void EclAgent::doProcess()
                 w->resetWorkflow();
         }
         {
-            MTIME_SECTION(timer, "Process");
+            MTIME_SECTION(queryActiveTimer(), "Process");
             Owned<IEclProcess> process = loadProcess();
 
             if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
@@ -3005,7 +3005,7 @@ char * EclAgent::getDaliServers()
 void EclAgent::addTimings()
 {
     WorkunitUpdate w = updateWorkUnit();
-    updateWorkunitTimings(w, timer, "eclagent");
+    updateWorkunitTimings(w, queryActiveTimer(), "eclagent");
 }
 
 // eclagent abort monitoring
@@ -3315,7 +3315,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         if (daliServers.length())
         {
             {
-                MTIME_SECTION(timer, "SDS_Initialize");
+                MTIME_SECTION(queryActiveTimer(), "SDS_Initialize");
                 Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
                 initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, MP_WAIT_FOREVER);
             }
@@ -3326,7 +3326,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 #endif
 
             {
-                MTIME_SECTION(timer, "Environment_Initialize");
+                MTIME_SECTION(queryActiveTimer(), "Environment_Initialize");
                 setPasswordsFromSDS();
             }
             PrintLog("ECLAGENT build %s", BUILD_TAG);

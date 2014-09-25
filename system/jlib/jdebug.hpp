@@ -156,8 +156,7 @@ protected:
 
 
 #if defined(TIMING)
-extern jlib_decl ITimeReporter *defaultTimer; // MORE - this appears to be always exactly the same as timer. Should delete one or other of them?
-extern jlib_decl ITimeReporter *timer;
+extern jlib_decl ITimeReporter * queryActiveTimer();
 extern jlib_decl ITimeReporter *createStdTimeReporter();
 extern jlib_decl ITimeReporter *createStdTimeReporter(MemoryBuffer &mb);
 #define TIME_SECTION(title)   TimeSection   glue(_timer,__LINE__)(title);

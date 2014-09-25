@@ -1667,7 +1667,7 @@ bool EclCC::processFiles()
     if (logTimings)
     {
         StringBuffer s;
-        fprintf(stderr, "%s", defaultTimer->getTimings(s).str());
+        fprintf(stderr, "%s", queryActiveTimer()->getTimings(s).str());
     }
     return ok;
 }

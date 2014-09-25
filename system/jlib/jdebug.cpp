@@ -608,8 +608,13 @@ public:
     }
 };
 
-ITimeReporter *defaultTimer;
-ITimeReporter *timer;
+static ITimeReporter * activeTimer = NULL;
+ITimeReporter * queryActiveTimer()
+{
+    return activeTimer;
+}
+
+
 ITimeReporter *createStdTimeReporter() { return new DefaultTimeReporter(); }
 ITimeReporter *createStdTimeReporter(MemoryBuffer &mb) { return new DefaultTimeReporter(mb); }
 
@@ -624,14 +629,14 @@ MODULE_INIT(INIT_PRIORITY_JDEBUG1)
 
 MODULE_INIT(INIT_PRIORITY_JDEBUG2)
 {
-    timer = defaultTimer = new DefaultTimeReporter();
+    activeTimer = new DefaultTimeReporter();
     return true;
 }
 
 MODULE_EXIT()
 {
-    ::Release(defaultTimer);
-    defaultTimer = NULL;
+    ::Release(activeTimer);
+    activeTimer = NULL;
 }
 
 

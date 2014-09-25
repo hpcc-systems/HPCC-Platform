@@ -1934,7 +1934,7 @@ protected:
         offset_t partsize = part->queryAttributes().getPropInt64("@size", -1);
         if (partsize==-1)
         {
-            MTIME_SECTION(timer, "Fetch remote file size");
+            MTIME_SECTION(queryActiveTimer(), "Fetch remote file size");
             unsigned numCopies = part->numCopies();
             for (unsigned copy=0; copy < numCopies; copy++)
             {

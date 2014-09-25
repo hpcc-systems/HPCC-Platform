@@ -959,7 +959,7 @@ public:
     void reset()
     {
         stats.reset();
-        timer->reset();
+        queryActiveTimer()->reset();
     }
 };
 

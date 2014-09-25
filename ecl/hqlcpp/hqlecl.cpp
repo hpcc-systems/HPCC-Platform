@@ -369,7 +369,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
         // ensure warnings/errors are available before we do the processing...
         wu->commit();
 
-        MTIME_SECTION (timer, "Generate_code");
+        MTIME_SECTION (queryActiveTimer(), "Generate_code");
         unsigned time = msTick();
         HqlCppTranslator translator(errs, wuname, code, targetClusterType, ctxCallback);
         processMetaCommands(translator, wu, query, ctxCallback);
@@ -539,7 +539,7 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     if (okToAbort)
         compiler->setAbortChecker(this);
 
-    MTIME_SECTION (timer, "Compile_code");
+    MTIME_SECTION (queryActiveTimer(), "Compile_code");
     unsigned time = msTick();
     PrintLog("Compiling %s", wuname);
     bool ok = compiler->compile();
