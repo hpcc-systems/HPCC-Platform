@@ -626,6 +626,7 @@ int main( int argc, char *argv[]  )
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
         globals->setPropInt("@masterTotalMem", hdwInfo.totalMemory);
+        unsigned mmemSize = globals->getPropInt("@masterMemorySize"); // in MB
         unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
         if (0 == gmemSize)
         {
@@ -650,7 +651,17 @@ int main( int argc, char *argv[]  )
 #endif            
 #endif
 #endif
-            gmemSize = maxMem * 3 / 4; // default to 75% of total
+            if (globals->getPropBool("@localThor") && 0 == mmemSize)
+            {
+                gmemSize = maxMem / 2; // 50% of total for slaves
+                mmemSize = maxMem / 4; // 25% of total for master
+            }
+            else
+            {
+                gmemSize = maxMem * 3 / 4; // 75% of total for slaves
+                if (0 == mmemSize)
+                    mmemSize = gmemSize; // default to same as slaves
+            }
             unsigned perSlaveSize = gmemSize;
             unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
             if (slavesPerNode>1)
@@ -660,18 +671,22 @@ int main( int argc, char *argv[]  )
             }
             globals->setPropInt("@globalMemorySize", perSlaveSize);
         }
-        else if (gmemSize >= hdwInfo.totalMemory)
+        else
         {
-            // should prob. error here
+            if (gmemSize >= hdwInfo.totalMemory)
+            {
+                // should prob. error here
+            }
+            if (0 == mmemSize)
+                mmemSize = gmemSize;
         }
-        unsigned gmemSizeMaster = globals->getPropInt("@masterMemorySize", gmemSize); // in MB
         bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
 
         // if @masterMemorySize and @globalMemorySize unspecified gmemSize will be default based on h/w
-        globals->setPropInt("@masterMemorySize", gmemSizeMaster);
+        globals->setPropInt("@masterMemorySize", mmemSize);
 
-        PROGLOG("Global memory size = %d MB", gmemSizeMaster);
-        roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)gmemSizeMaster) * 0x100000, 0, NULL);
+        PROGLOG("Global memory size = %d MB", mmemSize);
+        roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)mmemSize) * 0x100000, 0, NULL);
 
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
