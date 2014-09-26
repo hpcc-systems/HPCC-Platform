@@ -140,8 +140,10 @@ ESPStruct TpBinding
 
 ESPStruct TpEspServicePlugin
 {
-    string Name;
-    string Type;
+    string ShortName;
+    string LongName;
+    string FolderName;
+    string WidgetName;
 };
 
 //  ===========================================================================
