@@ -34,6 +34,7 @@ public:
     static char* getWord(char* oneline, char* & oneword, const char* separators, bool tws=false);
     static void parseNVPair(const char* nv, StringBuffer& name, StringBuffer& value);
     static int getLine(int total_len, int cur_len, const char* buf, int & oneline_len);
+    static __int64 getLine(__int64 total_len, __int64 cur_len, const char* buf, int & oneline_len);
     static int strncasecmp(const char* s1, const char* s2, register size32_t n);
     static int strcasecmp(const char* s1, const char* s2);
     static const char *stristr(const char *haystack, const char *needle);

@@ -145,7 +145,7 @@ interface IEspContext : extends IInterface
     virtual void addCustomerHeader(const char* name, const char* val) = 0;
 
     virtual void addTraceSummaryValue(const char *name, const char *value)=0;
-    virtual void addTraceSummaryValue(const char *name, int value)=0;
+    virtual void addTraceSummaryValue(const char *name, __int64 value)=0;
     virtual void addTraceSummaryTimeStamp(const char *name)=0;
     virtual void flushTraceSummary()=0;
 

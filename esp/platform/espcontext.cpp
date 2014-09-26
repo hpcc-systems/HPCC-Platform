@@ -418,7 +418,7 @@ public:
         m_traceValues.append(str.str());
     }
 
-    virtual void addTraceSummaryValue(const char *name, int value)
+    virtual void addTraceSummaryValue(const char *name, __int64 value)
     {
         StringBuffer str;
         if (name && *name)
