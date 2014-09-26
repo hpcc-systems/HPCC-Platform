@@ -7791,7 +7791,6 @@ void CHThorDiskReadBaseActivity::resolve()
 {
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
-    logicalFileName.set(mangledHelperFileName.str());
     if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;
@@ -7803,6 +7802,7 @@ void CHThorDiskReadBaseActivity::resolve()
     else
     {
         ldFile.setown(agent.resolveLFN(mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
+        logicalFileName.set(mangledHelperFileName.str());
         if (ldFile)
         {
             Owned<IFileDescriptor> fdesc;
