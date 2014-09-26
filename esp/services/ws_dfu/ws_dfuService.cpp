@@ -3056,6 +3056,7 @@ void CWsDfuEx::setFileNameFilter(const char* fname, const char* prefix, StringBu
         }
         fileNameFilter.append("*");
     }
+    fileNameFilter.toLowerCase();
     filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(fileNameFilter.str()).append(DFUQFilterSeparator);
 }
 
