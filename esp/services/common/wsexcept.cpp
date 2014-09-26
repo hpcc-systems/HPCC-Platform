@@ -9,19 +9,19 @@ public:
     CWsException (const char* source, WsErrorType errorType )
     {
         if (source)
-            m_source.append(source);
-        m_errorType = errorType;
+            exSource.append(source);
+        exErrorType = errorType;
     }
 
     CWsException( IMultiException& me, WsErrorType errorType )
     {
         append(me);
-        m_errorType = errorType;
+        exErrorType = errorType;
 
         const char* source = me.source();
 
         if (source)
-            m_source.append(source);
+            exSource.append(source);
     }
     CWsException( IException& e, const char* source, WsErrorType errorType )
     {
@@ -30,42 +30,42 @@ public:
             append(*me);
         } else
             append(e);
-        m_errorType = errorType;
+        exErrorType = errorType;
 
         if (source)
-            m_source.append(source);
+            exSource.append(source);
     }
 
     //convenience methods for handling this as an array
     virtual aindex_t ordinality() const
     {
-        synchronized block(m_mutex);
-        return m_array.ordinality();
+        synchronized block(mutex);
+        return exceptions.ordinality();
     }
     virtual IException& item(aindex_t pos) const
     {
-        synchronized block(m_mutex);
-        return m_array.item(pos);
+        synchronized block(mutex);
+        return exceptions.item(pos);
     }
     virtual const char* source() const
     {
-        synchronized block(m_mutex);
-        return m_source.str();
+        synchronized block(mutex);
+        return exSource.str();
     }
 
     //for complete control...caller is responsible for thread safety!
-    virtual IArrayOf<IException>& getArray()     { return m_array;              }
+    virtual IArrayOf<IException>& getArray()     { return exceptions;              }
 
     // add another exception. Pass ownership to this obj:
     // i.e., caller needs to make sure that e has one consumable ref count
     virtual void append(IException& e)
     {
-        synchronized block(m_mutex);
-        m_array.append(e);
+        synchronized block(mutex);
+        exceptions.append(e);
     }
     virtual void append(IMultiException& me)
     {
-        synchronized block(m_mutex);
+        synchronized block(mutex);
 
         IArrayOf<IException>& exceptions = me.getArray();
         const char* source = me.source();
@@ -77,17 +77,17 @@ public:
                 StringBuffer msg;
                 msg.appendf("[%s] ",source);
                 e.errorMessage(msg);
-                m_array.append(*MakeStringExceptionDirect(e.errorAudience(), e.errorCode(), msg));
+                exceptions.append(*MakeStringExceptionDirect(e.errorAudience(), e.errorCode(), msg));
             }
             else
-                m_array.append(*LINK(&e));
+                exceptions.append(*LINK(&e));
         }
     }
 
 
     StringBuffer& serialize(StringBuffer& buffer, unsigned indent = 0, bool simplified=false, bool root=true) const
     {
-        synchronized block(m_mutex);
+        synchronized block(mutex);
 
         if (root)
             buffer.append("<Exceptions>");
@@ -95,12 +95,12 @@ public:
         if (!simplified)
         {
             if (indent) buffer.append("\n\t");
-            buffer.appendf("<Source>%s</Source>", m_source.str());
+            buffer.appendf("<Source>%s</Source>", exSource.str());
         }
 
-        ForEachItemIn(i, m_array)
+        ForEachItemIn(i, exceptions)
         {
-            IException& exception = m_array.item(i);
+            IException& exception = exceptions.item(i);
 
             if (indent) buffer.append("\n\t");
             buffer.append("<Exception>");
@@ -115,7 +115,7 @@ public:
             {
                 if (indent) buffer.append("\n\t\t");
                 StringBuffer msg;
-                buffer.appendf("<Source>%s</Source>", m_source.str());
+                buffer.appendf("<Source>%s</Source>", exSource.str());
             }
 
             if (indent) buffer.append("\n\t\t");
@@ -136,13 +136,13 @@ public:
 
     virtual int errorCode() const
     {
-        synchronized block(m_mutex);
+        synchronized block(mutex);
         return ordinality() == 1 ? item(0).errorCode() : -1;
     }
     virtual StringBuffer& errorMessage(StringBuffer &msg) const
     {
-        synchronized block(m_mutex);
-        ForEachItemIn(i, m_array)
+        synchronized block(mutex);
+        ForEachItemIn(i, exceptions)
         {
             IException& e = item(i);
 
@@ -153,20 +153,20 @@ public:
     }
     virtual MessageAudience errorAudience() const
     {
-        synchronized block(m_mutex);
+        synchronized block(mutex);
         return ordinality() == 1 ? item(0).errorAudience() : MSGAUD_unknown;
     }
     virtual WsErrorType errorType() const
     {
-        synchronized block(m_mutex);
-        return m_errorType;
+        synchronized block(mutex);
+        return exErrorType;
     }
 private:
     CWsException( const CWsException& );
-    IArrayOf<IException> m_array;
-    StringBuffer         m_source;
-    mutable Mutex        m_mutex;
-    WsErrorType          m_errorType;
+    IArrayOf<IException> exceptions;
+    StringBuffer         exSource;
+    mutable Mutex        mutex;
+    WsErrorType          exErrorType;
 };
 
 IWsException esdl_decl *makeWsException(IMultiException& me, WsErrorType errorType)
