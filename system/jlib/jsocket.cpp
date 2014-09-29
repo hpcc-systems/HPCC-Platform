@@ -791,7 +791,7 @@ size32_t CSocket::avail_read()
 
 int CSocket::pre_connect (bool block)
 {
-    if (NULL == hostname || NULL == (*hostname))
+    if (NULL == hostname || '\0' == (*hostname))
     {
         StringBuffer err;
         err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",__FILE__, __LINE__);
