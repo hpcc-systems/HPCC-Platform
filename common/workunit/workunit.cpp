@@ -230,8 +230,8 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
         virtual IPropertyTree * getProgressTree() { return parent.getProgressTree(); }
         virtual WUGraphState queryGraphState() { return parent.queryGraphState(); }
         virtual WUGraphState queryNodeState(WUGraphIDType nodeId) { return parent.queryNodeState(nodeId); }
-        virtual IWUGraphProgress * update() { throwUnexpected(); return parent.update(); }
-        virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph) { throwUnexpected(); return NULL; }
+        virtual IWUGraphProgress * update() { throwUnexpected(); }
+        virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph) { throwUnexpected(); }
         virtual unsigned queryFormatVersion() { return parent.queryFormatVersion(); }
         virtual void setGraphState(WUGraphState state)
         {
@@ -5858,7 +5858,7 @@ class WorkUnitStatisticsIterator : public CArrayIteratorOf<IConstWUStatistic,ICo
 {
     typedef CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> PARENT;
 public:
-    WorkUnitStatisticsIterator(const Array &a, aindex_t start, IInterface *owner, const IStatisticsFilter * _filter)
+    WorkUnitStatisticsIterator(const IArray &a, aindex_t start, IInterface *owner, const IStatisticsFilter * _filter)
         : PARENT(a,start, owner), filter(_filter)
     {
     }

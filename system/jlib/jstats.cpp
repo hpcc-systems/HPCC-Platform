@@ -57,10 +57,12 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 
 //--------------------------------------------------------------------------------------------------------------------
 
+// Textual forms of the different enumerations, first items are for none and all.
 static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", NULL };
 static const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
 static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", NULL };
 
+#define PREFIXLEN(x) (sizeof(x)-1) // sizeof(const-string) = strlen(const-string) + 1 byte for the \0 terminator
 
 static unsigned matchString(const char * const * names, const char * search)
 {
@@ -689,7 +691,7 @@ class CComponentStatistics
 
 //--------------------------------------------------------------------------------------------------------------------
 
-static int compareUnsigned(unsigned * left, unsigned * right)
+static int compareUnsigned(unsigned const * left, unsigned const * right)
 {
     return (*left < *right) ? -1 : (*left > *right) ? +1 : 0;
 }
@@ -948,10 +950,10 @@ public:
         switch (scopeType)
         {
         case SSTactivity:
-            activityId = atoi(name->str() + strlen(ActivityScopePrefix));
+            activityId = atoi(name->str() + PREFIXLEN(ActivityScopePrefix));
             break;
         case SSTedge:
-            activityId = atoi(name->str() + strlen(EdgeScopePrefix));
+            activityId = atoi(name->str() + PREFIXLEN(EdgeScopePrefix));
             break;
         }
 
