@@ -191,6 +191,14 @@ doStop() {
 
 doStart() {
     init start
+    if strstr ${action} "hpcc-init" ; then
+      echo "Insuring dafilesrv is running in the environment"
+      scriptfile=/tmp/dafilesrv_start_$$
+      createScript $scriptfile dafilesrv "start"
+      OPTIONS="${OPTIONS:+"OPTIONS "}-h $IPsExcludeDIP"
+      runscript $IPsExcludeDIP
+    fi
+
     doOneIP $DIP $action "start" $comp || end 1  
 
     echo "$action start in the cluster ..."
