@@ -277,7 +277,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieCommunicationClient(SocketEndpoint& _ep, unsigned _roxieTimeout)
+    CRoxieCommunicationClient(const SocketEndpoint& _ep, unsigned _roxieTimeout)
         :ep(_ep), roxieTimeout(_roxieTimeout)
     {
     }
@@ -535,7 +535,7 @@ public:
 
 
 
-IRoxieCommunicationClient* createRoxieCommunicationClient(SocketEndpoint &ep, unsigned roxieTimeout)
+IRoxieCommunicationClient* createRoxieCommunicationClient(const SocketEndpoint &ep, unsigned roxieTimeout)
 {
     return new CRoxieCommunicationClient(ep, roxieTimeout);
 }

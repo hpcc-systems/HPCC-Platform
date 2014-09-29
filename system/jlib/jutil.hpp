@@ -21,7 +21,7 @@
 
 #include "jlib.hpp"
 #include "jstring.hpp"
-#include "jarray.tpp"
+#include "jarray.hpp"
 #include "jbuff.hpp"
 
 //#define NAMEDCOUNTS
@@ -152,16 +152,37 @@ extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);
 extern jlib_decl StringBuffer& encodeUrlUseridPassword(StringBuffer& out, const char* in);
 extern jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const char* in);
 
-class jlib_decl StringArray : public ArrayOf<const char *, const char *>
+//--------------------------------------------------------------------------------------------------------------------
+
+class StringPointerArrayMapper : public SimpleArrayMapper<const char *>
+{
+    typedef const char * MEMBER;
+public:
+    static void construct(const char * & member, const char * newValue)
+    {
+        member = strdup(newValue);
+    }
+    static void destruct(MEMBER & member)
+    {
+        free(const_cast<char *>(member));
+    }
+    static inline bool matches(MEMBER const & member, const char * param)
+    {
+        return strcmp(member, param) == 0;
+    }
+};
+
+
+class jlib_decl StringArray : public ArrayOf<const char *, const char *, StringPointerArrayMapper>
 {
     struct CCmp
     {
-        static int compare(char const **l, char const **r) { return strcmp(*l, *r); }
-        static int compareNC(char const **l, char const **r) { return stricmp(*l, *r); }
-        static int revCompare(char const **l, char const **r) { return strcmp(*r, *l); }
-        static int revCompareNC(char const **l, char const **r) { return stricmp(*r, *l); }
+        static int compare(char const * const *l, char const * const *r) { return strcmp(*l, *r); }
+        static int compareNC(char const * const *l, char const * const *r) { return stricmp(*l, *r); }
+        static int revCompare(char const * const *l, char const * const *r) { return strcmp(*r, *l); }
+        static int revCompareNC(char const * const *l, char const * const *r) { return stricmp(*r, *l); }
     };
-    typedef ArrayOf<const char *, const char *> PARENT;
+    typedef ArrayOf<const char *, const char *, StringPointerArrayMapper> PARENT;
 public:
     // Appends a list in a string delimited by 'delim'
     void appendList(const char *list, const char *delim);
@@ -169,7 +190,7 @@ public:
     void appendListUniq(const char *list, const char *delim);
     void sortAscii(bool nocase=false);
     void sortAsciiReverse(bool nocase=false);
-    void sortCompare(int (*compare)(const char * * l, const char * * r));
+    void sortCompare(int (*compare)(const char * const * l, const char * const * r));
 private:
     using PARENT::sort; // prevent access to this function - to avoid ambiguity
 };

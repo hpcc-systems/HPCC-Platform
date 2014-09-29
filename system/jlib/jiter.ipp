@@ -26,11 +26,11 @@ class jlib_decl CArrayIteratorBase : public CInterface
 {
 protected:
   IInterface *owner;
-  const Array &values;
+  const IArray &values;
   aindex_t current;
   aindex_t start;
 public:
-  CArrayIteratorBase(const Array &, aindex_t start=0 , IInterface *owner=NULL);
+  CArrayIteratorBase(const IArray &, aindex_t start=0 , IInterface *owner=NULL);
   ~CArrayIteratorBase();
 
   virtual bool first();
@@ -43,7 +43,7 @@ class jlib_decl CArrayIterator : public CArrayIteratorBase , implements IIterato
 {
 public:
   IMPLEMENT_IINTERFACE;
-  CArrayIterator(const Array &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
+  CArrayIterator(const IArray &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
 
   virtual bool first() { return CArrayIteratorBase::first(); }
   virtual bool next() { return CArrayIteratorBase::next(); }
@@ -56,7 +56,7 @@ template<class X, class Y> class CArrayIteratorOf : public CArrayIteratorBase, i
 {
 public:
   IMPLEMENT_IINTERFACE;
-  CArrayIteratorOf<X,Y>(const Array &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
+  CArrayIteratorOf<X,Y>(const IArray &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
 
   virtual bool first() { return CArrayIteratorBase::first(); }
   virtual bool next() { return CArrayIteratorBase::next(); }
@@ -68,7 +68,7 @@ public:
 class jlib_decl COwnedArrayIterator : public CArrayIterator
 {
 public:
-    COwnedArrayIterator(Array *_values, aindex_t _start = 0);
+    COwnedArrayIterator(IArray *_values, aindex_t _start = 0);
     ~COwnedArrayIterator();
 };
 

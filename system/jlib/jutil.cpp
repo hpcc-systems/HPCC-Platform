@@ -1402,7 +1402,7 @@ void StringArray::sortAsciiReverse(bool nocase)
     PARENT::sort(nocase ? CCmp::revCompareNC : CCmp::revCompare);
 }
 
-void StringArray::sortCompare(int (*compare)(const char * * l, const char * * r))
+void StringArray::sortCompare(int (*compare)(const char * const * l, const char * const * r))
 {
     PARENT::sort(compare);
 }

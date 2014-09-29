@@ -1226,7 +1226,7 @@ public:
         StringBuffer path;
         StringBuffer dir;
         ForEachItemIn(i1,rmfn) {
-            RemoteFilename &rfn = rmfn.item(i1);
+            const RemoteFilename &rfn = rmfn.item(i1);
             rfn.getLocalPath(path.clear());
             const char *s=path.str();
             size32_t dirlen = 0;
@@ -1265,7 +1265,7 @@ public:
         setDirectory(dir.str());
         StringBuffer mask;
         ForEachItemIn(i2,rmfn) {                    // now set mask
-            RemoteFilename &rfn = rmfn.item(i2);
+            const RemoteFilename &rfn = rmfn.item(i2);
             rfn.getLocalPath(path.clear());
             const char *s=path.str()+dir.length();
             if (isPathSepChar(*s)&&dir.length())

@@ -545,7 +545,7 @@ private:
         logctx.CTXLOG("%s", msg.str());
     }
 
-    static int comparePersistAccess(IInterface **_a, IInterface **_b)
+    static int comparePersistAccess(IInterface * const *_a, IInterface * const *_b)
     {
         IPropertyTree *a = *(IPropertyTree **)_a;
         IPropertyTree *b = *(IPropertyTree **)_b;
@@ -629,7 +629,7 @@ private:
     IConstWorkUnit *workunit;
     IPropertyTree *workflowInfo;
     Owned<PersistVersion> persist;
-    Array persistReadLocks;
+    IArray persistReadLocks;
     bool doOnce;
 };
 
@@ -680,7 +680,7 @@ class CDeserializedResultStore : public CInterface, implements IDeserializedResu
 {
     PointerArrayOf<row_t> stored;
     UnsignedArray counts;
-    PointerIArrayOf<IOutputMetaData> metas;
+    IPointerArrayOf<IOutputMetaData> metas;
     mutable SpinLock lock;
 public:
     IMPLEMENT_IINTERFACE;
@@ -1040,7 +1040,7 @@ protected:
 
 protected:
     CriticalSection resultsCrit;
-    PointerIArrayOf<FlushingStringBuffer> resultMap;
+    IPointerArrayOf<FlushingStringBuffer> resultMap;
     bool exceptionLogged;
     bool aborted;
     CriticalSection abortLock; // NOTE: we don't bother to get lock when just reading to see whether to abort

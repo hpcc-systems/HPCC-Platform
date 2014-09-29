@@ -265,7 +265,7 @@ public:
     inline HqlRegexExpr & item(unsigned i)                  { return values.item(i); }
 
 private:
-    CopyCIArrayOf<HqlRegexExpr> values;
+    CICopyArrayOf<HqlRegexExpr> values;
 };
 
 class HqlDfaState;

@@ -348,7 +348,7 @@ IIterator * DllEntry::createLocationIterator()
 
 typedef IArrayOf<IDllLocation> LocationArray;
 
-int orderLocations(IInterface * * pLeft, IInterface * * pRight)
+int orderLocations(IInterface * const * pLeft, IInterface * const * pRight)
 {
     IDllLocation * left = (IDllLocation *)*pLeft;
     IDllLocation * right = (IDllLocation *)*pRight;

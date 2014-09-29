@@ -629,7 +629,7 @@ public:
 unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename)
 {
     // used for detecting duff nodes
-    PointerIArrayOf<ISocket> sockets;
+    IPointerArrayOf<ISocket> sockets;
     unsigned to=30*1000;
     unsigned n=eps.ordinality();    // use approx log scale (timeout is long but only for failure situation)
     while (n>1) {
@@ -649,7 +649,7 @@ unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const
     class casyncfor: public CAsyncFor
     {
         const SocketEndpointArray &eps;
-        const PointerIArrayOf<ISocket> &sockets;
+        const IPointerArrayOf<ISocket> &sockets;
         SocketEndpointArray &failures;
         StringArray &failedmessages;
         UnsignedArray &failedcodes;
@@ -660,7 +660,7 @@ unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const
         const char *script;
         unsigned scripttimeout;
 public:
-        casyncfor(const SocketEndpointArray &_eps,const PointerIArrayOf<ISocket> &_sockets,const char *_dataDir,const char *_mirrorDir,bool _chkv, const char *_script, unsigned _scripttimeout, const char *_filename,SocketEndpointArray &_failures, StringArray &_failedmessages,UnsignedArray &_failedcodes,CriticalSection &_sect)
+        casyncfor(const SocketEndpointArray &_eps,const IPointerArrayOf<ISocket> &_sockets,const char *_dataDir,const char *_mirrorDir,bool _chkv, const char *_script, unsigned _scripttimeout, const char *_filename,SocketEndpointArray &_failures, StringArray &_failedmessages,UnsignedArray &_failedcodes,CriticalSection &_sect)
             : eps(_eps), sockets(_sockets), dataDir(_dataDir), mirrorDir(_mirrorDir),
               failures(_failures), failedmessages(_failedmessages), failedcodes(_failedcodes), sect(_sect)
         { 

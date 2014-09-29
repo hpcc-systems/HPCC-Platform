@@ -2227,7 +2227,7 @@ public:
             stack.kill();
         else if (stack.ordinality())
         {
-            CopyCIArrayOf<CGraphExecutorGraphInfo> toMove;
+            CICopyArrayOf<CGraphExecutorGraphInfo> toMove;
             ForEachItemIn(s, stack)
             {
                 bool dependenciesDone = true;
@@ -2616,8 +2616,7 @@ IThorGraphIterator *CJobBase::getSubGraphs()
     return new CGraphTableIterator(subGraphs);
 }
 
-
-static void getGlobalDeps(CGraphBase &graph, CopyCIArrayOf<CGraphDependency> &deps)
+static void getGlobalDeps(CGraphBase &graph, CICopyArrayOf<CGraphDependency> &deps)
 {
     Owned<IThorActivityIterator> iter = graph.getIterator();
     ForEach(*iter)
@@ -2710,7 +2709,7 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
         CGraphElementBase &sourceActivity = sourceActivities.item(c);
         if (!childGraph.isGlobal())
         {
-            CopyCIArrayOf<CGraphDependency> globalChildGraphDeps;
+            CICopyArrayOf<CGraphDependency> globalChildGraphDeps;
             getGlobalDeps(childGraph, globalChildGraphDeps);
             ForEachItemIn(gcd, globalChildGraphDeps)
             {

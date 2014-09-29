@@ -1745,7 +1745,7 @@ protected:
     }
 
 protected:
-    Array values;
+    IArray values;
     HqlExprArray results;
 };
 
@@ -1785,7 +1785,7 @@ protected:
     id_t doProcessAnnotation(IHqlExpression * expr);
 
 protected:
-    CopyArray types;
+    ICopyArray types;
     UnsignedArray typeIds;
     unsigned seq;
 };

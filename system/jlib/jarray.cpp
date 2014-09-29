@@ -18,7 +18,6 @@
 
 #include "jiface.hpp"
 #include "jarray.hpp"
-#include "jarray.tpp"
 #include "jsort.hpp"
 #include "jmisc.hpp"
 #include "jlib.hpp"

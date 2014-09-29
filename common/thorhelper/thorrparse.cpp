@@ -839,8 +839,8 @@ RegexMatchAction RegexRecursivePattern::beginMatch(RegexState & state)
 
 RegexMatchAction RegexEndRecursivePattern::match(RegexState & state)
 {
-    RegexRecursivePattern & top = (RegexRecursivePattern &)state.stack.pop();
-    const void * saved = top.positionStack.pop();
+    RegexRecursivePattern & top = (RegexRecursivePattern &)state.stack.popGet();
+    const void * saved = top.positionStack.popGet();
     RegexMatchAction ret = matchNext(state);
     top.positionStack.append(saved);
     state.stack.append(top);
@@ -1502,7 +1502,7 @@ RegexMatchAction RegexDonePattern::beginMatch(RegexState & state)
 
 RegexMatchAction RegexEndNestedPattern::match(RegexState & state)
 {
-    RegexPattern & top = state.stack.pop();
+    RegexPattern & top = state.stack.popGet();
     RegexMatchAction ret = top.MATCH(state);
     state.stack.append(top);
     return ret;
@@ -1513,7 +1513,7 @@ RegexMatchAction RegexEndNestedPattern::beginMatch(RegexState & state)
 {
     ActiveStage & stage = pushStage(state);
     stage.setState(RSfinished);
-    stage.extra.nextPattern = &state.namedStack.pop();
+    stage.extra.nextPattern = &state.namedStack.popGet();
     return stage.extra.nextPattern->beginMatch(state);
 }
 
@@ -2592,7 +2592,7 @@ RegexMatchAction RegexAsciiDfaPattern::match(RegexState & state)
 
         while (potentialMatches.ordinality() > prevPotentialMatches)
         {
-            state.cur = (const byte *)potentialMatches.pop();
+            state.cur = (const byte *)potentialMatches.popGet();
             RegexMatchAction ret = matchNext(state);
             if (ret != RegexMatchBacktrack)
             {
@@ -2701,7 +2701,7 @@ RegexMatchAction RegexAsciiDfaPattern::nextAction(ActiveStage & stage, RegexStat
         {
             if (prevPotentialMatches < potentialMatches.ordinality())
             {
-                stage.followPosition = (const byte *)potentialMatches.pop();
+                stage.followPosition = (const byte *)potentialMatches.popGet();
                 stage.setMatched();
                 return RegexMatchContinue;
             }
@@ -3241,7 +3241,7 @@ ActiveStage & RegexState::pushStage()
         temp.state = RSinit;
         stages.append(temp);
     }
-    return stages.item(curActiveStage);
+    return stages.element(curActiveStage);
 }
 
 void RegexState::popStage()
@@ -3252,7 +3252,7 @@ void RegexState::popStage()
     tos.pattern->getTraceText(t);
     DBGLOG("%*s[%p]Pop %s", --patternDepth, "", tos.pattern, t.str());
 #endif
-    stages.item(curActiveStage).cleanup(*this);
+    stages.element(curActiveStage).cleanup(*this);
     curActiveStage--;
 }
 

@@ -507,7 +507,7 @@ public:
     NodeInfoArray nodes;
 };
 
-int compareParts(CInterface * * _left, CInterface * * _right)
+int compareParts(CInterface * const * _left, CInterface * const * _right)
 {
     PartNodeInfo * left = (PartNodeInfo *)*_left;
     PartNodeInfo * right = (PartNodeInfo *)*_right;

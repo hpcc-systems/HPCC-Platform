@@ -3073,7 +3073,7 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
                 {
                     if (!doContinuation(topEntry, stepExtra.returnMismatches()))
                     {
-                        unsigned last = heap.pop();
+                        unsigned last = heap.popGet();
                         if (heap.length())
                             heap.replace(last, 0);
                         removeHeap(top);
@@ -12434,7 +12434,7 @@ protected:
     bool grouped;
 };
 
-MAKEPointerArray(CRoxieThreadedConcatReader, ReaderArray);
+typedef CopyReferenceArrayOf<CRoxieThreadedConcatReader> ReaderArray;
 
 class CRoxieServerThreadedConcatActivity : public CRoxieServerActivity
 {

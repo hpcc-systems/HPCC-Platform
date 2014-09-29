@@ -451,7 +451,7 @@ void LogicalGraphCreator::endActivity()
 void LogicalGraphCreator::endSubGraph(bool nested)
 {
     subGraphs.pop();
-    subGraphId = savedGraphId.pop();
+    subGraphId = savedGraphId.popGet();
     if (!nested)
         restoreSubGraphs();
 }
@@ -790,7 +790,7 @@ LogicalGraphInfo * LogicalGraphCreator::queryExtra(IHqlExpression * expr)
 void LogicalGraphCreator::restoreSubGraphs()
 {
     subGraphs.kill();
-    unsigned level = savedLevels.pop();
+    unsigned level = savedLevels.popGet();
     while (saved.ordinality() != level)
         subGraphs.append(saved.popGet());
 }

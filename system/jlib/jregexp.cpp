@@ -1349,7 +1349,7 @@ static bool WildMatchNreplace ( const char *src, int srclen, int srcidx,
                 if (WildMatchNreplace(src,srclen,srcidx,
                     pat, patlen, patidx,nocase, wild,wildlen))
                     return true;
-                wildlen.append(wildlen.pop()+1); // prob can do a bit better than this!             
+                wildlen.append(wildlen.popGet()+1); // prob can do a bit better than this!
                 srcidx++;
             }
             break; // fail

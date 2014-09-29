@@ -293,7 +293,7 @@ public:
         }
         if (freesections.ordinality()==0)
             return NULL;
-        unsigned s = freesections.pop();
+        unsigned s = freesections.popGet();
         CVMSectionAllocator *section = new CVMSectionAllocator();
         if (!section)
             return NULL;

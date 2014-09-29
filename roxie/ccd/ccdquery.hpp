@@ -34,7 +34,7 @@
 
 class TranslatorArray : public CInterface, implements IInterface
 {
-    PointerIArrayOf<IRecordLayoutTranslator> a;
+    IPointerArrayOf<IRecordLayoutTranslator> a;
 public:
     IMPLEMENT_IINTERFACE;
     inline IRecordLayoutTranslator *item(unsigned idx) const { return a.item(idx); }
@@ -203,7 +203,7 @@ public:
     inline bool isSequential() const { return sequential; }
     inline unsigned getLibraryGraphId() const { return libraryGraphId; }
 };
-MAKEPointerArray(ActivityArray, ActivityArrayArray);
+typedef CopyReferenceArrayOf<ActivityArray> ActivityArrayArray;
 
 typedef ActivityArray *ActivityArrayPtr;
 typedef MapStringTo<ActivityArrayPtr> MapStringToActivityArray;

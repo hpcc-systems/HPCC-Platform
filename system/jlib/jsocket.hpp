@@ -101,6 +101,7 @@ public:
     size32_t getNetAddress(size32_t maxsz,void *dst) const;     // for internal use - returns 0 if address doesn't fit
     void setNetAddress(size32_t sz,const void *src);            // for internal use
 
+    inline bool operator == ( const IpAddress & other) const { return ipequals(other); }
     inline IpAddress & operator = ( const IpAddress &other )
     {
         ipset(other);
@@ -109,12 +110,7 @@ public:
 
 };
 
-inline IpAddress &Array__Member2Param(IpAddress &src)           { return src; }
-inline void Array__Assign(IpAddress & dest, IpAddress &src)     { dest=src; }
-inline bool Array__Equal(IpAddress &m, IpAddress &p)            { return m.ipequals(p); }
-inline void Array__Destroy(IpAddress &p)                        { }
-
-class jlib_decl IpAddressArray : public ArrayOf<IpAddress, IpAddress &>
+class jlib_decl IpAddressArray : public StructArrayOf<IpAddress>
 { 
 public:
     StringBuffer &getText(StringBuffer &text);
@@ -163,12 +159,7 @@ public:
 
 };
 
-inline SocketEndpoint &Array__Member2Param(SocketEndpoint &src)         { return src; }
-inline void Array__Assign(SocketEndpoint & dest, SocketEndpoint &src)   { dest=src; }
-inline bool Array__Equal(SocketEndpoint &m, SocketEndpoint &p)          { return m.equals(p); }
-inline void Array__Destroy(SocketEndpoint &p)                           { }
-
-class jlib_decl SocketEndpointArray : public ArrayOf<SocketEndpoint, SocketEndpoint &>
+class jlib_decl SocketEndpointArray : public StructArrayOf<SocketEndpoint>
 { 
 public:
     StringBuffer &getText(StringBuffer &text);
@@ -381,7 +372,7 @@ public:
 
     virtual void set_keep_alive(bool set)=0;                    // set option SO_KEEPALIVE
 
-    virtual size32_t udp_write_to(SocketEndpoint &ep,void const* buf, size32_t size)=0;
+    virtual size32_t udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size)=0;
         virtual bool check_connection() = 0;
 
 
@@ -576,7 +567,7 @@ public:
 };
 
 extern jlib_decl void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,unsigned timeout);
-extern jlib_decl void multiConnect(const SocketEndpointArray &eps,PointerIArrayOf<ISocket> &retsockets,unsigned timeout);
+extern jlib_decl void multiConnect(const SocketEndpointArray &eps,IPointerArrayOf<ISocket> &retsockets,unsigned timeout);
 
 interface ISocketConnectWait: extends IInterface
 {

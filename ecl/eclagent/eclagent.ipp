@@ -355,7 +355,7 @@ private:
     mutable CriticalSection wusect;
     StringArray tempFiles;
     CriticalSection tfsect;
-    Array persistReadLocks;
+    IArray persistReadLocks;
     StringArray processedPersists;
 
     Owned<ILoadedDllEntry> dll;
@@ -728,8 +728,8 @@ public:
     CIArrayOf<EclGraphElement> branches;
     UnsignedArray branchIndexes;
     EclGraphElement * conditionalLink;
-    CopyCIArrayOf<EclSubGraph> dependentOn;
-    CopyCIArrayOf<EclGraphElement> dependentOnActivity;
+    CICopyArrayOf<EclSubGraph> dependentOn;
+    CICopyArrayOf<EclGraphElement> dependentOnActivity;
     IntArray dependentControlId;
     IProbeManager * probeManager;
 

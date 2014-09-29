@@ -2006,7 +2006,7 @@ extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, 
 extern jhtree_decl IKeyIndex *createKeyIndex(IReplicatedFile &part, unsigned crc, bool isTLK, bool preloadAllowed)
 {
     StringBuffer filePath;
-    RemoteFilename &rfn = part.queryCopies().item(0);
+    const RemoteFilename &rfn = part.queryCopies().item(0);
     rfn.getPath(filePath);
     return queryKeyStore()->load(filePath.str(), crc, part, isTLK, preloadAllowed);
 }
@@ -2902,7 +2902,7 @@ class CKeyArray : public CInterface, implements IKeyArray
 public:
     IMPLEMENT_IINTERFACE;
     virtual bool IsShared() const { return CInterface::IsShared(); }
-    PointerIArrayOf<IKeyIndexBase> keys;
+    IPointerArrayOf<IKeyIndexBase> keys;
     virtual IKeyIndexBase *queryKeyPart(unsigned partNo)
     {
         if (!keys.isItem(partNo))

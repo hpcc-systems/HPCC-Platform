@@ -77,7 +77,7 @@ public:
         else
             value = NULL;
     }
-    static int compare(IInterface **ll, IInterface **rr)
+    static int compare(IInterface * const *ll, IInterface * const *rr)
     {
         CNodeInfo *l = (CNodeInfo *) *ll;
         CNodeInfo *r = (CNodeInfo *) *rr;

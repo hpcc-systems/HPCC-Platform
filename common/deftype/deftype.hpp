@@ -408,7 +408,7 @@ protected:
     IntArray stringSizes;
     IntArray decimalSizes;
     UnsignedArray nesting;
-    CopyArray setTypes;
+    ICopyArray setTypes;
     unsigned optionalNesting;
     bool addHeader;
 };

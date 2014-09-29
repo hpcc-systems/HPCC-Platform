@@ -356,7 +356,7 @@ public:
         throw MakeStringException(-1, "not implemented");
     }
 
-    virtual size32_t udp_write_to(SocketEndpoint &ep, void const* buf, size32_t size)
+    virtual size32_t udp_write_to(const SocketEndpoint &ep, void const* buf, size32_t size)
     {
         throw MakeStringException(-1, "not implemented");
     }

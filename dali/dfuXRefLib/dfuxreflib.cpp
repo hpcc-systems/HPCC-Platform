@@ -1094,7 +1094,7 @@ public:
         ForEachItemIn(i2,epa) {
             if (i2)
                 out.append(", ");
-            SocketEndpoint &item = epa.item(sorted[i2]);
+            const SocketEndpoint &item = epa.item(sorted[i2]);
             StringBuffer cur;
             item.getUrlStr(cur);
             const char *s1 = prefix.str();
@@ -1512,7 +1512,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                     SocketEndpoint nullep;
                     while (partno>=epa.ordinality())
                         epa.append(nullep);
-                    epa.item(partno) = ep;
+                    epa.element(partno) = ep;
                 }
             }
             else {
@@ -2469,7 +2469,7 @@ class CXRefManager: public CXRefManagerBase
         }
     }
 
-    static int compareDirectory(CInterface **le, CInterface **re)
+    static int compareDirectory(CInterface * const *le, CInterface * const *re)
     {
         const CDfuDirEntry *l = (const CDfuDirEntry *)*le;
         const CDfuDirEntry *r = (const CDfuDirEntry *)*re;

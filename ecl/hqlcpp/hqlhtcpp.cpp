@@ -6022,7 +6022,7 @@ double HqlCppTranslator::getComplexity(HqlExprArray & exprs)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static int compareTrackedSourceByName(CInterface * * _left, CInterface * * _right)
+static int compareTrackedSourceByName(CInterface * const * _left, CInterface * const * _right)
 {
     SourceFieldUsage & left = static_cast<SourceFieldUsage &>(**_left);
     SourceFieldUsage & right = static_cast<SourceFieldUsage &>(**_right);
@@ -16023,7 +16023,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpress
 
 ABoundActivity * HqlCppTranslator::doBuildActivitySequentialParallel(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
-    Array boundActivities;
+    IArray boundActivities;
     ForEachChild(i, expr)
     {
         IHqlExpression * cur = expr->queryChild(i);

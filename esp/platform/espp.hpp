@@ -25,7 +25,7 @@ typedef ISocket * isockp;
 
 
 typedef MapBetween<int, int, isockp, isockp> SocketPortMap;
-MAKEPointerArray(ISocket, SocketPortArray);
+typedef CopyReferenceArrayOf<ISocket> SocketPortArray;
 
 class CEspTerminator : public Thread
 {

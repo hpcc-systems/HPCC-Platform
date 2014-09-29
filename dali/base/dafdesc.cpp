@@ -1583,7 +1583,7 @@ public:
         if (idx>=pending->ordinality())
             ERRLOG("IFileDescriptor setPart called after cluster finished");
         else {
-            SocketEndpoint &pep = pending->item(idx);
+            SocketEndpoint &pep = pending->element(idx);
             if (pep.isNull())
                 pep=ep;
             else

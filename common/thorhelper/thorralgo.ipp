@@ -122,11 +122,7 @@ public:
     byte flags;
 };
 
-inline ActiveStage & Array__Member2Param(ActiveStage & src)            { return src; }  
-inline void Array__Assign(ActiveStage & dest, ActiveStage & src)     { dest = src; }
-inline bool Array__Equal(const ActiveStage & m, const ActiveStage & p) { UNIMPLEMENTED; }
-
-MAKECopyArrayOf(ActiveStage, ActiveStage &, ActiveStageArray);
+typedef StructArrayOf<ActiveStage> ActiveStageArray;
 
 //---------------------------------------------------------------------------
 
@@ -189,7 +185,7 @@ public:
 
 protected:
     inline bool hasActiveStage()                            { return (curActiveStage != NotFound); }
-    inline ActiveStage & topStage()                         { return stages.item(curActiveStage); }
+    inline ActiveStage & topStage()                         { return stages.element(curActiveStage); }
 
 public:
     RegexStateCache & cache;

@@ -945,8 +945,8 @@ void WorkflowMachine::performItem(unsigned wfid, unsigned scheduledWfid)
     currentWfid = wfid;
     currentScheduledWfid = scheduledWfid;
     process->perform(ctx, wfid);
-    scheduledWfid = wfidStack.pop();
-    currentWfid = wfidStack.pop();
+    scheduledWfid = wfidStack.popGet();
+    currentWfid = wfidStack.popGet();
     if(currentWfid)
     {
 #ifdef TRACE_WORKFLOW

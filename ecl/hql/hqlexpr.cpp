@@ -10367,15 +10367,6 @@ extern IHqlExpression *createValueF(node_operator op, ITypeInfo *type, ...)
     return CHqlExpressionWithType::makeExpression(op, type, children);
 }
 
-extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, unsigned num, IHqlExpression * * args)
-{
-    IHqlExpression * expr = createOpenValue(op, type);
-    unsigned index;
-    for (index = 0; index < num; index++)
-        expr->addOperand(args[index]);
-    return expr->closeExpr();
-}
-
 extern HQL_API IHqlExpression * createValueFromCommaList(node_operator op, ITypeInfo * type, IHqlExpression * argsExpr)
 {
     HqlExprArray args;
@@ -10389,21 +10380,20 @@ extern HQL_API IHqlExpression * createValueFromCommaList(node_operator op, IType
 
 extern HQL_API IHqlExpression * createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args)
 {
-    ForEachItemIn(idx, args)
-        args.item(idx).Link();
-    HqlExprArray & castArgs = const_cast<HqlExprArray &>(args);
-    IHqlExpression * * exprList = static_cast<IHqlExpression * *>(castArgs.getArray());
-    return createValue(op, type, args.ordinality(), exprList);
+    return createValueSafe(op, type, args, 0, args.ordinality());
 }
 
 extern HQL_API IHqlExpression * createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args, unsigned from, unsigned max)
 {
     assertex(from <= args.ordinality() && max <= args.ordinality() && from <= max);
+    IHqlExpression * expr = createOpenValue(op, type);
     for (unsigned idx=from; idx < max; idx++)
-        args.item(idx).Link();
-    HqlExprArray & castArgs = const_cast<HqlExprArray &>(args);
-    IHqlExpression * * exprList = static_cast<IHqlExpression * *>(castArgs.getArray());
-    return createValue(op, type, max-from, exprList + from);
+    {
+        IHqlExpression & cur = args.item(idx);
+        cur.Link();
+        expr->addOperand(&cur);
+    }
+    return expr->closeExpr();
 }
 
 extern IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1)
@@ -13308,7 +13298,6 @@ extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquer
 
 //==============================================================================================================
 
-//MAKEValueArray(byte, ByteArray);
 typedef UnsignedArray DepthArray;
 
 struct TransformTrackingInfo
@@ -13495,19 +13484,19 @@ void TransformTrackingInfo::lock()
 
 void TransformTrackingInfo::unlock()
 {
-    unsigned transformStackLevel = transformStackMark.pop();
+    unsigned transformStackLevel = transformStackMark.popGet();
     while (transformStack.ordinality() > transformStackLevel)
     {
-        CHqlExpression * expr = (CHqlExpression *)transformStack.pop();
+        CHqlExpression * expr = (CHqlExpression *)transformStack.popGet();
         unsigned oldDepth = 0;
         IInterface * extra = NULL;
         if (curTransformDepth > 1)
         {
-            oldDepth = depthStack.pop();
+            oldDepth = depthStack.popGet();
             if (oldDepth & TRANSFORM_DEPTH_SAVE_MATCH_EXPR)
                 extra = expr;
             else if (oldDepth)
-                extra = (IInterface *)transformStack.pop();
+                extra = (IInterface *)transformStack.popGet();
         }
         expr->resetTransformExtra(extra, oldDepth);
         expr->Release();

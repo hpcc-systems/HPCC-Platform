@@ -57,7 +57,7 @@ bool endsWithDotDotDot(const StringBuffer & s)
     return (memcmp(s.str() + s.length() -3, "...", 3) == 0);
 }
 
-MAKEPointerArray(HqlExprArray, HqlExprArrayArray);
+typedef CopyReferenceArrayOf<HqlExprArray> HqlExprArrayArray;
 
 class HqltHql
 {
@@ -163,7 +163,7 @@ private:
     int           curDatasetDepth;
     StringBuffer  m_definitions;
     StringBuffer  m_services;
-    Array         m_visitedAlienTypes;
+    IArray         m_visitedAlienTypes;
     bool          m_isTop;
     int           m_export_level;
     unsigned      indent;
@@ -180,7 +180,7 @@ private:
     HqlExprArrayArray m_visited_array;
     PointerArray        scope;
     HqlExprArray    mapped;
-    PointerIArray   mapSaved;
+    IPointerArray   mapSaved;
     unsigned        clashCounter;
 };
 

@@ -1224,7 +1224,7 @@ protected:
 class CHqlMultiParentScope : public CHqlScope
 {
 protected:
-    CopyArray parents;
+    ICopyArray parents;
 
 public:
     CHqlMultiParentScope(IIdAtom *, ...);

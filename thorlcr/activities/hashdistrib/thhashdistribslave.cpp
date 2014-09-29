@@ -291,7 +291,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         CriticalSection activeWritersLock;
         mutable SpinLock totalSzLock;
         SpinLock doDedupLock;
-        PointerIArrayOf<CSendBucket> buckets;
+        IPointerArrayOf<CSendBucket> buckets;
         UnsignedArray candidates;
         size32_t totalSz;
         bool senderFull, doDedup, aborted, initialized;

@@ -1000,7 +1000,7 @@ StringBuffer & LRTable::trace(StringBuffer & out)
 //---------------------------------------------------------------------------
 //-- LRTableBuilder --
 
-static int compareActions(CInterface * * _left, CInterface * * _right)
+static int compareActions(CInterface * const * _left, CInterface * const * _right)
 {
     LRActionItem * left = static_cast<LRActionItem *>(*_left);
     LRActionItem * right = static_cast<LRActionItem *>(*_right);

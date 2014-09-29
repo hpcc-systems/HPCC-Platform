@@ -467,7 +467,7 @@ public:
     virtual offset_t getSize() { return fileSize; }
     virtual CDateTime *queryDateTime() { return &fileDate; }
 
-    static int compareAccess(IInterface **L, IInterface **R)
+    static int compareAccess(IInterface * const *L, IInterface * const *R)
     {
         ILazyFileIO *LL = (ILazyFileIO *) *L;
         ILazyFileIO *RR = (ILazyFileIO *) *R;
@@ -989,7 +989,7 @@ public:
                         break;
                     if (todo.ordinality())
                     {
-                        ILazyFileIO *popped = &todo.pop();
+                        ILazyFileIO *popped = &todo.popGet();
                         if (popped->isAlive())
                         {
                             next.set(popped);
@@ -1565,7 +1565,7 @@ public:
     }
 
     virtual bool IsShared() const { return CInterface::IsShared(); };
-    PointerIArrayOf<IFileIO> files;
+    IPointerArrayOf<IFileIO> files;
     StringArray filenames;
     Int64Array bases;
     unsigned valid;
@@ -1655,7 +1655,7 @@ public:
 
 template <class X> class PerChannelCacheOf
 {
-    PointerIArrayOf<X> cache;
+    IPointerArrayOf<X> cache;
     IntArray channels;
 public:
     void set(X *value, unsigned channel)
@@ -1691,9 +1691,9 @@ protected:
     bool isSuper;
 
     StringArray subNames;
-    PointerIArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
-    PointerIArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
-    PointerIArrayOf<IDefRecordMeta> diskMeta;
+    IPointerArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
+    IPointerArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
+    IPointerArrayOf<IDefRecordMeta> diskMeta;
     IArrayOf<IDistributedFile> subDFiles;  // To make sure subfiles get locked too
     IArrayOf<IResolvedFile> subRFiles;  // To make sure subfiles get locked too
 
@@ -2371,7 +2371,7 @@ public:
         ROQ->removePendingCallback(callback);
     }
 private:
-    void deserializeFilePart(MemoryBuffer &serverData, PointerIArrayOf<IFileDescriptor> &files, unsigned fileNo, bool remote)
+    void deserializeFilePart(MemoryBuffer &serverData, IPointerArrayOf<IFileDescriptor> &files, unsigned fileNo, bool remote)
     {
         IArrayOf<IPartDescriptor> parts;
         deserializePartFileDescriptors(serverData, parts);

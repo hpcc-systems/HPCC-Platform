@@ -395,7 +395,7 @@ public:
     }
 
 private:
-    Array errors;
+    IArray errors;
 };
 
 IErrorReceiver * createDedupingErrorReceiver(IErrorReceiver & prev)

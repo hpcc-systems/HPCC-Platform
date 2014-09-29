@@ -258,7 +258,7 @@ public:
 
 };
 
-MAKEPointerArray(CBufferQueueWaiting,CWaitingArray);
+typedef CopyReferenceArrayOf<CBufferQueueWaiting> CWaitingArray;
 
 class CBufferQueue
 {
@@ -372,7 +372,7 @@ static unsigned nextfreetag=0;
 unsigned short generateDynamicTag()
 {
     if (freetags.ordinality())
-        return freetags.pop();
+        return freetags.popGet();
     return nextfreetag++;
 }
 

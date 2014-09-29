@@ -1498,7 +1498,7 @@ class InMemoryIndexCursor : public CInterface, implements IInMemoryIndexCursor
         return NULL;
     }
 
-    static int compareSegments(IInterface **v1, IInterface **v2)
+    static int compareSegments(IInterface * const *v1, IInterface * const *v2)
     {
         // MORE - just assuming an offset match is not really enough. Use the same code as we did in tracking
 

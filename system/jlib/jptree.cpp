@@ -213,7 +213,7 @@ MODULE_EXIT()
 }
 
 
-static int comparePropTrees(IInterface **ll, IInterface **rr)
+static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
 {
     IPropertyTree *l = (IPropertyTree *) *ll;
     IPropertyTree *r = (IPropertyTree *) *rr;
@@ -756,7 +756,7 @@ private:
         return false;
     }
 
-    Array iters;
+    IArray iters;
     IPropertyTreeIterator *currentIter;
     IPropertyTree *current;
     unsigned cp, iterCount;
@@ -2014,7 +2014,7 @@ StringBuffer &PTree::getName(StringBuffer &ret) const
     return ret;
 }
 
-MAKEPointerArray(AttrValue, AttrArray);
+typedef CopyReferenceArrayOf<AttrValue> AttrArray;
 IAttributeIterator *PTree::getAttributes(bool sorted) const
 {
     class CAttributeIterator : public CInterface, implements IAttributeIterator
@@ -2086,7 +2086,7 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
     public:
         IMPLEMENT_IINTERFACE;
 
-        static int compareAttrs(AttrValue **ll, AttrValue **rr)
+        static int compareAttrs(AttrValue * const *ll, AttrValue * const *rr)
         {
             return stricmp((*ll)->key->get(), (*rr)->key->get());
         };
@@ -4701,7 +4701,7 @@ class CPullXMLReader : public CXMLReaderBase<X>, implements IPullPTreeReader
         StringBuffer tagText;
         bool binary, base64;
     };
-    CopyCIArrayOf<CStateInfo> stack, freeStateInfo;
+    CICopyArrayOf<CStateInfo> stack, freeStateInfo;
 
     CStateInfo *stateInfo;
 
@@ -4803,7 +4803,7 @@ public:
                 startOffset = curOffset-2;
                 if (freeStateInfo.ordinality())
                 {
-                    stateInfo = &freeStateInfo.pop();
+                    stateInfo = &freeStateInfo.popGet();
                     stateInfo->reset();
                 }
                 else
@@ -6669,7 +6669,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
         const char *wnsTag;
         unsigned childCount;
     };
-    CopyCIArrayOf<CStateInfo> stack, freeStateInfo;
+    CICopyArrayOf<CStateInfo> stack, freeStateInfo;
 
     CStateInfo *stateInfo;
 
@@ -6739,7 +6739,7 @@ public:
             stateInfo->childCount++;
         if (freeStateInfo.ordinality())
         {
-            stateInfo = &freeStateInfo.pop();
+            stateInfo = &freeStateInfo.popGet();
             stateInfo->reset();
         }
         else

@@ -2074,7 +2074,7 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
             }
             return info.getClear();
         }
-        static int compareWuids(IInterface **_a, IInterface **_b)
+        static int compareWuids(IInterface * const *_a, IInterface * const *_b)
         {
             IEspECLWorkunit *a = *(IEspECLWorkunit **)_a;
             IEspECLWorkunit *b = *(IEspECLWorkunit **)_b;

@@ -59,7 +59,7 @@ SCMinterface IRoxieCommunicationClient(IInterface)
 };
 
 
-extern "C" ROXIECOMMLIB_API IRoxieCommunicationClient *createRoxieCommunicationClient(SocketEndpoint &roxieEP, unsigned roxieTimeout);
+extern "C" ROXIECOMMLIB_API IRoxieCommunicationClient *createRoxieCommunicationClient(const SocketEndpoint &roxieEP, unsigned roxieTimeout);
 
 
 

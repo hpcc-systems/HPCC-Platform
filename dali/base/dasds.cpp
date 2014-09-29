@@ -681,7 +681,7 @@ public:
 class CSubscriberContainer : public CSubscriberContainerBase
 {
     StringAttr xpath, fullXpath;
-    PointerIArrayOf<CQualifiers> qualifierStack;
+    IPointerArrayOf<CQualifiers> qualifierStack;
     bool sub, sendValue;
     unsigned depth;
 public:
@@ -5922,7 +5922,7 @@ void CCovenSDSManager::validateBackup()
         WARNLOG("Store backup file doesn't exist or differs, filename=%s", storeFilename.str());
 }
 
-static int uint64compare(unsigned __int64 *i1, unsigned __int64 *i2)
+static int uint64compare(unsigned __int64 const *i1, unsigned __int64 const *i2)
 {
     if (*i1==*i2) return 0;
     if (*i1<*i2) return -1;
@@ -5937,10 +5937,10 @@ public:
     unsigned __int64 num;
 };
 
-static int extNcompareFunc(CInterface **_itm1, CInterface **_itm2)
+static int extNcompareFunc(CInterface * const *_itm1, CInterface * const *_itm2)
 {
-    CLegacyFmtItem *itm1 = *(CLegacyFmtItem **)_itm1;
-    CLegacyFmtItem *itm2 = *(CLegacyFmtItem **)_itm2;
+    CLegacyFmtItem *itm1 = (CLegacyFmtItem *)*_itm1;
+    CLegacyFmtItem *itm2 = (CLegacyFmtItem *)*_itm2;
     if (itm1->num==itm2->num) return 0;
     if (itm1->num<itm2->num) return -1;
     return 1;
