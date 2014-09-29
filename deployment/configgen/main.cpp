@@ -92,6 +92,7 @@ void usage()
   puts("          has more than one instance, it will be listed as two separate.");
   puts("          entries in the output");
   puts("          componentName,instanceip");
+  puts("   -listldapservers: Lists out all LDAP Server components and associated tags");
   puts("   -machines: Lists out all names or ips of machines specified in the environment");
   puts("          Output is written to stdout, one machine per line.");
   puts("   -validateonly: Validates the environment, without generating permanent ");
@@ -251,7 +252,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
                    const char* out_filename, bool generateOutput, const char* ipAddr, 
                    bool listComps, bool verbose, bool listallComps, bool listallCompsAllThors, bool listESPServices, bool listdirs,
                    bool listdropzones, bool listcommondirs, bool listMachines, bool validateOnly,
-                   bool listldaps, bool ldapconfig)
+                   bool listldaps, bool ldapconfig, bool ldapservers)
 {
   Owned<IPropertyTree> pEnv = createPTreeFromXMLFile(in_cfgname);
   short nodeIndex = 1;
@@ -379,6 +380,71 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       {
         deleteRecursive(tempdir);
         throw e;
+      }
+    }
+  }
+  else if (ldapservers)
+  {
+    //first, build a map of all ldapServer/IP
+    StringBuffer sb1,sb2;
+    typedef MapStringTo<StringBuffer> strMap;
+    strMap ldapServers;
+    {
+      xPath.appendf("Software/%s/", XML_TAG_LDAPSERVERPROCESS);
+      Owned<IPropertyTreeIterator> ldaps = pEnv->getElements(xPath.str());
+      ForEach(*ldaps)
+      {
+        IPropertyTree* ldap = &ldaps->query();
+        Owned<IPropertyTreeIterator> insts = ldap->getElements(XML_TAG_INSTANCE);
+        ForEach(*insts)
+        {
+          IPropertyTree* inst = &insts->query();
+          StringBuffer computerName(inst->queryProp(XML_ATTR_COMPUTER));
+          xPath.clear().appendf("Hardware/Computer[@name=\"%s\"]", computerName.str());
+          IPropertyTree* pComputer = pEnv->queryPropTree(xPath.str());
+          if (pComputer)
+          {
+            if (NULL == ldapServers.getValue(ldap->queryProp(XML_ATTR_NAME)))//only add once
+              ldapServers.setValue(ldap->queryProp(XML_ATTR_NAME), pComputer->queryProp("@netAddress"));
+          }
+        }
+      }
+    }
+
+    //Lookup and output all LDAPServer components
+    StringBuffer out;
+    xPath.clear().append(XML_TAG_SOFTWARE"/"XML_TAG_LDAPSERVERPROCESS);
+    Owned<IPropertyTreeIterator> ldaps = pEnv->getElements(xPath.str());
+
+    ForEach(*ldaps)
+    {
+      IPropertyTree* ldap = &ldaps->query();
+      out.appendf("%s\n",ldap->queryName());
+      Owned<IAttributeIterator> attrs = ldap->getAttributes();
+      ForEach(*attrs)
+      {
+        out.appendf("%s,%s\n", attrs->queryName(), attrs->queryValue());
+        //If this is ldap server name, lookup and add its IP address
+        if (0==strcmp(attrs->queryName(), "@name"))
+        {
+          StringBuffer sb(attrs->queryValue());
+          StringBuffer * ldapIP = ldapServers.getValue(sb);
+          if (ldapIP->str())
+          {
+            out.appendf("@ldapAddress,%s\n",ldapIP->str());
+            ldapServers.setValue(attrs->queryValue(), NULL);
+          }
+          else
+          {
+            out.clear();
+            break;
+          }
+        }
+      }
+      if (out.length())
+      {
+        fprintf(stdout, "%s", out.str());
+        out.clear();
       }
     }
   }
@@ -666,6 +732,7 @@ int main(int argc, char** argv)
   bool ldapconfig = false;
   bool listldaps = false;
   bool listespservices = false;
+  bool ldapservers = false;
 
   int i = 1;
   bool writeToFiles = false;
@@ -764,6 +831,11 @@ int main(int argc, char** argv)
       i++;
       listldaps = true;
     }
+    else if (stricmp(argv[i], "-listldapservers") == 0)
+    {
+      i++;
+      ldapservers = true;
+    }
     else if (stricmp(argv[i], "-machines") == 0)
     {
       i++;
@@ -804,7 +876,7 @@ int main(int argc, char** argv)
     processRequest(in_cfgname, out_dirname, in_dirname, compName, 
       compType,in_filename, out_filename, generateOutput, ipAddr.length() ? ipAddr.str(): NULL,
       listComps, verbose, listallComps, listallCompsAllThors, listespservices, listdirs, listdropzones, listcommondirs, listMachines,
-      validateOnly, listldaps, ldapconfig);
+      validateOnly, listldaps, ldapconfig, ldapservers);
   }
   catch(IException *excpt)
   {
