@@ -1117,6 +1117,15 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                 }
             }
 
+            if (syntaxChecking && instance.query && instance.query->getOperator() == no_forwardscope)
+            {
+                IHqlScope * scope = instance.query->queryScope();
+                //Have the side effect of resolving the symbols and triggering any syntax errors
+                IHqlScope * resolved = scope->queryResolvedScope(&ctx);
+                if (resolved)
+                    instance.query.set(resolved->queryExpression());
+            }
+
             gatherParseWarnings(ctx.errs, instance.query, parseCtx.orphanedWarnings);
 
             if (instance.query && !syntaxChecking && !optGenerateMeta && !optEvaluateResult)
