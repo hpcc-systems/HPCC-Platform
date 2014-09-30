@@ -23,6 +23,10 @@
 #include "jlog.hpp"
 #include "jregexp.hpp"
 
+#ifdef _WIN32
+#include <sys/timeb.h>
+#endif
+
 static CriticalSection statsNameCs;
 static StringBuffer statisticsComponentName;
 static StatisticCreatorType statisticsComponentType = SCTunknown;
@@ -62,8 +66,6 @@ static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz",
 static const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
 static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", NULL };
 
-#define PREFIXLEN(x) (sizeof(x)-1) // sizeof(const-string) = strlen(const-string) + 1 byte for the \0 terminator
-
 static unsigned matchString(const char * const * names, const char * search)
 {
     if (!search)
@@ -91,7 +93,7 @@ extern jlib_decl unsigned __int64 getTimeStampNowValue()
 #ifdef _WIN32
     struct _timeb now;
     _ftime(&now);
-    return (unsigned __in64)now.time * I64C(1000000) + now.millitm * 1000;
+    return (unsigned __int64)now.time * I64C(1000000) + now.millitm * 1000;
 #else
     struct timeval tm;
     gettimeofday(&tm,NULL);
@@ -764,7 +766,7 @@ public:
     {
         mergeUpdate(queryMeasure(kind), value, otherValue);
     }
-    void serialize(MemoryBuffer & out)
+    void serialize(MemoryBuffer & out) const
     {
         //MORE: Could compress - e.g., store as a packed integers
         out.append((unsigned)kind);
@@ -786,6 +788,127 @@ public:
 };
 
 //--------------------------------------------------------------------------------------------------------------------
+
+StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
+{
+    switch (scopeType)
+    {
+    case SSTgraph:
+        return out.append(GraphScopePrefix).append(id);
+    case SSTsubgraph:
+        return out.append(SubGraphScopePrefix).append(id);
+    case SSTactivity:
+        return out.append(ActivityScopePrefix).append(id);
+    case SSTedge:
+        return out.append(EdgeScopePrefix).append(id).append("_").append(extra);
+    default:
+        throwUnexpected();
+    }
+}
+
+unsigned StatsScopeId::getHash() const
+{
+    return hashc((const byte *)&id, sizeof(id), (unsigned)scopeType);
+}
+
+bool StatsScopeId::matches(const StatsScopeId & other) const
+{
+    return (scopeType == other.scopeType) && (id == other.id) && (extra == other.extra);
+}
+
+unsigned StatsScopeId::queryActivity() const
+{
+    switch (scopeType)
+    {
+    case SSTactivity:
+    case SSTedge:
+        return id;
+    default:
+        return 0;
+    }
+}
+
+void StatsScopeId::deserialize(MemoryBuffer & in, unsigned version)
+{
+    byte scopeTypeByte;
+    in.read(scopeTypeByte);
+    scopeType = (StatisticScopeType)scopeTypeByte;
+    switch (scopeType)
+    {
+    case SSTgraph:
+    case SSTsubgraph:
+    case SSTactivity:
+        in.read(id);
+        break;
+    case SSTedge:
+        in.read(id);
+        in.read(extra);
+        break;
+    default:
+        throwUnexpected();
+    }
+}
+
+void StatsScopeId::serialize(MemoryBuffer & out) const
+{
+    out.append((byte)scopeType);
+    switch (scopeType)
+    {
+    case SSTgraph:
+    case SSTsubgraph:
+    case SSTactivity:
+        out.append(id);
+        break;
+    case SSTedge:
+        out.append(id);
+        out.append(extra);
+        break;
+    default:
+        throwUnexpected();
+    }
+}
+
+void StatsScopeId::setId(StatisticScopeType _scopeType, unsigned _id, unsigned _extra)
+{
+    scopeType = _scopeType;
+    id = _id;
+    extra = _extra;
+}
+
+bool StatsScopeId::setScopeText(const char * text)
+{
+    if (MATCHES_CONST_PREFIX(text, ActivityScopePrefix))
+        setActivityId(atoi(text + CONST_STRLEN(ActivityScopePrefix)));
+    else if (MATCHES_CONST_PREFIX(text, GraphScopePrefix))
+        setId(SSTgraph, atoi(text + CONST_STRLEN(GraphScopePrefix)));
+    else if (MATCHES_CONST_PREFIX(text, SubGraphScopePrefix))
+        setSubgraphId(atoi(text + CONST_STRLEN(SubGraphScopePrefix)));
+    else if (MATCHES_CONST_PREFIX(text, EdgeScopePrefix))
+    {
+        const char * underscore = strchr(text, '_');
+        if (!underscore)
+            return false;
+        setEdgeId(atoi(text + CONST_STRLEN(EdgeScopePrefix)), atoi(underscore+1));
+    }
+    else
+        return false;
+
+    return true;
+}
+
+void StatsScopeId::setActivityId(unsigned _id)
+{
+    setId(SSTactivity, _id);
+}
+void StatsScopeId::setEdgeId(unsigned _id, unsigned _output)
+{
+    setId(SSTedge, _id, _output);
+}
+void StatsScopeId::setSubgraphId(unsigned _id)
+{
+    setId(SSTsubgraph, _id);
+}
+
 
 //Use an atom table to minimimize memory usage in esp.
 //The class could try and use a combination of the scope type and an unsigned, but I suspect not worth it.
@@ -818,15 +941,6 @@ IAtom * createEdgeScope(unsigned value1, unsigned value2)
 
 //--------------------------------------------------------------------------------------------------------------------
 
-static int orderCollection(IStatisticCollection * left, IStatisticCollection * right)
-{
-    SCMStringBuffer leftName;
-    SCMStringBuffer rightName;
-    const char * leftScope = left->queryScope(leftName);
-    const char * rightScope = right->queryScope(rightName);
-    return strcmp(leftScope, rightScope);
-}
-
 enum
 {
     SCroot,
@@ -838,24 +952,35 @@ class CStatisticCollection;
 static CStatisticCollection * deserializeCollection(CStatisticCollection * parent, MemoryBuffer & in, unsigned version);
 
 //MORE: Create an implementation with no children
-class CStatisticCollection : public CInterfaceOf<IStatisticCollection>
+typedef StructArrayOf<Statistic> StatsArray;
+class CollectionHashTable : public SuperHashTableOf<CStatisticCollection, StatsScopeId>
 {
 public:
-    CStatisticCollection(CStatisticCollection * _parent, StatisticScopeType _scopeType, IAtom * _name) : parent(_parent), scopeType(_scopeType), name(_name)
+    virtual void     onAdd(void *et);
+    virtual void     onRemove(void *et);
+    virtual unsigned getHashFromElement(const void *et) const;
+    virtual unsigned getHashFromFindParam(const void *fp) const;
+    virtual const void * getFindParam(const void *et) const;
+    virtual bool matchesFindParam(const void *et, const void *key, unsigned fphash) const;
+    virtual bool matchesElement(const void *et, const void *searchET) const;
+};
+typedef IArrayOf<CStatisticCollection> CollectionArray;
+
+class CStatisticCollection : public CInterfaceOf<IStatisticCollection>
+{
+    friend class CollectionHashTable;
+public:
+    CStatisticCollection(CStatisticCollection * _parent, const StatsScopeId & _id) : parent(_parent), id(_id)
     {
     }
 
     CStatisticCollection(CStatisticCollection * _parent, MemoryBuffer & in, unsigned version) : parent(_parent)
     {
-        byte scopeTypeByte;
-        StringAttr nameText;
-        in.read(scopeTypeByte);
-        in.read(nameText);
-        scopeType = (StatisticScopeType)scopeTypeByte;
-        name = createStatsScope(nameText);
+        id.deserialize(in, version);
 
         unsigned numStats;
         in.read(numStats);
+        stats.ensure(numStats);
         while (numStats-- > 0)
         {
             Statistic * next = Statistic::deserialize(in, version);
@@ -864,10 +989,11 @@ public:
 
         unsigned numChildren;
         in.read(numChildren);
+        children.ensure(numChildren);
         while (numChildren-- > 0)
         {
             CStatisticCollection * next = deserializeCollection(this, in, version);
-            children.append(*next);
+            children.add(*next);
         }
     }
 
@@ -876,7 +1002,7 @@ public:
 //interface IStatisticCollection:
     virtual StatisticScopeType queryScopeType() const
     {
-        return scopeType;
+        return id.queryScopeType();
     }
     virtual unsigned __int64 queryWhenCreated() const
     {
@@ -884,79 +1010,68 @@ public:
             return parent->queryWhenCreated();
         return 0;
     }
-    virtual const char * queryScope(IStringVal & str) const
+    virtual StringBuffer & getScope(StringBuffer & str) const
     {
-        return name->str();
+        return id.getScopeText(str);
     }
-    virtual IStringVal & getFullScope(IStringVal & str) const
+    virtual StringBuffer & getFullScope(StringBuffer & str) const
     {
         if (parent)
         {
-            SCMStringBuffer temp;
-            parent->getFullScope(temp);
-            temp.s.append(':').append(name->str());
-            str.set(temp.str());
+            parent->getFullScope(str);
+            str.append(':');
         }
-        else
-            str.set(name->str());
+        id.getScopeText(str);
         return str;
     }
     virtual unsigned __int64 queryStatistic(StatisticKind kind) const
     {
         ForEachItemIn(i, stats)
         {
-            Statistic & cur = stats.item(i);
+            const Statistic & cur = stats.item(i);
             if (cur.kind == kind)
                 return cur.value;
         }
         return 0;
     }
-
-    virtual IStatisticCollection * queryCollection(const char * scope)
+    virtual unsigned getNumStatistics() const
     {
-        IAtom * name = createStatsScope(scope);
-        return resolveSubScope(SSTall, name, false, false);
+        return stats.ordinality();
     }
-
-    virtual IStatisticIterator & getStatistics(/*filter*/)
+    virtual void getStatistic(StatisticKind & kind, unsigned __int64 & value, unsigned idx) const
     {
-        return * new CArrayIteratorOf<IStatistic, IStatisticIterator>(stats);
+        const Statistic & cur = stats.item(idx);
+        kind = cur.kind;
+        value = cur.value;
     }
     virtual IStatisticCollectionIterator & getScopes(const char * filter)
     {
         assertex(!filter);
-        return * new CArrayIteratorOf<IStatisticCollection, IStatisticCollectionIterator>(children);
+        return * new SuperHashIIteratorOf<IStatisticCollection, IStatisticCollectionIterator, false>(children);
     }
 
     virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const
     {
-        if (scopeType == searchScopeType)
+        if (id.queryScopeType() == searchScopeType)
         {
             const char * curMin = minValue.str();
             const char * curMax = maxValue.str();
-            if (!curMin || !*curMin || strcmp(name->str(), curMin) < 0)
-                minValue.set(name->str());
-            if (!curMax || strcmp(name->str(), curMax) > 0)
-                maxValue.set(name->str());
+            StringBuffer name;
+            id.getScopeText(name);
+            if (!curMin || !*curMin || strcmp(name.str(), curMin) < 0)
+                minValue.set(name.str());
+            if (!curMax || strcmp(name.str(), curMax) > 0)
+                maxValue.set(name.str());
         }
 
-        ForEachItemIn(i, children)
-            children.item(i).getMinMaxScope(minValue, maxValue, searchScopeType);
+        SuperHashIteratorOf<CStatisticCollection> iter(children, false);
+        for (iter.first(); iter.isValid(); iter.next())
+            iter.query().getMinMaxScope(minValue, maxValue, searchScopeType);
     }
 
     virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const
     {
-        unsigned activityId = 0;
-        switch (scopeType)
-        {
-        case SSTactivity:
-            activityId = atoi(name->str() + PREFIXLEN(ActivityScopePrefix));
-            break;
-        case SSTedge:
-            activityId = atoi(name->str() + PREFIXLEN(EdgeScopePrefix));
-            break;
-        }
-
+        unsigned activityId = id.queryActivity();
         if (activityId)
         {
             if ((minValue == 0) || (activityId < minValue))
@@ -965,78 +1080,36 @@ public:
                 maxValue = activityId;
         }
 
-        ForEachItemIn(i, children)
-            children.item(i).getMinMaxActivity(minValue, maxValue);
+        SuperHashIteratorOf<CStatisticCollection> iter(children, false);
+        for (iter.first(); iter.isValid(); iter.next())
+            iter.query().getMinMaxActivity(minValue, maxValue);
     }
 
 //other public interface functions
-    virtual const char * queryPartialScopeStr()
-    {
-        return name->str();
-    }
-
-    virtual int compareOrder(const char * search)
-    {
-        return strcmp(name->str(), search);
-    }
-
     void addStatistic(StatisticKind kind, unsigned __int64 value)
     {
         stats.append(*new Statistic(kind, value));
     }
 
-    CStatisticCollection * ensureSubScope(StatisticScopeType scopeType, IAtom * name, bool hasChildren)
+    CStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren)
     {
         //MORE: Implement hasChildren
-        return resolveSubScope(scopeType, name, true, false);
+        return resolveSubScope(search, true, false);
     }
 
-    CStatisticCollection * resolveSubScope(StatisticScopeType scopeType, IAtom * searchName, bool create, bool replace)
+    CStatisticCollection * resolveSubScope(const StatsScopeId & search, bool create, bool replace)
     {
-        unsigned low = 0;
-        unsigned high = children.ordinality();
-        unsigned mid = 0;
-        while (low != high)
+        if (!replace)
         {
-            mid = (low + high) >> 1;
-
-            CStatisticCollection  & cur = children.item(mid);
-            int c = cur.compareOrder(searchName->str());
-            if (c == 0)
-            {
-                if (replace)
-                {
-                    CStatisticCollection * ret = new CStatisticCollection(this, scopeType, searchName);
-                    children.add(*ret, mid);
-                    return ret;
-                }
-                else
-                    return &cur;
-            }
-
-            if (c > 0)
-            {
-                //Current element comes after the search item
-                if (low == mid)
-                    break;
-                high = mid;
-            }
-            else
-            {
-                //Current element comes before the search item
-                if (low + 1 == high)
-                {
-                    mid++;
-                    break;
-                }
-                low = mid+1;
-            }
+            CStatisticCollection * match = children.find(&search);
+            if (match)
+                return LINK(match);
         }
         if (create)
         {
-            CStatisticCollection * ret = new CStatisticCollection(this, scopeType, searchName);
-            children.add(*ret, mid);
-            return ret;
+            CStatisticCollection * ret = new CStatisticCollection(this, search);
+            children.add(*ret);
+            return LINK(ret);
         }
         return NULL;
     }
@@ -1044,169 +1117,70 @@ public:
     virtual void serialize(MemoryBuffer & out) const
     {
         out.append(getCollectionType());
-        out.append((byte)scopeType);
-        out.append(name->str());
+        id.serialize(out);
 
         out.append(stats.ordinality());
         ForEachItemIn(iStat, stats)
             stats.item(iStat).serialize(out);
 
         out.append(children.ordinality());
-        ForEachItemIn(iChild, children)
-            children.item(iChild).serialize(out);
+        SuperHashIteratorOf<CStatisticCollection> iter(children, false);
+        for (iter.first(); iter.isValid(); iter.next())
+            iter.query().serialize(out);
     }
-
-    void merge(CStatisticCollection & other, bool replace)
-    {
-        assertex(name == other.name);
-        ForEachItemIn(iStat, other.stats)
-        {
-            Statistic & cur = other.stats.item(iStat);
-            mergeStatistic(cur, replace);
-        }
-
-        ForEachItemIn(iChild, other.children)
-        {
-            CStatisticCollection & cur = other.children.item(iStat);
-            mergeChild(cur, replace);
-        }
-    }
-
-    //NOTE: May link incoming statistic
-    void mergeStatistic(Statistic & other, bool replace)
-    {
-        //MORE: Should this be binary sorted, and binchopped?
-        StatisticKind search = other.kind;
-        ForEachItemIn(i, stats)
-        {
-            Statistic & cur = stats.item(i);
-            if (cur.kind == search)
-            {
-                if (replace)
-                    cur.value = other.value;
-                else
-                    cur.merge(other.value);
-                return;
-            }
-        }
-        stats.append(OLINK(other));
-    }
-
-    //NOTE: May link incoming collection
-    void mergeChild(CStatisticCollection & other, bool replace)
-    {
-        unsigned low = 0;
-        unsigned high = children.ordinality();
-        unsigned mid = 0;
-        const char * search = other.name->str();
-        while (low != high)
-        {
-            unsigned mid = (low + high) >> 1;
-            CStatisticCollection  & cur = children.item(mid);
-            int c = cur.compareOrder(search);
-            if (c == 0)
-            {
-                if (replace)
-                    children.add(OLINK(other), mid);
-                else
-                    cur.merge(other, replace);
-                return;
-            }
-
-            if (c > 0)
-            {
-                //Current element comes after the search item
-                if (low + 1 == high)
-                    break;
-                high = mid;
-            }
-            else
-            {
-                //Current element comes before the search item
-                if (low + 1 == high)
-                {
-                    mid++;
-                    break;
-                }
-                low = mid+1;
-            }
-        }
-        children.add(OLINK(other), mid);
-    }
-
-protected:
-    //MORE: Untested - would it be better to merge children like this??
-    void mergeChildren(CStatisticCollection & other, bool replace)
-     {
-         //Build up a new array to avoid O(N^2) copies
-         unsigned numStats = children.ordinality();
-         unsigned numOther = other.children.ordinality();
-
-         IArrayOf<CStatisticCollection> merged;
-         merged.ensure(numStats > numOther ? numStats : numOther);
-
-         //MORE: Check for special cases other > this, this > other - including empty
-         unsigned cur = 0;
-         unsigned curOther = 0;
-         loop
-         {
-             int c;
-             if (cur >= children.ordinality())
-             {
-                 if (curOther >= other.children.ordinality())
-                     break;
-                 c = +1;
-             }
-             else
-             {
-                 if (curOther >= other.children.ordinality())
-                     c = -1;
-                 else
-                     c = orderCollection(&children.item(cur), &other.children.item(curOther));
-             }
-
-             //MORE: Improve this.  The extra linking/unlinking is a bit painful, moving would be much better
-             if (c == 0)
-             {
-                 if (replace)
-                 {
-                     merged.append(OLINK(other.children.item(curOther)));
-                 }
-                 else
-                 {
-                     children.item(cur).merge(other.children.item(curOther), replace);
-                     merged.append(OLINK(children.item(cur)));
-                 }
-                 cur++;
-                 curOther++;
-             }
-             else if (c < 0)
-             {
-                 merged.append(OLINK(children.item(cur)));
-                 cur++;
-             }
-             else
-             {
-                 merged.append(OLINK(other.children.item(curOther)));
-                 curOther++;
-             }
-         }
-         merged.swapWith(children);
-     }
 
 private:
-    StatisticScopeType scopeType;
+    StatsScopeId id;
     CStatisticCollection * parent;
-    IAtom * name;
-    IArrayOf<CStatisticCollection> children;
-    IArrayOf<Statistic> stats;
+    CollectionHashTable children;
+    StatsArray stats;
 };
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void CollectionHashTable::onAdd(void *et)
+{
+}
+void CollectionHashTable::onRemove(void *et)
+{
+    CStatisticCollection * elem = reinterpret_cast<CStatisticCollection *>(et);
+    elem->Release();
+}
+unsigned CollectionHashTable::getHashFromElement(const void *et) const
+{
+    const CStatisticCollection * elem = reinterpret_cast<const CStatisticCollection *>(et);
+    return elem->id.getHash();
+}
+unsigned CollectionHashTable::getHashFromFindParam(const void *fp) const
+{
+    const StatsScopeId * search = reinterpret_cast<const StatsScopeId *>(fp);
+    return search->getHash();
+}
+const void * CollectionHashTable::getFindParam(const void *et) const
+{
+    const CStatisticCollection * elem = reinterpret_cast<const CStatisticCollection *>(et);
+    return &elem->id;
+}
+bool CollectionHashTable::matchesFindParam(const void *et, const void *key, unsigned fphash) const
+{
+    const CStatisticCollection * elem = reinterpret_cast<const CStatisticCollection *>(et);
+    const StatsScopeId * search = reinterpret_cast<const StatsScopeId *>(key);
+    return elem->id.matches(*search);
+}
+bool CollectionHashTable::matchesElement(const void *et, const void *searchET) const
+{
+    const CStatisticCollection * elem = reinterpret_cast<const CStatisticCollection *>(et);
+    const CStatisticCollection * searchElem = reinterpret_cast<const CStatisticCollection *>(searchET);
+    return elem->id.matches(searchElem->id);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 class CRootStatisticCollection : public CStatisticCollection
 {
 public:
-    CRootStatisticCollection(StatisticCreatorType _creatorType, const char * _creator, StatisticScopeType _scopeType, IAtom * _name)
-        : CStatisticCollection(NULL, _scopeType, _name), creatorType(_creatorType), creator(_creator)
+    CRootStatisticCollection(StatisticCreatorType _creatorType, const char * _creator, const StatsScopeId & _id)
+        : CStatisticCollection(NULL, _id), creatorType(_creatorType), creator(_creator)
     {
         whenCreated = getTimeStampNowValue();
     }
@@ -1237,6 +1211,8 @@ public:
     StringAttr creator;
     unsigned __int64 whenCreated;
 };
+
+//---------------------------------------------------------------------------------------------------------------------
 
 void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection)
 {
@@ -1278,29 +1254,28 @@ public:
     {
         scopes.append(*scope);
     }
-    virtual void beginScope(StatisticScopeType scopeType, const char * scope)
+    virtual void beginScope(const StatsScopeId & id)
     {
-        IAtom * name = createStatsScope(scope);
         CStatisticCollection & tos = scopes.tos();
-        scopes.append(*tos.ensureSubScope(scopeType, name, true));
+        scopes.append(*tos.ensureSubScope(id, true));
     }
     virtual void beginActivityScope(unsigned id)
     {
-        IAtom * name = createActivityScope(id);
+        StatsScopeId scopeId(SSTactivity, id);
         CStatisticCollection & tos = scopes.tos();
-        scopes.append(*tos.ensureSubScope(SSTactivity, name, false));
+        scopes.append(*tos.ensureSubScope(scopeId, false));
     }
     virtual void beginSubGraphScope(unsigned id)
     {
-        IAtom * name = createSubGraphScope(id);
+        StatsScopeId scopeId(SSTsubgraph, id);
         CStatisticCollection & tos = scopes.tos();
-        scopes.append(*tos.ensureSubScope(SSTsubgraph, name, false));
+        scopes.append(*tos.ensureSubScope(scopeId, true));
     }
     virtual void beginEdgeScope(unsigned id, unsigned oid)
     {
-        IAtom * name = createEdgeScope(id, oid);
+        StatsScopeId scopeId(SSTedge, id, oid);
         CStatisticCollection & tos = scopes.tos();
-        scopes.append(*tos.ensureSubScope(SSTedge, name, false));
+        scopes.append(*tos.ensureSubScope(scopeId, false));
     }
     virtual void endScope()
     {
@@ -1321,10 +1296,10 @@ protected:
     Linked<CStatisticCollection> rootScope;
 };
 
-extern IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * rootScope)
+extern IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creatorType, const char * creator, const StatsScopeId & rootScope)
 {
     //creator unused at the moment.
-    Owned<CStatisticCollection> rootCollection = new CRootStatisticCollection(creatorType, creator, scopeType, createStatsScope(rootScope));
+    Owned<CStatisticCollection> rootCollection = new CRootStatisticCollection(creatorType, creator, rootScope);
     return new StatisticGatherer(rootCollection);
 }
 

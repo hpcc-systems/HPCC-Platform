@@ -22,54 +22,38 @@
 #include "jlib.hpp"
 #include "jiter.hpp"
 
-class jlib_decl CArrayIteratorBase : public CInterface
+template<class ELEMENT, class ITER> class CArrayIteratorOf : public CInterfaceOf<ITER>
 {
+public:
+    CArrayIteratorOf<ELEMENT,ITER>(const IArray & _values, aindex_t _start = 0, IInterface * _owner=NULL)
+    : owner(LINK(_owner)), values(_values), start(_start)
+    {
+        current = start;
+    }
+    ~CArrayIteratorOf<ELEMENT,ITER>()
+    {
+        ::Release(owner);
+    }
+
+    virtual bool first()
+    {
+        current = start;
+        return values.isItem(current);
+    }
+    virtual bool next()
+    {
+        current++;
+        return values.isItem(current);
+    }
+    virtual bool isValid() { return values.isItem(current); }
+    virtual ELEMENT & query() { return static_cast<ELEMENT &>(values.item(current)); }
+    virtual ELEMENT & get() { return OLINK(static_cast<ELEMENT &>(values.item(current))); };
+
 protected:
-  IInterface *owner;
+  IInterface * owner;
   const IArray &values;
   aindex_t current;
   aindex_t start;
-public:
-  CArrayIteratorBase(const IArray &, aindex_t start=0 , IInterface *owner=NULL);
-  ~CArrayIteratorBase();
-
-  virtual bool first();
-  virtual bool next();
-  virtual bool isValid();
-  virtual IInterface &_query();
-};
-
-class jlib_decl CArrayIterator : public CArrayIteratorBase, implements IIterator
-{
-public:
-  IMPLEMENT_IINTERFACE;
-  CArrayIterator(const IArray &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
-
-  virtual bool first() { return CArrayIteratorBase::first(); }
-  virtual bool next() { return CArrayIteratorBase::next(); }
-  virtual bool isValid() { return CArrayIteratorBase::isValid(); }
-  virtual IInterface & query() { return CArrayIteratorBase::_query(); };
-  virtual IInterface & get() { IInterface &ret = CArrayIteratorBase::_query(); ret.Link(); return ret; };
-};
-
-template<class X, class Y> class CArrayIteratorOf : public CArrayIteratorBase, implements Y
-{
-public:
-  IMPLEMENT_IINTERFACE;
-  CArrayIteratorOf<X,Y>(const IArray &a, aindex_t start = 0, IInterface *owner=NULL) : CArrayIteratorBase(a, start, owner) {}
-
-  virtual bool first() { return CArrayIteratorBase::first(); }
-  virtual bool next() { return CArrayIteratorBase::next(); }
-  virtual bool isValid() { return CArrayIteratorBase::isValid(); }
-  virtual X & query() { return (X &) CArrayIteratorBase::_query(); }
-  virtual X & get() { X &ret = (X &) CArrayIteratorBase::_query(); ret.Link(); return ret; };
-};
-
-class jlib_decl COwnedArrayIterator : public CArrayIterator
-{
-public:
-    COwnedArrayIterator(IArray *_values, aindex_t _start = 0);
-    ~COwnedArrayIterator();
 };
 
 class jlib_decl CNullIterator : public CInterfaceOf<IIterator>

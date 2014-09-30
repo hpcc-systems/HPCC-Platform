@@ -181,7 +181,9 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
             subgraphScopeName.append(_rootScope);
 
             StatisticScopeType scopeType = SSTgraph;
-            collector.setown(createStatisticsGatherer(_creatorType, _creator, scopeType, subgraphScopeName));
+            StatsScopeId rootScopeId;
+            verifyex(rootScopeId.setScopeText(_rootScope));
+            collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
         }
         virtual void beforeDispose()
         {
@@ -197,9 +199,7 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
             unsigned minActivity = 0;
             unsigned maxActivity = 0;
             stats->getMinMaxActivity(minActivity, maxActivity);
-            parent.lockWrite();
             parent.setSubgraphStats(creatorType, creator, id, compressed, minActivity, maxActivity);
-            parent.unlock();
         }
         virtual IStatisticGatherer & queryStatsBuilder()
         {
@@ -423,11 +423,12 @@ private:
     static void expandStats(IPropertyTree * target, IStatisticCollection & collection)
     {
         StringBuffer formattedValue;
-        Owned<IStatisticIterator> statsIter = &collection.getStatistics();
-        ForEach(*statsIter)
+        unsigned numStats = collection.getNumStatistics();
+        for (unsigned i=0; i < numStats; i++)
         {
-            StatisticKind kind = statsIter->query().queryKind();
-            unsigned __int64 value = statsIter->query().queryValue();
+            StatisticKind kind;
+            unsigned __int64 value;
+            collection.getStatistic(kind, value, i);
             formatStatistic(formattedValue.clear(), value, kind);
             target->setProp(queryTreeTag(kind), formattedValue);
         }
@@ -436,12 +437,13 @@ private:
     {
         expandStats(target, *collection);
 
-        SCMStringBuffer scopeName;
+        StringBuffer scopeName;
         Owned<IStatisticCollectionIterator> activityIter = &collection->getScopes(NULL);
         ForEach(*activityIter)
         {
             IStatisticCollection & cur = activityIter->query();
-            const char * id = cur.queryScope(scopeName);
+            cur.getScope(scopeName.clear());
+            const char * id = scopeName.str();
             const char * tag;
             IPropertyTree * curTarget = target;
             switch (cur.queryScopeType())
@@ -480,10 +482,14 @@ private:
         {
             IPropertyTree & curSubGraph = iter->query();
             curSubGraph.getPropBin("Stats", compressed.clear());
-            decompressToBuffer(serialized.clear(), compressed);
-            Owned<IStatisticCollection> collection = createStatisticCollection(serialized);
+            //Protect against updates that delete the stats while we are iterating
+            if (compressed.length())
+            {
+                decompressToBuffer(serialized.clear(), compressed);
+                Owned<IStatisticCollection> collection = createStatisticCollection(serialized);
 
-            expandProcessTreeFromStats(progressTree, progressTree, collection);
+                expandProcessTreeFromStats(progressTree, progressTree, collection);
+            }
         }
         return progressTree.getClear();
     }
@@ -501,9 +507,13 @@ private:
 
         //Replace the particular subgraph statistics added by this creator
         tag.append("[@creator='").append(creator).append("']");
+
+        lockWrite();
         subgraph = progress->setPropTree(tag, subgraph);
         subgraph->setPropBin("Stats", compressed.length(), compressed.toByteArray());
-        progress->setPropBool("@stats", true);
+        if (!progress->getPropBool("@stats", false))
+            progress->setPropBool("@stats", true);
+        unlock();
     }
 
 private:
@@ -581,7 +591,7 @@ public:
 
 public:
     StringAttr creator;
-    StringAttr scope;
+    StringBuffer scope;
     StringAttr description;
     StatisticMeasure measure;
     StatisticKind kind;
@@ -612,7 +622,8 @@ public:
             singleGraph = true;
         }
 
-        conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT));
+        //Don't lock the statistics while we iterate - any partial updates must not cause problems
+        conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_NONE, SDS_LOCK_TIMEOUT));
 
         if (conn && !singleGraph)
             graphIter.setown(conn->queryRoot()->getElements("*"));
@@ -739,10 +750,11 @@ protected:
     bool beginCollection(IStatisticCollection & collection)
     {
         collections.append(OLINK(collection));
-        statsIter.setown(&collection.getStatistics());
+        numStats = collection.getNumStatistics();
+        curStatIndex = 0;
         if (checkScope())
         {
-            if (statsIter->first())
+            if (curStatIndex < numStats)
             {
                 if (checkStatistic())
                     return true;
@@ -755,7 +767,7 @@ protected:
     bool nextStatistic()
     {
         //Finish iterating the statistics at this level.
-        while (statsIter->next())
+        while (++curStatIndex < numStats)
         {
             if (checkStatistic())
                 return true;
@@ -814,19 +826,19 @@ protected:
             return true;
         IStatisticCollection * collection = &collections.tos();
         curStat->scopeType = collection->queryScopeType();
-        collection->getFullScope(StringAttrAdaptor(curStat->scope));
+        collection->getFullScope(curStat->scope.clear());
         return filter->matches(SCTall, NULL, curStat->scopeType, curStat->scope, SMeasureAll, StKindAll);
     }
 
     bool checkStatistic()
     {
+        IStatisticCollection & collection = collections.tos();
+        collection.getStatistic(curStat->kind, curStat->value, curStatIndex);
+        curStat->measure = queryMeasure(curStat->kind);
         if (!filter)
             return true;
-        curStat->kind = statsIter->query().queryKind();
-        curStat->measure = queryMeasure(curStat->kind);
         if (!filter->matches(SCTall, NULL, SSTall, NULL, curStat->measure, curStat->kind))
             return false;
-        curStat->value = statsIter->query().queryValue();
         return true;
     }
 
@@ -848,7 +860,8 @@ private:
     IArrayOf<IStatisticCollectionIterator> childIterators;
     MemoryBuffer compressed;
     MemoryBuffer serialized;
-    Owned<IStatisticIterator> statsIter;
+    unsigned numStats;
+    unsigned curStatIndex;
     bool valid;
 };
 
@@ -5788,7 +5801,7 @@ StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, un
 StringBuffer &formatGraphTimerScope(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId)
 {
     str.append(graphName);
-    if (subId) str.append(":").append(subId);
+    if (subId) str.append(":sg").append(subId);
     return str;
 }
 
@@ -5834,21 +5847,25 @@ bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & g
     return true;
 }
 
-bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphNum)
+bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphId)
 {
+    if (!MATCHES_CONST_PREFIX(scope, GraphScopePrefix))
+        return false;
+
+    graphNum = atoi(scope + CONST_STRLEN(GraphScopePrefix));
+
     const char * colon = strchr(scope, ':');
     if (!colon)
-        return false;
-    if (strncmp(scope, "graph", 5) != 0)
-        return false;
+    {
+        graphName.set(scope);
+        subGraphId = 0;
+        return true;
+    }
 
+    const char * subgraph = colon+1;
     graphName.set(scope, (size32_t)(colon - scope));
-    subGraphNum = atoi(colon+1);
-
-    if (graphName && !memicmp(graphName, "graph", 5))
-        graphNum = atoi(graphName + 5);
-    else
-        graphNum = 0;
+    if (MATCHES_CONST_PREFIX(subgraph, SubGraphScopePrefix))
+        subGraphId = atoi(subgraph+CONST_STRLEN(SubGraphScopePrefix));
 
     return true;
 }

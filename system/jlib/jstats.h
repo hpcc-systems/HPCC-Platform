@@ -24,6 +24,9 @@
 #define ActivityScopePrefix "a"
 #define EdgeScopePrefix "e"
 #define SubGraphScopePrefix "sg"
+#define GraphScopePrefix "graph"
+#define CONST_STRLEN(x) (sizeof(x)-1)       // sizeof(const-string) = strlen(const-string) + 1 byte for the \0 terminator
+#define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, CONST_STRLEN(prefix)) == 0)
 
 enum OldStatsKind
 {
@@ -222,16 +225,51 @@ interface IStatisticIterator : public IIteratorOf<IStatistic>
 {
 };
 
+//Represents a single level of a scope
+class jlib_decl StatsScopeId
+{
+public:
+    StatsScopeId() : id(0), extra(0), scopeType(SSTnone) {}
+    StatsScopeId(StatisticScopeType _scopeType, unsigned _id, unsigned _extra = 0)
+        : id(_id), extra(_extra), scopeType(_scopeType)
+    {
+    }
+
+    StatisticScopeType queryScopeType() const { return scopeType; }
+    StringBuffer & getScopeText(StringBuffer & out) const;
+
+    unsigned getHash() const;
+    bool matches(const StatsScopeId & other) const;
+    unsigned queryActivity() const;
+
+    void deserialize(MemoryBuffer & in, unsigned version);
+    void serialize(MemoryBuffer & out) const;
+
+    bool setScopeText(const char * text);
+    void setId(StatisticScopeType _scopeType, unsigned _id, unsigned _extra = 0);
+    void setActivityId(unsigned _id);
+    void setEdgeId(unsigned _id, unsigned _output);
+    void setSubgraphId(unsigned _id);
+
+    bool operator == (const StatsScopeId & other) const { return matches(other); }
+
+protected:
+    //If any more items are added then this could become a union...
+    unsigned id;
+    unsigned extra;
+    StatisticScopeType scopeType;
+};
+
 interface IStatisticCollectionIterator;
 interface IStatisticCollection : public IInterface
 {
 public:
     virtual StatisticScopeType queryScopeType() const = 0;
-    virtual IStringVal & getFullScope(IStringVal & str) const = 0;
-    virtual const char * queryScope(IStringVal & str) const = 0;                    // optional if the argument is used.
+    virtual StringBuffer & getFullScope(StringBuffer & str) const = 0;
+    virtual StringBuffer & getScope(StringBuffer & str) const = 0;
     virtual unsigned __int64 queryStatistic(StatisticKind kind) const = 0;
-    virtual IStatisticCollection * queryCollection(const char * scope) = 0;
-    virtual IStatisticIterator & getStatistics(/*filter*/) = 0;
+    virtual unsigned getNumStatistics() const = 0;
+    virtual void getStatistic(StatisticKind & kind, unsigned __int64 & value, unsigned idx) const = 0;
     virtual IStatisticCollectionIterator & getScopes(const char * filter) = 0;
     virtual void getMinMaxScope(IStringVal & minValue, IStringVal & maxValue, StatisticScopeType searchScopeType) const = 0;
     virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const = 0;
@@ -246,7 +284,7 @@ interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection
 interface IStatisticGatherer : public IInterface
 {
 public:
-    virtual void beginScope(StatisticScopeType scopeType, const char * scope) = 0;
+    virtual void beginScope(const StatsScopeId & id) = 0;
     virtual void beginSubGraphScope(unsigned id) = 0;
     virtual void beginActivityScope(unsigned id) = 0;
     virtual void beginEdgeScope(unsigned id, unsigned oid) = 0;
@@ -406,7 +444,7 @@ extern jlib_decl StatisticKind queryStatisticKind(const char *  kind);
 extern jlib_decl StatisticCreatorType queryCreatorType(const char * sct);
 extern jlib_decl StatisticScopeType queryScopeType(const char * sst);
 
-extern IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * rootScope);
+extern jlib_decl IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creatorType, const char * creator, const StatsScopeId & rootScope);
 extern jlib_decl void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection);
 extern jlib_decl IStatisticCollection * createStatisticCollection(MemoryBuffer & in);
 

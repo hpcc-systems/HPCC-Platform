@@ -352,10 +352,10 @@ void WsWuInfo::addTimerToList(SCMStringBuffer& name, const char * scope, IConstW
     {
         StringAttr graphName;
         unsigned graphNum;
-        unsigned subGraphNum;
+        unsigned subGraphNum = 0;
         unsigned subId = 0;
 
-        if (parseGraphScope(scope, graphName, graphNum, subGraphNum) ||
+        if (parseGraphScope(scope, graphName, graphNum, subId) ||
             parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))   // leacy
         {
             if (graphName.length() > 0)
@@ -800,8 +800,8 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, uns
 
         StringAttr graphName;
         unsigned graphNum;
-        unsigned subGraphNum;
-        if (parseGraphScope(scope.str(), graphName, graphNum, subGraphNum))
+        unsigned subGraphId;
+        if (parseGraphScope(scope.str(), graphName, graphNum, subGraphId))
         {
             unsigned time = nanoToMilli(cur.getValue());
 
@@ -811,7 +811,7 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, uns
             Owned<IEspECLTimingData> g = createECLTimingData();
             g->setName(name.str());
             g->setGraphNum(graphNum);
-            g->setSubGraphNum(subGraphNum);
+            g->setSubGraphNum(subGraphId); // Use the Id - the number is not known
             g->setMS(time);
             g->setMin(time/60000);
             timingData.append(*g.getClear());
@@ -969,7 +969,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
     {
         unsigned totalThorTimeMS = getTotalThorTime();
         if (totalThorTimeMS == 0)
-            totalThorTimeMS = getTotalThorTime();
+            totalThorTimeMS = getLegacyTotalThorTime();
 
         if (totalThorTimeMS)
         {
