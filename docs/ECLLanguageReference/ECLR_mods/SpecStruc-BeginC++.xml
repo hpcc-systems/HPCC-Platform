@@ -159,6 +159,24 @@ STREAMED DATASET(r)
 
     <programlisting>void process(size32_t &amp; __lenResult, char * &amp; __result,
              size32_t lenValue, char * value, int len);</programlisting>
+
+    <para>If you are defining a function where you want to pass a pointer as a
+    constant, you must add <emphasis role="bold">const</emphasis> to the ECL
+    definition:</para>
+
+    <programlisting>BOOLEAN isUpper(const string mystring) := BEGINC++
+  size_t i=0;
+  while (i &lt; lenMystring)
+  {
+    if (!isupper((byte)mystring[i]))
+        return false;
+    i++;
+  }
+  return true;
+ENDC++;
+isUpper('JIM');
+
+</programlisting>
   </sect2>
 
   <sect2 id="BeginCPP_Available_Options">
