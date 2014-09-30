@@ -57,6 +57,9 @@
   in the <emphasis>recordset</emphasis> for each value in each field in the
   <emphasis>recordset</emphasis>.</para>
 
+  <para>The DECIMAL data type is not supported by this action. You can use a
+  REAL data type instead. </para>
+
   <para>Example:</para>
 
   <programlisting>SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
