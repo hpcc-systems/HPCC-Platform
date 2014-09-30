@@ -6670,6 +6670,11 @@ public:
     virtual void doAnalyse(IHqlExpression * expr)
     {
         IHqlExpression * body = expr->queryBody();
+        //Ugly...  If the syntax check is called on something containing a forward module then this code
+        //might be called with a placeholder symbol (which has a NULL body).
+        if (!body)
+            return;
+
         if (isGlobalOnWarning(body))
             mapper.addOnWarning(body);
         QuickHqlTransformer::doAnalyse(body);
