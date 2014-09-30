@@ -3448,7 +3448,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
             resp.setFileName(fileName);
             resp.setUserName(userName);
 
-            ISecUser* sec_user = secmgr->findUser(userName);
+            Owned<ISecUser> sec_user = secmgr->findUser(userName);
             if (sec_user)
             {
                 StringBuffer accessStr;
