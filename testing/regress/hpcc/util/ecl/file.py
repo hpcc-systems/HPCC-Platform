@@ -362,7 +362,8 @@ class ECLFile:
                                              recieved,
                                              fromfile=self.xml_e,
                                              tofile=self.xml_r):
-                self.diff += line
+                self.diff += str(line)
+            logging.debug("%3d. self.diff: '" + self.diff +"'",  self.taskId )
         except Exception as e:
             logging.debug( e, extra={'taskId':self.taskId})
             logging.debug("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
