@@ -59,7 +59,24 @@ interface IDynamicPriority
     virtual int get()=0;
 };
 
-interface IJobQueue: extends IInterface
+interface IJobQueueConst: extends IInterface
+{
+    virtual unsigned ordinality()=0;            // number of items on queue
+    virtual unsigned waiting()=0;               // number currently waiting on dequeue
+    virtual IJobQueueItem *getItem(unsigned idx)=0;
+    virtual IJobQueueItem *getHead()=0;
+    virtual IJobQueueItem *getTail()=0;
+    virtual IJobQueueItem *find(const char *wuid)=0;
+    virtual unsigned findRank(const char *wuid)=0;
+    virtual unsigned copyItems(CJobQueueContents &dest)=0;  // takes a snapshot copy of the entire queue (returns number copied)
+    virtual bool getLastDequeuedInfo(StringAttr &wuid, CDateTime &enqueuedt, int &priority)=0;
+    virtual void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state, StringBuffer& stateDetails)=0;
+
+    virtual void getState(StringBuffer& state, StringBuffer& stateDetails)=0;
+    virtual void getWUIDs(StringArray& ids)=0;
+};
+
+interface IJobQueue: extends IJobQueueConst
 {
 
 // enqueuing
@@ -79,20 +96,6 @@ interface IJobQueue: extends IInterface
     virtual void getStats(unsigned &connected,unsigned &waiting, unsigned &enqueued)=0; // this not quick as validates clients still running
     virtual bool waitStatsChange(unsigned timeout)=0;
     virtual void cancelWaitStatsChange()=0;
-
-
-//enquiry
-    virtual unsigned ordinality()=0;            // number of items on queue
-    virtual unsigned waiting()=0;               // number currently waiting on dequeue
-    virtual IJobQueueItem *getItem(unsigned idx)=0;
-    virtual IJobQueueItem *getHead()=0;
-    virtual IJobQueueItem *getTail()=0;
-    virtual IJobQueueItem *find(const char *wuid)=0;
-    virtual unsigned findRank(const char *wuid)=0;
-    virtual unsigned copyItems(CJobQueueContents &dest)=0;  // takes a snapshot copy of the entire queue (returns number copied)
-    virtual bool getLastDequeuedInfo(StringAttr &wuid, CDateTime &enqueuedt, int &priority)=0;
-    virtual void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state, StringBuffer& stateDetails)=0;
-
 
 //manipulation
     virtual IJobQueueItem *take(const char *wuid)=0; // finds and removes
@@ -136,6 +139,13 @@ interface IJobQueue: extends IInterface
 
 };
 
+interface IJQSnapshot : extends IInterface
+{
+    virtual IJobQueueConst *getJobQueue(const char *name)=0;
+    virtual bool isJQSnapshotValid(unsigned timeOutSeconds)=0;
+};
+
+extern WORKUNIT_API IJQSnapshot *createJQSnapshot();
 
 extern WORKUNIT_API IJobQueueItem *createJobQueueItem(const char *wuid);
 extern WORKUNIT_API IJobQueueItem *deserializeJobQueueItem(MemoryBuffer &mb); 

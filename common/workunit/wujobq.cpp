@@ -404,6 +404,7 @@ public:
     bool dequeuestop;
     bool cancelwaiting;
     bool validateitemsessions;
+    Owned<IPropertyTree> queueTree;
 
     class csubs: public CInterface, implements ISDSSubscription
     {
@@ -453,7 +454,14 @@ public:
         cancelwaiting = false;
         Cconnlockblock block(this,false);   // this just checks queue exists
     }
-
+    CJobQueue(IPropertyTree* _queue) : subs(this)
+    {
+        queueTree.setown(_queue);
+        activeq = qdata = NULL;
+        locknest = 0;
+        sessionid = myProcessSession();
+        connected = false;
+    }
     virtual ~CJobQueue()
     {
         try {
@@ -1949,8 +1957,87 @@ public:
         return true;
     }
 
+    void getState(StringBuffer& state, StringBuffer& stateDetails)
+    {
+        if (!queueTree)
+            return;
+        const char *st = queueTree->queryProp("@state");
+        if (!st || !*st)
+            return;
+
+        state.set(st);
+        if ((strieq(st, "paused") || strieq(st, "stopped")))
+            stateDetails.set(queueTree->queryProp("@stateDetails"));
+    }
+
+    void getWUIDs(StringArray& ids)
+    {
+        if (!queueTree)
+            return;
+        for (unsigned i=0;;i++)
+        {
+            VStringBuffer path("Item[@num=\"%d\"]", i+1);
+            IPropertyTree *item = queueTree->queryPropTree(path.str());
+            if (!item)
+                break;
+
+            const char* wuid = item->queryProp("@wuid");
+            if (wuid && *wuid=='~') //copy from CJobQueueItem constructor
+                wuid++;
+            if (!wuid || !*wuid || (*wuid=='!')) // filter escapes -- see queuedJobs() in dfuwu.cpp
+                continue;
+            ids.append(wuid);
+        }
+    }
 };
 
+class CJQSnapshot : public CInterface, implements IJQSnapshot
+{
+    CDateTime timeCached;
+    Owned<IPropertyTree> jobQueueInfo;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CJQSnapshot()
+    {
+        Owned<IRemoteConnection> connJobQueues = querySDS().connect("/JobQueues", myProcessSession(), RTM_LOCK_READ, 30000);
+        if (!connJobQueues)
+        {
+            DBGLOG("CJQSnapshot::CJQSnapshot: /JobQueues not found");
+            return;
+        }
+
+        jobQueueInfo.setown(createPTree("JobQueues"));
+        Owned<IPropertyTreeIterator> it = connJobQueues->queryRoot()->getElements("Queue");
+        ForEach(*it)
+            jobQueueInfo->addPropTree("Queue", createPTreeFromIPT(&it->query()));
+        timeCached.setNow();
+    }
+
+    bool isJQSnapshotValid(unsigned timeOutSeconds)
+    {
+        if (!jobQueueInfo)
+            return false;
+        CDateTime timeNow;
+        timeNow.setNow();
+        return timeNow.getSimple() <= timeCached.getSimple() + timeOutSeconds;;
+    }
+
+    IJobQueueConst* getJobQueue(const char *name)
+    {
+        if (!jobQueueInfo)
+            return NULL;
+        VStringBuffer path("Queue[@name=\"%s\"]", name);
+        Owned<IPropertyTree> queueTree = jobQueueInfo->getPropTree(path.str());
+        return queueTree ? new CJobQueue(queueTree.getClear()) : NULL;
+    }
+};
+
+IJQSnapshot *createJQSnapshot()
+{
+    return new CJQSnapshot();
+}
 
 IJobQueue *createJobQueue(const char *name)
 {
