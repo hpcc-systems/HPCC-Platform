@@ -554,6 +554,7 @@ public:
     {
         CActivityFactory::resetNodeProgressInfo();
         CriticalBlock b(statsCrit);
+        processed = 0;
         started = 0;
         totalCycles = 0;
         localCycles = 0;
@@ -802,6 +803,17 @@ protected:
         CriticalBlock b(statsCrit);
         putStatsValue(&edge, "count", "sum", processedArray[idx]);
         putStatsValue(&edge, "started", "sum", startedArray[idx]);
+    }
+
+    virtual void resetNodeProgressInfo()
+    {
+        CRoxieServerActivityFactory::resetNodeProgressInfo();
+        CriticalBlock b(statsCrit);
+        for (unsigned i = 0; i < numOutputs; i++)
+        {
+            processedArray[i] = 0;
+            startedArray[i] = 0;
+        }
     }
 
     virtual void noteProcessed(unsigned idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
