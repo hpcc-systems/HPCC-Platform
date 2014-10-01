@@ -570,6 +570,14 @@ static void getStringResult(const RtlFieldInfo *field, const CassValue *value, s
     switch (cass_value_type(value))
     {
     case CASS_VALUE_TYPE_ASCII:
+    {
+        CassString output;
+        check(cass_value_get_string(value, &output));
+        const char *text = output.data;
+        unsigned long bytes = output.length;
+        rtlStrToStrX(chars, result, bytes, text);
+        break;
+    }
     case CASS_VALUE_TYPE_VARCHAR:
     case CASS_VALUE_TYPE_TEXT:
     {
@@ -597,6 +605,14 @@ static void getUTF8Result(const RtlFieldInfo *field, const CassValue *value, siz
     switch (cass_value_type(value))
     {
     case CASS_VALUE_TYPE_ASCII:
+    {
+        CassString output;
+        check(cass_value_get_string(value, &output));
+        const char *text = output.data;
+        unsigned long bytes = output.length;
+        rtlStrToUtf8X(chars, result, bytes, text);
+        break;
+    }
     case CASS_VALUE_TYPE_VARCHAR:
     case CASS_VALUE_TYPE_TEXT:
     {
@@ -624,6 +640,14 @@ static void getUnicodeResult(const RtlFieldInfo *field, const CassValue *value, 
     switch (cass_value_type(value))
     {
     case CASS_VALUE_TYPE_ASCII:
+    {
+        CassString output;
+        check(cass_value_get_string(value, &output));
+        const char *text = output.data;
+        unsigned long bytes = output.length;
+        rtlStrToUnicodeX(chars, result, bytes, text);
+        break;
+    }
     case CASS_VALUE_TYPE_VARCHAR:
     case CASS_VALUE_TYPE_TEXT:
     {

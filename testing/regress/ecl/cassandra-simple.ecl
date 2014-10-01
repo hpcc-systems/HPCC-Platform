@@ -39,6 +39,7 @@ childrec := RECORD
    DECIMAL10_2 ddd {default(9.99)},
    UTF8 u1 {default(U'9999 ß')},
    UNICODE u2 {default(U'9999 ßßßß')},
+   STRING a,
    SET OF STRING set1,
    SET OF INTEGER4 list1,
    LINKCOUNTED DICTIONARY(maprec) map1{linkcounted};
@@ -46,10 +47,10 @@ END;
 
 // Some data we will use to initialize the Cassandra table
 
-init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße',['one','two','two','three'],[5,4,4,3],[{'a'=>'apple'},{'b'=>'banana'}]},
-                 {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là',[],[],[]}], childrec);
+init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße','Ascii',['one','two','two','three'],[5,4,4,3],[{'a'=>'apple'},{'b'=>'banana'}]},
+                 {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là','Ascii', [],[],[]}], childrec);
 
-init2 := ROW({'name4' , 3, true, 9.10, 11.12, D'aa55aa55', 987.65, U'Baße', U'Baße',[],[],[]}, childrec);
+init2 := ROW({'name4' , 3, true, 9.10, 11.12, D'aa55aa55', 987.65, U'Baße', U'Baße', '', [],[],[]}, childrec);
 
 // Set up the Cassandra database
 // Note that we can execute multiple statements in a single embed, provided that there are
@@ -76,6 +77,7 @@ createTables() := EMBED(cassandra : server('127.0.0.1'),user('rchapman'),keyspac
                       ddd VARCHAR,
                       u1 VARCHAR,
                       u2 VARCHAR,
+                      a ASCII,
                       set1 SET<varchar>,
                       list1 LIST<INT>,
                       map1 MAP<VARCHAR, VARCHAR>,
@@ -92,23 +94,23 @@ ENDEMBED;
 // unless told to...
 
 initialize(dataset(childrec) values) := EMBED(cassandra : user('rchapman'),keyspace('test'),batch('unlogged'))
-  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?);
+  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
 initialize2(row(childrec) values) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?);
+  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1) values (?,?,?,?,?,?,?,?,?,?,?,?,?);
 ENDEMBED;
 
 // Returning a dataset
 
 dataset(childrec) testCassandraDS() := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1;
 ENDEMBED;
 
 // Returning a single row
 
 childrec testCassandraRow() := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1 LIMIT 1;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 LIMIT 1;
 ENDEMBED;
 
 // Passing in parameters
@@ -127,13 +129,14 @@ testCassandraParms(
 //   DECIMAL10_2 ddd,
    UTF8 u1,
    UNICODE u2,
+   STRING a,
    SET OF STRING set1,
    SET OF INTEGER4 list1,
    // Note we can't pass a dataset as a paramter to bind to a collection field - it would be interpreted as 'execute once per value in the dataset'
    // You have to pass a record containing the field as a child dataset
    ROW(mapwrapper) map1
    ) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1) values (?,?,?,?,?,?,'8.76543',?,?,?,?,?);
+  INSERT INTO tbl1 (name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1) values (?,?,?,?,?,?,'8.76543',?,?,?,?,?,?);
 ENDEMBED;
 
 // Returning scalars
@@ -143,7 +146,7 @@ string testCassandraString() := EMBED(cassandra : user('rchapman'),keyspace('tes
 ENDEMBED;
 
 dataset(childrec) testCassandraStringParam(string filter) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1 where name = ?;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
 integer testCassandraInt() := EMBED(cassandra : user('rchapman'),keyspace('test'))
@@ -174,6 +177,10 @@ UNICODE testCassandraUnicode() := EMBED(cassandra : user('rchapman'),keyspace('t
   SELECT u2 from tbl1 WHERE name='name1';
 ENDEMBED;
 
+STRING testCassandraAscii() := EMBED(cassandra : user('rchapman'),keyspace('test'))
+  SELECT a from tbl1 WHERE name='name1';
+ENDEMBED;
+
 SET OF STRING testCassandraSet() := EMBED(cassandra : user('rchapman'),keyspace('test'))
   SELECT set1 from tbl1 WHERE name='name1';
 ENDEMBED;
@@ -196,7 +203,7 @@ stringrec := RECORD
 END;
 
 TRANSFORM(childrec) t(stringrec L) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1 where name = ?;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
 init3 := DATASET([{'name1'},
@@ -211,7 +218,7 @@ stringrec extractName(childrec l) := TRANSFORM
 END;
 
 dataset(childrec) testCassandraDSParam(dataset(stringrec) inrecs) := EMBED(cassandra : user('rchapman'),keyspace('test'))
-  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,set1,list1,map1 from tbl1 where name = ?;
+  SELECT name, value, boolval, r8, r4,d,ddd,u1,u2,a,set1,list1,map1 from tbl1 where name = ?;
 ENDEMBED;
 
 // Testing performance of batch inserts
@@ -239,7 +246,7 @@ sequential (
   createTables(),
   initialize(init),
 
-  testCassandraParms('name3', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße', ['four','five'], [2,2,3,1], ROW({[{'f'=>'fish'}]},MapWrapper)),
+  testCassandraParms('name3', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße', 'Only 7-bit US-ASCII chars allowed', ['four','five'], [2,2,3,1], ROW({[{'f'=>'fish'}]},MapWrapper)),
   initialize2(init2),
   OUTPUT(SORT(testCassandraDS(), name)),
   OUTPUT(testCassandraRow().name),
