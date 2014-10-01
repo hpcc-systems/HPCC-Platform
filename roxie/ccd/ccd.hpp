@@ -412,6 +412,8 @@ extern unsigned nodeCacheMB;
 extern unsigned leafCacheMB;
 extern unsigned blobCacheMB;
 
+extern Owned<IPerfMonHook> perfMonHook;
+
 struct PartNoType
 {
     unsigned short partNo;  // _n_of_400

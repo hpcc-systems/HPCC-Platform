@@ -2614,7 +2614,7 @@ private:
                 unsigned interval = control->getPropInt("@interval", 60000);
                 bool enable = control->getPropBool("@enable", true);
                 if (enable)
-                    startPerformanceMonitor(interval);
+                    startPerformanceMonitor(interval, PerfMonStandard, perfMonHook);
                 else
                     stopPerformanceMonitor();
             }
