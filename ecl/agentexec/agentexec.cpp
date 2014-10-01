@@ -42,7 +42,7 @@ CEclAgentExecutionServer::~CEclAgentExecutionServer()
 }
 
 
-void CEclAgentExecutionServer::start(StringBuffer & codeDir)
+void CEclAgentExecutionServer::start()
 {
     if (started)
     {
@@ -50,16 +50,11 @@ void CEclAgentExecutionServer::start(StringBuffer & codeDir)
         assert(false);
     }
 
-    codeDirectory = codeDir;
-    StringBuffer propertyFile = codeDirectory;
-    addPathSepChar(propertyFile);
-    propertyFile.append("agentexec.xml");
-
     Owned<IPropertyTree> properties;
     try
     {
-        DBGLOG("AgentExec: Loading properties file '%s'\n", propertyFile.str());
-        properties.setown(createPTreeFromXMLFile(propertyFile.str()));
+        DBGLOG("AgentExec: Loading properties file 'agentexec.xml'");
+        properties.setown(createPTreeFromXMLFile("agentexec.xml"));
     }
     catch (IException *e) 
     {
@@ -263,13 +258,8 @@ int main(int argc, char **argv)
 
     try
     { 
-        StringBuffer codeDirectory;
-        splitFilename(argv[0], &codeDirectory, &codeDirectory, NULL, NULL);
-        if (!codeDirectory.length())
-            codeDirectory.append(".");
-        
         execSvr.setown(new CEclAgentExecutionServer());
-        execSvr->start(codeDirectory);
+        execSvr->start();
     } 
     catch (...)
     {

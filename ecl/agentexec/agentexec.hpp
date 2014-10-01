@@ -28,7 +28,7 @@ public:
     CEclAgentExecutionServer();
     ~CEclAgentExecutionServer();
 
-    void start(StringBuffer & codeDir);
+    void start();
     void stop();
 
 private:
