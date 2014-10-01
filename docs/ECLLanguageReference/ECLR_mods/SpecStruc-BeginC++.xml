@@ -134,8 +134,10 @@ LINKCOUNTED DATASET(r)  ABC -&gt; size32_t countAbc, const byte * * abc
     <programlisting><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
 DATA xyz           size32_t &amp; __lenResult, void * &amp; __result
 STRING xyz         size32_t &amp; __lenResult, char * &amp; __result
+CONST STRING xyz   size32_t lenXyz, const char * xyz
 QSTRING xyz        size32_t &amp; __lenResult, char * &amp; __result
 UNICODE xyz        size32_t &amp; __lenResult, UChar * &amp; __result
+CONST UNICODE xyz  size32_t &amp; __lenResult, const UChar * &amp; __result
 DATA&lt;nn&gt; xyz       void * __result
 STRING&lt;nn&gt; xyz     char * __result
 QSTRING&lt;nn&gt; xyz    char * __result
@@ -160,9 +162,10 @@ STREAMED DATASET(r)
     <programlisting>void process(size32_t &amp; __lenResult, char * &amp; __result,
              size32_t lenValue, char * value, int len);</programlisting>
 
-    <para>If you are defining a function where you want to pass a pointer as a
-    constant, you must add <emphasis role="bold">const</emphasis> to the ECL
-    definition:</para>
+    <para>A function that takes a string parameter should also have the type
+    prefixed by <emphasis role="bold">const</emphasis> in the ECL code so that
+    modern compilers don't report errors when constant strings are passed to
+    the function. </para>
 
     <programlisting>BOOLEAN isUpper(const string mystring) := BEGINC++
   size_t i=0;
