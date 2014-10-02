@@ -1389,6 +1389,9 @@ public:
         }
     }
 
+    Owned<IConstWUGraphProgress> progress;
+    Owned<IWUGraphStats> graphStats;
+
     void beginGraph(const char *graphName)
     {
         if (debugContext)
@@ -1403,9 +1406,13 @@ public:
         graph->onCreate(this, NULL);  // MORE - is that right
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
+        if (workUnit)
+        {
+            progress.setown(workUnit->getGraphProgress(graph->queryName()));
+            graphStats.setown(progress->update(SCTroxie, queryStatisticsComponentName(), 0));
+        }
     }
 
-    Owned<IWUGraphStats> graphStats; // could make local to endGraph and pass to reset - might be cleaner
     virtual void endGraph(cycle_t startCycles, bool aborting)
     {
         if (graph)
@@ -1415,17 +1422,12 @@ public:
                 debugContext->checkBreakpoint(aborting ? DebugStateGraphAbort : DebugStateGraphEnd, NULL, graph->queryName());
             if (aborting)
                 graph->abort();
-            WorkunitUpdate progressWorkUnit(NULL);
-            Owned<IConstWUGraphProgress> progress;
             if (workUnit)
             {
-                progressWorkUnit.setown(&workUnit->lock());
-                progress.setown(progressWorkUnit->getGraphProgress(graph->queryName()));
-                graphStats.setown(progress->update(SCTroxie, queryStatisticsComponentName(), 0));
-
                 const char * graphName = graph->queryName();
                 StringBuffer graphDesc;
                 formatGraphTimerLabel(graphDesc, graphName);
+                WorkunitUpdate progressWorkUnit(&workUnit->lock());
                 updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
             }
             graph->reset();
