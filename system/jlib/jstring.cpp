@@ -1474,6 +1474,14 @@ int utf8CharLen(unsigned char ch)
     return len;
 }
 
+bool checkValidUtf8Char(unsigned size, const unsigned char *ch)
+{
+    for (unsigned pos = 1; pos < size; pos++)
+        if ((ch[pos] < 128) || (ch[pos] >= 192))
+            return false;  //its not a valid utf-8 character
+    return true;
+}
+
 int utf8CharLen(const unsigned char *ch)
 {
     //return 1 if this is an ascii character,
@@ -1482,9 +1490,8 @@ int utf8CharLen(const unsigned char *ch)
         return 1;
 
     unsigned char len = utf8CharLen(*ch);
-    for (unsigned pos = 1; pos < len; pos++)
-        if ((ch[pos] < 128) || (ch[pos] >= 192))
-            return 0;  //its not a valid utf-8 character after all
+    if (len && !checkValidUtf8Char(len, ch))
+        return 0;
 
     return len;
 }
@@ -1975,7 +1982,7 @@ StringBuffer &appendJSONRealValue(StringBuffer& s, const char *name, double valu
     return s;
 }
 
-inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch)
+inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch, unsigned &remaining)
 {
     switch (*ch)
     {
@@ -2007,28 +2014,32 @@ inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch)
                 s.append("\\u00").appendhex(*ch, true);
             else //json is always supposed to be utf8 (or other unicode formats)
             {
-                unsigned chlen = utf8CharLen((const unsigned char *)ch);
-                if (chlen==0)
+                unsigned chlen = utf8CharLen((unsigned char)*ch); //check first byte
+                if (chlen==0 || chlen > remaining || !checkValidUtf8Char(chlen, (const unsigned char *) ch))
                     s.append("\\u00").appendhex(*ch, true);
                 else
                 {
                     s.append(*ch);
                     while(--chlen)
+                    {
                         s.append(*(++ch));
+                        remaining--;
+                    }
                 }
             }
             break;
     }
     ch++;
+    remaining--;
     return s;
 }
 
-StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value)
+StringBuffer &encodeJSON(StringBuffer &s, unsigned size, const char *value)
 {
     if (!value)
         return s;
-    while (len-- && *value)
-        encodeJSONChar(s, value);
+    while (size && *value)
+        encodeJSONChar(s, value, size);
     return s;
 }
 
@@ -2036,9 +2047,7 @@ StringBuffer &encodeJSON(StringBuffer &s, const char *value)
 {
     if (!value)
         return s;
-    while (*value)
-        encodeJSONChar(s, value);
-    return s;
+    return encodeJSON(s, strlen(value), value);
 }
 
 void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid)
