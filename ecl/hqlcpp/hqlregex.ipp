@@ -330,7 +330,7 @@ protected:
     void insertSeparators();
     void optimizePattern();
     void optimizeSpotDFA();
-    void updateTimer(const char * name, unsigned timems);
+    void noteFinishedTiming(const char * name, cycle_t startCycles);
     HqlNamedRegex * queryNamed(IHqlExpression * defn, IAtom * name, node_operator op, bool caseSensitive);
     HqlNamedRegex * createNamed(IHqlExpression * expr, IAtom * name, node_operator op, bool caseSensitive);
 

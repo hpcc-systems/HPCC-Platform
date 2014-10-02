@@ -1048,10 +1048,10 @@ public:
     HqlCppOptions const & queryOptions() const { return options; }
     bool needToSerializeToSlave(IHqlExpression * expr) const;
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
-    void updateTimer(const char * name, unsigned timems)
+    void noteFinishedTiming(const char * name, cycle_t startCycles)
     {
         if (options.addTimingToWorkunit)
-            timeReporter->addTiming(name, NULL, timems);
+            timeReporter->addTiming(name, get_cycles_now()-startCycles);
     }
 
     void updateClusterType();

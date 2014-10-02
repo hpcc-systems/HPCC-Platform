@@ -105,7 +105,7 @@ void CHThorNaryActivity::ready()
     }
 }
 
-void CHThorNaryActivity::updateProgress(IWUGraphProgress &progress) const
+void CHThorNaryActivity::updateProgress(IStatisticGatherer &progress) const
 {
     //This would only have an effect if progress was updated while the graph was running.
     CHThorMultiInputActivity::updateProgress(progress);

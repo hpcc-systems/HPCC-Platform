@@ -323,15 +323,17 @@ public:
         mb.read(repPerc);
         replicateProgress->set(node, repPerc);
     }
-    virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
+    virtual void getActivityStats(IStatisticGatherer & stats)
     {
-        CMasterActivity::getXGMML(progress, node);
+        CMasterActivity::getActivityStats(stats);
         if (publishReplicatedDone)
         {
             replicateProgress->processInfo();
-            replicateProgress->addAttribute(node, "replicatedPercentage", replicateProgress->queryAverage());
+            //GC->JCS An average of percentages doesn't give you a very accurate answer..
+            stats.addStatistic(StPerReplicated, replicateProgress->queryAverage() * 10000);
         }
     }
+
 };
 
 CActivityBase *createIndexWriteActivityMaster(CMasterGraphElement *container)

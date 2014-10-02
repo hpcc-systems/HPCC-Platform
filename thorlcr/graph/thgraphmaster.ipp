@@ -183,51 +183,54 @@ public:
     bool queryCreatedFile(const char *file);
 };
 
+
 class graphmaster_decl CThorStats : public CInterface, implements IInterface
 {
 protected:
     unsigned __int64 max, min, tot, avg;
-    unsigned hi, lo, minNode, maxNode;
+    unsigned maxSkew, minSkew, minNode, maxNode;
     UInt64Array counts;
-    StringAttr prefix;
-    StringAttr labelMin, labelMax, labelMinSkew, labelMaxSkew, labelMinEndpoint, labelMaxEndpoint;
+    StatisticKind kind;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorStats(const char *prefix=NULL);
+    CThorStats(StatisticKind _kind);
     void reset();
     virtual void processInfo();
-    static void removeAttribute(IPropertyTree *node, const char *name);
-    static void addAttribute(IPropertyTree *node, const char *name, unsigned __int64 val);
-    static void addAttribute(IPropertyTree *node, const char *name, const char *val);
 
     unsigned __int64 queryTotal() { return tot; }
     unsigned __int64 queryAverage() { return avg; }
     unsigned __int64 queryMin() { return min; }
     unsigned __int64 queryMax() { return max; }
-    unsigned queryMinSkew() { return lo; }
-    unsigned queryMaxSkew() { return hi; }
+    unsigned queryMinSkew() { return minSkew; }
+    unsigned queryMaxSkew() { return maxSkew; }
     unsigned queryMaxNode() { return maxNode; }
     unsigned queryMinNode() { return minNode; }
 
     void set(unsigned node, unsigned __int64 count);
-    void getXGMML(IPropertyTree *node, bool suppressMinMaxWhenEqual);
+    void getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual);
+
+protected:
+    void calculateSkew();
+    void tallyValue(unsigned __int64 value, unsigned node);
 };
 
 class graphmaster_decl CTimingInfo : public CThorStats
 {
 public:
     CTimingInfo();
-    void getXGMML(IPropertyTree *node) { CThorStats::getXGMML(node, false); }
+    void getStats(IStatisticGatherer & stats) { CThorStats::getStats(stats, false); }
 };
 
 class graphmaster_decl ProgressInfo : public CThorStats
 {
     unsigned startcount, stopcount;
 public:
+    ProgressInfo();
+
     virtual void processInfo();
-    void getXGMML(IPropertyTree *node);
+    void getStats(IStatisticGatherer & stats);
 };
 typedef IArrayOf<ProgressInfo> ProgressInfoArray;
 
@@ -254,8 +257,8 @@ public:
     ~CMasterActivity();
 
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb);
-    virtual void getXGMML(unsigned idx, IPropertyTree *edge);
-    virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node);
+    virtual void getActivityStats(IStatisticGatherer & stats);
+    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx);
     virtual void init();
     virtual void handleSlaveMessage(CMessageBuffer &msg) { }
     virtual void reset();

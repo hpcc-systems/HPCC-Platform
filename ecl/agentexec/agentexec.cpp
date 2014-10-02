@@ -84,6 +84,7 @@ void CEclAgentExecutionServer::start(StringBuffer & codeDir)
         ERRLOG("'name' not specified in properties file\n");
         throwUnexpected();
     }
+    setStatisticsComponentName(SCThthor, agentName, true);
 
     //get dali server(s)
     properties->getProp("@daliServers", daliServers);

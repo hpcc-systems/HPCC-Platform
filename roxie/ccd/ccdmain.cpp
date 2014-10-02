@@ -529,6 +529,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
         }
         topology->getProp("@name", roxieName);
+        if (roxieName.length())
+            setStatisticsComponentName(SCTroxie, roxieName, true);
+        else
+            setStatisticsComponentName(SCTroxie, "roxie", true);
+
         Owned<const IQueryDll> standAloneDll;
         if (globals->hasProp("--loadWorkunit"))
         {

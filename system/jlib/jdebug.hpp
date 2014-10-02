@@ -21,12 +21,13 @@
 #define JDEBUG_HPP
 
 #include "jiface.hpp"
+#include "jstats.h"
 
 #define TIMING
 
-typedef __int64 cycle_t;
-
 __int64 jlib_decl cycle_to_nanosec(cycle_t cycles);
+__int64 jlib_decl cycle_to_microsec(cycle_t cycles);
+__int64 jlib_decl cycle_to_millisec(cycle_t cycles);
 cycle_t jlib_decl nanosec_to_cycle(__int64 cycles);
 cycle_t jlib_decl get_cycles_now();  // equivalent to getTSC when available
 double jlib_decl getCycleToNanoScale();
@@ -90,14 +91,15 @@ class StringBuffer;
 class MemoryBuffer;
 struct ITimeReporter : public IInterface
 {
-  virtual void addTiming(const char * scope, const char *desc, unsigned __int64 cycles) = 0;
-  virtual void mergeTiming(const char * scope, const char *desc, const __int64 totalcycles, const __int64 maxcycles, const unsigned count) = 0;
+  virtual void addTiming(const char * scope, unsigned __int64 cycles) = 0;
+  virtual void mergeTiming(const char * scope, const __int64 totalcycles, const __int64 maxcycles, const unsigned count) = 0;
   virtual unsigned numSections() = 0;
   virtual __int64 getTime(unsigned idx) = 0;
   virtual __int64 getMaxTime(unsigned idx) = 0;
   virtual unsigned getCount(unsigned idx) = 0;
+  virtual StatisticKind getTimerType(unsigned idx) = 0;
+  virtual StatisticScopeType getScopeType(unsigned idx) = 0;
   virtual StringBuffer &getScope(unsigned idx, StringBuffer &s) = 0;
-  virtual StringBuffer &getDescription(unsigned idx, StringBuffer &s) = 0;
   virtual StringBuffer &getTimings(StringBuffer &s) = 0;
   virtual void printTimings() = 0;
   virtual void reset() = 0;
@@ -126,7 +128,7 @@ public:
     }
     inline unsigned elapsedMs()
     {
-        return static_cast<unsigned>(cycle_to_nanosec(elapsedCycles())/1000000);
+        return static_cast<unsigned>(cycle_to_millisec(elapsedCycles()));
     }
 };
 inline cycle_t queryOneSecCycles() { return oneSecInCycles; }
@@ -145,7 +147,7 @@ protected:
 class jlib_decl MTimeSection
 {
 public:
-  MTimeSection(ITimeReporter *_master, const char * scope, const char * _title);
+  MTimeSection(ITimeReporter *_master, const char * scope);
   ~MTimeSection();
 protected:
   const char * scope;
@@ -160,7 +162,7 @@ extern jlib_decl ITimeReporter * queryActiveTimer();
 extern jlib_decl ITimeReporter *createStdTimeReporter();
 extern jlib_decl ITimeReporter *createStdTimeReporter(MemoryBuffer &mb);
 #define TIME_SECTION(title)   TimeSection   glue(_timer,__LINE__)(title);
-#define MTIME_SECTION(master,title)  MTimeSection   glue(mtimer,__LINE__)(master, "workunit;" title, title);
+#define MTIME_SECTION(master,title)  MTimeSection   glue(mtimer,__LINE__)(master, title);
 #else
 #define TIME_SECTION(title)   
 #define MTIME_SECTION(master,title)

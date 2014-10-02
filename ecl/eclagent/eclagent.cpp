@@ -1829,7 +1829,7 @@ void EclAgent::doProcess()
             if(noRetry && (w->getState() == WUStateFailed))
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
-            w->addTimeStamp("EclAgent", GetCachedHostName(), "Started");
+            addTimeStamp(w, SSTglobal, NULL, StWhenQueryStarted);
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());
@@ -1896,7 +1896,7 @@ void EclAgent::doProcess()
     {
         WorkunitUpdate w = updateWorkUnit();
 
-        w->addTimeStamp("EclAgent", GetCachedHostName(), "Finished");
+        addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
         addTimings();
 
         switch (w->getState())
@@ -3005,7 +3005,7 @@ char * EclAgent::getDaliServers()
 void EclAgent::addTimings()
 {
     WorkunitUpdate w = updateWorkUnit();
-    updateWorkunitTimings(w, queryActiveTimer(), "eclagent");
+    updateWorkunitTimings(w, queryActiveTimer());
 }
 
 // eclagent abort monitoring
@@ -3181,6 +3181,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     ILogMsgHandler * logMsgHandler = NULL;
     if (!standAloneExe)
     {
+        setStatisticsComponentName(SCThthor, agentTopology->queryProp("@name"), true);
+
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(agentTopology, "eclagent");
         lf->setCreateAliasFile(false);
         logMsgHandler = lf->beginLogging();
@@ -4098,7 +4100,7 @@ public:
         bp.removeEdge(*this);
     }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const 
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {   
         if (in)
             in->updateProgress(progress);

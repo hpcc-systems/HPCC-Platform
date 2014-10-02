@@ -48,7 +48,7 @@ public:
     bool buildXmlWuidInfo(IConstWorkUnit &wu, StringBuffer& wuStructure,bool bDescription = false);
     bool buildXmlWuidInfo(const char* wu, IEspECLWorkunit& wuStructure,bool bDescription = false);
     bool buildXmlExceptionList(IConstWorkUnit &wu,IPropertyTree& XMLStructure);
-    bool buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructure);
+//    bool buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructure);
     bool buildXmlLogList(IConstWorkUnit &wu,IPropertyTree& XMLStructure);
     void buildXmlActiveWuidStatus(const char* ClusterName, IEspECLWorkunit& wuStructure);
 };

@@ -51,7 +51,7 @@ public:
     //interface IHThorInput
     virtual void done();
     virtual void ready();
-    virtual void updateProgress(IWUGraphProgress &progress) const;
+    virtual void updateProgress(IStatisticGatherer &progress) const;
 };
 
 

@@ -654,8 +654,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
-        StringBuffer tsStr("Thor - ");
-        wu->setTimeStamp(tsStr.append(graphName).str(), GetCachedHostName(), "Started");
+        addTimeStamp(wu, SSTgraph, graphName, StWhenGraphStarted);
         updateWorkUnitLog(*wu);
     }
     Owned<IException> exception;
@@ -663,8 +662,16 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     workunit.forceReload();
     workunit.getWuid(wuid);
     const char *totalTimeStr = "Total thor time";
-    unsigned startTime = msTick();
-    unsigned totalTimeMs = workunit.getTimerDuration(totalTimeStr);
+    cycle_t startCycles = get_cycles_now();
+    unsigned totalTimeNs = 0;
+    unsigned totalThisTimeNs = 0;
+    StatisticsFilter summaryTimeFilter(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, SMeasureTimeNs, StTimeElapsed);
+    Owned<IConstWUStatistic> totalThorTime = getStatistic(&workunit, summaryTimeFilter);
+    Owned<IConstWUStatistic> totalThisThorTime = workunit.getStatistic(queryStatisticsComponentName(), GLOBAL_SCOPE, StTimeElapsed);
+    if (totalThorTime)
+        totalTimeNs = totalThorTime->getValue();
+    if (totalThisThorTime)
+        totalThisTimeNs = totalThisThorTime->getValue();
 
     Owned<IConstWUQuery> query = workunit.getQuery(); 
     SCMStringBuffer soName;
@@ -739,15 +746,15 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         allDone = job->go();
 
         Owned<IWorkUnit> wu = &workunit.lock();
-        unsigned graphTimeMs = msTick()-startTime;
+        unsigned __int64 graphTimeNs = cycle_to_nanosec(get_cycles_now()-startCycles);
         StringBuffer graphTimeStr;
         formatGraphTimerLabel(graphTimeStr, graphName);
 
-        updateWorkunitTimeStat(wu, "thor", graphName, "time", graphTimeStr, milliToNano(graphTimeMs), 1, 0);
-        updateWorkunitTimeStat(wu, "thor", "workunit", "ThorTime", totalTimeStr, milliToNano(totalTimeMs+graphTimeMs), 1, 0);
+        updateWorkunitTimeStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs);
+        updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+graphTimeNs);
+        wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+graphTimeNs, 1, 0, false);
 
-        StringBuffer tsStr("Thor - ");
-        wu->setTimeStamp(tsStr.append(graphName).str(), GetCachedHostName(), "Finished");
+        addTimeStamp(wu, SSTgraph, graphName, StWhenGraphFinished);
         
         removeJob(*job);
     }
