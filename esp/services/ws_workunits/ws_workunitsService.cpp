@@ -477,7 +477,8 @@ void CWsWorkunitsEx::refreshValidClusters()
     {
         SCMStringBuffer s;
         IStringVal &val = it->str(s);
-        if (!validClusters.getValue(val.str()))
+        bool* found = validClusters.getValue(val.str());
+        if (!found || !*found)
             validClusters.setValue(val.str(), true);
     }
 }
@@ -487,7 +488,8 @@ bool CWsWorkunitsEx::isValidCluster(const char *cluster)
     if (!cluster || !*cluster)
         return false;
     CriticalBlock block(crit);
-    if (validClusters.getValue(cluster))
+    bool* found = validClusters.getValue(cluster);
+    if (found && *found)
         return true;
     if (validateTargetClusterName(cluster))
     {
@@ -4127,13 +4129,16 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
         }
 
         //Get Thor IP
-        BoolHash uniqueProcesses, uniqueThorIPs;
+        BoolHash uniqueProcesses;
         Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
         ForEach (*thorInstances)
         {
             SCMStringBuffer processName;
             thorInstances->str(processName);
-            if ((processName.length() < 1) || uniqueProcesses.getValue(processName.str()))
+            if (processName.length() < 1)
+                continue;
+            bool* found = uniqueProcesses.getValue(processName.str());
+            if (found && *found)
                 continue;
 
             uniqueProcesses.setValue(processName.str(), true);
