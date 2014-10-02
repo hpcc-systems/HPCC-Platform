@@ -176,6 +176,7 @@ unsigned leafCacheMB = 50;
 unsigned blobCacheMB = 0;
 
 unsigned roxiePort = 0;
+Owned<IPerfMonHook> perfMonHook;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -827,8 +828,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             roxiemem::setDataAlignmentSize(0x400);
         }
         unsigned pinterval = topology->getPropInt("@systemMonitorInterval",1000*60);
+        perfMonHook.setown(roxiemem::createRoxieMemStatsPerfMonHook());  // Note - we create even if pinterval is 0, as can be enabled via control message
         if (pinterval)
-            startPerformanceMonitor(pinterval);
+            startPerformanceMonitor(pinterval, PerfMonStandard, perfMonHook);
 
 
         topology->getProp("@pluginDirectory", pluginDirectory);
@@ -1076,6 +1078,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     releaseRoxieStateCache();
     setDaliServixSocketCaching(false);  // make sure it cleans up or you get bogus memleak reports
     setNodeCaching(false); // ditto
+    perfMonHook.clear();
     strdup("Make sure leak checking is working");
     UseSysLogForOperatorMessages(false);
     ExitModuleObjects();
