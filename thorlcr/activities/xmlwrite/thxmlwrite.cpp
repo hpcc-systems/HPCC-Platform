@@ -57,12 +57,15 @@ public:
         props.setProp("@format", "utf8n");
         props.setProp("@kind", (kind==TAKjsonwrite) ? "json" : "xml");
 
-        StringBuffer s;
-        OwnedRoxieString supplied(helper->getHeader());
-        props.setPropInt("@headerLength", buildJsonHeader(s, supplied, rowTag).length());
+        if (kind==TAKjsonwrite)
+        {
+            StringBuffer s;
+            OwnedRoxieString supplied(helper->getHeader());
+            props.setPropInt("@headerLength", buildJsonHeader(s, supplied, rowTag).length());
 
-        supplied.set(helper->getFooter());
-        props.setPropInt("@footerLength", buildJsonFooter(s.clear(), supplied, rowTag).length());
+            supplied.set(helper->getFooter());
+            props.setPropInt("@footerLength", buildJsonFooter(s.clear(), supplied, rowTag).length());
+        }
     }
 };
 
