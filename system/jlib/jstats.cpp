@@ -150,6 +150,7 @@ unsigned __int64 getIPV4StatsValue(const IpAddress & ip)
 
 //--------------------------------------------------------------------------------------------------------------------
 
+const static unsigned __int64 oneMilliSecond = I64C(1000000);
 const static unsigned __int64 oneSecond = I64C(1000000000);
 const static unsigned __int64 oneMinute = I64C(60000000000);
 const static unsigned __int64 oneHour = I64C(3600000000000);
@@ -157,27 +158,36 @@ const static unsigned __int64 oneDay = 24 * I64C(3600000000000);
 
 static void formatTime(StringBuffer & out, unsigned __int64 value)
 {
-    unsigned days = (unsigned)(value / oneDay);
-    value = value % oneDay;
-    unsigned hours = (unsigned)(value / oneHour);
-    value = value % oneHour;
-    unsigned mins = (unsigned)(value / oneMinute);
-    value = value % oneMinute;
-    unsigned secs = (unsigned)(value / oneSecond);
-    unsigned ns = (unsigned)(value % oneSecond);
-
-    if (days > 0)
-        out.appendf("%u days ", days);
-    if (hours > 0 || days)
-        out.appendf("%u:%02u:%02u", hours, mins, secs);
-    else if (mins >= 5)
-        out.appendf("%u:%02u", mins, secs);
-    else if (mins >= 1)
-        out.appendf("%u:%02u.%03u", mins, secs, ns / 1000000);
-    else if (secs >= 10)
-        out.appendf("%u.%03u", secs, ns / 1000000);
+    //Aim to display at least 3 significant digits in the result string
+    if (value < oneMilliSecond)
+        out.appendf("%uns", (unsigned)value);
+    else if (value < oneSecond)
+    {
+        unsigned uvalue = (unsigned)value;
+        out.appendf("%u.%03ums", uvalue / 1000000, (uvalue / 1000) % 1000);
+    }
     else
-        out.appendf("%u.%06u", secs, ns / 1000);
+    {
+        unsigned days = (unsigned)(value / oneDay);
+        value = value % oneDay;
+        unsigned hours = (unsigned)(value / oneHour);
+        value = value % oneHour;
+        unsigned mins = (unsigned)(value / oneMinute);
+        value = value % oneMinute;
+        unsigned secs = (unsigned)(value / oneSecond);
+        unsigned ns = (unsigned)(value % oneSecond);
+
+        if (days > 0)
+            out.appendf("%u days ", days);
+        if (hours > 0 || days)
+            out.appendf("%u:%02u:%02u", hours, mins, secs);
+        else if (mins >= 10)
+            out.appendf("%u:%02u", mins, secs);
+        else if (mins >= 1)
+            out.appendf("%u:%02u.%03u", mins, secs, ns / 1000000);
+        else
+            out.appendf("%u.%03us", secs, ns / 1000000);
+    }
 }
 
 static void formatTimeStamp(StringBuffer & out, unsigned __int64 value)
@@ -331,6 +341,23 @@ StatisticMeasure queryMeasure(const char *  measure)
     return (StatisticMeasure)matchString(measureNames, measure);
 }
 
+StatsMergeAction queryMergeMode(StatisticMeasure measure)
+{
+    switch (measure)
+    {
+    case SMeasureTimeNs:        return StatsMergeSum;
+    case SMeasureTimestampUs:   return StatsMergeKeep;
+    case SMeasureCount:         return StatsMergeSum;
+    case SMeasureSize:          return StatsMergeSum;
+    case SMeasureLoad:          return StatsMergeMax;
+    case SMeasureSkew:          return StatsMergeMax;
+    case SMeasureNode:          return StatsMergeKeep;
+    case SMeasurePercent:       return StatsMergeReplace;
+    case SMeasureIPV4:          return StatsMergeKeep;
+    default:
+        throwUnexpected();
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------
 
 StatisticMeasure queryMeasure(StatisticKind kind)
@@ -679,6 +706,31 @@ unsigned __int64 mergeStatistic(StatisticMeasure measure, unsigned __int64 value
     return value;
 }
 
+unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction)
+{
+    switch (mergeAction)
+    {
+    case StatsMergeKeep:
+        return prevValue;
+    case StatsMergeAppend:
+    case StatsMergeReplace:
+        return newValue;
+    case StatsMergeSum:
+        return prevValue + newValue;
+    case StatsMergeMin:
+        if (prevValue > newValue)
+            return newValue;
+        else
+            return prevValue;
+    case StatsMergeMax:
+        if (prevValue < newValue)
+            return newValue;
+        else
+            return prevValue;
+    default:
+        throwUnexpected();
+    }
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -1092,6 +1144,23 @@ public:
         stats.append(*new Statistic(kind, value));
     }
 
+    void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    {
+        if (mergeAction != StatsMergeAppend)
+        {
+            ForEachItemIn(i, stats)
+            {
+                Statistic & cur = stats.element(i);
+                if (cur.kind == kind)
+                {
+                    cur.value = mergeStatisticValue(cur.value, value, mergeAction);
+                    return;
+                }
+            }
+        }
+        stats.append(*new Statistic(kind, value));
+    }
+
     CStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren)
     {
         //MORE: Implement hasChildren
@@ -1286,6 +1355,11 @@ public:
     {
         CStatisticCollection & tos = scopes.tos();
         tos.addStatistic(kind, value);
+    }
+    virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    {
+        CStatisticCollection & tos = scopes.tos();
+        tos.updateStatistic(kind, value, mergeAction);
     }
     virtual IStatisticCollection * getResult()
     {

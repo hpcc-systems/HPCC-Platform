@@ -1188,7 +1188,7 @@ public:
     void setStateEx(const char * text);
     void setAgentSession(__int64 sessionId);
     void setSecurityToken(const char *value);
-    void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge);
+    void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction);
     void setTracingValue(const char * propname, const char * value);
     void setTracingValueInt(const char * propname, int value);
     void setUser(const char * value);
@@ -1610,8 +1610,8 @@ public:
             { c->setStateEx(text); }
     virtual void setAgentSession(__int64 sessionId)
             { c->setAgentSession(sessionId); }
-    virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
-            { c->setStatistic(creatorType, creator, scopeType, scope, kind, optDescription, value, count, maxValue, merge); }
+    virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
+            { c->setStatistic(creatorType, creator, scopeType, scope, kind, optDescription, value, count, maxValue, mergeAction); }
     virtual void setTracingValue(const char * propname, const char * value)
             { c->setTracingValue(propname, value); }
     virtual void setTracingValueInt(const char * propname, int value)
@@ -3998,7 +3998,7 @@ void CLocalWorkUnit::unlockRemote(bool commit)
         {
             assertex(connectAtRoot);
             //MORE: I'm not convinced this is useful...
-            setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, NULL, StWhenWorkunitModified, NULL, getTimeStampNowValue(), 1, 0, false);
+            setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, NULL, StWhenWorkunitModified, NULL, getTimeStampNowValue(), 1, 0, StatsMergeReplace);
             try { connection->commit(); }
             catch (IException *e)
             { 
@@ -5912,7 +5912,7 @@ protected:
     Linked<const IStatisticsFilter> filter;
 };
 
-void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
+void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
 {
     if (!scope) scope = GLOBAL_SCOPE;
 
@@ -5928,8 +5928,7 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         stats = p->addPropTree("Statistics", createPTree("Statistics"));
 
     IPropertyTree * statTree = NULL;
-    bool append = false;
-    if (!append)
+    if (mergeAction != StatsMergeAppend)
     {
         StringBuffer xpath;
         xpath.append("Statistic[@creator='").append(creator).append("'][@scope='").append(scope).append("'][@kind='").append(kindName).append("']");
@@ -5954,10 +5953,10 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         if (statistics.cached)
             statistics.append(LINK(statTree));
 
-        merge = false;
+        mergeAction = StatsMergeAppend;
     }
 
-    if (merge)
+    if (mergeAction != StatsMergeAppend)
     {
         unsigned __int64 oldValue = statTree->getPropInt64("@value", 0);
         unsigned __int64 oldCount = statTree->getPropInt64("@count", 0);
@@ -5965,7 +5964,7 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         if (oldMax < oldValue)
             oldMax = oldValue;
 
-        statTree->setPropInt64("@value", mergeStatistic(measure, value, oldValue));
+        statTree->setPropInt64("@value", mergeStatisticValue(oldValue, value, mergeAction));
         statTree->setPropInt64("@count", count + oldCount);
         if (maxValue > oldMax)
             statTree->setPropInt64("@max", maxValue);
@@ -10569,7 +10568,7 @@ extern WORKUNIT_API void descheduleWorkunit(char const * wuid)
 
 extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value)
 {
-    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, value, 1, 0, false);
+    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, value, 1, 0, StatsMergeReplace);
 }
 
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer)
@@ -10580,13 +10579,13 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *ti
         StatisticScopeType scopeType= timer->getScopeType(i);
         timer->getScope(i, scope.clear());
         StatisticKind kind = timer->getTimerType(i);
-        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, timer->getTime(i), timer->getCount(i), timer->getMaxTime(i), false);
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, timer->getTime(i), timer->getCount(i), timer->getMaxTime(i), StatsMergeReplace);
     }
 }
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind)
 {
-    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, getTimeStampNowValue(), 1, 0, false);
+    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
 }
 
 

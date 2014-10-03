@@ -691,7 +691,7 @@ public:
             for (unsigned i = 0; i < STATS_SIZE; i++)
             {
                 if (counts[i])
-                    wu->setStatistic(SCTroxie, whoami, SSTglobal, NULL, mapRoxieStatKind(i), NULL, cumulative[i], counts[i], 0, false);
+                    wu->setStatistic(SCTroxie, whoami, SSTglobal, NULL, mapRoxieStatKind(i), NULL, cumulative[i], counts[i], 0, StatsMergeReplace);
             }
         }
     }

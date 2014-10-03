@@ -752,7 +752,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
 
         updateWorkunitTimeStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs);
         updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+graphTimeNs);
-        wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+graphTimeNs, 1, 0, false);
+        wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+graphTimeNs, 1, 0, StatsMergeReplace);
 
         addTimeStamp(wu, SSTgraph, graphName, StWhenGraphFinished);
         
