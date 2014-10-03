@@ -20,6 +20,8 @@
 #include "hqlhtcpp.ipp"
 #include "hqlecl.hpp"
 
+#define EMBEDDED_GRAPH_DELTA 1000000000
+
 class HqlCppLibrary : public CInterface
 {
 public:

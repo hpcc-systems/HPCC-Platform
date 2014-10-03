@@ -91,7 +91,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const = 0;
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source) = 0;
 
-    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, bool embedded, const byte * parentExtract) = 0;
+    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract) = 0;
     virtual bool getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * name, int seq) = 0;
     virtual IHThorGraphResults * createGraphLoopResults() = 0;
     virtual void outputFormattedResult(const char *name, unsigned sequence, bool close) = 0;

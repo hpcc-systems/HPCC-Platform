@@ -79,6 +79,7 @@ public:
     unsigned graphid;
 
     StringAttr libraryName;
+    StringAttr embeddedGraphName;
     unsigned interfaceHash;
     bool embedded;
 };

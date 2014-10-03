@@ -9554,7 +9554,13 @@ CHThorLibraryCallActivity::CHThorLibraryCallActivity(IAgentContext &_agent, unsi
 {
     libraryName.set(node->queryProp("att[@name=\"libname\"]/@value"));
     interfaceHash = node->getPropInt("att[@name=\"_interfaceHash\"]/@value", 0);
-    embedded = node->getPropBool("att[@name=\"embedded\"]/@value", false) ;
+    bool embedded = node->getPropBool("att[@name=\"embedded\"]/@value", false) ;
+    if (embedded)
+    {
+        embeddedGraphName.set(node->queryProp("att[@name=\"graph\"]/@value"));
+        if (!embeddedGraphName)
+            embeddedGraphName.set(libraryName);
+    }
 
     Owned<IPropertyTreeIterator> iter = node->getElements("att[@name=\"_outputUsed\"]");
     ForEach(*iter)
@@ -9576,7 +9582,7 @@ IHThorGraphResult * CHThorLibraryCallActivity::getResultRows(unsigned whichOutpu
         if (libraryName.length() == 0)
             libraryName.setown(helper.getLibraryName());
         helper.createParentExtract(extractBuilder);
-        results.setown(agent.executeLibraryGraph(libraryName, interfaceHash, activityId, embedded, extractBuilder.getbytes()));
+        results.setown(agent.executeLibraryGraph(libraryName, interfaceHash, activityId, embeddedGraphName, extractBuilder.getbytes()));
     }
 
     return results->queryResult(whichOutput);

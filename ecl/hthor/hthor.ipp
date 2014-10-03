@@ -2691,8 +2691,8 @@ class CHThorLibraryCallActivity : public CHThorSimpleActivityBase
     Owned<IHThorGraphResults> results;
     ActivityState state;
     StringAttr libraryName;
+    StringAttr embeddedGraphName;
     unsigned interfaceHash;
-    bool embedded;
 
     CIArrayOf<LibraryCallOutput> outputs;
     Owned<IHThorBoundLoopGraph> libraryGraph;
