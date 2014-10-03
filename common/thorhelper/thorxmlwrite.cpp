@@ -38,7 +38,7 @@ CommonXmlWriter::~CommonXmlWriter()
     flush(true);
 }
 
-CommonXmlWriter & CommonXmlWriter::clear()
+IXmlWriterExt & CommonXmlWriter::clear()
 {
     out.clear();
     indent = 0;
@@ -361,7 +361,7 @@ CommonJsonWriter::~CommonJsonWriter()
     flush(true);
 }
 
-CommonJsonWriter & CommonJsonWriter::clear()
+IXmlWriterExt & CommonJsonWriter::clear()
 {
     out.clear();
     indent = 0;
@@ -415,6 +415,14 @@ const char *CommonJsonWriter::checkItemNameBeginNested(const char *name)
     if (item)
         item->depth++;
     return name;
+}
+
+bool CommonJsonWriter::checkUnamedArrayItem(bool begin)
+{
+    CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
+    if (item && item->depth==(begin ? 0 : 1) && item->name.isEmpty())
+        return true;
+    return false;
 }
 
 const char *CommonJsonWriter::checkItemNameEndNested(const char *name)
@@ -557,13 +565,15 @@ void CommonJsonWriter::outputEndDataset(const char *dsname)
 
 void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildren)
 {
-    if (!fieldname || !*fieldname)
+    if (!fieldname)
+        return;
+    if (!*fieldname && !checkUnamedArrayItem(true))
         return;
 
     flush(false);
     checkFormat(true, false, 1);
     fieldname = checkItemNameBeginNested(fieldname);
-    if (fieldname)
+    if (fieldname && *fieldname)
     {
         const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
         while (sep)
@@ -582,13 +592,15 @@ void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildre
 
 void CommonJsonWriter::outputEndNested(const char *fieldname)
 {
-    if (!fieldname || !*fieldname)
+    if (!fieldname)
+        return;
+    if (!*fieldname && !checkUnamedArrayItem(false))
         return;
 
     flush(false);
     checkFormat(false, true, -1);
     fieldname = checkItemNameEndNested(fieldname);
-    if (fieldname)
+    if (fieldname && *fieldname)
     {
         const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
         while (sep)
@@ -607,6 +619,37 @@ void CommonJsonWriter::outputSetAll()
     flush(false);
     checkDelimit();
     appendJSONValue(out, "All", true);
+}
+
+StringBuffer &buildJsonHeader(StringBuffer  &header, const char *suppliedHeader, const char *rowTag)
+{
+    if (suppliedHeader)
+    {
+        header.append(suppliedHeader);
+        if (rowTag && *rowTag)
+            appendJSONName(header, rowTag).append('[');
+        return header;
+    }
+
+    if (rowTag && *rowTag)
+    {
+        header.append('{');
+        appendJSONName(header, rowTag);
+    }
+
+    return header.append('[');
+}
+
+StringBuffer &buildJsonFooter(StringBuffer  &footer, const char *suppliedFooter, const char *rowTag)
+{
+    if (suppliedFooter)
+    {
+        if (rowTag && *rowTag)
+            footer.append(']');
+        footer.append(suppliedFooter);
+        return footer;
+    }
+    return footer.append((rowTag && *rowTag) ? "]}" : "]");
 }
 
 //=====================================================================================
@@ -939,7 +982,7 @@ CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned _initialIndent
 
 //=====================================================================================
 
-IXmlWriter * createIXmlWriter(unsigned _flags, unsigned _initialIndent, IXmlStreamFlusher *_flusher, XMLWriterType xmlType)
+IXmlWriterExt * createIXmlWriterExt(unsigned _flags, unsigned _initialIndent, IXmlStreamFlusher *_flusher, XMLWriterType xmlType)
 {
     if (xmlType==WTJSON)
         return new CommonJsonWriter(_flags, _initialIndent, _flusher);

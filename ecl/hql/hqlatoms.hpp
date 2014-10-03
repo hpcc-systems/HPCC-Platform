@@ -218,6 +218,7 @@ extern HQL_API IAtom * isNullAtom;
 extern HQL_API IAtom * isValidAtom;
 extern HQL_API IAtom * jobAtom;
 extern HQL_API IAtom * jobTempAtom;
+extern HQL_API IAtom * jsonAtom;
 extern HQL_API IAtom * keepAtom;
 extern HQL_API IAtom * keyedAtom;
 extern HQL_API IAtom * labeledAtom;

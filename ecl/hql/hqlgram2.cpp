@@ -10405,6 +10405,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ITERATE: msg.append("ITERATE"); break;
     case JOIN: msg.append("JOIN"); break;
     case JOINED: msg.append("JOINED"); break;
+    case JSON_TOKEN: msg.append("JSON"); break;
     case KEEP: msg.append("KEEP"); break;
     case KEYDIFF: msg.append("KEYDIFF"); break;
     case KEYED: msg.append("KEYED"); break;

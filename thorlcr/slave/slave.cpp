@@ -662,7 +662,8 @@ public:
                 ret = createXmlReadSlave(this);
                 break;
             case TAKxmlwrite:
-                ret = createXmlWriteSlave(this);
+            case TAKjsonwrite:
+                ret = createXmlWriteSlave(this, kind);
                 break;
             case TAKmerge:
                 if (queryLocalOrGrouped())

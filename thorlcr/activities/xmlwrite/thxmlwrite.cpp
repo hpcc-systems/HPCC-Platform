@@ -27,9 +27,12 @@
 class CXmlWriteActivityMaster : public CWriteMasterBase
 {
     IHThorXmlWriteArg *helper;
+    ThorActivityKind kind;
+    unsigned headerLength;
+    unsigned footerLength;
 
 public:
-    CXmlWriteActivityMaster(CMasterGraphElement *info) : CWriteMasterBase(info)
+    CXmlWriteActivityMaster(CMasterGraphElement *info, ThorActivityKind _kind) : CWriteMasterBase(info), kind(_kind), headerLength(0), footerLength(0)
     {
         helper = (IHThorXmlWriteArg *)queryHelper();
     }
@@ -52,12 +55,22 @@ public:
         }
         props.setProp("@rowTag", rowTag.str());
         props.setProp("@format", "utf8n");
-        props.setProp("@kind", "xml");
+        props.setProp("@kind", (kind==TAKjsonwrite) ? "json" : "xml");
+
+        if (kind==TAKjsonwrite)
+        {
+            StringBuffer s;
+            OwnedRoxieString supplied(helper->getHeader());
+            props.setPropInt("@headerLength", buildJsonHeader(s, supplied, rowTag).length());
+
+            supplied.set(helper->getFooter());
+            props.setPropInt("@footerLength", buildJsonFooter(s.clear(), supplied, rowTag).length());
+        }
     }
 };
 
-CActivityBase *createXmlWriteActivityMaster(CMasterGraphElement *container)
+CActivityBase *createXmlWriteActivityMaster(CMasterGraphElement *container, ThorActivityKind kind)
 {
-    return new CXmlWriteActivityMaster(container);
+    return new CXmlWriteActivityMaster(container, kind);
 }
 

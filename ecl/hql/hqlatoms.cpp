@@ -215,6 +215,7 @@ IAtom * isNullAtom;
 IAtom * isValidAtom;
 IAtom * jobAtom;
 IAtom * jobTempAtom;
+IAtom * jsonAtom;
 IAtom * keepAtom;
 IAtom * keyedAtom;
 IAtom * labeledAtom;
@@ -634,6 +635,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(isValid);
     MAKEATOM(job);
     MAKEATOM(jobTemp);
+    MAKEATOM(json);
     MAKEATOM(keep);
     MAKEATOM(keyed);
     MAKEATOM(labeled);

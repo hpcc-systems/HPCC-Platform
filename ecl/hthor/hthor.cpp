@@ -878,7 +878,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 //=====================================================================================================
 
-CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), headerLength(0), footerLength(0)
 {
     OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
     if (!xmlpath)
@@ -896,12 +896,23 @@ void CHThorXmlWriteActivity::execute()
 {
     // Loop thru the results
     numRecords = 0;
+    StringBuffer header;
     OwnedRoxieString suppliedHeader(helper.getHeader());
-    const char *header = suppliedHeader;
-    if (!header) header = "<Dataset>\n";
-    diskout->write(strlen(header), header);
+    if (kind==TAKjsonwrite)
+    {
+        buildJsonHeader(header, suppliedHeader, rowTag);
+        headerLength = header.length();
+    }
+    else if (suppliedHeader)
+        header.set(suppliedHeader);
+    else
+        header.set("<Dataset>\n");
+    diskout->write(header.length(), header.str());
 
-    CommonXmlWriter xmlOutput(helper.getXmlFlags());
+    Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
+    writer->outputBeginArray(rowTag); //need to set up the array
+    writer->clear(); //but not output it
+
     loop
     {
         OwnedConstRoxieRow nextrec(input->nextInGroup());
@@ -914,29 +925,44 @@ void CHThorXmlWriteActivity::execute()
 
         try
         {
-            xmlOutput.clear().outputBeginNested(rowTag, false);
-            helper.toXML((const byte *)nextrec.get(), xmlOutput);
-            xmlOutput.outputEndNested(rowTag);
+            writer->clear().outputBeginNested(rowTag, false);
+            helper.toXML((const byte *)nextrec.get(), *writer);
+            writer->outputEndNested(rowTag);
         }
         catch(IException * e)
         {
             throw makeWrappedException(e);
         }
 
-        diskout->write(xmlOutput.length(), xmlOutput.str());
+        diskout->write(writer->length(), writer->str());
         numRecords++;
     }
+
     OwnedRoxieString suppliedFooter(helper.getFooter());
-    const char *footer = suppliedFooter;
-    if (!footer) footer = "</Dataset>\n";
-    diskout->write(strlen(footer), footer);
+    StringBuffer footer;
+    if (kind==TAKjsonwrite)
+    {
+        buildJsonFooter(footer.newline(), suppliedFooter, rowTag);
+        footerLength=footer.length();
+    }
+    else if (suppliedFooter)
+        footer.append(suppliedFooter);
+    else
+        footer.append("</Dataset>");
+
+    diskout->write(footer.length(), footer);
 }
 
 void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
 {
     desc->queryProperties().setProp("@format","utf8n");
     desc->queryProperties().setProp("@rowTag",rowTag.str());
-    desc->queryProperties().setProp("@kind", "xml");
+    desc->queryProperties().setProp("@kind", (kind==TAKjsonwrite) ? "json" : "xml");
+    if (headerLength)
+        desc->queryProperties().setPropInt("@headerLength", headerLength);
+    if (footerLength)
+        desc->queryProperties().setPropInt("@footerLength", footerLength);
+
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);

@@ -21,6 +21,6 @@
 #include "slave.ipp"
 #include "thdiskbaseslave.ipp"
 
-activityslaves_decl CActivityBase *createXmlWriteSlave(CGraphElementBase *container);
+activityslaves_decl CActivityBase *createXmlWriteSlave(CGraphElementBase *container, ThorActivityKind kind);
 
 #endif

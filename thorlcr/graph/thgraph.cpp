@@ -620,6 +620,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             case TAKdiskwrite:
             case TAKcsvwrite:
             case TAKxmlwrite:
+            case TAKjsonwrite:
                 if (_shortCircuit) return true;
                 onCreate();
                 alreadyUpdated = checkUpdate();
@@ -885,6 +886,7 @@ bool isGlobalActivity(CGraphElementBase &container)
 // always global, but only co-ordinate init/done
         case TAKcsvwrite:
         case TAKxmlwrite:
+        case TAKjsonwrite:
         case TAKindexwrite:
         case TAKkeydiff:
         case TAKkeypatch:
