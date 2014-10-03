@@ -333,9 +333,9 @@
       <sect2 id="ECLWatch_Workunit_Details" role="brk">
         <title role="brk">Workunit Details</title>
 
-        <para>The Workunit Details page provides more information about the
-        workunit. You can see more information about the selected workunit by
-        selecting the various Workunit Details tabs.</para>
+        <para>The Workunit Details page provides more information about a
+        workunit. You can see more specific information about the selected
+        workunit by selecting the various Workunit Details tabs.</para>
 
         <para>You can also perform certain actions on the selected workunit
         using the Workunit Action buttons.</para>
@@ -368,13 +368,13 @@
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Delete</emphasis> button the
-            workunit.</para>
+            <para>Press the <emphasis role="bold">Delete</emphasis> button to
+            delete the workunit.</para>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Restore</emphasis> button to
-            restore an archived workunit.</para>
+            restore a workunit that has been archived by Sasha.</para>
           </listitem>
 
           <listitem>
@@ -404,14 +404,17 @@
 
           <listitem>
             <para>Press the <emphasis role="bold">Publish</emphasis> button to
-            publish and submit the workunit.</para>
+            publish the workunit.</para>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Z.A.P.</emphasis> button to
-            package up system information for analysis.</para>
+            package up system information for analysis. This is useful for bug
+            reporting or troubleshooting.</para>
           </listitem>
         </itemizedlist>
+
+        <!-- Insert added WU Details stuff here -->
 
         <sect3>
           <title>Publish Action Button</title>
@@ -443,8 +446,9 @@
 
           <itemizedlist>
             <listitem>
-              <para><emphasis role="bold">Remote Dali:</emphasis> The IP of
-              the DALI to be used to resolve remote files. (optional)</para>
+              <para><emphasis role="bold">Remote Dali:</emphasis> The IP or
+              hostname of the DALI to be used to resolve remote files.
+              (optional)</para>
             </listitem>
           </itemizedlist>
 
@@ -527,6 +531,54 @@
         </sect3>
 
         <sect3>
+          <title>Outputs tab</title>
+
+          <para>Click on the Outputs tab to see all results.<figure>
+              <title>Outputs</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Click on the <emphasis role="bold">Result #</emphasis> link to
+          open a tab and display the results.</para>
+
+          <para><figure>
+              <title>Results Tab</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWaD000.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>You can filter the result set. Press the <emphasis
+          role="bold">Filter</emphasis> action button to further filter down
+          the results.</para>
+
+          <para>Press the <emphasis role="bold">Download</emphasis> action
+          buttons to download the output files. The output files are available
+          in 3 formats.</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">GZIP</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">ZIP </emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">XLS:</emphasis> Download the output
+              in an Excel spreadsheet format.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3>
           <title>Visualizations</title>
 
           <para>You can see visual representations of select workunits.
@@ -544,12 +596,150 @@
               </mediaobject>
             </figure></para>
 
-          <para>To access Visualizations, click on the outputs tab on the
+          <para>To access Visualizations, click on the Outputs tab from the
           selected workunit details page, then select the <emphasis
           role="bold">Visualize</emphasis> tab. You can view different
-          visualization types by clicking on the drop list on Visualize tab.
-          Click on the <emphasis role="bold">Mappings</emphasis> drop menu, to
-          change the parameters.</para>
+          visualization types by clicking on the drop list on the Visualize
+          tab. Click on the <emphasis role="bold">Mappings</emphasis> drop
+          menu, to change the parameters.</para>
+        </sect3>
+
+        <sect3>
+          <title>Inputs tab</title>
+
+          <para>Click on the <emphasis role="bold">Inputs</emphasis> tab to
+          see the workunit's input files. The input files are the source files
+          that make up the workunit. <figure>
+              <title>Inputs</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>The input files are displayed as a link. You can double-click
+          the link to open a tab for each input file. You can select more than
+          one input file and press the open button.</para>
+
+          <para>The <emphasis role="bold">Usage</emphasis> header indicates
+          how many times a file was used in the workunit.</para>
+        </sect3>
+
+        <sect3>
+          <title>Timers tab</title>
+
+          <para>Click on the <emphasis role="bold">Timers</emphasis> tab to
+          see the workunit timings. <figure>
+              <title>Timers</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Timers depict everything that happened with the workunit and
+          for how long. Timers include graphs which also provide more
+          information as to the processing of the workunit. The graphical heat
+          map indicates by a darker color where more time was needed, while
+          the lighter the color indicates that portion took less time.</para>
+        </sect3>
+
+        <sect3>
+          <title>Graphs tab</title>
+
+          <para>Click on the <emphasis role="bold">Graphs</emphasis> tab to
+          see the graphs produced by the workunit. <figure>
+              <title>GRAPHS***</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>The Graphs tab shows a list of each graph and the heat map.
+          Double click on the heat map to go to the corresponding portion of
+          the graph.</para>
+        </sect3>
+
+        <sect3>
+          <title>Timers tab</title>
+
+          <para>Click on the <emphasis role="bold">Timers</emphasis> tab to
+          see the workunit timings. <figure>
+              <title>Timers</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWuD001.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Timers depict everything that happened with the workunit and
+          for how long. Timers include graphs which also provide more
+          information as to the processing. The Heat map indicates by a darker
+          color where more time was needed,while the lighter the color
+          indicates that portion tool less time.</para>
+
+          <para><emphasis role="bold">Usage:</emphasis> how many times a file
+          was used in the work unit.</para>
+        </sect3>
+
+        <sect3>
+          <title>Workflows tab</title>
+
+          <para>The workflows tab only exists if you have an attribute
+          scheduled. There are multiple workflows when your code contains more
+          than one WHEN statement.</para>
+
+          <para><emphasis role="bold">Counts:</emphasis> How many "events" are
+          scheduled to happen.</para>
+
+          <para><emphasis role="bold">Remain:</emphasis> How many "events"
+          remain to occur.</para>
+        </sect3>
+
+        <sect3>
+          <title>Queries tab</title>
+
+          <para>Queries will only appear in the work unit details if the work
+          unit is a published QUERY. Displays what queries were published from
+          that work unit. Same as the queries tab: suspend, unsuspend,
+          activate or deactivate. delete tabs with out any data.</para>
+
+          <para></para>
+        </sect3>
+
+        <sect3>
+          <title>Helpers tab</title>
+
+          <para>The Helpers tab display several helpful elements. Which show
+          the ECL. The work unit XML. Archived query, The DLL. S. O.., Thor
+          log, ECL Agent log, and Thor slave log. The relevant logs files. If
+          a Roxy log only logs the relevant sections for the selected work
+          unit.</para>
+
+          <para>From a workunit, when you look at the log, it only shows the
+          portion of the log that pertains to that workunit.</para>
+        </sect3>
+
+        <sect3 id="WUDetails_ECL_Playground_TAB">
+          <title>ECL Tab</title>
+
+          <para>Shows the ECL code for that workunit. It is the same thing as
+          the Helpers ECL link.</para>
+        </sect3>
+
+        <sect3>
+          <title>XML tab</title>
+
+          <para>The workunits XML record as stored in Dali.</para>
         </sect3>
       </sect2>
     </sect1>
@@ -1359,7 +1549,7 @@
         <title>Hex Preview</title>
 
         <para>The Hex Preview shows the contents of a file on the landing zone
-        in hexadecimal form. If the file is large, then only the first 32k
+        in hexadecimal form. If the file large then only the first 32k
         display. Hex preview is designed for fixed length files, although it
         can also work for delimited files but may be limited in that
         regards.</para>
@@ -1394,7 +1584,62 @@
         role="bold">EBCDIC:</emphasis> for it to display properly.</para>
       </sect2>
 
-      <!-- ***Moved SPRAY Files Section over to DH-Mod1.xml: to avoid duplicate data*** -->
+      <sect2 id="LZ_Spray">
+        <title>Spray Files</title>
+
+        <para>You can spray files to your clusters from the Landing Zone page.
+        <orderedlist>
+            <listitem>
+              <para>Select the file from your drop zone by checking the box
+              next to it.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the appropriate drop menu option for the type of
+              spray you want.</para>
+
+              <para>For example, to spray a delimited file, select the
+              <emphasis role="bold">Delimited</emphasis> drop menu
+              option.</para>
+
+              <para><figure>
+                  <title>Landing Zone Spray</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLWA441.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Fill in the values as appropriate for the spray.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Spray</emphasis> button to
+              spray the file.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <sect3 id="multi-fileSpray">
+          <title>Spray multiple files</title>
+
+          <para>You can choose to spray multiple files with the multi-file
+          spray feature. This feature is useful for spraying a number of files
+          of the same type and the same scope using the same spray
+          options.</para>
+
+          <para>Fixed (length) files can have different record lengths and XML
+          files can have different row tags which must be specified
+          individually for each file. To specify these differences select the
+          files you want to spray and the spray type. You will then see the
+          files listed. Enter the record length or row tag information for
+          each file if using the Fixed or XML spray types, then check all
+          other applicable options and Spray.</para>
+        </sect3>
+      </sect2>
     </sect1>
 
     <sect1 id="Pub_Query">

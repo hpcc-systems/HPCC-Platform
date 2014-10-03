@@ -10485,11 +10485,11 @@ const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, 
 
 extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unresolved, IWorkUnitFactory &workunitFactory, IConstWorkUnit &cw, IPropertyTree *queryset)
 {
-    IConstWULibraryIterator &wulibraries = cw.getLibraries();
-    ForEach(wulibraries)
+    Owned<IConstWULibraryIterator> wulibraries = &cw.getLibraries();
+    ForEach(*wulibraries)
     {
         SCMStringBuffer libname;
-        IConstWULibrary &wulibrary = wulibraries.query();
+        IConstWULibrary &wulibrary = wulibraries->query();
         wulibrary.getName(libname);
         if (names.contains(libname.str()) || unresolved.contains(libname.str()))
             continue;

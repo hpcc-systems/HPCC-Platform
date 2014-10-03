@@ -1284,6 +1284,8 @@ public:
                         slaveManagers->item(channel)->resetQueryTimings(id, logctx);
                     }
             }
+            else
+                throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryId);
         }
         else
         {
