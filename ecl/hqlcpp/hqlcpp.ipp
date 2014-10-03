@@ -1055,7 +1055,7 @@ public:
     }
 
     void updateClusterType();
-    bool buildCode(HqlQueryContext & query, const char * embeddedLibraryName, bool isEmbeddedLibrary);
+    bool buildCode(HqlQueryContext & query, const char * embeddedLibraryName, const char * embeddedGraphName);
 
     inline StringBuffer & generateExprCpp(StringBuffer & out, IHqlExpression * expr)
     {

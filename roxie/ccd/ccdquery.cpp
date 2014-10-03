@@ -804,6 +804,12 @@ protected:
                 extra.libraryName.set(node.queryProp("att[@name=\"libname\"]/@value"));
                 extra.interfaceHash = node.getPropInt("att[@name=\"_interfaceHash\"]/@value", 0);
                 extra.embedded = node.getPropBool("att[@name=\"embedded\"]/@value", false) ;
+                if (extra.embedded)
+                {
+                    extra.embeddedGraphName.set(node.queryProp("att[@name=\"graph\"]/@value"));
+                    if (!extra.embeddedGraphName)
+                        extra.embeddedGraphName.set(extra.libraryName);
+                }
 
                 Owned<IPropertyTreeIterator> iter = node.getElements("att[@name=\"_outputUsed\"]");
                 ForEach(*iter)

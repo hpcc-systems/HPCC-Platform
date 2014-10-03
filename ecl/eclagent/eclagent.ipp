@@ -206,9 +206,9 @@ public:
     {
         ctx->addWuException(text, code, severity, source);
     }
-    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, bool embedded, const byte * parentExtract)
+    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract)
     {
-        return ctx->executeLibraryGraph(libraryName, expectedInterfaceHash, activityId, embedded, parentExtract);
+        return ctx->executeLibraryGraph(libraryName, expectedInterfaceHash, activityId, embeddedGraphName, parentExtract);
     }
     virtual bool getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * name, int seq)
     {
@@ -403,7 +403,7 @@ private:
     ILoadedDllEntry * loadWorkUnitDll(IConstWorkUnit * wu);
     IConstWorkUnit * resolveLibrary(const char * libraryName, unsigned expectedInterfaceHash);
     EclAgentQueryLibrary * queryEclLibrary(const char * libraryName, unsigned expectedInterfaceHash);
-    EclAgentQueryLibrary * loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, bool embedded);
+    EclAgentQueryLibrary * loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, const char * embeddedGraphName);
     virtual bool getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * name, int seq);
     virtual IDebuggableContext *queryDebugContext() const { return debugContext; };
 
@@ -528,7 +528,7 @@ public:
 
     virtual void executeThorGraph(const char * graphName);
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract);
-    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, bool embedded, const byte * parentExtract);
+    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract);
     virtual IThorChildGraph * resolveChildQuery(__int64 subgraphId, IHThorArg * colocal);
     virtual IEclGraphResults * resolveLocalQuery(__int64 activityId);
 

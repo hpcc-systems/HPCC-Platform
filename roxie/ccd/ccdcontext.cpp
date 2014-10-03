@@ -1379,7 +1379,7 @@ public:
     {
         if (extra.embedded)
         {
-            return factory->lookupGraph(extra.libraryName, probeManager, *this, parentActivity);
+            return factory->lookupGraph(extra.embeddedGraphName, probeManager, *this, parentActivity);
         }
         else
         {

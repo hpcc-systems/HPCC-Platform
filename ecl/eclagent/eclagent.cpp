@@ -1655,13 +1655,13 @@ EclAgentQueryLibrary * EclAgent::queryEclLibrary(const char * libraryName, unsig
     return NULL;
 }
 
-EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, bool embedded)
+EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, const char * embeddedGraphName)
 {
     Linked<EclAgentQueryLibrary> library = queryEclLibrary(libraryName, expectedInterfaceHash);
     if (!library)
     {
         const char * graphName = "graph1";
-        if (embedded)
+        if (embeddedGraphName)
         {
             library.setown(new EclAgentQueryLibrary);
             library->wu.set(queryWorkUnit());
@@ -1669,7 +1669,7 @@ EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsign
             library->name.set(libraryName);
             queryLibraries.append(*LINK(library));
 
-            graphName = libraryName;
+            graphName = embeddedGraphName;
         }
         else
         {

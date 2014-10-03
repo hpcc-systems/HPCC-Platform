@@ -1286,6 +1286,10 @@ EclSubGraph * EclGraph::idToGraph(unsigned id)
 
 void EclGraph::updateLibraryProgress()
 {
+    //Check for old format embedded graph names, and don't update the stats if not the correct format
+    if (!MATCHES_CONST_PREFIX(queryGraphName(), GraphScopePrefix))
+        return;
+
     Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
     ForEachItemIn(idx, graphs)
     {
@@ -1820,13 +1824,13 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
     }
 }
 
-IHThorGraphResults * EclAgent::executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, bool embedded, const byte * parentExtract)
+IHThorGraphResults * EclAgent::executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract)
 {
     Linked<EclGraph> savedGraph = activeGraph.get();
 
     try
     {
-        EclAgentQueryLibrary * library = loadEclLibrary(libraryName, expectedInterfaceHash, embedded);
+        EclAgentQueryLibrary * library = loadEclLibrary(libraryName, expectedInterfaceHash, embeddedGraphName);
 
         Owned<IHThorGraphResults> libraryResults = new GraphResults;
 
