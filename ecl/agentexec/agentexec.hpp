@@ -28,7 +28,7 @@ public:
     CEclAgentExecutionServer();
     ~CEclAgentExecutionServer();
 
-    void start(StringBuffer & codeDir);
+    void start();
     void stop();
 
 private:
@@ -37,10 +37,6 @@ private:
 
     //attributes
     bool started;
-    StringBuffer codeDirectory;
-    StringBuffer logDir;
-    StringBuffer logfilespec;
-    SCMStringBuffer queueNames;
     StringAttr agentName;
     Owned<IJobQueue> queue;
     StringBuffer daliServers;
