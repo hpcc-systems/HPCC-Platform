@@ -1431,13 +1431,13 @@ public:
                 updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
             }
             graph->reset();
+            graph.clear();
+            childGraphs.kill();
             if (graphStats)
             {
                 graphStats.clear();
                 progress.clear();
             }
-            graph.clear();
-            childGraphs.kill();
         }
     }
 
