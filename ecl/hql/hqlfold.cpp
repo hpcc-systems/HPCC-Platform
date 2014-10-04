@@ -5415,8 +5415,8 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                     IHqlExpression * selSeq = querySelSeq(updated);
                     IHqlExpression * updatedLhs = updated->queryChild(0);
                     IHqlExpression * updatedRhs = (op == no_selfjoin) ? updatedLhs : updated->queryChild(1);
-                    JoinSortInfo joinInfo;
-                    joinInfo.findJoinSortOrders(updatedCond, updatedLhs, updatedRhs, selSeq, false);
+                    JoinSortInfo joinInfo(updatedCond, updatedLhs, updatedRhs, selSeq, atmost);
+                    joinInfo.findJoinSortOrders(false);
 
                     //if will convert to an all join, then restore the old condition,
                     if (!joinInfo.hasRequiredEqualities())

@@ -1718,6 +1718,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.canLinkConstantRows,"canLinkConstantRows",true),
         DebugOption(options.checkAmbiguousRollupCondition,"checkAmbiguousRollupCondition",true),
         DebugOption(options.matchExistingDistributionForJoin,"matchExistingDistributionForJoin",true),
+        DebugOption(options.createImplicitKeyedDistributeForJoin,"createImplicitKeyedDistributeForJoin",true),
         DebugOption(options.expandHashJoin,"expandHashJoin",false),
         DebugOption(options.traceIR,"traceIR",false),
         DebugOption(options.preserveCaseExternalParameter,"preserveCaseExternalParameter",true),

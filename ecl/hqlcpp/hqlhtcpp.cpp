@@ -11861,8 +11861,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
 
 
     bool slidingAllowed = options.slidingJoins && canBeSlidingJoin(expr);
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, slidingAllowed);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(slidingAllowed);
 
     if (atmostAttr && joinInfo.hasHardRightNonEquality())
     {
@@ -12109,7 +12109,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
     if (isSmartJoin || expr->hasAttribute(unstableAtom))
         flags.append("|JFunstable");
-    if (joinInfo.neverMatchSelf(dataset1, dataset2, selSeq))
+    if (joinInfo.neverMatchSelf())
         flags.append("|JFnevermatchself");
 
     if (flags.length())

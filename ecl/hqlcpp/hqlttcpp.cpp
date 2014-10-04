@@ -2662,8 +2662,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     bool alwaysLocal = !translator.targetThor();
     if (!hasLocal && !alwaysLocal)
     {
-        JoinSortInfo joinInfo;
-        joinInfo.findJoinSortOrders(expr, false);
+        JoinSortInfo joinInfo(expr);
+        joinInfo.findJoinSortOrders(false);
 
         OwnedHqlExpr leftList = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftReq());
         OwnedHqlExpr mappedLeftList = replaceSelector(leftList, queryActiveTableSelector(), newLeft->queryNormalizedSelector());
@@ -2721,6 +2721,26 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     //And finally group it.
     return createDatasetF(no_group, LINK(distributed), LINK(mappedOrder), LINK(newLocalAttr), NULL);
 }
+
+static IHqlExpression * queryDistributionKey(IHqlExpression * rhs)
+{
+    loop
+    {
+        switch (rhs->getOperator())
+        {
+        case no_filter:
+        case no_metaactivity:
+        case no_sorted:
+            rhs = rhs->queryChild(0);
+            break;
+        case no_newkeyindex:
+            return rhs;
+        default:
+            return NULL;
+        }
+    }
+}
+
 
 
 IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression * expr)
@@ -2819,8 +2839,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
 
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, canBeSlidingJoin(expr));
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(canBeSlidingJoin(expr));
 
     //If the data is already distributed so the data is on the correct machines then perform the join locally.
     //Should be equally applicable to lookup, hash, all and normal joins.
@@ -2828,6 +2848,33 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     {
         if (isDistributedCoLocally(leftDs, rightDs, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
             return appendOwnedOperand(expr, createLocalAttribute());
+
+        if (options.createImplicitKeyedDistributeForJoin && !expr->hasAttribute(lookupAtom))
+        {
+            IHqlExpression * rhsKey = queryDistributionKey(rightDs);
+            if (rhsKey)
+            {
+                IHqlExpression * indexRecord = rightDs->queryRecord();
+                unsigned numUnsortedFields = numPayloadFields(rightDs);
+                unsigned numKeyedFields = getFlatFieldCount(indexRecord)-numUnsortedFields;
+
+                //To create a keyed distribute, all the keyed fields in the rhs key must have equalities
+                //in the join condition.  Need to extract a join condition which just contains that subset.
+                if (joinInfo.numRequiredEqualities() >= numKeyedFields)
+                {
+                    OwnedHqlExpr keyedCondition = joinInfo.getContiguousJoinCondition(numKeyedFields);
+                    if (keyedCondition)
+                    {
+                        OwnedHqlExpr distribute = createDataset(no_keyeddistribute, LINK(leftDs), createComma(LINK(rhsKey), keyedCondition.getClear(), LINK(seq)));
+                        HqlExprArray args;
+                        args.append(*distribute.getClear());
+                        unwindChildren(args, expr, 1);
+                        args.append(*createLocalAttribute());
+                        return expr->clone(args);
+                    }
+                }
+            }
+        }
 
         if (options.matchExistingDistributionForJoin)
         {

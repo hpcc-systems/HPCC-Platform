@@ -36,4 +36,3 @@ inDs := DATASET('in', inRecord, THOR);
 
 j := JOIN(inDs, nameKey, LEFT.surname = RIGHT.surname AND LEFT.forename = RIGHT.forename, STREAMED);
 output(j);
-
