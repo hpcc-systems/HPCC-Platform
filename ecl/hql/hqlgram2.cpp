@@ -7725,13 +7725,14 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
     bool isLookup = join->hasAttribute(lookupAtom);
     bool isSmart = join->hasAttribute(smartAtom);
     bool isAll = join->hasAttribute(allAtom);
+    bool isStreamed = join->hasAttribute(streamedAtom);
     IHqlExpression * rowLimit = join->queryAttribute(rowLimitAtom);
     IHqlExpression * keyed = join->queryAttribute(keyedAtom);
 
     if (keyed)
     {
-        if (isAll || isLookup || isSmart)
-            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL/SMART is not compatible with KEYED");
+        if (isAll || isLookup || isSmart || isStreamed)
+            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL/SMART/STREAMED is not compatible with KEYED");
     }
     else if (isLookup)
     {
@@ -7740,11 +7741,20 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
             reportWarning(CategorySyntax, ERR_KEYEDINDEXINVALID, err.pos, "ALL is not compatible with LOOKUP");
         if (isSmart)
             reportError(ERR_KEYEDINDEXINVALID, err.pos, "SMART is not compatible with LOOKUP");
+        if (isStreamed)
+            reportError(ERR_KEYEDINDEXINVALID, err.pos, "STREAMED is not compatible with LOOKUP");
     }
     else if (isSmart)
     {
         if (isAll)
             reportError(ERR_KEYEDINDEXINVALID, err, "ALL is not compatible with KEYED");
+        if (isStreamed)
+            reportError(ERR_KEYEDINDEXINVALID, err.pos, "STREAMED is not compatible with SMART");
+    }
+    else if (isAll)
+    {
+        if (isStreamed)
+            reportError(ERR_KEYEDINDEXINVALID, err.pos, "STREAMED is not compatible with ALL");
     }
 
     if (keyed)
