@@ -211,6 +211,8 @@ enum StatisticKind
 
 };
 
+//---------------------------------------------------------------------------------------------------------------------
+
 interface IStatistic : extends IInterface
 {
 public:
@@ -307,6 +309,17 @@ public:
     virtual IStatisticCollection * getResult() = 0;
 };
 
+//All filtering should go through this interface - so we can extend and allow AND/OR filters at a later date.
+interface IStatisticsFilter : public IInterface
+{
+public:
+    virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind) const = 0;
+    //These are a bit arbitrary...
+    virtual bool queryMergeSources() const = 0;
+    virtual const char * queryScope() const = 0;
+
+};
+
 class StatsScopeBlock
 {
 public:
@@ -321,6 +334,8 @@ public:
 protected:
     IStatisticGatherer & gatherer;
 };
+
+//---------------------------------------------------------------------------------------------------------------------
 
 class StatsSubgraphScope : public StatsScopeBlock
 {
@@ -349,16 +364,7 @@ public:
     }
 };
 
-//All filtering should go through this interface - so we can extend and allow AND/OR filters at a later date.
-interface IStatisticsFilter : public IInterface
-{
-public:
-    virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind) const = 0;
-    //These are a bit arbitrary...
-    virtual bool queryMergeSources() const = 0;
-    virtual const char * queryScope() const = 0;
-
-};
+//---------------------------------------------------------------------------------------------------------------------
 
 class ScopedItemFilter
 {
@@ -423,6 +429,124 @@ protected:
     ScopedItemFilter scopeFilter;
     bool mergeSources;
 };
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class StatisticsMapping
+{
+public:
+    //Takes a list of StatisticKind terminated by StKindNone
+    StatisticsMapping(StatisticKind kind, ...);
+
+    inline unsigned getIndex(StatisticKind kind) const
+    {
+        dbgassertex(kind >= StKindNone && kind < StMax);
+        return kindToIndex.item(kind);
+    }
+    inline StatisticKind getKind(unsigned index) const { return (StatisticKind)indexToKind.item(index); }
+    inline unsigned numStatistics() const { return indexToKind.ordinality(); }
+
+protected:
+    void createMappings();
+
+protected:
+    UnsignedArray kindToIndex;
+    UnsignedArray indexToKind;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//MORE: We probably want to have functions that peform the atomic equivalents
+class CRuntimeStatistic
+{
+public:
+    inline void add(unsigned __int64 delta) { value += delta; }
+    inline void addAtomic(unsigned __int64 delta) { value += delta; }
+    inline unsigned __int64 get() const { return value; }
+    inline unsigned __int64 getClear()
+    {
+        unsigned __int64 ret = value;
+        value -= ret;
+        return ret;
+    }
+    inline unsigned __int64 getClearAtomic()
+    {
+        unsigned __int64 ret = value;
+        value -= ret; // should be atomic dec...
+        return ret;
+    }
+    inline void clear() { set(0); }
+    inline void set(unsigned __int64 delta) { value = delta; }
+
+protected:
+    unsigned __int64 value;
+};
+
+//This class is used to gather statistics for an activity - it has no notion of scope.
+interface IContextLogger;
+class CRuntimeStatisticCollection
+{
+public:
+    CRuntimeStatisticCollection(const StatisticsMapping & _mapping) : mapping(_mapping)
+    {
+        unsigned num = mapping.numStatistics();
+        values = new CRuntimeStatistic[num+1]; // extra entry is to gather unexpected stats
+    }
+    ~CRuntimeStatisticCollection()
+    {
+        delete [] values;
+    }
+
+    inline CRuntimeStatistic & queryStatistic(StatisticKind kind)
+    {
+        unsigned index = queryMapping().getIndex(kind);
+        return values[index];
+    }
+    inline const CRuntimeStatistic & queryStatistic(StatisticKind kind) const
+    {
+        unsigned index = queryMapping().getIndex(kind);
+        return values[index];
+    }
+
+    void addStatistic(StatisticKind kind, unsigned __int64 value)
+    {
+        queryStatistic(kind).add(value);
+    }
+    void setStatistic(StatisticKind kind, unsigned __int64 value)
+    {
+        queryStatistic(kind).set(value);
+    }
+    unsigned __int64 getStatisticValue(StatisticKind kind) const
+    {
+        return queryStatistic(kind).get();
+    }
+    void reset()
+    {
+        unsigned num = mapping.numStatistics();
+        for (unsigned i = 0; i <= num; i++)
+            values[i].clear();
+        memset(values, 0, sizeof(unsigned __int64) * num);
+    }
+
+    inline const StatisticsMapping & queryMapping() const { return mapping; };
+    inline unsigned ordinality() const { return mapping.numStatistics(); }
+    inline StatisticKind getKind(unsigned i) const { return mapping.getKind(i); }
+
+    void rollupStatistics(IContextLogger * target) { rollupStatistics(1, &target); }
+    void rollupStatistics(unsigned num, IContextLogger * const * targets) const;
+
+    void recordStatistics(IStatisticGatherer & target, StatsMergeAction mergeAction) const;
+
+protected:
+    void reportIgnoredStats() const;
+
+private:
+    const StatisticsMapping & mapping;
+    CRuntimeStatistic * values;
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
 
 //A class for minimizing the overhead of collecting timestamps.
 class jlib_decl OptimizedTimestamp
