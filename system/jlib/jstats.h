@@ -199,6 +199,7 @@ enum StatisticKind
     //For any quantity there is potentially the following variants.
     //These modifiers ORd with the values above to form a compound type.
     StKindMask                          = 0x0ffff,
+    StVariantScale                      = (StKindMask+1),
     StMinX                              = 0x10000,  // the minimum value
     StMaxX                              = 0x20000,  // the maximum value
     StAvgX                              = 0x30000,  // the average value
@@ -208,6 +209,7 @@ enum StatisticKind
     StNodeMin                           = 0x70000,  // the node containing the minimum
     StNodeMax                           = 0x80000,  // the node containing the maximum
     StDeltaX                            = 0x90000,  // a difference in the value of X
+    StNextModifier                      = 0xa0000,
 
 };
 

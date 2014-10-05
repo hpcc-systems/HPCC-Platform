@@ -1335,6 +1335,7 @@ extern WORKUNIT_API unsigned getEnvironmentClusterInfo(IPropertyTree* environmen
 extern WORKUNIT_API void getRoxieProcessServers(const char *process, SocketEndpointArray &servers);
 extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *process);
 extern WORKUNIT_API bool isProcessCluster(const char *process);
+extern WORKUNIT_API IStatisticGatherer * createGlobalStatisticGatherer(IWorkUnit * wu);
 
 extern WORKUNIT_API bool getWorkUnitCreateTime(const char *wuid,CDateTime &time); // based on WUID
 extern WORKUNIT_API bool restoreWorkUnit(const char *base,const char *wuid);

@@ -358,6 +358,144 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
         throwUnexpected();
     }
 }
+
+//--------------------------------------------------------------------------------------------------------------------
+
+#define BASE_NAMES(x, y) \
+    #x #y, \
+    #x "Min" # y,  \
+    #x "Max" # y, \
+    #x "Avg" # y, \
+    "Skew" # y, \
+    "SkewMin" # y, \
+    "SkewMax" # y, \
+    "NodeMin" # y, \
+    "NodeMax" # y,
+
+#define NAMES(x, y) \
+    BASE_NAMES(x, y) \
+    #x "Delta" # y
+
+#define TIMENAMES(x, y) \
+    BASE_NAMES(x, y) \
+    "TimeDelta" # y
+
+#define BASE_TAGS(x, y) \
+    "@" #x "Min" # y,  \
+    "@" #x "Max" # y, \
+    "@" #x "Avg" # y, \
+    "@Skew" # y, \
+    "@SkewMin" # y, \
+    "SkewMax" # y, \
+    "@NodeMin" # y, \
+    "@NodeMax" # y,
+
+//Default tags nothing special overriden
+#define TAGS(x, y) \
+    "@" #x #y, \
+    BASE_TAGS(x, y) \
+    "@" #x "Delta" # y
+
+//Define tags when the default needs to be overriden
+#define XTAGS(x, y, dft) \
+    dft, \
+    BASE_TAGS(x, y) \
+    #x "Delta" # y
+
+//Define the tags for time items.
+#define TIMETAGS(x, y) \
+    "@" #x #y, \
+    BASE_TAGS(x, y) \
+    "@TimeDelta" # y
+
+#define STAT(x, y, m) St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }
+#define TAGSTAT(x, y, m, dft) St##x##y, m, { NAMES(x, y) }, { XTAGS(x, y, dft) }
+
+//--------------------------------------------------------------------------------------------------------------------
+
+//These are the macros to use to define the different entries in the stats meta table
+#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
+#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }
+#define NUMSTAT(y) STAT(Num, y, SMeasureCount)
+#define SIZESTAT(y) STAT(Size, y, SMeasureSize)
+#define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
+#define SKEWSTAT(y) STAT(Skew, y, SMeasureSkew)
+#define NODESTAT(y) STAT(Node, y, SMeasureNode)
+#define PERSTAT(y) STAT(Per, y, SMeasurePercent)
+#define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
+
+//The following variants are used where a different tag name is required
+#define TIMESTAT2(y, dft) TAGSTAT(Time, y, SMeasureTimeNs, dft)
+#define NUMSTAT2(y, dft) TAGSTAT(Num, y, SMeasureCount, dft)
+
+//--------------------------------------------------------------------------------------------------------------------
+
+class StatisticMeta
+{
+public:
+    StatisticKind kind;
+    StatisticMeasure measure;
+    const char * tags[StNextModifier/StVariantScale];
+    const char * names[StNextModifier/StVariantScale];
+};
+
+static const StatisticMeta statsMetaData[StMax] = {
+    { StKindNone, SMeasureNone, { "none" }, { "@none" } },
+    { StKindAll, SMeasureAll, { "all" }, { "@all" } },
+    { WHENSTAT(GraphStarted) },
+    { WHENSTAT(GraphFinished) },
+    { WHENSTAT(FirstRow) },
+    { WHENSTAT(QueryStarted) },
+    { WHENSTAT(QueryFinished) },
+    { WHENSTAT(Created) },
+    { WHENSTAT(Compiled) },
+    { WHENSTAT(WorkunitModified) },
+    { TIMESTAT(Elapsed) },
+    { TIMESTAT2(LocalExecute, "@localTime") },
+    { TIMESTAT2(TotalExecute, "@totalTime") },
+    { TIMESTAT(Remaining) },
+    { SIZESTAT(GeneratedCpp) },
+    { SIZESTAT(PeakMemory) },
+    { SIZESTAT(MaxRowSize) },
+    { NUMSTAT2(RowsProcessed, "@count") },
+    { NUMSTAT2(Slaves, "@slaves") },
+    { NUMSTAT2(Started, "@started") },
+    { NUMSTAT2(Stopped, "@stopped") },
+    { NUMSTAT2(IndexSeeks, "@seeks") },
+    { NUMSTAT2(IndexScans, "@scans") },
+    { NUMSTAT2(IndexWildSeeks, "@wildscans") },
+    { NUMSTAT2(IndexSkips, "@skips") },
+    { NUMSTAT2(IndexNullSkips, "@nullskips") },
+    { NUMSTAT2(IndexMerges, "@merges") },
+    { NUMSTAT2(IndexMergeCompares, "@mergecompares") },
+    { NUMSTAT2(PreFiltered, "@prefiltered") },
+    { NUMSTAT2(PostFiltered, "@postfiltered") },
+    { NUMSTAT2(BlobCacheHits, "@blobhit") },
+    { NUMSTAT2(LeafCacheHits, "@leafhit") },
+    { NUMSTAT2(NodeCacheHits, "@nodehit") },
+    { NUMSTAT2(BlobCacheAdds, "@blobadd") },
+    { NUMSTAT2(LeafCacheAdds, "@leadadd") },
+    { NUMSTAT2(NodeCacheAdds, "@nodeadd") },
+    { NUMSTAT2(PreloadCacheHits, "@preloadhits") },
+    { NUMSTAT2(PreloadCacheAdds, "@preloadadds") },
+    { NUMSTAT2(ServerCacheHits, "@sschits") },
+    { NUMSTAT2(IndexAccepted, "@accepted") },
+    { NUMSTAT2(IndexRejected, "@rejected") },
+    { NUMSTAT2(AtmostTriggered, "@atmost") },
+    { NUMSTAT2(DiskSeeks, "@fseeks") },
+    { NUMSTAT(Iterations) },
+    { LOADSTAT(WhileSorting) },
+    { NUMSTAT(LeftRows) },
+    { NUMSTAT(RightRows) },
+    { PERSTAT(Replicated) },
+    { NUMSTAT(DiskRowsRead) },
+    { NUMSTAT(IndexRowsRead) },
+    { NUMSTAT(DiskAccepted) },
+    { NUMSTAT(DiskRejected) },
+    { TIMESTAT(Soapcall) },
+};
+
+
 //--------------------------------------------------------------------------------------------------------------------
 
 StatisticMeasure queryMeasure(StatisticKind kind)
@@ -386,163 +524,20 @@ StatisticMeasure queryMeasure(StatisticKind kind)
         }
     }
 
-    switch (kind & StKindMask)
-    {
-    case StKindNone:
-        return SMeasureNone;
-    case StKindAll:
-        return SMeasureAll;
-    case StWhenGraphStarted:
-    case StWhenGraphFinished:
-    case StWhenFirstRow:
-    case StWhenQueryStarted:
-    case StWhenQueryFinished:
-    case StWhenCreated:
-    case StWhenCompiled:
-    case StWhenWorkunitModified:
-        return SMeasureTimestampUs;
-    case StTimeElapsed:
-    case StTimeLocalExecute:
-    case StTimeTotalExecute:
-    case StTimeRemaining:
-    case StTimeSoapcall:
-        return SMeasureTimeNs;
-    case StSizeGeneratedCpp:
-    case StSizePeakMemory:
-    case StSizeMaxRowSize:
-        return SMeasureSize;
-    case StNumRowsProcessed:
-    case StNumSlaves:
-    case StNumStarted:
-    case StNumStopped:
-    case StNumIndexSeeks:
-    case StNumIndexScans:
-    case StNumIndexWildSeeks:
-    case StNumIndexSkips:
-    case StNumIndexNullSkips:
-    case StNumIndexMerges:
-    case StNumIndexMergeCompares:
-    case StNumPreFiltered:
-    case StNumPostFiltered:
-    case StNumBlobCacheHits:
-    case StNumLeafCacheHits:
-    case StNumNodeCacheHits:
-    case StNumBlobCacheAdds:
-    case StNumLeafCacheAdds:
-    case StNumNodeCacheAdds:
-    case StNumPreloadCacheHits:
-    case StNumPreloadCacheAdds:
-    case StNumServerCacheHits:
-    case StNumIndexAccepted:
-    case StNumIndexRejected:
-    case StNumAtmostTriggered:
-    case StNumDiskSeeks:
-    case StNumIterations:
-    case StNumLeftRows:
-    case StNumRightRows:
-    case StNumDiskRowsRead:
-    case StNumIndexRowsRead:
-    case StNumDiskAccepted:
-    case StNumDiskRejected:
-        return SMeasureCount;
-    case StLoadWhileSorting:                 // Average load while processing a sort?
-        return SMeasureLoad;
-    case StPerReplicated:
-        return SMeasurePercent;
-    default:
-        throwUnexpected();
-    }
+    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
+    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
+    return statsMetaData[rawkind].measure;
 }
-
-//NOTE: Min/Max/Avg still contain the type prefix, otherwise you cannot deduce the measure from the name
-#define DEFINE_DEFAULTSHORTNAME_BASE(x, y) \
-    case St##x##y: return #x #y; \
-    case (St ## x ## y | StMinX): return #x "Min" # y;  \
-    case (St ## x ## y | StMaxX): return #x "Max" # y; \
-    case (St ## x ## y | StAvgX): return #x "Avg" # y; \
-    case (St ## x ## y | StSkew): return "Skew" # y; \
-    case (St ## x ## y | StSkewMin): return "SkewMin" # y; \
-    case (St ## x ## y | StSkewMax): return "SkewMax" # y; \
-    case (St ## x ## y | StNodeMin): return "NodeMin" # y; \
-    case (St ## x ## y | StNodeMax): return "NodeMax" # y;
-
-#define DEFINE_DEFAULTSHORTNAME(x, y) \
-    DEFINE_DEFAULTSHORTNAME_BASE(x, y) \
-    case (St ## x ## y | StDeltaX): return #x "Delta" # y;
-
-#define DEFINE_TIMESTAMPSHORTNAME(x, y) \
-    DEFINE_DEFAULTSHORTNAME_BASE(x, y) \
-    case (St ## x ## y | StDeltaX): return "TimeDelta" # y;
 
 const char * queryStatisticName(StatisticKind kind)
 {
-    switch (kind)
-    {
-    case StKindNone:                                return "";
-    case StKindAll:                                 return "all";
-
-    DEFINE_DEFAULTSHORTNAME(When, GraphStarted);
-    DEFINE_DEFAULTSHORTNAME(When, GraphFinished);
-    DEFINE_DEFAULTSHORTNAME(When, FirstRow);
-    DEFINE_DEFAULTSHORTNAME(When, QueryStarted);
-    DEFINE_DEFAULTSHORTNAME(When, QueryFinished);
-    DEFINE_DEFAULTSHORTNAME(When, Created);
-    DEFINE_DEFAULTSHORTNAME(When, Compiled);
-    DEFINE_DEFAULTSHORTNAME(When, WorkunitModified);
-
-    DEFINE_TIMESTAMPSHORTNAME(Time, Elapsed);
-    DEFINE_TIMESTAMPSHORTNAME(Time, LocalExecute);
-    DEFINE_TIMESTAMPSHORTNAME(Time, TotalExecute);
-    DEFINE_TIMESTAMPSHORTNAME(Time, Remaining);
-    DEFINE_TIMESTAMPSHORTNAME(Time, Soapcall);
-
-    DEFINE_DEFAULTSHORTNAME(Size, GeneratedCpp);
-    DEFINE_DEFAULTSHORTNAME(Size, PeakMemory);
-    DEFINE_DEFAULTSHORTNAME(Size, MaxRowSize);
-
-    DEFINE_DEFAULTSHORTNAME(Num, RowsProcessed);
-    DEFINE_DEFAULTSHORTNAME(Num, Slaves);
-    DEFINE_DEFAULTSHORTNAME(Num, Started);
-    DEFINE_DEFAULTSHORTNAME(Num, Stopped);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexSeeks);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexScans);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexWildSeeks);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexSkips);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexNullSkips);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexMerges);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexMergeCompares);
-    DEFINE_DEFAULTSHORTNAME(Num, PreFiltered);
-    DEFINE_DEFAULTSHORTNAME(Num, PostFiltered);
-    DEFINE_DEFAULTSHORTNAME(Num, BlobCacheHits);
-    DEFINE_DEFAULTSHORTNAME(Num, LeafCacheHits);
-    DEFINE_DEFAULTSHORTNAME(Num, NodeCacheHits);
-    DEFINE_DEFAULTSHORTNAME(Num, BlobCacheAdds);
-    DEFINE_DEFAULTSHORTNAME(Num, LeafCacheAdds);
-    DEFINE_DEFAULTSHORTNAME(Num, NodeCacheAdds);
-    DEFINE_DEFAULTSHORTNAME(Num, PreloadCacheHits);
-    DEFINE_DEFAULTSHORTNAME(Num, PreloadCacheAdds);
-    DEFINE_DEFAULTSHORTNAME(Num, ServerCacheHits);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexAccepted);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexRejected);
-    DEFINE_DEFAULTSHORTNAME(Num, AtmostTriggered);
-    DEFINE_DEFAULTSHORTNAME(Num, DiskSeeks);
-    DEFINE_DEFAULTSHORTNAME(Num, Iterations);
-    DEFINE_DEFAULTSHORTNAME(Load, WhileSorting);
-    DEFINE_DEFAULTSHORTNAME(Num, LeftRows);
-    DEFINE_DEFAULTSHORTNAME(Num, RightRows);
-    DEFINE_DEFAULTSHORTNAME(Per, Replicated);
-    DEFINE_DEFAULTSHORTNAME(Num, DiskRowsRead);
-    DEFINE_DEFAULTSHORTNAME(Num, IndexRowsRead);
-    DEFINE_DEFAULTSHORTNAME(Num, DiskAccepted);
-    DEFINE_DEFAULTSHORTNAME(Num, DiskRejected);
-
-    default:
-        throwUnexpected();
-    }
+    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
+    unsigned variant = (kind / StVariantScale);
+    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
+    dbgassertex(variant < (StNextModifier/StVariantScale));
+    return statsMetaData[rawkind].names[variant];
 }
-#undef DEFINE_DEFAULTSHORTNAME_BASE // prevent it being used accidentally
-#undef DEFINE_DEFAULTSHORTNAME // prevent it being used accidentally
-#undef DEFINE_TIMESTAMPSHORTNAME
+
 //--------------------------------------------------------------------------------------------------------------------
 
 void queryLongStatisticName(StringBuffer & out, StatisticKind kind)
@@ -552,90 +547,14 @@ void queryLongStatisticName(StringBuffer & out, StatisticKind kind)
 
 //--------------------------------------------------------------------------------------------------------------------
 
-//Keep prefixes on min/max/avg so they are consistent with short names (tags will eventually go...)
-#define DEFINE_TAGNAME(x, y, dft) \
-    case St##x##y: return dft; \
-    case (St ## x ## y | StMinX): return "@" #x "Min" # y;  \
-    case (St ## x ## y | StMaxX): return "@" #x "Max" # y; \
-    case (St ## x ## y | StAvgX): return "@" #x "Avg" # y; \
-    case (St ## x ## y | StSkew): return "@Skew" # y; \
-    case (St ## x ## y | StSkewMin): return "@SkewMin" # y; \
-    case (St ## x ## y | StSkewMax): return "@SkewMax" # y; \
-    case (St ## x ## y | StNodeMin): return "@NodeMin" # y; \
-    case (St ## x ## y | StNodeMax): return "@NodeMax" # y; \
-    case (St ## x ## y | StDeltaX): return "@" #x "Delta" # y;
-
-#define DEFINE_DEFAULTTAGNAME(x, y) DEFINE_TAGNAME(x, y, "@" #x #y)
-
-
 const char * queryTreeTag(StatisticKind kind)
 {
-    //For backward compatibility - where it matters.  Will eventually be deleted.
-    switch (kind)
-    {
-    DEFINE_DEFAULTTAGNAME(When, GraphStarted);
-    DEFINE_DEFAULTTAGNAME(When, GraphFinished);
-    DEFINE_DEFAULTTAGNAME(When, FirstRow);
-    DEFINE_DEFAULTTAGNAME(When, QueryStarted);
-    DEFINE_DEFAULTTAGNAME(When, QueryFinished);
-    DEFINE_DEFAULTTAGNAME(When, Created);
-    DEFINE_DEFAULTTAGNAME(When, Compiled);
-    DEFINE_DEFAULTTAGNAME(When, WorkunitModified);
-
-    DEFINE_DEFAULTTAGNAME(Time, Elapsed);
-    DEFINE_TAGNAME(Time, LocalExecute, "@localTime");
-    DEFINE_TAGNAME(Time, TotalExecute, "@totalTime");
-    DEFINE_DEFAULTTAGNAME(Time, Remaining);
-    DEFINE_DEFAULTTAGNAME(Time, Soapcall);
-
-    DEFINE_DEFAULTTAGNAME(Size, GeneratedCpp);
-    DEFINE_DEFAULTTAGNAME(Size, PeakMemory);
-    DEFINE_DEFAULTTAGNAME(Size, MaxRowSize);
-
-    //Primarily used for graph progress - backward compatible to simplify migration.
-    DEFINE_TAGNAME(Num, RowsProcessed, "@count");
-    DEFINE_TAGNAME(Num, Slaves, "@slaves");
-    DEFINE_TAGNAME(Num, Started, "@started");
-    DEFINE_TAGNAME(Num, Stopped, "@stopped");
-    DEFINE_TAGNAME(Num, IndexSeeks, "@seeks");
-    DEFINE_TAGNAME(Num, IndexScans, "@scans");
-    DEFINE_TAGNAME(Num, IndexWildSeeks, "@wildscans");
-    DEFINE_TAGNAME(Num, IndexSkips, "@skips");
-    DEFINE_TAGNAME(Num, IndexNullSkips, "@nullskips");
-    DEFINE_TAGNAME(Num, IndexMerges, "@merges");
-    DEFINE_TAGNAME(Num, IndexMergeCompares, "@mergecompares");
-    DEFINE_TAGNAME(Num, PreFiltered, "@prefiltered");
-    DEFINE_TAGNAME(Num, PostFiltered, "@postfiltered");
-    DEFINE_TAGNAME(Num, BlobCacheHits, "@blobhit");
-    DEFINE_TAGNAME(Num, LeafCacheHits, "@leafhit");
-    DEFINE_TAGNAME(Num, NodeCacheHits, "@nodehit");
-    DEFINE_TAGNAME(Num, BlobCacheAdds, "@blobadd");
-    DEFINE_TAGNAME(Num, LeafCacheAdds, "@leadadd");
-    DEFINE_TAGNAME(Num, NodeCacheAdds, "@nodeadd");
-    DEFINE_TAGNAME(Num, PreloadCacheHits, "@preloadhits");
-    DEFINE_TAGNAME(Num, PreloadCacheAdds, "@preloadadds");
-    DEFINE_TAGNAME(Num, ServerCacheHits, "@sschits");
-    DEFINE_TAGNAME(Num, IndexAccepted, "@accepted");
-    DEFINE_TAGNAME(Num, IndexRejected, "@rejected");
-    DEFINE_TAGNAME(Num, AtmostTriggered, "@atmost");
-    DEFINE_TAGNAME(Num, DiskSeeks, "@fseeks");
-
-    DEFINE_DEFAULTTAGNAME(Num, Iterations);
-
-    DEFINE_DEFAULTTAGNAME(Load, WhileSorting);
-    DEFINE_DEFAULTTAGNAME(Num, LeftRows);
-    DEFINE_DEFAULTTAGNAME(Num, RightRows);
-    DEFINE_DEFAULTTAGNAME(Per, Replicated);
-    DEFINE_DEFAULTTAGNAME(Num, DiskRowsRead);
-    DEFINE_DEFAULTTAGNAME(Num, IndexRowsRead);
-    DEFINE_DEFAULTTAGNAME(Num, DiskAccepted);
-    DEFINE_DEFAULTTAGNAME(Num, DiskRejected);
-
-    default:
-        throwUnexpected();
-    }
+    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
+    unsigned variant = (kind / StVariantScale);
+    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
+    dbgassertex(variant < (StNextModifier/StVariantScale));
+    return statsMetaData[rawkind].tags[variant];
 }
-#undef DEFINE_DEFAULTTAGNAME
 
 //--------------------------------------------------------------------------------------------------------------------
 
