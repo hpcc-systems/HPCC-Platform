@@ -179,6 +179,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void serializeSkipInfo(MemoryBuffer &out, unsigned seekLen, const void *rawSeek, unsigned numFields, const void * seek, const SmartStepExtra &stepExtra) const = 0;
     virtual ThorActivityKind getKind() const = 0;
     virtual const IRoxieContextLogger &queryLogCtx() const = 0;
+    virtual void mergeStats(MemoryBuffer &stats) = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory
@@ -210,7 +211,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual bool isGraphInvariant() const = 0;
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
     virtual IDefRecordMeta *queryActivityMeta() const = 0;
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const = 0;
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual unsigned numInputs() const = 0;
 };
 interface IGraphResult : public IInterface

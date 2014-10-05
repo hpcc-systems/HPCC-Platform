@@ -28,39 +28,6 @@
 #define CONST_STRLEN(x) (sizeof(x)-1)       // sizeof(const-string) = strlen(const-string) + 1 byte for the \0 terminator
 #define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, CONST_STRLEN(prefix)) == 0)
 
-enum OldStatsKind
-{
-    STATS_INDEX_SEEKS,
-    STATS_INDEX_SCANS,
-    STATS_INDEX_WILDSEEKS,
-    STATS_INDEX_SKIPS,
-    STATS_INDEX_NULLSKIPS,
-    STATS_INDEX_MERGES,
-
-    STATS_BLOBCACHEHIT,
-    STATS_LEAFCACHEHIT,
-    STATS_NODECACHEHIT,
-    STATS_BLOBCACHEADD,
-    STATS_LEAFCACHEADD,
-    STATS_NODECACHEADD,
-
-    STATS_INDEX_MERGECOMPARES,
-
-    STATS_PRELOADCACHEHIT,
-    STATS_PRELOADCACHEADD,
-
-    STATS_SERVERCACHEHIT,
-
-    STATS_ACCEPTED,
-    STATS_REJECTED,
-    STATS_ATMOST,
-
-    STATS_DISK_SEEKS,
-    STATS_SOAPCALL_LATENCY,
-
-    STATS_SIZE
-};
-
 enum CombineStatsAction
 {
     MergeStats,
@@ -439,6 +406,8 @@ class StatisticsMapping
 public:
     //Takes a list of StatisticKind terminated by StKindNone
     StatisticsMapping(StatisticKind kind, ...);
+    //Accepts all StatisticKind values
+    StatisticsMapping();
 
     inline unsigned getIndex(StatisticKind kind) const
     {
@@ -456,12 +425,15 @@ protected:
     UnsignedArray indexToKind;
 };
 
+extern const jlib_decl StatisticsMapping allStatistics;
+
 //---------------------------------------------------------------------------------------------------------------------
 
 //MORE: We probably want to have functions that peform the atomic equivalents
 class CRuntimeStatistic
 {
 public:
+    CRuntimeStatistic() : value(0) {}
     inline void add(unsigned __int64 delta) { value += delta; }
     inline void addAtomic(unsigned __int64 delta) { value += delta; }
     inline unsigned __int64 get() const { return value; }
@@ -478,6 +450,7 @@ public:
         return ret;
     }
     inline void clear() { set(0); }
+    void merge(unsigned __int64 otherValue, StatsMergeAction mergeAction);
     inline void set(unsigned __int64 delta) { value = delta; }
 
 protected:
@@ -514,6 +487,10 @@ public:
     {
         queryStatistic(kind).add(value);
     }
+    void mergeStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    {
+        queryStatistic(kind).merge(value, mergeAction);
+    }
     void setStatistic(StatisticKind kind, unsigned __int64 value)
     {
         queryStatistic(kind).set(value);
@@ -533,12 +510,22 @@ public:
     inline const StatisticsMapping & queryMapping() const { return mapping; };
     inline unsigned ordinality() const { return mapping.numStatistics(); }
     inline StatisticKind getKind(unsigned i) const { return mapping.getKind(i); }
+    inline unsigned __int64 getValue(unsigned i) const { return values[i].get(); }
 
+    void merge(const CRuntimeStatisticCollection & other);
     void rollupStatistics(IContextLogger * target) { rollupStatistics(1, &target); }
     void rollupStatistics(unsigned num, IContextLogger * const * targets) const;
 
-    void recordStatistics(IStatisticGatherer & target, StatsMergeAction mergeAction) const;
+    void recordStatistics(IStatisticGatherer & target) const;
 
+    // Print out collected stats to string
+    StringBuffer &toStr(StringBuffer &str) const;
+    // Print out collected stats to string as XML
+    StringBuffer &toXML(StringBuffer &str) const;
+    // Serialize/deserialize
+    MemoryBuffer &serialize(MemoryBuffer & out) const;
+    void deserialize(MemoryBuffer & in);
+    void deserializeMerge(MemoryBuffer& in);
 protected:
     void reportIgnoredStats() const;
 
@@ -580,6 +567,7 @@ extern jlib_decl const char * queryCreatorTypeName(StatisticCreatorType sct);
 extern jlib_decl const char * queryScopeTypeName(StatisticScopeType sst);
 extern jlib_decl const char * queryMeasureName(StatisticMeasure measure);
 extern jlib_decl StatsMergeAction queryMergeMode(StatisticMeasure measure);
+extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind);
 
 extern jlib_decl StatisticMeasure queryMeasure(const char *  measure);
 extern jlib_decl StatisticKind queryStatisticKind(const char *  kind);
@@ -590,9 +578,6 @@ extern jlib_decl IStatisticGatherer * createStatisticsGatherer(StatisticCreatorT
 extern jlib_decl void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection);
 extern jlib_decl IStatisticCollection * createStatisticCollection(MemoryBuffer & in);
 
-
-extern jlib_decl StatisticKind mapRoxieStatKind(unsigned i); // legacy
-extern jlib_decl StatisticMeasure getStatMeasure(unsigned i);
 inline unsigned __int64 milliToNano(unsigned __int64 value) { return value * 1000000; } // call avoids need to upcast values
 inline unsigned __int64 nanoToMilli(unsigned __int64 value) { return value / 1000000; }
 

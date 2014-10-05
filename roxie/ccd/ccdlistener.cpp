@@ -1241,12 +1241,10 @@ public:
         unsigned elapsed = msTick() - qstart;
         noteQuery(failed, elapsed, priority);
         queryFactory->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, 0);
-        if (logctx.queryTraceLevel() > 2)
-            logctx.dumpStats();
         if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
         {
             StringBuffer s;
-            logctx.printStats(s);
+            logctx.getStats(s);
             logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d%s", wuid.get(), elapsed, memused, priority, slavesReplyLen, s.str());
         }
         logctx.flush(true, false);
@@ -1881,13 +1879,11 @@ readAnother:
             queryFactory->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, bytesOut);
             queryFactory.clear();
         }
-        if (logctx.queryTraceLevel() > 2)
-            logctx.dumpStats();
         if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
             if (queryName.get())
             {
                 StringBuffer s;
-                logctx.printStats(s);
+                logctx.getStats(s);
                 logctx.CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid, peerStr.str(), elapsed, memused, priority, slavesReplyLen, bytesOut, continuationNeeded, s.str());
             }
         if (continuationNeeded)

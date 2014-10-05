@@ -238,9 +238,9 @@ public:
     {
         return ctx->queryRowManager();
     }
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
-        ctx->noteStatistic(statCode, value, count);
+        ctx->noteStatistic(kind, value);
     }
     virtual void CTXLOG(const char *format, ...) const
     {
@@ -596,9 +596,9 @@ public:
         throwUnexpected(); // only implemented by index-related subclasses
     }
 
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
-        mystats.noteStatistic(statCode, value, count);
+        mystats.addStatistic(kind, value);
     }
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
@@ -879,7 +879,7 @@ protected:
     IEngineRowAllocator *rowAllocator;
     CriticalSection statecrit;
 
-    mutable StatsCollector stats;
+    mutable CRuntimeStatisticCollection stats;
     unsigned processed;
     unsigned __int64 totalCycles;
     unsigned activityId;
@@ -894,7 +894,8 @@ public:
     CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager) 
         : factory(_factory), 
           basehelper(_factory->getHelper()),
-          activityId(_factory->queryId())
+          activityId(_factory->queryId()),
+          stats(allStatistics)
     {
         input = NULL;
         ctx = NULL;
@@ -911,7 +912,7 @@ public:
         timeActivities = defaultTimeActivities;
     }
     
-    CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper)
+    CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper), stats(allStatistics)
     {
         activityId = 0;
         input = NULL;
@@ -950,6 +951,11 @@ public:
     virtual const IRoxieContextLogger &queryLogCtx()const
     {
         return *this;
+    }
+
+    virtual void mergeStats(MemoryBuffer &buf)
+    {
+        stats.deserializeMerge(buf);
     }
 
     inline void createRowAllocator()
@@ -1041,13 +1047,13 @@ public:
         }
     }
 
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
         if (factory)
-            factory->noteStatistic(statCode, value, count);
+            factory->noteStatistic(kind, value);
         if (ctx)
-            ctx->noteStatistic(statCode, value, count);
-        stats.noteStatistic(statCode, value, count);
+            ctx->noteStatistic(kind, value);
+        stats.addStatistic(kind, value);
     }
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
@@ -1270,10 +1276,12 @@ public:
                 }
                 if (ctx->queryOptions().traceActivityTimes)
                 {
-                    stats.dumpStats(*this);
                     StringBuffer prefix, text;
                     getLogPrefix(prefix);
-                    text.appendf("records processed - %d", processed);
+                    stats.toStr(text);
+                    // MORE - probably don't need these any more - covered by the stats above
+                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
+                    text.clear().appendf("records processed - %d", processed);
                     CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
                     text.clear().appendf("total time - %d us", (unsigned) (cycle_to_nanosec(totalCycles)/1000));
                     CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
@@ -2503,7 +2511,7 @@ public:
                 const_cast<CRoxieServerSideCache *>(this)->moveToHead(found);
                 if (traceServerSideCache)
                     logctx.CTXLOG("CRoxieServerSideCache::findCachedResult cache hit");
-                logctx.noteStatistic(STATS_SERVERCACHEHIT, 1, 1);
+                logctx.noteStatistic(StNumServerCacheHits, 1);
                 return NULL;
                 // Because IMessageResult cannot be replayed, this echeme is flawed. I'm leaving the code here just as a stats gatherer to see how useful it would have been....
                 //IRoxieServerQueryPacket *ret = new CRoxieServerQueryPacket(p);
@@ -4117,7 +4125,13 @@ public:
                                     char *logInfo = (char *) extra->getNext(*rowlen);
                                     MemoryBuffer buf;
                                     buf.setBuffer(*rowlen, logInfo, false);
-                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
+                                    if (*logInfo == LOG_STATVALUES)
+                                    {
+                                        buf.skip(1);
+                                        activity.mergeStats(buf);
+                                    }
+                                    else
+                                        activity.queryLogCtx().CTXLOGl(new LogItem(buf));
                                     ReleaseRoxieRow(rowlen);
                                     ReleaseRoxieRow(logInfo);
                                 }
@@ -4221,7 +4235,13 @@ public:
                                 char *logInfo = (char *) extra->getNext(*rowlen);
                                 MemoryBuffer buf;
                                 buf.setBuffer(*rowlen, logInfo, false);
-                                activity.queryLogCtx().CTXLOGl(new LogItem(buf));
+                                if (*logInfo == LOG_STATVALUES)
+                                {
+                                    buf.skip(1);
+                                    activity.mergeStats(buf);
+                                }
+                                else
+                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
                                 ReleaseRoxieRow(rowlen);
                                 ReleaseRoxieRow(logInfo);
                             }
@@ -11780,7 +11800,7 @@ public:
     virtual void reset()
     {
         if (atmostsTriggered)
-            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
+            noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         right.clear();
         ReleaseClearRoxieRow(left);
         ReleaseClearRoxieRow(pendingRight);
@@ -17129,7 +17149,7 @@ public:
     virtual void reset()
     {
         if (atmostsTriggered)
-            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
+            noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         group.clear();
         CRoxieServerActivity::reset();
         defaultLeft.clear();
@@ -17695,7 +17715,7 @@ public:
     virtual void reset()
     {
         if (atmostsTriggered)
-            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
+            noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         CRoxieServerTwoInputActivity::reset();
         ReleaseClearRoxieRow(left);
         defaultRight.clear();
@@ -21634,9 +21654,9 @@ public:
     virtual void reset()
     {
         if (accepted)
-            noteStatistic(STATS_ACCEPTED, accepted, 1);
+            noteStatistic(StNumIndexAccepted, accepted);
         if (rejected)
-            noteStatistic(STATS_REJECTED, rejected, 1);
+            noteStatistic(StNumIndexRejected, rejected);
         remote.onReset();
         CRoxieServerActivity::reset();
         if (varFileInfo)
@@ -22405,9 +22425,9 @@ public:
     {
         onEOF();
         if (accepted)
-            noteStatistic(STATS_ACCEPTED, accepted, 1);
+            noteStatistic(StNumIndexAccepted, accepted);
         if (rejected)
-            noteStatistic(STATS_REJECTED, rejected, 1);
+            noteStatistic(StNumIndexRejected, rejected);
         if (variableFileName)
         {
             varFileInfo.clear();
@@ -24214,9 +24234,9 @@ public:
                                 result->append(endMarker);
                                 remote.injectResult(result.getClear());
                                 if (accepted)
-                                    noteStatistic(STATS_ACCEPTED, accepted, 1);
+                                    noteStatistic(StNumIndexAccepted, accepted);
                                 if (rejected)
-                                    noteStatistic(STATS_REJECTED, rejected, 1);
+                                    noteStatistic(StNumIndexRejected, rejected);
                             }
 
                             if (++fileNo < thisBase->numParts())
@@ -24435,7 +24455,7 @@ public:
         if (indexReadInput)
             indexReadInput->reset();
         if (atmostsTriggered)
-            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
+            noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         CRoxieServerActivity::reset(); 
         puller.reset();
         while (groups.ordinality())
@@ -25021,9 +25041,9 @@ public:
                                     remote.injectResult(result.getClear());
                                 }
                                 if (accepted)
-                                    noteStatistic(STATS_ACCEPTED, accepted, 1);
+                                    noteStatistic(StNumIndexAccepted, accepted);
                                 if (rejected)
-                                    noteStatistic(STATS_REJECTED, rejected, 1);
+                                    noteStatistic(StNumIndexRejected, rejected);
                             }
                             if (++fileNo < thisBase->numParts())
                             {

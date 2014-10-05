@@ -534,11 +534,6 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
 
 void SlaveContextLogger::flush(bool closing, bool aborted) const
 {
-    if (closing && !aborted)
-    {
-        if (queryTraceLevel() > 5)
-            stats.dumpStats(*this);
-    }
     if (output)
     {
         CriticalBlock b(crit);
@@ -548,7 +543,14 @@ void SlaveContextLogger::flush(bool closing, bool aborted) const
         {
             if (closing && mergeSlaveStatistics)
             {
-                stats.cascade(channel, *this);
+                MemoryBuffer buf;
+                buf.append((char) LOG_STATVALUES); // A special log entry for the stats
+                stats.serialize(buf);
+                unsigned len = buf.length();
+                void *ret = output->getBuffer(len, true);
+                memcpy(ret, buf.toByteArray(), len);
+                output->putBuffer(ret, len, true);
+                anyOutput = true;
             }
             ForEachItemIn(idx, log) // typically just one, as currently coded...
             {
