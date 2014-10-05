@@ -25251,9 +25251,9 @@ public:
         if (soaphelper == NULL)
         {
             if (factory->getKind()==TAKhttp_rowdataset)
-                soaphelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
+                soaphelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *this, this));
             else
-                soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
+                soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *this, this));
             soaphelper->start();
         }
 
@@ -25300,7 +25300,7 @@ public:
     virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
     {
         //MORE: parentExtract not passed to start - although shouldn't be a problem.
-        soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCrow, pClientCert, *ctx, this));
+        soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCrow, pClientCert, *this, this));
         soaphelper->start();
         soaphelper->waitUntilDone();
         IException *e = soaphelper->getError();
@@ -25383,7 +25383,7 @@ public:
 
         if (soaphelper == NULL)
         {
-            soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, pClientCert, *ctx, this));
+            soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, pClientCert, *this, this));
             soaphelper->start();
         }
 
@@ -25445,7 +25445,7 @@ public:
         try
         {
             start(parentExtractSize, parentExtract, false);
-            soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCdataset, pClientCert, *ctx, this));
+            soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCdataset, pClientCert, *this, this));
             soaphelper->start();
             soaphelper->waitUntilDone();
             IException *e = soaphelper->getError();

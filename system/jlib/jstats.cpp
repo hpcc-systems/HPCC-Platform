@@ -405,6 +405,7 @@ StatisticMeasure queryMeasure(StatisticKind kind)
     case StTimeLocalExecute:
     case StTimeTotalExecute:
     case StTimeRemaining:
+    case StTimeSoapcall:
         return SMeasureTimeNs;
     case StSizeGeneratedCpp:
     case StSizePeakMemory:
@@ -493,6 +494,7 @@ const char * queryStatisticName(StatisticKind kind)
     DEFINE_TIMESTAMPSHORTNAME(Time, LocalExecute);
     DEFINE_TIMESTAMPSHORTNAME(Time, TotalExecute);
     DEFINE_TIMESTAMPSHORTNAME(Time, Remaining);
+    DEFINE_TIMESTAMPSHORTNAME(Time, Soapcall);
 
     DEFINE_DEFAULTSHORTNAME(Size, GeneratedCpp);
     DEFINE_DEFAULTSHORTNAME(Size, PeakMemory);
@@ -584,6 +586,7 @@ const char * queryTreeTag(StatisticKind kind)
     DEFINE_TAGNAME(Time, LocalExecute, "@localTime");
     DEFINE_TAGNAME(Time, TotalExecute, "@totalTime");
     DEFINE_DEFAULTTAGNAME(Time, Remaining);
+    DEFINE_DEFAULTTAGNAME(Time, Soapcall);
 
     DEFINE_DEFAULTTAGNAME(Size, GeneratedCpp);
     DEFINE_DEFAULTTAGNAME(Size, PeakMemory);
@@ -1466,6 +1469,8 @@ extern jlib_decl StatisticKind mapRoxieStatKind(unsigned i)
     case STATS_ATMOST:              return StNumAtmostTriggered;
 
     case STATS_DISK_SEEKS:          return StNumDiskSeeks;
+    case STATS_SOAPCALL_LATENCY:    return StTimeSoapcall;
+
     default:
         throwUnexpected();
     }
