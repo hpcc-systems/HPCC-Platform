@@ -1003,7 +1003,7 @@ interface IContextLogger : extends IInterface
     virtual void CTXLOGva(const char *format, va_list args) const = 0;
     virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6))) = 0;
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const = 0;
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const = 0; // Values for statcode defined in jstats.h
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual unsigned queryTraceLevel() const = 0;
 };
 

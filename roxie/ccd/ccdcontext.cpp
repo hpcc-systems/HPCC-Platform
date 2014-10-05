@@ -1136,9 +1136,9 @@ public:
     }
 
     // interface IRoxieServerContext
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
-        logctx.noteStatistic(statCode, value, count);
+        logctx.noteStatistic(kind, value);
     }
 
     virtual void CTXLOG(const char *format, ...) const
@@ -1187,13 +1187,7 @@ public:
 
     virtual void CTXLOGl(LogItem *log) const
     {
-        if (log->isStatistics())
-        {
-            logctx.noteStatistic(log->getStatCode(), log->getStatValue(), (unsigned)log->getStatCount());
-            log->Release();
-        }
-        else
-            logctx.CTXLOGl(log);
+        logctx.CTXLOGl(log);
     }
 
     virtual unsigned logString(const char *text) const

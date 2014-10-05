@@ -478,9 +478,9 @@ protected:
         wildseeks += lwildseeks;
         if (ctx)
         {
-            if (lseeks) ctx->noteStatistic(STATS_INDEX_SEEKS, lseeks, 1);
-            if (lscans) ctx->noteStatistic(STATS_INDEX_SCANS, lscans, 1);
-            if (lwildseeks) ctx->noteStatistic(STATS_INDEX_WILDSEEKS, lwildseeks, 1);
+            if (lseeks) ctx->noteStatistic(StNumIndexSeeks, lseeks);
+            if (lscans) ctx->noteStatistic(StNumIndexScans, lscans);
+            if (lwildseeks) ctx->noteStatistic(StNumIndexWildSeeks, lwildseeks);
         }
     }
 
@@ -490,8 +490,8 @@ protected:
         nullSkips += lnullSkips;
         if (ctx)
         {
-            if (lskips) ctx->noteStatistic(STATS_INDEX_SKIPS, lskips, 1);
-            if (lnullSkips) ctx->noteStatistic(STATS_INDEX_NULLSKIPS, lnullSkips, 1);
+            if (lskips) ctx->noteStatistic(StNumIndexSkips, lskips);
+            if (lnullSkips) ctx->noteStatistic(StNumIndexNullSkips, lnullSkips);
         }
     }
 
@@ -2105,7 +2105,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             if (cacheNode)
             {
                 atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_PRELOADCACHEHIT, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumPreloadCacheHits, 1);
                 atomic_inc(&preloadCacheHits);
                 return LINK(cacheNode);
             }
@@ -2116,7 +2116,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             if (cacheNode)
             {
                 atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_NODECACHEHIT, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumNodeCacheHits, 1);
                 atomic_inc(&nodeCacheHits);
                 return LINK(cacheNode);
             }
@@ -2127,7 +2127,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             if (cacheNode)
             {
                 atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_LEAFCACHEHIT, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumLeafCacheHits, 1);
                 atomic_inc(&leafCacheHits);
                 return LINK(cacheNode);
             }
@@ -2138,7 +2138,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             if (cacheNode)
             {
                 atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_BLOBCACHEHIT, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumBlobCacheHits, 1);
                 atomic_inc(&blobCacheHits);
                 return LINK(cacheNode);
             }
@@ -2158,11 +2158,11 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 {
                     ::Release(node);
                     atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_BLOBCACHEHIT, 1, 1);
+                    if (ctx) ctx->noteStatistic(StNumBlobCacheHits, 1);
                     atomic_inc(&blobCacheHits);
                     return LINK(cacheNode);
                 }
-                if (ctx) ctx->noteStatistic(STATS_BLOBCACHEADD, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumBlobCacheAdds, 1);
                 atomic_inc(&blobCacheAdds);
                 blobCache.add(key, *LINK(node));
             }
@@ -2176,11 +2176,11 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 {
                     ::Release(node);
                     atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_LEAFCACHEHIT, 1, 1);
+                    if (ctx) ctx->noteStatistic(StNumLeafCacheHits, 1);
                     atomic_inc(&leafCacheHits);
                     return LINK(cacheNode);
                 }
-                if (ctx) ctx->noteStatistic(STATS_LEAFCACHEADD, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumLeafCacheAdds, 1);
                 atomic_inc(&leafCacheAdds);
                 leafCache.add(key, *LINK(node));
             }
@@ -2194,11 +2194,11 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 {
                     ::Release(node);
                     atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_NODECACHEHIT, 1, 1);
+                    if (ctx) ctx->noteStatistic(StNumNodeCacheHits, 1);
                     atomic_inc(&nodeCacheHits);
                     return LINK(cacheNode);
                 }
-                if (ctx) ctx->noteStatistic(STATS_NODECACHEADD, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumNodeCacheAdds, 1);
                 atomic_inc(&nodeCacheAdds);
                 nodeCache.add(key, *LINK(node));
             }
@@ -2217,7 +2217,7 @@ void CNodeCache::preload(CJHTreeNode *node, int iD, offset_t pos, IContextLogger
     if (!cacheNode)
     {
         atomic_inc(&cacheAdds);
-        if (ctx) ctx->noteStatistic(STATS_PRELOADCACHEADD, 1, 1);
+        if (ctx) ctx->noteStatistic(StNumPreloadCacheAdds, 1);
         atomic_inc(&preloadCacheAdds);
         preloadCache.add(key, *LINK(node));
     }
@@ -2453,7 +2453,7 @@ public:
                     if (!activekeys)
                     {
                         if (ctx)
-                            ctx->noteStatistic(STATS_INDEX_MERGECOMPARES, compares, 1); 
+                            ctx->noteStatistic(StNumIndexMergeCompares, compares);
                         return false;
                     }
                     eof = false;
@@ -2507,7 +2507,7 @@ public:
                     }
 #endif
                     if (ctx)
-                        ctx->noteStatistic(STATS_INDEX_MERGECOMPARES, compares, 1);
+                        ctx->noteStatistic(StNumIndexMergeCompares, compares);
                     return true;
                 }
                 else
@@ -2515,7 +2515,7 @@ public:
                     compares++;
                     if (ctx && (compares == 100))
                     {
-                        ctx->noteStatistic(STATS_INDEX_MERGECOMPARES, compares, 1); // also checks for abort...
+                        ctx->noteStatistic(StNumIndexMergeCompares, compares); // also checks for abort...
                         compares = 0;
                     }
                 }
@@ -2649,7 +2649,7 @@ public:
         if (activekeys>0) 
         {
             if (ctx)
-                ctx->noteStatistic(STATS_INDEX_MERGES, activekeys, 1);
+                ctx->noteStatistic(StNumIndexMerges, activekeys);
             cursors = cursorArray.getArray();
             fposes = fposArray.getArray();
             matcheds = (bool *) matchedArray.getArray();  // For some reason BoolArray is typedef'd to CharArray on linux...

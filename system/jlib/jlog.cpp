@@ -2593,7 +2593,7 @@ public:
     {
         return false;
     }
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
     }
     virtual unsigned queryTraceLevel() const

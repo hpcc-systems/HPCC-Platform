@@ -101,7 +101,8 @@ CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFac
     subgraphId(_subgraphId),
     queryFactory(_queryFactory),
     helperFactory(_helperFactory),
-    kind(_kind)
+    kind(_kind),
+    mystats(allStatistics)
 {
     if (helperFactory)
     {
@@ -178,7 +179,7 @@ public:
         return CActivityFactory::getKind();
     }
 
-    virtual void noteStatistics(const StatsCollector &fromStats)
+    virtual void noteStatistics(const CRuntimeStatisticCollection &fromStats)
     {
         CActivityFactory::noteStatistics(fromStats);
     }
@@ -3502,8 +3503,8 @@ public:
                         keyprocessed++;
                         if ((keyedLimit != (unsigned __int64) -1) && keyprocessed > keyedLimit)
                         {
-                            logctx.noteStatistic(STATS_ACCEPTED, keyprocessed-keyprocessedBefore, 1);
-                            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                            logctx.noteStatistic(StNumIndexAccepted, keyprocessed-keyprocessedBefore);
+                            logctx.noteStatistic(StNumIndexRejected, skipped);
                             limitExceeded(true);
                             break;
                         }
@@ -3553,15 +3554,15 @@ public:
                                 processed++;
                                 if (limit && processed > limit)
                                 {
-                                    logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     limitExceeded(false); 
                                     break;
                                 }
                                 if (processed > stopAfter)
                                 {
-                                    logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     logctx.flush(true, false);
                                     output->flush(true);
                                     return true;
@@ -3604,8 +3605,8 @@ public:
                                 logctx.CTXLOG("Indexread returning partial result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
                             if (sendContinuation(output))
                             {
-                                logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, skipped);
                                 return true;
                             }
                             else
@@ -3633,8 +3634,8 @@ public:
                 if (steppingOffset)
                     logctx.CTXLOG("Indexread return: steppingOffset %d, steppingRow %p, stepExtra.returnMismatches() %d",steppingOffset, steppingRow, (int) stepExtra.returnMismatches());
             }
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         logctx.flush(true, aborted);
         if (aborted)
@@ -3773,8 +3774,8 @@ public:
                     keyprocessed++;
                     if (keyedLimit && processed > keyedLimit)
                     {
-                        logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                        logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                        logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                        logctx.noteStatistic(StNumIndexRejected, skipped);
                         limitExceeded(true);
                         break;
                     }
@@ -3791,15 +3792,15 @@ public:
                                 processed++;
                                 if (processed > rowLimit)
                                 {
-                                    logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     limitExceeded(false); 
                                     break;
                                 }
                                 if (processed > stopAfter)
                                 {
-                                    logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     logctx.flush(true, aborted);
                                     output->flush(true);
                                     return true;
@@ -3814,8 +3815,8 @@ public:
                         {
                             if (sendContinuation(output))
                             {
-                                logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, skipped);
                                 return true;
                             }
                             else
@@ -3833,8 +3834,8 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         logctx.flush(true, aborted);
         if (aborted)
@@ -3972,8 +3973,8 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         if (aborted)
             output->abort();
@@ -4072,8 +4073,8 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         logctx.flush(true, aborted);
         if (aborted)
@@ -4256,8 +4257,7 @@ public:
         results.reset();
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, 0, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
         }
         logctx.flush(true, aborted);
         if (aborted)
@@ -4422,9 +4422,9 @@ bool CRoxieFetchActivityBase::process()
             accepted++;
             if (accepted > rowLimit)
             {
-                logctx.noteStatistic(STATS_DISK_SEEKS, accepted+rejected, 1);
-                logctx.noteStatistic(STATS_ACCEPTED, accepted, 1);
-                logctx.noteStatistic(STATS_REJECTED, rejected, 1);
+                logctx.noteStatistic(StNumDiskSeeks, accepted+rejected);
+                logctx.noteStatistic(StNumDiskAccepted, accepted);
+                logctx.noteStatistic(StNumDiskRejected, rejected);
                 limitExceeded();
                 return true;
             }
@@ -4432,9 +4432,9 @@ bool CRoxieFetchActivityBase::process()
         else
             rejected++;
     }
-    logctx.noteStatistic(STATS_DISK_SEEKS, accepted+rejected, 1);
-    logctx.noteStatistic(STATS_ACCEPTED, accepted, 1);
-    logctx.noteStatistic(STATS_REJECTED, rejected, 1);
+    logctx.noteStatistic(StNumDiskSeeks, accepted+rejected);
+    logctx.noteStatistic(StNumDiskAccepted, accepted);
+    logctx.noteStatistic(StNumDiskRejected, rejected);
     logctx.flush(true, aborted);
     if (aborted)
         output->abort();
@@ -4895,8 +4895,8 @@ bool CRoxieKeyedJoinIndexActivity::process()
                                 StringBuffer s;
                                 logctx.CTXLOG("limit exceeded for %s", packet->queryHeader().toString(s).str());
                             }
-                            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                            logctx.noteStatistic(STATS_REJECTED, rejected, 1);
+                            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                            logctx.noteStatistic(StNumIndexRejected, rejected);
                             limitExceeded();
                             return true;
                         }
@@ -4936,8 +4936,8 @@ bool CRoxieKeyedJoinIndexActivity::process()
                                 output->sendMetaInfo(si.toByteArray(), si.length());
                                 logctx.flush(true, aborted);
                                 output->flush(true);
-                                logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                logctx.noteStatistic(STATS_REJECTED, rejected, 1);
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, rejected);
                                 return true;
                             }
                             else
@@ -4974,8 +4974,8 @@ bool CRoxieKeyedJoinIndexActivity::process()
     }
     if (tlk)
     {
-        logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-        logctx.noteStatistic(STATS_REJECTED, rejected, 1);
+        logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+        logctx.noteStatistic(StNumIndexRejected, rejected);
     }
     logctx.flush(true, aborted);
     if (aborted)
@@ -5136,9 +5136,9 @@ bool CRoxieKeyedJoinFetchActivity::process()
             processed++;
             if (processed > rowLimit)
             {
-                logctx.noteStatistic(STATS_DISK_SEEKS, processed+skipped, 1);
-                logctx.noteStatistic(STATS_ACCEPTED, processed, 1);
-                logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                logctx.noteStatistic(StNumDiskSeeks, processed+skipped);
+                logctx.noteStatistic(StNumDiskAccepted, processed);
+                logctx.noteStatistic(StNumDiskRejected, skipped);
                 limitExceeded();
                 return true;
             }
@@ -5155,9 +5155,9 @@ bool CRoxieKeyedJoinFetchActivity::process()
         }
         inputData += inputSize;
     }
-    logctx.noteStatistic(STATS_DISK_SEEKS, processed+skipped, 1);
-    logctx.noteStatistic(STATS_ACCEPTED, processed, 1);
-    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+    logctx.noteStatistic(StNumDiskSeeks, processed+skipped);
+    logctx.noteStatistic(StNumDiskAccepted, processed);
+    logctx.noteStatistic(StNumDiskRejected, skipped);
     logctx.flush(true, aborted);
     if (aborted)
     {
