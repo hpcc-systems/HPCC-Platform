@@ -5914,7 +5914,7 @@ public:
     {
         StatisticScopeType scopeType = SSTsection; // MORE?
         StatisticKind kind = StTimeElapsed;
-        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, totaltime, count, maxtime, false);
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, totaltime, count, maxtime, StatsMergeReplace);
     }
 
 protected:

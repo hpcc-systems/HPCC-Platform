@@ -211,7 +211,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                     const char * scope = section.str();
                     StatisticScopeType scopeType = SSTcompilestage;
                     StatisticKind kind = StTimeElapsed;
-                    workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, false);
+                    workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, StatsMergeReplace);
                 }
             }
             else

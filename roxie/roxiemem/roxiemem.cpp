@@ -1727,11 +1727,11 @@ public:
             else
                 activityText.append("ac").append(allocatorId & MAX_ACTIVITY_ID);
 
-            target.addStatistic(SSTallocator, activityText.str(), StSizePeakMemory, NULL, results[j]->usage, results[j]->allocations, 0, false);
+            target.addStatistic(SSTallocator, activityText.str(), StSizePeakMemory, NULL, results[j]->usage, results[j]->allocations, 0, StatsMergeMax);
         }
         delete [] results;
 
-        target.addStatistic(SSTglobal, NULL, StSizePeakMemory, NULL, totalUsed, 1, 0, false);
+        target.addStatistic(SSTglobal, NULL, StSizePeakMemory, NULL, totalUsed, 1, 0, StatsMergeMax);
     }
 };
 
@@ -3267,7 +3267,7 @@ public:
         }
         if (map)
             map->reportStatistics(target, detail, allocatorCache);
-        target.addStatistic(SSTglobal, NULL, StSizePeakMemory, NULL, peakPages * HEAP_ALIGNMENT_SIZE, 1, 0, false);
+        target.addStatistic(SSTglobal, NULL, StSizePeakMemory, NULL, peakPages * HEAP_ALIGNMENT_SIZE, 1, 0, StatsMergeMax);
     }
 
     void restoreLimit(unsigned numRequested)

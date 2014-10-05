@@ -2641,7 +2641,7 @@ void CMasterGraph::done()
                         //GH-.JCS is this correct queryGraphId() is a subgraph?
                         formatGraphTimerScope(scope, graph.queryJob().queryGraphName(), graph.queryGraphId(), 0);
                         scope.append(":").append(timerScope);
-                        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsection, scope, StTimeElapsed, timerStr.str(), totaltime, count, maxtime, false);
+                        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsection, scope, StTimeElapsed, timerStr.str(), totaltime, count, maxtime, StatsMergeReplace);
 
                     }
                 } wureport(*this);

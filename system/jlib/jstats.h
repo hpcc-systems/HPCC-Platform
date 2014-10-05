@@ -281,6 +281,16 @@ interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection
 {
 };
 
+enum StatsMergeAction
+{
+    StatsMergeKeep,
+    StatsMergeReplace,
+    StatsMergeSum,
+    StatsMergeMin,
+    StatsMergeMax,
+    StatsMergeAppend,
+};
+
 interface IStatisticGatherer : public IInterface
 {
 public:
@@ -290,6 +300,7 @@ public:
     virtual void beginEdgeScope(unsigned id, unsigned oid) = 0;
     virtual void endScope() = 0;
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0;
+    virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) = 0;
     virtual IStatisticCollection * getResult() = 0;
 };
 
@@ -430,6 +441,7 @@ extern jlib_decl unsigned __int64 getIPV4StatsValue(const IpAddress & ip);
 extern jlib_decl void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasure measure);
 extern jlib_decl void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind kind);
 extern jlib_decl unsigned __int64 mergeStatistic(StatisticMeasure measure, unsigned __int64 value, unsigned __int64 otherValue);
+extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction);
 
 extern jlib_decl StatisticMeasure queryMeasure(StatisticKind kind);
 extern jlib_decl const char * queryStatisticName(StatisticKind kind);
@@ -438,6 +450,7 @@ extern jlib_decl const char * queryTreeTag(StatisticKind kind);
 extern jlib_decl const char * queryCreatorTypeName(StatisticCreatorType sct);
 extern jlib_decl const char * queryScopeTypeName(StatisticScopeType sst);
 extern jlib_decl const char * queryMeasureName(StatisticMeasure measure);
+extern jlib_decl StatsMergeAction queryMergeMode(StatisticMeasure measure);
 
 extern jlib_decl StatisticMeasure queryMeasure(const char *  measure);
 extern jlib_decl StatisticKind queryStatisticKind(const char *  kind);
@@ -463,7 +476,7 @@ extern jlib_decl void verifyStatisticFunctions();
 //This interface is primarily here to reduce the dependency between the different components.
 interface IStatisticTarget
 {
-    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge) = 0;
+    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
 };
 
 #endif
