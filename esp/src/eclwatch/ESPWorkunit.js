@@ -126,27 +126,27 @@ define([
             }
             this.set("sourceFiles", sourceFiles);
         },
-        _ExtractTime: function (Timer) {
+        ExtractTime: function (Timer) {
             var nsIndex = Timer.indexOf("ns");
-            if (nsIndex != -1) {
-                return (Timer.substr(0, nsIndex) * 1) / 1000000000;
+            if (nsIndex !== -1) {
+                return Timer.substr(0, nsIndex) / 1000000000;
             }
             var msIndex = Timer.indexOf("ms");
-            if (msIndex != -1) {
-                return (Timer.substr(0, msIndex) * 1) / 1000;
+            if (msIndex !== -1) {
+                return Timer.substr(0, msIndex) / 1000;
             }
             //MORE: This code doesn't cope with separate days
             var secs = 0;
             var timeParts = Timer.split(":");
             for (var j = 0; j < timeParts.length; ++j) {
-                secs = secs * 60 + timeParts[j] * 1;
+                secs = secs * 60 + timeParts[j];
             }
             return secs;
         },
         _TimersSetter: function (Timers) {
             var timers = [];
             for (var i = 0; i < Timers.ECLTimer.length; ++i) {
-                var secs = this._ExtractTime(Timers.ECLTimer[i].Value);
+                var secs = this.ExtractTime(Timers.ECLTimer[i].Value);
                 timers.push(lang.mixin(Timers.ECLTimer[i], {
                     __hpcc_id: i + 1,
                     Seconds: Math.round(secs * 1000) / 1000,
