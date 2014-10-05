@@ -696,6 +696,23 @@ public:
         }
     }
 
+    StringBuffer &printStats(StringBuffer &ret) const
+    {
+        SpinBlock b(lock);
+        if (cumulative)
+        {
+            for (unsigned i = 0; i < STATS_SIZE; i++)
+            {
+                if (counts[i])
+                {
+                    StatisticKind kind = mapRoxieStatKind(i);
+                    ret.appendf(" %s=%"I64F"u", queryStatisticName(kind), cumulative[i]);
+                }
+            }
+        }
+        return ret;
+    }
+
     void toXML(StringBuffer &reply) const
     {
         SpinBlock b(lock);
@@ -924,6 +941,11 @@ public:
     void dumpStats() const
     {
         stats.dumpStats(*this);
+    }
+
+    StringBuffer &printStats(StringBuffer &s) const
+    {
+        return stats.printStats(s);
     }
 
     virtual void dumpStats(IWorkUnit *wu) const

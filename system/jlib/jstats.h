@@ -56,6 +56,7 @@ enum OldStatsKind
     STATS_ATMOST,
 
     STATS_DISK_SEEKS,
+    STATS_SOAPCALL_LATENCY,
 
     STATS_SIZE
 };
@@ -146,7 +147,7 @@ enum StatisticKind
     StWhenCompiled,
     StWhenWorkunitModified,             // Not sure this is very useful
 
-    StTimeElapsed,                      // Elapsed wall time between first row and last row.
+    StTimeElapsed,                      // Elapsed wall time between first row and last row
     StTimeLocalExecute,                 // Time spend processing just this activity
     StTimeTotalExecute,                 // Time executing this activity and all inputs
     StTimeRemaining,
@@ -190,6 +191,8 @@ enum StatisticKind
     StNumIndexRowsRead,
     StNumDiskAccepted,
     StNumDiskRejected,
+
+    StTimeSoapcall,                     // Time spent waiting for soapcalls
 
     StMax,
 
