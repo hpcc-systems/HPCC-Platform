@@ -750,47 +750,37 @@ static int compareUnsigned(unsigned const * left, unsigned const * right)
     return (*left < *right) ? -1 : (*left > *right) ? +1 : 0;
 }
 
-class StatisticsMapping
+StatisticsMapping::StatisticsMapping(StatisticKind kind, ...)
 {
-public:
-    StatisticsMapping(StatisticKind kind, ...)
+    indexToKind.append(kind);
+    va_list args;
+    va_start(args, kind);
+    for (;;)
     {
-        indexToKind.append(kind);
-        va_list args;
-        va_start(args, kind);
-        for (;;)
-        {
-            unsigned next  = va_arg(args, unsigned);
-            if (!next)
-                break;
-            indexToKind.append(next);
-        }
-        va_end(args);
-        process();
+        unsigned next  = va_arg(args, unsigned);
+        if (!next)
+            break;
+        indexToKind.append(next);
     }
+    va_end(args);
+    createMappings();
+}
 
-    unsigned getIndex(StatisticKind kind) const { return kindToIndex.item(kind); }
-    StatisticKind getKind(unsigned index) const { return (StatisticKind)indexToKind.item(index); }
-    unsigned numStatistics() const { return indexToKind.ordinality(); }
+void StatisticsMapping::createMappings()
+{
+    //Possibly not needed, but sort the kinds, so that it is easy to merge/stream the results out in the correct order.
+    indexToKind.sort(compareUnsigned);
 
-protected:
-    void process()
+    //Provide mappings to all statistics to map them to the "unknown" bin by default
+    for (unsigned i=0; i < StMax; i++)
+        kindToIndex.append(numStatistics());
+
+    ForEachItemIn(i, indexToKind)
     {
-        //Possibly not needed, but sort the kinds, so that it is easy to merge/stream the results out in the correct order.
-        indexToKind.sort(compareUnsigned);
-        ForEachItemIn(i, indexToKind)
-        {
-            unsigned kind = indexToKind.item(i);
-            while (kindToIndex.ordinality() < kind)
-                kindToIndex.append(0);
-            kindToIndex.replace(i, kind);
-        }
+        unsigned kind = indexToKind.item(i);
+        kindToIndex.replace(i, kind);
     }
-
-protected:
-    UnsignedArray kindToIndex;
-    UnsignedArray indexToKind;
-};
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -1380,61 +1370,33 @@ extern IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creato
 
 //--------------------------------------------------------------------------------------------------------------------
 
-//This class is used to gather statistics for an activity.
-class CRuntimeStatisticCollection : public IStatisticCollection
+void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContextLogger * const * targets) const
 {
-public:
-    CRuntimeStatisticCollection(const StatisticsMapping & _mapping) : mapping(_mapping)
+    ForEachItem(iStat)
     {
-        unsigned num = mapping.numStatistics();
-        values = new unsigned __int64[num];
-        reset();
+        StatisticKind kind = getKind(iStat);
+        unsigned __int64 value = values[iStat].getClear();
+        for (unsigned iTarget = 0; iTarget < numTargets; iTarget++)
+            targets[iTarget]->noteStatistic(kind, value, 1);
     }
-    ~CRuntimeStatisticCollection()
-    {
-        delete [] values;
-    }
-
-    virtual void addStatistic(StatisticKind kind, unsigned __int64 value)
-    {
-        unsigned index = queryMapping().getIndex(kind);
-        values[index] += value;
-    }
-    virtual void setStatistic(StatisticKind kind, unsigned __int64 value)
-    {
-        unsigned index = queryMapping().getIndex(kind);
-        values[index] = value;
-    }
-    virtual unsigned __int64 getStatisticValue(StatisticKind kind) const
-    {
-        unsigned index = queryMapping().getIndex(kind);
-        return values[index];
-    }
-    void reset()
-    {
-        unsigned num = mapping.numStatistics();
-        memset(values, 0, sizeof(unsigned __int64) * num);
-    }
-
-    inline const StatisticsMapping & queryMapping() const { return mapping; };
-    inline unsigned ordinality() const { return mapping.numStatistics(); }
-    inline StatisticKind getKind(unsigned i) const { return mapping.getKind(i); }
-
-private:
-    const StatisticsMapping & mapping;
-    unsigned __int64 * values;
-};
-
-
-void processStatistics(IStatisticGatherer & target, const CRuntimeStatisticCollection & stats)
-{
-    ForEachItemIn(i, stats)
-    {
-        StatisticKind kind = stats.getKind(i);
-        target.addStatistic(kind, stats.getStatisticValue(kind));
-    }
+    reportIgnoredStats();
 }
 
+void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target, StatsMergeAction mergeAction) const
+{
+    ForEachItem(i)
+    {
+        StatisticKind kind = getKind(i);
+        target.updateStatistic(kind, values[i].get(), mergeAction);
+    }
+    reportIgnoredStats();
+}
+
+void CRuntimeStatisticCollection::reportIgnoredStats() const
+{
+    if (values[mapping.numStatistics()].getClear())
+        DBGLOG("Some statistics were addded but thrown away");
+}
 
 // ------------------------- old code -------------------------
 
