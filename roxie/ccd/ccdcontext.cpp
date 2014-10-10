@@ -1208,13 +1208,13 @@ public:
         return logctx.queryTraceLevel();
     }
 
-    virtual void noteProcessed(const IRoxieContextLogger &activityContext, const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
+    virtual void noteProcessed(const IRoxieContextLogger &activityContext, const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
     {
         if (options.traceActivityTimes)
         {
             StringBuffer text, prefix;
             text.appendf("%s outputIdx %d processed %d total %d us local %d us",
-                getActivityText(activity->getKind()), _idx, _processed, (unsigned) (cycle_to_nanosec(_totalCycles)/1000), (unsigned)(cycle_to_nanosec(_localCycles)/1000));
+                getActivityText(activity->getKind()), _idx, _processed, (unsigned) (cycle_to_nanosec(_totalCycles.totalCycles)/1000), (unsigned)(cycle_to_nanosec(_localCycles)/1000));
             activityContext.getLogPrefix(prefix);
             CTXLOGa(LOG_TIMING, prefix.str(), text.str());
         }
@@ -1227,12 +1227,13 @@ public:
                 StatsActivityScope scope(builder, activity->queryId());
                 //MORE: This is potentially problematic if noteProcessed is called for multiple edges => check if totalCycles is 0.
                 //There should really be two separate functions - one to update activity statistics, and another for edge statistics
-                if (_totalCycles)
+                if (_totalCycles.totalCycles)
                 {
-                    builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(_totalCycles));
+                    builder.addStatistic(StWhenFirstRow, (_totalCycles.firstRow));
+                    builder.addStatistic(StTimeElapsed, (_totalCycles.elapsed()));
+                    builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(_totalCycles.totalCycles));
                     builder.addStatistic(StTimeLocalExecute, cycle_to_nanosec(_localCycles));
                 }
-                //MORE: Should this be done via a callback instead - so the activity can add stats for when started + other interesting info
             }
 
             if (_processed)
@@ -1241,6 +1242,8 @@ public:
                 builder.addStatistic(StNumRowsProcessed, _processed);
             }
         }
+        if (_processed)
+            logctx.noteStatistic(StNumRowsProcessed, _processed);
     }
 
     virtual void checkAbort()

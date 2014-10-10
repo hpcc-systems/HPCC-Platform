@@ -83,7 +83,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         IHThorEnthArg *helper = static_cast <IHThorEnthArg *> (queryHelper());
         counter = 0;
         denominator = validRC(helper->getProportionDenominator());
@@ -147,7 +147,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (localCountReq)
         {
             localCountReq = false;
@@ -239,7 +239,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (first)
         {
             first = false;

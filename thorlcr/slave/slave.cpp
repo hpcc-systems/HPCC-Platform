@@ -88,7 +88,7 @@ void ProcessSlaveActivity::main()
             process();
             {
                 SpinBlock b(cycleLock);
-                totalCycles += get_cycles_now()-lastCycles;
+                totalCycles.totalCycles += get_cycles_now()-lastCycles;
                 lastCycles = 0; // signal not processing
             }
         }
@@ -167,7 +167,7 @@ void ProcessSlaveActivity::serializeStats(MemoryBuffer &mb)
         if (lastCycles)
         {
             unsigned __int64 nowCycles = get_cycles_now();
-            totalCycles += nowCycles-lastCycles;
+            totalCycles.totalCycles += nowCycles-lastCycles;
             lastCycles = nowCycles; // time accounted for
         }
     }

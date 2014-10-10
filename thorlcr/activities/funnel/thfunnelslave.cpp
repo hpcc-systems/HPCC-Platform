@@ -336,13 +336,13 @@ public:
                 virtual bool isGrouped() { return false; }
                 virtual void start()
                 {
-                    ActivityTimer s(activity.getTotalCyclesRef(), activity.queryTimeActivities(), NULL);
+                    ActivityTimer s(activity.getTotalCyclesRef(), activity.queryTimeActivities());
                     out.setown(createParallelFunnel(activity, inputs.getArray(), inputs.ordinality(), true, abortSoon));
                     dataLinkStart();
                 }
                 const void *nextRow()
                 {
-                    ActivityTimer t(activity.getTotalCyclesRef(), activity.queryTimeActivities(), NULL);
+                    ActivityTimer t(activity.getTotalCyclesRef(), activity.queryTimeActivities());
                     OwnedConstThorRow row = out->nextRow();
                     if (row)
                     {
@@ -375,7 +375,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         eogNext = false;
         stopped = 0;
         if (grouped)
@@ -461,7 +461,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (current)
         {
             if (grouped)
@@ -549,7 +549,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         eogNext = false;
         ForEachItemIn(i, inputs)
         {
@@ -571,7 +571,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         loop {
             bool eog = false;
             bool err = false;
@@ -652,7 +652,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         curinput = 0;
         eogNext = false;
         ForEachItemIn(i, inputs)
@@ -675,7 +675,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         unsigned n = inputs.ordinality();
         loop {
             if (curinput==n) {
@@ -771,7 +771,7 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         curinput = 0;
         anyThisGroup = anyThisInput = eogNext = false;
         ForEachItemIn(i, inputs)
@@ -795,7 +795,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eoi) 
             return NULL; 
         if (eogNext) { 
@@ -852,7 +852,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
 
         startInput(inputs.item(0));
 
@@ -898,7 +898,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!selectedInput)
             return NULL;
         OwnedConstThorRow ret = selectedInput->nextRow();
@@ -924,7 +924,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!selectedInput)
             return NULL;
         return selectedInput->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -973,7 +973,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         bool selectionIsAll;
         size32_t selectionLen;
         rtlDataAttr selection;

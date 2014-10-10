@@ -1822,7 +1822,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
 
         if (!isSmart())
@@ -1843,7 +1843,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!gotRHS)
         {
             getRHS(false);
@@ -2310,12 +2310,12 @@ public:
 // IThorSlaveActivity overloaded methods
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!gotRHS)
             getRHS(false);
         OwnedConstThorRow row = lookupNextRow();

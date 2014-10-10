@@ -1798,7 +1798,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         start(false);
     }
     void stop()
@@ -1831,7 +1831,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL); // careful not to call again in derivatives
+        ActivityTimer t(totalCycles, timeActivities); // careful not to call again in derivatives
         if (abortSoon||eofin) {
             eofin = true;
             return NULL;
@@ -2121,7 +2121,7 @@ public:
     {
         bool passthrough;
         {
-            ActivityTimer s(totalCycles, timeActivities, NULL);
+            ActivityTimer s(totalCycles, timeActivities);
             instrm.setown(partitioner->calc(this,inputs.item(0),passthrough));  // may return NULL
         }
         HashDistributeSlaveBase::start(passthrough);
@@ -2653,7 +2653,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         inputstopped = false;
         eos = lastEog = false;
         startInput(inputs.item(0));
@@ -2693,7 +2693,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos)
             return NULL;
         // bucket handlers, stream out non-duplicates (1st entry in HT)
@@ -3261,7 +3261,7 @@ public:
     void start()
     {
         HashDedupSlaveActivityBase::start();
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         Owned<IRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
         instrm.setown(distributor->connect(myRowIf, input, iHash, iCompare));
         input = instrm.get();
@@ -3344,7 +3344,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         inputLstopped = true;
         inputRstopped = true;
         leftdone = false;
@@ -3455,7 +3455,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!eof) {
             OwnedConstThorRow row = joinhelper->nextRow();
             if (row) {
@@ -3666,7 +3666,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         input = inputs.item(0);
         startInput(input);
         doNextGroup(); // or local set if !grouped
@@ -3696,7 +3696,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos) return NULL;
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();
         if (next)
@@ -3755,7 +3755,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         input = inputs.item(0);
         input->start();
         dataLinkStart();
@@ -3768,7 +3768,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow row = input->ungroupedNextRow();
         if (!row)
             return NULL;

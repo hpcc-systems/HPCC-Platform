@@ -28,14 +28,13 @@ class NSplitterSlaveActivity;
 class CSplitterOutputBase : public CSimpleInterface, implements IRowStream
 {
 protected:
-    unsigned __int64 totalCycles;
+    ActivityTimeAccumulator totalCycles;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CSplitterOutputBase() { totalCycles = 0; }
 
     virtual void start() = 0;
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
-    virtual unsigned __int64 queryTotalCycles() const { return totalCycles; }
+    virtual unsigned __int64 queryTotalCycles() const { return totalCycles.totalCycles; }
 };
 
 class CSplitterOutput : public CSplitterOutputBase
@@ -160,13 +159,13 @@ class NSplitterSlaveActivity : public CSlaveActivity
         CInputWrapper(NSplitterSlaveActivity &_activity, IThorDataLink *_input) : activity(_activity), input(_input) { }
         virtual const void *nextRow()
         {
-            ActivityTimer t(totalCycles, activity.queryTimeActivities(), NULL);
+            ActivityTimer t(totalCycles, activity.queryTimeActivities());
             return input->nextRow();
         }
         virtual void stop() { input->stop(); }
         virtual void start()
         {
-            ActivityTimer s(totalCycles, activity.queryTimeActivities(), NULL);
+            ActivityTimer s(totalCycles, activity.queryTimeActivities());
             input->start();
         }
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
@@ -312,7 +311,7 @@ public:
     }
     inline void more(rowcount_t &max)
     {
-        ActivityTimer t(totalCycles, queryTimeActivities(), NULL);
+        ActivityTimer t(totalCycles, queryTimeActivities());
         writer.more(max);
     }
     void prepareInput(unsigned output)
@@ -415,7 +414,7 @@ public:
     }
     unsigned __int64 queryTotalCycles() const
     {
-        unsigned __int64 _totalCycles = totalCycles; // more() time
+        unsigned __int64 _totalCycles = totalCycles.totalCycles; // more() time
         ForEachItemIn(o, outputs)
         {
             CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
@@ -441,7 +440,7 @@ CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _ou
 // IThorDataLink
 void CSplitterOutput::start()
 {
-    ActivityTimer s(totalCycles, activity.queryTimeActivities(), NULL);
+    ActivityTimer s(totalCycles, activity.queryTimeActivities());
     rec = max = 0;
     activity.prepareInput(output);
     if (activity.startException)
@@ -459,7 +458,7 @@ const void *CSplitterOutput::nextRow()
 {
     if (rec == max)
         activity.more(max);
-    ActivityTimer t(totalCycles, activity.queryTimeActivities(), NULL);
+    ActivityTimer t(totalCycles, activity.queryTimeActivities());
     const void *row = activity.nextRow(output); // pass ptr to max if need more
     ++rec;
     return row;

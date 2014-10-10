@@ -60,7 +60,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         resultSent = container.queryLocal(); // i.e. local, so don't send result to master
         eos = stopped = anyThisGroup = eogNext = false;
         input = inputs.item(0);
@@ -100,7 +100,7 @@ public:
     
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos)
             return NULL;
         while (!abortSoon && !eogNext)
@@ -142,7 +142,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
@@ -261,7 +261,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof) 
             return NULL;
         if (!limitChecked)

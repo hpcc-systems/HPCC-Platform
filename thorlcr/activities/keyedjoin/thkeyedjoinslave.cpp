@@ -2031,7 +2031,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         assertex(inputs.ordinality() == 1);
 
         eos = false;
@@ -2120,7 +2120,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon && !eos)
         {
             loop

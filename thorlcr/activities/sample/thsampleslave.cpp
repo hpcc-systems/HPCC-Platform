@@ -42,7 +42,7 @@ public:
 
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         input = inputs.item(0);
         startInput(input);
         eogNext = false;
@@ -63,7 +63,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         while(!abortSoon)
         {
             OwnedConstThorRow row = input->nextRow();

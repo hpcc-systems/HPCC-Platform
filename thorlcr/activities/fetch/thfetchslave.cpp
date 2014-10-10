@@ -358,7 +358,7 @@ public:
 // IThorDataLink impl.
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         class CKeyFieldExtractBase : public CSimpleInterface, implements IRowStream
         {
         protected:
@@ -471,7 +471,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon)
             return NULL;
 

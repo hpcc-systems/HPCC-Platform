@@ -282,7 +282,7 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ForEachItemIn(i, inputs) {
             IThorDataLink * input = inputs.item(i);
             try {
@@ -435,7 +435,7 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ForEachItemIn(i, inputs) {
             IThorDataLink * input = inputs.item(i);
             try { 
@@ -472,7 +472,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon) {
             OwnedConstThorRow row = out->nextRow();
             if (row) {
@@ -565,7 +565,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow ret = merger.nextRow();
         if (ret)
         {
@@ -581,7 +581,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow ret = merger.nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
