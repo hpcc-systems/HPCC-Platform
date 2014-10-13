@@ -1814,7 +1814,7 @@ public:
                 }
                 endCycles = get_cycles_now();
                 __int64 elapsedNs = cycle_to_nanosec(endCycles-startCycles);
-                master->logctx.noteStatistic(STATS_SOAPCALL_LATENCY, elapsedNs, 1);
+                master->logctx.noteStatistic(StTimeSoapcall, elapsedNs);
                 checkTimeLimitExceeded(&remainingMS);
                 ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider(nanoToMilli(elapsedNs), master->flags&SOAPFencoding?true:false);
                 processResponse(url, response, meta);

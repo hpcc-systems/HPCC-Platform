@@ -2461,7 +2461,7 @@ public:
             ss.append(": ").valist_appendf(format, args);
         LOG(MCoperatorProgress, thorJob, "%s", ss.str());
     }
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
     }
     virtual unsigned queryTraceLevel() const

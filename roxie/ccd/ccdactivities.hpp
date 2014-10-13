@@ -65,7 +65,7 @@ interface ISlaveActivityFactory : extends IActivityFactory
     virtual StringBuffer &toString(StringBuffer &ret) const = 0;
     virtual const char *queryQueryName() const = 0;
     virtual void addChildQuery(unsigned id, ActivityArray *childQuery) = 0;
-    virtual void noteStatistics(const StatsCollector &stats) = 0;
+    virtual void noteStatistics(const CRuntimeStatisticCollection &stats) = 0;
 };
 
 typedef const void * cvp;

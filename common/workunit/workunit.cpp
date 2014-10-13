@@ -5914,7 +5914,7 @@ protected:
 
 void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
 {
-    if (!scope) scope = GLOBAL_SCOPE;
+    if (!scope || !*scope) scope = GLOBAL_SCOPE;
 
     const char * kindName = queryStatisticName(kind);
     StatisticMeasure measure = queryMeasure(kind);
@@ -10595,4 +10595,65 @@ IConstWUStatistic * getStatistic(IConstWorkUnit * wu, const IStatisticsFilter & 
     if (iter->first())
         return &OLINK(iter->query());
     return NULL;
+}
+
+
+class GlobalStatisticGatherer : public CInterfaceOf<IStatisticGatherer>
+{
+public:
+    GlobalStatisticGatherer(IWorkUnit * _wu) : wu(_wu) {}
+
+    virtual void beginScope(const StatsScopeId & id)
+    {
+        prevLenStack.append(scope.length());
+        if (scope.length())
+            scope.append(":");
+        id.getScopeText(scope);
+        scopeTypeStack.append(id.queryScopeType());
+    }
+    virtual void beginSubGraphScope(unsigned id)
+    {
+        StatsScopeId scopeId(SSTsubgraph, id);
+        beginScope(scopeId);
+    }
+    virtual void beginActivityScope(unsigned id)
+    {
+        StatsScopeId scopeId(SSTactivity, id);
+        beginScope(scopeId);
+    }
+    virtual void beginEdgeScope(unsigned id, unsigned oid)
+    {
+        StatsScopeId scopeId(SSTedge, id, oid);
+        beginScope(scopeId);
+    }
+    virtual void endScope()
+    {
+        scope.setLength(prevLenStack.popGet());
+        scopeTypeStack.pop();
+    }
+    virtual void addStatistic(StatisticKind kind, unsigned __int64 value)
+    {
+        StatisticScopeType scopeType = (StatisticScopeType)scopeTypeStack.tos();
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, value, 1, 0, StatsMergeAppend);
+    }
+    virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    {
+        StatisticScopeType scopeType = (StatisticScopeType)scopeTypeStack.tos();
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, value, 1, 0, mergeAction);
+    }
+    virtual IStatisticCollection * getResult()
+    {
+        return NULL;
+    }
+
+protected:
+    Linked<IWorkUnit> wu;
+    StringBuffer scope;
+    UnsignedArray prevLenStack;
+    UnsignedArray scopeTypeStack;
+};
+
+IStatisticGatherer * createGlobalStatisticGatherer(IWorkUnit * wu)
+{
+    return new GlobalStatisticGatherer(wu);
 }
