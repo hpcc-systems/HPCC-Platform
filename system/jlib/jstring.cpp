@@ -1482,7 +1482,7 @@ int utf8CharLen(const unsigned char *ch, unsigned maxsize)
         return 1;
 
     unsigned char len = utf8CharLen(*ch);
-    if (maxsize!=(unsigned)-1 && len>maxsize)
+    if (len>maxsize)
         return 0;
     for (unsigned pos = 1; pos < len; pos++)
         if ((ch[pos] < 128) || (ch[pos] >= 192))
