@@ -882,6 +882,7 @@ protected:
     mutable StatsCollector stats;
     unsigned processed;
     unsigned __int64 totalCycles;
+    unsigned __int64 localCycles;
     unsigned activityId;
     activityState state;
     bool createPending;
@@ -901,6 +902,7 @@ public:
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
         totalCycles = 0;
+        localCycles = 0;
         if (factory)
             factory->createChildQueries(childGraphs, this, _probeManager, *this);
         state=STATEreset;
@@ -919,6 +921,7 @@ public:
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
         totalCycles = 0;
+        localCycles = 0;
         state=STATEreset;
         rowAllocator = NULL;
         debugging = false;
@@ -927,15 +930,16 @@ public:
         timeActivities = defaultTimeActivities;
     }
 
-    inline ~CRoxieServerActivity()
+    ~CRoxieServerActivity()
     {
-        CriticalBlock cb(statecrit);
         if (traceStartStop)
         {
-            DBGLOG("%p destroy %d state=%s", this, activityId, queryStateText(state)); // Note- CTXLOG may not be safe
+            // There was an old comment here stating // Note- CTXLOG may not be safe
+            // However as far as I can see it should always be safe
+            DBGLOG("%p destroy %d state=%s", this, activityId, queryStateText(state));
             if (watchActivityId && watchActivityId==activityId)
             {
-                DBGLOG("WATCH: %p destroy %d state=%s", this, activityId, queryStateText(state)); // Note- CTXLOG may not be safe
+                DBGLOG("WATCH: %p destroy %d state=%s", this, activityId, queryStateText(state));
             }
         }
         if (state!=STATEreset)
@@ -943,6 +947,10 @@ public:
             DBGLOG("STATE: Activity %d destroyed but not reset", activityId);
             state = STATEreset;  // bit pointless but there you go... 
         }
+        if (factory && !debugging)
+            factory->noteProcessed(0, processed, totalCycles, localCycles);
+        if (ctx)
+            ctx->noteProcessed(*this, this, 0, processed, totalCycles, localCycles);
         basehelper.Release();
         ::Release(rowAllocator);
     }
@@ -1203,18 +1211,6 @@ public:
             return NULL;
     }
 
-    void noteProcessed(unsigned _idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
-    {
-        if (factory)
-        {
-            if (!debugging)
-                factory->noteProcessed(_idx, _processed, _totalCycles, _localCycles);
-            if (ctx)
-                ctx->noteProcessed(*this, this, _idx, _processed, _totalCycles, _localCycles);
-        }
-
-    }
-
     inline void ensureCreated()
     {
         if (createPending)
@@ -1293,11 +1289,9 @@ public:
 #endif
                 ForEachItemIn(idx, dependencies)
                     dependencies.item(idx).reset();
-                noteProcessed(0, processed, totalCycles, queryLocalCycles());
+                localCycles = queryLocalCycles();  // We can't call queryLocalCycles() in the destructor, so save the information here when we can.
                 if (input)
                     input->reset();
-                processed = 0;
-                totalCycles = 0;
             }
         }
     }
@@ -8460,7 +8454,7 @@ public:
             if (traceStartStop)
                 parent->CTXLOG("%p reset Input adaptor %d stopped = %d", this, oid, stopped);
             parent->reset(oid);
-            parent->noteProcessed(oid, processed, 0, 0);
+            parent->processed += processed;
             processed = 0;
             idx = 0; // value should not be relevant really but this is the safest...
             stopped = false;
@@ -15382,7 +15376,7 @@ public:
 
     void reset(unsigned oid, unsigned _processed)
     {
-        noteProcessed(oid, _processed, 0, 0);
+        processed += _processed;
         started = false;
         error.clear();
         numActiveOutputs = numOutputs;
