@@ -20298,13 +20298,14 @@ protected:
     bool sorted;
     bool maySkip;
     bool isLocal;
+    bool forceRemote;
     CachedOutputMetaData diskSize;
     Owned<const IResolvedFile> varFileInfo;
     Owned<IFileIOArray> varFiles;
 
     inline bool useRemote()
     {
-        return remote != NULL && numParts > 1;
+        return remote != NULL && (forceRemote || numParts > 1);
     }
 
 public:
@@ -20321,7 +20322,8 @@ public:
           maySkip(_maySkip),
           deserializeSource(NULL)
     {
-        if (numParts != 1 && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
+        forceRemote = factory->queryQueryFactory().queryOptions().disableLocalOptimizations;
+        if ((forceRemote || numParts != 1) && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
             remote.setown(new CSkippableRemoteResultAdaptor(remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip));
         compoundHelper = NULL;
         eof = false;
