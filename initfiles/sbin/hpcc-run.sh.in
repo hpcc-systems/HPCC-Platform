@@ -46,9 +46,23 @@ getDali(){
         DIP=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep Dali | awk -F, '{print \$3}'  | sort | uniq`
 }
 
+# only allow IP's from machines with valid hpcc-components
+createIPListFull(){
+  _file=$1
+  local listallFile=/tmp/list_all_$$
+  ${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall > $listallFile
+  for m in ${IPS[@]}; do
+    grep "${m}" $listallFile &> /dev/null || IPS=( "${IPS[@]/$m}" )
+  done
+  echo "$IPS" > $_file
+  sed -i '/^$/d' $_file
+  [ -e "${listallFile}" ] && rm -rf $listallFile
+}
+
+# insure our list of remaining ip's does not contain machines without valid hpcc components
 createIPListFileExcludeDIP(){
   _file=$1
-  echo "$IPS" | grep -v $DIP  > $_file
+  cat $IPListFull | grep -v $DIP  > $_file
 }
 
 doOneIP(){
@@ -172,7 +186,8 @@ doStatus() {
      init status
      scriptFile=/tmp/${action}_status_$$
      createScript $scriptFile $action "status" $comp
-     runScript
+     OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPListFull"
+     runScript $IPListFull
      [ $run_in_seq -eq 0 ] && report "${action} status"
 }
 
@@ -235,6 +250,7 @@ end() {
         rm -rf $reportDir
    fi
    [ -e "${IPsExcludeDIP}" ] &&  rm -rf ${IPsExcludeDIP}
+   [ -e "${IPListFull}" ] && rm -rf ${IPListFull}
    exit $1
 }
 
@@ -256,10 +272,12 @@ fi
 envfile=$configs/$environment
 configfile=${CONFIG_DIR}/${ENV_CONF_FILE}
 
-
+# ordering matters
 getIPS
 getDali
 IPsExcludeDIP=/tmp/ip_list_exclude_dip_$$
+IPListFull=/tmp/ip_list_full_$$
+createIPListFull $IPListFull
 createIPListFileExcludeDIP $IPsExcludeDIP
 
 hasPython=0
