@@ -3192,11 +3192,6 @@ void HqlGram::setActiveAttrs(int activityToken, const TokenMap * attrs)
     default:
         if (lastToken == activityToken)
             pendingAttributes = attrs;
-        else
-        {
-            //Here as a debugging aid - invalid source means this shouldn't remain
-            throwUnexpected();
-        }
     }
 }
 
