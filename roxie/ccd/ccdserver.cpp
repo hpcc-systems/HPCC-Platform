@@ -242,12 +242,13 @@ public:
     {
         ctx->noteStatistic(kind, value);
     }
-    virtual void CTXLOG(const char *format, ...) const
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
-        va_list args;
-        va_start(args, format);
-        ctx->CTXLOGva(format, args);
-        va_end(args);
+        ctx->mergeStats(from);
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const
+    {
+        return ctx->queryStats();
     }
     virtual void CTXLOGva(const char *format, va_list args) const
     {
@@ -257,23 +258,9 @@ public:
     {
         ctx->CTXLOGa(category, prefix, text);
     }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        ctx->logOperatorExceptionVA(E, file, line, format, args);
-        va_end(args);
-    }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
     {
         ctx->logOperatorExceptionVA(E, file, line, format, args);
-    }
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        ctx->CTXLOGaeva(E, file, line, prefix, format, args);
-        va_end(args);
     }
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
     {
@@ -366,6 +353,10 @@ public:
     virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
     {
         return ctx->getWorkunitRowReader(wuid, name, sequence, xmlTransformer, rowAllocator, isGrouped);
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from)
+    {
+        ctx->mergeStats(from);
     }
 protected:
     IRoxieSlaveContext * ctx;
@@ -466,6 +457,11 @@ public:
     {
         arg.Release();
         throwUnexpected();
+    }
+
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    {
+        CActivityFactory::mergeStats(from);
     }
 
     virtual void noteProcessed(unsigned idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
@@ -594,11 +590,6 @@ public:
     virtual IDefRecordMeta *queryActivityMeta() const
     {
         throwUnexpected(); // only implemented by index-related subclasses
-    }
-
-    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
-    {
-        mystats.addStatistic(kind, value);
     }
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
@@ -949,9 +940,15 @@ public:
             state = STATEreset;  // bit pointless but there you go... 
         }
         if (factory && !debugging)
+        {
             factory->noteProcessed(0, processed, totalCycles, localCycles);
+            factory->mergeStats(stats);
+        }
         if (ctx)
+        {
             ctx->noteProcessed(*this, this, 0, processed, totalCycles, localCycles);
+            ctx->mergeStats(stats);
+        }
         basehelper.Release();
         ::Release(rowAllocator);
     }
@@ -973,53 +970,12 @@ public:
     }
 
     // MORE - most of this is copied from ccd.hpp - can't we refactor?
-    virtual void CTXLOG(const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGva(format, args);
-        va_end(args);
-    }
-
-    virtual void CTXLOGva(const char *format, va_list args) const
-    {
-        StringBuffer text, prefix;
-        getLogPrefix(prefix);
-        text.valist_appendf(format, args);
-        CTXLOGa(LOG_TRACING, prefix.str(), text.str());
-    }
-
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
     {
         if (ctx)
             ctx->CTXLOGa(category, prefix, text);
         else
             DBGLOG("[%s] %s", prefix, text);
-    }
-
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        StringBuffer prefix;
-        getLogPrefix(prefix);
-        CTXLOGaeva(E, file, line, prefix.str(), format, args);
-        va_end(args);
-    }
-
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
-    {
-        StringBuffer prefix;
-        getLogPrefix(prefix);
-        CTXLOGaeva(E, file, line, prefix.str(), format, args);
-    }
-
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGaeva(E, file, line, prefix, format, args);
-        va_end(args);
     }
 
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
@@ -1054,14 +1010,17 @@ public:
             log->Release(); // Should never happen
         }
     }
-
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
-        if (factory)
-            factory->noteStatistic(kind, value);
-        if (ctx)
-            ctx->noteStatistic(kind, value);
         stats.addStatistic(kind, value);
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    {
+        stats.merge(from);
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const
+    {
+        return stats;
     }
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
@@ -26538,7 +26497,7 @@ protected:
         queryDll.setown(createExeQueryDll("roxie"));
         stateInfo.setown(createPTreeFromXMLString("<test memoryLimit='50000000'/>"));
         queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, stateInfo, false, false));
-        ctx.setown(createSlaveContext(queryFactory, logctx, NULL));
+        ctx.setown(createSlaveContext(queryFactory, logctx, NULL, false));
         queryActiveTimer()->reset();
     }
 

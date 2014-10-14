@@ -1036,7 +1036,7 @@ protected:
     Owned<IDistributedFileTransaction> superfileTransaction;
 
     CriticalSection statsCrit;
-    const ContextLogger &logctx;
+    const IRoxieContextLogger &logctx;
 
 protected:
     CriticalSection resultsCrit;
@@ -1096,11 +1096,17 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, IRoxieQueryPacket *_packet, bool _debuggerActive)
+    CSlaveContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx, IRoxieQueryPacket *_packet, bool _hasChildren)
         : factory(_factory), logctx(_logctx), options(factory->queryOptions())
     {
+        bool debuggerActive = false;
         if (_packet)
+        {
             header = &_packet->queryHeader();
+            const byte *traceInfo = _packet->queryTraceInfo();
+            options.setFromSlaveLoggingFlags(*traceInfo);
+            debuggerActive = (*traceInfo & LOGGING_DEBUGGERACTIVE) != 0 && _hasChildren;  // No option to debug simple remote activity
+        }
         else
             header = NULL;
         startTime = lastWuAbortCheck = msTick();
@@ -1109,7 +1115,7 @@ public:
         deserializedResultStore = NULL;
         rereadResults = NULL;
         xmlStoredDatasetReadFlags = ptr_none;
-        if (_debuggerActive)
+        if (debuggerActive)
         {
             assertex(header);
             CSlaveDebugContext *slaveDebugContext = new CSlaveDebugContext(this, logctx, *header);
@@ -1141,43 +1147,19 @@ public:
         logctx.noteStatistic(kind, value);
     }
 
-    virtual void CTXLOG(const char *format, ...) const
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
-        va_list args;
-        va_start(args, format);
-        logctx.CTXLOGva(format, args);
-        va_end(args);
+        logctx.mergeStats(from);
     }
 
-    virtual void CTXLOGva(const char *format, va_list args) const
+    virtual const CRuntimeStatisticCollection &queryStats() const
     {
-        logctx.CTXLOGva(format, args);
+        return logctx.queryStats();
     }
 
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
     {
         logctx.CTXLOGa(category, prefix, text);
-    }
-
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        logctx.logOperatorExceptionVA(E, file, line, format, args);
-        va_end(args);
-    }
-
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
-    {
-        logctx.logOperatorExceptionVA(E, file, line, format, args);
-    }
-
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        logctx.CTXLOGaeva(E, file, line, prefix, format, args);
-        va_end(args);
     }
 
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
@@ -1259,11 +1241,6 @@ public:
                 builder.addStatistic(StNumRowsProcessed, _processed);
             }
         }
-    }
-
-    void setOptions(const SlaveContextLogger &ctx)
-    {
-        options.setFromSlaveContextLogger(ctx);
     }
 
     virtual void checkAbort()
@@ -2376,11 +2353,9 @@ protected:
     }
 };
 
-IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, IRoxieQueryPacket *packet)
+IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx, IRoxieQueryPacket *packet, bool hasChildren)
 {
-    CSlaveContext *ret = new CSlaveContext(_factory, _logctx, packet, _logctx.queryDebuggerActive());
-    ret->setOptions(_logctx);
-    return ret;
+    return new CSlaveContext(_factory, _logctx, packet, hasChildren);
 }
 
 class CRoxieServerDebugContext : extends CBaseServerDebugContext
@@ -2535,6 +2510,7 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
 
 protected:
     Owned<CRoxieWorkflowMachine> workflow;
+    Owned<ITimeReporter> myTimer;
     mutable MapStringToMyClass<IResolvedFile> fileCache;
     SafeSocket *client;
     bool isBlocked;
@@ -2593,6 +2569,7 @@ protected:
 
         lastSocketCheckTime = startTime;
         lastHeartBeat = startTime;
+        myTimer.setown(createStdTimeReporter());
     }
 
     void startWorkUnit()
@@ -2648,7 +2625,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerContext(const IQueryFactory *_factory, const ContextLogger &_logctx)
+    CRoxieServerContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
         : CSlaveContext(_factory, _logctx, NULL, false), serverQueryFactory(_factory)
     {
         init();
@@ -2799,6 +2776,7 @@ public:
 
     virtual void process()
     {
+        MTIME_SECTION(myTimer, "Process");
         EclProcessFactory pf = (EclProcessFactory) factory->queryDll()->getEntry("createProcess");
         Owned<IEclProcess> p = pf();
         try
@@ -2852,9 +2830,9 @@ public:
             WorkunitUpdate w(&workUnit->lock());
             w->setState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
             addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
-            ITimeReporter *timer = logctx.queryTimer();
-            updateWorkunitTimings(w, timer);
-            logctx.dumpStats(w);
+            updateWorkunitTimings(w, myTimer);
+            Owned<IStatisticGatherer> gatherer = createGlobalStatisticGatherer(w);
+            logctx.queryStats().recordStatistics(*gatherer);
 
             WuStatisticTarget statsTarget(w, "roxie");
             rowManager->reportPeakStatistics(statsTarget, 0);
@@ -3868,7 +3846,7 @@ IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQue
         return new CRoxieServerContext(context, factory, client, isXml ? MarkupFmt_XML : MarkupFmt_Unknown, isRaw, isBlocked, httpHelper, trim, _logctx, readFlags, querySetName);
 }
 
-IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const ContextLogger &_logctx)
+IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
 {
     return new CRoxieServerContext(factory, _logctx);
 }

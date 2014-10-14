@@ -162,7 +162,7 @@ size32_t channelWrite(unsigned channel, void const* buf, size32_t size)
     return minwrote;
 }
 
-#define TEST_SLAVE_FAILURE
+// #define TEST_SLAVE_FAILURE
 
 //============================================================================================
 
@@ -467,6 +467,7 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     debuggerActive = false;
     checkingHeap = false;
     traceActivityTimes = false;
+    stats.reset();
     start = msTick();
     if (packet)
     {
@@ -532,47 +533,39 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     }
 }
 
-void SlaveContextLogger::flush(bool closing, bool aborted) const
+void SlaveContextLogger::flush()
 {
     if (output)
     {
         CriticalBlock b(crit);
-        if (aborted)
-            output->abort();
-        else
+        if (mergeSlaveStatistics)
         {
-            if (closing && mergeSlaveStatistics)
+            MemoryBuffer buf;
+            buf.append((char) LOG_STATVALUES); // A special log entry for the stats
+            if (stats.serialize(buf))
             {
-                MemoryBuffer buf;
-                buf.append((char) LOG_STATVALUES); // A special log entry for the stats
-                stats.serialize(buf);
                 unsigned len = buf.length();
                 void *ret = output->getBuffer(len, true);
                 memcpy(ret, buf.toByteArray(), len);
                 output->putBuffer(ret, len, true);
                 anyOutput = true;
-            }
-            ForEachItemIn(idx, log) // typically just one, as currently coded...
-            {
-                MemoryBuffer buf;
-                LogItem &logItem = log.item(idx);
-                logItem.serialize(buf);
-                unsigned len = buf.length();
-                void *ret = output->getBuffer(len, true);
-                memcpy(ret, buf.toByteArray(), len);
-                output->putBuffer(ret, len, true);
-                anyOutput = true;
-            }
-            log.kill();
-            if (closing)
-            {
-                if (anyOutput)
-                    output->flush(true);
-                else
-                    output->abort();
-                output.clear();
             }
         }
+        ForEachItemIn(idx, log)
+        {
+            MemoryBuffer buf;
+            LogItem &logItem = log.item(idx);
+            logItem.serialize(buf);
+            unsigned len = buf.length();
+            void *ret = output->getBuffer(len, true);
+            memcpy(ret, buf.toByteArray(), len);
+            output->putBuffer(ret, len, true);
+            anyOutput = true;
+        }
+        log.kill();
+        if (anyOutput)
+            output->flush(true);
+         output.clear();
     }
 }
 
@@ -705,16 +698,6 @@ public:
     void enqueue(IRoxieQueryPacket *x)
     {
         {
-#ifdef _DEBUG
-            RoxiePacketHeader &header = x->queryHeader();
-            if (traceLevel > 10)
-            {
-                StringBuffer xx;
-                SlaveContextLogger l(x);
-                l.CTXLOG("enqueued %s", header.toString(xx).str());
-                l.flush(true, false);
-            }
-#endif
             CriticalBlock qc(qcrit);
 #ifdef TIME_PACKETS
             header.tick = msTick();
@@ -1118,8 +1101,8 @@ public:
             Owned <ISlaveActivityFactory> factory = queryFactory->getSlaveActivityFactory(activityId);
             assertex(factory);
             setActivity(factory->createActivity(logctx, packet));
-            bool skip = false;
 #ifdef TEST_SLAVE_FAILURE
+            bool skip = false;
             if (testSlaveFailure) 
             {
                 // Meaning of each byte in testSlaveFailure
@@ -1163,15 +1146,26 @@ public:
                     }
                 }
             }
-#endif
-            if (!skip && activity->process())
-                atomic_inc(&activitiesCompleted);
-            factory->noteStatistics(logctx.queryStats());
-            if (logctx.queryTraceLevel() > 5)
+            if (!skip)
             {
-                StringBuffer x;
-                logctx.CTXLOG("done processing %s", header.toString(x).str());
+#endif
+                Owned<IMessagePacker> output = activity->process();
+                if (logctx.queryTraceLevel() > 5)
+                {
+                    StringBuffer x;
+                    logctx.CTXLOG("done processing %s", header.toString(x).str());
+                }
+                if (output)
+                {
+                    atomic_inc(&activitiesCompleted);
+                    busy = false; // Keep order - before setActivity below
+                    setActivity(NULL);  // Ensures all stats are merged from child queries etc
+                    logctx.flush();
+                    output->flush(true);
+                }
+#ifdef TEST_SLAVE_FAILURE
             }
+#endif
         }
         catch (IUserException *E)
         {

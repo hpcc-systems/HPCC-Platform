@@ -547,6 +547,84 @@ public:
 
 };
 
+// Used as a base class by classes that want to intercept statistics but pass on other logging (i.e. slave or server activity classes)
+// Note that the stats are upmerged on destruction
+// Also note that we assume single-threaded access to stats.
+
+class IndirectContextLogger : public CInterface, implements IRoxieContextLogger
+{
+protected:
+    const IRoxieContextLogger *logctx;
+    bool aborted;
+    mutable CRuntimeStatisticCollection stats;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    IndirectContextLogger(const IRoxieContextLogger *_logctx, const StatisticsMapping & _statsMapping)
+    : logctx(_logctx), stats(_statsMapping)
+    {
+        aborted = false;
+    }
+    ~IndirectContextLogger()
+    {
+        if (logctx)
+            logctx->mergeStats(stats);
+    }
+    inline void abort()
+    {
+        aborted = true;
+    }
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+        if (aborted)
+            throw MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
+        stats.addStatistic(kind, value);
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    {
+        stats.merge(from);
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const
+    {
+        return stats;
+    }
+
+    // The rest are passthroughs
+
+    virtual unsigned queryTraceLevel() const
+    {
+        return logctx ? logctx->queryTraceLevel() : traceLevel;
+    }
+    virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
+    {
+        return logctx ? logctx->getLogPrefix(ret) : ret;
+    }
+    virtual bool isIntercepted() const
+    {
+        return logctx ? logctx->isIntercepted() : false;
+    }
+    virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
+    {
+        if (logctx)
+            logctx->CTXLOGa(category, prefix, text);
+    }
+    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
+    {
+        if (logctx)
+            logctx->CTXLOGaeva(E, file, line, prefix, format, args);
+    }
+    virtual void CTXLOGl(LogItem *log) const
+    {
+        if (logctx)
+            logctx->CTXLOGl(log);
+    }
+    virtual bool isBlind() const
+    {
+        return logctx ? logctx->isBlind() : blindLogging;
+    }
+};
+
 // MORE - this code probably should be commoned up with some of the new stats code
 extern void putStatsValue(IPropertyTree *node, const char *statName, const char *statType, unsigned __int64 val);
 extern void putStatsValue(StringBuffer &reply, const char *statName, const char *statType, unsigned __int64 val);
@@ -558,12 +636,11 @@ protected:
     unsigned start;
     unsigned ctxTraceLevel;
     mutable CRuntimeStatisticCollection stats;
-    mutable ITimeReporter *timeReporter;
     unsigned channel;
 public: // Not very clean but I don't care
     bool intercept;
     bool blind;
-    bool aborted;
+    mutable bool aborted;
     mutable CIArrayOf<LogItem> log;
 private:
     ContextLogger(const ContextLogger &);  // Disable copy constructor
@@ -575,14 +652,9 @@ public:
         ctxTraceLevel = traceLevel;
         intercept = false;
         blind = false;
-        timeReporter = createStdTimeReporter();
         start = msTick();
         channel = 0;
         aborted = false;
-    }
-    ~ContextLogger()
-    {
-        ::Release(timeReporter);
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -594,26 +666,6 @@ public:
         }
     };
 
-    virtual void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)))
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGva(format, args);
-        va_end(args);
-    }
-    virtual void CTXLOGva(const char *format, va_list args) const
-    {
-        StringBuffer prefix, text;
-        getLogPrefix(prefix);
-        text.valist_appendf(format, args);
-        DBGLOG("[%s] %s", prefix.str(), text.str());
-        if (intercept)
-        {
-            CriticalBlock b(crit);
-            log.append(* new LogItem(LOG_TRACING, prefix, msTick() - start, channel, text));
-            flush(false, false);
-        }
-    }
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
     {
         if (category == LOG_TRACING)
@@ -624,29 +676,8 @@ public:
         {
             CriticalBlock b(crit);
             log.append(* new LogItem(category, prefix, msTick() - start, channel, text));
-            flush(false, false);
         }
     }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6)))
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGaeva(E, file, line, 0, format, args);
-        va_end(args);
-    }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
-    {
-        CTXLOGaeva(E, file, line, 0, format, args);
-    }
-
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 6, 7)))
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGaeva(E, file, line, prefix, format, args);
-        va_end(args);
-    }
-
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
     {
         StringBuffer text;
@@ -666,7 +697,6 @@ public:
         {
             CriticalBlock b(crit);
             log.append(* new LogItem(LOG_ERROR, prefix, msTick() - start, channel, text));
-            flush(false, false);
         }
     }
     virtual void CTXLOGl(LogItem *logItem) const
@@ -674,7 +704,6 @@ public:
         // NOTE - we don't actually print anything to logfile here - was already printed on slave
         CriticalBlock b(crit);
         log.append(*logItem);
-        flush(false, false);
     }
 
     void setIntercept(bool _intercept)
@@ -692,19 +721,9 @@ public:
         ctxTraceLevel = _traceLevel;
     }
 
-    virtual void flush(bool closing, bool aborted) const
-    {
-    }
-
     StringBuffer &getStats(StringBuffer &s) const
     {
         return stats.toStr(s);
-    }
-
-    virtual void dumpStats(IWorkUnit *wu) const
-    {
-        Owned<IStatisticGatherer> gatherer = createGlobalStatisticGatherer(wu);
-        stats.recordStatistics(*gatherer);
     }
 
     virtual bool isIntercepted() const
@@ -724,18 +743,22 @@ public:
         stats.addStatistic(kind, value);
     }
 
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    {
+        stats.merge(from);
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const
+    {
+        return stats;
+    }
+
     virtual unsigned queryTraceLevel() const
     {
         return ctxTraceLevel;
     }
-    inline ITimeReporter *queryTimer() const
-    {
-        return timeReporter;
-    }
     void reset()
     {
         stats.reset();
-        queryActiveTimer()->reset();
     }
 };
 
@@ -760,23 +783,10 @@ public:
     }
 };
 
-class SimpleContextLogger : public ContextLogger
-{
-    unsigned instanceId;
-public:
-    SimpleContextLogger(unsigned _instanceId) : instanceId(_instanceId)
-    {
-    }
-    virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
-    {
-        return ret.append(instanceId);  
-    }
-};
-
 class SlaveContextLogger : public StringContextLogger
 {
-    mutable Owned<IMessagePacker> output;
-    mutable bool anyOutput;
+    Owned<IMessagePacker> output;
+    bool anyOutput;
     bool traceActivityTimes;
     bool debuggerActive;
     bool checkingHeap;
@@ -786,18 +796,11 @@ public:
     SlaveContextLogger();
     SlaveContextLogger(IRoxieQueryPacket *packet);
     void set(IRoxieQueryPacket *packet);
-    virtual void flush(bool closing, bool aborted) const;
-    inline bool queryTraceActivityTimes() const { return traceActivityTimes; }
+    void flush();
     inline bool queryDebuggerActive() const { return debuggerActive; }
-    inline bool queryCheckingHeap() const { return checkingHeap; }
-    inline void setDebuggerActive(bool _active) { debuggerActive = _active; }
     inline const CRuntimeStatisticCollection &queryStats() const
     {
         return stats;
-    }
-    inline void requestAbort()
-    {
-        aborted = true;
     }
     inline const char *queryWuid()
     {

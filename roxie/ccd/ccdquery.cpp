@@ -218,14 +218,14 @@ public:
         return *onceResultStore;
     }
 
-    virtual IPropertyTree &queryOnceContext(const IQueryFactory *factory, const ContextLogger &logctx) const
+    virtual IPropertyTree &queryOnceContext(const IQueryFactory *factory, const IRoxieContextLogger &logctx) const
     {
         checkOnceDone(factory, logctx);
         assertex(onceContext != NULL);
         return *onceContext;
     }
 
-    virtual void checkOnceDone(const IQueryFactory *factory, const ContextLogger &logctx) const
+    virtual void checkOnceDone(const IQueryFactory *factory, const IRoxieContextLogger &logctx) const
     {
         CriticalBlock b(onceCrit);
         if (!onceContext)
@@ -433,11 +433,11 @@ void QueryOptions::updateFromContext(bool &value, const IPropertyTree *ctx, cons
         value = ctx->getPropBool(name);
 }
 
-void QueryOptions::setFromSlaveContextLogger(const SlaveContextLogger &logctx)
+void QueryOptions::setFromSlaveLoggingFlags(unsigned loggingFlags)
 {
     // MORE - priority/timelimit ?
-    checkingHeap = logctx.queryCheckingHeap();
-    traceActivityTimes = logctx.queryTraceActivityTimes();
+    checkingHeap = (loggingFlags & LOGGING_CHECKINGHEAP) != 0;
+    traceActivityTimes = (loggingFlags & LOGGING_TIMEACTIVITIES) != 0;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1226,7 +1226,7 @@ public:
         return sharedOnceContext->queryOnceResultStore();
     }
 
-    virtual IPropertyTree &queryOnceContext(const ContextLogger &logctx) const
+    virtual IPropertyTree &queryOnceContext(const IRoxieContextLogger &logctx) const
     {
         assertex(sharedOnceContext);
         return sharedOnceContext->queryOnceContext(this, logctx);
@@ -1425,7 +1425,7 @@ public:
     {
         return package;
     }
-    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const ContextLogger &logctx) const
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx) const
     {
         throwUnexpected();  // only on server...
     }
@@ -1448,7 +1448,7 @@ public:
         return strdup(result ? result : defaultValue);
     }
 
-    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieSlaveContext *createSlaveContext(const IRoxieContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
     {
         throwUnexpected();   // only implemented in derived slave class
     }
@@ -1589,7 +1589,7 @@ public:
         return createWorkUnitServerContext(wu, this, _logctx);
     }
 
-    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const ContextLogger &logctx) const
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx) const
     {
         IPropertyTree *workflow = queryWorkflowTree();
         if (workflow)
@@ -1845,9 +1845,9 @@ public:
     {
     }
 
-    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieSlaveContext *createSlaveContext(const IRoxieContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
     {
-        return ::createSlaveContext(this, logctx, packet);
+        return ::createSlaveContext(this, logctx, packet, hasChildren);
     }
 
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName)

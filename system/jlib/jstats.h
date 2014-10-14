@@ -429,7 +429,7 @@ extern const jlib_decl StatisticsMapping allStatistics;
 
 //---------------------------------------------------------------------------------------------------------------------
 
-//MORE: We probably want to have functions that peform the atomic equivalents
+//MORE: We probably want to have functions that perform the atomic equivalents
 class CRuntimeStatistic
 {
 public:
@@ -487,6 +487,10 @@ public:
     {
         queryStatistic(kind).add(value);
     }
+    void addStatisticAtomic(StatisticKind kind, unsigned __int64 value)
+    {
+        queryStatistic(kind).addAtomic(value);
+    }
     void mergeStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
     {
         queryStatistic(kind).merge(value, mergeAction);
@@ -504,7 +508,6 @@ public:
         unsigned num = mapping.numStatistics();
         for (unsigned i = 0; i <= num; i++)
             values[i].clear();
-        memset(values, 0, sizeof(unsigned __int64) * num);
     }
 
     inline const StatisticsMapping & queryMapping() const { return mapping; };
@@ -523,7 +526,7 @@ public:
     // Print out collected stats to string as XML
     StringBuffer &toXML(StringBuffer &str) const;
     // Serialize/deserialize
-    MemoryBuffer &serialize(MemoryBuffer & out) const;
+    bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     void deserialize(MemoryBuffer & in);
     void deserializeMerge(MemoryBuffer& in);
 protected:

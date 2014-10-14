@@ -211,7 +211,6 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual bool isGraphInvariant() const = 0;
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
     virtual IDefRecordMeta *queryActivityMeta() const = 0;
-    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual unsigned numInputs() const = 0;
 };
 interface IGraphResult : public IInterface

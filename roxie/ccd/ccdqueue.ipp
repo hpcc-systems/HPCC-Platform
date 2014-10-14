@@ -103,7 +103,6 @@ public:
     }
 
     virtual void flush(bool last_message) { data.setLength(lastput); }
-    virtual void abort() {}
     virtual void sendMetaInfo(const void *buf, unsigned len) { throwUnexpected(); }
     virtual unsigned size() const { return lastput; }
 };

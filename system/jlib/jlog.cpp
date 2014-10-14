@@ -2540,6 +2540,24 @@ void SysLogMsgHandler::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("handler", handlerTree);
 }
 
+// Default implementations of the functions in IContextLogger interface
+
+void IContextLogger::CTXLOG(const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    CTXLOGva(format, args);
+    va_end(args);
+}
+
+void IContextLogger::logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    logOperatorExceptionVA(E, file, line, format, args);
+    va_end(args);
+}
+
 class DummyLogCtx : implements IContextLogger
 {
 public:
@@ -2547,33 +2565,11 @@ public:
     virtual void Link() const {}
     virtual bool Release() const { return false; }
 
-    virtual void CTXLOG(const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGva(format, args);
-        va_end(args);
-    }
     virtual void CTXLOGva(const char *format, va_list args) const
     {
         StringBuffer ss;
         ss.valist_appendf(format, args);
         DBGLOG("%s", ss.str());
-    }
-    virtual void CTXLOGa(unsigned activityId, const char *text) const
-    {
-        DBGLOG("[%d] %s", activityId, text);
-    }
-    virtual StringBuffer &getLogPrefix(StringBuffer &ret) const 
-    {
-        return ret;
-    }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        logOperatorExceptionVA(E, file, line, format, args);
-        va_end(args);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
     {
@@ -2589,11 +2585,10 @@ public:
             ss.append(": ").valist_appendf(format, args);
         LOG(MCoperatorProgress, unknownJob, "%s", ss.str());
     }
-    virtual bool isIntercepted() const
-    {
-        return false;
-    }
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
     }
     virtual unsigned queryTraceLevel() const

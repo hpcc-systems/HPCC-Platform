@@ -1205,10 +1205,7 @@ public:
             Owned<IRoxieServerContext> ctx = queryFactory->createContext(wu, logctx);
             try
             {
-                {
-                    MTIME_SECTION(logctx.queryTimer(), "Process");
-                    ctx->process();
-                }
+                ctx->process();
                 memused = ctx->getMemoryUsage();
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(false);
@@ -1247,7 +1244,6 @@ public:
             logctx.getStats(s);
             logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d%s", wuid.get(), elapsed, memused, priority, slavesReplyLen, s.str());
         }
-        logctx.flush(true, false);
     }
 
 private:
@@ -1893,7 +1889,6 @@ readAnother:
         }
         else
         {
-            logctx.flush(true, false);
             try
             {
                 if (client && !isHTTP && !isStatus)

@@ -1411,7 +1411,7 @@ void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
     }
 }
 
-MemoryBuffer& CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
+bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
 {
     unsigned numValid = 0;
     ForEachItem(i1)
@@ -1430,7 +1430,7 @@ MemoryBuffer& CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
             out.append(value);
         }
     }
-    return out;
+    return numValid != 0;
 }
 
 //---------------------------------------------------
