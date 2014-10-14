@@ -10258,6 +10258,7 @@ JoinFlag
                             $$.setExpr(createExprAttribute(unstableAtom));
                             $$.setPosition($1);
                         }
+    | STREAMED          {   $$.setExpr(createAttribute(streamedAtom)); $$.setPosition($1); }
     ;
 
 

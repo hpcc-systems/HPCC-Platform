@@ -14392,7 +14392,7 @@ bool isKeyedJoin(IHqlExpression * expr)
     node_operator op = expr->getOperator();
     if ((op == no_join) || (op == no_joincount) || (op == no_denormalize) || (op == no_denormalizegroup))
     {
-        if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom))
+        if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom) || expr->hasAttribute(streamedAtom))
             return false;
         if (expr->hasAttribute(keyedAtom) || containsAssertKeyed(expr->queryChild(2)))
             return true;
