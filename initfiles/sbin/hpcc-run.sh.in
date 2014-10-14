@@ -31,19 +31,33 @@ print_usage(){
         echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] [-n concurrent] [-s] [-S] {start|stop|restart|status|setup}"
         echo "  -a|--action: HPCC service name. Either hpcc-init (default) or dafilesrv."
         echo "  -c|--comp: HPCC component. For example, mydali, myroxie, mythor, etc."
-        echo "  -n|--concurrent: How many concurrent instances to run. The default is 5."
-        echo "  -S|--sequentially: For the command to run sequentially. i.e. one host a time."
+        echo "  -n|--concurrent: How many concurrent instances to run. The default is equal to the number of nodes present."
+        echo "  -S|--sequentially: For the command to run sequentially. i.e. one host a time. (overrides -n)"
         echo "  -s|--save: Save the result to a file named by ip."
         echo
         end 1
 }
 
 getIPS(){
+    if [ -z "${comp}" ]; then
         IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -machines | awk -F, '{print \$1}'  | sort | uniq`
+    else
+        IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep -e "${comp}" | awk -F, '{ print \$3 }' | sort | uniq`
+        if [ -z "${IPS}" ]; then
+            log_failure_msg "Component ${comp} not found"
+            print_usage
+            end 1
+        fi
+    fi
 }
 
 getDali(){
         DIP=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep Dali | awk -F, '{print \$3}'  | sort | uniq`
+}
+
+createIPListFile(){
+    _file=$1
+    echo "$IPS" > $_file
 }
 
 createIPListFileExcludeDIP(){
@@ -88,7 +102,6 @@ doOneIP(){
        echo "$_ip: Cannot Ping host? (Host Alive?)"
        return 1
    fi
-
 }
 
 createScript(){
@@ -115,7 +128,7 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
               CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
           fi
           echo "\$IP: Running \$CMD";
-          if [ $run_in_seq -eq 1 ]
+          if [ $concurrent -ne 1 ]
           then
               CMD="\$CMD | tee $hpccStatusFile"
           else
@@ -142,22 +155,20 @@ SCRIPTFILE
 }
 
 runScript() {
-
-   if [ $run_in_seq -eq 0 ] && [ $hasPython -eq 1 ]
-   then
-      eval ${INSTALL_DIR}/sbin/cluster_script.py -f ${scriptFile} "$OPTIONS"
-      rc=$?
-   else
-      if [ $run_in_seq -eq 0 ] 
-      then
-         echo ""
-         echo "Cannot detect python version ${expected_python_version}+. Will run on the cluster hosts sequentially."
-         echo ""
-      fi
-      run_cluster ${scriptFile} 0 $1
-      rc=$?
-   fi
-   rm -rf $scriptFile
+    if [ $concurrent -ne 1 ] && [ $hasPython -eq 1 ]; then
+        OPTIONS="${OPTIONS:+"$OPTIONS "}-n ${concurrent}"
+        eval ${INSTALL_DIR}/sbin/cluster_script.py -f ${scriptFile} "$OPTIONS"
+        rc=$?
+    else
+        if [ $hasPython -eq 0 ]; then
+            echo ""
+            echo "Cannot detect python version ${expected_python_version}+. Will run on the cluster hosts sequentially."
+            echo ""
+        fi
+        run_cluster ${scriptFile} 0 $1
+        rc=$?
+    fi
+    rm -rf $scriptFile
 }
 
 doSetup() {
@@ -165,7 +176,7 @@ doSetup() {
      scriptFile=/tmp/${action}_setup_$$
      createScript $scriptFile $action "setup" $comp
      runScript
-     [ $run_in_seq -eq 0 ] && report "${action} setup"
+     [ $concurrent -ne 1 ] && report "${action} setup"
 }
 
 doStatus() {
@@ -173,7 +184,7 @@ doStatus() {
      scriptFile=/tmp/${action}_status_$$
      createScript $scriptFile $action "status" $comp
      runScript
-     [ $run_in_seq -eq 0 ] && report "${action} status"
+     [ $concurrent -ne 1 ] && report "${action} status"
 }
 
 doStop() {
@@ -181,36 +192,63 @@ doStop() {
     init stop
     scriptFile=/tmp/${action}_stop_$$
     createScript $scriptFile $action "stop" $comp
-    OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsExcludeDIP"
-    runScript $IPsExcludeDIP
-    [ $run_in_seq -eq 0 ] && report "${action} stop" $DIP
-
-    doOneIP $DIP $action "stop" $comp || end 0
+    if [ -n "${comp}" ]; then
+        OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsFile"
+        runScript $IPsFile
+        report "${action} stop"
+    else
+        OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsExcludeDIP"
+        runScript $IPsExcludeDIP
+        report "${action} stop" $DIP
+        doOneIP $DIP $action "stop" $comp
+        if [ "${action}" = "hpcc-init" ]; then
+            echo "Service dafilesrv is still running".
+            echo "To stop it, run \"service dafilesrv stop\"."
+        fi
+    fi
 }
 
 
 doStart() {
     init start
-    doOneIP $DIP $action "start" $comp || end 1  
-
+    if [ -n "${comp}" ]; then
+        startFile=$IPsFile
+    else
+        doOneIP $DIP $action "start" $comp || end 1
+        startFile=$IPsExcludeDIP
+    fi
     echo "$action start in the cluster ..."
     scriptFile=/tmp/${action}_start_$$
     createScript $scriptFile $action "start" $comp
-    OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsExcludeDIP"
-    runScript $IPsExcludeDIP
+    OPTIONS="${OPTIONS:+"$OPTIONS "}-h $startFile"
+    runScript $startFile
+    if [ -n "${comp}" ]; then
+        report "${action} start"
+    else
+        report "${action} start" $DIP
+    fi
     [ $rc -ne 0 ] && end $rc
-    [ $run_in_seq -eq 0 ] && report "${action} start" $DIP
 }
 
 init() {
-     dateTime=$(date +"%Y%m%d_%H%M%S")
-     reportDir=/var/log/HPCCSystems/cluster/$1/${dateTime}
-     mkdir -p $reportDir
-     chown -R ${user}:${user} ${reportDir}/..
+    getIPS
+    getDali
+    IPsFile=/tmp/ip_list_$$
+    createIPListFile $IPsFile
+    IPsExcludeDIP=/tmp/ip_list_exclude_dip_$$
+    createIPListFileExcludeDIP $IPsExcludeDIP
+
+    if [ $concurrent -eq 0 ]; then
+        concurrent=$( wc -l $IPsFile | awk '{ print $1 }')
+    fi
+
+    dateTime=$(date +"%Y%m%d_%H%M%S")
+    reportDir=/var/log/HPCCSystems/cluster/$1/${dateTime}
+    mkdir -p $reportDir
+    chown -R ${user}:${user} ${reportDir}/..
 }
 
 report() {
-
     _title=$1
     hostToSkip=$2
 
@@ -221,8 +259,6 @@ report() {
        cat ${reportDir}/$_host | grep -v "ervice dafilesrv" | grep -v -e "^[[:space:]]*$" 
        echo
     done
-
-
 }
 
 
@@ -235,6 +271,7 @@ end() {
         rm -rf $reportDir
    fi
    [ -e "${IPsExcludeDIP}" ] &&  rm -rf ${IPsExcludeDIP}
+   [ -e "${IPsFile}" ] && rm -rf ${IPsFile}
    exit $1
 }
 
@@ -257,17 +294,12 @@ envfile=$configs/$environment
 configfile=${CONFIG_DIR}/${ENV_CONF_FILE}
 
 
-getIPS
-getDali
-IPsExcludeDIP=/tmp/ip_list_exclude_dip_$$
-createIPListFileExcludeDIP $IPsExcludeDIP
-
 hasPython=0
 save=0
-run_in_seq=0
 expected_python_version=2.6
 is_python_installed $expected_python_version
 [ $? -eq 0 ] && hasPython=1
+concurrent=0
 
 OPTIONS="-e $configfile -s ${SECTION:-DEFAULT}"
 
@@ -281,20 +313,18 @@ while true ; do
         -a|--action) action=$2
             shift 2 ;;
         -n|--concurrent) 
-            if [ -n "$2" ] && [[ $2 =~ ^[0-9]+$ ]]
-            then
-                [ $2 -gt 0 ] && OPTIONS="${OPTIONS:+"$OPTIONS "}-n $2"
-
+            if [ -n "$2" ] && [[ $2 =~ ^[1-9][0-9]*$ ]] && [ $concurrent -ne 1 ]; then
+                concurrent=$2
             fi
-
             shift 2 ;;
-        -S|--sequentially) run_in_seq=1
-                   RUN_CLUSTER_DISPLAY_OUTPUT=TRUE
-                   shift ;;
+        -S|--sequentially)
+            concurrent=1
+            RUN_CLUSTER_DISPLAY_OUTPUT=TRUE
+            shift ;;
         -s|--save) save=1
-                   shift ;;
+            shift ;;
         -h|--help) print_usage
-                   shift ;;
+            shift ;;
         --) shift ; break ;;
         *) print_usage ;;
     esac
@@ -320,7 +350,7 @@ for arg; do
         stop) 
             doStop
             ;;
-        restart) 
+        restart)
             doStop
             doStart
             ;;
