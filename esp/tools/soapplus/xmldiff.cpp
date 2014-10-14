@@ -23,6 +23,16 @@
 
 #include "jliball.hpp"
 
+static int compInt(const int* a, const int* b)
+{
+    if(*a == *b)
+        return 0;
+    else if(*a > *b)
+        return 1;
+    else 
+        return -1;
+}
+
 CXmlDiff::CXmlDiff(IProperties* globals, const char* left, const char* right, IPropertyTree* cfgtree)
 {
     m_globals = globals;
@@ -41,6 +51,11 @@ CXmlDiff::CXmlDiff(IProperties* globals, const char* left, const char* right, IP
         m_ooo = true;
     else
         m_ooo = false;
+
+    if(globals && globals->hasProp("ordsen"))
+        m_ordsen = true;
+    else
+        m_ordsen = false;
 
     if(cfgtree)
     {
@@ -371,6 +386,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     }
 
     bool isDS = isDataset(xpath);
+    ArrayOf<int> A;
     if(t1->hasChildren() && t2->hasChildren())
     {
         int num1 = t1->numChildren();
@@ -453,6 +469,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
                                 else
                                 {
                                     foundmatch = true;
+                                    A.append(j);
                                     ptrs1[i] = NULL;
                                     ptrs2[j] = NULL;
                                     break;
@@ -466,6 +483,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
                                 ptrs1[i] = NULL;
                                 ptrs2[j] = NULL;
                                 foundmatch = true;
+                                A.append(j);
                                 break;
                             }
                         }
@@ -506,8 +524,24 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
 
         delete[] ptrs1;
         delete[] ptrs2;
-        m_compcache.setValue(keybuf,true);
-        return true;
+
+        bool cmpResult = true;
+        if(m_ordsen)
+        {
+            ArrayOf<int> B;
+            ForEachItemIn(x, A)
+                B.append(x);
+            B.sort(compInt);
+            for(unsigned int k = 0; k < A.length(); k++)
+                if(A[k] != B[k])
+                {
+                    cmpResult = false;
+                    break;
+                }
+        }
+
+        m_compcache.setValue(keybuf,cmpResult);
+        return cmpResult;
     }
     else if((t1->hasChildren() && !t2->hasChildren()) || (!t1->hasChildren() && t2->hasChildren()))
     {
@@ -917,61 +951,210 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
             }
         }
 
-        for(i = 0; i < num1; i++)
+        if(m_ordsen)
         {
-            if(!ptrs1[i])
-                continue;
-            const char* name1 = ptrs1[i]->queryName();
-
-            const char* did = NULL;
-            if(isDS && stricmp(name1, "Row") == 0 && ptrs1[i]->hasProp("did"))
+            IPropertyTree** tmpptrs1 = new IPropertyTree*[num1];
+            IPropertyTree** tmpptrs2 = new IPropertyTree*[num2];
+            int i;
+            for(i = 0; i < num1; i++)
+                tmpptrs1[i] = ptrs1[i];
+            for(i = 0; i < num2; i++)
+            tmpptrs2[i] = ptrs2[i];
+            ArrayOf<int> A;
+            for(i = 0; i < num1; i++)
             {
-                did = ptrs1[i]->queryProp("did");
-            }
+                if(!tmpptrs1[i])
+                    continue;
+                const char* name1 = tmpptrs1[i]->queryName();
 
-            for(int j = 0; j < num2; j++)
-            {
-                if(ptrs2[j])
+                const char* did = NULL;
+                if(isDS && stricmp(name1, "Row") == 0 && tmpptrs1[i]->hasProp("did"))
                 {
-                    const char* name2 = ptrs2[j]->queryName();
-                    if(name1 && name2 && strcmp(name1, name2) == 0)
-                    {
-                        StringBuffer xpathbuf(xpath);
-                        xpathbuf.append("/").append(name1);
-                        
-                        StringBuffer xpathFullBuf(xpathFull);
-                        xpathFullBuf.append("/").append(name1);
-                        StringBuffer attrString;
-                        getAttrString(ptrs2[j], attrString);
-                        if(attrString.length())
-                            xpathFullBuf.appendf("[%s]", attrString.str());
+                    did = tmpptrs1[i]->queryProp("did");
+                }
 
-                        if(did && *did)
+                for(int j = 0; j < num2; j++)
+                {
+                    if(tmpptrs2[j])
+                    {
+                        const char* name2 = tmpptrs2[j]->queryName();
+                        if(name1 && name2 && strcmp(name1, name2) == 0)
                         {
-                            const char* did2 = ptrs2[j]->queryProp("did");
-                            if(did2 && *did2 && strcmp(did, did2) == 0)
+                            StringBuffer xpathbuf(xpath);
+                            xpathbuf.append("/").append(name1);
+                            
+                            StringBuffer xpathFullBuf(xpathFull);
+                            xpathFullBuf.append("/").append(name1);
+                            StringBuffer attrString;
+                            getAttrString(tmpptrs2[j], attrString);
+                            if(attrString.length())
+                                xpathFullBuf.appendf("[%s]", attrString.str());
+
+                            if(did && *did)
                             {
-                                diffPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
-                                ptrs1[i] = NULL;
-                                ptrs2[j] = NULL;
-                                break;
+                                const char* did2 = tmpptrs2[j]->queryProp("did");
+                                if(did2 && *did2 && strcmp(did, did2) == 0)
+                                {
+                                    tmpptrs1[i] = NULL;
+                                    tmpptrs2[j] = NULL;
+                                    A.append(j);
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                bool isEqual = cmpPtree(xpathbuf.str(), tmpptrs1[i], tmpptrs2[j], xpathFullBuf.str());
+                                if(isEqual)
+                                {
+                                    tmpptrs1[i] = NULL;
+                                    tmpptrs2[j] = NULL;
+                                    A.append(j);
+                                    break;
+                                }
                             }
                         }
-                        else
+                    }
+                }
+            }
+            delete[] tmpptrs1;
+            delete[] tmpptrs2;
+
+            ArrayOf<int> B;
+            for(unsigned k = 0; k < A.length(); k++)
+            {
+                B.append(A[k]);
+            }
+            B.sort(compInt);
+            //printf("--------------\n");
+            for(unsigned k = 0; k < B.length(); k++)
+            {
+                //printf("%d %d\n", A[k], B[k]);
+                if(A.item(k) != B.item(k))
+                    A[k] = -1;
+            }
+
+            int ind = 0;
+            for(i = 0; i < num1; i++)
+            {
+                if(!ptrs1[i])
+                    continue;
+                const char* name1 = ptrs1[i]->queryName();
+
+                const char* did = NULL;
+                if(isDS && stricmp(name1, "Row") == 0 && ptrs1[i]->hasProp("did"))
+                {
+                    did = ptrs1[i]->queryProp("did");
+                }
+
+                for(int j = 0; j < num2; j++)
+                {
+                    if(ptrs2[j])
+                    {
+                        const char* name2 = ptrs2[j]->queryName();
+                        if(name1 && name2 && strcmp(name1, name2) == 0)
                         {
-                            bool isEqual = cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
-                            if(isEqual)
+                            StringBuffer xpathbuf(xpath);
+                            xpathbuf.append("/").append(name1);
+                            
+                            StringBuffer xpathFullBuf(xpathFull);
+                            xpathFullBuf.append("/").append(name1);
+                            StringBuffer attrString;
+                            getAttrString(ptrs2[j], attrString);
+                            if(attrString.length())
+                                xpathFullBuf.appendf("[%s]", attrString.str());
+
+                            if(did && *did)
                             {
-                                ptrs1[i] = NULL;
-                                ptrs2[j] = NULL;
-                                break;
+                                const char* did2 = ptrs2[j]->queryProp("did");
+                                if(did2 && *did2 && strcmp(did, did2) == 0)
+                                {
+                                    if(A[ind] != -1)
+                                    {
+                                        diffPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
+                                        ptrs1[i] = NULL;
+                                        ptrs2[j] = NULL;
+                                    }
+                                    ind++;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                bool isEqual = cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
+                                if(isEqual)
+                                {
+                                    if(A[ind] != -1)
+                                    {
+                                        ptrs1[i] = NULL;
+                                        ptrs2[j] = NULL;
+                                    }
+                                    ind++;
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        
+        else
+        {
+            for(i = 0; i < num1; i++)
+            {
+                if(!ptrs1[i])
+                    continue;
+                const char* name1 = ptrs1[i]->queryName();
+
+                const char* did = NULL;
+                if(isDS && stricmp(name1, "Row") == 0 && ptrs1[i]->hasProp("did"))
+                {
+                    did = ptrs1[i]->queryProp("did");
+                }
+
+                for(int j = 0; j < num2; j++)
+                {
+                    if(ptrs2[j])
+                    {
+                        const char* name2 = ptrs2[j]->queryName();
+                        if(name1 && name2 && strcmp(name1, name2) == 0)
+                        {
+                            StringBuffer xpathbuf(xpath);
+                            xpathbuf.append("/").append(name1);
+                            
+                            StringBuffer xpathFullBuf(xpathFull);
+                            xpathFullBuf.append("/").append(name1);
+                            StringBuffer attrString;
+                            getAttrString(ptrs2[j], attrString);
+                            if(attrString.length())
+                                xpathFullBuf.appendf("[%s]", attrString.str());
+
+                            if(did && *did)
+                            {
+                                const char* did2 = ptrs2[j]->queryProp("did");
+                                if(did2 && *did2 && strcmp(did, did2) == 0)
+                                {
+                                    diffPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
+                                    ptrs1[i] = NULL;
+                                    ptrs2[j] = NULL;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                bool isEqual = cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
+                                if(isEqual)
+                                {
+                                    ptrs1[i] = NULL;
+                                    ptrs2[j] = NULL;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         int cost = 0;
 
         //calculate cost only if m_difflimit is non-zero
