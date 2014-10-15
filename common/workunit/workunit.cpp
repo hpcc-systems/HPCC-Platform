@@ -10592,8 +10592,12 @@ extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const ch
     Owned<IConstWUStatistic> totalThisThorTime = workunit->getStatistic(queryStatisticsComponentName(), GLOBAL_SCOPE, StTimeElapsed);
     if (totalThorTime)
         totalTimeNs = totalThorTime->getValue();
+    else
+        totalTimeNs = 0;
     if (totalThisThorTime)
         totalThisTimeNs = totalThisThorTime->getValue();
+    else
+        totalThisTimeNs = 0;
 }
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind)
