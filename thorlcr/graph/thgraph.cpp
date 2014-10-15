@@ -2427,25 +2427,11 @@ public:
     {
         traceLevel = 1;
     }
-    virtual void CTXLOG(const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGva(format, args);
-        va_end(args);
-    }
     virtual void CTXLOGva(const char *format, va_list args) const
     {
         StringBuffer ss;
         ss.valist_appendf(format, args);
         LOG(MCdebugProgress, thorJob, "%s", ss.str());
-    }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        logOperatorExceptionVA(E, file, line, format, args);
-        va_end(args);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
     {
@@ -2461,7 +2447,10 @@ public:
             ss.append(": ").valist_appendf(format, args);
         LOG(MCoperatorProgress, thorJob, "%s", ss.str());
     }
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
     }
     virtual unsigned queryTraceLevel() const

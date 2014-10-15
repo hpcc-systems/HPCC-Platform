@@ -238,16 +238,17 @@ public:
     {
         return ctx->queryRowManager();
     }
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
-        ctx->noteStatistic(statCode, value, count);
+        ctx->noteStatistic(kind, value);
     }
-    virtual void CTXLOG(const char *format, ...) const
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
-        va_list args;
-        va_start(args, format);
-        ctx->CTXLOGva(format, args);
-        va_end(args);
+        ctx->mergeStats(from);
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const
+    {
+        return ctx->queryStats();
     }
     virtual void CTXLOGva(const char *format, va_list args) const
     {
@@ -257,23 +258,9 @@ public:
     {
         ctx->CTXLOGa(category, prefix, text);
     }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        ctx->logOperatorExceptionVA(E, file, line, format, args);
-        va_end(args);
-    }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
     {
         ctx->logOperatorExceptionVA(E, file, line, format, args);
-    }
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        ctx->CTXLOGaeva(E, file, line, prefix, format, args);
-        va_end(args);
     }
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
     {
@@ -366,6 +353,10 @@ public:
     virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
     {
         return ctx->getWorkunitRowReader(wuid, name, sequence, xmlTransformer, rowAllocator, isGrouped);
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from)
+    {
+        ctx->mergeStats(from);
     }
 protected:
     IRoxieSlaveContext * ctx;
@@ -466,6 +457,11 @@ public:
     {
         arg.Release();
         throwUnexpected();
+    }
+
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    {
+        CActivityFactory::mergeStats(from);
     }
 
     virtual void noteProcessed(unsigned idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
@@ -594,11 +590,6 @@ public:
     virtual IDefRecordMeta *queryActivityMeta() const
     {
         throwUnexpected(); // only implemented by index-related subclasses
-    }
-
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
-    {
-        mystats.noteStatistic(statCode, value, count);
     }
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
@@ -879,7 +870,7 @@ protected:
     IEngineRowAllocator *rowAllocator;
     CriticalSection statecrit;
 
-    mutable StatsCollector stats;
+    mutable CRuntimeStatisticCollection stats;
     unsigned processed;
     unsigned __int64 totalCycles;
     unsigned __int64 localCycles;
@@ -895,7 +886,8 @@ public:
     CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager) 
         : factory(_factory), 
           basehelper(_factory->getHelper()),
-          activityId(_factory->queryId())
+          activityId(_factory->queryId()),
+          stats(allStatistics)
     {
         input = NULL;
         ctx = NULL;
@@ -913,7 +905,7 @@ public:
         timeActivities = defaultTimeActivities;
     }
     
-    CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper)
+    CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper), stats(allStatistics)
     {
         activityId = 0;
         input = NULL;
@@ -935,7 +927,9 @@ public:
         if (traceStartStop)
         {
             // There was an old comment here stating // Note- CTXLOG may not be safe
-            // However as far as I can see it should always be safe
+            // There were problems in the destruction order of graphs that might mean an IndirectSlaveContext
+            // was released while activities still referenced it.
+            // However these should now all be fixed
             DBGLOG("%p destroy %d state=%s", this, activityId, queryStateText(state));
             if (watchActivityId && watchActivityId==activityId)
             {
@@ -948,9 +942,15 @@ public:
             state = STATEreset;  // bit pointless but there you go... 
         }
         if (factory && !debugging)
+        {
             factory->noteProcessed(0, processed, totalCycles, localCycles);
+            factory->mergeStats(stats);
+        }
         if (ctx)
+        {
             ctx->noteProcessed(*this, this, 0, processed, totalCycles, localCycles);
+            ctx->mergeStats(stats);
+        }
         basehelper.Release();
         ::Release(rowAllocator);
     }
@@ -960,6 +960,11 @@ public:
         return *this;
     }
 
+    virtual void mergeStats(MemoryBuffer &buf)
+    {
+        stats.deserializeMerge(buf);
+    }
+
     inline void createRowAllocator()
     {
         if (!rowAllocator) 
@@ -967,53 +972,12 @@ public:
     }
 
     // MORE - most of this is copied from ccd.hpp - can't we refactor?
-    virtual void CTXLOG(const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGva(format, args);
-        va_end(args);
-    }
-
-    virtual void CTXLOGva(const char *format, va_list args) const
-    {
-        StringBuffer text, prefix;
-        getLogPrefix(prefix);
-        text.valist_appendf(format, args);
-        CTXLOGa(LOG_TRACING, prefix.str(), text.str());
-    }
-
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
     {
         if (ctx)
             ctx->CTXLOGa(category, prefix, text);
         else
             DBGLOG("[%s] %s", prefix, text);
-    }
-
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        StringBuffer prefix;
-        getLogPrefix(prefix);
-        CTXLOGaeva(E, file, line, prefix.str(), format, args);
-        va_end(args);
-    }
-
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
-    {
-        StringBuffer prefix;
-        getLogPrefix(prefix);
-        CTXLOGaeva(E, file, line, prefix.str(), format, args);
-    }
-
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGaeva(E, file, line, prefix, format, args);
-        va_end(args);
     }
 
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
@@ -1048,14 +1012,17 @@ public:
             log->Release(); // Should never happen
         }
     }
-
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
-        if (factory)
-            factory->noteStatistic(statCode, value, count);
-        if (ctx)
-            ctx->noteStatistic(statCode, value, count);
-        stats.noteStatistic(statCode, value, count);
+        stats.addStatistic(kind, value);
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    {
+        stats.merge(from);
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const
+    {
+        return stats;
     }
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
@@ -1266,10 +1233,12 @@ public:
                 }
                 if (ctx->queryOptions().traceActivityTimes)
                 {
-                    stats.dumpStats(*this);
                     StringBuffer prefix, text;
                     getLogPrefix(prefix);
-                    text.appendf("records processed - %d", processed);
+                    stats.toStr(text);
+                    // MORE - probably don't need these any more - covered by the stats above
+                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
+                    text.clear().appendf("records processed - %d", processed);
                     CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
                     text.clear().appendf("total time - %d us", (unsigned) (cycle_to_nanosec(totalCycles)/1000));
                     CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
@@ -2497,7 +2466,7 @@ public:
                 const_cast<CRoxieServerSideCache *>(this)->moveToHead(found);
                 if (traceServerSideCache)
                     logctx.CTXLOG("CRoxieServerSideCache::findCachedResult cache hit");
-                logctx.noteStatistic(STATS_SERVERCACHEHIT, 1, 1);
+                logctx.noteStatistic(StNumServerCacheHits, 1);
                 return NULL;
                 // Because IMessageResult cannot be replayed, this echeme is flawed. I'm leaving the code here just as a stats gatherer to see how useful it would have been....
                 //IRoxieServerQueryPacket *ret = new CRoxieServerQueryPacket(p);
@@ -4111,7 +4080,13 @@ public:
                                     char *logInfo = (char *) extra->getNext(*rowlen);
                                     MemoryBuffer buf;
                                     buf.setBuffer(*rowlen, logInfo, false);
-                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
+                                    if (*logInfo == LOG_STATVALUES)
+                                    {
+                                        buf.skip(1);
+                                        activity.mergeStats(buf);
+                                    }
+                                    else
+                                        activity.queryLogCtx().CTXLOGl(new LogItem(buf));
                                     ReleaseRoxieRow(rowlen);
                                     ReleaseRoxieRow(logInfo);
                                 }
@@ -4215,7 +4190,13 @@ public:
                                 char *logInfo = (char *) extra->getNext(*rowlen);
                                 MemoryBuffer buf;
                                 buf.setBuffer(*rowlen, logInfo, false);
-                                activity.queryLogCtx().CTXLOGl(new LogItem(buf));
+                                if (*logInfo == LOG_STATVALUES)
+                                {
+                                    buf.skip(1);
+                                    activity.mergeStats(buf);
+                                }
+                                else
+                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
                                 ReleaseRoxieRow(rowlen);
                                 ReleaseRoxieRow(logInfo);
                             }
@@ -11774,7 +11755,7 @@ public:
     virtual void reset()
     {
         if (atmostsTriggered)
-            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
+            noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         right.clear();
         ReleaseClearRoxieRow(left);
         ReleaseClearRoxieRow(pendingRight);
@@ -15055,8 +15036,8 @@ public:
         if (resultInput)
             resultInput->reset();
         resultInput = NULL;
-        iterationGraphs.kill();
         outputs.kill();
+        iterationGraphs.kill(); // must be done after all activities killed
         if (probeManager)
         {
             probeManager->deleteGraph(NULL, (IArrayOf<IInputBase>*)&probes);
@@ -15435,6 +15416,7 @@ void LibraryCallFactoryExtra::set(const LibraryCallFactoryExtra & _other)
     maxOutputs = _other.maxOutputs;
     graphid = _other.graphid;
     libraryName.set(_other.libraryName);
+    embeddedGraphName.set(_other.embeddedGraphName);
     interfaceHash = _other.interfaceHash;
     embedded = _other.embedded;
 
@@ -17123,7 +17105,7 @@ public:
     virtual void reset()
     {
         if (atmostsTriggered)
-            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
+            noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         group.clear();
         CRoxieServerActivity::reset();
         defaultLeft.clear();
@@ -17689,7 +17671,7 @@ public:
     virtual void reset()
     {
         if (atmostsTriggered)
-            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
+            noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         CRoxieServerTwoInputActivity::reset();
         ReleaseClearRoxieRow(left);
         defaultRight.clear();
@@ -20278,13 +20260,14 @@ protected:
     bool sorted;
     bool maySkip;
     bool isLocal;
+    bool forceRemote;
     CachedOutputMetaData diskSize;
     Owned<const IResolvedFile> varFileInfo;
     Owned<IFileIOArray> varFiles;
 
     inline bool useRemote()
     {
-        return remote != NULL && numParts > 1;
+        return remote != NULL && (forceRemote || numParts > 1);
     }
 
 public:
@@ -20301,7 +20284,8 @@ public:
           maySkip(_maySkip),
           deserializeSource(NULL)
     {
-        if (numParts != 1 && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
+        forceRemote = factory->queryQueryFactory().queryOptions().disableLocalOptimizations;
+        if ((forceRemote || numParts != 1) && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
             remote.setown(new CSkippableRemoteResultAdaptor(remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip));
         compoundHelper = NULL;
         eof = false;
@@ -21628,9 +21612,9 @@ public:
     virtual void reset()
     {
         if (accepted)
-            noteStatistic(STATS_ACCEPTED, accepted, 1);
+            noteStatistic(StNumIndexAccepted, accepted);
         if (rejected)
-            noteStatistic(STATS_REJECTED, rejected, 1);
+            noteStatistic(StNumIndexRejected, rejected);
         remote.onReset();
         CRoxieServerActivity::reset();
         if (varFileInfo)
@@ -22399,9 +22383,9 @@ public:
     {
         onEOF();
         if (accepted)
-            noteStatistic(STATS_ACCEPTED, accepted, 1);
+            noteStatistic(StNumIndexAccepted, accepted);
         if (rejected)
-            noteStatistic(STATS_REJECTED, rejected, 1);
+            noteStatistic(StNumIndexRejected, rejected);
         if (variableFileName)
         {
             varFileInfo.clear();
@@ -24208,9 +24192,9 @@ public:
                                 result->append(endMarker);
                                 remote.injectResult(result.getClear());
                                 if (accepted)
-                                    noteStatistic(STATS_ACCEPTED, accepted, 1);
+                                    noteStatistic(StNumIndexAccepted, accepted);
                                 if (rejected)
-                                    noteStatistic(STATS_REJECTED, rejected, 1);
+                                    noteStatistic(StNumIndexRejected, rejected);
                             }
 
                             if (++fileNo < thisBase->numParts())
@@ -24429,7 +24413,7 @@ public:
         if (indexReadInput)
             indexReadInput->reset();
         if (atmostsTriggered)
-            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
+            noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         CRoxieServerActivity::reset(); 
         puller.reset();
         while (groups.ordinality())
@@ -25015,9 +24999,9 @@ public:
                                     remote.injectResult(result.getClear());
                                 }
                                 if (accepted)
-                                    noteStatistic(STATS_ACCEPTED, accepted, 1);
+                                    noteStatistic(StNumIndexAccepted, accepted);
                                 if (rejected)
-                                    noteStatistic(STATS_REJECTED, rejected, 1);
+                                    noteStatistic(StNumIndexRejected, rejected);
                             }
                             if (++fileNo < thisBase->numParts())
                             {
@@ -25586,19 +25570,6 @@ public:
 class CActivityGraph : public CInterface, implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph
 {
 protected:
-    IArrayOf<IRoxieServerActivity> activities;
-    IArrayOf<IRoxieInput> probes;
-    IRoxieServerActivityCopyArray sinks;
-    StringAttr graphName;
-    Owned<CGraphResults> results;
-    CGraphResults graphLoopResults;
-    ActivityArray & graphDefinition;
-    CriticalSection evaluateCrit;
-
-    IProbeManager *probeManager;
-    unsigned id;
-    unsigned loopCounter;
-
     class ActivityGraphSlaveContext : public IndirectSlaveContext
     {
         SpinLock abortLock;
@@ -25705,6 +25676,20 @@ protected:
         CActivityGraph * container;
     } graphCodeContext;
 
+    // NOTE - destructor order is significant - need to destroy graphCodeContext and graphSlaveContext last
+
+    IArrayOf<IRoxieServerActivity> activities;
+    IArrayOf<IRoxieInput> probes;
+    IRoxieServerActivityCopyArray sinks;
+    StringAttr graphName;
+    Owned<CGraphResults> results;
+    CGraphResults graphLoopResults;
+    ActivityArray & graphDefinition;
+    CriticalSection evaluateCrit;
+
+    IProbeManager *probeManager;
+    unsigned id;
+    unsigned loopCounter;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -26516,7 +26501,7 @@ protected:
         queryDll.setown(createExeQueryDll("roxie"));
         stateInfo.setown(createPTreeFromXMLString("<test memoryLimit='50000000'/>"));
         queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, stateInfo, false, false));
-        ctx.setown(createSlaveContext(queryFactory, logctx, NULL));
+        ctx.setown(createSlaveContext(queryFactory, logctx, NULL, false));
         queryActiveTimer()->reset();
     }
 

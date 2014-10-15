@@ -455,7 +455,6 @@ class CSendManager : public CInterface, implements ISendManager
         unsigned        requested_size;
         MemoryBuffer    metaInfo;
         bool            last_message_done;
-        bool            aborted;
         int             queue_number;
         
     public:
@@ -476,7 +475,6 @@ class CSendManager : public CInterface, implements ISendManager
             package_header.msgSeq = _msgSeq;
             package_header.udpSequence = 0; // these are allocated when transmitted
             
-            aborted = false;
             packed_request = false;
             part_buffer = bufferManager->allocate();
             data_buffer_size = DATA_PAYLOAD - sizeof(UdpPacketHeader);
@@ -507,11 +505,6 @@ class CSendManager : public CInterface, implements ISendManager
             }
         }
 
-        virtual void abort() 
-        {
-            aborted = true;
-        }
-        
         virtual void *getBuffer(unsigned len, bool variable) 
         {
             if (variable)
@@ -591,7 +584,6 @@ class CSendManager : public CInterface, implements ISendManager
 
         virtual void flush(bool last_msg = false) 
         {
-            assert(!aborted);
             if (!last_message_done && last_msg) 
             {
                 last_message_done = true;

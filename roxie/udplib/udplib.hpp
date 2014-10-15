@@ -48,7 +48,6 @@ interface IMessagePacker : extends IInterface
     virtual void putBuffer(const void *buf, unsigned len, bool variable) = 0;
     virtual void flush(bool last_message = false) = 0;
     virtual bool dataQueued() = 0;
-    virtual void abort() = 0;
     virtual void sendMetaInfo(const void *buf, unsigned len) = 0;
 
     virtual unsigned size() const = 0;  // Total amount written via putBuffer plus any overhead from record length prefixes

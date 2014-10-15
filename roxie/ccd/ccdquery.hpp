@@ -74,9 +74,9 @@ class CRoxieWorkflowMachine;
 
 interface ISharedOnceContext : extends IInterface
 {
-    virtual IPropertyTree &queryOnceContext(const IQueryFactory *queryFactory, const ContextLogger &_logctx) const = 0;
+    virtual IPropertyTree &queryOnceContext(const IQueryFactory *queryFactory, const IRoxieContextLogger &_logctx) const = 0;
     virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
-    virtual void checkOnceDone(const IQueryFactory *queryFactory, const ContextLogger &_logctx) const = 0;
+    virtual void checkOnceDone(const IQueryFactory *queryFactory, const IRoxieContextLogger &_logctx) const = 0;
 };
 
 //----------------------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ public:
 
     void setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo);
     void setFromContext(const IPropertyTree *ctx);
-    void setFromSlaveContextLogger(const SlaveContextLogger &logctx);
+    void setFromSlaveLoggingFlags(unsigned loggingFlags);
 
 
     unsigned priority;
@@ -130,7 +130,7 @@ private:
 
 interface IQueryFactory : extends IInterface
 {
-    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const = 0;
+    virtual IRoxieSlaveContext *createSlaveContext(const IRoxieContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const = 0;
     virtual IActivityGraph *lookupGraph(const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const = 0;
     virtual ISlaveActivityFactory *getSlaveActivityFactory(unsigned id) const = 0;
     virtual IRoxieServerActivityFactory *getRoxieServerActivityFactory(unsigned id) const = 0;
@@ -151,13 +151,13 @@ interface IQueryFactory : extends IInterface
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual ISharedOnceContext *querySharedOnceContext() const = 0;
     virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
-    virtual IPropertyTree &queryOnceContext(const ContextLogger &logctx) const = 0;
+    virtual IPropertyTree &queryOnceContext(const IRoxieContextLogger &logctx) const = 0;
 
     virtual const IRoxiePackage &queryPackage() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
 
     virtual IPropertyTree *cloneQueryXGMML() const = 0;
-    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const ContextLogger &logctx) const = 0;
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx) const = 0;
     virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
 
     virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName) const = 0;
@@ -225,7 +225,7 @@ protected:
     ActivityArrayArray childQueries;
     UnsignedArray childQueryIndexes;
     CachedOutputMetaData meta;
-    mutable StatsCollector mystats;
+    mutable CRuntimeStatisticCollection mystats;
 
 public:
     CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
@@ -243,10 +243,9 @@ public:
     virtual IQueryFactory &queryQueryFactory() const { return queryFactory; }
     virtual ThorActivityKind getKind() const { return kind; }
 
-    virtual void noteStatistics(const StatsCollector &fromStats)
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
-        // Merge in the stats from this instance
-        mystats.merge(fromStats);
+        mystats.merge(from);
     }
 
     virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const
@@ -256,7 +255,13 @@ public:
 
     virtual void getNodeProgressInfo(IPropertyTree &node) const
     {
-        mystats.getNodeProgressInfo(node);
+        ForEachItemIn(i, mystats)
+        {
+            StatisticKind kind = mystats.getKind(i);
+            unsigned __int64 value = mystats.getStatisticValue(kind);
+            if (value)
+                putStatsValue(&node, queryStatisticName(kind), "sum", value);
+        }
     }
 
     virtual void resetNodeProgressInfo()
