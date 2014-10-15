@@ -706,8 +706,13 @@ dfuplus action=dspray srcname=le::imagedb
           from all the nodes of the cluster), typically from one cluster to
           another. It appropriately handles re-distributing the file parts if
           the source and destination clusters do not have the same number of
-          nodes. It may also be used to copy files from other HPCC
-          environments (using the <emphasis>srcdali</emphasis> option).</para>
+          nodes. </para>
+
+          <para>The copy operation can also be used to copy files from other
+          HPCC environments (using the <emphasis>srcdali</emphasis> option).
+          This is also known as a remote copy. For a remote copy of a file
+          that contains a variable length field, you must include the
+          <emphasis role="bold">nosplit</emphasis> option. </para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">copy</emphasis> <emphasis>operation</emphasis>:</para>
