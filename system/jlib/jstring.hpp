@@ -371,7 +371,7 @@ extern jlib_decl const char *encodeXML(const char *x, IIOStream &out, unsigned f
 extern jlib_decl void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsigned len=(unsigned)-1);
 
 extern jlib_decl int utf8CharLen(unsigned char ch);
-extern jlib_decl int utf8CharLen(const unsigned char *ch);
+extern jlib_decl int utf8CharLen(const unsigned char *ch, unsigned maxsize = (unsigned)-1);
 
 inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)
 {
