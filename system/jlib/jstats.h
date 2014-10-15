@@ -401,7 +401,7 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class StatisticsMapping
+class jlib_decl StatisticsMapping
 {
 public:
     //Takes a list of StatisticKind terminated by StKindNone
@@ -430,7 +430,7 @@ extern const jlib_decl StatisticsMapping allStatistics;
 //---------------------------------------------------------------------------------------------------------------------
 
 //MORE: We probably want to have functions that perform the atomic equivalents
-class CRuntimeStatistic
+class jlib_decl CRuntimeStatistic
 {
 public:
     CRuntimeStatistic() : value(0) {}
@@ -459,7 +459,7 @@ protected:
 
 //This class is used to gather statistics for an activity - it has no notion of scope.
 interface IContextLogger;
-class CRuntimeStatisticCollection
+class jlib_decl CRuntimeStatisticCollection
 {
 public:
     CRuntimeStatisticCollection(const StatisticsMapping & _mapping) : mapping(_mapping)

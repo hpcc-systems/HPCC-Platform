@@ -997,7 +997,7 @@ extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char c
 /* Their detail level can be modified from the default as MCdebugInfo(50). */
 /***************************************************************************/
 
-interface IContextLogger : extends IInterface
+interface jlib_decl IContextLogger : extends IInterface
 {
     void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
     virtual void CTXLOGva(const char *format, va_list args) const = 0;
