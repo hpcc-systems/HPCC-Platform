@@ -1177,8 +1177,11 @@ void FileSprayer::calculateSprayPartition()
         // Store discovered CSV record structure into target logical file.
         StringBuffer recStru;
         partitioners.item(0).getRecordStructure(recStru);
-        IDistributedFile * target = distributedTarget.get();
-        target->setECL(recStru.str());
+        if (recStru.length() > 0)
+        {
+            IDistributedFile * target = distributedTarget.get();
+            target->setECL(recStru.str());
+        }
     }
 
 }
@@ -2941,8 +2944,16 @@ void FileSprayer::updateTargetProperties()
 
             // and simple (top level) elements
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
-            ForEach(*iter) {
-                curProps.addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
+            ForEach(*iter)
+            {
+                const char * _propName = iter->query().queryName();
+                LOG(MCevent, unknownJob, "queryName():'%s'", _propName);
+                if (stricmp(_propName,"ECL") == 0)
+                    // To prevent multiple "ECL" properties and
+                    // keep existing source record structure definition
+                    curProps.setPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
+                else
+                    curProps.addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
             }
         }
     }
