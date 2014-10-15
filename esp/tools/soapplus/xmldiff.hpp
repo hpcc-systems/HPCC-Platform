@@ -43,6 +43,7 @@ private:
     MapStringTo<bool> m_compcache;
     int m_difflimit;
     bool m_ooo;
+    bool m_ordsen;
     IProperties* m_globals;
 
     void printPtree(const char* prefix, const char* xpath, IPropertyTree* t, const char* xpathFull);

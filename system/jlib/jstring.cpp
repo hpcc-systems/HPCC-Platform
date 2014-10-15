@@ -1474,7 +1474,7 @@ int utf8CharLen(unsigned char ch)
     return len;
 }
 
-int utf8CharLen(const unsigned char *ch)
+int utf8CharLen(const unsigned char *ch, unsigned maxsize)
 {
     //return 1 if this is an ascii character,
     //or 0 if its not a valid utf-8 character
@@ -1482,6 +1482,8 @@ int utf8CharLen(const unsigned char *ch)
         return 1;
 
     unsigned char len = utf8CharLen(*ch);
+    if (len>maxsize)
+        return 0;
     for (unsigned pos = 1; pos < len; pos++)
         if ((ch[pos] < 128) || (ch[pos] >= 192))
             return 0;  //its not a valid utf-8 character after all
@@ -1975,9 +1977,10 @@ StringBuffer &appendJSONRealValue(StringBuffer& s, const char *name, double valu
     return s;
 }
 
-inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch)
+inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch, unsigned &remaining)
 {
-    switch (*ch)
+    byte next = *ch;
+    switch (next)
     {
         case '\b':
             s.append("\\b");
@@ -1998,37 +2001,38 @@ inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch)
         case '\\':
         case '/':
             s.append('\\');
-            s.append(*ch);
+            s.append(next);
             break;
         default:
-            if (*ch >= ' ' && ((byte)*ch) < 128)
-                s.append(*ch);
-            else if (*ch < ' ' && *ch > 0)
-                s.append("\\u00").appendhex(*ch, true);
+            if (next >= ' ' && next < 128)
+                s.append(next);
+            else if (next < ' ' && next > 0)
+                s.append("\\u00").appendhex(next, true);
             else //json is always supposed to be utf8 (or other unicode formats)
             {
-                unsigned chlen = utf8CharLen((const unsigned char *)ch);
+                unsigned chlen = utf8CharLen((const unsigned char *)ch, remaining);
                 if (chlen==0)
-                    s.append("\\u00").appendhex(*ch, true);
+                    s.append("\\u00").appendhex(next, true);
                 else
                 {
-                    s.append(*ch);
-                    while(--chlen)
-                        s.append(*(++ch));
+                    s.append(chlen, ch);
+                    ch += (chlen-1);
+                    remaining -= (chlen-1);
                 }
             }
             break;
     }
     ch++;
+    remaining--;
     return s;
 }
 
-StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value)
+StringBuffer &encodeJSON(StringBuffer &s, unsigned size, const char *value)
 {
     if (!value)
         return s;
-    while (len-- && *value)
-        encodeJSONChar(s, value);
+    while (size)
+        encodeJSONChar(s, value, size);
     return s;
 }
 
@@ -2036,9 +2040,7 @@ StringBuffer &encodeJSON(StringBuffer &s, const char *value)
 {
     if (!value)
         return s;
-    while (*value)
-        encodeJSONChar(s, value);
-    return s;
+    return encodeJSON(s, strlen(value), value);
 }
 
 void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid)

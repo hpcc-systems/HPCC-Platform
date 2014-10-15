@@ -520,7 +520,7 @@ void CommonJsonWriter::outputUtf8(unsigned len, const char *field, const char *f
     if ((flags & XWFopt) && (rtlTrimUtf8StrLen(len, field) == 0))
         return;
     checkDelimit();
-    appendJSONStringValue(out, checkItemName(fieldname), len, field, true);
+    appendJSONStringValue(out, checkItemName(fieldname), rtlUtf8Size(len, field), field, true);
 }
 
 void CommonJsonWriter::outputBeginArray(const char *fieldname)

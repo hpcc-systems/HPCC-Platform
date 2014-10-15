@@ -2190,7 +2190,8 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
             bool isAllJoin = expr->queryAttribute(allAtom) != NULL;
             bool isHashJoin = expr->queryAttribute(hashAtom) != NULL;
             bool isSmartJoin = expr->queryAttribute(smartAtom) != NULL;
-            bool isKeyedJoin = !isAllJoin && !isLookupJoin && !isSmartJoin && (expr->queryAttribute(keyedAtom) || isKey(expr->queryChild(1)));
+            bool isStreamedJoin = expr->queryAttribute(streamedAtom) != NULL;
+            bool isKeyedJoin = !isAllJoin && !isLookupJoin && !isSmartJoin && !isStreamedJoin && (expr->queryAttribute(keyedAtom) || isKey(expr->queryChild(1)));
             bool isLocal = (expr->queryAttribute(localAtom) != NULL);
             bool fo = expr->queryAttribute(fullonlyAtom) || expr->queryAttribute(fullouterAtom);
             bool createDefaultLeft = fo || expr->queryAttribute(rightonlyAtom) || expr->queryAttribute(rightouterAtom);
@@ -3100,9 +3101,10 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
     case no_joincount:
         {
             bool isLookupJoin = queryAttribute(lookupAtom, parms) != NULL;
-            bool isSmartJoin = queryAttribute(smartAtom, parms) != NULL;
             bool isAllJoin = queryAttribute(allAtom, parms) != NULL;
-            bool isKeyedJoin = !isAllJoin && !isLookupJoin && !isSmartJoin && (queryAttribute(keyedAtom, parms) || isKey(&parms.item(1)));
+            bool isSmartJoin = queryAttribute(smartAtom, parms) != NULL;
+            bool isStreamedJoin = queryAttribute(streamedAtom, parms) != NULL;
+            bool isKeyedJoin = !isAllJoin && !isLookupJoin && !isSmartJoin && !isStreamedJoin && (queryAttribute(keyedAtom, parms) || isKey(&parms.item(1)));
 
             recordArg = 3;
             if (queryAttribute(groupAtom, parms))

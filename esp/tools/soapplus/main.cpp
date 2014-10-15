@@ -69,6 +69,7 @@ void usage()
     puts("   -gf : the output filename for generated message");
     puts("   -delay <min-milli-seconds> <max-milli-seconds> : randomly delay between requests in stress test. By default requests are sent without stop.");
     puts("   -ooo : the 2 input files to diff are Out-Of-Order, so do the best-match calculation while comparing them. (this will slow it down dramatically for big xml files).");
+    puts("   -ordsen : order sensitive. Even if there're matching tags, but if the tags in the files are not in the same order, they'll be deemed different.");
     puts("   -y: use default answers to yes or no prompts.");
     puts("   -wiz: ECL to ESP wizard mode.");
     puts("   -soapaction <url>: specify the soapaction.");
@@ -671,6 +672,11 @@ int main(int argc, char** argv)
         else if(stricmp(argv[i], "-ooo") == 0)
         {
             globals->setProp("ooo", "1");
+            i++;
+        }
+        else if(stricmp(argv[i], "-ordsen") == 0)
+        {
+            globals->setProp("ordsen", "1");
             i++;
         }
         else if(stricmp(argv[i], "-wiz") == 0)

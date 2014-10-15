@@ -2760,7 +2760,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         return removeAttribute(expr, hashAtom);
 
     //Check to see if this join should be done as a keyed join...
-    if (!expr->hasAttribute(lookupAtom) && !expr->hasAttribute(smartAtom) && !expr->hasAttribute(allAtom))
+    if (!expr->hasAttribute(lookupAtom) && !expr->hasAttribute(smartAtom) &&
+        !expr->hasAttribute(allAtom) && !expr->hasAttribute(streamedAtom))
     {
         if (rightDs->getOperator() == no_filter)
         {
@@ -2928,7 +2929,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
     //Sort,Sort->join is O(NlnN) lookup join using a hash table is O(N) =>convert for hthor/roxie
-    if (!isThorCluster(targetClusterType) && !expr->hasAttribute(_normalized_Atom) && !expr->hasAttribute(smartAtom))
+    if (!isThorCluster(targetClusterType) &&
+        !expr->hasAttribute(_normalized_Atom) && !expr->hasAttribute(smartAtom) && !expr->hasAttribute(streamedAtom))
     {
         bool createLookup = false;
         if ((op == no_join) && options.convertJoinToLookup)
