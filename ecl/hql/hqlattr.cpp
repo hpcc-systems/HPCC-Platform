@@ -802,6 +802,14 @@ public:
         {
         case no_field:
             {
+                //Remove the default value before transforming to avoid waste when processing before the expression tree is normalized
+                if (queryRealChild(expr, 0))
+                {
+                    HqlExprArray children;
+                    unwindChildren(children, expr, 1);
+                    OwnedHqlExpr plain = expr->clone(children);
+                    return transform(plain);
+                }
                 if (expr->hasAttribute(_linkCounted_Atom))
                 {
                     OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);

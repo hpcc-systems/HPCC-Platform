@@ -968,10 +968,17 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
         }
     case no_select:
         {
+            IHqlExpression * ds = expr->queryChild(0);
             IHqlExpression * field = expr->queryChild(1);
-            OwnedHqlExpr newDs = transform(expr->queryChild(0));
+            OwnedHqlExpr newDs = transform(ds);
+            if (newDs == ds)
+                return LINK(expr);
+
             children.append(*LINK(newDs));
-            children.append(*lookupNewSelectedField(newDs, field));
+            if (ds->queryRecord() == newDs->queryRecord())
+                children.append(*LINK(field));
+            else
+                children.append(*lookupNewSelectedField(newDs, field));
             break;
         }
     }

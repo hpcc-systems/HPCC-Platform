@@ -39,6 +39,8 @@ typedef unsigned short UChar;
 
 interface ITypeInfo;
 interface IValue;
+interface IHqlExpression;
+interface IHqlScope;
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define type_bigendianint       type_swapint
@@ -199,6 +201,8 @@ public:
     virtual unsigned getCrc() = 0;      // must be run independant.
     virtual typemod_t queryModifier() = 0;
     virtual IInterface * queryModifierExtra() = 0;
+    virtual IHqlExpression * castToExpression() = 0; // Here to avoid dynamic casts
+    virtual IHqlScope * castToScope() = 0;
 
     inline bool isBoolean() const { return getTypeCode() == type_boolean; }
 

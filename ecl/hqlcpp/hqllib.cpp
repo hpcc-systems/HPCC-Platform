@@ -121,7 +121,7 @@ unsigned HqlCppLibrary::getHash(const HqlExprArray & values, unsigned crc) const
         case type_groupedtable:
         case type_dictionary:
             {
-                OwnedHqlExpr normalizedRecord = normalizeRecord(translator, cur.queryRecord());
+                OwnedHqlExpr normalizedRecord = normalizeExpression(translator, cur.queryRecord());
                 OwnedHqlExpr serialized = getSerializedForm(normalizedRecord, diskAtom);
                 unsigned recordCrc = getExpressionCRC(serialized);
                 crc = hashc((const byte *)&tc, sizeof(tc), crc);
@@ -654,7 +654,8 @@ void HqlCppTranslator::buildLibraryGraph(BuildCtx & ctx, IHqlExpression * expr, 
     for (unsigned i2 = outputLibrary->numStreamedInputs(); i2 < numParams; i2++)
     {
         IHqlExpression * parameter = outputLibrary->queryInputExpr(i2);
-        extractBuilder->evaluateExpression(evalctx, parameter, dummyTarget, NULL, false);
+        OwnedHqlExpr normalParameter = normalizeExpression(*this, parameter);
+        extractBuilder->evaluateExpression(evalctx, normalParameter, dummyTarget, NULL, false);
     }
 
     BuildCtx graphctx(initctx);

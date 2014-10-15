@@ -48,6 +48,7 @@ SuperHashTable::SuperHashTable(void)
 #ifdef TRACE_HASH
     search_tot = 0;
     search_num = 0;
+    search_max = 0;
 #endif
 }
 
@@ -97,17 +98,14 @@ void SuperHashTable::reinit(unsigned initsize)
 SuperHashTable::~SuperHashTable()
 {
     doKill();
-#ifdef TRACE_HASH
-    dumpStats();
-#endif
 }
 
 #ifdef TRACE_HASH
 void SuperHashTable::dumpStats()
 {
     if (tablecount && search_tot && search_num)
-        printf("Hash table %d entries, %d size, average search length %d(%d/%d))\n", tablecount, tablesize, 
-               (int) (search_tot/search_num), search_tot, search_num);
+        printf("Hash table %d entries, %d size, average search length %d(%d/%d)) max %d\n", tablecount, tablesize,
+               (int) (search_tot/search_num), search_tot, search_num, search_max);
 }
 #endif
  
@@ -116,6 +114,8 @@ void SuperHashTable::note_searchlen(int len) const
 {
     search_tot += len;
     search_num++;
+    if (search_max < len)
+        search_max = len;
 }
 #endif
 
@@ -254,14 +254,18 @@ unsigned SuperHashTable::doFindExact(const void *et) const
         i = getHashFromElement(et) % tablesize;
 #endif
         unsigned is = i;
-        while (table[i]!=et)
+        loop
         {
+            const void * cur = table[i];
+            if (!cur || cur == et)
+                break;
             i++;
             if (i==tablesize)
                 i = 0;
-            if (!table[i] || i==is)
+            if (i==is)
                 break;
         }
+        setCache(i);
     }
     return i;
 }
@@ -519,6 +523,26 @@ void *SuperHashTable::addOrFind(void * donor)
         onAdd(donor);
         return donor;
     } 
+    return et;
+}
+
+void *SuperHashTable::addOrFindExact(void * donor)
+{
+    unsigned vm = doFindExact(donor);
+    void *et = table[vm];
+    if(!et)
+    {
+        unsigned tablelim = getTableLimit(tablesize);
+        if (tablecount>=tablelim)
+        {
+            expand();
+            vm = doFindExact(donor);
+        }
+        tablecount++;
+        table[vm] = donor;
+        onAdd(donor);
+        return donor;
+    }
     return et;
 }
 

@@ -59,6 +59,7 @@ protected:
     void             addNew(void * et); //use this when you are sure the key does not already exist in the table (saves some needless matching)
     void             addNew(void * donor, unsigned hash);
     void *           addOrFind(void *);
+    void *           addOrFindExact(void * donor);
     inline void *    find(const void * param) const { return table[doFind(param)]; }
     inline void *    find(unsigned hashcode, const void * param) const { return table[doFind(hashcode, param)]; }
     void *           findElement(unsigned hashcode, const void * searchE) const;
@@ -101,6 +102,7 @@ protected:
 #ifdef TRACE_HASH
     mutable int      search_tot;
     mutable int      search_num;
+    mutable int      search_max;
 #endif
 };
 
@@ -116,6 +118,8 @@ class SuperHashTableOf : public SuperHashTable
       { return SuperHashTable::replace(&et); }
     inline ET *      addOrFind(ET & et)
       { return static_cast<ET *>(SuperHashTable::addOrFind(&et)); }
+    inline ET *      addOrFindExact(ET & et)
+      { return static_cast<ET *>(SuperHashTable::addOrFindExact(&et)); }
     inline ET *      find(const FP * fp) const
       { return static_cast<ET *>(SuperHashTable::find(fp)); }
     inline ET *      next(const ET * et) const

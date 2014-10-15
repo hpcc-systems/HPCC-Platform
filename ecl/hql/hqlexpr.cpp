@@ -250,6 +250,9 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
 }
 MODULE_EXIT()
 {
+#ifdef TRACE_HASH
+    exprCache->dumpStats();
+#endif
     for (unsigned i=0; i<=8; i++)
     {
         ::Release(nullIntValue[i][0]);
@@ -3945,7 +3948,7 @@ IHqlSimpleScope * CHqlExpression::querySimpleScope()
     return NULL; 
 }
 
-#define HASHFIELD(p) hashcode = hashc((unsigned char *) &p, sizeof(p), hashcode)
+#define HASHFIELD(p) hashcode = hashvalue(p, hashcode)
 
 void CHqlExpression::setInitialHash(unsigned typeHash)
 {
@@ -4375,6 +4378,7 @@ IHqlExpression *CHqlExpression::queryRecord()
 }
 
 //== Commoning up code.... ==
+#if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
 void CHqlExpression::Link(void) const
 { 
 #ifdef GATHER_LINK_STATS
@@ -4396,6 +4400,7 @@ bool CHqlExpression::Release(void) const
     CHECK_EXPR_SEQID(2);
     return Parent::Release();
 }
+#endif
 
 
 void CHqlExpression::beforeDispose()
@@ -4706,7 +4711,7 @@ inline void addUniqueTable(HqlExprCopyArray & array, IHqlExpression * ds)
         array.append(*ds);
 }
 
-inline void addHiddenTable(HqlExprCopyArray & array, IHqlExpression * ds, IHqlExpression * selSeq)
+inline void addHiddenTable(HqlExprCopyArray & array, IHqlExpression * ds)
 {
 #if defined(GATHER_HIDDEN_SELECTORS)
     if (array.find(*ds) == NotFound)
@@ -4727,6 +4732,24 @@ inline void addActiveTable(HqlExprCopyArray & array, IHqlExpression * ds)
 }
 
 
+inline void addUniqueTable(UsedExpressionHashTable & array, IHqlExpression * ds)
+{
+    array.addOrFindExact(*ds);
+}
+
+inline void addActiveTable(UsedExpressionHashTable & array, IHqlExpression * ds)
+{
+    //left.subfield  should be reduced the base cursor
+    ds = queryDatasetCursor(ds);
+
+//  This test is valid once the tree is normalized, but now this can be called on a parse tree.
+//  assertex(ds == ds->queryNormalizedSelector());
+    node_operator dsOp = ds->getOperator();
+    if (dsOp != no_self && dsOp != no_selfref)
+        addUniqueTable(array, ds->queryNormalizedSelector());
+}
+
+
 //---------------------------------------------------------------------------------------------------------------------
 
 CUsedTables::CUsedTables()
@@ -4738,8 +4761,17 @@ CUsedTables::CUsedTables()
 
 CUsedTables::~CUsedTables()
 {
-    if (numTables > 1)
+    if (numTables == 1)
+    {
+        if (numActiveTables == 0)
+            tables.single->Release();
+    }
+    else if (numTables != 0)
+    {
+        for (unsigned i2=numActiveTables; i2 < numTables; i2++)
+            tables.multi[i2]->Release();
         delete [] tables.multi;
+    }
 }
 
 
@@ -4825,6 +4857,7 @@ void CUsedTables::set(HqlExprCopyArray & activeTables, HqlExprCopyArray & newTab
         else
         {
             tables.single = &newTables.item(0);
+            tables.single->Link();
         }
     }
     else if (numTables != 0)
@@ -4833,7 +4866,10 @@ void CUsedTables::set(HqlExprCopyArray & activeTables, HqlExprCopyArray & newTab
         for (unsigned i1=0; i1 < numActiveTables; i1++)
             multi[i1] = &activeTables.item(i1);
         for (unsigned i2=numActiveTables; i2 < numTables; i2++)
+        {
             multi[i2] = &newTables.item(i2-numActiveTables);
+            multi[i2]->Link();
+        }
         tables.multi = multi;
     }
 }
@@ -4852,9 +4888,16 @@ void CUsedTablesBuilder::addNewTable(IHqlExpression * expr)
     addUniqueTable(newScopeTables, expr);
 }
 
-void CUsedTablesBuilder::addHiddenTable(IHqlExpression * expr, IHqlExpression * selSeq)
+void CUsedTablesBuilder::addHiddenSelector(IHqlExpression * expr)
 {
-    ::addHiddenTable(newScopeTables, expr, selSeq);
+#if defined(GATHER_HIDDEN_SELECTORS)
+    //expr is always a newly created selector.  If this expression isn't shared, then it will not be used anywhere else
+    //in the expression tree, so don't add it.
+    if (!static_cast<CHqlExpression *>(expr)->IsShared())
+        return;
+
+    addUniqueTable(newScopeTables, expr);
+#endif
 }
 
 void CUsedTablesBuilder::addActiveTable(IHqlExpression * expr)
@@ -4864,16 +4907,22 @@ void CUsedTablesBuilder::addActiveTable(IHqlExpression * expr)
 
 void CUsedTablesBuilder::cleanupProduction()
 {
-    ForEachItemInRev(i, inScopeTables)
+    HqlExprCopyArray toRemove;
+    SuperHashIteratorOf<IHqlExpression> iter(inScopeTables);
+    ForEach(iter)
     {
-        switch (inScopeTables.item(i).getOperator())
+        IHqlExpression & cur = iter.query();
+        switch (cur.getOperator())
         {
         case no_matchattr:
         case no_matchrow:
-            inScopeTables.remove(i);
+            toRemove.append(cur);
             break;
         }
     }
+
+    ForEachItemIn(i, toRemove)
+        inScopeTables.remove(&toRemove.item(i));
 }
 
 void CUsedTablesBuilder::removeParent(IHqlExpression * expr)
@@ -4890,15 +4939,6 @@ void CUsedTablesBuilder::removeParent(IHqlExpression * expr)
             break;
         expr = root->queryChild(0);
         removeActive(expr->queryNormalizedSelector());
-    }
-}
-
-void CUsedTablesBuilder::removeActiveRecords()
-{
-    ForEachItemInRev(i, inScopeTables)
-    {
-        if (inScopeTables.item(i).isRecord())
-            inScopeTables.remove(i);
     }
 }
 
@@ -4926,6 +4966,40 @@ void CUsedTablesBuilder::removeRows(IHqlExpression * expr, IHqlExpression * left
     default:
         throwUnexpectedOp(rowsSide);
     }
+}
+
+void CUsedTablesBuilder::removeActiveRecords()
+{
+    HqlExprCopyArray toRemove;
+    SuperHashIteratorOf<IHqlExpression> iter(inScopeTables);
+    ForEach(iter)
+    {
+        IHqlExpression & cur = iter.query();
+        if (cur.isRecord())
+            toRemove.append(cur);
+    }
+
+    ForEachItemIn(i, toRemove)
+        inScopeTables.remove(&toRemove.item(i));
+}
+
+inline void expand(HqlExprCopyArray & target, const UsedExpressionHashTable & source)
+{
+    SuperHashIteratorOf<IHqlExpression> iter(source);
+    ForEach(iter)
+    {
+        IHqlExpression & cur = iter.query();
+        target.append(cur);
+    }
+}
+
+void CUsedTablesBuilder::set(CUsedTables & tables)
+{
+    HqlExprCopyArray inTables;
+    HqlExprCopyArray newTables;
+    expand(inTables, inScopeTables);
+    expand(newTables, newScopeTables);
+    tables.set(inTables, newTables);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -5042,10 +5116,10 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
         break;
     case childdataset_datasetleft:
         {
+            cacheChildrenTablesUsed(used, 1, max);
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-            cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
             used.removeParent(ds);
             used.removeRows(this, left, NULL);
@@ -5063,73 +5137,72 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             }
             if (!ignoreInputs)
                 cacheChildrenTablesUsed(used, 0, 1);
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
             break;
         }
     case childdataset_left:
         { 
+            cacheChildrenTablesUsed(used, 1, max);
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-            cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
             used.removeRows(this, left, NULL);
 
             if (!ignoreInputs)
                 cacheChildrenTablesUsed(used, 0, 1);
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
             break;
         }
     case childdataset_same_left_right:
     case childdataset_nway_left_right:
         {
+            cacheChildrenTablesUsed(used, 1, max);
+
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
-            cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
             used.removeActive(right);
             used.removeRows(this, left, right);
 
             if (!ignoreInputs)
                 cacheChildrenTablesUsed(used, 0, 1);
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-            used.addHiddenTable(right, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
+            used.addHiddenSelector(right);
             break;
         }
     case childdataset_top_left_right:
         {
+            cacheChildrenTablesUsed(used, 1, max);
+
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
-            cacheChildrenTablesUsed(used, 1, max);
             used.removeParent(ds);
             used.removeActive(left);
             used.removeActive(right);
             used.removeRows(this, left, right);
             cacheChildrenTablesUsed(used, 0, 1);
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-            used.addHiddenTable(right, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
+            used.addHiddenSelector(right);
             break;
         }
     case childdataset_leftright: 
         {
+            cacheChildrenTablesUsed(used, 2, max);
+
             IHqlExpression * leftDs = queryChild(0);
             IHqlExpression * rightDs = queryChild(1);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, leftDs, selSeq);
             OwnedHqlExpr right = createSelector(no_right, rightDs, selSeq);
-            cacheChildrenTablesUsed(used, 2, max);
             used.removeActive(right);
             used.removeRows(this, left, right);
             if (op == no_normalize)
@@ -5146,10 +5219,9 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
                 if (!ignoreInputs)
                     cacheChildrenTablesUsed(used, 0, 2);
             }
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-            used.addHiddenTable(right, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
+            used.addHiddenSelector(right);
             break;
         }
         break;
@@ -5731,7 +5803,11 @@ void CHqlField::onCreateField()
     case type_groupedtable:
         typeExpr = queryRecord();
 #ifdef _DEBUG
-        assertex(!recordRequiresLinkCount(typeExpr) || hasAttribute(_linkCounted_Atom));
+        if (!hasAttribute(_linkCounted_Atom))
+        {
+            OwnedHqlExpr unadornedRecord = getUnadornedRecordOrField(typeExpr->queryRecord());
+            assertex(!recordRequiresLinkCount(unadornedRecord));
+        }
 #endif
         break;
     }
@@ -5749,8 +5825,7 @@ bool CHqlField::equals(const IHqlExpression & r) const
 {
     if (CHqlExpression::equals(r))
     {
-        const CHqlField *fr = QUERYINTERFACE(&r, const CHqlField);
-        if (fr && fr->id==id)
+        if (id == r.queryId())
             return true;
     }
     return false;
@@ -9643,8 +9718,8 @@ bool CHqlVariable::equals(const IHqlExpression & r) const
 {
     if (CHqlExpression::equals(r))
     {
-        assertex(QUERYINTERFACE(&r, const CHqlVariable) == (const CHqlVariable *) &r);
-        const CHqlVariable *c = (const CHqlVariable *) &r;
+        dbgassertex(QUERYINTERFACE(&r, const CHqlVariable) == (const CHqlVariable *) &r);
+        const CHqlVariable *c = static_cast<const CHqlVariable *>(&r);
         return strcmp(name, c->name) == 0;
     }
     return false;
@@ -9691,7 +9766,7 @@ bool CHqlAttribute::equals(const IHqlExpression &r) const
 void CHqlAttribute::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = hashc((unsigned char *) &name, sizeof(name), hashcode);
+    HASHFIELD(name);
 }
 
 IHqlExpression *CHqlAttribute::clone(HqlExprArray & args)
@@ -9763,8 +9838,8 @@ IInterface * CHqlUnknown::queryUnknownExtra()
 void CHqlUnknown::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = hashc((unsigned char *) &name, sizeof(name), hashcode);
-    hashcode = hashc((unsigned char *) &extra, sizeof(extra), hashcode);
+    HASHFIELD(name);
+    HASHFIELD(extra);
 }
 
 IHqlExpression *CHqlUnknown::clone(HqlExprArray &newkids)
@@ -9807,8 +9882,8 @@ bool CHqlSequence::equals(const IHqlExpression &r) const
 void CHqlSequence::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = hashc((unsigned char *) &name, sizeof(name), hashcode);
-    hashcode = hashc((unsigned char *) &seq, sizeof(seq), hashcode);
+    HASHFIELD(name);
+    HASHFIELD(seq);
 }
 
 IHqlExpression *CHqlSequence::clone(HqlExprArray &newkids)
@@ -10251,7 +10326,7 @@ extern IHqlExpression *createEnumType(ITypeInfo * _type, IHqlScope *_scope)
 void CHqlTemplateFunctionContext::sethash() 
 { 
     CHqlExpression::sethash(); 
-    hashcode = hashc((unsigned char *) context, sizeof(context), hashcode); 
+    HASHFIELD(context);
 }
 
 //==============================================================================================================
@@ -10352,9 +10427,9 @@ extern IHqlExpression *createValueF(node_operator op, ITypeInfo *type, ...)
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
         if (!parm)
             break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
+
+        dbgassertex(QUERYINTERFACE(parm, IHqlExpression));
+
         if (parm->getOperator() == no_comma)
         {
             parm->unwindList(children, no_comma);
@@ -10557,9 +10632,9 @@ extern IHqlExpression *createDatasetF(node_operator op, ...)
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
         if (!parm)
             break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
+
+        dbgassertex(QUERYINTERFACE(parm, IHqlExpression));
+
         if (parm->getOperator() == no_comma)
         {
             parm->unwindList(children, no_comma);
@@ -11591,9 +11666,9 @@ extern IHqlExpression *createRowF(node_operator op, ...)
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
         if (!parm)
             break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
+
+        dbgassertex(QUERYINTERFACE(parm, IHqlExpression));
+
         if (parm->getOperator() == no_comma)
         {
             parm->unwindList(children, no_comma);
@@ -13318,7 +13393,7 @@ static TransformTrackingInfo transformExtraState[NUM_PARALLEL_TRANSFORMS+1];
 static bool isActiveMask[NUM_PARALLEL_TRANSFORMS+1];
 
 #if NUM_PARALLEL_TRANSFORMS==1
-unsigned threadActiveExtraIndex=1;
+const unsigned threadActiveExtraIndex=1;
 #else
 #ifdef _WIN32
 __declspec(thread) unsigned threadActiveExtraIndex;
@@ -13504,6 +13579,7 @@ void TransformTrackingInfo::unlock()
     curTransformDepth--;
 }
 
+#if NUM_PARALLEL_TRANSFORMS!=1
 static void ensureThreadExtraIndex()
 {
     {
@@ -13535,6 +13611,7 @@ static void releaseExtraIndex()
     threadActiveExtraIndex = 0;
     transformSemaphore->signal();
 }
+#endif
 
 extern HQL_API void lockTransformMutex()
 {
@@ -15107,7 +15184,7 @@ IHqlExpression * queryExpression(ITypeInfo * type)
     ITypeInfo * indirect = queryModifier(type, typemod_indirect);
     if (indirect)
         return static_cast<IHqlExpression *>(indirect->queryModifierExtra());
-    return QUERYINTERFACE(queryUnqualifiedType(type), IHqlExpression);
+    return queryUnqualifiedType(type)->castToExpression();
 }
 
 IHqlExpression * queryExpression(IHqlDataset * ds)
@@ -15119,7 +15196,7 @@ IHqlExpression * queryExpression(IHqlDataset * ds)
 IHqlScope * queryScope(ITypeInfo * type)
 {
     if (!type) return NULL;
-    return QUERYINTERFACE(queryUnqualifiedType(type), IHqlScope);
+    return queryUnqualifiedType(type)->castToScope();
 }
 
 IHqlRemoteScope * queryRemoteScope(IHqlScope * scope)
