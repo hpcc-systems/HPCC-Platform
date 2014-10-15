@@ -927,7 +927,9 @@ public:
         if (traceStartStop)
         {
             // There was an old comment here stating // Note- CTXLOG may not be safe
-            // However as far as I can see it should always be safe
+            // There were problems in the destruction order of graphs that might mean an IndirectSlaveContext
+            // was released while activities still referenced it.
+            // However these should now all be fixed
             DBGLOG("%p destroy %d state=%s", this, activityId, queryStateText(state));
             if (watchActivityId && watchActivityId==activityId)
             {
@@ -15034,8 +15036,8 @@ public:
         if (resultInput)
             resultInput->reset();
         resultInput = NULL;
-        iterationGraphs.kill();
         outputs.kill();
+        iterationGraphs.kill(); // must be done after all activities killed
         if (probeManager)
         {
             probeManager->deleteGraph(NULL, (IArrayOf<IInputBase>*)&probes);
@@ -15414,6 +15416,7 @@ void LibraryCallFactoryExtra::set(const LibraryCallFactoryExtra & _other)
     maxOutputs = _other.maxOutputs;
     graphid = _other.graphid;
     libraryName.set(_other.libraryName);
+    embeddedGraphName.set(_other.embeddedGraphName);
     interfaceHash = _other.interfaceHash;
     embedded = _other.embedded;
 
@@ -25567,19 +25570,6 @@ public:
 class CActivityGraph : public CInterface, implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph
 {
 protected:
-    IArrayOf<IRoxieServerActivity> activities;
-    IArrayOf<IRoxieInput> probes;
-    IRoxieServerActivityCopyArray sinks;
-    StringAttr graphName;
-    Owned<CGraphResults> results;
-    CGraphResults graphLoopResults;
-    ActivityArray & graphDefinition;
-    CriticalSection evaluateCrit;
-
-    IProbeManager *probeManager;
-    unsigned id;
-    unsigned loopCounter;
-
     class ActivityGraphSlaveContext : public IndirectSlaveContext
     {
         SpinLock abortLock;
@@ -25686,6 +25676,20 @@ protected:
         CActivityGraph * container;
     } graphCodeContext;
 
+    // NOTE - destructor order is significant - need to destroy graphCodeContext and graphSlaveContext last
+
+    IArrayOf<IRoxieServerActivity> activities;
+    IArrayOf<IRoxieInput> probes;
+    IRoxieServerActivityCopyArray sinks;
+    StringAttr graphName;
+    Owned<CGraphResults> results;
+    CGraphResults graphLoopResults;
+    ActivityArray & graphDefinition;
+    CriticalSection evaluateCrit;
+
+    IProbeManager *probeManager;
+    unsigned id;
+    unsigned loopCounter;
 
 public:
     IMPLEMENT_IINTERFACE;

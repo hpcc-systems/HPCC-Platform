@@ -10633,12 +10633,12 @@ public:
     }
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value)
     {
-        StatisticScopeType scopeType = (StatisticScopeType)scopeTypeStack.tos();
+        StatisticScopeType scopeType = scopeTypeStack.ordinality() ? (StatisticScopeType)scopeTypeStack.tos() : SSTglobal;
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, value, 1, 0, StatsMergeAppend);
     }
     virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
     {
-        StatisticScopeType scopeType = (StatisticScopeType)scopeTypeStack.tos();
+        StatisticScopeType scopeType = scopeTypeStack.ordinality() ? (StatisticScopeType)scopeTypeStack.tos() : SSTglobal;
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, value, 1, 0, mergeAction);
     }
     virtual IStatisticCollection * getResult()
