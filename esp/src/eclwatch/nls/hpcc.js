@@ -308,6 +308,7 @@ define({root:
     Parts: "Parts",
     Password: "Password",
     PasswordExpiration: "Password Expiration",
+    PasswordOpenZAP: "Password to open ZAP(optional)",
     PasswordsDoNotMatch: "Passwords do not match.",
     PasswordExpired: "Your password has expired.  Please change now.",
     PasswordExpirePrefix: "Your password will expire in ",

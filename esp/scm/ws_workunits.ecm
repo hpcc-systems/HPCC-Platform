@@ -1539,6 +1539,7 @@ ESPrequest [nil_remove] WUCreateZAPInfoRequest
     string ProblemDescription;
     string WhatChanged;
     string WhereSlow;
+    [min_ver("1.53")] string Password;
 };
 
 ESPresponse [exceptions_inline] WUCreateZAPInfoResponse

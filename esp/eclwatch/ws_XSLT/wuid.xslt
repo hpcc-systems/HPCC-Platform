@@ -750,18 +750,28 @@
                         mywindow.focus();
                         return false;
                     }
-                    function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo)
+                    function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo, password)
                     {
                         document.getElementById("ESPIPAddress").value=espIP;
                         if (thorIP != '')
-                            document.getElementById("ESPIPAddress").value=thorIP;
+                            document.getElementById("ThorIPAddress").value=thorIP;
                         document.getElementById("BuildVersion").value=ESPBuildVersion;
                         if (problemDesciption != '')
                             document.getElementById("ProblemDescription").value=problemDesciption;
+                        else
+                            document.getElementById("ProblemDescription").value = "";
                         if (history != '')
                             document.getElementById("WhatChanged").value=history;
+                        else
+                            document.getElementById("WhatChanged").value = "";
                         if (timingInfo != '')
                             document.getElementById("WhereSlow").value=timingInfo;
+                        else
+                            document.getElementById("WhereSlow").value = "";
+                        if (password != '')
+                            document.getElementById("Password").value=password;
+                        else
+                            document.getElementById("Password").value = "";
 
                         document.forms['protect'].action = "/WsWorkunits/WUCreateZAPInfo";
                         document.forms['protect'].encType="application/x-www-form-urlencoded";
