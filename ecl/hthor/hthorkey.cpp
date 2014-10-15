@@ -282,13 +282,13 @@ public:
     virtual bool outputToFile(const char *) { return false; } 
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorActivityBase::updateProgress(progress);
-        IPropertyTree &node = progress.updateNode(subgraphId, activityId);
-        setProgress(node, "postfiltered", queryPostFiltered());
-        setProgress(node, "seeks", querySeeks());
-        setProgress(node, "scans", queryScans());
+        StatsActivityScope scope(progress, activityId);
+        progress.addStatistic(StNumPostFiltered, queryPostFiltered());
+        progress.addStatistic(StNumIndexSeeks, querySeeks());
+        progress.addStatistic(StNumIndexScans, queryScans());
     }
 
     virtual unsigned querySeeks() const
@@ -372,7 +372,7 @@ protected:
 
 //for layout translation
     Owned<IRecordLayoutTranslator> layoutTrans;
-    PointerIArrayOf<IRecordLayoutTranslator> layoutTransArray;
+    IPointerArrayOf<IRecordLayoutTranslator> layoutTransArray;
     bool gotLayoutTrans;
 };
 
@@ -1934,7 +1934,7 @@ protected:
         offset_t partsize = part->queryAttributes().getPropInt64("@size", -1);
         if (partsize==-1)
         {
-            MTIME_SECTION(timer, "Fetch remote file size");
+            MTIME_SECTION(queryActiveTimer(), "Fetch remote file size");
             unsigned numCopies = part->numCopies();
             for (unsigned copy=0; copy < numCopies; copy++)
             {
@@ -4010,15 +4010,15 @@ public:
         helper.onLimitExceeded();
     }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorThreadedActivityBase::updateProgress(progress);
-        IPropertyTree &node = progress.updateNode(subgraphId, activityId);
-        setProgress(node, "prefiltered", atomic_read(&prefiltered));
-        setProgress(node, "postfiltered", atomic_read(&postfiltered));
-        setProgress(node, "skips", atomic_read(&skips));
-        setProgress(node, "seeks", seeks);
-        setProgress(node, "scans", scans);
+        StatsActivityScope scope(progress, activityId);
+        progress.addStatistic(StNumPreFiltered, atomic_read(&prefiltered));
+        progress.addStatistic(StNumPostFiltered, atomic_read(&postfiltered));
+        progress.addStatistic(StNumIndexSkips, atomic_read(&skips));
+        progress.addStatistic(StNumIndexSeeks, seeks);
+        progress.addStatistic(StNumIndexScans, scans);
     }
 
 protected:

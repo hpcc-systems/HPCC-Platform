@@ -547,7 +547,4 @@ extern graph_decl ILargeMemLimitNotify *createMultiThorResourceMutex(const char 
 
 extern graph_decl void setThorVMSwapDirectory(const char *swapdir);
 
-class IPerfMonHook; 
-extern graph_decl IPerfMonHook *createThorMemStatsPerfMonHook(IPerfMonHook *chain=NULL); // for passing to jdebug startPerformanceMonitor
-
 #endif

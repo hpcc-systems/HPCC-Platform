@@ -25,6 +25,8 @@
 #include "jtime.ipp"
 #include "jencrypt.hpp"
 #include "junicode.hpp"
+#include "jlzw.hpp"
+#include "jregexp.hpp"
 #include "eclrtl.hpp"
 #include "deftype.hpp"
 #include <time.h>
@@ -169,6 +171,49 @@ void doDescheduleWorkkunit(char const * wuid)
 
 class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
 {
+    class CWuGraphStats : public CInterfaceOf<IWUGraphStats>
+    {
+    public:
+        CWuGraphStats(CConstGraphProgress &_parent, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
+            : parent(_parent), creatorType(_creatorType), creator(_creator), id(_id)
+        {
+            StringBuffer subgraphScopeName;
+            subgraphScopeName.append(_rootScope);
+
+            StatisticScopeType scopeType = SSTgraph;
+            StatsScopeId rootScopeId;
+            verifyex(rootScopeId.setScopeText(_rootScope));
+            collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+        }
+        virtual void beforeDispose()
+        {
+            Owned<IStatisticCollection> stats = collector->getResult();
+
+            MemoryBuffer compressed;
+            {
+                MemoryBuffer serialized;
+                serializeStatisticCollection(serialized, stats);
+                compressToBuffer(compressed, serialized.length(), serialized.toByteArray());
+            }
+
+            unsigned minActivity = 0;
+            unsigned maxActivity = 0;
+            stats->getMinMaxActivity(minActivity, maxActivity);
+            parent.setSubgraphStats(creatorType, creator, id, compressed, minActivity, maxActivity);
+        }
+        virtual IStatisticGatherer & queryStatsBuilder()
+        {
+            return *collector;
+        }
+
+    protected:
+        CConstGraphProgress &parent;
+        Owned<IStatisticGatherer> collector;
+        StringAttr creator;
+        StatisticCreatorType creatorType;
+        unsigned id;
+    };
+
     class CGraphProgress : public CInterface, implements IWUGraphProgress
     {
         CConstGraphProgress &parent;
@@ -182,19 +227,12 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
         {
             parent.unlock();
         }
-        virtual IPropertyTree * queryProgressTree() { return parent.queryProgressTree(); }
+        virtual IPropertyTree * getProgressTree() { return parent.getProgressTree(); }
         virtual WUGraphState queryGraphState() { return parent.queryGraphState(); }
         virtual WUGraphState queryNodeState(WUGraphIDType nodeId) { return parent.queryNodeState(nodeId); }
-        virtual IWUGraphProgress * update() { return parent.update(); }
+        virtual IWUGraphProgress * update() { throwUnexpected(); }
+        virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph) { throwUnexpected(); }
         virtual unsigned queryFormatVersion() { return parent.queryFormatVersion(); }
-        virtual IPropertyTree & updateEdge(WUGraphIDType nodeId, const char *edgeId)
-        {
-            return parent.updateEdge(nodeId, edgeId);
-        }
-        virtual IPropertyTree & updateNode(WUGraphIDType nodeId, WUNodeIDType id)
-        {
-            return parent.updateNode(nodeId, id);
-        }
         virtual void setGraphState(WUGraphState state)
         {
             parent.setGraphState(state);
@@ -204,32 +242,6 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
             parent.setNodeState(nodeId, state);
         }
     };
-    IPropertyTree &updateElement(WUGraphIDType nodeId, const char *elemName, const char *id)
-    {
-        IPropertyTree *elem = NULL;
-        if (!connectedWrite) lockWrite();
-        StringBuffer path;
-        path.append("node[@id=\"").append(nodeId).append("\"]");
-        IPropertyTree *node = progress->queryPropTree(path.str());
-        if (!node)
-        {
-            node = progress->addPropTree("node", createPTree());
-            node->setPropInt("@id", (int)nodeId);
-            elem = node->addPropTree(elemName, createPTree());
-            elem->setProp("@id", id);
-        }
-        else
-        {
-            path.clear().append(elemName).append("[@id=\"").append(id).append("\"]");
-            elem = node->queryPropTree(path.str());
-            if (!elem)
-            {
-                elem = node->addPropTree(elemName, createPTree());
-                elem->setProp("@id", id);
-            }
-        }
-        return *elem;
-    }
 public:
     IMPLEMENT_IINTERFACE;
     static void deleteWuidProgress(const char *wuid)
@@ -281,15 +293,6 @@ public:
         connected = false;
         connectedWrite = false;
         conn.clear();
-    }
-    IPropertyTree &updateNode(WUGraphIDType nodeId, WUNodeIDType id)
-    {
-        StringBuffer s;
-        return updateElement(nodeId, "node", s.append(id).str());
-    }
-    IPropertyTree &updateEdge(WUGraphIDType nodeId, const char *edgeId)
-    {
-        return updateElement(nodeId, "edge", edgeId);
     }
     static bool getRunningGraph(const char *wuid, IStringVal &graphName, WUGraphIDType &subId)
     {
@@ -344,25 +347,32 @@ public:
             }
         }
     }
-    virtual IPropertyTree * queryProgressTree()
+    virtual IPropertyTree * getProgressTree()
     {
         if (!connected) connect();
-        return progress;
+        if (progress->getPropBool("@stats"))
+            return createProcessTreeFromStats();
+        return LINK(progress);
     }
     virtual WUGraphState queryGraphState()
     {
-        return (WUGraphState)queryProgressTree()->getPropInt("@_state", (unsigned)WUGraphUnknown);
+        return (WUGraphState)queryProgressStateTree()->getPropInt("@_state", (unsigned)WUGraphUnknown);
     }
     virtual WUGraphState queryNodeState(WUGraphIDType nodeId)
     {
         StringBuffer path;
         path.append("node[@id=\"").append(nodeId).append("\"]/@_state");
-        return (WUGraphState)queryProgressTree()->getPropInt(path.str(), (unsigned)WUGraphUnknown);
+        return (WUGraphState)queryProgressStateTree()->getPropInt(path.str(), (unsigned)WUGraphUnknown);
     }
     virtual IWUGraphProgress * update()
     {
         return new CGraphProgress(*this);
     }
+    virtual IWUGraphStats * update(StatisticCreatorType creatorType, const char * creator, unsigned subgraph)
+    {
+        return new CWuGraphStats(*this, creatorType, creator, graphName, subgraph);
+    }
+
     virtual unsigned queryFormatVersion()
     {
         if (!connected) connect();
@@ -371,6 +381,7 @@ public:
 
     static bool packProgress(const char *wuid,bool pack)
     {
+        //MORE: This function could be deleted, because progress information is never actually packed
         StringBuffer path;
         path.append("/GraphProgress/").append(wuid);
         Owned<IRemoteConnection> conn(querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
@@ -403,6 +414,107 @@ public:
         return true;
     }
 
+private:
+    IPropertyTree * queryProgressStateTree()
+    {
+        if (!connected) connect();
+        return progress;
+    }
+    static void expandStats(IPropertyTree * target, IStatisticCollection & collection)
+    {
+        StringBuffer formattedValue;
+        unsigned numStats = collection.getNumStatistics();
+        for (unsigned i=0; i < numStats; i++)
+        {
+            StatisticKind kind;
+            unsigned __int64 value;
+            collection.getStatistic(kind, value, i);
+            formatStatistic(formattedValue.clear(), value, kind);
+            target->setProp(queryTreeTag(kind), formattedValue);
+        }
+    }
+    void expandProcessTreeFromStats(IPropertyTree * rootTarget, IPropertyTree * target, IStatisticCollection * collection)
+    {
+        expandStats(target, *collection);
+
+        StringBuffer scopeName;
+        Owned<IStatisticCollectionIterator> activityIter = &collection->getScopes(NULL);
+        ForEach(*activityIter)
+        {
+            IStatisticCollection & cur = activityIter->query();
+            cur.getScope(scopeName.clear());
+            const char * id = scopeName.str();
+            const char * tag;
+            IPropertyTree * curTarget = target;
+            switch (cur.queryScopeType())
+            {
+            case SSTedge:
+                tag = "edge";
+                id += strlen(EdgeScopePrefix);
+                break;
+            case SSTactivity:
+                tag = "node";
+                id += strlen(ActivityScopePrefix);
+                break;
+            case SSTsubgraph:
+                //All subgraphs are added a root elements in the progress tree
+                curTarget = rootTarget;
+                tag = "node";
+                id += strlen(SubGraphScopePrefix);
+                break;
+            default:
+                throwUnexpected();
+            }
+
+            IPropertyTree * next = curTarget->addPropTree(tag, createPTree());
+            next->setProp("@id", id);
+            expandProcessTreeFromStats(rootTarget, next, &cur);
+        }
+    }
+
+    IPropertyTree * createProcessTreeFromStats()
+    {
+        MemoryBuffer compressed;
+        MemoryBuffer serialized;
+        Owned<IPropertyTree> progressTree = createPTree();
+        Owned<IPropertyTreeIterator> iter = progress->getElements("sg*");
+        ForEach(*iter)
+        {
+            IPropertyTree & curSubGraph = iter->query();
+            curSubGraph.getPropBin("Stats", compressed.clear());
+            //Protect against updates that delete the stats while we are iterating
+            if (compressed.length())
+            {
+                decompressToBuffer(serialized.clear(), compressed);
+                Owned<IStatisticCollection> collection = createStatisticCollection(serialized);
+
+                expandProcessTreeFromStats(progressTree, progressTree, collection);
+            }
+        }
+        return progressTree.getClear();
+    }
+
+    void setSubgraphStats(StatisticCreatorType creatorType, const char * creator, unsigned id, const MemoryBuffer & compressed, unsigned minActivity, unsigned maxActivity)
+    {
+        StringBuffer tag;
+        tag.append("sg").append(id);
+
+        IPropertyTree * subgraph = createPTree(tag);
+        subgraph->setProp("@c", queryCreatorTypeName(creatorType));
+        subgraph->setProp("@creator", creator);
+        subgraph->setPropInt("@minActivity", minActivity);
+        subgraph->setPropInt("@maxActivity", maxActivity);
+
+        //Replace the particular subgraph statistics added by this creator
+        tag.append("[@creator='").append(creator).append("']");
+
+        lockWrite();
+        subgraph = progress->setPropTree(tag, subgraph);
+        subgraph->setPropBin("Stats", compressed.length(), compressed.toByteArray());
+        if (!progress->getPropBool("@stats", false))
+            progress->setPropBool("@stats", true);
+        unlock();
+    }
 
 private:
     Owned<IRemoteConnection> conn;
@@ -413,18 +525,347 @@ private:
     unsigned formatVersion;
 };
 
-class CLocalWUTimeStamp : public CInterface, implements IConstWUTimeStamp
+//--------------------------------------------------------------------------------------------------------------------
+
+class ExtractedStatistic : public CInterfaceOf<IConstWUStatistic>
 {
-    Owned<IPropertyTree> p;
+public:
+    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const
+    {
+        str.set(description);
+        return str;
+    }
+    virtual IStringVal & getCreator(IStringVal & str) const
+    {
+        str.set(creator);
+        return str;
+    }
+    virtual IStringVal & getScope(IStringVal & str) const
+    {
+        str.set(scope);
+        return str;
+    }
+    virtual IStringVal & getFormattedValue(IStringVal & str) const
+    {
+        StringBuffer formatted;
+        formatStatistic(formatted, value, measure);
+        str.set(formatted);
+        return str;
+    }
+    virtual StatisticMeasure getMeasure() const
+    {
+        return measure;
+    }
+    virtual StatisticKind getKind() const
+    {
+        return kind;
+    }
+    virtual StatisticCreatorType getCreatorType() const
+    {
+        return creatorType;
+    }
+    virtual StatisticScopeType getScopeType() const
+    {
+        return scopeType;
+    }
+    virtual unsigned __int64 getValue() const
+    {
+        return value;
+    }
+    virtual unsigned __int64 getCount() const
+    {
+        return count;
+    }
+    virtual unsigned __int64 getMax() const
+    {
+        return max;
+    }
+    virtual unsigned __int64 getTimestamp() const
+    {
+        return timeStamp;
+    }
+    virtual bool matches(const IStatisticsFilter * filter) const
+    {
+        return filter->matches(creatorType, creator, scopeType, scope, measure, kind);
+    }
 
 public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWUTimeStamp(IPropertyTree *p);
-
-    virtual IStringVal & getApplication(IStringVal & str) const;
-    virtual IStringVal & getEvent(IStringVal & str) const;
-    virtual IStringVal & getDate(IStringVal & dt) const;
+    StringAttr creator;
+    StringBuffer scope;
+    StringAttr description;
+    StatisticMeasure measure;
+    StatisticKind kind;
+    StatisticCreatorType creatorType;
+    StatisticScopeType scopeType;
+    unsigned __int64 value;
+    unsigned __int64 count;
+    unsigned __int64 max;
+    unsigned __int64 timeStamp;
 };
+
+class CConstGraphProgressStatisticsIterator : public CInterfaceOf<IConstWUStatisticIterator>
+{
+public:
+    CConstGraphProgressStatisticsIterator(const char * wuid, const IStatisticsFilter * _filter) : filter(_filter)
+    {
+        if (filter)
+            scopes.appendList(filter->queryScope(), ":");
+        const char * searchGraph = "*";
+        if (scopes.ordinality())
+            searchGraph = scopes.item(0);
+
+        rootPath.append("/GraphProgress/").append(wuid).append('/');
+        bool singleGraph = false;
+        if (!containsWildcard(searchGraph))
+        {
+            rootPath.append(searchGraph).append("/");
+            singleGraph = true;
+        }
+
+        //Don't lock the statistics while we iterate - any partial updates must not cause problems
+        conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_NONE, SDS_LOCK_TIMEOUT));
+
+        if (conn && !singleGraph)
+            graphIter.setown(conn->queryRoot()->getElements("*"));
+
+        curStat.setown(new ExtractedStatistic);
+        //These are currently constant for all graph statistics instances
+        curStat->count = 1;
+        curStat->max = 0;
+        valid = false;
+    }
+
+    virtual IConstWUStatistic & query()
+    {
+        return *curStat;
+    }
+
+    virtual bool first()
+    {
+        valid = false;
+        if (!conn)
+            return false;
+
+        if (graphIter && !graphIter->first())
+            return false;
+        ensureUniqueStatistic();
+        if (!firstSubGraph())
+            return false;
+
+        valid = true;
+        return true;
+    }
+
+    virtual bool next()
+    {
+        ensureUniqueStatistic();
+        if (!nextStatistic())
+        {
+            if (!nextSubGraph())
+            {
+                if (!nextGraph())
+                {
+                    valid = false;
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    virtual bool isValid()
+    {
+        return valid;
+    }
+
+protected:
+    bool firstSubGraph()
+    {
+        IPropertyTree & graphNode = graphIter ? graphIter->query() : *conn->queryRoot();
+        const char * xpath = "sg*";
+        StringBuffer childXpath;
+        if (scopes.isItem(1))
+        {
+            const char * scope1 = scopes.item(1);
+            if (strnicmp(scope1, "sg", 2) == 0)
+            {
+                childXpath.append(scope1);
+                xpath = childXpath.str();
+            }
+        }
+
+        subgraphIter.setown(graphNode.getElements(xpath));
+        if (!subgraphIter)
+            subgraphIter.setown(graphNode.getElements("sg0"));
+
+        if (!subgraphIter->first())
+            return false;
+        if (firstStat())
+            return true;
+        return nextSubGraph();
+    }
+
+    bool nextSubGraph()
+    {
+        loop
+        {
+            if (!subgraphIter->next())
+                return false;
+            if (firstStat())
+                return true;
+        }
+    }
+
+    bool nextGraph()
+    {
+        if (!graphIter)
+            return false;
+        loop
+        {
+            if (!graphIter->next())
+                return false;
+            if (firstSubGraph())
+                return true;
+        }
+    }
+
+    bool firstStat()
+    {
+        IPropertyTree & curSubGraph = subgraphIter->query();
+        if (!checkSubGraph())
+            return false;
+
+        curSubGraph.getPropBin("Stats", compressed.clear());
+        //Don't crash on old format progress...
+        if (compressed.length() == 0)
+            return false;
+
+        decompressToBuffer(serialized.clear(), compressed);
+
+        Owned<IStatisticCollection> collection = createStatisticCollection(serialized);
+        curStat->timeStamp = collection->queryWhenCreated();
+        return beginCollection(*collection);
+    }
+
+    bool beginCollection(IStatisticCollection & collection)
+    {
+        collections.append(OLINK(collection));
+        numStats = collection.getNumStatistics();
+        curStatIndex = 0;
+        if (checkScope())
+        {
+            if (curStatIndex < numStats)
+            {
+                if (checkStatistic())
+                    return true;
+                return nextStatistic();
+            }
+        }
+        return nextChildScope();
+    }
+
+    bool nextStatistic()
+    {
+        //Finish iterating the statistics at this level.
+        while (++curStatIndex < numStats)
+        {
+            if (checkStatistic())
+                return true;
+        }
+        return nextChildScope();
+    }
+
+    bool nextChildScope()
+    {
+        loop
+        {
+            if (collections.ordinality() == 0)
+                return false;
+
+            IStatisticCollection * curCollection = &collections.tos();
+            if (childIterators.ordinality() < collections.ordinality())
+            {
+                //Start iterating the children for the current collection
+                childIterators.append(curCollection->getScopes(NULL));
+                if (!childIterators.tos().first())
+                {
+                    finishCollection();
+                    continue;
+                }
+            }
+            else if (!childIterators.tos().next())
+            {
+                finishCollection();
+                continue;
+            }
+
+            if (beginCollection(childIterators.tos().query()))
+                return true;
+        }
+    }
+
+    void finishCollection()
+    {
+        collections.pop();
+        childIterators.pop();
+    }
+
+    bool checkSubGraph()
+    {
+        if (!filter)
+            return true;
+        IPropertyTree & curSubGraph = subgraphIter->query();
+        curStat->creatorType = queryCreatorType(curSubGraph.queryProp("@c"));
+        curStat->creator.set(curSubGraph.queryProp("@creator"));
+        return filter->matches(curStat->creatorType, curStat->creator, SSTall, NULL, SMeasureAll, StKindAll);
+    }
+
+    bool checkScope()
+    {
+        if (!filter)
+            return true;
+        IStatisticCollection * collection = &collections.tos();
+        curStat->scopeType = collection->queryScopeType();
+        collection->getFullScope(curStat->scope.clear());
+        return filter->matches(SCTall, NULL, curStat->scopeType, curStat->scope, SMeasureAll, StKindAll);
+    }
+
+    bool checkStatistic()
+    {
+        IStatisticCollection & collection = collections.tos();
+        collection.getStatistic(curStat->kind, curStat->value, curStatIndex);
+        curStat->measure = queryMeasure(curStat->kind);
+        if (!filter)
+            return true;
+        if (!filter->matches(SCTall, NULL, SSTall, NULL, curStat->measure, curStat->kind))
+            return false;
+        return true;
+    }
+
+    void ensureUniqueStatistic()
+    {
+        //If something else has linked this statistic, clone a unique one.
+        if (curStat->IsShared())
+            curStat.setown(new ExtractedStatistic(*curStat));
+    }
+private:
+    Owned<IRemoteConnection> conn;
+    Owned<ExtractedStatistic> curStat;
+    const IStatisticsFilter * filter;
+    StringArray scopes;
+    StringBuffer rootPath;
+    Owned<IPropertyTreeIterator> graphIter;
+    Owned<IPropertyTreeIterator> subgraphIter;
+    IArrayOf<IStatisticCollection> collections;
+    IArrayOf<IStatisticCollectionIterator> childIterators;
+    MemoryBuffer compressed;
+    MemoryBuffer serialized;
+    unsigned numStats;
+    unsigned curStatIndex;
+    bool valid;
+};
+
+//--------------------------------------------------------------------------------------------------------------------
 
 class CLocalWUAppValue : public CInterface, implements IConstWUAppValue
 {
@@ -447,15 +888,46 @@ public:
     IMPLEMENT_IINTERFACE;
     CLocalWUStatistic(IPropertyTree *p);
 
-    virtual IStringVal & getFullName(IStringVal & str) const;
     virtual IStringVal & getCreator(IStringVal & str) const;
-    virtual IStringVal & getDescription(IStringVal & str) const;
-    virtual IStringVal & getName(IStringVal & str) const;
+    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const;
+    virtual IStringVal & getFormattedValue(IStringVal & str) const;
+    virtual IStringVal & getType(IStringVal & str) const;
     virtual IStringVal & getScope(IStringVal & str) const;
-    virtual StatisticMeasure getKind() const;
+    virtual StatisticMeasure getMeasure() const;
+    virtual StatisticCreatorType getCreatorType() const;
+    virtual StatisticScopeType getScopeType() const;
+    virtual StatisticKind getKind() const;
     virtual unsigned __int64 getValue() const;
     virtual unsigned __int64 getCount() const;
     virtual unsigned __int64 getMax() const;
+    virtual unsigned __int64 getTimestamp() const;
+
+    virtual bool matches(const IStatisticsFilter * filter) const;
+};
+
+
+class CLocalWULegacyTiming : public CInterface, implements IConstWUStatistic
+{
+    Owned<IPropertyTree> p;
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalWULegacyTiming(IPropertyTree *p);
+
+    virtual IStringVal & getCreator(IStringVal & str) const;
+    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const;
+    virtual IStringVal & getFormattedValue(IStringVal & str) const;
+    virtual IStringVal & getType(IStringVal & str) const;
+    virtual IStringVal & getScope(IStringVal & str) const;
+    virtual StatisticMeasure getMeasure() const;
+    virtual StatisticCreatorType getCreatorType() const;
+    virtual StatisticScopeType getScopeType() const;
+    virtual StatisticKind getKind() const;
+    virtual unsigned __int64 getValue() const;
+    virtual unsigned __int64 getCount() const;
+    virtual unsigned __int64 getMax() const;
+    virtual unsigned __int64 getTimestamp() const;
+
+    virtual bool matches(const IStatisticsFilter * filter) const;
 };
 
 
@@ -484,6 +956,7 @@ template <typename T, typename IT> struct CachedTags
     }
 
     operator IArrayOf<IT>&() { return tags; }
+    unsigned ordinality() const { return tags.ordinality(); }
 
     void kill()
     {
@@ -559,8 +1032,6 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
     mutable bool activitiesCached;
     mutable bool webServicesInfoCached;
     mutable bool roxieQueryInfoCached;
-    mutable bool timersCached;
-    mutable IArrayOf<IWUActivity> activities;
     mutable IArrayOf<IWUPlugin> plugins;
     mutable IArrayOf<IWULibrary> libraries;
     mutable IArrayOf<IWUException> exceptions;
@@ -568,10 +1039,9 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
     mutable IArrayOf<IWUResult> results;
     mutable IArrayOf<IWUResult> temporaries;
     mutable IArrayOf<IWUResult> variables;
-    mutable IArrayOf<IWUTimer> timers;
-    mutable CachedTags<CLocalWUTimeStamp,IConstWUTimeStamp> timestamps;
     mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
     mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics;
+    mutable CachedTags<CLocalWULegacyTiming,IConstWUStatistic> legacyTimings;
     mutable Owned<IUserDescriptor> userDesc;
     Mutex locked;
     Owned<ISecManager> secMgr;
@@ -582,10 +1052,10 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser, const char *parentWuid = NULL);
+    CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser);
     CLocalWorkUnit(IRemoteConnection *_conn, IPropertyTree* root, ISecManager *secmgr, ISecUser *secuser);
     ~CLocalWorkUnit();
-    CLocalWorkUnit(const char *dummyWuid, const char *parentWuid, ISecManager *secmgr, ISecUser *secuser);
+    CLocalWorkUnit(const char *dummyWuid, ISecManager *secmgr, ISecUser *secuser);
     IPropertyTree *getUnpackedTree(bool includeProgress) const;
 
     ISecManager *querySecMgr(){return secMgr.get();}
@@ -609,9 +1079,6 @@ public:
     virtual bool requiresLocalFileUpload() const;
     virtual bool getIsQueryService() const;
     virtual IStringVal & getClusterName(IStringVal & str) const;
-    virtual unsigned getCombineQueries() const;
-    virtual WUCompareMode getCompareMode() const;
-    virtual IStringVal & getCustomerId(IStringVal & str) const;
     virtual bool hasDebugValue(const char * propname) const;
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const;
     virtual IStringIterator & getDebugValues() const;
@@ -626,13 +1093,11 @@ public:
     virtual unsigned getSourceFileCount() const;
     virtual unsigned getResultCount() const;
     virtual unsigned getVariableCount() const;
-    virtual unsigned getTimerCount() const;
     virtual unsigned getApplicationValueCount() const;
     virtual IConstWUGraphIterator & getGraphs(WUGraphType type) const;
     virtual IConstWUGraph * getGraph(const char *name) const;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const;
     virtual IStringVal & getJobName(IStringVal & str) const;
-    virtual IStringVal & getParentWuid(IStringVal & str) const;
     virtual IConstWUPlugin * getPluginByName(const char * name) const;
     virtual IConstWUPluginIterator & getPlugins() const;
     virtual IConstWULibraryIterator & getLibraries() const;
@@ -645,8 +1110,6 @@ public:
     virtual IConstWUResult * getResultBySequence(unsigned seq) const;
     virtual unsigned getResultLimit() const;
     virtual IConstWUResultIterator & getResults() const;
-    virtual IConstWUActivityIterator& getActivities() const;
-    virtual IConstWUActivity*   getActivity(__int64 id) const;
     virtual IStringVal & getScope(IStringVal & str) const;
     virtual IStringVal & getSecurityToken(IStringVal & str) const;
     virtual WUState getState() const;
@@ -656,14 +1119,8 @@ public:
     virtual IStringVal & getStateDesc(IStringVal & str) const;
     virtual IConstWUResult * getTemporaryByName(const char * name) const;
     virtual IConstWUResultIterator & getTemporaries() const;
-    virtual unsigned getTimerCount(const char * timerName) const;
-    virtual unsigned getTimerDuration(const char * timerName) const;
-    virtual IStringVal & getTimerDescription(const char * timerName, IStringVal & str) const;
-    virtual IStringIterator & getTimers() const;
-    virtual IConstWUTimerIterator & getTimerIterator() const;
-    virtual IConstWUTimeStampIterator & getTimeStamps() const;
-    virtual IConstWUStatisticIterator & getStatistics() const;
-    virtual IConstWUStatistic * getStatistic(const char * name) const;
+    virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const;
+    virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const;
     virtual IStringVal & getXmlParams(IStringVal & params) const;
@@ -676,7 +1133,6 @@ public:
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
 
-    virtual IStringVal & getTimeStamp(const char * name, const char * instance, IStringVal & str) const;
     virtual IStringVal & getUser(IStringVal & str) const;
     virtual IStringVal & getWuScope(IStringVal & str) const;
     virtual IConstWUResult * getVariableByName(const char * name) const;
@@ -685,7 +1141,6 @@ public:
     virtual bool getRunningGraph(IStringVal &graphName, WUGraphIDType &subId) const;
     virtual bool isProtected() const;
     virtual bool isPausing() const;
-    virtual bool isBilled() const;
     virtual IWorkUnit& lock();
     virtual bool reload();
     virtual void requestAbort();
@@ -712,8 +1167,6 @@ public:
     void clearExceptions();
     void commit();
     IWUException *createException();
-    void setTimeStamp(const char *name, const char *instance, const char *event);
-    void addTimeStamp(const char * name, const char * instance, const char *event);
     void addProcess(const char *type, const char *instance, unsigned pid, const char *log);
     void setAction(WUAction action);
     void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite);
@@ -724,9 +1177,6 @@ public:
     void setIsClone(bool value);
     void setClusterName(const char * value);
     void setCodeVersion(unsigned version, const char * buildVersion, const char * eclVersion);
-    void setCombineQueries(unsigned combine);
-    void setCompareMode(WUCompareMode value);
-    void setCustomerId(const char * value);
     void setDebugValue(const char * propname, const char * value, bool overwrite);
     void setDebugValueInt(const char * propname, int value, bool overwrite);
     void setJobName(const char * value);
@@ -738,15 +1188,12 @@ public:
     void setStateEx(const char * text);
     void setAgentSession(__int64 sessionId);
     void setSecurityToken(const char *value);
-    void setStatistic(const char * creator, const char * wuScope, const char * stat, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge);
-    void setTimerInfo(const char * name, unsigned ms, unsigned count, unsigned __int64 max);
+    void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction);
     void setTracingValue(const char * propname, const char * value);
     void setTracingValueInt(const char * propname, int value);
     void setUser(const char * value);
     void setWuScope(const char * value);
-    void setBilled(bool billed);
     void setSnapshot(const char * value);
-    void setTimeStamp(const char *application, const char *instance, const char *event, bool add);
     void setDebugAgentListenerPort(unsigned port);
     void setDebugAgentListenerIP(const char * ip);
     void setXmlParams(const char *params);
@@ -765,7 +1212,6 @@ public:
     IWUQuery * updateQuery();
     IWUWebServicesInfo* updateWebServicesInfo(bool create);
     IWURoxieQueryInfo* updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName);
-    IWUActivity* updateActivity(__int64 id);
     IWUPlugin * updatePluginByName(const char * name);
     IWULibrary * updateLibraryByName(const char * name);
     IWUResult * updateResultByName(const char * name);
@@ -800,9 +1246,6 @@ public:
     bool getAllowAutoQueueSwitch() const;
     void setLibraryInformation(const char * name, unsigned interfaceHash, unsigned definitionHash);
 
-protected:
-    IConstWUStatistic * getStatisticByDescription(const char * name) const;
-
 private:
     void init();
     IWUGraph *createGraph();
@@ -815,8 +1258,6 @@ private:
     void loadPlugins() const;
     void loadLibraries() const;
     void loadClusters() const;
-    void loadActivities() const;
-    void loadTimers() const;
     void unsubscribe();
     void checkAgentRunning(WUState & state);
 
@@ -971,12 +1412,6 @@ public:
             { return c->getWuidVersion(); }
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const
             { c->getBuildVersion(buildVersion, eclVersion); }
-    virtual unsigned getCombineQueries() const
-            { return c->getCombineQueries(); }
-    virtual WUCompareMode getCompareMode() const
-            { return c->getCompareMode(); }
-    virtual IStringVal & getCustomerId(IStringVal & str) const
-            { return c->getCustomerId(str); }
     virtual bool hasDebugValue(const char * propname) const
             { return c->hasDebugValue(propname); }
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const
@@ -1003,8 +1438,6 @@ public:
             { return c->getResultCount(); }
     virtual unsigned getVariableCount() const
             { return c->getVariableCount(); }
-    virtual unsigned getTimerCount() const
-            { return c->getTimerCount(); }
     virtual unsigned getApplicationValueCount() const
             { return c->getApplicationValueCount(); }
     virtual IConstWUGraphIterator & getGraphs(WUGraphType type) const
@@ -1015,8 +1448,6 @@ public:
             { return c->getGraphProgress(name); }
     virtual IStringVal & getJobName(IStringVal & str) const
             { return c->getJobName(str); }
-    virtual IStringVal & getParentWuid(IStringVal & str) const
-            { return c->getParentWuid(str); }
     virtual IConstWUPlugin * getPluginByName(const char * name) const
             { return c->getPluginByName(name); }
     virtual IConstWUPluginIterator & getPlugins() const
@@ -1047,10 +1478,6 @@ public:
             { return c->getResultLimit(); }
     virtual IConstWUResultIterator & getResults() const
             { return c->getResults(); }
-    virtual IConstWUActivityIterator & getActivities() const
-            { return c->getActivities(); }
-    virtual IConstWUActivity * getActivity(__int64 id) const
-            { return c->getActivity(id); }
     virtual IStringVal & getScope(IStringVal & str) const
             { return c->getScope(str); }
     virtual IStringVal & getSecurityToken(IStringVal & str) const
@@ -1067,25 +1494,10 @@ public:
             { return c->getStateDesc(str); }
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const
             { return c->getRunningGraph(graphName, subId); }
-    virtual unsigned getTimerCount(const char * timerName) const
-            { return c->getTimerCount(timerName); }
-    virtual unsigned getTimerDuration(const char * timerName) const
-            { return c->getTimerDuration(timerName); }
-    virtual IStringVal & getTimerDescription(const char * timerName, IStringVal & str) const
-            { return c->getTimerDescription(timerName, str); }
-    virtual IStringVal & getTimeStamp(const char * name, const char * instance, IStringVal & str) const
-            { return c->getTimeStamp(name, instance, str); }
-    virtual IStringIterator & getTimers() const
-            { return c->getTimers(); }
-    virtual IConstWUTimerIterator & getTimerIterator() const
-            { return c->getTimerIterator(); }
-    virtual IConstWUTimeStampIterator & getTimeStamps() const
-            { return c->getTimeStamps(); }
-    virtual IConstWUStatisticIterator & getStatistics() const
-            { return c->getStatistics(); }
-    virtual IConstWUStatistic * getStatistic(const char * name) const
-            { return c->getStatistic(name); }
-
+    virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const
+            { return c->getStatistics(filter); }
+    virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const
+            { return c->getStatistic(creator, scope, kind); }
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day)
             { return c->getWuDate(year,month,day);}
 
@@ -1111,8 +1523,6 @@ public:
             { return c->isProtected(); }
     virtual bool isPausing() const
             { return c->isPausing(); }
-    virtual bool isBilled() const
-            { return c->isBilled(); }
     virtual IWorkUnit & lock()
             { ((CInterface *)this)->Link(); return (IWorkUnit &) *this; }
     virtual bool reload()
@@ -1156,16 +1566,10 @@ public:
             { c->commit(); }
     virtual IWUException * createException()
             { return c->createException(); }
-    virtual void setTimeStamp(const char * name, const char * instance, const char *event)
-            { c->setTimeStamp(name, instance, event); }
-    virtual void addTimeStamp(const char * name, const char * instance, const char *event)
-            { c->addTimeStamp(name, instance, event); }
     virtual void addProcess(const char *type, const char *instance, unsigned pid, const char *log)
             { c->addProcess(type, instance, pid, log); }
     virtual void protect(bool protectMode)
             { c->protect(protectMode); }
-    virtual void setBilled(bool billed)
-            { c->setBilled(billed); }
     virtual void setAction(WUAction action)
             { c->setAction(action); }
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite)
@@ -1184,12 +1588,6 @@ public:
             { c->setClusterName(value); }
     virtual void setCodeVersion(unsigned version, const char * buildVersion, const char * eclVersion)
             { c->setCodeVersion(version, buildVersion, eclVersion); }
-    virtual void setCombineQueries(unsigned combine)
-            { c->setCombineQueries(combine); }
-    virtual void setCompareMode(WUCompareMode value)
-            { c->setCompareMode(value); }
-    virtual void setCustomerId(const char * value)
-            { c->setCustomerId(value); }
     virtual void setDebugValue(const char * propname, const char * value, bool overwrite)
             { c->setDebugValue(propname, value, overwrite); }
     virtual void setDebugValueInt(const char * propname, int value, bool overwrite)
@@ -1212,11 +1610,8 @@ public:
             { c->setStateEx(text); }
     virtual void setAgentSession(__int64 sessionId)
             { c->setAgentSession(sessionId); }
-    virtual void setTimerInfo(const char * name, unsigned ms, unsigned count, unsigned __int64 max)
-            { c->setTimerInfo(name, ms, count, max); }
-    virtual void setStatistic(const char * creator, const char * wuScope, const char * stat, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
-            { c->setStatistic(creator, wuScope, stat, description, kind, value, count, maxValue, merge); }
-
+    virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
+            { c->setStatistic(creatorType, creator, scopeType, scope, kind, optDescription, value, count, maxValue, mergeAction); }
     virtual void setTracingValue(const char * propname, const char * value)
             { c->setTracingValue(propname, value); }
     virtual void setTracingValueInt(const char * propname, int value)
@@ -1259,8 +1654,6 @@ public:
         { return c->updateWebServicesInfo(create); }
     virtual IWURoxieQueryInfo * updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName)
         { return c->updateRoxieQueryInfo(wuid, roxieClusterName); }
-    virtual IWUActivity * updateActivity(__int64 id) 
-            { return c->updateActivity(id); }
     virtual IWUPlugin * updatePluginByName(const char * name)
             { return c->updatePluginByName(name); }
     virtual IWULibrary * updateLibraryByName(const char * name)
@@ -1610,7 +2003,7 @@ public:
     virtual WUResultFormat getResultFormat() const;
     virtual unsigned    getResultHash() const;
     virtual bool        getResultIsAll() const;
-    virtual IProperties *queryXmlns();
+    virtual IProperties *queryResultXmlns();
 
     // interface IWUResult
     virtual void        setResultStatus(WUResultStatus status);
@@ -1643,7 +2036,7 @@ public:
     virtual void        setResultFormat(WUResultFormat format);
     virtual void        setResultXML(const char *val);
     virtual void        setResultRow(unsigned len, const void * data);
-    virtual void        setXmlns(const char *prefix, const char *uri);
+    virtual void        setResultXmlns(const char *prefix, const char *uri);
 };
 
 class CLocalWUPlugin : public CInterface, implements IWUPlugin
@@ -1656,13 +2049,9 @@ public:
 
     virtual IStringVal& getPluginName(IStringVal &str) const;
     virtual IStringVal& getPluginVersion(IStringVal &str) const;
-    virtual bool        getPluginThor() const;
-    virtual bool        getPluginHole() const;
 
     virtual void        setPluginName(const char *str);
     virtual void        setPluginVersion(const char *str);
-    virtual void        setPluginThor(bool on);
-    virtual void        setPluginHole(bool on);
 };
 
 class CLocalWULibrary : public CInterface, implements IWULibrary
@@ -1674,10 +2063,7 @@ public:
     CLocalWULibrary(IPropertyTree *p);
 
     virtual IStringVal & getName(IStringVal & str) const;
-    virtual IConstWULibraryActivityIterator * getActivities() const;
-
     virtual void setName(const char * str);
-    virtual void addActivity(unsigned id);
 };
 
 class CLocalWUGraph : public CInterface, implements IWUGraph
@@ -1696,7 +2082,6 @@ public:
     CLocalWUGraph(const CLocalWorkUnit &owner, IPropertyTree *p);
 
     virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const;
-    virtual IStringVal & getDOT(IStringVal & ret) const;
     virtual IStringVal & getName(IStringVal & ret) const;
     virtual IStringVal & getLabel(IStringVal & ret) const;
     virtual IStringVal & getTypeName(IStringVal & ret) const;
@@ -1710,22 +2095,6 @@ public:
     virtual void setType(WUGraphType type);
     virtual void setXGMML(const char *str);
     virtual void setXGMMLTree(IPropertyTree * tree, bool compress=true);
-};
-
-class CLocalWUActivity : public CInterface, implements IWUActivity
-{
-    Owned<IPropertyTree> p;
-
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWUActivity(IPropertyTree *p, __int64 id = 0);
-
-    virtual __int64 getId() const;
-    virtual unsigned getKind() const;
-    virtual IStringVal & getHelper(IStringVal & ret) const;
-
-    virtual void setKind(unsigned id);
-    virtual void setHelper(const char * str);
 };
 
 class CLocalWUException : public CInterface, implements IWUException
@@ -1918,16 +2287,10 @@ mapEnums workunitSortFields[] =
    { WUSFecl, "Query/Text" },
    { WUSFfileread, "FilesRead/File/@name" },
    { WUSFroxiecluster, "RoxieQueryInfo/@roxieClusterName" },
-   { WUSFbatchloginid, "Application/Dispatcher/FTPUserID" },
-   { WUSFbatchcustomername, "Application/Dispatcher/CustomerName" },
-   { WUSFbatchpriority, "Application/Dispatcher/JobPriority" },
-   { WUSFbatchinputreccount, "Application/Dispatcher/InputRecords" },
-   { WUSFbatchtimeuploaded, "Application/Dispatcher/TimeUploaded" },
-   { WUSFbatchtimecompleted, "Application/Dispatcher/TimeCompleted" },
-   { WUSFbatchmachine, "Application/Dispatcher/Machine" },
-   { WUSFbatchinputfile, "Application/Dispatcher/InputFileName" },
-   { WUSFbatchoutputfile, "Application/Dispatcher/OutputFileName" },
-   { WUSFtotalthortime, "Statistics/Statistic[@desc='Total thor time']/@value|Timings/Timing[@name='Total thor time']/@duration" },//Use Statistics first. If not found, use Timings
+   { WUSFtotalthortime, "Statistics/Statistic[@c='summary'][@creator='thor'][@kind='TimeElapsed']/@value|"
+                        "Statistics/Statistic[@desc='Total thor time']/@value|"
+                        "Timings/Timing[@name='Total thor time']/@duration"                                 //Use Statistics first. If not found, use Timings
+   },
    { WUSFterm, NULL }
 };
 
@@ -2070,11 +2433,11 @@ public:
         getXPath(wuRoot, name);
         IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager *)NULL, NULL, (const char *)NULL);
+        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager *)NULL, NULL);
         return &cw->lockRemote(false);
     }
 
-    virtual IWorkUnit* createNamedWorkUnit(const char *wuid,const char *parentWuid, const char *app, const char *user)
+    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
     {
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
@@ -2085,7 +2448,7 @@ public:
             conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
         conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
-        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager*)NULL, NULL, parentWuid);
+        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager*)NULL, NULL);
         IWorkUnit* ret = &cw->lockRemote(false);
         ret->setDebugValue("CREATED_BY", app, true);
         ret->setDebugValue("CREATED_FOR", user, true);
@@ -2093,7 +2456,7 @@ public:
             cw->setWuScope(user);
         return ret;
     }
-    virtual IWorkUnit* createWorkUnit(const char *parentWuid, const char *app, const char *user)
+    virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
     {
         StringBuffer wuid("W");
         char result[32];
@@ -2106,14 +2469,14 @@ public:
             wuid.append('-').append(startSession());
         if (workUnitTraceLevel > 1)
             PrintLog("createWorkUnit created %s", wuid.str());
-        IWorkUnit* ret = createNamedWorkUnit(wuid.str(),parentWuid, app, user);
+        IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user);
         if (workUnitTraceLevel > 1)
         {
             SCMStringBuffer wuidName;
             ret->getWuid(wuidName);
             PrintLog("createWorkUnit created %s", wuidName.str());
         }
-        ret->addTimeStamp("workunit", NULL, "Created");
+        addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
         return ret;
     }
     bool secDeleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser, bool raiseexceptions)
@@ -2165,7 +2528,6 @@ public:
     }
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner)
     {
-        // Not sure what to do about customerID vs user etc
         StringBuffer path("*");
         if (owner && *owner)
             path.append("[@submitID=\"").append(owner).append("\"]");
@@ -2488,9 +2850,11 @@ public:
             StringArray unknownAttributes;
             const MapStringTo<bool> *subset;
 
-            void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
+            void populateQueryTree(const IPropertyTree* querySetTree, IPropertyTree* queryTree)
             {
-                Owned<IPropertyTreeIterator> iter = querySetTree->getElements(xPath);
+                const char* querySetId = querySetTree->queryProp("@id");
+                VStringBuffer path("Query%s", xPath.get());
+                Owned<IPropertyTreeIterator> iter = querySetTree->getElements(path.str());
                 ForEach(*iter)
                 {
                     IPropertyTree &query = iter->query();
@@ -2505,8 +2869,8 @@ public:
                             if (!subset->getValue(match))
                                 continue;
                         }
-                        VStringBuffer xPath("Alias[@id='%s']", queryId);
-                        IPropertyTree *alias = queryRegistry->queryPropTree(xPath.str());
+                        VStringBuffer aliasXPath("Alias[@id='%s']", queryId);
+                        IPropertyTree *alias = querySetTree->queryPropTree(aliasXPath.str());
                         if (alias)
                             activated = true;
                     }
@@ -2519,40 +2883,30 @@ public:
                     if ((postFilters.suspendedByUserFilter == WUQFSYes) && !query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
                         continue;
 
-                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", LINK(&query));
-                    queryWithSetId->addProp("@querySetId", querySetId);
-                    queryWithSetId->addPropBool("@activated", activated);
+                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", createPTreeFromIPT(&query));
+                    queryWithSetId->setProp("@querySetId", querySetId);
+                    queryWithSetId->setPropBool("@activated", activated);
                 }
             }
-
-            IPropertyTree* getAllQuerySetQueries(IRemoteConnection* conn, const char *querySet, const char *xPath)
+            IRemoteConnection* populateQueryTree(IPropertyTree* queryTree)
             {
-                Owned<IPropertyTree> queryTree = createPTree("Queries");
-                IPropertyTree* root = conn->queryRoot();
-                if (querySet && *querySet)
+                StringBuffer querySetXPath("QuerySets");
+                if (!querySet.isEmpty())
+                    querySetXPath.appendf("/QuerySet[@id=\"%s\"]", querySet.get());
+                Owned<IRemoteConnection> conn = querySDS().connect(querySetXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+                if (!conn)
+                    return NULL;
+
+                if (querySet.isEmpty())
                 {
-                    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
-                    VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
-                    populateQueryTree(queryRegistry, querySet, root, path.str(), queryTree);
+                    Owned<IPropertyTreeIterator> querySetIter = conn->queryRoot()->getElements("*");
+                    ForEach(*querySetIter)
+                        populateQueryTree(&querySetIter->query(), queryTree);
                 }
                 else
-                {
-                    Owned<IPropertyTreeIterator> iter = root->getElements("QuerySet");
-                    ForEach(*iter)
-                    {
-                        IPropertyTree &querySetTree = iter->query();
-                        const char* id = querySetTree.queryProp("@id");
-                        if (id && *id)
-                        {
-                            Owned<IPropertyTree> queryRegistry = getQueryRegistry(id, false);
-                            VStringBuffer path("Query%s", xPath);
-                            populateQueryTree(queryRegistry, id, &querySetTree, path.str(), queryTree);
-                        }
-                    }
-                }
-                return queryTree.getClear();
+                    populateQueryTree(conn->queryRoot(), queryTree);
+                return conn.getClear();
             }
-
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -2566,11 +2920,9 @@ public:
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
             {
-                Owned<IRemoteConnection> conn = querySDS().connect("QuerySets", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+                Owned<IPropertyTree> elementTree = createPTree("Queries");
+                Owned<IRemoteConnection> conn = populateQueryTree(elementTree);
                 if (!conn)
-                    return NULL;
-                Owned<IPropertyTree> elementTree = getAllQuerySetQueries(conn, querySet.get(), xPath.get());
-                if (!elementTree)
                     return NULL;
                 Owned<IPropertyTreeIterator> iter = elementTree->getElements("*");
                 if (!iter)
@@ -2805,10 +3157,10 @@ public:
         secMgr.set(&secmgr);
         secUser.set(&secuser);
     }
-    virtual IWorkUnit* createNamedWorkUnit(const char *wuid,const char *parentWuid, const char *app, const char *user)
+    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
     {
         checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        IWorkUnit *wu=factory->createNamedWorkUnit(wuid, parentWuid, app, user);
+        IWorkUnit *wu=factory->createNamedWorkUnit(wuid, app, user);
         if (wu)
         {
             CLockedWorkUnit* lw = dynamic_cast<CLockedWorkUnit*>(wu);
@@ -2817,10 +3169,10 @@ public:
         }
         return wu;
     }
-    virtual IWorkUnit* createWorkUnit(const char *parentWuid, const char *app, const char *user)
+    virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
     {
         checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        IWorkUnit *wu=factory->createWorkUnit(parentWuid, app, user);
+        IWorkUnit *wu=factory->createWorkUnit(app, user);
         if (wu)
         {
             CLockedWorkUnit* lw = dynamic_cast<CLockedWorkUnit*>(wu);
@@ -2849,7 +3201,6 @@ public:
     //make cached workunits a non secure pass through for now.
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner)
     {
-        // Not sure what to do about customerID vs user etc
         StringBuffer path("*");
         if (owner && *owner)
             path.append("[@submitID=\"").append(owner).append("\"]");
@@ -2982,13 +3333,11 @@ public:
 };
 //==========================================================================================
 
-CLocalWorkUnit::CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser, const char *parentWuid) : connection(_conn)
+CLocalWorkUnit::CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser) : connection(_conn)
 {
     connectAtRoot = true;
     init();
     p.setown(connection->getRoot());
-    if (parentWuid)
-        p->setProp("@parent", parentWuid);
     secMgr.set(secmgr);
     secUser.set(secuser);
 }
@@ -3013,10 +3362,8 @@ void CLocalWorkUnit::init()
     variables.kill();
     plugins.kill();
     libraries.kill();
-    activities.kill();
     exceptions.kill();
     temporaries.kill();
-    timers.kill();
     roxieQueryInfo.clear();
     webServicesInfo.clear();
     workflowIteratorCached = false;
@@ -3029,21 +3376,18 @@ void CLocalWorkUnit::init()
     activitiesCached = false;
     webServicesInfoCached = false;
     roxieQueryInfoCached = false;
-    timersCached = false;
     dirty = false;
     abortDirty = true;
     abortState = false;
 }
 
 // Dummy workunit support
-CLocalWorkUnit::CLocalWorkUnit(const char *_wuid, const char *parentWuid, ISecManager *secmgr, ISecUser *secuser)
+CLocalWorkUnit::CLocalWorkUnit(const char *_wuid, ISecManager *secmgr, ISecUser *secuser)
 {
     connectAtRoot = true;
     init();
     p.setown(createPTree(_wuid));
     p->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-    if (parentWuid)
-        p->setProp("@parentWuid", parentWuid);
     secMgr.set(secmgr);
     secUser.set(secuser);
 }
@@ -3062,7 +3406,6 @@ CLocalWorkUnit::~CLocalWorkUnit()
         roxieQueryInfo.clear();
         workflowIterator.clear();
 
-        activities.kill();
         plugins.kill();
         libraries.kill();
         exceptions.kill();
@@ -3070,7 +3413,6 @@ CLocalWorkUnit::~CLocalWorkUnit()
         results.kill();
         temporaries.kill();
         variables.kill();
-        timestamps.kill();
         appvalues.kill();
         statistics.kill();
 
@@ -3655,7 +3997,8 @@ void CLocalWorkUnit::unlockRemote(bool commit)
         try
         {
             assertex(connectAtRoot);
-            setTimeStamp("workunit", NULL, "Modified",false);
+            //MORE: I'm not convinced this is useful...
+            setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, NULL, StWhenWorkunitModified, NULL, getTimeStampNowValue(), 1, 0, StatsMergeReplace);
             try { connection->commit(); }
             catch (IException *e)
             { 
@@ -3866,13 +4209,6 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
 }
 
 
-IStringVal& CLocalWorkUnit::getParentWuid(IStringVal &str) const 
-{
-    CriticalBlock block(crit);
-    str.set(p->queryProp("@parent"));
-    return str;
-}
-
 void CLocalWorkUnit::setUser(const char * value) 
 { 
     CriticalBlock block(crit);
@@ -3896,19 +4232,6 @@ IStringVal& CLocalWorkUnit::getWuScope(IStringVal &str) const
 {
     CriticalBlock block(crit);
     str.set(p->queryProp("@scope"));
-    return str;
-}
-
-void CLocalWorkUnit::setCustomerId(const char * value) 
-{ 
-    CriticalBlock block(crit);
-    p->setProp("CustomerID", value); 
-}
-
-IStringVal& CLocalWorkUnit::getCustomerId(IStringVal &str) const 
-{
-    CriticalBlock block(crit);
-    str.set(p->queryProp("CustomerID"));
     return str;
 }
 
@@ -4963,18 +5286,6 @@ IUserDescriptor *CLocalWorkUnit::queryUserDescriptor() const
     return userDesc;
 }
 
-void CLocalWorkUnit::setCombineQueries(unsigned combine) 
-{
-    CriticalBlock block(crit);
-    p->setPropInt("COMBINE_QUERIES", combine);
-}
-
-unsigned CLocalWorkUnit::getCombineQueries() const 
-{
-    CriticalBlock block(crit);
-    return p->getPropInt("COMBINE_QUERIES");
-}
-
 bool CLocalWorkUnit::isProtected() const
 {
     CriticalBlock block(crit);
@@ -5002,18 +5313,6 @@ void CLocalWorkUnit::protect(bool protectMode)
     p->setPropBool("@protected", protectMode);
 }
 
-bool CLocalWorkUnit::isBilled() const
-{
-    CriticalBlock block(crit);
-    return p->getPropBool("@billed", false);
-}
-
-void CLocalWorkUnit::setBilled(bool value)
-{
-    CriticalBlock block(crit);
-    p->setPropBool("@billed", value);
-}
-
 void CLocalWorkUnit::setResultLimit(unsigned value)
 {
     CriticalBlock block(crit);
@@ -5024,18 +5323,6 @@ unsigned CLocalWorkUnit::getResultLimit() const
 {
     CriticalBlock block(crit);
     return p->getPropInt("resultLimit");
-}
-
-void CLocalWorkUnit::setCompareMode(WUCompareMode value)
-{
-    CriticalBlock block(crit);
-    p->setPropInt("comparemode", (int)value);
-}
-
-WUCompareMode CLocalWorkUnit::getCompareMode() const
-{
-    CriticalBlock block(crit);
-    return (WUCompareMode) p->getPropInt("comparemode");
 }
 
 IStringVal & CLocalWorkUnit::getSnapshot(IStringVal & str) const
@@ -5051,7 +5338,7 @@ void CLocalWorkUnit::setSnapshot(const char * val)
     p->setProp("SNAPSHOT", val);
 }
 
-static int comparePropTrees(IInterface **ll, IInterface **rr)
+static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
 {
     IPropertyTree *l = (IPropertyTree *) *ll;
     IPropertyTree *r = (IPropertyTree *) *rr;
@@ -5183,7 +5470,6 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     updateProp(p, fromP, "@clusterName");
     updateProp(p, fromP, "allowedclusters");
     updateProp(p, fromP, "@submitID");
-    updateProp(p, fromP, "CustomerID");
     updateProp(p, fromP, "SNAPSHOT");
 
     //MORE: This is very adhoc.  All options that should be cloned should really be in a common branch
@@ -5504,113 +5790,6 @@ IConstWULibrary * CLocalWorkUnit::getLibraryByName(const char * search) const
     return NULL;
 }
 
-unsigned CLocalWorkUnit::getTimerDuration(const char *name) const
-{
-    Owned<IConstWUStatistic> stat = getStatisticByDescription(name);
-    if (stat)
-    {
-        unsigned __int64 time = stat->getValue();
-        return (unsigned)(time / 1000000);
-    }
-
-    //Backward compatibility - but only use it if no statistics
-    CriticalBlock block(crit);
-    if (p->hasProp("Statistics"))
-        return 0;
-
-    StringBuffer pname;
-    pname.appendf("Timings/Timing[@name=\"%s\"]/@duration", name);
-    return p->getPropInt(pname.str(), 0);
-}
-
-IStringVal & CLocalWorkUnit::getTimerDescription(const char * name, IStringVal & str) const
-{
-    Owned<IConstWUStatistic> stat = getStatisticByDescription(name);
-    if (stat)
-        return stat->getDescription(str);
-
-    //Backward compatibility - but only use it if no statistics
-    CriticalBlock block(crit);
-    if (p->hasProp("Statistics"))
-    {
-        str.clear();
-        return str;
-    }
-
-    str.set(name);
-    return str;
-}
-
-unsigned CLocalWorkUnit::getTimerCount(const char *name) const
-{
-    Owned<IConstWUStatistic> stat = getStatisticByDescription(name);
-    if (stat)
-        return (unsigned)stat->getCount();
-
-    //Backward compatibility - but only use it if no statistics
-    CriticalBlock block(crit);
-    if (p->hasProp("Statistics"))
-        return 0;
-
-    StringBuffer pname;
-    pname.appendf("Timings/Timing[@name=\"%s\"]/@count", name);
-    return p->getPropInt(pname.str(), 0);
-}
-
-IStringIterator& CLocalWorkUnit::getTimers() const
-{
-    CriticalBlock block(crit);
-
-    if (p->hasProp("Statistics"))
-        return *new CStringPTreeAttrIterator(p->getElements("Statistics/Statistic[@unit=\"ns\"]"), "@desc");
-
-    //Backward compatibility - but only use it if no statistics
-    return *new CStringPTreeAttrIterator(p->getElements("Timings/Timing"), "@name");
-}
-
-IConstWUTimerIterator& CLocalWorkUnit::getTimerIterator() const
-{
-    CriticalBlock block(crit);
-    loadTimers();
-    return *new CArrayIteratorOf<IConstWUTimer,IConstWUTimerIterator> (timers, 0, (IConstWorkUnit *) this);
-
-}
-
-class CLocalWUTimer : public CInterface, implements IWUTimer
-{
-    StringAttr name;
-    unsigned count;
-    unsigned duration;
-
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWUTimer(const char* _name, unsigned _count, unsigned _duration) : name(_name), count(_count), duration(_duration) { };
-
-    virtual IStringVal & getName(IStringVal & str) const { str.set(name.get()); return str; } ;
-    virtual unsigned getCount() const { return count; };
-    virtual unsigned getDuration() const { return duration; };
-
-    virtual void setName(const char * str) { name.set(str); };
-    virtual void setCount(unsigned c) { count = c; };
-    virtual void setDuration(unsigned d) { duration = d; };
-};
-
-void CLocalWorkUnit::loadTimers() const
-{
-    CriticalBlock block(crit);
-    if (timersCached)
-        return;
-
-    assertex(timers.length() == 0);
-    Owned<IPropertyTreeIterator> r = p->getElements("Timings/Timing");
-    ForEach(*r)
-    {
-        IPropertyTree *rp = &r->query();
-        timers.append(*new CLocalWUTimer(rp->queryProp("@name"), rp->getPropInt("@count"), rp->getPropInt("@duration")));
-    }
-    timersCached = true;
-}
-
 StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId)
 {
     str.append("Graph ").append(graphName);
@@ -5622,7 +5801,7 @@ StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, un
 StringBuffer &formatGraphTimerScope(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId)
 {
     str.append(graphName);
-    if (subId) str.append(":").append(subId);
+    if (subId) str.append(":sg").append(subId);
     return str;
 }
 
@@ -5668,216 +5847,168 @@ bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & g
     return true;
 }
 
-void CLocalWorkUnit::setTimerInfo(const char *name, unsigned ms, unsigned count, unsigned __int64 max)
+bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphId)
 {
-    CriticalBlock block(crit);
-    IPropertyTree *timings = p->queryPropTree("Timings");
-    if (!timings)
-        timings = p->addPropTree("Timings", createPTree("Timings"));
-    StringBuffer xpath;
-    xpath.append("Timing[@name=\"").append(name).append("\"]");
-    IPropertyTree *timing = timings->queryPropTree(xpath.str());
-    if (!timing)
+    if (!MATCHES_CONST_PREFIX(scope, GraphScopePrefix))
+        return false;
+
+    graphNum = atoi(scope + CONST_STRLEN(GraphScopePrefix));
+
+    const char * colon = strchr(scope, ':');
+    if (!colon)
     {
-        timing = timings->addPropTree("Timing", createPTree("Timing"));
-        timing->setProp("@name", name);
+        graphName.set(scope);
+        subGraphId = 0;
+        return true;
     }
-    timing->setPropInt("@count", count);
-    timing->setPropInt("@duration", ms);
-    if (!max && 1==count) max = milliToNano(ms); // max is in nanoseconds
-    if (max)
-        timing->setPropInt64("@max", max);
-}
 
-void CLocalWorkUnit::setTimeStamp(const char *application, const char *instance, const char *event, bool add)
-{
-    CriticalBlock block(crit);
-    char timeStamp[64];
-    time_t tNow;
-    time(&tNow);
-#ifdef _WIN32
-    struct tm *gmtNow;
-    gmtNow = gmtime(&tNow);
-    strftime(timeStamp, 64, "%Y-%m-%dT%H:%M:%SZ", gmtNow);
-#else
-    struct tm gmtNow;
-    gmtime_r(&tNow, &gmtNow);
-    strftime(timeStamp, 64, "%Y-%m-%dT%H:%M:%SZ", &gmtNow);
-#endif //_WIN32
-    IPropertyTree *ts = p->queryPropTree("TimeStamps");
-    if (!ts) {
-        ts = p->addPropTree("TimeStamps", createPTree("TimeStamps"));
-        add = true;
-    }
-    IPropertyTree *t=NULL;
-    if (!add) {
-        StringBuffer path;
-        path.appendf("TimeStamp[@application=\"%s\"]",application);
-        t = ts->queryBranch(path.str());
-    }
-    if (!t) {
-        t = createPTree("TimeStamp");
-        t->setProp("@application", application);
-        add = true;
-    }
-    if (instance)
-        t->setProp("@instance", instance);
-    t->setProp(event, timeStamp);
+    const char * subgraph = colon+1;
+    graphName.set(scope, (size32_t)(colon - scope));
+    if (MATCHES_CONST_PREFIX(subgraph, SubGraphScopePrefix))
+        subGraphId = atoi(subgraph+CONST_STRLEN(SubGraphScopePrefix));
 
-    IPropertyTree *et = t->queryPropTree(event);
-    if(et)
-        et->setPropInt("@ts",(int)tNow);
-    if (add)
-        ts->addPropTree("TimeStamp", t);
+    return true;
 }
 
 
-mapEnums queryStatMeasure[] =
+class WorkUnitStatisticsIterator : public CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator>
 {
-    { SMEASURE_TIME_NS, "ns" },
-    { SMEASURE_COUNT, "cnt" },
-    { SMEASURE_MEM_KB, "kb" },
-    { SMEASURE_MAX, NULL},
+    typedef CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> PARENT;
+public:
+    WorkUnitStatisticsIterator(const IArray &a, aindex_t start, IInterface *owner, const IStatisticsFilter * _filter)
+        : PARENT(a,start, owner), filter(_filter)
+    {
+    }
+
+    virtual bool first()
+    {
+        if (!PARENT::first())
+            return false;
+        if (matchesFilter())
+            return true;
+        return next();
+    }
+
+    virtual bool next()
+    {
+        loop
+        {
+            if (!PARENT::next())
+                return false;
+            if (matchesFilter())
+                return true;
+        }
+    }
+
+protected:
+    bool matchesFilter()
+    {
+        if (!filter)
+            return true;
+        return query().matches(filter);
+    }
+
+protected:
+    Linked<const IStatisticsFilter> filter;
 };
 
-void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, const char * stat, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
+void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
 {
-    if (!wuScope) wuScope = "workunit";
+    if (!scope) scope = GLOBAL_SCOPE;
+
+    const char * kindName = queryStatisticName(kind);
+    StatisticMeasure measure = queryMeasure(kind);
 
     //creator. scope and name must all be present, and must not contain semi colons.
-    assertex(creator && wuScope && stat);
-    dbgassertex(!strchr(creator, ';') && !strchr(wuScope, ';') && !strchr(stat, ';'));
-    if (count == 1 && maxValue < value)
-        maxValue = value;
-
-    StringBuffer fullname;
-    fullname.append(creator).append(";").append(wuScope).append(";").append(stat);
-
-    StringBuffer xpath;
-    xpath.append("Statistic[@name=\"").append(fullname).append("\"]");
+    assertex(creator && scope);
 
     CriticalBlock block(crit);
     IPropertyTree * stats = p->queryPropTree("Statistics");
     if (!stats)
         stats = p->addPropTree("Statistics", createPTree("Statistics"));
-    IPropertyTree * statTree = stats->queryPropTree(xpath.str());
+
+    IPropertyTree * statTree = NULL;
+    if (mergeAction != StatsMergeAppend)
+    {
+        StringBuffer xpath;
+        xpath.append("Statistic[@creator='").append(creator).append("'][@scope='").append(scope).append("'][@kind='").append(kindName).append("']");
+        statTree = stats->queryPropTree(xpath.str());
+    }
+
     if (!statTree)
     {
-        //MORE: When getTimings is removed the default description could be dynamically calculated
-        StringBuffer descriptionText;
-        if (!description || !*description)
-        {
-            bool isDefaultName = streq(stat, "time");
-            bool isDefaultScope = streq(wuScope, "workunit");
-
-            descriptionText.append(creator);
-            if (isDefaultName || !isDefaultScope)
-                descriptionText.append(": ").append(wuScope);
-            if (!isDefaultName)
-                descriptionText.append(": ").append(stat);
-            description = descriptionText;
-        }
-
         statTree = stats->addPropTree("Statistic", createPTree("Statistic"));
-        statTree->setProp("@name", fullname.str());
+        statTree->setProp("@creator", creator);
+        statTree->setProp("@scope", scope);
+        statTree->setProp("@kind", kindName);
+        //These items are primarily here to facilitate filtering.
+        statTree->setProp("@unit", queryMeasureName(measure));
+        statTree->setProp("@c", queryCreatorTypeName(creatorType));
+        statTree->setProp("@s", queryScopeTypeName(scopeType));
+        statTree->setPropInt64("@ts", getTimeStampNowValue());
 
-        if (description)
-            statTree->setProp("@desc", description);
-        setEnum(statTree, "@unit", kind, queryStatMeasure);
+        if (optDescription)
+            statTree->setProp("@desc", optDescription);
 
+        if (statistics.cached)
+            statistics.append(LINK(statTree));
+
+        mergeAction = StatsMergeAppend;
+    }
+
+    if (mergeAction != StatsMergeAppend)
+    {
+        unsigned __int64 oldValue = statTree->getPropInt64("@value", 0);
+        unsigned __int64 oldCount = statTree->getPropInt64("@count", 0);
+        unsigned __int64 oldMax = statTree->getPropInt64("@max", 0);
+        if (oldMax < oldValue)
+            oldMax = oldValue;
+
+        statTree->setPropInt64("@value", mergeStatisticValue(oldValue, value, mergeAction));
+        statTree->setPropInt64("@count", count + oldCount);
+        if (maxValue > oldMax)
+            statTree->setPropInt64("@max", maxValue);
+    }
+    else
+    {
         statTree->setPropInt64("@value", value);
         statTree->setPropInt64("@count", count);
         if (maxValue)
             statTree->setPropInt64("@max", maxValue);
-
-        if (statistics.cached)
-            statistics.append(LINK(statTree));
-    }
-    else
-    {
-        if (merge)
-        {
-            unsigned __int64 oldValue = statTree->getPropInt64("@value", 0);
-            unsigned __int64 oldCount = statTree->getPropInt64("@count", 0);
-            unsigned __int64 oldMax = statTree->getPropInt64("@max", 0);
-
-            statTree->setPropInt64("@value", value + oldValue);
-            statTree->setPropInt64("@count", count + oldCount);
-            if (maxValue > oldMax)
-                statTree->setPropInt64("@max", maxValue);
-        }
         else
-        {
-            statTree->setPropInt64("@value", value);
-            statTree->setPropInt64("@count", count);
-            if (maxValue)
-                statTree->setPropInt64("@max", maxValue);
-        }
+            statTree->removeProp("@max");
     }
 }
 
-void CLocalWorkUnit::setTimeStamp(const char *application, const char *instance, const char *event)
-{
-    setTimeStamp(application,instance,event,false);
-}
-
-void CLocalWorkUnit::addTimeStamp(const char *application, const char *instance, const char *event)
-{
-    setTimeStamp(application,instance,event,true);
-}
-
-IStringVal &CLocalWorkUnit::getTimeStamp(const char *name, const char *application, IStringVal &str) const
+IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter * filter) const
 {
     CriticalBlock block(crit);
+    //This should be deleted in version 6.0 when support for 4.x is no longer required
+    legacyTimings.load(p,"Timings/*");
+    if (legacyTimings.ordinality())
+        return *new WorkUnitStatisticsIterator(legacyTimings, 0, (IConstWorkUnit *) this, filter);
 
-    str.clear();
-
-    StringBuffer pname("TimeStamps/TimeStamp");
-    if (application)
-        pname.appendf("[@application=\"%s\"]", application);
-    pname.appendf("/%s", name);
-
-    Owned<IPropertyTreeIterator> stamps = p->getElements(pname.str());
-    if (stamps && stamps->first())
-        str.set(stamps->query().queryProp(NULL));
-
-    return str;
-}
-
-IConstWUTimeStampIterator& CLocalWorkUnit::getTimeStamps() const
-{
-    CriticalBlock block(crit);
-    timestamps.load(p,"TimeStamps/*");
-    return *new CArrayIteratorOf<IConstWUTimeStamp,IConstWUTimeStampIterator> (timestamps, 0, (IConstWorkUnit *) this);
-}
-
-IConstWUStatisticIterator& CLocalWorkUnit::getStatistics() const
-{
-    CriticalBlock block(crit);
     statistics.load(p,"Statistics/*");
-    return *new CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> (statistics, 0, (IConstWorkUnit *) this);
+    Owned<IConstWUStatisticIterator> localStats = new WorkUnitStatisticsIterator(statistics, 0, (IConstWorkUnit *) this, filter);
+    if (filter && !filter->queryMergeSources())
+        return *localStats.getClear();
+
+    const char * wuid = p->queryName();
+    Owned<IConstWUStatisticIterator> graphStats = new CConstGraphProgressStatisticsIterator(wuid, filter);
+    return * new CCompoundIteratorOf<IConstWUStatisticIterator, IConstWUStatistic>(localStats, graphStats);
 }
 
-IConstWUStatistic * CLocalWorkUnit::getStatisticByDescription(const char * desc) const
+IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * creator, const char * scope, StatisticKind kind) const
 {
-    StringBuffer xpath;
-    xpath.appendf("Statistics/Statistic[@desc=\"%s\"]", desc);
-    CriticalBlock block(crit);
-    IPropertyTree * match = p->queryPropTree(xpath);
-    if (!match)
-        return NULL;
-    return new CLocalWUStatistic(LINK(match));
-}
-
-IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * name) const
-{
-    StringBuffer xpath;
-    xpath.appendf("Statistics/Statistic[@name=\"%s\"]", name);
-    CriticalBlock block(crit);
-    IPropertyTree * match = p->queryPropTree(xpath);
-    if (!match)
-        return NULL;
-    return new CLocalWUStatistic(LINK(match));
+    //MORE: Optimize this....
+    StatisticsFilter filter;
+    filter.setCreator(creator);
+    filter.setScope(scope);
+    filter.setKind(kind);
+    Owned<IConstWUStatisticIterator> stats = &getStatistics(&filter);
+    if (stats->first())
+        return LINK(&stats->query());
+    return NULL;
 }
 
 bool CLocalWorkUnit::getWuDate(unsigned & year, unsigned & month, unsigned& day)
@@ -6085,7 +6216,7 @@ IWURoxieQueryInfo* CLocalWorkUnit::updateRoxieQueryInfo(const char *wuid, const 
     return roxieQueryInfo.getLink();
 }
 
-static int compareResults(IInterface **ll, IInterface **rr)
+static int compareResults(IInterface * const *ll, IInterface * const *rr)
 {
     CLocalWUResult *l = (CLocalWUResult *) *ll;
     CLocalWUResult *r = (CLocalWUResult *) *rr;
@@ -6567,60 +6698,6 @@ IPropertyTreeIterator & CLocalWorkUnit::getFilesReadIterator() const
 
 //=================================================================================================
 
-IWUActivity * CLocalWorkUnit::updateActivity(__int64 id)
-{
-    CriticalBlock block(crit);
-    IConstWUActivity *existing = getActivity(id);
-    if (existing)
-        return (IWUActivity *) existing;
-    if (!activities.length())
-        p->addPropTree("Activities", createPTree("Activities"));
-    IPropertyTree *pl = p->queryPropTree("Activities");
-    IPropertyTree *s = pl->addPropTree("Activity", createPTree("Activity"));
-    IWUActivity * q = new CLocalWUActivity(LINK(s), id); 
-    activities.append(*LINK(q));
-    return q;
-}
-
-IConstWUActivity * CLocalWorkUnit::getActivity(__int64 id) const
-{
-    CriticalBlock block(crit);
-    loadActivities();
-    ForEachItemIn(idx, activities)
-    {
-        IConstWUActivity &cur = activities.item(idx);
-        if (cur.getId() == id)
-            return &OLINK(cur);
-    }
-    return NULL;
-}
-
-void CLocalWorkUnit::loadActivities() const
-{
-    CriticalBlock block(crit);
-    if (!activitiesCached)
-    {
-        assertex(activities.length() == 0);
-        Owned<IPropertyTreeIterator> r = p->getElements("Activities/Activity");
-        for (r->first(); r->isValid(); r->next())
-        {
-            IPropertyTree *rp = &r->query();
-            rp->Link();
-            activities.append(*new CLocalWUActivity(rp));
-        }
-        activitiesCached = true;
-    }
-}
-
-IConstWUActivityIterator& CLocalWorkUnit::getActivities() const
-{
-    CriticalBlock block(crit);
-    loadActivities();
-    return *new CArrayIteratorOf<IConstWUActivity,IConstWUActivityIterator> (activities, 0, (IConstWorkUnit *) this);
-}
-
-//=================================================================================================
-
 
 bool CLocalWorkUnit::switchThorQueue(const char *cluster, IQueueSwitcher *qs)
 {
@@ -6791,28 +6868,6 @@ unsigned CLocalWorkUnit::getVariableCount() const
     
 }
 
-unsigned CLocalWorkUnit::getTimerCount() const
-{
-    CriticalBlock block(crit);
-
-    if (p->hasProp("Statistics"))
-    {
-        Owned<IPropertyTreeIterator> iter = p->getElements("Statistics/Statistic[@unit=\"ns\"]");
-        unsigned cnt =0;
-        if (iter)
-        {
-            ForEach(*iter)
-                cnt++;
-        }
-        return cnt;
-    }
-
-    if (p->hasProp("Timings"))
-        return p->queryPropTree("Timings")->numChildren();
-
-    return 0;
-}
-
 unsigned CLocalWorkUnit::getApplicationValueCount() const
 {
     CriticalBlock block(crit);
@@ -6970,11 +7025,6 @@ IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *name) const
     return new CConstGraphProgress(p->queryName(), name);
 }
 
-IStringVal& CLocalWUGraph::getDOT(IStringVal &str) const
-{
-    UNIMPLEMENTED;
-}
-
 void CLocalWUGraph::setName(const char *str)
 {
     p->setProp("@name", str);
@@ -7007,6 +7057,21 @@ void CLocalWUGraph::setXGMMLTree(IPropertyTree *_graph, bool compress)
         xgmml->setPropTree("graph", _graph);
 }
 
+static void expandAttributes(IPropertyTree & targetNode, IPropertyTree & progressNode)
+{
+    Owned<IAttributeIterator> aIter = progressNode.getAttributes();
+    ForEach (*aIter)
+    {
+        const char *aName = aIter->queryName()+1;
+        if (0 != stricmp("id", aName)) // "id" reserved.
+        {
+            IPropertyTree *att = targetNode.addPropTree("att", createPTree());
+            att->setProp("@name", aName);
+            att->setProp("@value", aIter->queryValue());
+        }
+    }
+}
+
 void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progressTree, const unsigned &progressV) const
 {
     IPropertyTree *graphNode = rootNode.queryPropTree("att/graph");
@@ -7017,6 +7082,8 @@ void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progre
     IPropertyTree *progressNode = progressTree.queryPropTree(progressNodePath.str());
     if (progressNode)
     {
+        expandAttributes(*graphNode, *progressNode);
+
         Owned<IPropertyTreeIterator> edges = progressNode->getElements("edge");
         ForEach (*edges)
         {
@@ -7030,17 +7097,8 @@ void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progre
                     mergePTree(graphEdge, &edge);
                 else
                 { // must translate to XGMML format
-                    Owned<IAttributeIterator> aIter = edge.getAttributes();
-                    ForEach (*aIter)
-                    {
-                        const char *aName = aIter->queryName()+1;
-                        if (0 != stricmp("id", aName)) // "id" reserved.
-                        {
-                            IPropertyTree *att = graphEdge->addPropTree("att", createPTree());
-                            att->setProp("@name", aName);
-                            att->setProp("@value", aIter->queryValue());
-                        }
-                    }
+                    expandAttributes(*graphEdge, edge);
+
                     // This is really only here, so that our progress format can use non-attribute values, which have different efficiency qualifies (e.g. can be external by dali)
                     Owned<IPropertyTreeIterator> iter = edge.getElements("*");
                     ForEach (*iter)
@@ -7066,17 +7124,7 @@ void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progre
                     mergePTree(_node, &node);
                 else
                 { // must translate to XGMML format
-                    Owned<IAttributeIterator> aIter = node.getAttributes();
-                    ForEach (*aIter)
-                    {
-                        const char *aName = aIter->queryName()+1;
-                        if (0 != stricmp("id", aName)) // "id" reserved.
-                        {
-                            IPropertyTree *att = _node->addPropTree("att", createPTree());
-                            att->setProp("@name", aName);
-                            att->setProp("@value", aIter->queryValue());
-                        }
-                    }
+                    expandAttributes(*_node, node);
                 }
             }
         }
@@ -7115,8 +7163,9 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
         else
             _progress.setown(new CConstGraphProgress(wuid, p->queryProp("@name")));
 
+        //MORE: Eventually this should directly access the new stats structure
         unsigned progressV = _progress->queryFormatVersion();
-        IPropertyTree *progressTree = _progress->queryProgressTree();
+        Owned<IPropertyTree> progressTree = _progress->getProgressTree();
         Owned<IPropertyTreeIterator> nodeIterator = copy->getElements("node");
         ForEach (*nodeIterator)
             mergeProgress(nodeIterator->query(), *progressTree, progressV);
@@ -7879,7 +7928,7 @@ IStringVal& CLocalWUResult::getResultXml(IStringVal &str) const
     return str;
 }
 
-IProperties *CLocalWUResult::queryXmlns()
+IProperties *CLocalWUResult::queryResultXmlns()
 {
     CriticalBlock block(crit);
     if (xmlns)
@@ -7989,7 +8038,7 @@ void CLocalWUResult::setResultSchemaRaw(unsigned size, const void *schema)
 {
     p->setPropBin("SchemaRaw", size, schema);
 }
-void CLocalWUResult::setXmlns(const char *prefix, const char *uri)
+void CLocalWUResult::setResultXmlns(const char *prefix, const char *uri)
 {
     StringBuffer xpath("@xmlns");
     if (prefix && *prefix)
@@ -8456,16 +8505,6 @@ IStringVal& CLocalWUPlugin::getPluginVersion(IStringVal &str) const
     return str;
 }
 
-bool CLocalWUPlugin::getPluginThor() const
-{
-    return p->getPropInt("@thor") != 0;
-}
-
-bool CLocalWUPlugin::getPluginHole() const
-{
-    return p->getPropInt("@hole") != 0;
-}
-
 void CLocalWUPlugin::setPluginName(const char *str)
 {
     p->setProp("@dllname", str);
@@ -8476,30 +8515,7 @@ void CLocalWUPlugin::setPluginVersion(const char *str)
     p->setProp("@version", str);
 }
 
-void CLocalWUPlugin::setPluginThor(bool on)
-{
-    p->setPropInt("@thor", (int) on);
-}
-
-void CLocalWUPlugin::setPluginHole(bool on)
-{
-    p->setPropInt("@hole", (int) on);
-}
-
 //==========================================================================================
-
-class WULibraryActivityIterator : public CInterface, implements IConstWULibraryActivityIterator
-{
-public:
-    WULibraryActivityIterator(IPropertyTree * tree) { iter.setown(tree->getElements("activity")); }
-    IMPLEMENT_IINTERFACE;
-    bool                first() { return iter->first(); }
-    bool                isValid() { return iter->isValid(); }
-    bool                next() { return iter->next(); }
-    unsigned            query() const { return iter->query().getPropInt("@id"); }
-private:
-    Owned<IPropertyTreeIterator> iter;
-};
 
 CLocalWULibrary::CLocalWULibrary(IPropertyTree *props) : p(props)
 {
@@ -8511,57 +8527,9 @@ IStringVal& CLocalWULibrary::getName(IStringVal &str) const
     return str;
 }
 
-IConstWULibraryActivityIterator * CLocalWULibrary::getActivities() const 
-{ 
-    return new WULibraryActivityIterator(p); 
-}
-
 void CLocalWULibrary::setName(const char *str)
 {
     p->setProp("@name", str);
-}
-
-void CLocalWULibrary::addActivity(unsigned id)
-{
-    StringBuffer s;
-    s.append("activity[@id=\"").append(id).append("\"]");
-    if (!p->hasProp(s.str()))
-        p->addPropTree("activity", createPTree())->setPropInt("@id", id);
-}
-
-//==========================================================================================
-
-CLocalWUActivity::CLocalWUActivity(IPropertyTree *props, __int64 id) : p(props)
-{
-    if (id)
-        p->setPropInt64("@id", id);
-}
-
-__int64 CLocalWUActivity::getId() const
-{
-    return p->getPropInt64("@id");
-}
-
-unsigned CLocalWUActivity::getKind() const
-{
-    return (unsigned)p->getPropInt("@kind");
-}
-
-IStringVal & CLocalWUActivity::getHelper(IStringVal & str) const
-{
-    str.set(p->queryProp("@helper"));
-    return str;
-}
-
-
-void CLocalWUActivity::setKind(unsigned kind)
-{
-    p->setPropInt64("@kind", kind);
-}
-
-void CLocalWUActivity::setHelper(const char * str)
-{
-    p->setProp("@helper", str);
 }
 
 //==========================================================================================
@@ -8656,32 +8624,6 @@ void CLocalWUException::setExceptionColumn(unsigned c)
 
 //==========================================================================================
 
-CLocalWUTimeStamp::CLocalWUTimeStamp(IPropertyTree *props) : p(props)
-{
-}
-
-IStringVal & CLocalWUTimeStamp::getApplication(IStringVal & str) const
-{
-    str.set(p->queryProp("@application"));
-    return str;
-}
-
-IStringVal & CLocalWUTimeStamp::getEvent(IStringVal & str) const
-{
-    IPropertyTree* evt=p->queryPropTree("*[1]");
-    if(evt)
-        str.set(evt->queryName());
-    return str;
-}
-
-IStringVal & CLocalWUTimeStamp::getDate(IStringVal & str) const
-{
-    str.set(p->queryProp("*[1]"));
-    return str;
-}
-
-//==========================================================================================
-
 CLocalWUAppValue::CLocalWUAppValue(IPropertyTree *props,unsigned child): p(props)
 {
     prop.append("*[").append(child).append("]");
@@ -8713,54 +8655,103 @@ CLocalWUStatistic::CLocalWUStatistic(IPropertyTree *props) : p(props)
 {
 }
 
-IStringVal & CLocalWUStatistic::getFullName(IStringVal & str) const
-{
-    str.set(p->queryProp("@name"));
-    return str;
-}
-
 IStringVal & CLocalWUStatistic::getCreator(IStringVal & str) const
 {
-    const char * name = p->queryProp("@name");
-    const char * sep1 = strchr(name, ';');
-    assertex(sep1);
-    str.setLen(name, sep1-name);
+    const char * creator = p->queryProp("@creator");
+    str.set(creator);
     return str;
 }
 
-IStringVal & CLocalWUStatistic::getDescription(IStringVal & str) const
+
+IStringVal & CLocalWUStatistic::getDescription(IStringVal & str, bool createDefault) const
 {
-    str.set(p->queryProp("@desc"));
+    const char * desc = p->queryProp("@desc");
+    if (desc)
+    {
+        str.set(desc); // legacy and in case it is overridden
+    }
+    else if (createDefault)
+    {
+        StatisticKind kind = getKind();
+        assertex(kind != StKindNone);
+
+        const char * scope = p->queryProp("@scope");
+        assertex(scope);
+
+        //Clean up the format of the scope when converting it to a description
+        StringBuffer descriptionText;
+        if (streq(scope, GLOBAL_SCOPE))
+        {
+            const char * creator = p->queryProp("@creator");
+            descriptionText.append(creator).append(":");
+            queryLongStatisticName(descriptionText, kind);
+        }
+        else
+        {
+            loop
+            {
+                char c = *scope++;
+                if (!c)
+                    break;
+                if (c == ':')
+                    descriptionText.append(": ");
+                else
+                    descriptionText.append(c);
+            }
+
+            if (kind != StTimeElapsed)
+                queryLongStatisticName(descriptionText.append(": "), kind);
+        }
+
+        str.set(descriptionText);
+    }
+    else
+        str.clear();
+
     return str;
 }
 
-IStringVal & CLocalWUStatistic::getName(IStringVal & str) const
+IStringVal & CLocalWUStatistic::getType(IStringVal & str) const
 {
-    const char * name = p->queryProp("@name");
-    const char * sep1 = strchr(name, ';');
-    assertex(sep1);
-    const char * scope = sep1+1;
-    const char * sep2 = strchr(scope, ';');
-    assertex(sep2);
-    str.set(sep2+1);
+    StatisticKind kind = getKind();
+    if (kind != StKindNone)
+        str.set(queryStatisticName(kind));
     return str;
+}
+
+IStringVal & CLocalWUStatistic::getFormattedValue(IStringVal & str) const
+{
+    StringBuffer formatted;
+    formatStatistic(formatted, getValue(), getMeasure());
+    str.set(formatted);
+    return str;
+}
+
+StatisticCreatorType CLocalWUStatistic::getCreatorType() const
+{
+    return queryCreatorType(p->queryProp("@c"));
+}
+
+StatisticScopeType CLocalWUStatistic::getScopeType() const
+{
+    return queryScopeType(p->queryProp("@s"));
+}
+
+StatisticKind CLocalWUStatistic::getKind() const
+{
+    return queryStatisticKind(p->queryProp("@kind"));
 }
 
 IStringVal & CLocalWUStatistic::getScope(IStringVal & str) const
 {
-    const char * name = p->queryProp("@name");
-    const char * sep1 = strchr(name, ';');
-    assertex(sep1);
-    const char * scope = sep1+1;
-    const char * sep2 = strchr(scope, ';');
-    assertex(sep2);
-    str.setLen(scope, sep2-scope);
+    const char * scope = p->queryProp("@scope");
+    str.set(scope);
     return str;
 }
 
-StatisticMeasure CLocalWUStatistic::getKind() const
+StatisticMeasure CLocalWUStatistic::getMeasure() const
 {
-    return (StatisticMeasure)getEnum(p, "@unit", queryStatMeasure);
+    return queryMeasure(p->queryProp("@unit"));
 }
 
 unsigned __int64 CLocalWUStatistic::getValue() const
@@ -8778,11 +8769,114 @@ unsigned __int64 CLocalWUStatistic::getMax() const
     return p->getPropInt64("@max", 0);
 }
 
+unsigned __int64 CLocalWUStatistic::getTimestamp() const
+{
+    return p->getPropInt64("@ts", 0);
+}
+
+
+bool CLocalWUStatistic::matches(const IStatisticsFilter * filter) const
+{
+    if (!filter)
+        return true;
+    const char * creator = p->queryProp("@creator");
+    const char * scope = p->queryProp("@scope");
+    return filter->matches(getCreatorType(), creator, getScopeType(), scope, getMeasure(), getKind());
+}
+
+//==========================================================================================
+
+CLocalWULegacyTiming::CLocalWULegacyTiming(IPropertyTree *props) : p(props)
+{
+}
+
+IStringVal & CLocalWULegacyTiming::getCreator(IStringVal & str) const
+{
+    str.clear();
+    return str;
+}
+
+
+IStringVal & CLocalWULegacyTiming::getDescription(IStringVal & str, bool createDefault) const
+{
+    str.set(p->queryProp("@name"));
+    return str;
+}
+
+IStringVal & CLocalWULegacyTiming::getType(IStringVal & str) const
+{
+    str.set(queryStatisticName(StTimeElapsed));
+    return str;
+}
+
+IStringVal & CLocalWULegacyTiming::getFormattedValue(IStringVal & str) const
+{
+    StringBuffer formatted;
+    formatStatistic(formatted, getValue(), getMeasure());
+    str.set(formatted);
+    return str;
+}
+
+StatisticCreatorType CLocalWULegacyTiming::getCreatorType() const
+{
+    return SCTunknown;
+}
+
+StatisticScopeType CLocalWULegacyTiming::getScopeType() const
+{
+    return SSTnone;
+}
+
+StatisticKind CLocalWULegacyTiming::getKind() const
+{
+    return StTimeElapsed;
+}
+
+IStringVal & CLocalWULegacyTiming::getScope(IStringVal & str) const
+{
+    str.clear();
+    return str;
+}
+
+StatisticMeasure CLocalWULegacyTiming::getMeasure() const
+{
+    return SMeasureTimeNs;
+}
+
+unsigned __int64 CLocalWULegacyTiming::getValue() const
+{
+    return p->getPropInt64("@duration", 0) * 1000000;
+}
+
+unsigned __int64 CLocalWULegacyTiming::getCount() const
+{
+    return p->getPropInt64("@count", 0);
+}
+
+unsigned __int64 CLocalWULegacyTiming::getMax() const
+{
+    return p->getPropInt64("@max", 0);
+}
+
+unsigned __int64 CLocalWULegacyTiming::getTimestamp() const
+{
+    return 0;
+}
+
+bool CLocalWULegacyTiming::matches(const IStatisticsFilter * filter) const
+{
+    if (!filter)
+        return true;
+    const char * creator = p->queryProp("@creator");
+    const char * scope = p->queryProp("@scope");
+    return filter->matches(SCTall, NULL, SSTall, NULL, getMeasure(), getKind());
+}
+
 //==========================================================================================
 
 extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit()
 {
-    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit("W_LOCAL", NULL, (ISecManager*)NULL, NULL);
+    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit("W_LOCAL", (ISecManager*)NULL, NULL);
     ILocalWorkUnit* ret = QUERYINTERFACE(&cw->lockRemote(false), ILocalWorkUnit);
     return ret;
 }
@@ -10133,26 +10227,14 @@ void setQueryCommentForNamedQuery(IPropertyTree * queryRegistry, const char *id,
             throw MakeStringException(QUERRREG_COMMENT,  "Could not find query %s", id);
     }
 }
+
 extern WORKUNIT_API IPropertyTree * getQueryRegistryRoot()
-
 {
-      Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-
-      if (!globalLock)
-
-            return NULL;
-
-      //Only lock the branch for the target we're interested in.
-
-      StringBuffer xpath;
-
-      xpath.append("/QuerySets");
-
-      Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-      if (conn)
-            return conn->getRoot();
-      else
-            return NULL;
+    Owned<IRemoteConnection> conn = querySDS().connect("/QuerySets", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (conn)
+        return conn->getRoot();
+    else
+        return NULL;
 }
 
 extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWULibraryIterator *libraries)
@@ -10182,27 +10264,30 @@ extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree,
 
 extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool readonly)
 {
-    Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-
     //Only lock the branch for the target we're interested in.
     StringBuffer xpath;
     xpath.append("/QuerySets/QuerySet[@id=\"").append(wsEclId).append("\"]");
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (conn)
+        return conn->getRoot();
+    if (readonly)
+        return NULL;
+
+    //Lock the QuerySets in case another thread/client wants to check/add the same QuerySet.
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+
+    //Re-check if the QuerySet has been added between checking the 1st time and gaining the globalLock.
+    conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
+    if (conn)
+        return conn->getRoot();
+
+    conn.setown(querySDS().connect("/QuerySets/QuerySet", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, SDS_LOCK_TIMEOUT));
     if (!conn)
-    {
-        if (readonly)
-            return NULL;
-        Owned<IPropertyTree> querySet = createPTree();
-        querySet->setProp("@id", wsEclId);
-        globalLock->queryRoot()->addPropTree("QuerySet", querySet.getClear());
-        globalLock->commit();
-
-        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
-        if (!conn)
-            throwUnexpected();
-    }
-
-    return conn->getRoot();
+        throwUnexpected();
+    IPropertyTree * root = conn->queryRoot();
+    root->setProp("@id",wsEclId);
+    conn->commit();
+    return LINK(root);
 }
 
 IPropertyTree * addNamedPackageSet(IPropertyTree * packageRegistry, const char * name, IPropertyTree *packageInfo, bool overWrite)
@@ -10238,27 +10323,30 @@ void removeNamedPackage(IPropertyTree * packageRegistry, const char * id)
 
 extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, bool readonly)
 {
-    Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-
     //Only lock the branch for the target we're interested in.
     StringBuffer xpath;
     xpath.append("/PackageSets/PackageSet[@id=\"").append(wsEclId).append("\"]");
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (conn)
+        return conn->getRoot();
+    if (readonly)
+        return NULL;
+
+    //Lock the PackageSets in case another thread/client wants to check/add the same PackageSet.
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+
+    //Re-check if the PackageSet has been added between checking the 1st time and gaining the globalLock.
+    conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
+    if (conn)
+        return conn->getRoot();
+
+    conn.setown(querySDS().connect("/PackageSets/PackageSet", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, SDS_LOCK_TIMEOUT));
     if (!conn)
-    { 
-        if (readonly)
-            return NULL;
-        Owned<IPropertyTree> querySet = createPTree();
-        querySet->setProp("@id", wsEclId);
-        globalLock->queryRoot()->addPropTree("PackageSet", querySet.getClear());
-        globalLock->commit();
-
-        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
-        if (!conn)
-            throwUnexpected();
-    }
-
-    return conn->getRoot();
+        throwUnexpected();
+    IPropertyTree* root = conn->queryRoot();
+    root->setProp("@id",wsEclId);
+    conn->commit();
+    return LINK(root);
 }
 
 void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const char *queryName, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid)
@@ -10372,12 +10460,14 @@ void setQueryCommentForNamedQuery(const char *querySetName, const char *id, cons
     setQueryCommentForNamedQuery(queryRegistry, id, queryComment);
 }
 
-const char *queryIdFromQuerySetWuid(IPropertyTree *queryRegistry, const char *wuid, IStringVal &id)
+const char *queryIdFromQuerySetWuid(IPropertyTree *queryRegistry, const char *wuid, const char *queryName, IStringVal &id)
 {
     if (!queryRegistry)
         return NULL;
     StringBuffer xpath;
     xpath.appendf("Query[@wuid='%s']", wuid);
+    if (queryName && *queryName)
+        xpath.appendf("[@name='%s']", queryName);
     IPropertyTree *q = queryRegistry->queryPropTree(xpath.str());
     if (q)
     {
@@ -10386,10 +10476,10 @@ const char *queryIdFromQuerySetWuid(IPropertyTree *queryRegistry, const char *wu
     return id.str();
 }
 
-const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, IStringVal &id)
+const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, const char *queryName, IStringVal &id)
 {
     Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySetName, true);
-    return queryIdFromQuerySetWuid(queryRegistry, wuid, id);
+    return queryIdFromQuerySetWuid(queryRegistry, wuid, queryName, id);
 }
 
 extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unresolved, IWorkUnitFactory &workunitFactory, IConstWorkUnit &cw, IPropertyTree *queryset)
@@ -10476,57 +10566,33 @@ extern WORKUNIT_API void descheduleWorkunit(char const * wuid)
         doDescheduleWorkkunit(wuid);
 }
 
-extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, const char * component, const char * wuScope, const char * stat, const char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue)
+extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value)
 {
-    if (!wuScope)
-        wuScope = "workunit";
-    if (!stat)
-        stat = "time";
-
-    //The following line duplicates the statistics as timing information - preserved temporarily to show refactoring.
-    //wu->setTimerInfo(description, (unsigned)(value/1000000), (unsigned)count, (unsigned)maxValue);
-    wu->setStatistic(component, wuScope, stat, description, SMEASURE_TIME_NS, value, count, maxValue, false);
+    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, value, 1, 0, StatsMergeReplace);
 }
 
-extern WORKUNIT_API void updateWorkunitTiming(IWorkUnit * wu, const char * component, const char * mangledScope, const char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue)
+extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer)
 {
-    StringAttr scopeText;
-    StringAttr componentText;
-    const char * wuScope = mangledScope;
-    const char * stat = "time";
-
-    //If the scope contains a semicolon then it is taken to mean (wuScope;stat or comonent;wuScope;stat)
-    const char * sep1 = strchr(mangledScope, ';');
-    if (sep1)
-    {
-        const char * sep2 = strchr(sep1+1, ';');
-        if (sep2)
-        {
-            componentText.set(mangledScope, sep1 - mangledScope);
-            scopeText.set(sep1+1, sep2-(sep1+1));
-            component = componentText;
-            wuScope = scopeText;
-            stat = sep2+1;
-        }
-        else
-        {
-            scopeText.set(mangledScope, sep1-mangledScope);
-            wuScope = scopeText.get();
-            stat = sep1+1;
-        }
-    }
-
-    updateWorkunitTimeStat(wu, component, wuScope, stat, description, value, count, maxValue);
-}
-
-extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer, const char * component)
-{
-    StringBuffer description;
     StringBuffer scope;
     for (unsigned i = 0; i < timer->numSections(); i++)
     {
-        timer->getDescription(i, description.clear());
+        StatisticScopeType scopeType= timer->getScopeType(i);
         timer->getScope(i, scope.clear());
-        updateWorkunitTiming(wu, component, scope, description, timer->getTime(i), timer->getCount(i), timer->getMaxTime(i));
+        StatisticKind kind = timer->getTimerType(i);
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, timer->getTime(i), timer->getCount(i), timer->getMaxTime(i), StatsMergeReplace);
     }
+}
+
+extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind)
+{
+    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
+}
+
+
+IConstWUStatistic * getStatistic(IConstWorkUnit * wu, const IStatisticsFilter & filter)
+{
+    Owned<IConstWUStatisticIterator> iter = &wu->getStatistics(&filter);
+    if (iter->first())
+        return &OLINK(iter->query());
+    return NULL;
 }

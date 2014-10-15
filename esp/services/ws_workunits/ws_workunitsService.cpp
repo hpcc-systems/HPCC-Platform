@@ -1064,6 +1064,8 @@ WUExceptionSeverity checkGetExceptionSeverity(CWUExceptionSeverity severity)
             return ExceptionSeverityWarning;
         case CWUExceptionSeverity_ERROR:
             return ExceptionSeverityError;
+        case CWUExceptionSeverity_ALERT:
+            return ExceptionSeverityAlert;
     }
 
     throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT,"invalid exception severity");
@@ -1602,7 +1604,7 @@ bool CWsWorkunitsEx::onWUResultView(IEspContext &context, IEspWUResultViewReques
 
     ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
 
-    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, getCFD(), true);
+    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true);
     StringBuffer html;
     wv->renderSingleResult(req.getViewName(), req.getResultName(), html);
     resp.setResult(html.str());
@@ -1637,9 +1639,7 @@ void doWUQueryByFile(IEspContext &context, const char *logicalFile, IEspWUQueryR
     if (getWsWorkunitAccess(context, *cw) < SecAccess_Read)
         throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED,"Cannot access the workunit for file %s.",logicalFile);
 
-    SCMStringBuffer parent;
-    if (!cw->getParentWuid(parent).length())
-        doWUQueryBySingleWuid(context, wuid.str(), resp);
+    doWUQueryBySingleWuid(context, wuid.str(), resp);
 
     resp.setFirst(false);
     resp.setPageSize(1);
@@ -1867,21 +1867,18 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             continue;
         }
 
-        SCMStringBuffer parent;
-        if (!cw.getParentWuid(parent).length())
+        SCMStringBuffer wuidStr;
+        const char* wuid = cw.getWuid(wuidStr).str();
+        if (!looksLikeAWuid(wuid))
         {
-            const char* wuid = cw.getWuid(parent).str();
-            if (!looksLikeAWuid(wuid))
-            {
-                numWUs--;
-                continue;
-            }
-            actualCount++;
-            Owned<IEspECLWorkunit> info = createECLWorkunit("","");
-            WsWuInfo winfo(context, wuid);
-            winfo.getCommon(*info, 0);
-            results.append(*info.getClear());
+            numWUs--;
+            continue;
         }
+        actualCount++;
+        Owned<IEspECLWorkunit> info = createECLWorkunit("","");
+        WsWuInfo winfo(context, wuid);
+        winfo.getCommon(*info, 0);
+        results.append(*info.getClear());
     }
 
     if (version > 1.02)
@@ -2077,7 +2074,7 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
             }
             return info.getClear();
         }
-        static int compareWuids(IInterface **_a, IInterface **_b)
+        static int compareWuids(IInterface * const *_a, IInterface * const *_b)
         {
             IEspECLWorkunit *a = *(IEspECLWorkunit **)_a;
             IEspECLWorkunit *b = *(IEspECLWorkunit **)_b;
@@ -2370,11 +2367,11 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
     if (!filterBy || !filterBy->length())
-        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryXmlns());
+        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
-        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryXmlns());
+        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
     }
 }
 
@@ -3736,7 +3733,7 @@ inline StringBuffer &buildFullDllPath(StringBuffer &dllpath, StringBuffer &dllna
     return addPathSepChar(dllpath.set(dir)).append(sharedObjectFileName(dllname, name, ext, copy));
 }
 
-void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char *dir, StringBuffer &dllpath, StringBuffer &dllname)
+void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char *dir, StringBuffer &dllpath, StringBuffer &dllname, unsigned crc)
 {
     StringBuffer name, ext;
     if (srcpath && *srcpath)
@@ -3745,23 +3742,56 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
     unsigned copy=0;
     buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), copy);
     while (checkFileExists(dllpath.str()))
+    {
+        if (crc && crc == crc_file(dllpath.str()))
+        {
+            DBGLOG("Workunit dll already exists: %s", dllpath.str());
+            return;
+        }
         buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), ++copy);
-
+    }
     DBGLOG("Writing workunit dll: %s", dllpath.str());
     Owned<IFile> f = createIFile(dllpath.str());
     Owned<IFileIO> io = f->open(IFOcreate);
     io->write(0, obj.length(), obj.toByteArray());
 }
 
-void CWsWorkunitsEx::deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml)
+void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml)
 {
     StringBuffer dllpath, dllname;
     StringBuffer srcname(filename);
+
+    unsigned crc = 0;
+    Owned<IPropertyTree> srcxml;
+    if (xml && *xml)
+    {
+        srcxml.setown(createPTreeFromXMLString(xml));
+        if (srcxml && wuid.length())
+        {
+            crc = srcxml->getPropInt("Query[1]/Associated[1]/File[@type='dll'][1]/@crc", 0);
+            if (crc)
+            {
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+                Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+                if (cw)
+                {
+                    //is this a previous copy of same query, or a WUID collision?
+                    if (cw->getHash() == (unsigned) srcxml->getPropInt64("@hash", 0))
+                    {
+                        Owned<IConstWUQuery> query = cw->getQuery();
+                        if (query && crc == query->getQueryDllCrc())
+                            return;
+                    }
+                }
+            }
+        }
+    }
+
     if (!srcname.length())
         srcname.append(name).append(SharedObjectExtension);
-    writeSharedObject(srcname.str(), obj, dir, dllpath, dllname);
+    writeSharedObject(srcname.str(), obj, dir, dllpath, dllname, crc);
 
-    NewWsWorkunit wu(context);
+    NewWsWorkunit wu(context, wuid); //duplicate wuid made unique
 
     StringBufferAdaptor isvWuid(wuid);
     wu->getWuid(isvWuid);
@@ -3782,9 +3812,8 @@ void CWsWorkunitsEx::deploySharedObject(IEspContext &context, StringBuffer &wuid
         wu->setJobName(name);
 
     //clean slate, copy only select items from processed workunit xml
-    if (xml && *xml)
+    if (srcxml)
     {
-        Owned<IPropertyTree> srcxml = createPTreeFromXMLString(xml);
         if (srcxml->hasProp("@jobName"))
             wu->setJobName(srcxml->queryProp("@jobName"));
         if (srcxml->hasProp("@token"))
@@ -3800,7 +3829,7 @@ void CWsWorkunitsEx::deploySharedObject(IEspContext &context, StringBuffer &wuid
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }
 
-void CWsWorkunitsEx::deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml)
+void CWsWorkunitsEx::deploySharedObjectReq(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml)
 {
     if (isEmpty(req.getFileName()))
        throw MakeStringException(ECLWATCH_INVALID_INPUT, "File name required when deploying a shared object.");
@@ -3841,7 +3870,7 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         if (strieq(type, "archive")|| strieq(type, "ecl_text"))
             deployEclOrArchive(context, req, resp);
         else if (strieq(type, "shared_object"))
-            deploySharedObject(context, req, resp, queryDirectory.str());
+            deploySharedObjectReq(context, req, resp, queryDirectory.str());
         else
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "WUDeployWorkunit '%s' unknown object type.", type);
     }
@@ -3933,7 +3962,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             sb.append("Thor:         ").append(req.getThorIPAddress()).append("\r\n");
         //Exceptions/Warnings/Info
         Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
-        StringBuffer info, warn, err;
+        StringBuffer info, warn, err, alert;
         ForEach(*exceptions)
         {
             switch (exceptions->query().getSeverity())
@@ -3947,6 +3976,9 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             case ExceptionSeverityError:
                 err.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
                 break;
+            case ExceptionSeverityAlert:
+                alert.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+                break;
             }
         }
         if (err.length())
@@ -3955,6 +3987,8 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             sb.append("Warnings:     ").append("\r\n").append(warn);
         if (info.length())
             sb.append("Information:  ").append("\r\n").append(info);
+        if (alert.length())
+            sb.append("Alert:        ").append("\r\n").append(alert);
 
         //User provided Information
 

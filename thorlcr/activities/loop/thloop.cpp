@@ -89,7 +89,7 @@ protected:
 public:
     CLoopActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
-        loopCounterProgress.setown(new CThorStats("loopCounter-"));
+        loopCounterProgress.setown(new CThorStats(StNumIterations));
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
         loopGraph = NULL;
@@ -144,11 +144,12 @@ public:
         mb.read(loopCounter);
         loopCounterProgress->set(node, loopCounter);
     }
-    virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
+    virtual void getActivityStats(IStatisticGatherer & stats)
     {
-        CMasterActivity::getXGMML(progress, node);
-        loopCounterProgress->getXGMML(node, false);
+        CMasterActivity::getActivityStats(stats);
+        loopCounterProgress->getStats(stats, false);
     }
+
 };
 
 

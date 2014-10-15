@@ -56,12 +56,7 @@ struct SmartSocketEndpoint
 };
 
 
-inline SmartSocketEndpoint *Array__Member2Param(SmartSocketEndpoint *&src){ return src; }
-inline void Array__Assign(SmartSocketEndpoint * & dest, SmartSocketEndpoint * src){ dest = src; }
-inline bool Array__Equal(SmartSocketEndpoint * const & m, SmartSocketEndpoint * const & p){ return m==p; }
-inline void Array__Destroy(SmartSocketEndpoint *item){delete item;}
-MAKEArrayOf(SmartSocketEndpoint*, SmartSocketEndpoint*, SmartSocketEndpointArray);
-
+class SmartSocketEndpointArray : public SafePointerArrayOf<SmartSocketEndpoint> {};
 
 class jlib_decl CSmartSocketFactory: public Thread,
     implements ISmartSocketFactory

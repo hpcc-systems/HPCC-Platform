@@ -312,9 +312,13 @@ define([
             return obj && obj.isInstanceOf && obj.isInstanceOf(Workunit);
         },
 
-        Get: function (wuid) {
+        Get: function (wuid, data) {
             var store = new Store();
-            return store.get(wuid);
+            var retVal = store.get(wuid);
+            if (data) {
+                retVal.updateData(data);
+            }
+            return retVal;
         },
 
         CreateWUQueryStore: function (options) {

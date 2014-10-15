@@ -197,13 +197,19 @@ define([
         //  Implementation  ---
         getFilter: function () {
             var retVal = this.filter.toObject();
-            lang.mixin(retVal, {
-                StartDate: this.getISOString("FromDate", "FromTime"),
-                EndDate: this.getISOString("ToDate", "ToTime")
-            });
-            if (retVal.StartDate != "" && retVal.EndDate != "") {
+            if (retVal.StartDate && retVal.FromTime) {
+                lang.mixin(retVal, {
+                    StartDate: this.getISOString("FromDate", "FromTime")
+                });
+            }
+            if (retVal.EndDate && retVal.ToTime) {
+                lang.mixin(retVal, {
+                    EndDate: this.getISOString("ToDate", "ToTime")
+                });
+            }
+            if (retVal.StartDate && retVal.EndDate) {
                 retVal["DateRB"] = "0";
-            } else if (retVal.LastNDays != "") {
+            } else if (retVal.LastNDays) {
                 retVal["DateRB"] = "0";
                 var now = new Date();
                 retVal.StartDate = date.add(now, "day", retVal.LastNDays * -1).toISOString();
@@ -216,6 +222,10 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
+
+            if (this.params.searchResults) {
+                this.filter.disable(true);
+            }
 
             this.clusterTargetSelect.init({
                 Targets: true,
@@ -351,7 +361,7 @@ define([
 
         initWorkunitsGrid: function () {
             var context = this;
-            var store = new ESPWorkunit.CreateWUQueryStore();
+            var store = this.params.searchResults ? this.params.searchResults : new ESPWorkunit.CreateWUQueryStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
                 query: this.getFilter(),

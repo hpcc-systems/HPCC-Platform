@@ -26,6 +26,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlfield_imp.hpp"
+#include "rtlembed.hpp"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
 
@@ -343,7 +344,10 @@ static bool isInteger(enum_field_types type)
 static bool getBooleanResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 {
     if (*bound.is_null)
-        return false;
+    {
+        NullFieldProcessor p(field);
+        return p.boolResult;
+    }
     if (!isInteger(bound.buffer_type))
         typeError("boolean", field);
     return rtlReadUInt(bound.buffer, *bound.length) != 0;
@@ -353,8 +357,8 @@ static void getDataResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, si
 {
     if (*bound.is_null)
     {
-        result = NULL;
-        chars = 0;
+        NullFieldProcessor p(field);
+        rtlStrToDataX(chars, result, p.resultChars, p.stringResult);
         return;
     }
     if (bound.buffer_type == MYSQL_TYPE_TINY_BLOB ||
@@ -375,7 +379,10 @@ static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const MYSQL
 static double getRealResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 {
     if (*bound.is_null)
-        return 0;
+    {
+        NullFieldProcessor p(field);
+        return p.doubleResult;
+    }
     if (isInteger(bound.buffer_type))
     {
         if (bound.is_unsigned)
@@ -394,7 +401,10 @@ static double getRealResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 static __int64 getSignedResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 {
     if (*bound.is_null)
-        return 0;
+    {
+        NullFieldProcessor p(field);
+        return p.intResult;
+    }
     if (isInteger(bound.buffer_type))
     {
         if (bound.is_unsigned)
@@ -409,7 +419,10 @@ static __int64 getSignedResult(const RtlFieldInfo *field, const MYSQL_BIND &boun
 static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, const MYSQL_BIND &bound)
 {
     if (*bound.is_null)
-        return 0;
+    {
+        NullFieldProcessor p(field);
+        return p.uintResult;
+    }
     if (!isInteger(bound.buffer_type))
         typeError("integer", field);
     if (bound.is_unsigned)
@@ -422,8 +435,8 @@ static void getStringResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, 
 {
     if (*bound.is_null)
     {
-        result = NULL;
-        chars = 0;
+        NullFieldProcessor p(field);
+        rtlStrToStrX(chars, result, p.resultChars, p.stringResult);
         return;
     }
     if (bound.buffer_type != MYSQL_TYPE_STRING && bound.buffer_type != MYSQL_TYPE_VAR_STRING)
@@ -438,8 +451,8 @@ static void getUTF8Result(const RtlFieldInfo *field, const MYSQL_BIND &bound, si
 {
     if (*bound.is_null)
     {
-        result = NULL;
-        chars = 0;
+        NullFieldProcessor p(field);
+        rtlUtf8ToUtf8X(chars, result, p.resultChars, p.stringResult);
         return;
     }
     if (bound.buffer_type != MYSQL_TYPE_STRING && bound.buffer_type != MYSQL_TYPE_VAR_STRING)
@@ -454,8 +467,8 @@ static void getUnicodeResult(const RtlFieldInfo *field, const MYSQL_BIND &bound,
 {
     if (*bound.is_null)
     {
-        result = NULL;
-        chars = 0;
+        NullFieldProcessor p(field);
+        rtlUnicodeToUnicodeX(chars, result, p.resultChars, p.unicodeResult);
         return;
     }
     if (bound.buffer_type != MYSQL_TYPE_STRING && bound.buffer_type != MYSQL_TYPE_VAR_STRING)
@@ -470,18 +483,19 @@ static void getDecimalResult(const RtlFieldInfo *field, const MYSQL_BIND &bound,
 {
     if (*bound.is_null)
     {
-        value.setInt(0);
+        NullFieldProcessor p(field);
+        value.set(p.decimalResult);
         return;
     }
     size32_t chars;
     rtlDataAttr result;
     mysqlembed::getStringResult(field, bound, chars, result.refstr());
+    value.setString(chars, result.getstr());
     if (field)
     {
         RtlDecimalTypeInfo *dtype = (RtlDecimalTypeInfo *) field->type;
         value.setPrecision(dtype->getDecimalDigits(), dtype->getDecimalPrecision());
     }
-    value.setString(chars, result.getstr());
 }
 
 static void createBindBuffer(MYSQL_BIND & bindInfo, enum_field_types sqlType, unsigned size)
@@ -1009,16 +1023,29 @@ public:
         bindInfo.buffer_length = bytes;
         bindInfo.length = &bindInfo.buffer_length;
     }
+    virtual void bindFloatParam(const char *name, float val)
+    {
+        MYSQL_BIND &bindInfo = findParameter(name, MYSQL_TYPE_FLOAT, sizeof(val));
+        * (float *) bindInfo.buffer = val;
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         MYSQL_BIND &bindInfo = findParameter(name, MYSQL_TYPE_DOUBLE, sizeof(val));
         * (double *) bindInfo.buffer = val;
+    }
+    virtual void bindSignedSizeParam(const char *name, int size, __int64 val)
+    {
+        bindSignedParam(name, val);
     }
     virtual void bindSignedParam(const char *name, __int64 val)
     {
         MYSQL_BIND &bindInfo = findParameter(name, MYSQL_TYPE_LONGLONG, sizeof(val));
         * (__int64 *) bindInfo.buffer = val;
         bindInfo.is_unsigned = false;
+    }
+    virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
+    {
+        bindUnsignedParam(name, val);
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
@@ -1069,8 +1096,9 @@ public:
     {
         throwUnexpected();
     }
-    virtual void compileEmbeddedScript(size32_t len, const char *script)
+    virtual void compileEmbeddedScript(size32_t chars, const char *script)
     {
+        size32_t len = rtlUtf8Size(chars, script);
         Owned<MySQLStatement> stmt  = new MySQLStatement(mysql_stmt_init(*conn));
         if (!*stmt)
             fail("failed to create statement");
@@ -1097,7 +1125,7 @@ protected:
     {
         if (!stmtInfo->hasResult() || stmtInfo->queryResultBindings().numColumns() != 1)
             typeError("scalar", NULL);
-        lazyExecute();
+        lazyExecute(); // MORE this seems wrong to me  - or at least needs to check not already executed
         if (!stmtInfo->next())
             typeError("scalar", NULL);
         return stmtInfo->queryResultBindings().queryColumn(0);
@@ -1123,9 +1151,9 @@ protected:
 class MySQLEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
     {
-        if (isImport)
+        if (flags & EFimport)
             UNSUPPORTED("IMPORT");
         else
             return new MySQLEmbedFunctionContext(options);

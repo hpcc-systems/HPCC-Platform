@@ -90,7 +90,7 @@ public:
         lseek(hfile,savedPos,SEEK_SET);
         if (length<ofs+maxsize) {
             if (0 != ftruncate(hfile,ofs+maxsize))
-                throw MakeErrnoException(errno, "CVMSectionAllocator truncate");
+                throw makeErrnoException(errno, "CVMSectionAllocator truncate");
         }
         base = (byte *)mmap(NULL, maxsize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_NORESERVE, hfile, _ofs);
 
@@ -243,7 +243,7 @@ public:
 #ifdef WIN32
         hfile = CreateFile(filename, GENERIC_READ|GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_FLAG_RANDOM_ACCESS, 0);
         if (hfile == INVALID_HANDLE_VALUE) 
-            throw MakeOsException(GetLastError(), "CVMAllocator(CreateFile) %s", filename);
+            throw makeOsExceptionV(GetLastError(), "CVMAllocator(CreateFile) %s", filename);
         LARGE_INTEGER li;
         li.QuadPart = nsections*SECTIONSIZE; 
 //      li.LowPart = SetFilePointer(hfile, li.LowPart, &li.HighPart, FILE_BEGIN);
@@ -252,7 +252,7 @@ public:
 #else
         hfile = _lopen(filename.get(), O_RDWR | O_CREAT | O_TRUNC, 0);
         if (hfile == -1)
-            throw MakeOsException(GetLastError(), "CMmapLargeMemoryAllocator(CreateFile) %s", filename.get());
+            throw makeOsExceptionV(GetLastError(), "CMmapLargeMemoryAllocator(CreateFile) %s", filename.get());
         unlink(filename);   // delete now (linux won't really delete until handle released)
 #endif
         for (unsigned i=nsections;i;)
@@ -293,7 +293,7 @@ public:
         }
         if (freesections.ordinality()==0)
             return NULL;
-        unsigned s = freesections.pop();
+        unsigned s = freesections.popGet();
         CVMSectionAllocator *section = new CVMSectionAllocator();
         if (!section)
             return NULL;

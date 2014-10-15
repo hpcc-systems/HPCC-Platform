@@ -1462,6 +1462,7 @@ const char *getOpString(node_operator op)
     case no_merge_pending: return "no_merge_pending";
     case no_merge_nomatch: return "no_merge_nomatch";
     case no_toxml: return "TOXML";
+    case no_tojson: return "TOJSON";
     case no_catchds: return "CATCH";
     case no_readspill: return "no_readspill";
     case no_writespill: return "no_writespill";
@@ -1473,6 +1474,7 @@ const char *getOpString(node_operator op)
     case no_executewhen: return "WHEN";
     case no_callsideeffect: return "no_callsideeffect";
     case no_fromxml: return "FROMXML";
+    case no_fromjson: return "FROMJSON";
     case no_preservemeta: return "order-tracking";
     case no_normalizegroup: return "NORMALIZE";
     case no_indirect: return "no_indirect";
@@ -1850,6 +1852,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_definesideeffect:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_dataset_from_transform:
         return childdataset_none;
     case no_group:
@@ -2258,6 +2261,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_definesideeffect:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_dataset_from_transform:
         return 0;
     case no_delayedselect:
@@ -2573,6 +2577,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_commonspill:
     case no_readspill:
     case no_fromxml:
+    case no_fromjson:
     case no_normalizegroup:
     case no_cogroup:
     case no_dataset_alias:
@@ -3946,7 +3951,8 @@ void CHqlExpression::setInitialHash(unsigned typeHash)
 {
     hashcode = op+typeHash;
     unsigned kids = operands.ordinality();
-    hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
+    if (kids)
+        hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
 }
 
 void CHqlExpression::sethash()
@@ -10361,15 +10367,6 @@ extern IHqlExpression *createValueF(node_operator op, ITypeInfo *type, ...)
     return CHqlExpressionWithType::makeExpression(op, type, children);
 }
 
-extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, unsigned num, IHqlExpression * * args)
-{
-    IHqlExpression * expr = createOpenValue(op, type);
-    unsigned index;
-    for (index = 0; index < num; index++)
-        expr->addOperand(args[index]);
-    return expr->closeExpr();
-}
-
 extern HQL_API IHqlExpression * createValueFromCommaList(node_operator op, ITypeInfo * type, IHqlExpression * argsExpr)
 {
     HqlExprArray args;
@@ -10383,21 +10380,20 @@ extern HQL_API IHqlExpression * createValueFromCommaList(node_operator op, IType
 
 extern HQL_API IHqlExpression * createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args)
 {
-    ForEachItemIn(idx, args)
-        args.item(idx).Link();
-    HqlExprArray & castArgs = const_cast<HqlExprArray &>(args);
-    IHqlExpression * * exprList = static_cast<IHqlExpression * *>(castArgs.getArray());
-    return createValue(op, type, args.ordinality(), exprList);
+    return createValueSafe(op, type, args, 0, args.ordinality());
 }
 
 extern HQL_API IHqlExpression * createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args, unsigned from, unsigned max)
 {
     assertex(from <= args.ordinality() && max <= args.ordinality() && from <= max);
+    IHqlExpression * expr = createOpenValue(op, type);
     for (unsigned idx=from; idx < max; idx++)
-        args.item(idx).Link();
-    HqlExprArray & castArgs = const_cast<HqlExprArray &>(args);
-    IHqlExpression * * exprList = static_cast<IHqlExpression * *>(castArgs.getArray());
-    return createValue(op, type, max-from, exprList + from);
+    {
+        IHqlExpression & cur = args.item(idx);
+        cur.Link();
+        expr->addOperand(&cur);
+    }
+    return expr->closeExpr();
 }
 
 extern IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1)
@@ -11658,6 +11654,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
     case no_typetransfer:
     case no_createrow:
     case no_fromxml:
+    case no_fromjson:
         {
             IHqlExpression & transform = args.item(0);
             type = makeRowType(LINK(transform.queryRecordType()));
@@ -13301,7 +13298,6 @@ extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquer
 
 //==============================================================================================================
 
-//MAKEValueArray(byte, ByteArray);
 typedef UnsignedArray DepthArray;
 
 struct TransformTrackingInfo
@@ -13488,19 +13484,19 @@ void TransformTrackingInfo::lock()
 
 void TransformTrackingInfo::unlock()
 {
-    unsigned transformStackLevel = transformStackMark.pop();
+    unsigned transformStackLevel = transformStackMark.popGet();
     while (transformStack.ordinality() > transformStackLevel)
     {
-        CHqlExpression * expr = (CHqlExpression *)transformStack.pop();
+        CHqlExpression * expr = (CHqlExpression *)transformStack.popGet();
         unsigned oldDepth = 0;
         IInterface * extra = NULL;
         if (curTransformDepth > 1)
         {
-            oldDepth = depthStack.pop();
+            oldDepth = depthStack.popGet();
             if (oldDepth & TRANSFORM_DEPTH_SAVE_MATCH_EXPR)
                 extra = expr;
             else if (oldDepth)
-                extra = (IInterface *)transformStack.pop();
+                extra = (IInterface *)transformStack.popGet();
         }
         expr->resetTransformExtra(extra, oldDepth);
         expr->Release();

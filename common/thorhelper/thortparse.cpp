@@ -981,7 +981,7 @@ TomitaResultIterator::~TomitaResultIterator()
     def->Release();
 }
 
-int compareStartPtr(CInterface * * pLeft, CInterface * * pRight)
+int compareStartPtr(CInterface * const * pLeft, CInterface * const * pRight)
 {
     //try and make it different to improve sort performance, and so results are reproducible between windows and linux, but it can't be guaranteed.
     GrammarSymbol * left = static_cast<GrammarSymbol *>(*pLeft);

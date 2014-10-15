@@ -265,7 +265,7 @@ struct PartitionInfo
     
 
 
-MAKEPointerArray(CSortNode,NodeArray);
+typedef CopyReferenceArrayOf<CSortNode> NodeArray;
 
 class CSortMaster: public IThorSorterMaster, public CSimpleInterface
 { 
@@ -589,7 +589,7 @@ public:
     static CriticalSection ECFcrit;
     static CThorExpandingRowArray *ECFarray;
     static ICompare *ECFcompare;
-    static int elemCompareFunc(unsigned *p1, unsigned *p2)
+    static int elemCompareFunc(unsigned const *p1, unsigned const *p2)
     {
         return ECFcompare->docompare(ECFarray->query(*p1), ECFarray->query(*p2));
     }

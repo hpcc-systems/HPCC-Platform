@@ -258,7 +258,7 @@ public:
 
 };
 
-MAKEPointerArray(CBufferQueueWaiting,CWaitingArray);
+typedef CopyReferenceArrayOf<CBufferQueueWaiting> CWaitingArray;
 
 class CBufferQueue
 {
@@ -372,7 +372,7 @@ static unsigned nextfreetag=0;
 unsigned short generateDynamicTag()
 {
     if (freetags.ordinality())
-        return freetags.pop();
+        return freetags.popGet();
     return nextfreetag++;
 }
 
@@ -1025,11 +1025,11 @@ class MultiPacketHandler // TAG_SYS_MULTI
         {
             StringBuffer errorMsg("sender=");
             msg.getSender().getUrlStr(errorMsg).newline();
-            msg.append("This header: ");
+            errorMsg.append("This header: ");
             mhdr.getDetails(errorMsg).newline();
             if (otherMhdr)
             {
-                msg.append("Other header: ");
+                errorMsg.append("Other header: ");
                 otherMhdr->getDetails(errorMsg).newline();
             }
             msg.getDetails(errorMsg);
@@ -1667,7 +1667,11 @@ int CMPConnectThread::run()
                 sock->readtms(&id[0],sizeof(id),sizeof(id),rd,CONFIRM_TIMEOUT); 
                 if (rd != sizeof(id))
                 {
-                    FLLOG(MCoperatorWarning, unknownJob, "MP Connect Thread: invalid number of connection bytes serialized");
+                    StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
+                    SocketEndpoint ep;
+                    sock->getPeerEndpoint(ep);
+                    ep.getUrlStr(errMsg);
+                    FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     sock->close();
                     continue;
                 }
@@ -1676,7 +1680,11 @@ int CMPConnectThread::run()
                 if (remoteep.isNull() || hostep.isNull())
                 {
                     // JCSMORE, I think remoteep really must/should match a IP of this local host
-                    FLLOG(MCoperatorWarning, unknownJob, "MP Connect Thread: invalid remote and/or host ep serialized");
+                    StringBuffer errMsg("MP Connect Thread: invalid remote and/or host ep serialized from ");
+                    SocketEndpoint ep;
+                    sock->getPeerEndpoint(ep);
+                    ep.getUrlStr(errMsg);
+                    FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     sock->close();
                     continue;
                 }
@@ -1783,7 +1791,7 @@ CMPChannel &CMPServer::lookup(const SocketEndpoint &endpoint)
         checkclosed = false;
         CMPChannel *c = NULL;
         loop { 
-            c = (CMPChannel *)next(c);
+            c = next(c);
             if (!c) {
                 break;
             }
@@ -2220,9 +2228,7 @@ public:
                 const SocketEndpoint &ep = e->queryEndpoint();
                 if (src && (ep == src->endpoint()))
                     throw;
-                StringBuffer epStr;
-                ep.getUrlStr(epStr);
-                FLLOG(MCoperatorWarning, unknownJob, "CInterCommunicator: ignoring closed endpoint: %s", epStr.str());
+                // ignoring closed endpoint
                 e->Release();
                 // loop around and recv again
             }
@@ -2459,9 +2465,7 @@ public:
                 const SocketEndpoint &ep = e->queryEndpoint();
                 if (RANK_NULL != group->rank(ep))
                     throw;
-                StringBuffer epStr;
-                ep.getUrlStr(epStr);
-                FLLOG(MCoperatorWarning, unknownJob, "CCommunicator: ignoring closed endpoint from outside the communicator group: %s", epStr.str());
+                // ignoring closed endpoint from outside the communicator group
                 e->Release();
                 // loop around and recv again
             }

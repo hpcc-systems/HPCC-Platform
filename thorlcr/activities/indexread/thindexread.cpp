@@ -34,7 +34,7 @@ protected:
     Owned<CSlavePartMapping> mapping;
     bool nofilter;
     ProgressInfoArray progressInfoArr;
-    StringArray progressLabels;
+    UnsignedArray progressKinds;
     Owned<ProgressInfo> inputProgress;
     StringBuffer fileName;
 
@@ -184,9 +184,9 @@ public:
         limit = RCMAX;
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
-        progressLabels.append("seeks");
-        progressLabels.append("scans");
-        ForEachItemIn(l, progressLabels)
+        progressKinds.append(StNumIndexSeeks);
+        progressKinds.append(StNumIndexScans);
+        ForEachItemIn(l, progressKinds)
             progressInfoArr.append(*new ProgressInfo);
         inputProgress.setown(new ProgressInfo);
         reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
@@ -261,26 +261,24 @@ public:
         rowcount_t progress;
         mb.read(progress);
         inputProgress->set(node, progress);
-        ForEachItemIn(p, progressLabels)
+        ForEachItemIn(p, progressKinds)
         {
             unsigned __int64 st;
             mb.read(st);
             progressInfoArr.item(p).set(node, st);
         }
     }
-    virtual void getXGMML(unsigned idx, IPropertyTree *edge)
+    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
     {
-        CMasterActivity::getXGMML(idx, edge);
-        StringBuffer label;
-        label.append("@inputProgress");
-        edge->setPropInt64(label.str(), inputProgress->queryTotal());
+        //This should be an activity stats
+        CMasterActivity::getEdgeStats(stats, idx);
+
+        stats.addStatistic(StNumIndexRowsRead, inputProgress->queryTotal());
         ForEachItemIn(p, progressInfoArr)
         {
             ProgressInfo &progress = progressInfoArr.item(p);
             progress.processInfo();
-            StringBuffer attr("@");
-            attr.append(progressLabels.item(p));
-            edge->setPropInt64(attr.str(), progress.queryTotal());
+            stats.addStatistic((StatisticKind)progressKinds.item(p), progress.queryTotal());
         }
     }
     virtual void abort()

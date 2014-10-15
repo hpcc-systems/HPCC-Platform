@@ -34,7 +34,7 @@
 #define MEDIUMTIMEOUT 30000
 
 #include "jlib.hpp"
-#include "jarray.tpp"
+#include "jarray.hpp"
 #include "jexcept.hpp"
 #include "jhash.hpp"
 #include "jsuperhash.hpp"
@@ -200,12 +200,6 @@ public:
     CIOConnection(CGraphElementBase *_activity, unsigned _index) : activity(_activity), index(_index) { }
 };
 
-inline CIOConnection *Array__Member2Param(CIOConnection * src)         { return src; }
-inline void Array__Assign(CIOConnection * & dest, CIOConnection * src) { dest = src; }
-inline void Array__Destroy(CIOConnection * & next)                           { if (next) next->Release(); }
-inline CIOConnection * Array__Member2ParamPtr(CIOConnection * src)     { return src; }
-MAKEArrayOf(CIOConnection *, CIOConnection *, _CIOConnectionArray);
-
 class COwningSimpleIOConnection : public CIOConnection
 {
 public:
@@ -213,7 +207,7 @@ public:
     ~COwningSimpleIOConnection() { ::Release(activity); }
 };
 
-class CIOConnectionArray : public _CIOConnectionArray
+class CIOConnectionArray : public OwnedPointerArrayOf<CIOConnection>
 {
 public:
     CIOConnection *queryItem(unsigned i)
@@ -238,7 +232,7 @@ public:
 typedef SimpleHashTableOf<CGraphBase, graph_id> CGraphTableCopy;
 typedef OwningSimpleHashTableOf<CGraphBase, graph_id> CGraphTable;
 typedef CIArrayOf<CGraphBase> CGraphArray;
-typedef CopyCIArrayOf<CGraphBase> CGraphArrayCopy;
+typedef CICopyArrayOf<CGraphBase> CGraphArrayCopy;
 typedef IIteratorOf<CGraphBase> IThorGraphIterator;
 typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGraphArrayIterator;
 typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> CGraphArrayCopyIterator;
@@ -357,7 +351,7 @@ public:
 };
 
 typedef CIArrayOf<CGraphElementBase> CGraphElementArray;
-typedef CopyCIArrayOf<CGraphElementBase> CGraphElementArrayCopy;
+typedef CICopyArrayOf<CGraphElementBase> CGraphElementArrayCopy;
 typedef OwningSimpleHashTableOf<CGraphElementBase, activity_id> CGraphElementTable;
 typedef IIteratorOf<CGraphElementBase> IThorActivityIterator;
 typedef ArrayIIteratorOf<const CGraphElementArray, CGraphElementBase, IThorActivityIterator> CGraphElementArrayIterator;
@@ -511,6 +505,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual void getResultDictionary(size32_t & tcount, byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
 
         virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToXML(lenResult, result, info, row, flags); }
+        virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToJSON(lenResult, result, info, row, flags); }
         virtual unsigned getGraphLoopCounter() const
         {
             return graph->queryLoopCounter();           // only called if value is valid
@@ -520,6 +515,10 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
         {
             return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+        }
+        virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+        {
+            return ctx->fromJson(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
         }
         virtual IEngineContext *queryEngineContext()
         {
@@ -763,6 +762,8 @@ protected:
     unsigned maxActivityCores, globalMemorySize;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
+    Owned<IPerfMonHook> perfmonhook;
+    size32_t oldNodeCacheMem;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -788,10 +789,12 @@ protected:
             removeAssociates(child);
         }
     }
+    void endJob();
 public:
     IMPLEMENT_IINTERFACE;
 
     CJobBase(const char *graphName);
+    virtual void beforeDispose();
     ~CJobBase();
     void clean();
     void init();
@@ -803,6 +806,7 @@ public:
     bool queryForceLogging(graph_id graphId, bool def) const;
     ITimeReporter &queryTimeReporter() { return *timeReporter; }
     const IContextLogger &queryContextLogger() const { return *logctx; }
+    virtual void startJob();
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     virtual CGraphBase *createGraph() = 0;
     void joinGraph(CGraphBase &graph);

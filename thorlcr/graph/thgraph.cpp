@@ -367,7 +367,7 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     xgmml->getProp("@id", helperName);
     helperFactory = (EclHelperFactory) queryJob().queryDllEntry().getEntry(helperName.str());
     if (!helperFactory)
-        throw MakeOsException(GetLastError(), "Failed to load helper factory method: %s (dll handle = %p)", helperName.str(), queryJob().queryDllEntry().getInstance());
+        throw makeOsExceptionV(GetLastError(), "Failed to load helper factory method: %s (dll handle = %p)", helperName.str(), queryJob().queryDllEntry().getInstance());
     alreadyUpdated = false;
     whichBranch = (unsigned)-1;
     whichBranchBitSet.setown(createBitSet());
@@ -620,6 +620,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             case TAKdiskwrite:
             case TAKcsvwrite:
             case TAKxmlwrite:
+            case TAKjsonwrite:
                 if (_shortCircuit) return true;
                 onCreate();
                 alreadyUpdated = checkUpdate();
@@ -885,6 +886,7 @@ bool isGlobalActivity(CGraphElementBase &container)
 // always global, but only co-ordinate init/done
         case TAKcsvwrite:
         case TAKxmlwrite:
+        case TAKjsonwrite:
         case TAKindexwrite:
         case TAKkeydiff:
         case TAKkeypatch:
@@ -2227,7 +2229,7 @@ public:
             stack.kill();
         else if (stack.ordinality())
         {
-            CopyCIArrayOf<CGraphExecutorGraphInfo> toMove;
+            CICopyArrayOf<CGraphExecutorGraphInfo> toMove;
             ForEachItemIn(s, stack)
             {
                 bool dependenciesDone = true;
@@ -2486,6 +2488,7 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     slaveGroup.setown(jobGroup->remove(0));
     myrank = jobGroup->rank(queryMyNode());
     globalMemorySize = globals->getPropInt("@globalMemorySize"); // in MB
+    oldNodeCacheMem = 0;
 }
 
 void CJobBase::init()
@@ -2531,6 +2534,11 @@ void CJobBase::init()
     graphExecutor.setown(new CGraphExecutor(*this));
 }
 
+void CJobBase::beforeDispose()
+{
+    endJob();
+}
+
 CJobBase::~CJobBase()
 {
     clean();
@@ -2549,6 +2557,41 @@ CJobBase::~CJobBase()
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
         PROGLOG("Heap usage : %"I64F"d bytes", (unsigned __int64)heapUsage);
+}
+
+void CJobBase::startJob()
+{
+    LOG(MCdebugProgress, thorJob, "New Graph started : %s", graphName.get());
+    ClearTempDirs();
+    unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
+    if (pinterval)
+    {
+        perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
+        startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
+    }
+    PrintMemoryStatusLog();
+    logDiskSpace();
+    unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);
+    if (keyNodeCacheMB)
+    {
+        oldNodeCacheMem = setNodeCacheMem(keyNodeCacheMB * 0x100000);
+        PROGLOG("Key node cache size set to: %d MB", keyNodeCacheMB);
+    }
+    unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
+    if (!keyFileCacheLimit)
+        keyFileCacheLimit = (querySlaves()+1)*2;
+    setKeyIndexCacheSize(keyFileCacheLimit);
+    PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
+}
+
+void CJobBase::endJob()
+{
+    stopPerformanceMonitor();
+    LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
+    clearKeyStoreCache(true);
+    if (oldNodeCacheMem)
+        setNodeCacheMem(oldNodeCacheMem);
+    PrintMemoryStatusLog();
 }
 
 bool CJobBase::queryForceLogging(graph_id graphId, bool def) const
@@ -2575,7 +2618,7 @@ IThorGraphIterator *CJobBase::getSubGraphs()
     return new CGraphTableIterator(subGraphs);
 }
 
-static void getGlobalDeps(CGraphBase &graph, CopyCIArrayOf<CGraphDependency> &deps)
+static void getGlobalDeps(CGraphBase &graph, CICopyArrayOf<CGraphDependency> &deps)
 {
     Owned<IThorActivityIterator> iter = graph.getIterator();
     ForEach(*iter)
@@ -2668,7 +2711,7 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
         CGraphElementBase &sourceActivity = sourceActivities.item(c);
         if (!childGraph.isGlobal())
         {
-            CopyCIArrayOf<CGraphDependency> globalChildGraphDeps;
+            CICopyArrayOf<CGraphDependency> globalChildGraphDeps;
             getGlobalDeps(childGraph, globalChildGraphDeps);
             ForEachItemIn(gcd, globalChildGraphDeps)
             {
@@ -2999,7 +3042,7 @@ bool CActivityBase::getOptBool(const char *prop, bool defVal) const
 {
     bool def = queryJob().getOptBool(prop, defVal);
     VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropBool(path.str(), def);
+    return container.queryXGMML().getPropBool(path.toLowerCase().str(), def);
 }
 
 int CActivityBase::getOptInt(const char *prop, int defVal) const
@@ -3013,5 +3056,5 @@ __int64 CActivityBase::getOptInt64(const char *prop, __int64 defVal) const
 {
     __int64 def = queryJob().getOptInt64(prop, defVal);
     VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropInt64(path.str(), def);
+    return container.queryXGMML().getPropInt64(path.toLowerCase().str(), def);
 }

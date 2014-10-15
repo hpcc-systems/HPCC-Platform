@@ -215,6 +215,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   FROM
   FORMAT_ATTR
   FORWARD
+  FROMJSON
   FROMUNICODE
   FROMXML
   FULL
@@ -255,6 +256,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   ITERATE
   JOIN
   JOINED
+  JSON_TOKEN
   KEEP
   KEYDIFF
   KEYED
@@ -427,6 +429,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TIMEOUT
   TIMELIMIT
   TOKEN
+  TOJSON
   TOPN
   TOUNICODE
   TOXML
@@ -2815,6 +2818,7 @@ buildFlag
                         }
     | DATASET '(' dataSet ')'
                         {
+                            parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "DATASET attribute on index is deprecated, and has no effect");
                             OwnedHqlExpr ds = $3.getExpr();
                             if (ds->getOperator() != no_table)
                                 parser->reportError(ERR_EXPECTED_DATASET, $3, "Expected parameter to be a DATASET definition");
@@ -3208,6 +3212,16 @@ outputFlag
                             HqlExprArray args;
                             $3.unwindCommaList(args);
                             $$.setExpr(createExprAttribute(xmlAtom, args), $1);
+                        }
+    | JSON_TOKEN        {
+                            $$.setExpr(createAttribute(jsonAtom));
+                            $$.setPosition($1);
+                        }
+    | JSON_TOKEN '(' xmlOptions ')' //exact same options as XML for now
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(jsonAtom, args), $1);
                         }
     | UPDATE            {
                             $$.setExpr(createComma(createAttribute(updateAtom), createAttribute(overwriteAtom)), $1);
@@ -5457,6 +5471,9 @@ rangeOrIndices
 
 rangeExpr
     : expression        {
+                            IHqlExpression * expr = $1.queryExpr();
+                            if (expr->isConstant() && !expr->queryType()->isInteger())
+                                parser->reportWarning(CategoryMistake, WRN_INT_OR_RANGE_EXPECTED, $1.pos, "Floating point index used. Was an index range intended instead?");
                             parser->normalizeExpression($1, type_int, false);
                             parser->checkPositive($1);
                             $$.setExpr($1.getExpr());
@@ -5882,6 +5899,11 @@ primexpr1
                         {
                             //MORE Could allow ,NOTRIM,OPT,???flags
                             $$.setExpr(createValue(no_toxml, makeUtf8Type(UNKNOWN_LENGTH, NULL), $3.getExpr()));
+                        }
+    | TOJSON '(' dataRow ')'
+                        {
+                            //MORE Could allow ,NOTRIM,OPT,???flags
+                            $$.setExpr(createValue(no_tojson, makeUtf8Type(UNKNOWN_LENGTH, NULL), $3.getExpr()));
                         }
     | REGEXFIND '(' expression ',' expression regexOpt ')'
                         {
@@ -6965,9 +6987,12 @@ globalValueAttribute
 
 dataRow
     : dataSet '[' expression ']'
-                        {   
+                        {
+                            IHqlExpression * expr = $3.queryExpr();
+                            if (expr->isConstant() && !expr->queryType()->isInteger())
+                                parser->reportWarning(CategoryMistake, WRN_INT_OR_RANGE_EXPECTED, $3.pos, "Floating point index used. Was an index range intended instead?");
                             parser->normalizeExpression($3, type_int, false);
-                            $$.setExpr(createRow(no_selectnth, $1.getExpr(), $3.getExpr()));    
+                            $$.setExpr(createRow(no_selectnth, $1.getExpr(), $3.getExpr()));
                         }
     | dictionary '[' expressionList ']'
                         {
@@ -7245,6 +7270,11 @@ simpleDataRow
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             $$.setExpr(createRow(no_fromxml, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())), $1);
+                        }
+    | FROMJSON '(' recordDef ',' expression optCommaTrim ')'
+                        {
+                            parser->normalizeExpression($5, type_stringorunicode, false);
+                            $$.setExpr(createRow(no_fromjson, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())), $1);
                         }
     | WHEN '(' dataRow ',' action ')'
                         {
@@ -12043,7 +12073,7 @@ beginPatternParameters
 
 endPatternParameters
     :                   {   
-                            parser->current_type = (ITypeInfo *)parser->savedType.pop();
+                            parser->current_type = (ITypeInfo *)parser->savedType.popGet();
                             $$.clear();
                         }
     ;

@@ -294,6 +294,8 @@ public:
                             PROGLOG("Workunit option 'slaveDaliClient' enabled");
                             enableThorSlaveAsDaliClient();
                         }
+                        job->startJob();
+
                         msg.clear();
                         msg.append(false);
                         break;

@@ -2119,6 +2119,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
             return FixedInputActivity;
         return FixedInputActivity;  //MORE:???? Should be able to optimize this
     case no_fromxml:                // A bit bit like a source activity, no transform..., but has an input
+    case no_fromjson:
         return SourceActivity;
     case no_selfjoin:
         return CreateRecordActivity;

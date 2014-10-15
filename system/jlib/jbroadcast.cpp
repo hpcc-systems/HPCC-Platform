@@ -72,17 +72,17 @@ static unsigned getNextJobId()
     return nextJobId++;
 }
 
-static int pktOrderFunc(unsigned *m1, unsigned *m2)
+static int pktOrderFunc(unsigned const *m1, unsigned const *m2)
 {
     return *m1-*m2;
 }
 
-static int pktRevOrderFunc(unsigned *m1, unsigned *m2)
+static int pktRevOrderFunc(unsigned const *m1, unsigned const *m2)
 {
     return *m2-*m1;
 }
 
-static int dataPktOrderFunc(CInterface **dataPacket1, CInterface **dataPacket2)
+static int dataPktOrderFunc(CInterface * const *dataPacket1, CInterface * const *dataPacket2)
 {
     return (*((CDataPacket **)dataPacket2))->header->id-(*((CDataPacket **)dataPacket1))->header->id;
 }
@@ -102,7 +102,7 @@ public:
     inline __int64 getNextFree() { return nextFree; }
     inline __int64 getId()
     {
-        return freeList.ordinality() ? freeList.pop() : nextFree++;
+        return freeList.ordinality() ? freeList.popGet() : nextFree++;
     }
     inline void freeId(__int64 id)
     {
@@ -650,7 +650,7 @@ public:
         // detach first nacked pkt.
         CriticalBlock b(crit);
         if (!nackOrder.ordinality()) return NULL;
-        unsigned nackPkt = nackOrder.pop();
+        unsigned nackPkt = nackOrder.popGet();
         CUIntTableItem *map = (CUIntTableItem *)pktNodeTable.find(nackPkt);
         assertex(map);
         map->Link();
@@ -840,7 +840,7 @@ public:
         unsigned offset = 0;
 
 #ifdef _DEBUG
-        MTimeSection * mt = new MTimeSection(defaultTimer, "ServerBroadcast", "SERVER BROADCAST"); // MORE is ServerBroadcast a scope (where) or a name (what)?
+        MTimeSection * mt = new MTimeSection(queryActiveTimer(), "ServerBroadcast"); // MORE is ServerBroadcast a scope (where) or a name (what)?
 #endif
 
         unsigned maxDataSz = MC_PACKET_SIZE-sizeof(MCPacketHeader);
@@ -1067,7 +1067,8 @@ public:
         LOG(MCdebugProgress(10), unknownJob, "All %d packets from all %d nodes acknowledged", packets, nodes);
 #ifdef _DEBUG
         StringBuffer str;
-        defaultTimer->getTimings(str);
+        if (queryActiveTimer())
+            queryActiveTimer()->getTimings(str);
         LOG(MCdebugProgress(10), unknownJob, "%s", str.str());
 #endif
         return !stopped;

@@ -192,6 +192,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_regex_find:
     case no_regex_replace:
     case no_toxml:
+    case no_tojson:
 
 //Boolean operators:
     case no_eq:
@@ -394,6 +395,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_executewhen:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_xmlparse:
     case no_normalizegroup:
     case no_owned_ds:

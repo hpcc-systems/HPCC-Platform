@@ -94,7 +94,6 @@ void SuperHashTable::reinit(unsigned initsize)
     init(initsize);
 }
 
-
 SuperHashTable::~SuperHashTable()
 {
     doKill();
@@ -267,6 +266,30 @@ unsigned SuperHashTable::doFindExact(const void *et) const
     return i;
 }
 
+void SuperHashTable::ensure(unsigned mincount)
+{
+    if (mincount <= getTableLimit(tablesize))
+        return;
+
+    unsigned newsize = tablesize;
+    loop
+    {
+#ifdef HASHSIZE_POWER2
+        newsize += newsize;
+#else
+        if (newsize>=0x3FF)
+            newsize += 0x400;
+        else
+            newsize += newsize+1;
+#endif
+        if (newsize < tablesize)
+            throw MakeStringException(0, "HashTable expanded beyond 2^32 items");
+        if (mincount <= getTableLimit(newsize))
+            break;
+    }
+    expand(newsize);
+}
+
 void SuperHashTable::expand()
 {
     unsigned newsize = tablesize;
@@ -278,6 +301,11 @@ void SuperHashTable::expand()
     else
         newsize += newsize+1;
 #endif
+    expand(newsize);
+}
+
+void SuperHashTable::expand(unsigned newsize)
+{
     if (newsize < tablesize)
         throw MakeStringException(0, "HashTable expanded beyond 2^32 items");
     void * *newtable = (void * *) checked_malloc(newsize*sizeof(void *),-603);

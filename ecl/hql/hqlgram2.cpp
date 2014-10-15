@@ -505,7 +505,7 @@ void HqlGram::popTopScope()
     if(topScopes.length() > 0)
     {
         topScopes.pop();
-        insideEvaluate = wasInEvaluate.pop();
+        insideEvaluate = wasInEvaluate.popGet();
     }
 }                                       
 
@@ -578,7 +578,7 @@ void HqlGram::pushRecord(IHqlExpression *newRecord)
 
 IHqlExpression* HqlGram::popRecord()
 {
-    return &activeRecords.pop();
+    return &activeRecords.popGet();
 }                                       
 
 IHqlExpression* HqlGram::endRecordDef()
@@ -2600,8 +2600,8 @@ void HqlGram::enterCompoundObject()
 
 void HqlGram::leaveCompoundObject()
 {
-    current_id = (IIdAtom *)savedIds.pop();
-    lastpos = savedLastpos.pop();
+    current_id = (IIdAtom *)savedIds.popGet();
+    lastpos = savedLastpos.popGet();
 }
 
 void HqlGram::leaveType(const YYSTYPE & errpos)
@@ -10371,6 +10371,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case FORWARD: msg.append("FORWARD"); break;
     case FROM: msg.append("FROM"); break;
     case FROMUNICODE: msg.append("FROMUNICODE"); break;
+    case FROMJSON: msg.append("FROMJSON"); break;
     case FROMXML: msg.append("FROMXML"); break;
     case FULL: msg.append("FULL"); break;
     case FUNCTION: msg.append("FULL"); break;
@@ -10409,6 +10410,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ITERATE: msg.append("ITERATE"); break;
     case JOIN: msg.append("JOIN"); break;
     case JOINED: msg.append("JOINED"); break;
+    case JSON_TOKEN: msg.append("JSON"); break;
     case KEEP: msg.append("KEEP"); break;
     case KEYDIFF: msg.append("KEYDIFF"); break;
     case KEYED: msg.append("KEYED"); break;
@@ -10583,6 +10585,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TIMEOUT: msg.append("TIMEOUT"); break;
     case TIMELIMIT: msg.append("TIMELIMIT"); break;
     case TOKEN: msg.append("TOKEN"); break;
+    case TOJSON: msg.append("TOJSON"); break;
     case TOPN: msg.append("TOPN"); break;
     case TOUNICODE: msg.append("TOUNICODE"); break;
     case TOXML: msg.append("TOXML"); break;
@@ -10768,14 +10771,14 @@ void HqlGram::simplifyExpected(int *expected)
                        FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
                        MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
                        KEYUNICODE, TOK_TRUE, TOK_FALSE, BOOL_CONST, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
-                       TOXML, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
+                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
     simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);
     simplify(expected, ACTION_ID, ORDERED, 0); // more include other actions
     simplify(expected, VALUE_ID, DATASET_ID, DICTIONARY_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, DICTIONARY_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, DICTIONARY_TYPE_ID, DATASET_TYPE_ID, 0);
     simplify(expected, LIBRARY, LIBRARY, SCOPE_FUNCTION, STORED, PROJECT, INTERFACE, MODULE, 0);
-    simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, 0);
+    simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, FROMJSON, 0);
     simplify(expected, TRANSFORM_ID, TRANSFORM_FUNCTION, TRANSFORM, '@', 0);
     simplify(expected, RECORD, RECORDOF, RECORD_ID, RECORD_FUNCTION, SCOPE_ID, VALUE_MACRO, '{', '@', 0);
     simplify(expected, IFBLOCK, ANY, PACKED, BIG, LITTLE, 0);

@@ -260,7 +260,7 @@ public:
         case EINPROGRESS:           return str.append("EINPROGRESS - operation now in progress ");
 #endif
         }
-        IException *ose = MakeOsException(err);
+        IException *ose = makeOsException(err);
         ose->errorMessage(str);
         ose->Release();
         return str;
@@ -402,7 +402,7 @@ public:
     void        read(void* buf, size32_t size);
     size32_t    write(void const* buf, size32_t size);
     size32_t    write_multiple(unsigned num,void const**buf, size32_t *size);
-    size32_t    udp_write_to(SocketEndpoint &ep,void const* buf, size32_t size);
+    size32_t    udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size);
     void        close();
     void        errclose();
     bool        connectionless() { return (sockmode!=sm_tcp)&&(sockmode!=sm_tcp_server); }
@@ -791,7 +791,14 @@ size32_t CSocket::avail_read()
 
 int CSocket::pre_connect (bool block)
 {
-    assertex(hostname);
+    if (NULL == hostname || '\0' == (*hostname))
+    {
+        StringBuffer err;
+        err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",__FILE__, __LINE__);
+        IJSOCK_Exception *e = new SocketException(JSOCKERR_bad_netaddr,err.str());
+        throw e;
+    }
+
     DEFINE_SOCKADDR(u);
     if (targetip.isNull()) {
         set_return_addr(hostport,hostname);
@@ -1268,7 +1275,7 @@ void CSocket::connect_wait(unsigned timems)
     while (!exit) {
 #ifdef CENTRAL_NODE_RANDOM_DELAY
         ForEachItemIn(cn,CentralNodeArray) {
-            SocketEndpoint &ep=CentralNodeArray.item(cn);
+            const SocketEndpoint &ep=CentralNodeArray.item(cn);
             if (ep.ipequals(targetip)) {
                 unsigned sleeptime = getRandom() % 1000;
                 StringBuffer s;
@@ -1543,7 +1550,8 @@ EintrRetry:
                 goto EintrRetry;
             }
             else {
-                LOGERR2(err,1,"readtms");
+                VStringBuffer errMsg("readtms(timeoutms=%d)", timeoutms);
+                LOGERR2(err,1,errMsg.str());
                 if ((err==ECONNRESET)||(err==EINTRCALL)||(err==ECONNABORTED)) {
                     errclose();
                     err = JSOCKERR_broken_pipe;
@@ -1795,7 +1803,7 @@ EintrRetry:
     return true;
 }
 
-size32_t CSocket::udp_write_to(SocketEndpoint &ep, void const* buf, size32_t size)
+size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32_t size)
 {
     if (size==0)
         return 0;
@@ -2960,7 +2968,7 @@ StringBuffer & IpAddress::getIpText(StringBuffer & out) const
     char tmp[INET6_ADDRSTRLEN];
     const char *res = _inet_ntop(AF_INET6, &netaddr, tmp, sizeof(tmp));
     if (!res) 
-        throw MakeOsException(errno);
+        throw makeOsException(errno);
     return out.append(res);
 }
 
@@ -3250,7 +3258,7 @@ const char * SocketListCreator::getText()
 void SocketListCreator::addSockets(SocketEndpointArray &array)
 {
     ForEachItemIn(i,array) {
-        SocketEndpoint &sockep=array.item(i);
+        const SocketEndpoint &sockep=array.item(i);
         StringBuffer ipstr;
         sockep.getIpText(ipstr);
         addSocket(ipstr.str(),sockep.port);
@@ -3450,13 +3458,10 @@ struct SelectItem
     byte mode;
     bool del;
     bool add_epoll;
+    bool operator == (const SelectItem & other) const { return sock == other.sock; }
 };
 
-inline SelectItem &Array__Member2Param(SelectItem &src)                 { return src; }
-inline void Array__Assign(SelectItem & dest, SelectItem &src)           { dest=src; }
-inline bool Array__Equal(SelectItem &m, SelectItem &p)                  { return m.sock==p.sock; }
-inline void Array__Destroy(SelectItem &p)                               { }
-class SelectItemArray : public ArrayOf<SelectItem, SelectItem &> { };
+class SelectItemArray : public StructArrayOf<SelectItem> { };
 
 #define SELECT_TIMEOUT_SECS 1           // but it does (TBD)
 
@@ -3593,7 +3598,7 @@ public:
             return true;
         }
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (!si.del&&(si.sock==sock)) {
                 si.del = true;
                 selectvarschange = true;
@@ -3662,7 +3667,7 @@ public:
     {
         bool ret = false;
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (si.del)
                 ret = true; // maybe that bad one
             else  if (!sockOk(si.handle)) {
@@ -3770,7 +3775,7 @@ class CSocketSelectThread: public CSocketBaseThread
         unsigned h = HASHSOCKET(handle);
         unsigned sh = h;
         loop {
-            SelectItem &i=items.item(hashtab[h]);
+            SelectItem &i=items.element(hashtab[h]);
             if (i.handle==handle) 
                 return i;
             if (++h==HASHTABSIZE)
@@ -3822,7 +3827,7 @@ public:
         closedummy();
         ForEachItemIn(i,items) {
             try {
-                SelectItem &si = items.item(i);
+                SelectItem &si = items.element(i);
                 si.sock->Release();
                 si.nfy->Release();
             }
@@ -3841,7 +3846,7 @@ public:
         unsigned n = items.ordinality();
         bool hashupdateneeded = (n!=basesize); // additions all come at end
         for (unsigned i=0;i<n;) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (si.del) {
                 si.nfy->Release();
                 try {
@@ -3878,7 +3883,7 @@ public:
         CriticalBlock block(sect);
         unsigned n=0;
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (!si.del) {
                 if (si.sock==sock) {
                     si.del = true;
@@ -3942,7 +3947,7 @@ public:
             offset = 0;
         unsigned j=offset;
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(j);
+            SelectItem &si = items.element(j);
             j++;
             if (j==ni)
                 j = 0;
@@ -4068,21 +4073,21 @@ public:
                             if (r&&findfds(rs,si->handle,r)) {
                                 if (!si->del) {
                                     tonotify.append(*si);
-                                    tonotify.item(tonotify.length()-1).mode = SELECTMODE_READ;
+                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_READ;
                                 }
                                 --n;
                             }
                             if (w&&findfds(ws,si->handle,w)) {
                                 if (!si->del) {
                                     tonotify.append(*si);
-                                    tonotify.item(tonotify.length()-1).mode = SELECTMODE_WRITE;
+                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_WRITE;
                                 }
                                 --n;
                             }
                             if (e&&findfds(es,si->handle,e)) {
                                 if (!si->del) {
                                     tonotify.append(*si);
-                                    tonotify.item(tonotify.length()-1).mode = SELECTMODE_EXCEPT;
+                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_EXCEPT;
                                 }
                                 --n;
                             }
@@ -4093,7 +4098,7 @@ public:
 #endif
                     }
                     ForEachItemIn(j,tonotify) {
-                        SelectItem &si = tonotify.item(j);
+                        const SelectItem &si = tonotify.item(j);
                         try {
                             si.nfy->notifySelected(si.sock,si.mode); // ignore return
                         }
@@ -4229,8 +4234,13 @@ class CSocketEpollThread: public CSocketBaseThread
     {
         int srtn;
         struct epoll_event event;
+
+        // write all bytes to eliminate uninitialized warnings
+        memset(&event, 0, sizeof(event));
+
         event.events = event_mask;
         event.data.fd = fd;
+
 # ifdef EPOLLTRACE
         DBGLOG("EPOLL: op(%d) fd %d to epfd %d", op, fd, efd);
 # endif
@@ -4348,7 +4358,7 @@ public:
         closedummy();
         ForEachItemIn(i,items) {
             try {
-                SelectItem &si = items.item(i);
+                SelectItem &si = items.element(i);
                 epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
                 si.sock->Release();
                 si.nfy->Release();
@@ -4377,7 +4387,7 @@ public:
         unsigned n = items.ordinality();
         bool reindex = false;
         for (unsigned i=0;i<n;) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (si.add_epoll) {
                 reindex = true;
             }
@@ -4410,7 +4420,7 @@ public:
             int max_sockid = 0;
 # endif
             ForEachItemIn(j,items) {
-                SelectItem &si = items.item(j);
+                SelectItem &si = items.element(j);
                 epfdtbl[si.handle] = j;
                 if (si.add_epoll) {
                     si.add_epoll = false;
@@ -4454,7 +4464,7 @@ public:
         CriticalBlock block(sect);
         unsigned n=0;
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (!si.del) {
                 if (si.sock==sock) {
                     si.del = true;
@@ -4595,14 +4605,14 @@ public:
                                     }
                                     if (ep_mode != 0) {
                                         tonotify.append(*epsi);
-                                        tonotify.item(tonotify.length()-1).mode = ep_mode;
+                                        tonotify.element(tonotify.length()-1).mode = ep_mode;
                                     }
                                 }
                             }
                         }
                     }
                     ForEachItemIn(j,tonotify) {
-                        SelectItem &si = tonotify.item(j);
+                        const SelectItem &si = tonotify.item(j);
                         try {
                             si.nfy->notifySelected(si.sock,si.mode); // ignore return
                         }
@@ -5303,7 +5313,7 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
         SocketEndpoint ep;
         unsigned idx;
         IMPLEMENT_IINTERFACE;
-        void init(CSocket *_sock,unsigned _idx,SocketEndpoint &_ep,CriticalSection *_sect,ISocketSelectHandler *_handler,ISocketConnectNotify *_inotify, unsigned *_remaining, Semaphore *_notifysem)
+        void init(CSocket *_sock,unsigned _idx,const SocketEndpoint &_ep,CriticalSection *_sect,ISocketSelectHandler *_handler,ISocketConnectNotify *_inotify, unsigned *_remaining, Semaphore *_notifysem)
         {
             ep = _ep;
             idx = _idx;
@@ -5403,7 +5413,7 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
     delete [] elems;
 }
 
-void multiConnect(const SocketEndpointArray &eps, PointerIArrayOf<ISocket> &retsockets,unsigned timeout)
+void multiConnect(const SocketEndpointArray &eps, IPointerArrayOf<ISocket> &retsockets,unsigned timeout)
 {
     unsigned n = eps.ordinality();
     if (n==0)
@@ -5426,9 +5436,9 @@ void multiConnect(const SocketEndpointArray &eps, PointerIArrayOf<ISocket> &rets
     class cNotify: implements ISocketConnectNotify
     {
         CriticalSection &sect;
-        PointerIArrayOf<ISocket> &retsockets;
+        IPointerArrayOf<ISocket> &retsockets;
     public:
-        cNotify(PointerIArrayOf<ISocket> &_retsockets,CriticalSection &_sect)
+        cNotify(IPointerArrayOf<ISocket> &_retsockets,CriticalSection &_sect)
             : retsockets(_retsockets),sect(_sect)
         {
         }

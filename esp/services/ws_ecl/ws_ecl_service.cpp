@@ -1656,7 +1656,7 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     appendXMLTag(formxml, "ClientVersion", v.appendf("%g",context.getClientVersion()).str());
     appendXMLTag(formxml, "RequestElement", v.clear().append(wsinfo.queryname).append("Request").str());
 
-    Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.queryname.get(), getCFD(), true);
+    Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
     if (web)
     {
         appendXMLTag(formxml, "Help", web->aggregateResources("HELP", v.clear()).str());
@@ -2097,7 +2097,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     IConstWorkUnit *sourceWorkUnit = wsinfo.ensureWorkUnit();
 
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
-    Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "wsecl", context.queryUserId());
+    Owned <IWorkUnit> workunit = factory->createWorkUnit("wsecl", context.queryUserId());
 
     IExtendedWUInterface *ext = queryExtendedWU(workunit);
     ext->copyWorkUnit(sourceWorkUnit, false);
@@ -2139,7 +2139,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     //don't wait indefinately, in case submitted to an inactive queue wait max + 5 mins
     if (!async && waitForWorkUnitToComplete(wuid.str(), wsecl->workunitTimeout))
     {
-        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
         if (!web)
         {
             DBGLOG("WS-ECL failed to create WuWebView for workunit %s", wuid.str());
@@ -2158,7 +2158,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     {
         if (!async)
             DBGLOG("WS-ECL request timed out, WorkUnit %s", wuid.str());
-        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
         web->createWuidResponse(out, flags);
     }
 
@@ -2263,7 +2263,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
             else
             {
                 IConstWorkUnit *wu = wsinfo.ensureWorkUnit();
-                Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.queryname.get(), getCFD(), true);
+                Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
                 if (web.get())
                     web->expandResults(roxieresp.str(), output, xmlflags);
             }
@@ -2306,7 +2306,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     if (strieq(clustertype.str(), "roxie"))
     {
         sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname);
-        Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.queryname.get(), getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
         if (!view)
             web->applyResultsXSLT(xsltfile.str(), output.str(), html);
         else
@@ -2637,6 +2637,28 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
            response->setContent(mb.length(), mb.toByteArray());
            response->setContentType(mimetype.str());
+           response->setStatus(HTTP_STATUS_OK);
+           response->send();
+           return 0;
+        }
+        if(strieq(methodName.str(), "resurls"))
+        {
+           StringBuffer content, fmt;
+           getWuResourceUrlListByPath(thepath, fmt, content, "/WsEcl/");
+
+           response->setContent(content.str());
+           response->setContentType(strieq(fmt, "json") ? "application/json" : "text/xml");
+           response->setStatus(HTTP_STATUS_OK);
+           response->send();
+           return 0;
+        }
+        if(strieq(methodName.str(), "manifest"))
+        {
+           StringBuffer mf;
+           getWuManifestByPath(thepath, mf);
+
+           response->setContent(mf.str());
+           response->setContentType("text/xml");
            response->setStatus(HTTP_STATUS_OK);
            response->send();
            return 0;
@@ -2985,7 +3007,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
             else
             {
                 WsEclWuInfo wsinfo(wuid.str(), target.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
-                Owned<IWuWebView> web = createWuWebView(*wsinfo.ensureWorkUnit(), wsinfo.queryname.get(), getCFD(), true);
+                Owned<IWuWebView> web = createWuWebView(*wsinfo.ensureWorkUnit(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
                 if (web.get())
                     web->expandResults(output.str(), soapresp, xmlflags);
             }

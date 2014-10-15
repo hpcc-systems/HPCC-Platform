@@ -703,6 +703,7 @@ FROM                { RETURNSYM(FROM); }
 FORMAT              { RETURNSYM(FORMAT_ATTR); }
 FORWARD             { RETURNSYM(FORWARD); }
 FROMUNICODE         { RETURNSYM(FROMUNICODE); }
+FROMJSON            { RETURNSYM(FROMJSON); }
 FROMXML             { RETURNSYM(FROMXML); }
 FULL                { RETURNSYM(FULL); }
 FUNCTION            { RETURNHARD(FUNCTION); }
@@ -737,6 +738,7 @@ ISVALID             { RETURNSYM(ISVALID); }
 ITERATE             { RETURNSYM(ITERATE); }
 JOIN                { RETURNSYM(JOIN); }
 JOINED              { RETURNSYM(JOINED); }
+JSON                { RETURNSYM(JSON_TOKEN); }
 KEEP                { RETURNSYM(KEEP); }
 KEYDIFF             { RETURNSYM(KEYDIFF); }
 KEYED               { RETURNSYM(KEYED); }
@@ -913,6 +915,7 @@ THRESHOLD           { RETURNSYM(THRESHOLD); }
 TIMEOUT             { RETURNSYM(TIMEOUT); }
 TIMELIMIT           { RETURNSYM(TIMELIMIT); }
 TOKEN               { RETURNSYM(TOKEN); }
+TOJSON              { RETURNSYM(TOJSON); }
 TOPN                { RETURNSYM(TOPN); }
 TOUNICODE           { RETURNSYM(TOUNICODE); }
 TOXML               { RETURNSYM(TOXML); }

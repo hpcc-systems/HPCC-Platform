@@ -152,7 +152,7 @@ void AsyncBlockReader::enqueue(AsyncRequest *req)
         rd = (int)(insize-offset);
     if (aioread64(infile, req->buffer, rd, offset, FILE_BEGIN, &req->result)==-1) 
     {
-        throw MakeOSException("async failed ");
+        throw makeOSException("async failed ");
     }
     offset+=rd;
 }

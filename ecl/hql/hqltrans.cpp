@@ -2483,12 +2483,12 @@ void NestedHqlTransformer::beginNestedScope()
 
 void NestedHqlTransformer::endNestedScope()
 {
-    unsigned prevTransforms = depthStack.pop();
-    unsigned prevSelectors = depthStack.pop();
+    unsigned prevTransforms = depthStack.popGet();
+    unsigned prevSelectors = depthStack.popGet();
 
     while (savedSelectors.ordinality() != prevSelectors)
     {
-        IHqlExpression & cur = savedSelectors.pop();
+        IHqlExpression & cur = savedSelectors.popGet();
         NewHqlTransformer::setTransformedSelector(&cur, NULL);
     }
 
@@ -2497,7 +2497,7 @@ void NestedHqlTransformer::endNestedScope()
         OwnedHqlExpr prev = &savedTransformedValue.popGet();
         if (prev == savedNull)
             prev.clear();
-        IHqlExpression & cur = savedTransformed.pop();
+        IHqlExpression & cur = savedTransformed.popGet();
         NewHqlTransformer::setTransformed(&cur, prev);
     }
 }

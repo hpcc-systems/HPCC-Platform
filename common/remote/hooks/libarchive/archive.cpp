@@ -214,7 +214,7 @@ public:
             throw MakeStringException(0, "Only sequential access to contained file %s supported", fullName.get());
         byte *data = (byte *) _data;
         size32_t lenRequested = len;
-        while (len > 0 & pos < fileSize)
+        while (len > 0 && pos < fileSize)
         {
             if (pos >= curPos+curBuffSize)
             {

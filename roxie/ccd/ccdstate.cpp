@@ -2166,7 +2166,7 @@ private:
                 Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx);
                 if (f)
                 {
-                    unsigned warnLimit = f->getWarnTimeLimit();
+                    unsigned warnLimit = f->queryOptions().warnTimeLimit;
                     reply.appendf("<QueryTimeWarning val='%d'/>", warnLimit);
                 }
             }
@@ -2616,7 +2616,7 @@ private:
                 unsigned interval = control->getPropInt("@interval", 60000);
                 bool enable = control->getPropBool("@enable", true);
                 if (enable)
-                    startPerformanceMonitor(interval);
+                    startPerformanceMonitor(interval, PerfMonStandard, perfMonHook);
                 else
                     stopPerformanceMonitor();
             }
@@ -2638,11 +2638,11 @@ private:
             else if (stricmp(queryName, "control:timings")==0)
             {
                 reply.append("<Timings>");
-                timer->getTimings(reply);
+                queryActiveTimer()->getTimings(reply);
                 reply.append("</Timings>");
                 if (control->getPropBool("@reset", false))
                 {
-                    timer->reset();
+                    queryActiveTimer()->reset();
                 }
             }
             else if (stricmp(queryName, "control:topology")==0)

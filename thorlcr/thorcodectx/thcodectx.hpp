@@ -113,9 +113,11 @@ public:
     virtual IEclGraphResults *resolveLocalQuery(__int64 gid);
     virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal);
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags);
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags);
     virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) { throwUnexpected(); }
     virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) { throwUnexpected(); }
     virtual const void * fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
+    virtual const void * fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual char *getDaliServers();
     virtual IWorkUnit *updateWorkUnit() const { throwUnexpected(); }

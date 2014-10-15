@@ -1139,7 +1139,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
     {
-        MTIME_SECTION(timer, "CKeyStore_load");
+        MTIME_SECTION(queryActiveTimer(), "CKeyStore_load");
         IKeyIndex *keyIndex;
 
         // MORE - holds onto the mutex way too long
@@ -1387,7 +1387,7 @@ CJHTreeNode *CMemKeyIndex::loadNode(offset_t pos)
         throw E;
     }
     char *nodeData = (char *) (io->base() + pos);
-    MTIME_SECTION(timer, "JHTREE read node");
+    MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     return CKeyIndex::loadNode(nodeData, pos, false);
 }
 
@@ -1407,7 +1407,7 @@ CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos)
     unsigned nodeSize = keyHdr->getNodeSize();
     MemoryAttr ma;
     char *nodeData = (char *) ma.allocate(nodeSize);
-    MTIME_SECTION(timer, "JHTREE read node");
+    MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     if (io->read(pos, nodeSize, nodeData) != nodeSize)
     {
         IException *E = MakeStringException(errno, "Error %d reading node at position %"I64F"x", errno, pos); 
@@ -1446,7 +1446,7 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
             throwUnexpected();
         }
         {
-            MTIME_SECTION(timer, "JHTREE load node");
+            MTIME_SECTION(queryActiveTimer(), "JHTREE load node");
             ret->load(keyHdr, nodeData, pos, true);
         }
         return ret.getClear();
@@ -2006,7 +2006,7 @@ extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, 
 extern jhtree_decl IKeyIndex *createKeyIndex(IReplicatedFile &part, unsigned crc, bool isTLK, bool preloadAllowed)
 {
     StringBuffer filePath;
-    RemoteFilename &rfn = part.queryCopies().item(0);
+    const RemoteFilename &rfn = part.queryCopies().item(0);
     rfn.getPath(filePath);
     return queryKeyStore()->load(filePath.str(), crc, part, isTLK, preloadAllowed);
 }
@@ -2902,7 +2902,7 @@ class CKeyArray : public CInterface, implements IKeyArray
 public:
     IMPLEMENT_IINTERFACE;
     virtual bool IsShared() const { return CInterface::IsShared(); }
-    PointerIArrayOf<IKeyIndexBase> keys;
+    IPointerArrayOf<IKeyIndexBase> keys;
     virtual IKeyIndexBase *queryKeyPart(unsigned partNo)
     {
         if (!keys.isItem(partNo))
@@ -3050,7 +3050,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         Owned<IFileIOStream> out = createIOStream(io);
         unsigned maxRecSize = (variable && blobby) ? 18 : 10;
         unsigned keyedSize = (shortForm || (variable && blobby)) ? 10 : (unsigned) -1;
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, 0, NODESIZE, keyedSize, 0);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0);
 
         char keybuf[18];
         memset(keybuf, '0', 18);

@@ -968,6 +968,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             switch (op)
             {
             case no_fromxml:
+            case no_fromjson:
                 return option;
             case no_createrow:
                 //MORE: There are more cases that could be evaluated outside of thor, but playing safe.
@@ -1443,6 +1444,9 @@ IHqlExpression * SequenceNumberAllocator::attachSequenceNumber(IHqlExpression * 
                 args.append(*createAttribute(namedAtom, LINK(name)));
             args.append(*createAttribute(outputAtom));
             args.append(*createUniqueId());
+            IHqlExpression *noXpath = expr->queryAttribute(noXpathAtom);
+            if (noXpath)
+                args.append(*LINK(noXpath));
             gatherAttributes(args, xmlnsAtom, expr);
             return createSetResult(args);
         }
@@ -3645,7 +3649,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
 void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
 {
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         ThorHqlTransformer transformer(*this, targetClusterType, wu());
 
         HqlExprArray & exprs = curWorkflow.queryExprs();
@@ -3654,7 +3658,7 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
         transformer.transformRoot(exprs, transformed);
 
         replaceArray(exprs, transformed);
-        updateTimer("workunit;tree transform: convert logical", msTick()-time);
+        noteFinishedTiming("compile:tree transform: convert logical", startCycles);
     }
 
     if (queryOptions().normalizeLocations)
@@ -6804,7 +6808,7 @@ void groupThorGraphs(HqlExprArray & in)
 
     //Need to work out the best order to generate the statements in.  We want
     //to move non thor queries to the front, so we do a insertion sort on them
-    CopyCIArrayOf<StatementInfo> sorted;
+    CICopyArrayOf<StatementInfo> sorted;
     ForEachItemIn(idx1, stmts)
     {
         StatementInfo & cur = stmts.item(idx1);
@@ -6898,7 +6902,7 @@ bool moveUnconditionalEarlier(HqlExprArray & in)
 
     //For each block of unconditional statements which follow a conditional statement, see if they can be moved over the conditional statements.
     //(copies with no overhead if couldImprove is false)
-    CopyCIArrayOf<StatementInfo> sorted;
+    CICopyArrayOf<StatementInfo> sorted;
     unsigned max = stmts.ordinality();
     for (unsigned idx1 = 0; idx1 < max;)
     {
@@ -7939,6 +7943,7 @@ void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
     case no_allnodes:
     case no_keyedlimit:
     case no_nothor:
+    case no_sizeof:
         return;
     case no_sequential:
         return;
@@ -10135,13 +10140,14 @@ void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs)
         queryLocationIndependent(&exprs.item(iInit));
 
     translator.traceExpressions("before annotation normalize", exprs);
-    unsigned time = msTick();
+
+    cycle_t startCycles = get_cycles_now();
     AnnotationNormalizerTransformer normalizer;
     HqlExprArray transformed;
     normalizer.analyseArray(exprs, 0);
     normalizer.transformRoot(exprs, transformed);
     replaceArray(exprs, transformed);
-    translator.updateTimer("workunit;tree transform: normalize.annotations", msTick()-time);
+    translator.noteFinishedTiming("compile:tree transform: normalize.annotations", startCycles);
 }
 
 //---------------------------------------------------------------------------
@@ -12504,7 +12510,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
 //      ForEachItemIn(iInit, exprs)
 //          queryLocationIndependent(&exprs.item(iInit));
 
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         HqlTreeNormalizer normalizer(translator);
         HqlExprArray transformed;
         normalizer.analyseArray(exprs, 0);
@@ -12515,27 +12521,27 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         replaceArray(exprs, transformed);
         seenForceLocal = normalizer.querySeenForceLocal();
         seenLocalUpload = normalizer.querySeenLocalUpload();
-        translator.updateTimer("workunit;tree transform: normalize.initial", msTick()-time);
+        translator.noteFinishedTiming("compile:tree transform: normalize.initial", startCycles);
     }
 
     if (translator.queryOptions().constantFoldPostNormalize)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         HqlExprArray transformed;
         quickFoldExpressions(transformed, exprs, NULL, 0);
         replaceArray(exprs, transformed);
-        translator.updateTimer("workunit;tree transform: normalize.fold", msTick()-time);
+        translator.noteFinishedTiming("compile:tree transform: normalize.fold", startCycles);
     }
 
     translator.traceExpressions("before scope tag", exprs);
 
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         HqlScopeTagger normalizer(translator.queryErrorProcessor(), translator.queryLocalOnWarningMapper());
         HqlExprArray transformed;
         normalizer.transformRoot(exprs, transformed);
         replaceArray(exprs, transformed);
-        translator.updateTimer("workunit;tree transform: normalize.scope", msTick()-time);
+        translator.noteFinishedTiming("compile:tree transform: normalize.scope", startCycles);
     }
 
     if (translator.queryOptions().normalizeLocations)
@@ -12544,12 +12550,12 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
     translator.traceExpressions("after scope tag", exprs);
 
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         HqlLinkedChildRowTransformer transformer(translator.queryOptions().implicitLinkedChildRows);
         HqlExprArray transformed;
         transformer.transformArray(exprs, transformed);
         replaceArray(exprs, transformed);
-        translator.updateTimer("workunit;tree transform: normalize.linkedChildRows", msTick()-time);;
+        translator.noteFinishedTiming("compile:tree transform: normalize.linkedChildRows", startCycles);;
     }
 
     if (seenLocalUpload)
@@ -12774,15 +12780,18 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
     traceExpressions("before transform graph for generation", exprs);
     //Don't change the engine if libraries are involved, otherwise things will get very confused.
 
-    unsigned timeCall = msTick();
-    expandDelayedFunctionCalls(&queryErrorProcessor(), exprs);
-    updateTimer("workunit;tree transform: expand delayed calls", msTick()-timeCall);
+    {
+        cycle_t startCycles = get_cycles_now();
+        expandDelayedFunctionCalls(&queryErrorProcessor(), exprs);
+        noteFinishedTiming("compile:tree transform: expand delayed calls", startCycles);
+    }
 
-
-    unsigned time1 = msTick();
-    traceExpressions("before normalize", exprs);
-    normalizeHqlTree(*this, exprs);
-    updateTimer("workunit;tree transform: normalize", msTick()-time1);
+    {
+        cycle_t startCycles = get_cycles_now();
+        traceExpressions("before normalize", exprs);
+        normalizeHqlTree(*this, exprs);
+        noteFinishedTiming("compile:tree transform: normalize", startCycles);
+    }
 
     if (wu()->getDebugValueBool("dumpIR", false))
         EclIR::dbglogIR(exprs);
@@ -12806,13 +12815,13 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
     checkNormalized(exprs);
 
     {
-        unsigned startTime = msTick();
+        cycle_t startCycles = get_cycles_now();
         substituteClusterSize(exprs);
-        updateTimer("workunit;tree transform: substituteClusterSize", msTick()-startTime);
+        noteFinishedTiming("compile:tree transform: substituteClusterSize", startCycles);
     }
 
     {
-        unsigned startTime = msTick();
+        cycle_t startCycles = get_cycles_now();
         HqlExprArray folded;
         unsigned foldOptions = DEFAULT_FOLD_OPTIONS;
         if (options.foldConstantDatasets) foldOptions |= HFOconstantdatasets;
@@ -12824,7 +12833,7 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
 
         foldHqlExpression(queryErrorProcessor(), folded, exprs, foldOptions);
         replaceArray(exprs, folded);
-        updateTimer("workunit;tree transform: global fold", msTick()-startTime);
+        noteFinishedTiming("compile:tree transform: global fold", startCycles);
     }
 
     traceExpressions("after global fold", exprs);
@@ -12832,11 +12841,11 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
 
     if (options.globalOptimize)
     {
-        unsigned startTime = msTick();
+        cycle_t startCycles = get_cycles_now();
         HqlExprArray folded;
         optimizeHqlExpression(queryErrorProcessor(), folded, exprs, HOOfold);
         replaceArray(exprs, folded);
-        updateTimer("workunit;tree transform: global optimize", msTick()-startTime);
+        noteFinishedTiming("compile:tree transform: global optimize", startCycles);
     }
 
     traceExpressions("alloc", exprs);
@@ -12849,34 +12858,34 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
 #ifdef USE_SELSEQ_UID
     if (options.normalizeSelectorSequence)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         LeftRightTransformer normalizer;
         normalizer.process(curWorkflow.queryExprs());
-        updateTimer("workunit;tree transform: left right", msTick()-time);
+        noteFinishedTiming("compile:tree transform: left right", startCycles);
         //traceExpressions("after implicit alias", workflow);
     }
 #endif
 
     if (queryOptions().createImplicitAliases)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         ImplicitAliasTransformer normalizer;
         normalizer.process(curWorkflow.queryExprs());
-        updateTimer("workunit;tree transform: implicit alias", msTick()-time);
+        noteFinishedTiming("compile:tree transform: implicit alias", startCycles);
         //traceExpressions("after implicit alias", workflow);
     }
 
     {
-        unsigned startTime = msTick();
+        cycle_t startCycles = get_cycles_now();
         hoistNestedCompound(*this, curWorkflow.queryExprs());
-        updateTimer("workunit;tree transform: hoist nested compound", msTick()-startTime);
+        noteFinishedTiming("compile:tree transform: hoist nested compound", startCycles);
     }
 
     if (options.optimizeNestedConditional)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         optimizeNestedConditional(curWorkflow.queryExprs());
-        updateTimer("workunit;optimize nested conditional", msTick()-time);
+        noteFinishedTiming("compile:optimize nested conditional", startCycles);
         traceExpressions("nested", curWorkflow);
         checkNormalized(curWorkflow);
     }
@@ -12884,39 +12893,43 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
     checkNormalized(curWorkflow);
     //sort(x)[n] -> topn(x, n)[]n, count(x)>n -> count(choosen(x,n+1)) > n and possibly others
     {
-        unsigned startTime = msTick();
+        cycle_t startCycles = get_cycles_now();
         optimizeActivities(curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
-        updateTimer("workunit;tree transform: optimize activities", msTick()-startTime);
+        noteFinishedTiming("compile:tree transform: optimize activities", startCycles);
     }
     checkNormalized(curWorkflow);
 
     //----------------------------- Transformations below this mark may have created globals so be very careful with hoisting ---------------------
 
-    unsigned time5 = msTick();
-    migrateExprToNaturalLevel(curWorkflow, wu(), *this);       // Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.
-    updateTimer("workunit;tree transform: migrate", msTick()-time5);
-    //transformToAliases(exprs);
-    traceExpressions("migrate", curWorkflow);
-    checkNormalized(curWorkflow);
+    {
+        cycle_t startCycles = get_cycles_now();
+        migrateExprToNaturalLevel(curWorkflow, wu(), *this);       // Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.
+        noteFinishedTiming("compile:tree transform: migrate", startCycles);
+        //transformToAliases(exprs);
+        traceExpressions("migrate", curWorkflow);
+        checkNormalized(curWorkflow);
+    }
 
-    unsigned time2 = msTick();
-    markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
-    updateTimer("workunit;tree transform: thor hole", msTick()-time2);
-    traceExpressions("boundary", curWorkflow);
-    checkNormalized(curWorkflow);
+    {
+        cycle_t startCycles = get_cycles_now();
+        markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
+        noteFinishedTiming("compile:tree transform: thor hole", startCycles);
+        traceExpressions("boundary", curWorkflow);
+        checkNormalized(curWorkflow);
+    }
 
     if (options.optimizeGlobalProjects)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         insertImplicitProjects(*this, curWorkflow.queryExprs());
-        updateTimer("workunit;global implicit projects", msTick()-time);
+        noteFinishedTiming("compile:global implicit projects", startCycles);
         traceExpressions("implicit", curWorkflow);
         checkNormalized(curWorkflow);
     }
 
-    unsigned time3 = msTick();
+    cycle_t startCycles3 = get_cycles_now();
     normalizeResultFormat(curWorkflow, options);
-    updateTimer("workunit;tree transform: normalize result", msTick()-time3);
+    noteFinishedTiming("compile:tree transform: normalize result", startCycles3);
     traceExpressions("results", curWorkflow);
     checkNormalized(curWorkflow);
 
@@ -12928,9 +12941,9 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
 //  traceExpressions("flatten", workflow);
 
     {
-        unsigned startTime = msTick();
+        cycle_t startCycles = get_cycles_now();
         mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);          // reduces number of graphs sent to thor
-        updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
+        noteFinishedTiming("compile:tree transform: merge thor", startCycles);
     }
 
     traceExpressions("merged", curWorkflow);
@@ -12945,9 +12958,9 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
     //expandGlobalDatasets(workflow, wu(), *this);
 
     {
-        unsigned startTime = msTick();
+        cycle_t startCycles = get_cycles_now();
         mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);
-        updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
+        noteFinishedTiming("compile:tree transform: merge thor", startCycles);
     }
     checkNormalized(curWorkflow);
 
@@ -12973,12 +12986,12 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     if (exprs.ordinality() == 0)
         return false;   // No action needed
 
-    unsigned time4 = msTick();
+    cycle_t startCycles = get_cycles_now();
     ::extractWorkflow(*this, exprs, workflow);
 
     traceExpressions("workflow", workflow);
     checkNormalized(workflow);
-    updateTimer("workunit;tree transform: stored results", msTick()-time4);
+    noteFinishedTiming("compile:tree transform: stored results", startCycles);
 
     if (outputLibrary && workflow.ordinality() > 1)
     {
@@ -13019,9 +13032,9 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         if (options.regressionTest)
     #endif
         {
-            unsigned startTime = msTick();
+            cycle_t startCycles = get_cycles_now();
             checkDependencyConsistency(curWorkflow.queryExprs());
-            updateTimer("workunit;tree transform: check dependency", msTick()-startTime);
+            noteFinishedTiming("compile:tree transform: check dependency", startCycles);
         }
 
         traceExpressions("end transformGraphForGeneration", curWorkflow);

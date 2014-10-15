@@ -316,7 +316,6 @@ int main(int argc, const char* argv[])
 
     bool enableSNMP = false;
 
-    Owned<IPerfMonHook> perfMonHook;
     try {
 
 
@@ -339,7 +338,7 @@ int main(int argc, const char* argv[])
                 coalesceDatastore(force);
             }
             else {
-                startPerformanceMonitor(serverConfig->getPropInt("@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000, PerfMonStandard, perfMonHook);
+                startPerformanceMonitor(serverConfig->getPropInt("@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000);
                 AddServers();
                 addAbortHandler(actionOnAbort);
 

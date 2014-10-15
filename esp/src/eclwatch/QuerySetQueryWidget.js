@@ -106,6 +106,10 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (this.params.searchResults) {
+                this.filter.disable(true);
+            }
+
             this.clusterTargetSelect.init({
                 Targets: true,
                 includeBlank: true,
@@ -276,7 +280,7 @@ define([
 
         initQuerySetGrid: function (params) {
             var context = this;
-            var store = ESPQuery.CreateQueryStore();
+            var store = this.params.searchResults ? this.params.searchResults : ESPQuery.CreateQueryStore();
             this.querySetGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
                 query: this.getFilter(),

@@ -425,6 +425,7 @@ const char * cppSystemText[]  = {
     "   varunicode deserializeVUnicodeX(boolean o) :    eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeVUnicodeX';",
     "   _linkcounted_ row(dummyRecord) deserializeRow(boolean _deserializer, boolean _in) : eclrtl,include,entrypoint='rtlDeserializeBufferRow';",
     "   _linkcounted_ row(dummyRecord) createRowFromXml(utf8 _text, boolean xmltransformer, boolean _stripWhitespace) : ctxmethod,pure,entrypoint='fromXml';",
+    "   _linkcounted_ row(dummyRecord) createRowFromJson(utf8 _text, boolean xmltransformer, boolean _stripWhitespace) : ctxmethod,pure,entrypoint='fromJson';",
 
     "   _linkcounted_ dataset appendRowsToRowset(_array_ dataset _in) : pure,eclrtl,include,entrypoint='appendRowsToRowset';",
 
@@ -699,6 +700,7 @@ const char * cppSystemText[]  = {
     "   unsigned4 countToSize(unsigned4 numRows, const data1 raw, boolean iRecordSize) : eclrtl,pure,include,entrypoint='rtlCountToSize';",
     
     "   utf8 ctxGetRowXml(boolean _meta, const row _row, unsigned4 flags) : ctxmethod,entrypoint='getRowXML';",
+    "   utf8 ctxGetRowJson(boolean _meta, const row _row, unsigned4 flags) : ctxmethod,entrypoint='getRowJSON';",
 
     "   boolean getMatched(unsigned4 idx) : method,pure,include,entrypoint='getMatched';",
     "   unsigned4 getMatchLength(unsigned4 idx) : method,pure,include,entrypoint='getMatchLength';",
@@ -851,9 +853,12 @@ const char * cppSystemText[]  = {
     "   bindDataParam(const varstring name, data val) : method,entrypoint='bindDataParam';",
     "   bindDatasetParam(const varstring name, streamed dataset val) : method,entrypoint='bindDatasetParam',passParameterMeta(true);",
     "   bindRealParam(const varstring name, real val) : method,entrypoint='bindRealParam';",
+    "   bindFloatParam(const varstring name, real4 val) : method,entrypoint='bindFloatParam';",
     "   bindRowParam(const varstring name, _linkcounted_ row row) : method,entrypoint='bindRowParam',passParameterMeta(true);",
     "   bindSignedParam(const varstring name, integer val) : method,entrypoint='bindSignedParam';",
     "   bindUnsignedParam(const varstring name, unsigned val) : method,entrypoint='bindUnsignedParam';",
+    "   bindSignedSizeParam(const varstring name, integer4 size, integer val) : method,entrypoint='bindSignedSizeParam';",
+    "   bindUnsignedSizeParam(const varstring name, integer4 size, unsigned val) : method,entrypoint='bindUnsignedSizeParam';",
     "   bindStringParam(const varstring name, const string val) : method,entrypoint='bindStringParam';",
     "   bindVStringParam(const varstring name, const varstring val) : method,entrypoint='bindVStringParam';",
     "   bindUTF8Param(const varstring name, const utf8 val) : method,entrypoint='bindUTF8Param';",

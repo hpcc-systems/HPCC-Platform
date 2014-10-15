@@ -322,11 +322,11 @@ public:
                 Owned<IRowStream> out;
                 FunnelSlaveActivity &activity;
                 const bool &abortSoon;
-                PointerIArrayOf<IThorDataLink> &inputs;
+                IPointerArrayOf<IThorDataLink> &inputs;
             public:
                 IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-                CDataLink(FunnelSlaveActivity &_activity, PointerIArrayOf<IThorDataLink> &_inputs, const bool &_abortSoon) 
+                CDataLink(FunnelSlaveActivity &_activity, IPointerArrayOf<IThorDataLink> &_inputs, const bool &_abortSoon) 
                     : CThorDataLink(&_activity), activity(_activity), inputs(_inputs), abortSoon(_abortSoon)
                 {
                 }

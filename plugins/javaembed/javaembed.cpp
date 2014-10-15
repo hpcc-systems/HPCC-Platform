@@ -270,8 +270,8 @@ protected:
     }
     void pop()
     {
-        row = (jobject) stack.pop();
-        Class = (jclass) stack.pop();
+        row = (jobject) stack.popGet();
+        Class = (jclass) stack.popGet();
     }
     jfieldID getFieldId(const RtlFieldInfo * field, const char *sig, const char *expected)
     {
@@ -989,14 +989,14 @@ public:
     virtual void processEndDataset(const RtlFieldInfo * field)
     {
         inDataSet = false;
-        idx = idxStack.pop();
+        idx = idxStack.popGet();
         pop();
     }
     virtual void processEndRow(const RtlFieldInfo * field)
     {
         if (field != outerRow)
         {
-            constructor = (jmethodID) stack.pop();
+            constructor = (jmethodID) stack.popGet();
             JNIenv->DeleteLocalRef(row);
             pop();
         }
@@ -1796,6 +1796,25 @@ public:
         v.l = javaData;
         addArg(v);
     }
+    virtual void bindFloatParam(const char *name, float val)
+    {
+        // Could argue that the size should match...
+        jvalue v;
+        switch(*argsig)
+        {
+        case 'D':
+            v.d = val;
+            break;
+        case 'F':
+            v.f = val;
+            break;
+        default:
+            typeError("REAL");
+            break;
+        }
+        argsig++;
+        addArg(v);
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         jvalue v;
@@ -1813,6 +1832,10 @@ public:
         }
         argsig++;
         addArg(v);
+    }
+    virtual void bindSignedSizeParam(const char *name, int size, __int64 val)
+    {
+        bindSignedParam(name, val);
     }
     virtual void bindSignedParam(const char *name, __int64 val)
     {
@@ -1837,6 +1860,10 @@ public:
         }
         argsig++;
         addArg(v);
+    }
+    virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
+    {
+        bindUnsignedParam(name, val);
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
@@ -2280,9 +2307,9 @@ static JNIEnv *queryJNIEnv()
 class JavaEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
     {
-        assertex(isImport);
+        assertex(flags & EFimport);
         return new JavaEmbedImportContext(queryContext(), options);
     }
 };

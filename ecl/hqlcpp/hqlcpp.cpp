@@ -1146,7 +1146,7 @@ HqlStmts * HqlCppInstance::querySection(IAtom * section)
     return NULL;
 }
 
-void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inThor)
+void HqlCppInstance::addPlugin(const char *plugin, const char *version)
 {
     if (!plugin || !*plugin)
         return;
@@ -1160,10 +1160,6 @@ void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inT
 
         if (version && *version)
             p->setPluginVersion(version);
-        if (inThor)
-            p->setPluginThor(true);
-        else
-            p->setPluginHole(true);
     }
     if (!plugins)
         plugins.setown(createPTree("Plugins"));
@@ -1216,7 +1212,7 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
         StringBuffer plugin, version;
         getStringValue(plugin, pluginAttr->queryChild(0));
         getStringValue(version, pluginAttr->queryChild(1));
-        addPlugin(plugin.str(), version.str(), false);
+        addPlugin(plugin.str(), version.str());
         if (!libname.length())
         {
             getStringValue(libname, pluginAttr->queryChild(0));
@@ -1732,6 +1728,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.useResultsForChildSpills,"useResultsForChildSpills",false),
         DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
         DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
+        DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
     };
 
     //get options values from workunit
@@ -2456,7 +2453,8 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
         doBuildAssignToFromUnicode(ctx, target, expr);
         break;
     case no_toxml:
-        doBuildAssignToXml(ctx, target, expr);
+    case no_tojson:
+        doBuildAssignToXmlorJson(ctx, target, expr);
         break;
     case no_wuid:
         doBuildAssignWuid(ctx, target, expr);
@@ -3139,6 +3137,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_eventextra:
     case no_loopcounter:
     case no_toxml:
+    case no_tojson:
         buildTempExpr(ctx, expr, tgt);
         return;
     case no_asstring:
@@ -7363,7 +7362,7 @@ void HqlCppTranslator::doBuildAssignFormat(IIdAtom * func, BuildCtx & ctx, const
 
 //---------------------------------------------------------------------------
 
-void HqlCppTranslator::doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+void HqlCppTranslator::doBuildAssignToXmlorJson(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     IHqlExpression * row = expr->queryChild(0);
 
@@ -7371,7 +7370,8 @@ void HqlCppTranslator::doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget 
     args.append(*buildMetaParameter(row));
     args.append(*LINK(row));
     args.append(*getSizetConstant(XWFtrim|XWFopt|XWFnoindent));
-    OwnedHqlExpr call = bindFunctionCall(ctxGetRowXmlId, args);
+    node_operator op = expr->getOperator();
+    OwnedHqlExpr call = bindFunctionCall((op==no_tojson) ? ctxGetRowJsonId : ctxGetRowXmlId, args);
     buildExprAssign(ctx, target, call);
 }
 
@@ -11587,6 +11587,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
 {
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     IHqlExpression * outofline = funcdef->queryChild(0);
+    IHqlExpression * formals = funcdef->queryChild(1);
     assertex(outofline->getOperator() == no_outofline);
     IHqlExpression * bodyCode = outofline->queryChild(0);
     IHqlExpression *language = queryAttributeChild(bodyCode, languageAtom, 0);
@@ -11600,7 +11601,11 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
     StringBuffer createParam;
     createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContext(");
-    createParam.append(isImport ? "true" : "false");
+    createParam.append(isImport ? "EFimport" : "EFembed");
+    if (returnType->getTypeCode()==type_void)
+        createParam.append("|EFnoreturn");
+    if (formals->numChildren()==0)
+        createParam.append("|EFnoparams");
     StringBuffer attrParam;
     ForEachChild(idx, bodyCode)
     {
@@ -11629,7 +11634,6 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     scriptArgs.append(*LINK(ctxVar));
     scriptArgs.append(*LINK(bodyCode->queryChild(0)));
     buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
-    IHqlExpression *formals = funcdef->queryChild(1);
     ForEachChild(i, formals)
     {
         HqlExprArray args;
@@ -11645,7 +11649,13 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         switch (paramType->getTypeCode())
         {
         case type_int:
-            bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
+            if (paramType->getSize()<8)
+            {
+                bindFunc = paramType->isSigned() ? bindSignedSizeParamId : bindUnsignedSizeParamId;
+                args.append(*createIntConstant(paramType->getSize()));
+            }
+            else
+                bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
             break;
         case type_varstring:
             bindFunc = bindVStringParamId;
@@ -11654,7 +11664,10 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             bindFunc = bindStringParamId;
             break;
         case type_real:
-            bindFunc = bindRealParamId;
+            if (paramType->getSize()==4)
+                bindFunc = bindFloatParamId;
+            else
+                bindFunc = bindRealParamId;
             break;
         case type_boolean:
             bindFunc = bindBooleanParamId;

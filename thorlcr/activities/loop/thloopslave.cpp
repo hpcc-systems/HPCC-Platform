@@ -1000,7 +1000,7 @@ class CChildGroupAggregateActivitySlave : public CSlaveActivity, public CThorDat
     IHThorChildGroupAggregateArg *helper;
     bool eos, gathered;
     Owned<IEngineRowAllocator> allocator;
-    Owned<CThorRowAggregator> aggregated;
+    Owned<RowAggregator> aggregated;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -1019,7 +1019,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         gathered = eos = false;
         aggregated.clear();
-        aggregated.setown(new CThorRowAggregator(*this, *helper, *helper));
+        aggregated.setown(new RowAggregator(*helper, *helper));
         aggregated->start(queryRowAllocator());
         dataLinkStart();
     }

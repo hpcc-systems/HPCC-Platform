@@ -19,7 +19,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
-    <xs:include schemaLocation="Environment.xsd"/>
+    <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="PluginProcess">
         <xs:annotation>
             <xs:documentation>Describes a custom plugin installation</xs:documentation>

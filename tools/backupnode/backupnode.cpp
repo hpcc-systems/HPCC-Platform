@@ -125,12 +125,12 @@ static bool CopySingleFile(IFile *srcfile,IFile *dstfile, bool compress, bool su
                 {
                     DWORD read;
                     if (!::ReadFile(hSource, buf, BUFSIZE, &read, NULL))
-                        throw MakeOsException(GetLastError(), "Failed to read file %s", source);
+                        throw makeOsExceptionV(GetLastError(), "Failed to read file %s", source);
                     if (read)
                     {
                         DWORD wrote;
                         if (!::WriteFile(hTarget, buf, read, &wrote, NULL))
-                            throw MakeOsException(GetLastError(), "Failed to write file %s", target);
+                            throw makeOsExceptionV(GetLastError(), "Failed to write file %s", target);
                         assertex(wrote==read);
                     }
                     else

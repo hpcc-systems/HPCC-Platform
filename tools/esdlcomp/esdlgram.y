@@ -361,6 +361,10 @@ EnumList
  ;
 
 EnumItemDef
+ : EspMetaData EnumItemBare
+ ;
+
+EnumItemBare
  : ID '(' EnumConstValue ')'
  {
     CurParam = new ParamInfo;
@@ -383,7 +387,7 @@ EnumItemDef
     CurParam = new ParamInfo;
     CurParam->name = strdup($1.getName());
     CurParam->kind = TK_ENUM;
-    AddMetaTag(new MetaTagInfo("enum", VStrBuffer("\"%s\"", $1.getName()).str()));
+    AddMetaTag(new MetaTagInfo("enum", VStringBuffer("\"%s\"", $1.getName()).str()));
     CurParam->tags = getClearCurMetaTags();
 
     AddEspProperty();
@@ -830,7 +834,7 @@ EnumDef
  }
  | ID '=' '-' INTEGER_CONST
  {
-    EnumValue = - $3.getInt();
+    EnumValue = - $4.getInt();
     CurEnumVal = new EnumValInfo($1.getName(),EnumValue);
     EnumValue++;
  }
@@ -874,6 +878,12 @@ EspVersionDef
  {
     VersionInfo *prev = hcp->versions;
     hcp->versions = new VersionInfo($3.getName(), $5.getDouble());
+    hcp->versions->next = prev;
+ }
+ | ESPVERSIONDEF '(' ID ',' INTEGER_CONST ')' ';'
+ {
+    VersionInfo *prev = hcp->versions;
+    hcp->versions = new VersionInfo($3.getName(), $5.getInt());
     hcp->versions->next = prev;
  }
  ;
@@ -932,7 +942,6 @@ ProcDef
  }
  ;
 
-
 ProcAttr
  : Virtual
  | Callback
@@ -944,7 +953,6 @@ ProcAttrList
  : ProcAttr ProcAttrList
  |
  ;
-
 
 RetParam
  : StartRetParam TypeModifiers TypeList
@@ -980,7 +988,6 @@ ParamList
  }
  ;
 
-
 Param
  : StartParam TypeModifiers TypeList
  {
@@ -1001,8 +1008,6 @@ TypeModifier
  | SizeInfo
  | Layout
  ;
-
-
 
 Layout
  : LAYOUT '(' LayoutParams ')'
@@ -1442,17 +1447,16 @@ string_const
 
 %%
 
-
 void AddModule()
 {
-   if (CurModule)
-   {
-     if (LastModule)
-       LastModule->next = CurModule;
-     else
-       hcp->modules = CurModule;
-     LastModule = CurModule;
-   }
+    if (CurModule)
+    {
+        if (LastModule)
+            LastModule->next = CurModule;
+        else
+            hcp->modules = CurModule;
+        LastModule = CurModule;
+    }
 }
 
 void TestOut(const char *str)
@@ -1462,74 +1466,74 @@ void TestOut(const char *str)
 
 void AddApi()
 {
-   if (CurApi)
-   {
-     if (LastApi)
-       LastApi->next = CurApi;
-     else
-       hcp->apis = CurApi;
-     LastApi = CurApi;
-   }
+    if (CurApi)
+    {
+        if (LastApi)
+            LastApi->next = CurApi;
+        else
+            hcp->apis = CurApi;
+        LastApi = CurApi;
+    }
 }
 
 void AddEspMessage()
 {
-   if (CurEspMessage)
-   {
-     if (LastEspMessage)
-       LastEspMessage->next = CurEspMessage;
-     else
-       hcp->msgs = CurEspMessage;
-     LastEspMessage = CurEspMessage;
+    if (CurEspMessage)
+    {
+        if (LastEspMessage)
+            LastEspMessage->next = CurEspMessage;
+        else
+            hcp->msgs = CurEspMessage;
+        LastEspMessage = CurEspMessage;
    }
 }
 
 void AddEspProperty()
 {
-   if (CurParam)
-   {
-     if (LastParam)
-       LastParam->next = CurParam;
-     else
-       CurEspMessage->setParams(CurParam);
-     LastParam = CurParam;
+    if (CurParam)
+    {
+        if (LastParam)
+            LastParam->next = CurParam;
+        else
+            CurEspMessage->setParams(CurParam);
+        LastParam = CurParam;
    }
 }
 
 void AddEspService()
 {
-   if (CurService)
-   {
-     if (LastService)
-       LastService->next = CurService;
-     else
-       hcp->servs = CurService;
-     LastService = CurService;
-   }
+    if (CurService)
+    {
+        if (LastService)
+           LastService->next = CurService;
+        else
+           hcp->servs = CurService;
+        LastService = CurService;
+    }
 }
 
 void AddEspMethod()
 {
-   if (CurMethod)
-   {
-     if (LastMethod)
-       LastMethod->next = CurMethod;
-     else
-       hcp->methods = CurMethod;
-     LastMethod = CurMethod;
+    if (CurMethod)
+    {
+        if (LastMethod)
+            LastMethod->next = CurMethod;
+        else
+            hcp->methods = CurMethod;
+        LastMethod = CurMethod;
    }
 }
 
 void AddEspInclude()
 {
-   if (CurInclude)
-   {
-     if (LastInclude)
-       LastInclude->next = CurInclude;
-     else
-       hcp->includes = CurInclude;
-     LastInclude = CurInclude;
-   }
+    if (CurInclude)
+    {
+        if (LastInclude)
+            LastInclude->next = CurInclude;
+        else
+            hcp->includes = CurInclude;
+        LastInclude = CurInclude;
+    }
 }
 
 void AddMetaTag(MetaTagInfo *mti)
@@ -1550,7 +1554,7 @@ MetaTagInfo* getClearCurMetaTags()
 
         if (tagNames.find(t->getName())!= tagNames.end())
         {
-            VStrBuffer msg("Attribute '%s' are declared more than once", t->getName());
+            VStringBuffer msg("Attribute '%s' are declared more than once", t->getName());
             yyerror(msg.str());
         }
         else
@@ -1570,16 +1574,58 @@ MetaTagInfo* getClearCurMetaTags()
 
 void AddEnum()
 {
-   if (CurEnum)
-   {
-     if (LastEnum)
-       LastEnum->next = CurEnum;
-     else
-       hcp->enums = CurEnum;
-     LastEnum = CurEnum;
+    if (CurEnum)
+    {
+        if (LastEnum)
+            LastEnum->next = CurEnum;
+        else
+            hcp->enums = CurEnum;
+        LastEnum = CurEnum;
    }
 }
 
+void yyCleanupESDLGlobals()
+{
+//These global pointers, have been assigned to the esdlcompiler 'hcp' member vars
+//The compiler is responsible for releasing memory allocated.
+
+    hcp = NULL;
+    CurModule=NULL;
+    CurProc=NULL;
+    CurParam=NULL;
+    CurLayout=NULL;
+    CurEnum=NULL;
+    CurEnumVal=NULL;
+    CurApi=NULL;
+    CurInclude = NULL;
+    CurEspMessage=NULL;
+    CurService=NULL;
+    CurMethod=NULL;
+    CurMetaTags=NULL;
+    LastModule=NULL;
+    LastProc=NULL;
+    LastParam=NULL;
+    LastLayout=NULL;
+    LastEnum=NULL;
+    LastEnumVal=NULL;
+    LastApi=NULL;
+    LastInclude=NULL;
+    LastEspMessage=NULL;
+    LastService=NULL;
+    LastMethod=NULL;
+}
+
+void yyInitESDLGlobals(ESDLcompiler * esdlcompiler)
+{
+    hcp = esdlcompiler;
+
+    EnumValue = 0;
+    esp_def_export_tag=NULL;
+
+    linenum=1;
+    errnum=0;
+    nCommentStartLine = -1;
+}
 
 extern char *yytext;
 void yyerror(const char *s)

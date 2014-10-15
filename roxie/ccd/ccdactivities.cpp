@@ -155,7 +155,7 @@ public:
 
     bool getEnableFieldTranslation() const
     {
-        return queryFactory.getEnableFieldTranslation();
+        return queryFactory.queryOptions().enableFieldTranslation;
     }
 
     const char *queryQueryName() const
@@ -603,9 +603,17 @@ public:
     {
         convertRowToXML(lenResult, result, info, row, flags);
     }
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+    {
+        convertRowToJSON(lenResult, result, info, row, flags);
+    }
     const void * fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
     {
         return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+    }
+    const void * fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+    {
+        return createRowFromJson(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
     }
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual IWorkUnit *updateWorkUnit() const { throwUnexpected(); }
@@ -938,7 +946,7 @@ public:
 
     virtual bool process()
     {
-        MTIME_SECTION(timer, "CRoxieDiskReadBaseActivity::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieDiskReadBaseActivity::process");
         atomic_inc(&diskReadStarted);
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         doProcess(output);
@@ -2320,7 +2328,7 @@ public:
         }
         else
         {
-            MTIME_SECTION(timer, "CParallelRoxieActivity::process");
+            MTIME_SECTION(queryActiveTimer(), "CParallelRoxieActivity::process");
             atomic_inc(&diskReadStarted);
             Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
             class casyncfor: public CAsyncFor
@@ -3087,7 +3095,7 @@ public:
             OwnedRoxieString indexName(helper->getFileName());
             datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
         }
     }
 };
@@ -3449,7 +3457,7 @@ public:
 
     virtual bool process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexReadActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexReadActivity ::process");
         unsigned __int64 keyedLimit = readHelper->getKeyedLimit();
         unsigned __int64 limit = readHelper->getRowLimit();
 
@@ -3728,7 +3736,7 @@ public:
 
     virtual bool process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexNormalizeActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexNormalizeActivity ::process");
         unsigned __int64 keyedLimit = normalizeHelper->getKeyedLimit(); 
         unsigned __int64 rowLimit = normalizeHelper->getRowLimit();
 
@@ -3902,7 +3910,7 @@ public:
 
     virtual bool process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexCountActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexCountActivity ::process");
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         unsigned skipped = 0;
 
@@ -4026,7 +4034,7 @@ public:
 
     virtual bool process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexAggregateActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexAggregateActivity ::process");
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
         OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
@@ -4175,7 +4183,7 @@ public:
 
     virtual bool process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexGroupAggregateActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexGroupAggregateActivity ::process");
         Owned<IRowManager> rowManager = roxiemem::createRowManager(0, NULL, logctx, NULL, true); // MORE - should not really use default limits
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
@@ -4379,7 +4387,7 @@ public:
 
 bool CRoxieFetchActivityBase::process()
 {
-    MTIME_SECTION(timer, "CRoxieFetchActivityBase::process");
+    MTIME_SECTION(queryActiveTimer(), "CRoxieFetchActivityBase::process");
     Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     unsigned accepted = 0;
     unsigned rejected = 0;
@@ -4658,7 +4666,7 @@ public:
             OwnedRoxieString indexFileName(helper->getIndexFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
         }
     }
 
@@ -4789,7 +4797,7 @@ IRoxieSlaveActivity *CRoxieKeyedJoinIndexActivityFactory::createActivity(SlaveCo
 
 bool CRoxieKeyedJoinIndexActivity::process()
 {
-    MTIME_SECTION(timer, "CRoxieKeyedJoinIndexActivity::process");
+    MTIME_SECTION(queryActiveTimer(), "CRoxieKeyedJoinIndexActivity::process");
     Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     IOutputMetaData *joinFieldsMeta = helper->queryJoinFieldsRecordSize();
     Owned<IEngineRowAllocator> joinFieldsAllocator = getRowAllocator(joinFieldsMeta, basefactory->queryId());
@@ -5080,7 +5088,7 @@ public:
 
 bool CRoxieKeyedJoinFetchActivity::process()
 {
-    MTIME_SECTION(timer, "CRoxieKeyedJoinFetchActivity::process");
+    MTIME_SECTION(queryActiveTimer(), "CRoxieKeyedJoinFetchActivity::process");
     // MORE - where we are returning everything there is an optimization or two to be had
     Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     unsigned processed = 0;
@@ -5220,7 +5228,7 @@ public:
 
     virtual bool process()
     {
-        MTIME_SECTION(timer, "CRoxieRemoteActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieRemoteActivity ::process");
 
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         unsigned __int64 rowLimit = remoteHelper->getRowLimit();
@@ -5358,7 +5366,7 @@ public:
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
                     indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit()));
                     if (indexfile)
-                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
                 }
                 if (fileName && !allFilesDynamic)
                 {

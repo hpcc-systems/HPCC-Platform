@@ -42,47 +42,30 @@
 #define _copy(dest, src)   memcpy(&dest, &src, sizeof(src))
 
 
-inline IInterface & Array__Member2Param(IInterface * src)              { return *src; }
-inline void Array__Assign(IInterface * & dest, IInterface & src)       { dest = &src; assert(dest); }
-inline bool Array__Equal(IInterface * const & m, const IInterface & p) { return m==&p; }
-inline void Array__Destroy(IInterface * & next)                        { if (next) next->Release(); }
-inline IInterface * Array__Member2ParamPtr(IInterface * src)           { return src; }
-inline void Array__Assign(IInterface * & dest, IInterface * src)       { dest = src; }
-inline bool Array__Equal(IInterface * const & m, const IInterface * p) { return m==p; }
+class jlib_decl ICopyArray : public CopyReferenceArrayOf<IInterface> {};
+class jlib_decl IArray : public OwnedReferenceArrayOf<IInterface> {};
+class jlib_decl IPointerArray : public OwnedPointerArrayOf<IInterface> {};
 
-inline CInterface & Array__Member2Param(CInterface * src)              { return *src; }
-inline void Array__Assign(CInterface * & dest, CInterface & src)       { dest = &src; assert(dest);}
-inline bool Array__Equal(CInterface * const & m, const CInterface & p) { return m==&p; }
-inline void Array__Destroy(CInterface * & next)                        { if (next) next->Release(); }
+class jlib_decl CICopyArray : public CopyReferenceArrayOf<CInterface> {};
+class jlib_decl CIArray : public OwnedReferenceArrayOf<CInterface> {};
 
-// Used by StringArray
-inline const char *Array__Member2Param(const char *src)         { return src; }
-inline void Array__Assign(const char * & dest, const char *src) { const char *p = strdup(src); dest=p; }
-inline bool Array__Equal(const char *m, const char *p)          { return strcmp(m, p)==0; }
-inline void Array__Destroy(const char *p)                       { free((void*) p); }
+class jlib_decl CharArray : public ArrayOf<char> { };
+class jlib_decl IntArray : public ArrayOf<int> { };
+class jlib_decl ShortArray : public ArrayOf<short> { };
+class jlib_decl FloatArray : public ArrayOf<float> { };
+class jlib_decl DoubleArray : public ArrayOf<double> { };
+class jlib_decl UnsignedArray : public ArrayOf<unsigned> { };
+class jlib_decl UnsignedShortArray : public ArrayOf<unsigned short> { };
+class jlib_decl PointerArray : public ArrayOf<void *> { };
+class jlib_decl ConstPointerArray : public ArrayOf<const void *> { };
 
-MAKECopyArrayOf(IInterface *, IInterface &, jlib_decl CopyArray);
-MAKEArrayOf(IInterface *, IInterface &, jlib_decl Array);
-MAKEPtrArrayOf(IInterface *, IInterface *, jlib_decl PointerIArray);
-MAKECopyArrayOf(CInterface *, CInterface &, jlib_decl CopyCIArray);
-MAKEArrayOf(CInterface *, CInterface &, jlib_decl CIArray);
-MAKEValueArray(char,     jlib_decl CharArray);
-MAKEValueArray(int,      jlib_decl IntArray);
-MAKEValueArray(short,    jlib_decl ShortArray);
-MAKEValueArray(float,    jlib_decl FloatArray);
-MAKEValueArray(double,   jlib_decl DoubleArray);
-MAKEValueArray(unsigned, jlib_decl UnsignedArray);
-MAKEValueArray(unsigned short, jlib_decl UnsignedShortArray);
-MAKEValueArray(void *,   jlib_decl PointerArray);
-MAKEValueArray(const void *, jlib_decl ConstPointerArray);
-MAKEValueArray(unsigned char *,BytePointerArray);
 #ifdef _WIN32
-MAKEValueArray(bool,     jlib_decl BoolArray);
+class jlib_decl BoolArray : public ArrayOf<bool> { };
 #else
 typedef CharArray BoolArray;
 #endif
-MAKEValueArray(__int64, jlib_decl Int64Array);
-MAKEValueArray(unsigned __int64, jlib_decl UInt64Array);
+class jlib_decl Int64Array : public ArrayOf<__int64> { };
+class jlib_decl UInt64Array : public ArrayOf<unsigned __int64> { };
 
 template <class A, class C, class IITER>
 class ArrayIIteratorOf : public CInterface, implements IITER
@@ -120,71 +103,71 @@ public:
 };
 
 template <class TYPE>
-class CopyCIArrayOf : public CopyCIArray
+class CICopyArrayOf : public CICopyArray
 {
 public:
-    inline TYPE & item(aindex_t pos) const        { return (TYPE &)CopyCIArray::item(pos); }
-    inline TYPE & pop()                           { return (TYPE &)CopyCIArray::pop(); }
-    inline TYPE & tos(void) const                 { return (TYPE &)CopyCIArray::tos(); }
-    inline TYPE & tos(aindex_t num) const         { return (TYPE &)CopyCIArray::tos(num); }
-    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CopyCIArray::getArray(pos); }
-    inline void append(TYPE& obj)                 { assert(&obj); CopyCIArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); CopyCIArray::appendUniq(obj); } 
-    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CopyCIArray::add(obj, pos); } 
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return CopyCIArray::find(obj); }
-    inline void replace(TYPE &obj, aindex_t pos)  { assert(&obj); CopyCIArray::replace(obj, pos); }
-    inline bool zap(TYPE & obj)                   { assert(&obj); return CopyCIArray::zap(obj); }
+    inline TYPE & item(aindex_t pos) const        { return (TYPE &)CICopyArray::item(pos); }
+    inline TYPE & popGet()                        { return (TYPE &)CICopyArray::popGet(); }
+    inline TYPE & tos(void) const                 { return (TYPE &)CICopyArray::tos(); }
+    inline TYPE & tos(aindex_t num) const         { return (TYPE &)CICopyArray::tos(num); }
+    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CICopyArray::getArray(pos); }
+    inline void append(TYPE& obj)                 { assert(&obj); CICopyArray::append(obj); } 
+    inline void appendUniq(TYPE& obj)             { assert(&obj); CICopyArray::appendUniq(obj); } 
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CICopyArray::add(obj, pos); } 
+    inline aindex_t find(TYPE & obj) const        { assert(&obj); return CICopyArray::find(obj); }
+    inline void replace(TYPE &obj, aindex_t pos)  { assert(&obj); CICopyArray::replace(obj, pos); }
+    inline bool zap(TYPE & obj)                   { assert(&obj); return CICopyArray::zap(obj); }
 };
 
 template <class TYPE>
-class IArrayOf : public Array
+class IArrayOf : public IArray
 {
 public:
-    inline TYPE & item(aindex_t pos) const        { return (TYPE &)Array::item(pos); }
-    inline TYPE & popGet()                        { return (TYPE &)Array::popGet(); }
-    inline TYPE & tos(void) const                 { return (TYPE &)Array::tos(); }
-    inline TYPE & tos(aindex_t num) const         { return (TYPE &)Array::tos(num); }
-    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)Array::getArray(pos); }
-    inline void append(TYPE& obj)                 { assert(&obj); Array::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); Array::appendUniq(obj); } 
-    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); Array::add(obj, pos); } 
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return Array::find(obj); }
-    inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); Array::replace(obj, pos, nodel); }
-    inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return Array::zap(obj, nodel); }
+    inline TYPE & item(aindex_t pos) const        { return (TYPE &)IArray::item(pos); }
+    inline TYPE & popGet()                        { return (TYPE &)IArray::popGet(); }
+    inline TYPE & tos(void) const                 { return (TYPE &)IArray::tos(); }
+    inline TYPE & tos(aindex_t num) const         { return (TYPE &)IArray::tos(num); }
+    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IArray::getArray(pos); }
+    inline void append(TYPE& obj)                 { assert(&obj); IArray::append(obj); } 
+    inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq(obj); } 
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add(obj, pos); } 
+    inline aindex_t find(TYPE & obj) const        { assert(&obj); return IArray::find(obj); }
+    inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace(obj, pos, nodel); }
+    inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap(obj, nodel); }
 };
 
 template <class TYPE>
-class ICopyArrayOf : public CopyArray
+class ICopyArrayOf : public ICopyArray
 {
 public:
-    inline TYPE & item(aindex_t pos) const        { return (TYPE &)CopyArray::item(pos); }
-    inline TYPE & pop()                           { return (TYPE &)CopyArray::pop(); }
-    inline TYPE & tos(void) const                 { return (TYPE &)CopyArray::tos(); }
-    inline TYPE & tos(aindex_t num) const         { return (TYPE &)CopyArray::tos(num); }
-    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CopyArray::getArray(pos); }
-    inline void append(TYPE& obj)                 { assert(&obj); CopyArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); CopyArray::appendUniq(obj); } 
-    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CopyArray::add(obj, pos); } 
-    inline aindex_t find(TYPE & obj) const        { assert(&obj); return CopyArray::find(obj); }
-    inline void replace(TYPE &obj, aindex_t pos) { assert(&obj); CopyArray::replace(obj, pos); }
-    inline bool zap(TYPE & obj)                   { assert(&obj); return CopyArray::zap(obj); }
+    inline TYPE & item(aindex_t pos) const        { return (TYPE &)ICopyArray::item(pos); }
+    inline TYPE & popGet()                        { return (TYPE &)ICopyArray::popGet(); }
+    inline TYPE & tos(void) const                 { return (TYPE &)ICopyArray::tos(); }
+    inline TYPE & tos(aindex_t num) const         { return (TYPE &)ICopyArray::tos(num); }
+    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)ICopyArray::getArray(pos); }
+    inline void append(TYPE& obj)                 { assert(&obj); ICopyArray::append(obj); } 
+    inline void appendUniq(TYPE& obj)             { assert(&obj); ICopyArray::appendUniq(obj); } 
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); ICopyArray::add(obj, pos); } 
+    inline aindex_t find(TYPE & obj) const        { assert(&obj); return ICopyArray::find(obj); }
+    inline void replace(TYPE &obj, aindex_t pos) { assert(&obj); ICopyArray::replace(obj, pos); }
+    inline bool zap(TYPE & obj)                   { assert(&obj); return ICopyArray::zap(obj); }
 };
 
 template <class TYPE>
-class PointerIArrayOf : public PointerIArray
+class IPointerArrayOf : public IPointerArray
 {
 public:
-    inline TYPE * item(aindex_t pos) const        { return (TYPE *)PointerIArray::item(pos); }
-    inline TYPE * popGet()                        { return (TYPE *)PointerIArray::popGet(); }
-    inline TYPE * tos(void) const                 { return (TYPE *)PointerIArray::tos(); }
-    inline TYPE * tos(aindex_t num) const         { return (TYPE *)PointerIArray::tos(num); }
-    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)PointerIArray::getArray(pos); }
-    inline void append(TYPE * obj)                { PointerIArray::append(obj); } 
-    inline void appendUniq(TYPE * obj)            { PointerIArray::appendUniq(obj); } 
-    inline void add(TYPE * obj, aindex_t pos)     { PointerIArray::add(obj, pos); } 
-    inline aindex_t find(TYPE * obj) const        { return PointerIArray::find(obj); }
-    inline void replace(TYPE * obj, aindex_t pos, bool nodel=false) { PointerIArray::replace(obj, pos, nodel); }
-    inline bool zap(TYPE * obj, bool nodel=false) { return PointerIArray::zap(obj, nodel); }
+    inline TYPE * item(aindex_t pos) const        { return (TYPE *)IPointerArray::item(pos); }
+    inline TYPE * popGet()                        { return (TYPE *)IPointerArray::popGet(); }
+    inline TYPE * tos(void) const                 { return (TYPE *)IPointerArray::tos(); }
+    inline TYPE * tos(aindex_t num) const         { return (TYPE *)IPointerArray::tos(num); }
+    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IPointerArray::getArray(pos); }
+    inline void append(TYPE * obj)                { IPointerArray::append(obj); } 
+    inline void appendUniq(TYPE * obj)            { IPointerArray::appendUniq(obj); } 
+    inline void add(TYPE * obj, aindex_t pos)     { IPointerArray::add(obj, pos); } 
+    inline aindex_t find(TYPE * obj) const        { return IPointerArray::find(obj); }
+    inline void replace(TYPE * obj, aindex_t pos, bool nodel=false) { IPointerArray::replace(obj, pos, nodel); }
+    inline bool zap(TYPE * obj, bool nodel=false) { return IPointerArray::zap(obj, nodel); }
 };
 
 template <class TYPE>
@@ -199,7 +182,7 @@ public:
     inline aindex_t find(TYPE * x) const        { return PointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)PointerArray::getArray(pos); }
     inline TYPE * item(aindex_t pos) const      { return (TYPE *)PointerArray::item(pos); }
-    inline TYPE * pop()                         { return (TYPE *)PointerArray::pop(); }
+    inline TYPE * popGet()                      { return (TYPE *)PointerArray::popGet(); }
     inline void replace(TYPE * x, aindex_t pos) { PointerArray::replace(x, pos); }
     inline TYPE * tos(void) const               { return (TYPE *)PointerArray::tos(); }
     inline TYPE * tos(aindex_t num) const       { return (TYPE *)PointerArray::tos(num); }
@@ -207,12 +190,13 @@ public:
 };
 
 #include "jstring.hpp"
-#include "jarray.tpp"
+#include "jarray.hpp"
 #include "jhash.hpp"
 #include "jstream.hpp"
 #include "jutil.hpp"
 
-inline void appendArray(CIArray & target, const CIArray & source)
+template <class ARRAY>
+inline void appendArray(ARRAY & target, const ARRAY & source)
 {
     unsigned max = source.ordinality();
     if (max)
@@ -223,7 +207,7 @@ inline void appendArray(CIArray & target, const CIArray & source)
     }
 }
 
-inline void appendArray(Array & target, const Array & source)
+inline void appendArray(IArray & target, const IArray & source)
 {
     unsigned max = source.ordinality();
     if (max)
@@ -248,22 +232,19 @@ struct InitializerType
     unsigned int modpriority;
     SoContext soCtx;
     byte state;
+
+    bool operator == (const InitializerType & other) const { return this == &other; }
 };
 
-inline InitializerType & Array__Member2Param(InitializerType &src)              { return src; }  
-inline void Array__Assign(InitializerType & dest, InitializerType & src)       { dest = src; }
-inline bool Array__Equal(InitializerType const & m, const InitializerType & p) { return &m==&p; }
-inline void Array__Destroy(InitializerType & /*next*/) { }
-
-MAKEArrayOf(InitializerType, InitializerType &, jlib_decl InitializerArray);
+class jlib_decl InitializerArray : public StructArrayOf<InitializerType> { };
 
 class jlib_decl InitTable
 {
 public:
     InitializerArray initializers;
 
-    static int sortFuncDescending(InitializerType *i1, InitializerType *i2);
-    static int sortFuncAscending(InitializerType *i1, InitializerType *i2);
+    static int sortFuncDescending(InitializerType const *i1, InitializerType const *i2);
+    static int sortFuncAscending(InitializerType const *i1, InitializerType const *i2);
 public:
     InitTable();
     void init(SoContext soCtx=0);
@@ -271,7 +252,8 @@ public:
     void add(InitializerType &iT);
     void add(boolFunc func, unsigned int priority, unsigned int modpriority, byte state=ITS_Uninitialized);
     count_t items() { return initializers.ordinality(); }
-    InitializerType &item(aindex_t i) { return initializers.item(i); }
+
+    InitializerType & element(aindex_t i) { return initializers.element(i); }
 };
 
 class jlib_decl ModInit

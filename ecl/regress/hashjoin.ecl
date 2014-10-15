@@ -47,7 +47,7 @@ JoinRecord JoinTransform (namesRecord l, addressRecord r) :=
                 END;
 
 j := JOIN(DISTRIBUTE(namesTable, HASH(surname[1..8])),
-          DISTRIBUTE(addressTable, HASH(surname[1.8])),
+          DISTRIBUTE(addressTable, HASH(surname[1..8])),
           LEFT.surname[1..8] = RIGHT.surname[1..8] AND (LEFT.surname[12] != RIGHT.surname[13]),
           JoinTransform(LEFT,RIGHT));
 

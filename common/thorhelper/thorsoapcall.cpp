@@ -210,6 +210,9 @@ public:
                 path.append("/");
             }
         }
+        IpAddress ipaddr(host);
+        if ( ipaddr.isNull())
+            throw MakeStringException(-1, "Invalid IP address %s", host.str());
     }
 };
 
@@ -1224,7 +1227,7 @@ int CWSCHelperThread::run()
                 {
                     if (master->aborted) {
                         while (inputRows.ordinality() > 0)
-                            master->rowProvider->releaseRow(inputRows.pop());
+                            master->rowProvider->releaseRow(inputRows.popGet());
                         return 0;
                     }
                     const void *r = master->rowProvider->getNextRow();
@@ -1244,7 +1247,7 @@ int CWSCHelperThread::run()
             }
 
             while (inputRows.ordinality() > 0)
-                master->rowProvider->releaseRow(inputRows.pop());
+                master->rowProvider->releaseRow(inputRows.popGet());
         }
     }
 
@@ -1720,8 +1723,8 @@ public:
         while (!master->aborted)
         {
             Owned<ISocket> socket;
-            unsigned startTime, endTime;
-            startTime = msTick();
+            cycle_t startCycles, endCycles;
+            startCycles = get_cycles_now();
             loop 
             {
                 try
@@ -1809,9 +1812,11 @@ public:
                 {
                     throw MakeStringException(-1, "Zero length response in processQuery");
                 }
-                endTime = msTick();
+                endCycles = get_cycles_now();
+                __int64 elapsedNs = cycle_to_nanosec(endCycles-startCycles);
+                master->logctx.noteStatistic(STATS_SOAPCALL_LATENCY, elapsedNs, 1);
                 checkTimeLimitExceeded(&remainingMS);
-                ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider(endTime-startTime, master->flags&SOAPFencoding?true:false);
+                ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider(nanoToMilli(elapsedNs), master->flags&SOAPFencoding?true:false);
                 processResponse(url, response, meta);
                 delete meta;
                 break;

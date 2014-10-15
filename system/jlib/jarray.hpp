@@ -20,7 +20,7 @@
 #ifndef JARRAY_HPP
 #define JARRAY_HPP
 
-
+#include <new>
 
 #include "platform.h"
 #include "jiface.hpp"
@@ -45,6 +45,7 @@ typedef int (* StdCompare)(const void *_e1, const void *_e2);
 class jlib_decl Allocator
 {
 public:
+    Allocator() { _init(); }
     void  kill();
     inline bool isItem(aindex_t pos = 0) const    { return pos < used; }      /* Is there an item at pos */
     inline aindex_t length() const                 { return used; } /* Return number of items  */
@@ -88,116 +89,383 @@ protected:
     inline void _move(aindex_t pos1, aindex_t pos2, aindex_t num) { memmove((char *)_head + pos1 * SIZE, (char *)_head + pos2 * SIZE, num * SIZE); }
 };
 
-/* inheritance structure:
+//--------------------------------------------------------------------------------------------------------------------
 
-  BaseArrayOf inherits from AllocatorOf
-  CopyArrayOf (non-owning ref array) inherits from BaseArrayOf
-  OwningArrayOf inherits from BaseArrayOf
-  ArrayOf (owning ref array) inherits from OwningArrayOf
-  PtrArrayOf (owning ptr array) inherits from OwningArrayOf
+//Ugly - avoid problems with new being #defined in windows debug mode
+#undef new
 
-  the difference between the latter two is that they call different functions to convert MEMBER to PARAM (Array__Member2Param vs Array__Member2ParamPtr)
-  this is necessary because of the use of global functions, to allow two arrays with the
-  same MEMBER but different PARAMs (otherwise these functions would have the same prototype, because their arguments only involve MEMBER and not PARAM)
+template <class MEMBER, class PARAM = MEMBER>
+class SimpleArrayMapper
+{
+public:
+    static void construct(MEMBER & member, PARAM newValue)
+    {
+        ::new (&member) MEMBER(newValue);
+    }
+    static inline void destruct(MEMBER & member)
+    {
+        member.~MEMBER();
+    }
+    static inline bool matches(const MEMBER & member, PARAM param)
+    {
+        return member == param;
+    }
+    static inline PARAM getParameter(const MEMBER & member)
+    {
+        return (PARAM)member;
+    }
+};
 
- */
-
-template <class MEMBER, class PARAM>
-class BaseArrayOf : public AllocatorOf<sizeof(MEMBER)>
+// An array which stores elements MEMBER, is passed and returns PARAMs
+// The MAPPER class is used to map between these two different classes.
+template <typename MEMBER, typename PARAM = MEMBER, class MAPPER = SimpleArrayMapper<MEMBER, PARAM> >
+class ArrayOf : public AllocatorOf<sizeof(MEMBER)>
 {
     typedef AllocatorOf<sizeof(MEMBER)> PARENT;
-    typedef BaseArrayOf<MEMBER,PARAM> SELF;
+    typedef ArrayOf<MEMBER,PARAM,MAPPER> SELF;
 
 protected:
-    typedef int (*CompareFunc)(MEMBER *, MEMBER *);
+    typedef int (*CompareFunc)(const MEMBER *, const MEMBER *);   // Should really be const, as should the original array functions
 
 public:
+    ~ArrayOf<MEMBER,PARAM,MAPPER>() { kill(); }
+
+    MEMBER & operator[](size_t pos) { return element((aindex_t)pos); }
+    const MEMBER & operator[](size_t pos) const { return element((aindex_t)pos); }
+
     inline bool contains(PARAM search) const          { return find(search) != NotFound; }
 
-    void add(PARAM, aindex_t pos);              /* Adds at pos             */
-    void append(PARAM);                         /* Adds to end of array    */
-    bool appendUniq(PARAM);                     /* Adds to end of array if not already in array - returns true if added*/
-    aindex_t bAdd(MEMBER & newItem, CompareFunc, bool & isNew);
-    aindex_t bSearch(const MEMBER & key, CompareFunc) const;
-    aindex_t find(PARAM) const;
-    MEMBER *getArray(aindex_t = 0) const;
-    void sort(CompareFunc);
-    void swap(aindex_t pos1, aindex_t pos2);
-    void swapWith(SELF & other) { this->doSwapWith(other); }
+    void add(PARAM newValue, aindex_t pos)
+    {
+        aindex_t valid_above = SELF::used - pos;
+        SELF::_space();
+        SELF::_move(pos + 1, pos, valid_above);
+        SELF::construct(newValue, pos);
+    }
+    void append(PARAM newValue)
+    {
+        SELF::_space();
+        SELF::construct(newValue, SELF::used-1);
+    }
+    bool appendUniq(PARAM newValue)
+    {
+        if (contains(newValue))
+            return false;
+        append(newValue);
+        return true;
+    }
+    aindex_t bAdd(MEMBER & newItem, CompareFunc cf, bool & isNew)
+    {
+        SELF::_space();
+
+        //MORE: This should have a callback function/method that is used to transfer the new element instead of memcpy
+        MEMBER * match = (MEMBER *) SELF::_doBAdd(&newItem, sizeof(MEMBER), (StdCompare)cf, isNew);
+        if (!isNew)
+            SELF::used--;
+
+        MEMBER * head= (MEMBER *)SELF::_head;
+        return (aindex_t)(match - head);
+    }
+    aindex_t bSearch(const MEMBER & key, CompareFunc cf) const
+    {
+        MEMBER * head= (MEMBER *)SELF::_head;
+        MEMBER * match = (MEMBER *) SELF::_doBSearch(&key, sizeof(MEMBER), (StdCompare)cf);
+        if (match)
+            return (aindex_t)(match - (MEMBER *)head);
+        return NotFound;
+    }
+    aindex_t find(PARAM searchValue) const
+    {
+        MEMBER * head= (MEMBER *)SELF::_head;
+        for (aindex_t pos = 0; pos < SELF::used; ++pos)
+        {
+            if (MAPPER::matches(head[pos], searchValue))
+                return pos;
+        }
+        return NotFound;
+    }
+    MEMBER * getArray(aindex_t pos = 0) const
+    {
+        MEMBER * head= (MEMBER *)SELF::_head;
+        assertex(pos <= SELF::used);
+        return &head[pos];
+    }
+    void sort(CompareFunc cf)
+    {
+        SELF::_doSort(sizeof(MEMBER), (StdCompare)cf);
+    }
+    void swap(aindex_t pos1, aindex_t pos2)
+    {
+        if (pos1 != pos2)
+        {
+            MEMBER * head= (MEMBER *)SELF::_head;
+            byte temp[sizeof(MEMBER)];
+            memcpy(temp, head + pos1, sizeof(MEMBER));
+            memcpy(head + pos1, head + pos2, sizeof(MEMBER));
+            memcpy(head + pos2, temp, sizeof(MEMBER));
+        }
+    }
+    void swapWith(SELF & other)
+    {
+        SELF::doSwapWith(other);
+    }
+    void clear()
+    {
+        SELF::used = 0;
+    }
+    void kill(bool nodestruct = false)
+    {
+        aindex_t count = SELF::used;
+        SELF::used = 0;
+        if (!nodestruct)
+        {
+            for (aindex_t i=0; i<count; i++)
+                 SELF::destruct(i);
+        }
+        PARENT::kill();
+    }
+    MEMBER & element(aindex_t pos)
+    {
+        assertex(SELF::isItem(pos));
+        MEMBER * head = (MEMBER *)SELF::_head;
+        return head[pos];
+    }
+    const MEMBER & element(aindex_t pos) const
+    {
+        assertex(SELF::isItem(pos));
+        MEMBER * head = (MEMBER *)SELF::_head;
+        return head[pos];
+    }
+    inline PARAM item(aindex_t pos) const
+    {
+        assertex(SELF::isItem(pos));
+        MEMBER * head= (MEMBER *)SELF::_head;
+        return MAPPER::getParameter(head[pos]);
+    }
+    void remove(aindex_t pos, bool nodestruct = false)
+    {
+        assertex(pos < SELF::used);
+        SELF::used --;
+        if (!nodestruct) SELF::destruct(pos);
+        SELF::_move( pos, pos + 1, ( SELF::used - pos ) );
+    }
+    void removen(aindex_t pos, aindex_t num, bool nodestruct = false)
+    {
+        assertex(pos + num <= SELF::used);
+        SELF::used -= num;
+        if (!nodestruct)
+        {
+            unsigned idx = 0;
+            for (;idx < num; idx++)
+                SELF::destruct(pos+idx);
+        }
+        SELF::_move( pos, pos + num, ( SELF::used - pos ) );
+    }
+    void pop(bool nodestruct = false)
+    {
+        assertex(SELF::used);
+        --SELF::used;
+        if (!nodestruct)
+            SELF::destruct(SELF::used);
+    }
+    PARAM popGet()
+    {
+        assertex(SELF::used);
+        --SELF::used;
+        MEMBER * head= (MEMBER *)SELF::_head;
+        return MAPPER::getParameter(head[SELF::used]); // used already decremented so element() would assert
+    }
+    void popn(aindex_t n, bool nodestruct = false)
+    {
+        assertex(SELF::used>=n);
+        MEMBER * head= (MEMBER *)SELF::_head;
+        while (n--)
+        {
+            --SELF::used;
+            if (!nodestruct)
+                SELF::destruct(SELF::used);
+        }
+    }
+    void popAll(bool nodestruct = false)
+    {
+        if (!nodestruct)
+        {
+            while (SELF::used)
+                SELF::destruct(--SELF::used);
+        }
+        else
+            SELF::used = 0;
+    }
+    void replace(PARAM newValue, aindex_t pos, bool nodestruct = false)
+    {
+        if (!nodestruct)
+            SELF::destruct(pos);
+        SELF::construct(newValue, pos);
+    }
+    const MEMBER & last(void) const
+    {
+        return element(SELF::used-1);
+    }
+    const MEMBER & last(aindex_t n) const
+    {
+        return element(SELF::used-n-1);
+    }
+    MEMBER & last(void)
+    {
+        return element(SELF::used-1);
+    }
+    MEMBER & last(aindex_t n)
+    {
+        return element(SELF::used-n-1);
+    }
+    PARAM tos(void) const
+    {
+        return MAPPER::getParameter(element(SELF::used-1));
+    }
+    PARAM tos(aindex_t n) const
+    {
+        return MAPPER::getParameter(element(SELF::used-n-1));
+    }
+    void trunc(aindex_t limit, bool nodestruct = false)
+    {
+        while (limit < SELF::used)
+            SELF::pop(nodestruct);
+    }
+    bool zap(PARAM searchValue, bool nodestruct = false)
+    {
+        MEMBER * head= (MEMBER *)SELF::_head;
+        for (aindex_t pos= 0; pos < SELF::used; ++pos)
+        {
+            if (MAPPER::matches(head[pos], searchValue))
+            {
+                remove(pos, nodestruct);
+                return true;
+            }
+        }
+        return false;
+    }
+
+protected:
+    inline void construct(PARAM newValue, unsigned pos)
+    {
+        MEMBER * head= (MEMBER *)SELF::_head;
+        MAPPER::construct(head[pos], newValue);
+    }
+    inline void destruct(unsigned pos)
+    {
+        MEMBER * head= (MEMBER *)SELF::_head;
+        MAPPER::destruct(head[pos]);
+    }
 };
 
-template <class MEMBER, class PARAM>
-class CopyArrayOf : public BaseArrayOf<MEMBER, PARAM>
+//--------------------------------------------------------------------------------------------------------------------
+
+template <typename ITEM>
+class OwnedReferenceArrayMapper
 {
-    typedef BaseArrayOf<MEMBER, PARAM> PARENT;
-    typedef CopyArrayOf<MEMBER, PARAM> SELF;
-    
+    typedef ITEM * MEMBER;
+    typedef ITEM & PARAM;
 public:
-    CopyArrayOf() { SELF::_init(); }
-    ~CopyArrayOf();
-    
-    void clear();
-    inline PARAM item(aindex_t pos) const;
-    PARAM tos(void) const;
-    PARAM tos(aindex_t) const;
-
-    PARAM pop(void);
-    void popn(aindex_t);
-    void popAll(void);
-    void remove(aindex_t pos);                  /* Remove (delete) item at pos */
-    void removen(aindex_t pos, aindex_t num);   /* Remove (delete) item at pos */
-    void replace(PARAM, aindex_t pos);          /* Replace an item at pos */
-    void trunc(aindex_t);
-    bool zap(PARAM);
+    static void construct(MEMBER & member, PARAM newValue)
+    {
+        member = &newValue;
+    }
+    static void destruct(MEMBER & member)
+    {
+        member->Release();
+    }
+    static inline bool matches(const MEMBER & member, PARAM param)
+    {
+        return member == &param;
+    }
+    static inline PARAM getParameter(const MEMBER & member)
+    {
+        return *member;
+    }
 };
 
-template <class MEMBER, class PARAM>
-class OwningArrayOf : public BaseArrayOf<MEMBER, PARAM>
+// An array which stores owned references to elements of type INTERFACE
+template <class INTERFACE>
+class OwnedReferenceArrayOf : public ArrayOf<INTERFACE *, INTERFACE &, OwnedReferenceArrayMapper<INTERFACE> >
 {
-    typedef BaseArrayOf<MEMBER, PARAM> PARENT;
-    typedef OwningArrayOf<MEMBER,PARAM> SELF;
-    
-public:
-    OwningArrayOf() { SELF::_init(); }
-    ~OwningArrayOf();
-    
-    void clear(bool nodel = false);                  /* Remove all items, don't free array */
-    void kill(bool nodel = false);                   /* Remove all items        */
-    void pop(bool nodel = false);
-    void popn(aindex_t,bool nodel = false);
-    void popAll(bool nodel = false);
-    void replace(PARAM, aindex_t pos, bool nodel = false); /* Replace an item at pos */
-    void remove(aindex_t pos, bool nodel = false);    /* Remove (delete) item at pos */
-    void removen(aindex_t pos, aindex_t num, bool nodel = false);    /* Remove N items (delete) item at pos */
-    void trunc(aindex_t pos, bool nodel = false);
-    bool zap(PARAM, bool nodel = false);
 };
 
-template <class MEMBER, class PARAM>
-class ArrayOf : public OwningArrayOf<MEMBER, PARAM>
+//--------------------------------------------------------------------------------------------------------------------
+
+template <typename ITEM>
+class OwnedPointerArrayMapper : public SimpleArrayMapper<ITEM*>
 {
-    typedef OwningArrayOf<MEMBER, PARAM> PARENT;
-    typedef ArrayOf<MEMBER,PARAM> SELF;
-
+    typedef ITEM * MEMBER;
+    typedef ITEM * PARAM;
 public:
-    inline PARAM item(aindex_t pos) const; 
-    PARAM popGet();
-    PARAM tos(void) const;
-    PARAM tos(aindex_t) const;
+    static void destruct(MEMBER & member)
+    {
+        ::Release(member);
+    }
 };
 
-template <class MEMBER, class PARAM>
-class PtrArrayOf : public OwningArrayOf<MEMBER, PARAM>
+// An array which stores owned pointers to elements of type INTERFACE
+template <typename INTERFACE>
+class OwnedPointerArrayOf : public ArrayOf<INTERFACE *, INTERFACE *, OwnedPointerArrayMapper<INTERFACE> >
 {
-    typedef OwningArrayOf<MEMBER, PARAM> PARENT;
-    typedef PtrArrayOf<MEMBER,PARAM> SELF;
-    
-public:
-    inline PARAM item(aindex_t pos) const             { assertex(SELF::isItem(pos)); return Array__Member2ParamPtr(((MEMBER *)AllocatorOf<sizeof(MEMBER)>::_head)[pos]);}
-    PARAM popGet();
-    PARAM tos(void) const;
-    PARAM tos(aindex_t) const;
 };
+
+//--------------------------------------------------------------------------------------------------------------------
+
+template <typename ITEM>
+class SafePointerArrayMapper : public SimpleArrayMapper<ITEM*>
+{
+    typedef ITEM * MEMBER;
+    typedef ITEM * PARAM;
+public:
+    static void destruct(MEMBER & member)
+    {
+        delete member;
+    }
+};
+
+// An array which stores owned pointers to elements of type INTERFACE, and calls delete when they are released.
+template <typename INTERFACE>
+class SafePointerArrayOf : public ArrayOf<INTERFACE *, INTERFACE *, SafePointerArrayMapper<INTERFACE> >
+{
+};
+
+//--------------------------------------------------------------------------------------------------------------------
+
+template <class ITEM>
+class ReferenceArrayMapper
+{
+public:
+    static void construct(ITEM * & member, ITEM & newValue)
+    {
+        member = &newValue;
+    }
+    static inline void destruct(ITEM * & member)
+    {
+    }
+    static inline bool matches(ITEM * const & member, ITEM & param)
+    {
+        return member == &param;
+    }
+    static inline ITEM & getParameter(ITEM * const & member)
+    {
+        return *member;
+    }
+};
+
+// An array which stores pointers to INTERFACE, but passes and returns references.
+template <class INTERFACE>
+class CopyReferenceArrayOf : public ArrayOf<INTERFACE *, INTERFACE &, ReferenceArrayMapper<INTERFACE> >
+{
+};
+
+//--------------------------------------------------------------------------------------------------------------------
+
+template <typename CLASS>
+class StructArrayOf : public ArrayOf<CLASS, const CLASS &> { };
+
+//--------------------------------------------------------------------------------------------------------------------
+
 
 template <class ARRAY, class PARAM> class ArrayIteratorOf
 {
@@ -237,32 +505,30 @@ private:
   { ForEachItemIn(idx##__LINE__, SRC)                        \
       (TGT).append((SRC).item(idx##__LINE__)); }
 
-#define MAKEArrayOf(member, param, array)       class array : public ArrayOf<member, param> {};
-#define MAKECopyArrayOf(member, param, array)   class array : public CopyArrayOf<member, param> {};
-#define MAKEPtrArrayOf(member, param, array)    class array : public PtrArrayOf<member, param> {};
+/*
+    Documentation on the template classes:
 
-#define MAKEValueArray(simple, array)                                       \
-inline simple Array__Member2Param(simple &src)              { return src; }  \
-inline void Array__Assign(simple & dest, simple const & src){ dest = src; }  \
-inline bool Array__Equal(simple const & m, simple const p)  { return m==p; } \
-MAKECopyArrayOf(simple, simple, array)
+    CopyReferenceArrayOf<X>
+        An array of references to objects/interfaces of type X.  This array doesn't link count.
+    OwnedReferenceArrayOf<X> {};
+        An array of references to link counted objects/interfaces of type X.  The array takes ownership of the items
+        that are added to it, and will be released when they are removed.
+    OwnedPointerArrayOf<X> {};
+        An array of pointers to link counted objects/interfaces of type X (which may be NULL).  The array takes
+        ownership of the items that are added to it, and will be released when they are removed.
+    SafePointerArrayOf<IInterface> {};
+        An array of pointers to objects/interfaces of type X (may include NULL).  The array takes ownership of the
+        items that are added to it, and will be deleted when they are removed.
+    ArrayOf<X> {}
+        An array of objects of type X.  This is normally used for simple types e.g., unsigned or pointers
+    StructArrayOf<X> {}
+        An array of objects of type X.  This is used where X is a class type because items are passed.
+        Copy constructors are called when items are added, and destructors when they are removed.
 
-#define MAKEPointerArray(simple, array)                                     \
-inline simple & Array__Member2Param(simple *&src)              { return *src; }  \
-inline void Array__Assign(simple * & dest, simple & src)       { dest = &src; }  \
-inline bool Array__Equal(simple * const & m, simple const & p) { return m==&p; } \
-MAKECopyArrayOf(simple *, simple &, array)
-
-/* Documentation on the macros:
-
- MAKEValueArray(simple-type, array-name)
-   Declare an array of a built in, or simple type.  It takes care of defining
-   all the inline functions required. e.g. MAKEValueArray(unsigned, unsignedArray)
-
- MAKE[Copy]ArrayOf(member, param, array-name) 
-   Declares an array class of members, where param is used as the parameter
-   that is passed into and returned from the access functions.  Including Copy
-   in the name means that no action is taken when the items are destroyed.
+    ArrayOf<MEMBER, PARAM, MAPPING> {}
+        The base array implementation which stores elements of type MEMBER, and elements of type PARAM are added.
+        The MAPPING class configures how MEMBERs are mapped to PARAMs, and the operations performed when items
+        are added or removed from the array.
 
 */
 

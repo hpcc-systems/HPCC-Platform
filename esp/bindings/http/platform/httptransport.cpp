@@ -322,7 +322,6 @@ CHttpMessage::CHttpMessage(ISocket& socket) : m_socket(socket)
 {
     m_bufferedsocket.setown(createBufferedSocket(&socket));
     m_content_length = -1;
-    m_content_length64 = -1;
     m_port = 80;
     m_paramCount = 0;
     m_attachCount = 0;
@@ -376,10 +375,7 @@ int CHttpMessage::parseOneHeader(char* oneline)
     else if(!stricmp(name, "Content-Length"))
     {
         if(value != NULL)
-        {
-            m_content_length = atoi(value);
-            m_content_length64 = atoi64_l(value,strlen(value));
-        }
+            m_content_length = atoi64_l(value,strlen(value));
     }
     else if(!stricmp(name, "Host"))
     {
@@ -525,9 +521,9 @@ int CHttpMessage::readContent()
 
     if(m_content_length > 0)
     {
-        int totallen = m_content_length;
+        __int64 totallen = m_content_length;
         if(buflen > totallen)
-            buflen = totallen;
+            buflen = (int)totallen;
         int readlen = 0;    
         for(;;)
         {
@@ -545,7 +541,7 @@ int CHttpMessage::readContent()
             if(totallen <= 0)
                 break;
             if(buflen > totallen)
-                buflen = totallen;
+                buflen = (int)totallen;
         }
         
         return 0;
@@ -609,7 +605,7 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
         return -1;
 
     if (getEspLogLevel()>LogNormal)
-        DBGLOG("Headers processed! content_length = %d", m_content_length);
+        DBGLOG("Headers processed! content_length = %"I64F"d", m_content_length);
     
     if (isUpload())
         return 0;
@@ -672,8 +668,7 @@ void CHttpMessage::setContent(IFileIOStream* stream)
     if(stream != NULL)
     {
         m_content.clear();
-        m_content_length = (int)stream->size();
-        m_content_length64 = stream->size();
+        m_content_length = stream->size();
         m_content_stream.setown(stream);
     }
 }
@@ -822,12 +817,10 @@ int CHttpMessage::send()
     }
 
     // When m_content is empty but the stream was set, read content from the stream.
-    if(((m_content_length > 0 && m_content.length() == 0) || (m_content_length64 > 0)) && m_content_stream.get() != NULL)
+    if((m_content_length > 0 && m_content.length() == 0) && m_content_stream.get() != NULL)
     {
         //Read the file and send out 20K at a time.
         __int64 content_length = m_content_length;
-        if ((m_content_length64 > 0) && (content_length != m_content_length64))
-            content_length = m_content_length64;
         int buflen = 20*1024;
         if(buflen > content_length)
             buflen = (int) content_length;
@@ -1766,7 +1759,7 @@ StringBuffer& CHttpRequest::constructHeaderBuffer(StringBuffer& headerbuf, bool 
 
     headerbuf.append("\r\n");
 
-    if(inclLength && m_content_length > 0) 
+    if(inclLength && m_content_length > 0)
         headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
 
     if(m_cookies.length() > 0)
@@ -1895,7 +1888,7 @@ void CHttpRequest::readUploadFileContent(StringArray& fileNames, StringArray& fi
     multipart->parseContentType(m_content_type.get());
 
     MemoryBuffer fileContent, moreContent;
-    __int64 bytesNotRead = m_content_length64;
+    __int64 bytesNotRead = m_content_length;
     while (1)
     {
         StringBuffer fileName, content;
@@ -1940,7 +1933,7 @@ int CHttpRequest::readContentToFiles(StringBuffer netAddress, StringBuffer path,
     multipart->parseContentType(contentType);
 
     MemoryBuffer fileContent, moreContent;
-    __int64 bytesNotRead = m_content_length64;
+    __int64 bytesNotRead = m_content_length;
     while (1)
     {
         StringBuffer fileName;
@@ -2053,7 +2046,7 @@ StringBuffer& CHttpResponse::constructHeaderBuffer(StringBuffer& headerbuf, bool
         headerbuf.append("text/xml; charset=UTF-8");
     headerbuf.append("\r\n");
 
-    if(inclLen && m_content_length > 0) 
+    if(inclLen && m_content_length > 0)
         headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
 
     headerbuf.append("Connection: close\r\n");
@@ -2331,7 +2324,7 @@ int CHttpResponse::receive(bool alwaysReadContent, IMultiException *me)
         return -1;
 
     if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response headers processed! content_length = %d", m_content_length);
+        DBGLOG("Response headers processed! content_length = %"I64F"d", m_content_length);
     
     char status_class = '2';
     if(m_status.length() > 0)

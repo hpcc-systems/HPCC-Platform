@@ -61,7 +61,7 @@ class CDaliAuditServer: public IDaliServer, public Thread
     CriticalSection handlemessagesect;
     StringAttr auditdir;
 
-    static int compfile(IInterface **v1, IInterface **v2) // for bAdd only
+    static int compfile(IInterface * const *v1, IInterface * const *v2) // for bAdd only
     {
         IFile *e1 = (IFile *)*v1;
         IFile *e2 = (IFile *)*v2;

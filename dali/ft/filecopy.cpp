@@ -2381,7 +2381,7 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
 
             ForEachItemIn(i, multi)
             {
-                RemoteFilename &rfn = multi.item(i);
+                const RemoteFilename &rfn = multi.item(i);
                 FilePartInfo & next = * new FilePartInfo(rfn);
                 Owned<IPartDescriptor> part = source->getPart(idx);
                 next.extractExtra(*part);

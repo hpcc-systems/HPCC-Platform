@@ -145,7 +145,7 @@ public:
     void addHint(const char * hintXml, ICodegenContextCallback * ctxCallback);
 
     void processIncludes();
-    void addPlugin(const char *plugin, const char *version, bool inThor);
+    void addPlugin(const char *plugin, const char *version);
         
 private:
     void addPluginsAsResource();
@@ -153,7 +153,7 @@ private:
 
 public:
     CIArray             sections;
-    Array               helpers;
+    IArray               helpers;
     StringAttrArray     modules;
     StringAttrArray     includes;
     CIArray             extra;
@@ -734,6 +734,7 @@ struct HqlCppOptions
     bool                useResultsForChildSpills;
     bool                alwaysUseGraphResults;
     bool                reportAssertFilenameTail;
+    bool                newBalancedSpotter;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -867,7 +868,7 @@ public:
 
 // Helper functions
 
-    void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4), noreturn));            // override the global function to try and add more context information
+    __declspec(noreturn) void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4), noreturn));            // override the global function to try and add more context information
 
     void buildAddress(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void buildBlockCopy(BuildCtx & ctx, IHqlExpression * tgt, CHqlBoundExpr & src);
@@ -1047,14 +1048,14 @@ public:
     HqlCppOptions const & queryOptions() const { return options; }
     bool needToSerializeToSlave(IHqlExpression * expr) const;
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
-    void updateTimer(const char * name, unsigned timems)
+    void noteFinishedTiming(const char * name, cycle_t startCycles)
     {
         if (options.addTimingToWorkunit)
-            timeReporter->addTiming(name, NULL, timems);
+            timeReporter->addTiming(name, get_cycles_now()-startCycles);
     }
 
     void updateClusterType();
-    bool buildCode(HqlQueryContext & query, const char * embeddedLibraryName, bool isEmbeddedLibrary);
+    bool buildCode(HqlQueryContext & query, const char * embeddedLibraryName, const char * embeddedGraphName);
 
     inline StringBuffer & generateExprCpp(StringBuffer & out, IHqlExpression * expr)
     {
@@ -1195,7 +1196,7 @@ public:
     void doBuildAssignUnicodeOrder(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignRegexFindReplace(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignSubString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
-    void doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
+    void doBuildAssignToXmlorJson(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignWhich(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void doBuildAssignWuid(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
@@ -1248,7 +1249,7 @@ public:
     void doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
 
     IReferenceSelector * doBuildRowDeserializeRow(BuildCtx & ctx, IHqlExpression * expr);
-    IReferenceSelector * doBuildRowFromXML(BuildCtx & ctx, IHqlExpression * expr);
+    IReferenceSelector * doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * doBuildRowIdToBlob(BuildCtx & ctx, IHqlExpression * expr, bool isNew);
     IReferenceSelector * doBuildRowIf(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * doBuildRowMatchAttr(BuildCtx & ctx, IHqlExpression * expr);
@@ -1642,7 +1643,7 @@ public:
     void buildHTTPtoXml(BuildCtx & ctx);
     void buildSOAPtoXml(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * transform, IHqlExpression * selSeq);
 
-    void buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName);
+    void buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName, bool removeXpath);
     void doTransform(BuildCtx & ctx, IHqlExpression * transform, BoundRow * self);
     void doUpdateTransform(BuildCtx & ctx, IHqlExpression * transform, BoundRow * self, BoundRow * previous, bool alwaysNextRow);
     void doInlineTransform(BuildCtx & ctx, IHqlExpression * transform, BoundRow * targetRow);

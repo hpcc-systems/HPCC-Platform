@@ -1633,7 +1633,7 @@ public:
                 unsigned length = packet->queryHeader().packetlength;
 
                 {
-                    MTIME_SECTION(timer, "bucket_wait");
+                    MTIME_SECTION(queryActiveTimer(), "bucket_wait");
                     bucket.wait((length / 1024) + 1);
                 }
                 if (channelWrite(header.channel, &header, length) != length)
@@ -1769,7 +1769,7 @@ public:
             throttledPacketSendManager->sendPacket(x, logctx);
         else
         {
-            MTIME_SECTION(timer, "RoxieSocketQueueManager::sendPacket");
+            MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendPacket");
             RoxiePacketHeader &header = x->queryHeader();
 
 
@@ -1805,7 +1805,7 @@ public:
 
     virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx)
     {
-        MTIME_SECTION(timer, "RoxieSocketQueueManager::sendIbyti");
+        MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendIbyti");
         RoxiePacketHeader ibytiHeader(header, header.activityId & ROXIE_PRIORITY_MASK);
     
         if (logctx.queryTraceLevel() > 8)
@@ -1822,7 +1822,7 @@ public:
 
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx)
     {
-        MTIME_SECTION(timer, "RoxieSocketQueueManager::sendAbort");
+        MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendAbort");
         RoxiePacketHeader abortHeader(header, header.activityId & ROXIE_PRIORITY_MASK);
         abortHeader.retries = QUERY_ABORTED;
         if (logctx.queryTraceLevel() > 8)
@@ -1838,7 +1838,7 @@ public:
 
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx) 
     {
-        MTIME_SECTION(timer, "RoxieSocketQueueManager::sendAbortCallback");
+        MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendAbortCallback");
         RoxiePacketHeader abortHeader(header, ROXIE_FILECALLBACK);
         abortHeader.retries = QUERY_ABORTED;
         MemoryBuffer data;

@@ -330,6 +330,9 @@ public:
     void markHoistPoints(IHqlExpression * expr)
     {
         node_operator op = expr->getOperator();
+        if (op == no_sizeof)
+            return;
+
         if (expr->isDataset() || (expr->isDatarow() && (op != no_select)))
         {
             if (!translator.canAssignInline(&ctx, expr))
@@ -1821,6 +1824,14 @@ void ActivityInstance::addAttributeBool(const char * name, bool value)
     addGraphAttributeBool(graphNode, name, value);
 }
 
+void ActivityInstance::addAttribute(const char * name, IHqlExpression * expr)
+{
+    StringBuffer temp;
+    IValue * value = expr->queryValue();
+    assertex(value);
+    value->getStringValue(temp);
+    addGraphAttribute(graphNode, name, temp);
+}
 
 void ActivityInstance::addLocationAttribute(IHqlExpression * location)
 {
@@ -3616,8 +3627,22 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
         else
             xpathCppText.append("NULL");
 
+        StringBuffer defaultInitializer;
+        IHqlExpression *defaultValue = queryAttributeChild(field, defaultAtom, 0);
+        if (defaultValue)
+        {
+            MemoryBuffer target;
+            if (createConstantField(target, field, defaultValue))
+                appendStringAsQuotedCPP(defaultInitializer, target.length(), target.toByteArray(), false);
+            else
+                throwError1(HQLERR_CouldNotGenerateDefault, field->queryName()->str());
+        }
+
         StringBuffer definition;
-        definition.append("const RtlFieldStrInfo ").append(name).append("(\"").append(lowerName).append("\",").append(xpathCppText).append(",&").append(typeName).append(");");
+        definition.append("const RtlFieldStrInfo ").append(name).append("(\"").append(lowerName).append("\",").append(xpathCppText).append(",&").append(typeName);
+        if (defaultInitializer.length())
+            definition.append(',').append(defaultInitializer);
+        definition.append(");");
 
         BuildCtx fieldctx(declarectx);
         fieldctx.setNextPriority(TypeInfoPrio);
@@ -5094,7 +5119,7 @@ void addDatasetResultXmlNamespaces(IWUResult &result, HqlExprArray &xmlnsAttrs, 
         getUTF8Value(xmlnsURI, xmlns.queryChild(1));
         if (xmlnsURI.length())
         {
-            result.setXmlns(xmlnsPrefix, xmlnsURI);
+            result.setResultXmlns(xmlnsPrefix, xmlnsURI);
             if (xmlnsPrefix.length() && declaredPrefixes.find(xmlnsPrefix)==NotFound)
                 declaredPrefixes.append(xmlnsPrefix);
         }
@@ -5109,7 +5134,7 @@ void addDatasetResultXmlNamespaces(IWUResult &result, HqlExprArray &xmlnsAttrs, 
         {
             StringBuffer uri("urn:hpccsystems:ecl:unknown:");
             uri.append(prefix);
-            result.setXmlns(prefix, uri);
+            result.setResultXmlns(prefix, uri);
         }
     }
 }
@@ -5276,7 +5301,10 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         gatherAttributes(xmlnsAttrs, xmlnsAtom, originalExpr);
         if (retType == type_row)
         {
-            Owned<IWUResult> result = createDatasetResultSchema(seq, name, ::queryRecord(schemaType), xmlnsAttrs, false, false);
+            OwnedHqlExpr record = LINK(::queryRecord(schemaType));
+            if (originalExpr->hasAttribute(noXpathAtom))
+                record.setown(removeAttributeFromFields(record, xpathAtom));
+            Owned<IWUResult> result = createDatasetResultSchema(seq, name, record, xmlnsAttrs, false, false);
             if (result)
                 result->setResultTotalRowCount(1);
         }
@@ -5714,18 +5742,18 @@ void dumpActivityCounts()
 
 
 
-bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedLibraryName, bool isEmbeddedLibrary)
+bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedLibraryName, const char * embeddedGraphName)
 {
-    unsigned time = msTick();
+    cycle_t startCycles = get_cycles_now();
     WorkflowArray workflow;
-    bool ok = prepareToGenerate(query, workflow, isEmbeddedLibrary);
+    bool ok = prepareToGenerate(query, workflow, (embeddedLibraryName != NULL));
     if (ok)
     {
         //This is done late so that pickBestEngine has decided which engine we are definitely targeting.
-        if (!isEmbeddedLibrary)
+        if (!embeddedLibraryName)
             updateClusterType();
 
-        updateTimer("workunit;tree transform", msTick()-time);
+        noteFinishedTiming("compile:tree transform", startCycles);
 
         if (insideLibrary())
         {
@@ -5758,7 +5786,7 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
                 }
 
                 BuildCtx ctx(*code, goAtom);
-                buildLibraryGraph(ctx, graph, embeddedLibraryName);
+                buildLibraryGraph(ctx, graph, embeddedGraphName);
             }
             else
                 buildWorkflow(workflow);
@@ -5768,11 +5796,11 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
 
         if (options.calculateComplexity)
         {
-            unsigned time = msTick();
+            cycle_t startCycles = get_cycles_now();
             StringBuffer complexityText;
             complexityText.append(getComplexity(workflow));
             wu()->setDebugValue("__Calculated__Complexity__", complexityText, true);
-            updateTimer("workunit;calculate complexity", msTick()-time);
+            noteFinishedTiming("compile:calculate complexity", startCycles);
         }
     }
 
@@ -5789,8 +5817,6 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
 
     try
     {
-        unsigned time = msTick();
-
         wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,BUILD_TAG,LANGUAGE_VERSION);
         cacheOptions();
 
@@ -5811,10 +5837,15 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
 
             StringBuffer internalLibraryName;
             name->queryValue()->getStringValue(internalLibraryName);
+            //Use a graph number that couldn't possibly clash with any graphs generated by the main query
+            StringBuffer embeddedGraphName;
+            embeddedGraphName.append("graph").append(EMBEDDED_GRAPH_DELTA+i+1);
+
             overrideOptionsForLibrary();
             HqlQueryContext libraryQuery;
             libraryQuery.expr.set(definition);
-            if (!buildCode(libraryQuery, internalLibraryName.str(), true))
+
+            if (!buildCode(libraryQuery, internalLibraryName.str(), embeddedGraphName.str()))
                 return false;
         }
 
@@ -5822,7 +5853,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
             overrideOptionsForLibrary();
         else
             overrideOptionsForQuery();
-        if (!buildCode(query, NULL, false))
+        if (!buildCode(query, NULL, NULL))
             return false;
 
         //Return early if iteratively generating the field usage statistics
@@ -5850,9 +5881,9 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         code->processIncludes();
         if (options.peephole)
         {
-            cycle_t time = msTick();
+            cycle_t startCycles = get_cycles_now();
             peepholeOptimize(*code, *this);
-            updateTimer("workunit;peephole optimize", msTick()-time);
+            noteFinishedTiming("compile:peephole optimize", startCycles);
         }
     }
     catch (IException * e)
@@ -5881,7 +5912,9 @@ public:
 
     virtual void report(const char * scope, const char * description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
     {
-        updateWorkunitTiming(wu, "eclcc", scope, description, milliToNano(totaltime), count, milliToNano(maxtime));
+        StatisticScopeType scopeType = SSTsection; // MORE?
+        StatisticKind kind = StTimeElapsed;
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, totaltime, count, maxtime, StatsMergeReplace);
     }
 
 protected:
@@ -6002,7 +6035,7 @@ double HqlCppTranslator::getComplexity(HqlExprArray & exprs)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static int compareTrackedSourceByName(CInterface * * _left, CInterface * * _right)
+static int compareTrackedSourceByName(CInterface * const * _left, CInterface * const * _right)
 {
     SourceFieldUsage & left = static_cast<SourceFieldUsage &>(**_left);
     SourceFieldUsage & right = static_cast<SourceFieldUsage &>(**_right);
@@ -9202,11 +9235,11 @@ Tricky getting this in the correct order, problems are:
 
 IHqlExpression * HqlCppTranslator::optimizeCompoundSource(IHqlExpression * expr, unsigned flags)
 {
-    unsigned time = msTick();
+    cycle_t startCycles = get_cycles_now();
 
     CompoundSourceTransformer transformer(*this, flags);
     OwnedHqlExpr ret = transformer.process(expr);
-    updateTimer("workunit;tree transform: optimize disk read", msTick()-time);
+    noteFinishedTiming("compile:tree transform: optimize disk read", startCycles);
     return ret.getClear();
 }
 
@@ -9219,9 +9252,9 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     //insert projects after compound created...
     if (options.optimizeResourcedProjects)
     {
-        cycle_t time = msTick();
+        cycle_t startCycles = get_cycles_now();
         OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), projectBeforeSpill);
-        updateTimer("workunit;implicit projects", msTick()-time);
+        noteFinishedTiming("compile:implicit projects", startCycles);
         traceExpression("AfterResourcedImplicit", resourced);
         checkNormalized(optimized);
 
@@ -9232,11 +9265,11 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     //Now call the optimizer again - the main purpose is to move projects over limits and into compound index/disk reads
     if (options.optimizeGraph)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         traceExpression("BeforeOptimize2", resourced);
         resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags()|HOOcompoundproject));
         traceExpression("AfterOptimize2", resourced);
-        updateTimer("workunit;optimize graph", msTick()-time);
+        noteFinishedTiming("compile:optimize graph", startCycles);
     }
     resourced.setown(optimizeCompoundSource(resourced, csfFlags));
     return resourced.getClear();
@@ -9264,11 +9297,11 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     checkNormalized(resourced);
     if (options.optimizeGraph)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, optFlags|HOOfiltersharedproject));
         //have the following on an "aggressive fold" option?  If no_selects extract constants it can be quite impressive (jholt22.hql)
         //resourced.setown(foldHqlExpression(resourced));
-        updateTimer("workunit;optimize graph", msTick()-time);
+        noteFinishedTiming("compile:optimize graph", startCycles);
     }
     traceExpression("AfterOptimize", resourced);
     checkNormalized(resourced);
@@ -9283,7 +9316,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
 
     traceExpression("BeforeResourcing", resourced);
 
-    unsigned time = msTick();
+    cycle_t startCycles = get_cycles_now();
     if (outputLibraryId)
     {
         unsigned numResults = outputLibrary->numResultsUsed();
@@ -9296,7 +9329,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     if (!resourced)
         return NULL;
 
-    updateTimer("workunit;resource graph", msTick()-time);
+    noteFinishedTiming("compile:resource graph", startCycles);
     traceExpression("AfterResourcing", resourced);
 
     if (options.regressionTest)
@@ -9316,11 +9349,11 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     //Finally create a couple of special compound activities.
     //e.g., filtered fetch, limited keyed join
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         CompoundActivityTransformer transformer(targetClusterType);
         resourced.setown(transformer.transformRoot(resourced));
         traceExpression("AfterCompoundActivity", resourced);
-        updateTimer("workunit;tree transform: compound activity", msTick()-time);
+        noteFinishedTiming("compile:tree transform: compound activity", startCycles);
     }
 
     resourced.setown(spotTableInvariant(resourced));
@@ -9768,13 +9801,15 @@ void HqlCppTranslator::buildClusterHelper(BuildCtx & ctx, IHqlExpression * expr)
 }
 
 
-void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName)
+void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName, bool removeXpath)
 {
     StringBuffer eclFuncName;
     StringBuffer s;
 
     //Ensure the ECL for the record reflects its serialized form, not the internal form
     OwnedHqlExpr record = getSerializedForm(dataset->queryRecord(), diskAtom);
+    if (removeXpath)
+        record.setown(removeAttributeFromFields(record, xpathAtom));
     appendUniqueId(eclFuncName.append("ecl"), getConsistentUID(record));
 
     BuildCtx declarectx(*code, declareAtom);
@@ -10140,11 +10175,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     //virtual const char * getFileName() { return "x.d00"; }
     buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(expr));
 
-    //virtual const char * getDatasetName() { return "x.d00"; }
-    IHqlExpression * tableName = expr->queryAttribute(nameAtom);
-    if (tableName)
-        doBuildVarStringFunction(instance->startctx, "getDatasetName", tableName->queryChild(0));
-
     //virtual unsigned getFlags() = 0;
     IHqlExpression * updateAttr = expr->queryAttribute(updateAtom);
     IHqlExpression * compressAttr = expr->queryAttribute(compressedAtom);
@@ -10201,7 +10231,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         instance->classctx.addQuoted(s.clear().append("virtual unsigned getKeyedSize() { return (unsigned) -1; }"));
 
     //virtual const char * queryRecordECL() = 0;
-    buildRecordEcl(instance->createctx, dataset, "queryRecordECL");
+    buildRecordEcl(instance->createctx, dataset, "queryRecordECL", false);
 
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
     HqlExprArray xmlnsAttrs;
@@ -10324,7 +10354,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     OwnedHqlExpr filename = foldHqlExpression(rawFilename);
     IHqlExpression * program  = queryRealChild(expr, 2);
     IHqlExpression * csvAttr = expr->queryAttribute(csvAtom);
+    bool isJson = false;
     IHqlExpression * xmlAttr = expr->queryAttribute(xmlAtom);
+    if (!xmlAttr)
+    {
+        xmlAttr = expr->queryAttribute(jsonAtom);
+        if (xmlAttr)
+            isJson=true;
+    }
     LinkedHqlExpr expireAttr = expr->queryAttribute(expireAtom);
     IHqlExpression * seq = querySequence(expr);
 
@@ -10342,30 +10379,30 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     ThorActivityKind kind = TAKdiskwrite;
-    const char * activity = "DiskWrite";
+    const char * activityArgName = "DiskWrite";
     if (expr->getOperator() == no_spill)
     {
         kind = TAKspill;
-        activity = "Spill";
+        activityArgName = "Spill";
     }
     else if (pipe)
     {
         kind = TAKpipewrite;
-        activity = "PipeWrite";
+        activityArgName = "PipeWrite";
     }
     else if (csvAttr)
     {
         kind = TAKcsvwrite;
-        activity = "CsvWrite";
+        activityArgName = "CsvWrite";
     }
     else if (xmlAttr)
     {
-        kind = TAKxmlwrite;
-        activity = "XmlWrite";
+        kind = (isJson) ? TAKjsonwrite : TAKxmlwrite;
+        activityArgName = "XmlWrite";
     }
 
     bool useImplementationClass = options.minimizeActivityClasses && targetRoxie() && expr->hasAttribute(_spill_Atom);
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activity);
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activityArgName);
     //Output to a variable filename is either a user result, or a computed workflow spill, both need evaluating.
 
     if (useImplementationClass)
@@ -10502,7 +10539,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
             //virtual const char * queryRecordECL() = 0;
-            buildRecordEcl(instance->createctx, dataset, "queryRecordECL");
+            buildRecordEcl(instance->createctx, dataset, "queryRecordECL", expr->hasAttribute(noXpathAtom));
 
             buildExpiryHelper(instance->createctx, expireAttr);
             buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);
@@ -10523,7 +10560,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         OwnedHqlExpr outputDs = createDataset(no_null, LINK(outputRecord));
         HqlExprArray xmlnsAttrs;
         gatherAttributes(xmlnsAttrs, xmlnsAtom, expr);
-        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), outputRecord, xmlnsAttrs, (kind != TAKcsvwrite) && (kind != TAKxmlwrite), true);
+        bool createTransformer = (kind != TAKcsvwrite) && (kind != TAKxmlwrite) && (kind != TAKjsonwrite);
+        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), outputRecord, xmlnsAttrs, createTransformer, true);
         if (expr->hasAttribute(resultAtom))
             result->setResultRowLimit(-1);
 
@@ -10775,11 +10813,15 @@ void HqlCppTranslator::buildXmlSerializeSetValues(BuildCtx & ctx, IHqlExpression
         callProcedure(subctx, outputXmlSetAllId, args);
         subctx.selectElse(stmt);
     }
-    CHqlBoundExpr boundCurElement;
-    cursor->buildIterateLoop(subctx, boundCurElement, false);
-    OwnedHqlExpr curElement = boundCurElement.getTranslatedExpr();
-
-    buildXmlSerializeScalar(subctx, curElement, itemName);
+    buildXmlSerializeBeginArray(subctx, itemName);
+    {
+        BuildCtx loopctx(subctx);
+        CHqlBoundExpr boundCurElement;
+        cursor->buildIterateLoop(loopctx, boundCurElement, false);
+        OwnedHqlExpr curElement = boundCurElement.getTranslatedExpr();
+        buildXmlSerializeScalar(loopctx, curElement, itemName);
+    }
+    buildXmlSerializeEndArray(subctx, itemName);
 }
 
 void HqlCppTranslator::buildXmlSerializeBeginNested(BuildCtx & ctx, IHqlExpression * name, bool doIndent)
@@ -10834,9 +10876,7 @@ void HqlCppTranslator::buildXmlSerializeSet(BuildCtx & ctx, IHqlExpression * fie
 
     HqlExprArray args;
     buildXmlSerializeBeginNested(ctx, name, false);
-    buildXmlSerializeBeginArray(ctx, itemName);
     buildXmlSerializeSetValues(ctx, value, itemName, (name != NULL));
-    buildXmlSerializeEndArray(ctx, itemName);
     buildXmlSerializeEndNested(ctx, name);
 }
 
@@ -16004,7 +16044,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpress
 
 ABoundActivity * HqlCppTranslator::doBuildActivitySequentialParallel(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
-    Array boundActivities;
+    IArray boundActivities;
     ForEachChild(i, expr)
     {
         IHqlExpression * cur = expr->queryChild(i);
@@ -18430,9 +18470,9 @@ void HqlCppTranslator::spotGlobalCSE(WorkflowItem & curWorkflow)
 {
     if (!insideLibrary() && options.globalAutoHoist)
     {
-        unsigned startTime = msTick();
+        cycle_t startCycles = get_cycles_now();
         spotGlobalCSE(curWorkflow.queryExprs());
-        updateTimer("workunit;tree transform: spot global cse", msTick()-startTime);
+        noteFinishedTiming("compile:tree transform: spot global cse", startCycles);
     }
 }
 
@@ -18698,7 +18738,7 @@ void HqlCppTranslator::pickBestEngine(HqlExprArray & exprs)
 
     if (targetThor())
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         ForEachItemIn(idx, exprs)
         {
             if (needsRealThor(&exprs.item(idx)))
@@ -18707,7 +18747,7 @@ void HqlCppTranslator::pickBestEngine(HqlExprArray & exprs)
         // if we got this far, thor not required
         setTargetClusterType(HThorCluster);
         DBGLOG("Thor query redirected to hthor instead");
-        updateTimer("workunit;tree transform: pick engine", msTick()-time);
+        noteFinishedTiming("compile:tree transform: pick engine", startCycles);
     }
 }
 
@@ -18716,7 +18756,7 @@ void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
 {
     if (targetThor())
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         ForEachItemIn(idx2, workflow)
         {
             HqlExprArray & exprs = workflow.item(idx2).queryExprs();
@@ -18729,7 +18769,7 @@ void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
         }
         setTargetClusterType(HThorCluster);
         DBGLOG("Thor query redirected to hthor instead");
-        updateTimer("workunit;tree transform: pick engine", msTick()-time);
+        noteFinishedTiming("compile:tree transform: pick engine", startCycles);
     }
 }
 

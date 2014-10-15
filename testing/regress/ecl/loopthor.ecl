@@ -16,9 +16,7 @@
 ############################################################################## */
 
 //nohthor
-//nothor
 
-#option ('newChildQueries', true)
 
 namesRecord := 
             RECORD

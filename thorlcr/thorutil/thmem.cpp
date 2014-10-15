@@ -1196,7 +1196,7 @@ void CThorSpillableRowArray::sort(ICompare &compare, unsigned maxCores)
     }
 }
 
-static int callbackSortRev(IInterface **cb2, IInterface **cb1)
+static int callbackSortRev(IInterface * const *cb2, IInterface * const *cb1)
 {
     rowidx_t i2 = ((IWritePosCallback *)(*cb2))->queryRecordNumber();
     rowidx_t i1 = ((IWritePosCallback *)(*cb1))->queryRecordNumber();
@@ -1231,7 +1231,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
         ForEachItemIn(c, writeCallbacks)
             cbCopy.append(writeCallbacks.item(c));
         cbCopy.sort(callbackSortRev);
-        nextCB = &cbCopy.pop();
+        nextCB = &cbCopy.popGet();
         nextCBI = nextCB->queryRecordNumber();
     }
     Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags);
@@ -1248,7 +1248,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
                 nextCB->filePosition(writer->getPosition());
                 if (cbCopy.ordinality())
                 {
-                    nextCB = &cbCopy.pop();
+                    nextCB = &cbCopy.popGet();
                     nextCBI = nextCB->queryRecordNumber();
                 }
                 else
@@ -1377,7 +1377,7 @@ class CThorRowCollectorBase : public CSimpleInterface, implements roxiemem::IBuf
 protected:
     CActivityBase &activity;
     CThorSpillableRowArray spillableRows;
-    PointerIArrayOf<CFileOwner> spillFiles;
+    IPointerArrayOf<CFileOwner> spillFiles;
     Owned<IOutputRowSerializer> serializer;
     RowCollectorSpillFlags diskMemMix;
     rowcount_t totalRows;
@@ -2003,7 +2003,7 @@ public:
     CThorAllocator(memsize_t memSize, unsigned memorySpillAt, IContextLogger &_logctx, roxiemem::RoxieHeapFlags _defaultFlags) : logctx(_logctx), defaultFlags(_defaultFlags)
     {
         allocatorMetaCache.setown(createRowAllocatorCache(this));
-        rowManager.setown(roxiemem::createRowManager(memSize, NULL, logctx, allocatorMetaCache, false));
+        rowManager.setown(roxiemem::createRowManager(memSize, NULL, logctx, allocatorMetaCache, false, true));
         rowManager->setMemoryLimit(memSize, 0==memorySpillAt ? 0 : memSize/100*memorySpillAt);
         const bool paranoid = false;
         if (paranoid)
@@ -2383,11 +2383,4 @@ public:
 IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t sz)
 {
     return new COutputMetaWithExtra(meta, sz);
-}
-
-
-
-IPerfMonHook *createThorMemStatsPerfMonHook(IPerfMonHook *chain)
-{
-    return LINK(chain);
 }

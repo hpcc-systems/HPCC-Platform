@@ -73,6 +73,7 @@ include_directories (
          ./../../../rtl/include
          ./../../../common/dllserver
          ./../../bindings
+         ./../../bindings/http/client
          ./../../smc/SMCLib
          ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/dali/dfu

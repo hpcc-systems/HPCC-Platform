@@ -91,28 +91,28 @@ struct QueueLock
     Linked<IJobQueue> queue;
 };
 
-static int sortTargetClustersByNameDescending(IInterface **L, IInterface **R)
+static int sortTargetClustersByNameDescending(IInterface * const *L, IInterface * const *R)
 {
     IEspTargetCluster *left = (IEspTargetCluster *) *L;
     IEspTargetCluster *right = (IEspTargetCluster *) *R;
     return strcmp(right->getClusterName(), left->getClusterName());
 }
 
-static int sortTargetClustersByNameAscending(IInterface **L, IInterface **R)
+static int sortTargetClustersByNameAscending(IInterface * const *L, IInterface * const *R)
 {
     IEspTargetCluster *left = (IEspTargetCluster *) *L;
     IEspTargetCluster *right = (IEspTargetCluster *) *R;
     return strcmp(left->getClusterName(), right->getClusterName());
 }
 
-static int sortTargetClustersBySizeDescending(IInterface **L, IInterface **R)
+static int sortTargetClustersBySizeDescending(IInterface * const *L, IInterface * const *R)
 {
     IEspTargetCluster *left = (IEspTargetCluster *) *L;
     IEspTargetCluster *right = (IEspTargetCluster *) *R;
     return right->getClusterSize() - left->getClusterSize();
 }
 
-static int sortTargetClustersBySizeAscending(IInterface **L, IInterface **R)
+static int sortTargetClustersBySizeAscending(IInterface * const *L, IInterface * const *R)
 {
     IEspTargetCluster *left = (IEspTargetCluster *) *L;
     IEspTargetCluster *right = (IEspTargetCluster *) *R;

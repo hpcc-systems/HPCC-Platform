@@ -331,6 +331,7 @@ protected:
     StringAttr optOutputDirectory;
     StringAttr optOutputFilename;
     StringAttr optQueryRepositoryReference;
+    StringAttr optComponentName;
     FILE * batchLog;
 
     IFileArray inputFiles;
@@ -452,6 +453,7 @@ int main(int argc, const char *argv[])
     setTerminateOnSEH(true);
     InitModuleObjects();
     queryStderrLogMsgHandler()->setMessageFields(0);
+
     // Turn logging down (we turn it back up if -v option seen)
     Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
@@ -1043,7 +1045,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     bool withinRepository = (queryAttributePath && *queryAttributePath);
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
     size32_t prevErrs = errorProcessor.errCount();
-    unsigned startTime = msTick();
+    cycle_t startCycles = get_cycles_now();
     const char * sourcePathname = queryContents ? queryContents->querySourcePath()->str() : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
@@ -1131,10 +1133,11 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             if (instance.query && !syntaxChecking && !optGenerateMeta && !optEvaluateResult)
                 instance.query.setown(convertAttributeToQuery(instance.query, ctx));
 
-            instance.stats.parseTime = msTick()-startTime;
+            unsigned __int64 parseTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
+            instance.stats.parseTime = nanoToMilli(parseTimeNs);
 
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-                updateWorkunitTimeStat(instance.wu, "eclcc", "workunit", "parse time", NULL, milliToNano(instance.stats.parseTime), 1, 0);
+                updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile:parseTime", StTimeElapsed, NULL, parseTimeNs);
 
             if (optIncludeMeta || optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getMetaTree());
@@ -1206,10 +1209,11 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         }
     }
 
-    unsigned totalTime = msTick() - startTime;
-    instance.stats.generateTime = totalTime - instance.stats.parseTime;
+    unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
+    instance.stats.generateTime = nanoToMilli(totalTimeNs) - instance.stats.parseTime;
+    //MORE: This is done too late..
     if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-        updateWorkunitTimeStat(instance.wu, "eclcc", "workunit", "totalTime", NULL, milliToNano(totalTime), 1, 0);
+        updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 }
 
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
@@ -1677,7 +1681,7 @@ bool EclCC::processFiles()
     if (logTimings)
     {
         StringBuffer s;
-        fprintf(stderr, "%s", defaultTimer->getTimings(s).str());
+        fprintf(stderr, "%s", queryActiveTimer()->getTimings(s).str());
     }
     return ok;
 }
@@ -1885,6 +1889,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optGenerateHeader, "-pch"))
         {
         }
+        else if (iter.matchOption(optComponentName, "--component"))
+        {
+        }
         else if (iter.matchFlag(optSaveQueryText, "-q"))
         {
         }
@@ -1988,6 +1995,11 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         return false;
     }
 
+    if (optComponentName.length())
+        setStatisticsComponentName(SCTeclcc, optComponentName, false);
+    else
+        setStatisticsComponentName(SCTeclcc, "eclcc", false);
+
     // Option post processing follows:
     if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend || optShowPaths)
         optNoCompile = true;
@@ -2059,6 +2071,7 @@ const char * const helpText[] = {
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",
     "!   -checkVersion Enable/disable ecl version checking from archives",
+    "!   --component   Set the name of the component this is executing on behalf of"
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
@@ -2233,7 +2246,7 @@ protected:
     Semaphore & fileReady;
 };
 
-int compareFilenames(IInterface * * pleft, IInterface * * pright)
+int compareFilenames(IInterface * const * pleft, IInterface * const * pright)
 {
     IFile * left = static_cast<IFile *>(*pleft);
     IFile * right = static_cast<IFile *>(*pright);

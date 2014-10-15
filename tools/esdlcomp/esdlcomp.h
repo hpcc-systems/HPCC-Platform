@@ -21,9 +21,11 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include "esdl_utils.hpp"
-#include "../../system/include/platform.h"
-
+#include "platform.h"
+#include "jmutex.hpp"
+#include "jstring.hpp"
+#include "jfile.hpp"
+#include "esdldecl.hpp"
 
 #undef YYSTYPE
 #define YYSTYPE attribute
@@ -258,6 +260,7 @@ public:
 
     void release()
     {
+
         if (mttype_==mt_string && str_val_!=NULL)
             free(str_val_);
 
@@ -315,43 +318,41 @@ public:
         return -1;
     }
 
-    void write_xml_attr()
+    void toStringXmlAttr(StringBuffer & out)
     {
+        out.append(' ').append(getName()).append("='");
+
         switch (mttype_)
         {
-        case mt_string:
-        case mt_const_id:
-        {
-            if (!str_val_)
-                outf(" %s=\"\"", getName());
-            else
+            case mt_string:
+            case mt_const_id:
             {
-                int len=strlen(str_val_);
-                StrBuffer val;
-                if (len>=2 && *str_val_=='\"')
-                    val.append(str_val_, 1, strlen(str_val_)-2);
-                else
-                    val.append(str_val_);
-                StrBuffer encoded;
-                encodeXML(val.str(), encoded);
-                outf(" %s=\"%s\"", getName(), encoded.str());
+                if (str_val_)
+                {
+                    const char *val = str_val_;
+                    int len=strlen(val);
+                    if (len>=2 && *val=='\"')
+                    {
+                        val++;
+                        len -= 2;
+                    }
+                    encodeXML(val, out, 0, len);
+                }
+                break;
             }
-            break;
+            case mt_double:
+                out.append(double_val_);
+                break;
+            case mt_int:
+                out.append(int_val_);
+                break;
+            case mt_none:
+            default:
+                break;
         }
-        case mt_double:
-            outf(" %s=\"%f\"", getName(), double_val_);
-            break;
-        case mt_int:
-            outf(" %s=\"%d\"", getName(), int_val_);
-            break;
-        case mt_none:
-        default:
-            outf(" %s=\"\"", getName());
-            break;
-        }
+
+        out.append('\'');
     }
-
-
 };
 
 inline MetaTagInfo* findMetaTag(MetaTagInfo *list, const char *name)
@@ -371,7 +372,7 @@ inline const char *getMetaString(MetaTagInfo *list, const char *tag, const char 
     return (mti!=NULL) ? mti->getString() : def_val;
 }
 
-inline bool getMetaStringValue(MetaTagInfo *list, StrBuffer &val, const char *tag)
+inline bool getMetaStringValue(MetaTagInfo *list, StringBuffer &val, const char *tag)
 {
     MetaTagInfo *mti=findMetaTag(list, tag);
     if (!mti)
@@ -403,7 +404,7 @@ inline const char* getMetaConstId(MetaTagInfo *list, const char *tag, const char
 
 // return: true if the ver tag is defined
 bool hasMetaVerInfo(MetaTagInfo *list, const char* tag);
-bool getMetaVerInfo(MetaTagInfo *list, const char* tag, StrBuffer& s);
+bool getMetaVerInfo(MetaTagInfo *list, const char* tag, StringBuffer& s);
 
 class ParamInfo
 {
@@ -476,7 +477,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -496,7 +497,7 @@ public:
         return ::hasMetaVerInfo(tags,tag);
     }
 
-    bool getMetaVerInfo(const char* tag, StrBuffer& s)
+    bool getMetaVerInfo(const char* tag, StringBuffer& s)
     {
         return ::getMetaVerInfo(tags,tag,s);
     }
@@ -524,7 +525,7 @@ public:
         return buffer;
     }
 
-    void write_xml_type_attr()
+    void toStringXmlAttr(StringBuffer & out)
     {
         const char *xsd_type = getMetaString("xsd_type", NULL);
         if (xsd_type)
@@ -534,51 +535,56 @@ public:
             const char *finger = strchr(xsd_type, ':');
             if (finger)
                 xsd_type=finger+1;
-            StrBuffer TypeName(xsd_type);
+            StringBuffer TypeName(xsd_type);
             TypeName.replace('\"', 0);
-            outf(" complex_type=\"%s\"", TypeName.str());
+            out.appendf(" complex_type='%s'", TypeName.str());
         }
         else
         {
             char typestr[256]={0};
             cat_type(typestr, 0, 0);
 
-            outf(" %s=\"%s\"", (kind==TK_ESPSTRUCT) ? "complex_type" : "type", typestr);
+            out.appendf(" %s='%s'", (kind==TK_ESPSTRUCT) ? "complex_type" : "type", typestr);
         }
     }
 
-    void write_esxdl()
+    void toString(StringBuffer & out)
     {
         if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
         {
-            outf(2, "<EsdlArray name=\"%s\" ", name);
-            write_xml_type_attr();
+            out.appendf("\t\t<EsdlArray name='%s' ", name);
+            toStringXmlAttr(out);
             for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-                mtag->write_xml_attr();
-            outs("/>\n");
+            {
+                mtag->toStringXmlAttr(out);
+            }
         }
         else if (kind==TK_ENUM)
         {
-            outf(2, "<EsdlEnumItem name=\"%s\"", name);
+            out.appendf("\t\t<EsdlEnumItem name='%s'", name);
             for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-                mtag->write_xml_attr();
-            outs("/>\n");
+            {
+                mtag->toStringXmlAttr(out);
+            }
         }
         else if (kind==TK_ESPENUM)
         {
-            outf(2, "<EsdlEnum name=\"%s\" enum_type=\"%s\"", name, typname);
+            out.appendf("\t\t<EsdlEnum name='%s' enum_type='%s'", name, typname);
             for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-                mtag->write_xml_attr();
-            outs("/>\n");
+            {
+                mtag->toStringXmlAttr(out);
+            }
         }
         else
         {
-            outf(2, "<EsdlElement name=\"%s\"", name);
-            write_xml_type_attr();
+            out.appendf("\t\t<EsdlElement name='%s'", name);
+            toStringXmlAttr(out);
             for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-                mtag->write_xml_attr();
-            outs("/>\n");
+            {
+                mtag->toStringXmlAttr(out);
+            }
         }
+        out.append("/>\n");
     };
 
     type_kind kind;
@@ -594,7 +600,7 @@ public:
 
 private:
     char      *xsdtype;
-    StrBuffer *m_arrayImplType;
+    StringBuffer *m_arrayImplType;
 };
 
 class ProcInfo
@@ -623,12 +629,13 @@ public:
     ModuleInfo(const char *n);
     ~ModuleInfo();
 
+
     char        *name;
     char        *base;
     int          version;
     ProcInfo    *procs;
     ModuleInfo  *next;
-    bool            isSCMinterface;
+    bool         isSCMinterface;
 };
 
 class ExportDefInfo
@@ -646,8 +653,7 @@ public:
             free(name_);
     }
 
-
-    char                *name_;
+    char           *name_;
     ExportDefInfo  *next;
 };
 
@@ -658,10 +664,11 @@ public:
     ApiInfo(const char *grp="");
     ~ApiInfo();
 
+
    void write_header_method();
    void write_clarion_include_method();
 
-    char            *group;
+    char        *group;
     char        *name;
     ProcInfo    *proc;
     ApiInfo  *next;
@@ -675,33 +682,33 @@ public:
     };
     ~IncludeInfo(){}
 
-   void write_esxdl()
+   void toString(StringBuffer & out)
    {
-       outf(1, "<EsdlInclude file=\"%s\"/>\n", pathstr.str());
+      out.appendf("\t<EsdlInclude file='%s'/>\n", pathstr.str());
    }
 
-   StrBuffer pathstr;
+   StringBuffer pathstr;
    IncludeInfo  *next;
 };
 
 class VersionInfo
 {
 public:
-    //VersionInfo(const char *version_name_, double version_value_) : version_name(version_name_), version_value(version_value_)
     VersionInfo(const char *version_name_, double version_value_)
     {
         version_name.append(version_name_);
         version_value = version_value_;
         next=NULL;
     };
+
     ~VersionInfo(){}
 
-   void write_esxdl()
+   void toString(StringBuffer & out)
    {
-       outf(1, "<EsdlVersion name=\"%s\" version=\"%f\" />\n", version_name.str(), version_value);
+       out.appendf("\t<EsdlVersion name='%s' version='%f' />\n", version_name.str(), version_value);
    }
 
-   StrBuffer version_name;
+   StringBuffer version_name;
    double version_value;
    VersionInfo *next;
 };
@@ -740,14 +747,18 @@ public:
     ~EnumInfo()
     {
         free(name);
+        while (vals)
+        {
+            EnumValInfo *va=vals;
+            vals = va->next;
+            delete va;
+        }
     }
 
     char             *name;
-    EnumValInfo  *vals;
+    EnumValInfo      *vals;
     EnumInfo         *next;
 };
-
-
 
 class EspMessageInfo
 {
@@ -857,13 +868,12 @@ public:
         return xsdgrouptype;
     }
 
-
     const char *getMetaString(const char *tag, const char *def_val)
     {
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -902,38 +912,69 @@ public:
 
     EspMessageInfo *find_parent();
 
-    void write_esxdl_children()
+    void toStringEsxdlChildren(StringBuffer & out)
     {
         EspMessageInfo *parmsg = find_parent();
         if (parmsg)
-            parmsg->write_esxdl_children();
+            parmsg->toStringEsxdlChildren(out);
         for (ParamInfo *param=attrs_; param; param=param->next)
-            param->write_esxdl();
+            param->toString(out);
     }
 
-    void write_esxdl()
+    void toString(StringBuffer & out)
     {
         const char *esdltype = query_esxdl_type();
         if (esdltype)
         {
-            outf(1, "<%s name=\"%s\"", esdltype, name_);
+            out.appendf("\t<%s name='%s'", esdltype, name_);
             if (base_ && *base_)
-                outf(" base=\"%s\"", base_);
+            {
+                out.appendf(" base='%s'", base_);
+            }
             if (parent)
-                outf(" base_type=\"%s\"", parent);
+            {
+                out.appendf(" base_type='%s'", parent);
+            }
             for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-                mtag->write_xml_attr();
-            outs(">\n");
+            {
+                mtag->toStringXmlAttr(out);
+            }
+
+            out.append(">\n");
 
             for (ParamInfo *param=attrs_; param; param=param->next)
-                param->write_esxdl();
+            {
+                param->toString(out);
+            }
 
-            outf(1, "</%s>\n", esdltype);
+            out.appendf("\t</%s>\n", esdltype);
         }
     }
 
     MetaTagInfo     *tags;
     EspMessageInfo  *next;
+
+    ~EspMessageInfo()
+    {
+        while (attrs_)
+        {
+            ParamInfo *attr=attrs_;
+            attrs_ = attr->next;
+            delete attr;
+        }
+
+        while (tags)
+        {
+            MetaTagInfo *attr=tags;
+            tags = attr->next;
+            delete attr;
+        }
+        delete tags;
+        free (name_);
+        free (base_);
+        free (parent);
+        free (xsdgrouptype);
+    }
 
 private:
     ParamInfo       *attrs_;
@@ -981,6 +1022,18 @@ public:
         next=NULL;
     }
 
+    ~EspMethodInfo()
+    {
+        fprintf(stderr, "~EspMethodInfo(%s)\n", name_);
+
+        while (tags)
+        {
+            MetaTagInfo *p=tags;
+            tags = p->next;
+            delete p;
+        }
+    }
+
     const char *getName(){return name_;}
     void setName(const char *name)
     {
@@ -1010,7 +1063,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1021,21 +1074,22 @@ public:
         return ::getMetaInt(tags, tag, def_val);
     }
 
-    bool getMetaVerInfo(const char* tag, StrBuffer& s)
+    bool getMetaVerInfo(const char* tag, StringBuffer& s)
     {
         return ::getMetaVerInfo(tags,tag,s);
     }
 
     EspMessageInfo *getRequestInfo();
 
-    void write_esxdl()
+    void toString(StringBuffer & out)
     {
-        outf(1, "<EsdlMethod name=\"%s\" request_type=\"%s\" response_type=\"%s\" ", name_, request_, response_);
+        out.appendf("\t<EsdlMethod name='%s' request_type='%s' response_type='%s' ", name_, request_, response_);
         for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-            mtag->write_xml_attr();
-        outs("/>\n");
+        {
+            mtag->toStringXmlAttr(out);
+        }
+        out.append("/>\n");
     }
-
 
     MetaTagInfo     *tags;
     EspMethodInfo   *next;
@@ -1078,7 +1132,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1124,7 +1178,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1194,7 +1248,7 @@ public:
         return ::getMetaString(tags, tag, def_val);
     }
 
-    bool getMetaStringValue(StrBuffer &val, const char *tag)
+    bool getMetaStringValue(StringBuffer &val, const char *tag)
     {
         return ::getMetaStringValue(tags, val, tag);
     }
@@ -1204,16 +1258,20 @@ public:
         return ::getMetaInt(tags, tag, def_val);
     }
 
-    void write_esxdl()
+    void toString(StringBuffer & out)
     {
-        outf(2, "<EsdlService name=\"%s\" ", name_);
+        out.appendf("\t\t<EsdlService name='%s' ", name_);
         for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-            mtag->write_xml_attr();
-        outs(">\n");
+        {
+            mtag->toStringXmlAttr(out);
+        }
+        out.append(">\n");
 
         for (EspMethodInfo *mth=methods; mth; mth=mth->next)
-            mth->write_esxdl();
-        outs(2, "</EsdlService>");
+        {
+            mth->toString(out);
+        }
+        out.append("\t\t</EsdlService>");
     }
 
     EspStructInfo  *structs;
@@ -1225,36 +1283,53 @@ public:
 };
 
 
-class ESDLcompiler
+class esdl_decl ESDLcompiler
 {
 public:
-    ESDLcompiler(const char * SourceFile,const char *OutDir);
+    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes);
     ~ESDLcompiler();
 
     void Process();
     void write_esxdl();
 
-    const char *getPackageName(){return packagename;}
-    char *       filename;
-    StrBuffer name;
+    const char * getSrcDir() const
+    {
+        return srcDir.str();
+    }
+
+    const char * getEsxdlContent() const
+    {
+        return esxdlcontent.str();
+    }
+
+    const char* getPackageName()
+    {
+        return packagename;
+    }
+
+    char* filename;
+    StringBuffer name;
 
 private:
+    bool outputIncludes;
     int esxdlo;
-    char *       packagename;
+    char* packagename;
+    StringBuffer srcDir;
+    StringBuffer esxdlcontent;
 
 public:
-    ModuleInfo * modules;
-    EnumInfo * enums;
-    ApiInfo *apis;
-    EspMessageInfo *msgs;
-    EspServInfo *servs;
-    EspMethodInfo *methods;
-    IncludeInfo *includes;
-    VersionInfo *versions;
+    static CriticalSection m_critSect;
+    ModuleInfo* modules;
+    EnumInfo* enums;
+    ApiInfo* apis;
+    EspMessageInfo* msgs;
+    EspServInfo* servs;
+    EspMethodInfo* methods;
+    IncludeInfo* includes;
+    VersionInfo* versions;
 };
 
 
-//extern char * clarion;
 extern int nCommentStartLine;
 extern void yyerror(const char *s);
 inline char upperchar(char val){return ((val<97 || val>122) ? val : (val-32));}

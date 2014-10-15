@@ -28,8 +28,8 @@ class ViewFile;
 class ViewRelation;
 typedef IArrayOf<ViewFile> ViewFileArray;
 typedef CIArrayOf<ViewRelation> ViewRelationArray;
-typedef CopyCIArrayOf<ViewFile> ViewFileCopyArray;
-typedef CopyCIArrayOf<ViewRelation> ViewRelationCopyArray;
+typedef CICopyArrayOf<ViewFile> ViewFileCopyArray;
+typedef CICopyArrayOf<ViewRelation> ViewRelationCopyArray;
 
 //---------------------------------------------------------------------------
 
@@ -178,7 +178,7 @@ public:
     CFileTreeBrowser * browser;
     unsigned maxRecursion;
     bool isEfficient;
-    CopyCIArrayOf<ViewFile> nestedFiles;
+    CICopyArrayOf<ViewFile> nestedFiles;
 };
 
 struct ViewWalkOptions : public ViewGatherOptions
@@ -293,7 +293,7 @@ protected:
     ViewRelation * relation;
     Owned<DelayedFilteredResultSetCursor> filtered;
     Owned<NotifyingResultSetCursor> notifier;
-    CopyCIArrayOf<CRelatedBrowseFile> children;
+    CICopyArrayOf<CRelatedBrowseFile> children;
 };
 
 

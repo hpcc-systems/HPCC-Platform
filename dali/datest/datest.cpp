@@ -666,7 +666,7 @@ void Test_MultiFile()
             unsigned nc = rmfn.ordinality();
             StringBuffer rfns;
             for (unsigned j=0;j<nc;j++) {
-                RemoteFilename &rfn = rmfn.item(j);
+                const RemoteFilename &rfn = rmfn.item(j);
                 printf("  Component %d %s%s\n",j,rfn.getRemotePath(rfns.clear()).str(),
                                               rmfn.isWild(j)?", WILD":"");
             }
@@ -675,7 +675,7 @@ void Test_MultiFile()
                     rmfn.expandWild();
                     nc = rmfn.ordinality();
                     for (unsigned k=0;k<nc;k++) {
-                        RemoteFilename &rfn = rmfn.item(k);
+                        const RemoteFilename &rfn = rmfn.item(k);
                         printf("  Resolved %d %s\n",k,rfn.getRemotePath(rfns.clear()).str());
                         assertex(!rmfn.isWild(k));
                     }
@@ -2860,7 +2860,7 @@ void testMultiConnect()
         }
     } notify;
     unsigned t = msTick();
-    PointerIArrayOf<ISocket> out;
+    IPointerArrayOf<ISocket> out;
     multiConnect(eps,notify,5000);
     printf("connect took %d\n",msTick()-t);
 }

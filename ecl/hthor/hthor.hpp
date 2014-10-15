@@ -56,7 +56,7 @@ struct IHThorInput : public IInputBase
 
     virtual void ready() = 0;
     virtual void done() = 0;
-    virtual void updateProgress(IWUGraphProgress &progress) const = 0;
+    virtual void updateProgress(IStatisticGatherer &progress) const = 0;
     virtual const void * nextGE(const void * seek, unsigned numFields) { throwUnexpected(); }   // can only be called on stepping fields.
     virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return false; }
@@ -79,8 +79,8 @@ struct IHThorActivity : implements IActivityBase
     virtual void done() = 0;
     virtual __int64 getCount() = 0;
     virtual unsigned queryOutputs() = 0;
-    virtual void updateProgress(IWUGraphProgress &progress) const = 0;
-    virtual void updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph) const = 0;
+    virtual void updateProgress(IStatisticGatherer &progress) const = 0;
+    virtual void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const = 0;
     virtual void extractResult(unsigned & len, void * & ret) = 0;
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) = 0;
 };

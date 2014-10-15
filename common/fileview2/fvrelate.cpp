@@ -745,8 +745,8 @@ void ViewERdiagramVisitor::endIfBlock()
 
 void ViewERdiagramVisitor::endDataset(const char * name, const char * childname)
 {
-    activeFieldPrefix.setLength(savedFieldCounts.pop());
-    activeFieldCount = savedFieldCounts.pop();
+    activeFieldPrefix.setLength(savedFieldCounts.popGet());
+    activeFieldCount = savedFieldCounts.popGet();
 }
 
 void ViewERdiagramVisitor::endRecord(const char * name)

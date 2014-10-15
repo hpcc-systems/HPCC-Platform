@@ -185,7 +185,7 @@ protected:
     IArrayOf<ConditionalContextInfo> candidates;
     ConditionalContextInfo * activeParent;
     OwnedHqlExpr rootExpr;
-    CopyCIArrayOf<CHqlExprMultiGuard> childGuards;
+    CICopyArrayOf<CHqlExprMultiGuard> childGuards;
     ICopyArrayOf<ConditionalContextInfo> insertLocations;
     unsigned seq;
     bool alwaysEvaluateGuardedTogether;

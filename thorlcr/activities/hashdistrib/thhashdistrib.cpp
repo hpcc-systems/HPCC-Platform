@@ -97,18 +97,16 @@ public:
         lhsProgress->set(node, lhsProgressCount);
         rhsProgress->set(node, rhsProgressCount);
     }
-    virtual void getXGMML(unsigned idx, IPropertyTree *edge)
+    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
     {
-        HashDistributeActivityMaster::getXGMML(idx, edge);
+        //This should be an activity stats
+        HashDistributeActivityMaster::getEdgeStats(stats, idx);
         assertex(0 == idx);
         lhsProgress->processInfo();
         rhsProgress->processInfo();
 
-        StringBuffer label;
-        label.append("@progressInput-").append(container.queryInput(0)->queryId());
-        edge->setPropInt64(label.str(), lhsProgress->queryTotal());
-        label.clear().append("@progressInput-").append(container.queryInput(1)->queryId());
-        edge->setPropInt64(label.str(), rhsProgress->queryTotal());
+        stats.addStatistic(StNumLeftRows, lhsProgress->queryTotal());
+        stats.addStatistic(StNumRightRows, rhsProgress->queryTotal());
     }
 };
 

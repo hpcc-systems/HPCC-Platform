@@ -61,6 +61,9 @@ EclDirectWUExceptions::EclDirectWUExceptions(IConstWorkUnit& cw)
             case ExceptionSeverityInformation:
                 e->setSeverity("Info");
                 break;
+            case ExceptionSeverityAlert:
+                e->setSeverity("Alert");
+                break;
         }
 
         errors.append(*e.getLink());
@@ -163,10 +166,10 @@ bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspR
     Owned <IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned <IWorkUnit> workunit;
     if (!user.length())
-        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", ""));
+        workunit.setown(factory->createWorkUnit("ECL-Direct", ""));
     else
     {
-        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", user.str()));
+        workunit.setown(factory->createWorkUnit("ECL-Direct", user.str()));
         workunit->setUser(user.str());
     }
 
@@ -247,10 +250,10 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
     Owned <IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned <IWorkUnit> workunit;
     if (!user.length())
-        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", ""));
+        workunit.setown(factory->createWorkUnit("ECL-Direct", ""));
     else
     {
-        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", user.str()));
+        workunit.setown(factory->createWorkUnit("ECL-Direct", user.str()));
         workunit->setUser(user.str());
     }
 
@@ -311,7 +314,7 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
     {
         StringBuffer results;
         CRunEclExFormat outputFormat = req.getFormat();
-        Owned<IWuWebView> web = createWuWebView(wuid.str(), NULL, getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true);
         if (!web)
             results.appendf("<Exception><Source>ESP</Source><Message>Failed loading result workunit %s</Message></Exception>", wuid.str());
         else if (outputFormat == CRunEclExFormat_Table)

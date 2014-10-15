@@ -212,7 +212,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
 
 //=======================================================================================
 
-MAKEValueArray(const RtlTypeInfo *, RtlTypeInfoArray);
+typedef ArrayOf<const RtlTypeInfo *> RtlTypeInfoArray;
 
 class SimpleFieldSearcher : public CInterface, implements IRowMatcher
 {
@@ -1080,21 +1080,21 @@ BreakpointActionMode CBaseDebugContext::checkBreakpoint(DebugState state, IActiv
         return BreakpointActionContinue;
     class ActivityTimer
     {
-        unsigned __int64 startCycles;
-        unsigned __int64 &accumulator;
+        cycle_t startCycles;
+        cycle_t &accumulator;
     public:
-        inline ActivityTimer(unsigned __int64 &_accumulator) : accumulator(_accumulator)
+        inline ActivityTimer(cycle_t &_accumulator) : accumulator(_accumulator)
         {
             startCycles = get_cycles_now();
         }
         inline ~ActivityTimer()
         {
-            unsigned __int64 elapsed = get_cycles_now() - startCycles;
+            cycle_t elapsed = get_cycles_now() - startCycles;
             accumulator += elapsed;
         }
     } timer(debugCyclesAdjust);
+
     CriticalBlock b(breakCrit); // Note - this may block for a while if program is suspended!
-    
 
     assertex(running);
 

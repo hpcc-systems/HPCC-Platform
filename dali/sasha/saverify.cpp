@@ -498,19 +498,19 @@ public:
     {
         if (eps.ordinality()==0)
             return;
-        PointerIArrayOf<ISocket> sockets;
+        IPointerArrayOf<ISocket> sockets;
         multiConnect(eps,sockets,60*1000);
         CriticalSection sect;
         unsigned failurelimit = 10;             // only report 10 from each cluster
         class casyncfor: public CAsyncFor
         {
             SocketEndpointArray &eps;
-            PointerIArrayOf<ISocket> &sockets;
+            IPointerArrayOf<ISocket> &sockets;
             CriticalSection &sect;
             unsigned &failurelimit;
             const char *clustername;
         public:
-            casyncfor(SocketEndpointArray &_eps,PointerIArrayOf<ISocket> &_sockets, CriticalSection &_sect, unsigned &_failurelimit,const char *_clustername) 
+            casyncfor(SocketEndpointArray &_eps,IPointerArrayOf<ISocket> &_sockets, CriticalSection &_sect, unsigned &_failurelimit,const char *_clustername) 
                 : eps(_eps), sockets(_sockets), sect(_sect), failurelimit(_failurelimit)
             { 
                 clustername = _clustername;

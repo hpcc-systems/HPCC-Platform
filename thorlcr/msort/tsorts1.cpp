@@ -41,7 +41,7 @@
 // This contains the original global merge method
 
 class CSortMerge;
-MAKEPointerArray(CSortMerge,CSortMergeArray);
+typedef CopyReferenceArrayOf<CSortMerge> CSortMergeArray;
 
 class CMergeReadStream : public CSimpleInterface, public IRowStream
 {

@@ -863,7 +863,7 @@ public:
     }
 
 private:
-    static int compareBundleSets(IInterface **a, IInterface **b)
+    static int compareBundleSets(IInterface * const *a, IInterface * const *b)
     {
         IBundleInfoSet *aa = (IBundleInfoSet *) *a;
         IBundleInfoSet *bb = (IBundleInfoSet *) *b;

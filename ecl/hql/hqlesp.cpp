@@ -175,7 +175,7 @@ protected:
     HqlLookupContext & lookupCtx;
     Owned<IPropertyTree> root;
     Linked<IPropertyTree> archive;
-    CopyArray visited;
+    ICopyArray visited;
     StringPairArray results;
 };
 

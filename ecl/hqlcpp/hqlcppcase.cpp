@@ -115,14 +115,17 @@ IHqlExpression * createNotFoundValue()
 
 //===========================================================================
 
-static int comparePair(IInterface * * left, IInterface * * right)
+static int comparePair(IHqlExpression * lexpr, IHqlExpression * rexpr)
 {
-    IHqlExpression * lexpr = (IHqlExpression *)*left;
-    IHqlExpression * rexpr = (IHqlExpression *)*right;
-
     return lexpr->queryChild(0)->queryValue()->compare(rexpr->queryChild(0)->queryValue());
 }
 
+static int comparePair(IInterface * const * left, IInterface * const * right)
+{
+    IHqlExpression * lexpr = (IHqlExpression *)*left;
+    IHqlExpression * rexpr = (IHqlExpression *)*right;
+    return comparePair(lexpr, rexpr);
+}
 
 HqlCppCaseInfo::HqlCppCaseInfo(HqlCppTranslator & _translator) : translator(_translator)
 {

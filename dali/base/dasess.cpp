@@ -287,7 +287,7 @@ public:
     {
         if (!previousSessionIds.ordinality())
             return 0;
-        return previousSessionIds.pop();
+        return previousSessionIds.popGet();
     }
     unsigned previousSessionIdCount() const
     {

@@ -142,7 +142,7 @@ void CppWriterTemplate::generate(ISectionWriter & writer, unsigned pass, IProper
                 output = (properties && properties->hasProp(cur.id->str()));
             break;
         case TplEndCondition:
-            output = outputStack.pop();
+            output = outputStack.popGet();
             break;
         }
 

@@ -664,6 +664,27 @@ const void * createRowFromXml(IEngineRowAllocator * rowAllocator, size32_t len, 
     return rowBuilder.finalizeRowClear(newSize);
 }
 
+size32_t createRowFromJson(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    Owned<IPropertyTree> root = createPTreeFromJSONString(size, utf8, ipt_none, stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
+    if (!root)
+    {
+        throwError(THORCERR_InvalidJsonFromJson);
+        return 0;
+    }
+    Owned <XmlColumnProvider> columns = new XmlDatasetColumnProvider;
+    columns->setRow(root);
+    NullDiskCallback dummyCallback;
+    return xmlTransformer->transform(rowBuilder, columns, &dummyCallback);
+}
+
+const void * createRowFromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    size32_t newSize = createRowFromJson(rowBuilder, rtlUtf8Size(len, utf8), utf8, xmlTransformer, stripWhitespace);
+    return rowBuilder.finalizeRowClear(newSize);
+}
+
 //=====================================================================================================
 
 IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, const void * text, bool isDataSet)
@@ -1330,7 +1351,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1350,7 +1372,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1370,7 +1393,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1391,7 +1415,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1415,7 +1440,8 @@ public:
     }
     virtual bool readBool(const char * path, bool _default)
     {
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
             throw MakeStringException(0, "Attempting to extract xml content text as boolean");
 
@@ -1431,7 +1457,8 @@ public:
     }
     virtual __int64 readInt(const char * path, __int64 _default)
     {
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
             throw MakeStringException(0, "Attempting to extract xml content text as integer");
 
@@ -1446,7 +1473,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1468,7 +1496,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1489,7 +1518,8 @@ public:
     virtual void readStringX(size32_t & len, char * & text, const char * path, size32_t _lenDefault, const char * _default)
     {
         MemoryBuffer result;
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             if (length)
@@ -1511,7 +1541,8 @@ public:
     }
     virtual void readUnicodeX(size32_t & len, UChar * & text, const char * path, size32_t _lenDefault, const UChar * _default)
     {
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             rtlCodepageToUnicodeX(len, text, length, contentMb.toByteArray()+offset, "utf-8");
@@ -1528,7 +1559,8 @@ public:
     }
     virtual void readUtf8X(size32_t & len, char * & text, const char * path, size32_t _lenDefault, const char * _default)
     {
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         size32_t size;
         if (contentRequest(path, offset, length))
         {
@@ -1588,7 +1620,7 @@ class CXMLParse : public CInterface, implements IXMLParse
     {
         CXPath xpath;
         IXMLSelect *iXMLSelect;   // NOTE - not linked - creates circular links
-        CopyCIArrayOf<CParseStackInfo> stack, freeParseInfo;
+        CICopyArrayOf<CParseStackInfo> stack, freeParseInfo;
         IPTreeMaker *maker;
         Linked<CMarkReadBase> marking;
         Owned<COffsetNodeCreator> nodeCreator;
@@ -1647,7 +1679,7 @@ class CXMLParse : public CInterface, implements IXMLParse
             CParseStackInfo *stackInfo;
             if (freeParseInfo.ordinality())
             {
-                stackInfo = &freeParseInfo.pop();
+                stackInfo = &freeParseInfo.popGet();
                 stackInfo->reset();
             }
             else

@@ -291,7 +291,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         CriticalSection activeWritersLock;
         mutable SpinLock totalSzLock;
         SpinLock doDedupLock;
-        PointerIArrayOf<CSendBucket> buckets;
+        IPointerArrayOf<CSendBucket> buckets;
         UnsignedArray candidates;
         size32_t totalSz;
         bool senderFull, doDedup, aborted, initialized;
@@ -3496,10 +3496,10 @@ public:
 
 //===========================================================================
 
-CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, bool ordered)
+RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, RowAggregator *localAggTable, mptag_t mptag, bool ordered)
 {
     Owned<IRowStream> strm;
-    Owned<CThorRowAggregator> globalAggTable = new CThorRowAggregator(activity, helperExtra, helper);
+    Owned<RowAggregator> globalAggTable = new RowAggregator(helperExtra, helper);
     globalAggTable->start(activity.queryRowAllocator());
     __int64 readCount = 0;
     if (ordered)
@@ -3508,12 +3508,12 @@ CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivi
         {
             CActivityBase &activity;
             IRowInterfaces *rowIf;
-            Linked<CThorRowAggregator> localAggregated;
+            Linked<RowAggregator> localAggregated;
             RtlDynamicRowBuilder outBuilder;
             size32_t node;
         public:
             IMPLEMENT_IINTERFACE;
-            CRowAggregatedStream(CActivityBase &_activity, IRowInterfaces *_rowIf, CThorRowAggregator *_localAggregated) : activity(_activity), rowIf(_rowIf), localAggregated(_localAggregated), outBuilder(_rowIf->queryRowAllocator())
+            CRowAggregatedStream(CActivityBase &_activity, IRowInterfaces *_rowIf, RowAggregator *_localAggregated) : activity(_activity), rowIf(_rowIf), localAggregated(_localAggregated), outBuilder(_rowIf->queryRowAllocator())
             {
                 node = activity.queryContainer().queryJob().queryMyRank();
             }
@@ -3570,10 +3570,10 @@ CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivi
     {
         class CRowAggregatedStream : public CInterface, implements IRowStream
         {
-            Linked<CThorRowAggregator> localAggregated;
+            Linked<RowAggregator> localAggregated;
         public:
             IMPLEMENT_IINTERFACE;
-            CRowAggregatedStream(CThorRowAggregator *_localAggregated) : localAggregated(_localAggregated)
+            CRowAggregatedStream(RowAggregator *_localAggregated) : localAggregated(_localAggregated)
             {
             }
             // IRowStream impl.
@@ -3620,7 +3620,7 @@ class CHashAggregateSlave : public CSlaveActivity, public CThorDataLink, impleme
     IHThorHashAggregateArg *helper;
     IThorDataLink *input;
     mptag_t mptag;
-    Owned<CThorRowAggregator> localAggTable;
+    Owned<RowAggregator> localAggTable;
     bool eos;
     Owned<IHashDistributor> distributor;
 
@@ -3662,13 +3662,13 @@ public:
             mptag = container.queryJob().deserializeMPTag(data);
             ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
         }
+        localAggTable.setown(new RowAggregator(*helper, *helper));
     }
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         input = inputs.item(0);
         startInput(input);
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
         doNextGroup(); // or local set if !grouped
         if (!container.queryGrouped())
             ActPrintLog("Table before distribution contains %d entries", localAggTable->elementCount());
@@ -3684,6 +3684,7 @@ public:
     void stop()
     {
         ActPrintLog("HASHAGGREGATE: stopping");
+        localAggTable->reset();
         stopInput(input);
         dataLinkStop();
     }

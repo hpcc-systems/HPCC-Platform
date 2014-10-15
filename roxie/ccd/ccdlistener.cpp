@@ -1194,7 +1194,7 @@ public:
             }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
-            priority = queryFactory->getPriority();
+            priority = queryFactory->queryOptions().priority;
             switch (priority)
             {
             case 0: loQueryStats.noteActive(); break;
@@ -1244,7 +1244,11 @@ public:
         if (logctx.queryTraceLevel() > 2)
             logctx.dumpStats();
         if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
-            logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory %d Mb priority %d slavesreply %d", wuid.get(), elapsed, memused, priority, slavesReplyLen);
+        {
+            StringBuffer s;
+            logctx.printStats(s);
+            logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d%s", wuid.get(), elapsed, memused, priority, slavesReplyLen, s.str());
+        }
         logctx.flush(true, false);
     }
 
@@ -1660,7 +1664,7 @@ readAnother:
                         if (queryFactory)
                         {
                             queryFactory->checkSuspended();
-                            bool stripWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (ptr_ignoreWhiteSpace & defaultXmlReadFlags));
+                            bool stripWhitespace = queryFactory->queryOptions().stripWhitespaceFromStoredDataset;
                             stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
                             PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
                                                                                (stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none));
@@ -1730,7 +1734,7 @@ readAnother:
                                 logctx.setTraceLevel(queryXml->getPropInt("@traceLevel", traceLevel));
                             }
 
-                            priority = queryFactory->getPriority();
+                            priority = queryFactory->queryOptions().priority;
                             switch (priority)
                             {
                             case 0: loQueryStats.noteActive(); break;
@@ -1881,8 +1885,11 @@ readAnother:
             logctx.dumpStats();
         if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
             if (queryName.get())
-                logctx.CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory %d Mb priority %d slavesreply %d resultsize %d continue %d", queryName.get(), uid, peerStr.str(), elapsed, memused, priority, slavesReplyLen, bytesOut, continuationNeeded);
-
+            {
+                StringBuffer s;
+                logctx.printStats(s);
+                logctx.CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid, peerStr.str(), elapsed, memused, priority, slavesReplyLen, bytesOut, continuationNeeded, s.str());
+            }
         if (continuationNeeded)
         {
             rawText.clear();

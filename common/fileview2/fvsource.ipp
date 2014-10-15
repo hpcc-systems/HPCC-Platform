@@ -330,7 +330,7 @@ protected:
     Owned<DataSourceMetaData> transformedMeta;
     HqlExprAttr transformedRecord;
     Owned<ILoadedDllEntry> loadedDll;
-    Array pluginDlls;
+    IArray pluginDlls;
     rowTransformFunction transformer;
     unsigned extraFieldsSize;
     unsigned openCount;

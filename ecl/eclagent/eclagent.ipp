@@ -206,9 +206,9 @@ public:
     {
         ctx->addWuException(text, code, severity, source);
     }
-    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, bool embedded, const byte * parentExtract)
+    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract)
     {
-        return ctx->executeLibraryGraph(libraryName, expectedInterfaceHash, activityId, embedded, parentExtract);
+        return ctx->executeLibraryGraph(libraryName, expectedInterfaceHash, activityId, embeddedGraphName, parentExtract);
     }
     virtual bool getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * name, int seq)
     {
@@ -355,7 +355,7 @@ private:
     mutable CriticalSection wusect;
     StringArray tempFiles;
     CriticalSection tfsect;
-    Array persistReadLocks;
+    IArray persistReadLocks;
     StringArray processedPersists;
 
     Owned<ILoadedDllEntry> dll;
@@ -403,7 +403,7 @@ private:
     ILoadedDllEntry * loadWorkUnitDll(IConstWorkUnit * wu);
     IConstWorkUnit * resolveLibrary(const char * libraryName, unsigned expectedInterfaceHash);
     EclAgentQueryLibrary * queryEclLibrary(const char * libraryName, unsigned expectedInterfaceHash);
-    EclAgentQueryLibrary * loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, bool embedded);
+    EclAgentQueryLibrary * loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, const char * embeddedGraphName);
     virtual bool getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * name, int seq);
     virtual IDebuggableContext *queryDebugContext() const { return debugContext; };
 
@@ -500,6 +500,7 @@ public:
     virtual bool queryWriteResultsToStdout() { return writeResultsToStdout; }
     virtual IOrderedOutputSerializer * queryOutputSerializer() { return outputSerializer; }
     virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
+    virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual char *getDaliServers();
 
@@ -514,7 +515,7 @@ public:
     }
 
     virtual void fail(int code, char const * str);
-    void failv(int code, char const * fmt, ...) __attribute__((format(printf, 3, 4), noreturn));
+    __declspec(noreturn) void failv(int code, char const * fmt, ...) __attribute__((format(printf, 3, 4), noreturn));
     virtual int queryLastFailCode();
     virtual void getLastFailMessage(size32_t & outLen, char * & outStr, const char * tag);
     virtual void getEventName(size32_t & outLen, char * & outStr);
@@ -527,7 +528,7 @@ public:
 
     virtual void executeThorGraph(const char * graphName);
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract);
-    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, bool embedded, const byte * parentExtract);
+    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract);
     virtual IThorChildGraph * resolveChildQuery(__int64 subgraphId, IHThorArg * colocal);
     virtual IEclGraphResults * resolveLocalQuery(__int64 activityId);
 
@@ -613,6 +614,10 @@ public:
     {
         convertRowToXML(lenResult, result, info, row, flags);
     }
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+    {
+        convertRowToJSON(lenResult, result, info, row, flags);
+    }
     virtual const char *queryAllowedPipePrograms()
     {
         return allowedPipeProgs.get();
@@ -690,7 +695,7 @@ public:
     bool prepare(IAgentContext & agent, const byte * parentExtract, bool checkDependencies);
     IHThorInput * queryOutput(unsigned idx);
     void updateProgress(IAgentContext & agent);
-    void updateProgress(IWUGraphProgress &progress);
+    void updateProgress(IStatisticGatherer &progress);
 
     void ready() { if (!alreadyUpdated) activity->ready(); }
     void execute() { if (!alreadyUpdated) activity->execute(); }
@@ -723,8 +728,8 @@ public:
     CIArrayOf<EclGraphElement> branches;
     UnsignedArray branchIndexes;
     EclGraphElement * conditionalLink;
-    CopyCIArrayOf<EclSubGraph> dependentOn;
-    CopyCIArrayOf<EclGraphElement> dependentOnActivity;
+    CICopyArrayOf<EclSubGraph> dependentOn;
+    CICopyArrayOf<EclGraphElement> dependentOnActivity;
     IntArray dependentControlId;
     IProbeManager * probeManager;
 
@@ -845,6 +850,8 @@ private:
         IHThorInput  *in;
         EclSubGraph  *owner;
         size32_t    maxRowSize;
+        unsigned sourceId;
+        unsigned outputIndex;
 
         StringBuffer edgeId;
 
@@ -852,7 +859,7 @@ private:
         IMPLEMENT_IINTERFACE;
 
         LegacyInputProbe(IHThorInput *_in, EclSubGraph *_owner, unsigned _sourceId, int outputidx)
-            : in(_in), owner(_owner)
+            : in(_in), owner(_owner), sourceId(_sourceId), outputIndex(outputidx)
         {
             edgeId.append(_sourceId).append("_").append(outputidx);
             maxRowSize = 0;
@@ -894,10 +901,12 @@ private:
             return ret;
         }
 
-        virtual void updateProgress(IWUGraphProgress &progress) const
+        virtual void updateProgress(IStatisticGatherer &progress) const
         {
-            IPropertyTree &edge = progress.updateEdge(owner->id, edgeId);
-            edge.setPropInt64("@maxrowsize", maxRowSize);
+            {
+                StatsEdgeScope scope(progress, sourceId, outputIndex);
+                progress.addStatistic(StSizeMaxRowSize, maxRowSize);
+            }
             if (in)
                 in->updateProgress(progress);
         }   
@@ -936,7 +945,7 @@ public:
     void executeSubgraphs(const byte * parentExtract);
     EclGraphElement * idToActivity(unsigned id);
     void reset();
-    void updateProgress(IWUGraphProgress & progress);
+    void updateProgress(IStatisticGatherer & progress);
     void updateProgress();
     void doExecuteChild(const byte * parentExtract);
     IEclLoopGraph * resolveLoopGraph(unsigned id);
@@ -988,6 +997,8 @@ public:
     bool isSink;
     bool executed;
     bool created;
+    unsigned __int64 startGraphTime;
+    cycle_t elapsedGraphCycles;
     EclGraph &parent;
     EclSubGraph * owner;
     unsigned parentActivityId;

@@ -284,6 +284,11 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (this.params.searchResults) {
+                this.filter.disable(true);
+                this.widget.Tree.set("disabled", true);
+            }
+
             this.clusterTargetSelect.init({
                 Groups: true,
                 includeBlank: true
@@ -391,7 +396,7 @@ define([
 
         initWorkunitsGrid: function () {
             var context = this;
-            this.listStore = new ESPLogicalFile.CreateLFQueryStore();
+            this.listStore = this.params.searchResults ? this.params.searchResults : new ESPLogicalFile.CreateLFQueryStore();
             this.treeStore = new ESPLogicalFile.CreateLFQueryTreeStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: this.listStore,
@@ -560,7 +565,7 @@ define([
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "DesprayDropDown").set("disabled", !hasSelection);
-            registry.byId(this.id + "FilterFilterDropDown").set("disabled", this.treeMode);
+            registry.byId(this.id + "FilterFilterDropDown").set("disabled", this.treeMode || this.params.searchResults);
 
             if (hasSelection) {
                 var context = this;

@@ -4177,7 +4177,7 @@ IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted)
     return createConstant("");
 }
 
-int compareAtoms(IInterface * * pleft, IInterface * * pright)
+int compareAtoms(IInterface * const * pleft, IInterface * const * pright)
 {
     IAtom * left = static_cast<IAtom *>(*pleft);
     IAtom * right = static_cast<IAtom *>(*pright);
@@ -4185,20 +4185,8 @@ int compareAtoms(IInterface * * pleft, IInterface * * pright)
     return stricmp(left->str(), right->str());
 }
 
-
-int compareSymbolsByName(IInterface * * pleft, IInterface * * pright)
+int compareScopesByName(IHqlScope * left, IHqlScope * right)
 {
-    IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
-    IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
-
-    return stricmp(left->queryName()->str(), right->queryName()->str());
-}
-
-int compareScopesByName(IInterface * * pleft, IInterface * * pright)
-{
-    IHqlScope * left = static_cast<IHqlScope *>(*pleft);
-    IHqlScope * right = static_cast<IHqlScope *>(*pright);
-
     const char * leftName = left->queryName()->str();
     const char * rightName = right->queryName()->str();
     if (leftName && rightName)
@@ -4208,6 +4196,26 @@ int compareScopesByName(IInterface * * pleft, IInterface * * pright)
     if (rightName)
         return -1;
     return 0;
+}
+
+int compareSymbolsByName(IHqlExpression * left, IHqlExpression * right)
+{
+    return stricmp(left->queryName()->str(), right->queryName()->str());
+}
+
+int compareSymbolsByName(IInterface * const * pleft, IInterface * const * pright)
+{
+    IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
+    IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
+
+    return stricmp(left->queryName()->str(), right->queryName()->str());
+}
+
+int compareScopesByName(IInterface * const * pleft, IInterface * const * pright)
+{
+    IHqlScope * left = static_cast<IHqlScope *>(*pleft);
+    IHqlScope * right = static_cast<IHqlScope *>(*pright);
+    return compareScopesByName(left, right);
 }
 
 class ModuleExpander
@@ -6156,11 +6164,8 @@ void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpression * expr, bool
 //------------------------- Library processing -------------------------------------
 
 
-int compareLibraryParameterOrder(IInterface * * pleft, IInterface * * pright)
+int compareLibraryParameterOrder(IHqlExpression * left, IHqlExpression * right)
 {
-    IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
-    IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
-
     //datasets come first - even if not streamed
     if (left->isDataset())
     {
@@ -6190,6 +6195,12 @@ int compareLibraryParameterOrder(IInterface * * pleft, IInterface * * pright)
 }
 
 
+static int compareLibraryParameterOrder(IInterface * const * pleft, IInterface * const * pright)
+{
+    IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
+    IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
+    return compareLibraryParameterOrder(left, right);
+}
 
 LibraryInputMapper::LibraryInputMapper(IHqlExpression * _libraryInterface)
 : libraryInterface(_libraryInterface)
@@ -6777,18 +6788,22 @@ StringBuffer & convertToValidLabel(StringBuffer &out, const char * in, unsigned 
     return out;
 }
 
-bool arraysSame(CIArray & left, CIArray & right)
+template <class ARRAY>
+bool doArraysSame(ARRAY & left, ARRAY & right)
 {
     if (left.ordinality() != right.ordinality())
         return false;
     return memcmp(left.getArray(), right.getArray(), left.ordinality() * sizeof(CInterface*)) == 0;
 }
 
-bool arraysSame(Array & left, Array & right)
+bool arraysSame(HqlExprArray & left, HqlExprArray & right)
 {
-    if (left.ordinality() != right.ordinality())
-        return false;
-    return memcmp(left.getArray(), right.getArray(), left.ordinality() * sizeof(CInterface*)) == 0;
+    return doArraysSame(left, right);
+}
+
+bool arraysSame(HqlExprCopyArray & left, HqlExprCopyArray & right)
+{
+    return doArraysSame(left, right);
 }
 
 bool isFailAction(IHqlExpression * expr)
@@ -7929,13 +7944,13 @@ public:
     ConstantRowCreator(MemoryBuffer & _out) : out(_out) { expectedIndex = 0; }
 
     bool buildTransformRow(IHqlExpression * transform);
+    bool processFieldValue(IHqlExpression * optField, ITypeInfo * lhsType, IHqlExpression * rhs);
 
 protected:
     bool expandAssignChildren(IHqlExpression * expr);
     bool expandAssignElement(IHqlExpression * expr);
 
     bool processElement(IHqlExpression * expr, IHqlExpression * parentSelector);
-    bool processFieldValue(IHqlExpression * optField, ITypeInfo * lhsType, IHqlExpression * rhs);
     bool processRecord(IHqlExpression * record, IHqlExpression * parentSelector);
 
     IHqlExpression * queryMatchingAssign(IHqlExpression * self, IHqlExpression * search);
@@ -8136,12 +8151,13 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
             }
             return true;
         }
+    case type_utf8:
     case type_unicode:
     case type_qstring:
         {
             if (lenLhs == UNKNOWN_LENGTH)
                 rtlWriteInt4(out.reserve(sizeof(size32_t)), lenValue);
-            castValue->toMem(out.reserve(castValueType->getSize()));
+            castValue->toMem(out.reserve(castValue->getSize()));
             return true;
         }
     //MORE:
@@ -8220,6 +8236,12 @@ bool createConstantRow(MemoryBuffer & target, IHqlExpression * transform)
 {
     ConstantRowCreator builder(target);
     return builder.buildTransformRow(transform);
+}
+
+bool createConstantField(MemoryBuffer & target, IHqlExpression * field, IHqlExpression * value)
+{
+    ConstantRowCreator builder(target);
+    return builder.processFieldValue(field, field->queryType(), value);
 }
 
 IHqlExpression * createConstantRowExpr(IHqlExpression * transform)

@@ -77,7 +77,7 @@ public:
         else
             value = NULL;
     }
-    static int compare(IInterface **ll, IInterface **rr)
+    static int compare(IInterface * const *ll, IInterface * const *rr)
     {
         CNodeInfo *l = (CNodeInfo *) *ll;
         CNodeInfo *r = (CNodeInfo *) *rr;
@@ -101,7 +101,7 @@ interface IKeyBuilder : public IInterface
     virtual unsigned __int64 createBlob(size32_t size, const char * _ptr) = 0;
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t fileSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence);
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence);
 
 interface IKeyDesprayer : public IInterface
 {

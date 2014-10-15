@@ -171,7 +171,7 @@
               <entry><emphasis>CONTEXT</emphasis></entry>
 
               <entry>Internal use, only. Indicates an extra internal context
-              parameter is passed to the function.</entry>
+              parameter (ICodeContext *) is passed to the function. This must be the first function parameter.</entry>
             </row>
 
             <row>

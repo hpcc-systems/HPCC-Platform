@@ -358,7 +358,7 @@ public:
     }
 
     virtual unsigned getFlags()                             { return 0; }
-    virtual const char * getDatasetName()                   { return NULL; }
+    virtual const char * getDatasetName()                   { return NULL; }  // Never used, left in to keep VMT unchanged only
     virtual const char * getDistributeIndexName()           { return NULL; }
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }

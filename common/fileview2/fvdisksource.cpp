@@ -641,13 +641,11 @@ bool TranslatedDiskDataSource::createHelperWU()
 
     // MORE: Where should we get these parameters from ????
     StringAttr application("fileViewer");
-    StringAttr customerid("viewer");
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IWorkUnit> workunit = factory->createWorkUnit(NULL, application, username);
+    Owned<IWorkUnit> workunit = factory->createWorkUnit(application, username);
     workunit->setUser(username);
     workunit->setClusterName(cluster);  
-    workunit->setCustomerId(customerid);
     workunit->setAction(WUActionCompile);
 
     StringBuffer jobName;
@@ -660,7 +658,6 @@ bool TranslatedDiskDataSource::createHelperWU()
     query->setQueryText(eclText.str());
     query->setQueryName(jobName.str());
 
-    workunit->setCompareMode(CompareModeOff);
     StringAttrAdaptor xxx(helperWuid); workunit->getWuid(xxx);
     return true;
 }
@@ -715,13 +712,11 @@ bool IndirectDiskDataSource::createBrowseWU()
     // MORE: Where should we get these parameters from ????
     StringAttr application("fileViewer");
     StringAttr owner("fileViewer");
-    StringAttr customerid("viewer");
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    Owned<IWorkUnit> workunit = factory->createWorkUnit(NULL, application, owner);
+    Owned<IWorkUnit> workunit = factory->createWorkUnit(application, owner);
     workunit->setUser(owner);
     workunit->setClusterName(cluster);  
-    workunit->setCustomerId(customerid);
 
     StringBuffer jobName;
     jobName.append("FileView_for_").append(logicalName);
@@ -733,7 +728,6 @@ bool IndirectDiskDataSource::createBrowseWU()
     query->setQueryText(eclText.str());
     query->setQueryName(jobName.str());
 
-    workunit->setCompareMode(CompareModeOff);
     StringAttrAdaptor xxx(browseWuid); workunit->getWuid(xxx);
     return true;
 }

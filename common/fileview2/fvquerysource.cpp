@@ -68,8 +68,6 @@ bool QueryDataSource::createBrowseWU()
         return false;
     returnedRecord.set(browseWUcode->queryChild(0)->queryRecord());
 
-    StringAttr tempAttr;
-    StringAttrAdaptor temp(tempAttr);
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> parent = factory->openWorkUnit(wuid, false);
 
@@ -78,11 +76,9 @@ bool QueryDataSource::createBrowseWU()
     parent->getClusterName(acluster);
     parent->getUser(user);
 
-    Owned<IWorkUnit> workunit = factory->createWorkUnit(NULL, "fileViewer", user.str());
+    Owned<IWorkUnit> workunit = factory->createWorkUnit("fileViewer", user.str());
     workunit->setUser(user.str());
     workunit->setClusterName(cluster);
-    workunit->setCustomerId(parent->getCustomerId(temp).str());
-    workunit->setCompareMode(CompareModeOff);   // ? parent->getCompareMode()
     StringAttrAdaptor bwa(browseWuid); workunit->getWuid(bwa);
 
     workunit->setDebugValueInt("importImplicitModules", false, true);

@@ -1412,14 +1412,9 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
          if(!strnicmp(path.str(), "/WsWorkunits/manifest/", strlen("/WsWorkunits/manifest/")))
          {
             const char *pos = path.str();
-            StringBuffer wuid;
-            nextPathNode(pos, wuid, 2);
-            Owned<IWuWebView> web = createWuWebView(wuid, wuid, getCFD(), true);
-            if (!web)
-                throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit");
+            skipPathNodes(pos, 1);
             StringBuffer mf;
-            if (!web->getManifest(mf).length())
-                throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open manifest");
+            getWuManifestByPath(pos, mf);
 
             response->setContent(mf.str());
             response->setContentType("text/xml");

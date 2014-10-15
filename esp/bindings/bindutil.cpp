@@ -259,6 +259,39 @@ int Utils::getLine(int total_len, int cur_pos, const char* buf, int& oneline_len
     return cur_pos;
 }
 
+__int64 Utils::getLine(__int64 total_len, __int64 cur_pos, const char* buf, int& oneline_len)
+{
+    oneline_len = 0;
+    if(cur_pos >= total_len)
+    {
+        return total_len;
+    }
+
+    while(cur_pos < total_len && buf[cur_pos] != '\r' && buf[cur_pos] != '\n')
+    {
+        oneline_len++;
+        cur_pos++;
+    }
+
+    if(cur_pos == total_len)
+        return total_len;
+
+    if(buf[cur_pos] == '\r')
+    {
+        cur_pos++;
+    }
+
+    if(cur_pos == total_len)
+        return total_len;
+
+    if(buf[cur_pos] == '\n')
+    {
+        cur_pos++;
+    }
+
+    return cur_pos;
+}
+
 int Utils::strncasecmp(const char* s1, const char* s2, register size32_t n) 
 {
     bool s1isnull = (s1 == NULL);

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,25 +14,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+#onwarning ('mistake', error);
 
-IMPORT SqLite3;
+s := [2,3,5,7];
+s[2..4];
+s[2.4];
 
-childrec := RECORD
-   string name => unsigned value;
-END;
+'abcde'[2..4];
+'abcde'[2.4];
 
-dataset(childrec) testSqLite(unsigned lim) := EMBED(SqLite3 : file('test.db'))
-  SELECT * from tbl1 where two = :lim;
-ENDEMBED;
-
-dataset(childrec) testSqLite2(string v) := EMBED(SqLite3 : file('test.db'))
-  SELECT * from tbl1 where one = :v;
-ENDEMBED;
-
-unsigned testSqLite3(string v) := EMBED(SqLite3 : file('test.db'))
-  SELECT count(*) from tbl1 where one = :v;
-ENDEMBED;
-
-output(testSqLite(20));
-output(testSqLite2('hello!'));
-output(testSqLite3('hello!'));
+ds := dataset([{2},{3},{5},{7}], {integer a});
+ds[2..4];
+ds[2.4];

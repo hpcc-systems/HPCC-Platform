@@ -1446,8 +1446,8 @@ size32_t RtlUnimplementedTypeInfo::toXML(const byte * self, const byte * selfrow
 
 //-------------------------------------------------------------------------------------------------------------------
 
-RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type) 
-: RtlFieldInfo(rtlCreateFieldNameAtom(_name), _xpath, _type) 
+RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer)
+: RtlFieldInfo(rtlCreateFieldNameAtom(_name), _xpath, _type, _initializer)
 {
 }
 

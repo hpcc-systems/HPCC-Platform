@@ -179,6 +179,9 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (this.params.searchResults) {
+                this.filter.disable(true);
+            }
             if (params.ClusterName) {
                 registry.byId(this.id + "Cluster").set("value", params.ClusterName);
             }
@@ -304,7 +307,7 @@ define([
 
         initWorkunitsGrid: function() {
             var context = this;
-            var store = new ESPDFUWorkunit.CreateWUQueryStore();
+            var store = this.params.searchResults ? this.params.searchResults : new ESPDFUWorkunit.CreateWUQueryStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
                 columns: {

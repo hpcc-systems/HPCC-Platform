@@ -432,7 +432,7 @@ public:
 
     virtual IBranchItem *createBranchItem(IPropertyTree &e) = 0;
 
-    static int compareBranch(IInterface **v1, IInterface **v2) // for bAdd only
+    static int compareBranch(IInterface * const *v1, IInterface * const *v2) // for bAdd only
     {
         IBranchItem *e1 = (IBranchItem *)*v1;
         IBranchItem *e2 = (IBranchItem *)*v2;

@@ -2334,7 +2334,7 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
                 if (res>0) 
                     copyFile(path,src);
                 else
-                    throw MakeOsException(GetLastError());
+                    throw makeOsException(GetLastError());
             }
         }
         catch (IException *e)

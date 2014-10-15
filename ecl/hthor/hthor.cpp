@@ -211,27 +211,25 @@ void CHThorActivityBase::done()
         input->done();
 }
 
-void CHThorActivityBase::updateProgress(IWUGraphProgress &progress) const
+void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
 {
     updateProgressForOther(progress, activityId, subgraphId);
     if (input)
         input->updateProgress(progress);
 }
 
-void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph) const
+void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const
 {
     updateProgressForOther(progress, otherActivity, otherSubgraph, 0, processed);
 }
 
-void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const
+void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const
 {
-    StringBuffer path;
-    path.append(otherActivity).append("_").append(whichOutput);
-    IPropertyTree &edge = progress.updateEdge(otherSubgraph, path.str());
-    edge.setPropInt64("@count", numProcessed);
-    edge.setPropBool("@started", true);
-    edge.setPropBool("@stopped", true);
-    edge.setPropInt64("@slaves", 1);
+    StatsEdgeScope scope(progress, otherActivity, whichOutput);
+    progress.addStatistic(StNumRowsProcessed, numProcessed);
+    progress.addStatistic(StNumStarted, 1);  // wrong for an activity in a subquery
+    progress.addStatistic(StNumStopped, 1);
+    progress.addStatistic(StNumSlaves, 1);  // MORE: A bit pointless for an hthor graph
 }
 
 ILocalEclGraphResults * CHThorActivityBase::resolveLocalQuery(__int64 graphId)
@@ -880,7 +878,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 //=====================================================================================================
 
-CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), headerLength(0), footerLength(0)
 {
     OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
     if (!xmlpath)
@@ -898,12 +896,23 @@ void CHThorXmlWriteActivity::execute()
 {
     // Loop thru the results
     numRecords = 0;
+    StringBuffer header;
     OwnedRoxieString suppliedHeader(helper.getHeader());
-    const char *header = suppliedHeader;
-    if (!header) header = "<Dataset>\n";
-    diskout->write(strlen(header), header);
+    if (kind==TAKjsonwrite)
+    {
+        buildJsonHeader(header, suppliedHeader, rowTag);
+        headerLength = header.length();
+    }
+    else if (suppliedHeader)
+        header.set(suppliedHeader);
+    else
+        header.set("<Dataset>\n");
+    diskout->write(header.length(), header.str());
 
-    CommonXmlWriter xmlOutput(helper.getXmlFlags());
+    Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
+    writer->outputBeginArray(rowTag); //need to set up the array
+    writer->clear(); //but not output it
+
     loop
     {
         OwnedConstRoxieRow nextrec(input->nextInGroup());
@@ -916,29 +925,44 @@ void CHThorXmlWriteActivity::execute()
 
         try
         {
-            xmlOutput.clear().outputBeginNested(rowTag, false);
-            helper.toXML((const byte *)nextrec.get(), xmlOutput);
-            xmlOutput.outputEndNested(rowTag);
+            writer->clear().outputBeginNested(rowTag, false);
+            helper.toXML((const byte *)nextrec.get(), *writer);
+            writer->outputEndNested(rowTag);
         }
         catch(IException * e)
         {
             throw makeWrappedException(e);
         }
 
-        diskout->write(xmlOutput.length(), xmlOutput.str());
+        diskout->write(writer->length(), writer->str());
         numRecords++;
     }
+
     OwnedRoxieString suppliedFooter(helper.getFooter());
-    const char *footer = suppliedFooter;
-    if (!footer) footer = "</Dataset>\n";
-    diskout->write(strlen(footer), footer);
+    StringBuffer footer;
+    if (kind==TAKjsonwrite)
+    {
+        buildJsonFooter(footer.newline(), suppliedFooter, rowTag);
+        footerLength=footer.length();
+    }
+    else if (suppliedFooter)
+        footer.append(suppliedFooter);
+    else
+        footer.append("</Dataset>");
+
+    diskout->write(footer.length(), footer);
 }
 
 void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
 {
     desc->queryProperties().setProp("@format","utf8n");
     desc->queryProperties().setProp("@rowTag",rowTag.str());
-    desc->queryProperties().setProp("@kind", "xml");
+    desc->queryProperties().setProp("@kind", (kind==TAKjsonwrite) ? "json" : "xml");
+    if (headerLength)
+        desc->queryProperties().setPropInt("@headerLength", headerLength);
+    if (footerLength)
+        desc->queryProperties().setPropInt("@footerLength", footerLength);
+
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
@@ -1025,17 +1049,6 @@ void CHThorIndexWriteActivity::execute()
 
     // Loop thru the results
     unsigned __int64 reccount = 0;
-    unsigned __int64 fileSize = 0;
-    OwnedRoxieString dsName(helper.getDatasetName());
-    if (dsName.get())
-    {
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(dsName,"IndexWrite::execute",false,false,true);
-        if (ldFile )
-        {
-            IDistributedFile * dFile = ldFile->queryDistributedFile();
-            fileSize = dFile ? dFile->queryAttributes().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
-        }
-    }
     unsigned int fileCrc = -1;
     file.setown(createIFile(filename.get()));
     {
@@ -1065,7 +1078,7 @@ void CHThorIndexWriteActivity::execute()
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
         size32_t keyMaxSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, fileSize, nodeSize, helper.getKeyedSize(), 0);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0);
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;
@@ -6293,7 +6306,7 @@ void CHThorMultiInputActivity::setInput(unsigned index, IHThorInput *_input)
     }
 }
 
-void CHThorMultiInputActivity::updateProgress(IWUGraphProgress &progress) const
+void CHThorMultiInputActivity::updateProgress(IStatisticGatherer &progress) const
 {
     CHThorSimpleActivityBase::updateProgress(progress);
     ForEachItemIn(idx, inputs)
@@ -7807,11 +7820,13 @@ void CHThorDiskReadBaseActivity::resolve()
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str());
         tempFileName.set(agent.queryTemporaryFile(mangledFilename.str()));
+        logicalFileName.set(tempFileName);
         gatherInfo(NULL);
     }
     else
     {
         ldFile.setown(agent.resolveLFN(mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
+        logicalFileName.set(mangledHelperFileName.str());
         if (ldFile)
         {
             Owned<IFileDescriptor> fdesc;
@@ -7822,6 +7837,23 @@ void CHThorDiskReadBaseActivity::resolve()
             {
                 persistent = dFile->queryAttributes().getPropBool("@persistent");
                 dfsParts.setown(dFile->getIterator());
+                if (helper.getFlags() & TDRfilenamecallback)
+                {
+                    IDistributedSuperFile *super = dFile->querySuperFile();
+                    if (super)
+                    {
+                        unsigned numsubs = super->numSubFiles(true);
+                        unsigned s=0;
+                        for (; s<numsubs; s++)
+                        {
+                            IDistributedFile &subfile = super->querySubFile(s, true);
+                            subfileLogicalFilenames.append(subfile.queryLogicalName());
+                        }
+                        assertex(fdesc);
+                        superfile.set(fdesc->querySuperFileDescriptor());
+                        assertex(superfile);
+                    }
+                }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
                 if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
@@ -7952,11 +7984,17 @@ bool CHThorDiskReadBaseActivity::openNext()
               (!dfsParts&&(partNum<ldFile->numParts())))
         {
             IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
-
             unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
             //MORE: Order of copies should be optimized at this point....
             StringBuffer file, filelist;
             closepart();
+            if (dfsParts && superfile && curPart)
+            {
+                unsigned subfile;
+                unsigned lnum;
+                if (superfile->mapSubPart(partNum, subfile, lnum))
+                    logicalFileName.set(subfileLogicalFilenames.item(subfile));
+            }
             for (unsigned copy=0; copy < numCopies; copy++)
             {
                 RemoteFilename rfilename;
@@ -9531,7 +9569,7 @@ void LibraryCallOutput::done()
     result.clear();
 }
 
-void LibraryCallOutput::updateProgress(IWUGraphProgress &progress) const
+void LibraryCallOutput::updateProgress(IStatisticGatherer &progress) const
 {
     owner->updateOutputProgress(progress, *this, processed);
 }
@@ -9542,7 +9580,13 @@ CHThorLibraryCallActivity::CHThorLibraryCallActivity(IAgentContext &_agent, unsi
 {
     libraryName.set(node->queryProp("att[@name=\"libname\"]/@value"));
     interfaceHash = node->getPropInt("att[@name=\"_interfaceHash\"]/@value", 0);
-    embedded = node->getPropBool("att[@name=\"embedded\"]/@value", false) ;
+    bool embedded = node->getPropBool("att[@name=\"embedded\"]/@value", false) ;
+    if (embedded)
+    {
+        embeddedGraphName.set(node->queryProp("att[@name=\"graph\"]/@value"));
+        if (!embeddedGraphName)
+            embeddedGraphName.set(libraryName);
+    }
 
     Owned<IPropertyTreeIterator> iter = node->getElements("att[@name=\"_outputUsed\"]");
     ForEach(*iter)
@@ -9564,7 +9608,7 @@ IHThorGraphResult * CHThorLibraryCallActivity::getResultRows(unsigned whichOutpu
         if (libraryName.length() == 0)
             libraryName.setown(helper.getLibraryName());
         helper.createParentExtract(extractBuilder);
-        results.setown(agent.executeLibraryGraph(libraryName, interfaceHash, activityId, embedded, extractBuilder.getbytes()));
+        results.setown(agent.executeLibraryGraph(libraryName, interfaceHash, activityId, embeddedGraphName, extractBuilder.getbytes()));
     }
 
     return results->queryResult(whichOutput);
@@ -9577,7 +9621,7 @@ IHThorInput * CHThorLibraryCallActivity::queryOutput(unsigned idx)
     return &outputs.item(idx);
 }
 
-void CHThorLibraryCallActivity::updateOutputProgress(IWUGraphProgress &progress, const LibraryCallOutput & _output, unsigned __int64 numProcessed) const
+void CHThorLibraryCallActivity::updateOutputProgress(IStatisticGatherer &progress, const LibraryCallOutput & _output, unsigned __int64 numProcessed) const
 {
     LibraryCallOutput & output = const_cast<LibraryCallOutput &>(_output);
     updateProgressForOther(progress, activityId, subgraphId, outputs.find(output), numProcessed);
@@ -9673,7 +9717,7 @@ public:
         throwUnexpected();
     }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
 //      CHThorSimpleActivityBase::updateProgress(progress);
         ForEachItemIn(i, inputs)

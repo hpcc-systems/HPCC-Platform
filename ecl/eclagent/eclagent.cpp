@@ -1048,6 +1048,11 @@ const void * EclAgent::fromXml(IEngineRowAllocator * rowAllocator, size32_t len,
     return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
 }
 
+const void * EclAgent::fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    return createRowFromJson(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+}
+
 
 bool EclAgent::getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * stepname, int sequence)
 {
@@ -1226,10 +1231,10 @@ void EclAgent::setResultUnicode(const char * name, unsigned sequence, int len, U
     {
         if (outputFmt == ofSTD)
         {
-            char * buff = 0;
+            rtlDataAttr buff;
             unsigned bufflen = 0;
-            rtlUnicodeToCodepageX(bufflen, buff, len, val, "utf-8");
-            outputSerializer->fwrite(sequence, (const void*)buff, 1, bufflen);
+            rtlUnicodeToCodepageX(bufflen, buff.refstr(), len, val, "utf-8");
+            outputSerializer->fwrite(sequence, buff.getdata(), 1, bufflen);
             outputSerializer->close(sequence, true);
         }
         else
@@ -1650,13 +1655,13 @@ EclAgentQueryLibrary * EclAgent::queryEclLibrary(const char * libraryName, unsig
     return NULL;
 }
 
-EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, bool embedded)
+EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, const char * embeddedGraphName)
 {
     Linked<EclAgentQueryLibrary> library = queryEclLibrary(libraryName, expectedInterfaceHash);
     if (!library)
     {
         const char * graphName = "graph1";
-        if (embedded)
+        if (embeddedGraphName)
         {
             library.setown(new EclAgentQueryLibrary);
             library->wu.set(queryWorkUnit());
@@ -1664,7 +1669,7 @@ EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsign
             library->name.set(libraryName);
             queryLibraries.append(*LINK(library));
 
-            graphName = libraryName;
+            graphName = embeddedGraphName;
         }
         else
         {
@@ -1729,9 +1734,8 @@ void EclAgent::loadDependencies(IConstWorkUnit * wu)
     for (plugins->first();plugins->isValid();plugins->next())
     {
         IConstWUPlugin &thisplugin = plugins->query();
-        SCMStringBuffer name, version;
+        SCMStringBuffer name;
         thisplugin.getPluginName(name);
-        thisplugin.getPluginVersion(version);
 
         StringBuffer plugIn;
         plugIn.append(pluginDirectory).append(name);
@@ -1825,7 +1829,7 @@ void EclAgent::doProcess()
             if(noRetry && (w->getState() == WUStateFailed))
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
-            w->addTimeStamp("EclAgent", GetCachedHostName(), "Started");
+            addTimeStamp(w, SSTglobal, NULL, StWhenQueryStarted);
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());
@@ -1843,7 +1847,7 @@ void EclAgent::doProcess()
                 w->resetWorkflow();
         }
         {
-            MTIME_SECTION(timer, "Process");
+            MTIME_SECTION(queryActiveTimer(), "Process");
             Owned<IEclProcess> process = loadProcess();
 
             if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
@@ -1892,7 +1896,7 @@ void EclAgent::doProcess()
     {
         WorkunitUpdate w = updateWorkUnit();
 
-        w->addTimeStamp("EclAgent", GetCachedHostName(), "Finished");
+        addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
         addTimings();
 
         switch (w->getState())
@@ -2673,7 +2677,7 @@ void EclAgent::checkPersistMatches(const char * logicalName, unsigned eclCRC)
     logException(ExceptionSeverityInformation, 0, msg.str(), false);
 }
 
-static int comparePersistAccess(IInterface **_a, IInterface **_b)
+static int comparePersistAccess(IInterface * const *_a, IInterface * const *_b)
 {
     IPropertyTree *a = *(IPropertyTree **)_a;
     IPropertyTree *b = *(IPropertyTree **)_b;
@@ -3001,7 +3005,7 @@ char * EclAgent::getDaliServers()
 void EclAgent::addTimings()
 {
     WorkunitUpdate w = updateWorkUnit();
-    updateWorkunitTimings(w, timer, "eclagent");
+    updateWorkunitTimings(w, queryActiveTimer());
 }
 
 // eclagent abort monitoring
@@ -3177,6 +3181,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     ILogMsgHandler * logMsgHandler = NULL;
     if (!standAloneExe)
     {
+        setStatisticsComponentName(SCThthor, agentTopology->queryProp("@name"), true);
+
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(agentTopology, "eclagent");
         lf->setCreateAliasFile(false);
         logMsgHandler = lf->beginLogging();
@@ -3311,7 +3317,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         if (daliServers.length())
         {
             {
-                MTIME_SECTION(timer, "SDS_Initialize");
+                MTIME_SECTION(queryActiveTimer(), "SDS_Initialize");
                 Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
                 initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, MP_WAIT_FOREVER);
             }
@@ -3322,7 +3328,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 #endif
 
             {
-                MTIME_SECTION(timer, "Environment_Initialize");
+                MTIME_SECTION(queryActiveTimer(), "Environment_Initialize");
                 setPasswordsFromSDS();
             }
             PrintLog("ECLAGENT build %s", BUILD_TAG);
@@ -3342,7 +3348,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 //Stand alone program, but dali is specified => create a workunit in dali, and store the results there....
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                Owned<IWorkUnit> daliWu = factory->createWorkUnit(NULL, "eclagent", "eclagent");
+                Owned<IWorkUnit> daliWu = factory->createWorkUnit("eclagent", "eclagent");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
                 extendedWu->copyWorkUnit(standAloneWorkUnit, true);
                 daliWu->getWuid(wuid);
@@ -4094,7 +4100,7 @@ public:
         bp.removeEdge(*this);
     }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const 
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {   
         if (in)
             in->updateProgress(progress);

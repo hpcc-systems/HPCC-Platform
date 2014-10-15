@@ -412,6 +412,8 @@ extern unsigned nodeCacheMB;
 extern unsigned leafCacheMB;
 extern unsigned blobCacheMB;
 
+extern Owned<IPerfMonHook> perfMonHook;
+
 struct PartNoType
 {
     unsigned short partNo;  // _n_of_400
@@ -620,18 +622,6 @@ class StatsCollector : public CInterface, implements IInterface
         }
     }
 
-    inline static const char *getStatCombineModeName(StatisticCombineType type)
-    {
-        switch(type)
-        {
-            case STATSMODE_COMBINE_SUM: return "sum";
-            case STATSMODE_COMBINE_MAX: return "max";
-            case STATSMODE_COMBINE_MIN: return "min";
-            default:
-                throwUnexpected();
-        }
-    }
-
 public:
     IMPLEMENT_IINTERFACE;
     StatsCollector()
@@ -656,20 +646,7 @@ public:
             throw MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
         init();
         assert (statIdx < STATS_SIZE);
-        switch (getStatCombineMode(statIdx))
-        {
-        case STATSMODE_COMBINE_SUM:
-            cumulative[statIdx] += value;
-            break;
-        case STATSMODE_COMBINE_MAX:
-            if (!counts[statIdx] || cumulative[statIdx] <= value)
-                cumulative[statIdx] = value;
-            break;
-        case STATSMODE_COMBINE_MIN:
-            if (!counts[statIdx] || cumulative[statIdx] >= value)
-                cumulative[statIdx] = value;
-            break;
-        }
+        cumulative[statIdx] += value;
         counts[statIdx] += count;
     }
 
@@ -697,7 +674,8 @@ public:
                 {
                     StringBuffer prefix, text;
                     logctx.getLogPrefix(prefix);
-                    text.appendf("%s - %"I64F"d (%d instances)", getStatName(i), cumulative[i], counts[i]);
+                    StatisticKind kind = mapRoxieStatKind(i);
+                    text.appendf("%s - %"I64F"d (%d instances)", queryStatisticName(kind), cumulative[i], counts[i]);
                     logctx.CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
                 }
             }
@@ -709,12 +687,30 @@ public:
         SpinBlock b(lock);
         if (cumulative)
         {
+            const char * whoami = queryStatisticsComponentName();
             for (unsigned i = 0; i < STATS_SIZE; i++)
             {
                 if (counts[i])
-                    wu->setStatistic("roxie", "workunit", getStatShortName(i), getStatName(i), getStatMeasure(i), cumulative[i], counts[i], 0, false);
+                    wu->setStatistic(SCTroxie, whoami, SSTglobal, NULL, mapRoxieStatKind(i), NULL, cumulative[i], counts[i], 0, StatsMergeReplace);
             }
         }
+    }
+
+    StringBuffer &printStats(StringBuffer &ret) const
+    {
+        SpinBlock b(lock);
+        if (cumulative)
+        {
+            for (unsigned i = 0; i < STATS_SIZE; i++)
+            {
+                if (counts[i])
+                {
+                    StatisticKind kind = mapRoxieStatKind(i);
+                    ret.appendf(" %s=%"I64F"u", queryStatisticName(kind), cumulative[i]);
+                }
+            }
+        }
+        return ret;
     }
 
     void toXML(StringBuffer &reply) const
@@ -726,11 +722,28 @@ public:
             {
                 if (counts[i])
                 {
-                    putStatsValue(reply, getStatName(i), getStatCombineModeName(getStatCombineMode(i)), counts[i]);
+                    StatisticKind kind = mapRoxieStatKind(i);
+                    putStatsValue(reply, queryStatisticName(kind), "sum", counts[i]);
                 }
             }
         }
     }
+
+    void getProgressInfo(IStatisticGatherer & builder) const
+    {
+        SpinBlock b(lock);
+        if (cumulative)
+        {
+            for (unsigned i = 0; i < STATS_SIZE; i++)
+            {
+                if (counts[i])
+                {
+                    builder.addStatistic(mapRoxieStatKind(i), counts[i]);
+                }
+            }
+        }
+    }
+
 
     void getNodeProgressInfo(IPropertyTree &node) const
     {
@@ -741,7 +754,9 @@ public:
             {
                 if (counts[i])
                 {
-                    putStatsValue(&node, getStatShortName(i), getStatCombineModeName(getStatCombineMode(i)), counts[i]);
+                    StatisticKind kind = mapRoxieStatKind(i);
+                    const char * statsName = queryStatisticName(kind);
+                    putStatsValue(&node, statsName, "sum", counts[i]);
                 }
             }
         }
@@ -928,6 +943,11 @@ public:
         stats.dumpStats(*this);
     }
 
+    StringBuffer &printStats(StringBuffer &s) const
+    {
+        return stats.printStats(s);
+    }
+
     virtual void dumpStats(IWorkUnit *wu) const
     {
         stats.dumpStats(wu);
@@ -959,7 +979,7 @@ public:
     void reset()
     {
         stats.reset();
-        timer->reset();
+        queryActiveTimer()->reset();
     }
 };
 

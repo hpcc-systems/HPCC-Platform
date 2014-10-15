@@ -322,7 +322,7 @@ int main( int argc, char *argv[]  )
             int err = _chdir(thorPath.str());
             if (err)
             {
-                IException *e = MakeErrnoException(-1, "Failed to change dir to '%s'",thorPath.str());
+                IException *e = makeErrnoExceptionV(-1, "Failed to change dir to '%s'", thorPath.str());
                 FLLOG(MCexception(e), thorJob, e);
                 throw e;
             }
@@ -353,10 +353,10 @@ int main( int argc, char *argv[]  )
                 globals->setProp("@thorTempDirectory", tempDirStr.str());
             else
                 tempDirStr.append(globals->queryProp("@thorTempDirectory"));
+            addPathSepChar(tempDirStr).append(getMachinePortBase());
+
             logDiskSpace(); // Log before temp space is cleared
-            StringBuffer tempPrefix("thtmp");
-            tempPrefix.append(getMachinePortBase()).append("_");
-            SetTempDir(tempDirStr.str(), tempPrefix.str(), true);
+            SetTempDir(tempDirStr.str(), "thtmp", true);
 
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 

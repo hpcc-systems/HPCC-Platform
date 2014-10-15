@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,13 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
-#include <afx.h>
+#ifndef __ESDL_DECL_HPP__
+#define __ESDL_DECL_HPP__
 
-class HIDLfile : CFile
-{
-public:
-    HIDLfile();
-    ~HIDLfile();
+#ifdef _WIN32
+ #ifdef ESDLCOMP_EXPORTS
+  #define esdl_decl __declspec(dllexport)
+ #else
+  #define esdl_decl __declspec(dllimport)
+ #endif
+#else
+ #define esdl_decl
+#endif
 
-    Open();
-};
+#endif

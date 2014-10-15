@@ -520,7 +520,12 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     else if(ldap_client->getServerType() == IPLANET)
         pp = new CIPlanetAciProcessor(cfg);
     else if(ldap_client->getServerType() == OPEN_LDAP)
-        pp = new COpenLdapAciProcessor(cfg);
+    {
+        if (0 == stricmp(ldap_client->getLdapConfig()->getCfgServerType(), "389DirectoryServer"))//uses iPlanet style ACI
+            pp = new CIPlanetAciProcessor(cfg);
+        else
+            pp = new COpenLdapAciProcessor(cfg);
+    }
     else
         throwUnexpected();
 

@@ -189,7 +189,7 @@ regexid_t RegexIdAllocator::queryID(IHqlExpression * expr, IAtom * name)
 }
 
 
-int compareUnsigned(unsigned * left, unsigned * right) 
+int compareUnsigned(unsigned const * left, unsigned const * right)
 { 
     return (*left < *right) ? -1 : (*left > *right) ? +1 : 0; 
 }
@@ -2119,7 +2119,7 @@ inline int compareHqlRegexExpr(HqlRegexExpr * left, HqlRegexExpr * right)
     return (idl < idr) ? -1 : (idl > idr) ? +1 : 0; 
 }
 
-int compareHqlRegexExpr(CInterface * * left, CInterface * * right) 
+static int compareHqlRegexExpr(CInterface * const * left, CInterface * const * right)
 { 
     return compareHqlRegexExpr((HqlRegexExpr *)*left, (HqlRegexExpr *)*right);
 }
@@ -2184,7 +2184,7 @@ static inline int compareState(HqlDfaState * left, HqlDfaState * right)
     return left->position.compare(right->position);
 }
 
-static int compareState(CInterface * * left, CInterface * * right) 
+static int compareState(CInterface * const * left, CInterface * const * right)
 { 
     return compareState((HqlDfaState *)*left, (HqlDfaState *)*right);
 }
@@ -2528,7 +2528,7 @@ HqlRegexExpr * RegexContext::createStructure(IHqlExpression * expr, bool caseSen
 
 void RegexContext::buildStructure()
 {
-    unsigned startTime = msTick();
+    cycle_t startCycles = get_cycles_now();
     IHqlExpression * grammar = expr->queryChild(2);
     assertex(grammar->getOperator() == no_pat_instance);
     OwnedHqlExpr structure = LINK(grammar);//createValue(no_pat_instance, makeRuleType(NULL), LINK(grammar), LINK(grammar->queryChild(1)));
@@ -2538,7 +2538,7 @@ void RegexContext::buildStructure()
     root->setRegexOwn(rootRegex);
     named.append(*LINK(root));
 
-    updateTimer("workunit;Generate PARSE: Create Structure", msTick()-startTime);
+    noteFinishedTiming("compile:generate PARSE:create structure", startCycles);
 }
 
 void RegexContext::expandRecursion()
@@ -2591,7 +2591,7 @@ void RegexContext::optimizeSpotDFA()
 
 void RegexContext::optimizePattern()
 {
-    unsigned startTime = msTick();
+    cycle_t startCycles = get_cycles_now();
     ForEachItemIn(idx1, named)
         named.item(idx1).mergeCreateSets();
     root->expandNamedSymbols();
@@ -2605,7 +2605,7 @@ void RegexContext::optimizePattern()
         }
     }
     optimizeSpotDFA();
-    updateTimer("workunit;Generate PARSE: Optimize", msTick()-startTime);
+    noteFinishedTiming("compile:generate PARSE:optimize", startCycles);
 }
 
 
@@ -2626,7 +2626,8 @@ HqlNamedRegex * RegexContext::queryDefine(IHqlExpression * defineName, bool case
 
 void RegexContext::analysePattern()
 {
-    unsigned startTime = msTick();
+    cycle_t startCycles = get_cycles_now();
+
     //This conversion is based around the description in the Dragon book:
     //3.9 From a regular expression to a DFA
     //even though we don't always convert it, the steps form a useful algorithm
@@ -2642,13 +2643,13 @@ void RegexContext::analysePattern()
     ForEachItemIn(idx3, named)
         named.item(idx3).generateDFAs();
 
-    updateTimer("workunit;Generate PARSE: Analyse", msTick()-startTime);
+    noteFinishedTiming("compile:generate PARSE:analyse", startCycles);
 }
 
 
 void RegexContext::generateRegex()
 {
-    unsigned startTime = msTick();
+    cycle_t startCycles = get_cycles_now();
 
     parser.addedSeparators = info.addedSeparators;
     setParserOptions(parser);
@@ -2663,7 +2664,7 @@ void RegexContext::generateRegex()
     parser.grammar.set(root->queryRootPattern());
     parser.minPatternLength = root->getMinLength();
 
-    updateTimer("workunit;Generate PARSE: Generate", msTick()-startTime);
+    noteFinishedTiming("compile:generate PARSE:generate", startCycles);
 }
 
 
@@ -2744,10 +2745,10 @@ void RegexContext::generateLexer(IDfaPattern * builder)
     lexerRoot->generateDFA(builder);
 }
 
-void RegexContext::updateTimer(const char * name, unsigned timems)
+void RegexContext::noteFinishedTiming(const char * name, cycle_t startCycles)
 {
     if (timeReporter)
-        timeReporter->addTiming(name, NULL, timems);
+        timeReporter->addTiming(name, get_cycles_now() - startCycles);
 }
 
 /*

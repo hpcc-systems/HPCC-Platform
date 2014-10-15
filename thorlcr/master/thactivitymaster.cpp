@@ -343,7 +343,8 @@ public:
                 ret = createXmlReadActivityMaster(this);
                 break;
             case TAKxmlwrite:
-                ret = createXmlWriteActivityMaster(this);
+            case TAKjsonwrite:
+                ret = createXmlWriteActivityMaster(this, kind);
                 break;
             case TAKmerge:
                 ret = createMergeActivityMaster(this);

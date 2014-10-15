@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      155
-#define MIN_ACTIVITY_INTERFACE_VERSION  155             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      156
+#define MIN_ACTIVITY_INTERFACE_VERSION  156             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -381,11 +381,13 @@ public:
 //Core struct used for representing meta for a field.
 struct RtlFieldInfo
 {
-    inline RtlFieldInfo(IAtom * _name, const char * _xpath, const RtlTypeInfo * _type) : name(_name), xpath(_xpath), type(_type) {}
+    inline RtlFieldInfo(IAtom * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer = NULL)
+    : name(_name), xpath(_xpath), type(_type), initializer((const byte *) _initializer) {}
 
     IAtom * name;
     const char * xpath;
     const RtlTypeInfo * type;
+    const byte *initializer;
 
     inline bool isFixedSize() const 
     { 
@@ -641,6 +643,9 @@ interface ICodeContext : public IResourceContext
     virtual IEngineContext *queryEngineContext() = 0;
     virtual char *getDaliServers() = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
+
+    virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
 };
 
 
@@ -914,6 +919,7 @@ enum ThorActivityKind
     TAKunknowndenormalizegroup2,
     TAKunknowndenormalizegroup3,
     TAKlastdenormalizegroup,
+    TAKjsonwrite,
 
     TAKlast
 };
@@ -1196,7 +1202,7 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual const char * queryRecordECL() = 0;
     virtual unsigned getFlags() = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * src, IBlobCreator * blobs, unsigned __int64 & filepos) = 0;   //NB: returns size
-    virtual const char * getDatasetName() = 0;
+    virtual const char * getDatasetName() = 0;   // Never used, left in to preserve VMT layout only
     virtual const char * getDistributeIndexName() = 0;
     virtual unsigned getKeyedSize() = 0;
     virtual unsigned getExpiryDays() = 0;

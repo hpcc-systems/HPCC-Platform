@@ -79,6 +79,7 @@ interface ILdapConnectionPool : extends IInterface
 interface ILdapConfig : extends IInterface
 {
     virtual LdapServerType getServerType() = 0;
+    virtual const char * getCfgServerType() const = 0;
     virtual StringBuffer& getLdapHost(StringBuffer& hostbuf) = 0;
     virtual void markDown(const char* ldaphost) = 0;
     virtual int getLdapPort() = 0;

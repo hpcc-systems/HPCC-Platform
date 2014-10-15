@@ -32,26 +32,27 @@ class CKeyedJoinMaster : public CMasterActivity
     unsigned numTags;
     mptag_t tags[4];
     ProgressInfoArray progressInfoArr;
-    StringArray progressLabels;
+    UnsignedArray progressKinds;
 
 
 public:
     CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
         helper = (IHThorKeyedJoinArg *) queryHelper();
-        progressLabels.append("seeks");
-        progressLabels.append("scans");
-        progressLabels.append("accepted");
-        progressLabels.append("postfiltered");
-        progressLabels.append("prefiltered");
+        //GH->JCS a bit wasteful creating this array each time.
+        progressKinds.append(StNumIndexSeeks);
+        progressKinds.append(StNumIndexScans);
+        progressKinds.append(StNumIndexAccepted);
+        progressKinds.append(StNumPostFiltered);
+        progressKinds.append(StNumPreFiltered);
 
         if (helper->diskAccessRequired())
         {
-            progressLabels.append("diskSeeks");
-            progressLabels.append("diskAccepted");
-            progressLabels.append("diskRejected");
+            progressKinds.append(StNumDiskSeeks);
+            progressKinds.append(StNumDiskAccepted);
+            progressKinds.append(StNumDiskRejected);
         }
-        ForEachItemIn(l, progressLabels)
+        ForEachItemIn(l, progressKinds)
             progressInfoArr.append(*new ProgressInfo);
         localKey = false;
         numTags = 0;
@@ -270,24 +271,23 @@ public:
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
         CMasterActivity::deserializeStats(node, mb);
-        ForEachItemIn(p, progressLabels)
+        ForEachItemIn(p, progressKinds)
         {
             unsigned __int64 st;
             mb.read(st);
             progressInfoArr.item(p).set(node, st);
         }
     }
-    virtual void getXGMML(unsigned idx, IPropertyTree *edge)
+    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
     {
-        CMasterActivity::getXGMML(idx, edge);
+        //This should be an activity stats
+        CMasterActivity::getEdgeStats(stats, idx);
         assertex(0 == idx);
         ForEachItemIn(p, progressInfoArr)
         {
             ProgressInfo &progress = progressInfoArr.item(p);
             progress.processInfo();
-            StringBuffer attr("@");
-            attr.append(progressLabels.item(p));
-            edge->setPropInt64(attr.str(), progress.queryTotal());
+            stats.addStatistic((StatisticKind)progressKinds.item(p), progress.queryTotal());
         }
     }
 };

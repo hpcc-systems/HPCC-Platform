@@ -773,12 +773,21 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
     // Get the length and address of the stack
     unsigned len = fstack.getSp();
-// ARMFIX: All 5 __64BIT__ usages in this file could be replaced by one at the top
-// regarding the type of a few local variables via typedef
-#ifdef __64BIT__
-    // ARMFIX: This will have to change for ARM. See info below.
-    while (len<6*REGSIZE) 
-        len = fstack.pushPtr(NULL);         // ensure enough to fill 6 registers
+#ifdef REGPARAMS
+    while (len < REGPARAMS*REGSIZE)
+        len = fstack.pushPtr(NULL);         // ensure enough to fill REGPARAMS registers
+#endif
+#ifdef ODD_STACK_ALIGNMENT
+    // Some architectures (arm) require that the total amount pushed onto the stack for parameters is an odd number of words
+    // (so that the stack alignment is always an even number of words once the return IP is pushed)
+    if ((len & REGSIZE) == 0)
+        len = fstack.pushPtr(NULL);
+#endif
+#ifdef EVEN_STACK_ALIGNMENT
+    // Other architectures (x86) require that the total amount pushed onto the stack for parameters is an even number of words
+    // (so that the stack alignment is always an even number of words after the callq, which pushes an even number of words)
+    if ((len & REGSIZE) == REGSIZE)
+        len = fstack.pushPtr(NULL);
 #endif
     char* strbuf = fstack.getMem();
 
@@ -796,8 +805,6 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 #endif
 
     try{
-// X86/X86_64 Procedure Call Standard
-#if defined (_ARCH_X86_) || defined(_ARCH_X86_64_)
     // Assembly code that does the dynamic function call. The calling convention is a combination of 
     // Pascal and C, that is the parameters are pushed from left to right, the stack goes downward(i.e.,
     // the stack pointer decreases as you push), and the caller is responsible for restoring the 
@@ -805,9 +812,10 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
 // **** Windows ****
 #ifdef _WIN32
-#ifdef _WIN64
+ // Note - we assume X86/X86_64 Procedure Call Standard
+ #if defined (_ARCH_X86_64_)
         UNIMPLEMENTED;
-#else
+ #elif defined (_ARCH_X86_)
         _asm{
         ;save registers that will be used
         push   ecx
@@ -859,27 +867,96 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         pop    esi
         pop    ecx
     }
-#endif
+ #else
+    UNIMPLEMENTED;
+ #endif
 #else // WIN32
 
 // **** Linux/Mac ****
-#ifdef _ARCH_X86_64_
+ #ifdef _ARCH_X86_64_
+        assertex((len & 15) == 0);  // We need to make sure we add an EVEN number of words to stack, so that it is 16-byte aligned before the callq
 
         __int64 dummy1, dummy2,dummy3,dummy4;
 
         void * floatstack = fstack.getFloatMem(); 
         if (floatstack) { // sets xmm0-7
+            unsigned * floatSizes = fstack.getFloatSizes();
             __asm__ (
+            ".doparm0: \n\t"
+                "cmpl  $4,(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat0 \n\t"
                 "movsd  (%%rsi),%%xmm0 \n\t"
+                "jmp .doparm1 \n\t"
+            ".dofloat0: \n\t"
+                "movss  (%%rsi),%%xmm0 \n\t"
+
+            ".doparm1: \n\t"
+                "cmpl  $4,4(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat1 \n\t"
                 "movsd  8(%%rsi),%%xmm1 \n\t"
+                "jmp .doparm2 \n\t"
+            ".dofloat1: \n\t"
+                "movss  8(%%rsi),%%xmm1 \n\t"
+
+            ".doparm2: \n\t"
+                "cmpl  $4,8(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat2 \n\t"
                 "movsd  16(%%rsi),%%xmm2 \n\t"
+                "jmp .doparm3 \n\t"
+            ".dofloat2: \n\t"
+                "movss  16(%%rsi),%%xmm2 \n\t"
+
+            ".doparm3: \n\t"
+                "cmpl  $4,12(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat3 \n\t"
                 "movsd  24(%%rsi),%%xmm3 \n\t"
+                "jmp .doparm4 \n\t"
+            ".dofloat3: \n\t"
+                "movss  24(%%rsi),%%xmm3 \n\t"
+
+            ".doparm4: \n\t"
+                "cmpl  $4,16(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat4 \n\t"
                 "movsd  32(%%rsi),%%xmm4 \n\t"
+                "jmp .doparm5 \n\t"
+            ".dofloat4: \n\t"
+                "movss  32(%%rsi),%%xmm4 \n\t"
+
+            ".doparm5: \n\t"
+                "cmpl  $4,20(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat5 \n\t"
                 "movsd  40(%%rsi),%%xmm5 \n\t"
+                "jmp .doparm6 \n\t"
+            ".dofloat5: \n\t"
+                "movss  40(%%rsi),%%xmm5 \n\t"
+
+            ".doparm6: \n\t"
+                "cmpl  $4,24(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat6 \n\t"
                 "movsd  48(%%rsi),%%xmm6 \n\t"
+                "jmp .doparm7 \n\t"
+            ".dofloat6: \n\t"
+                "movss  48(%%rsi),%%xmm6 \n\t"
+
+            ".doparm7: \n\t"
+                "cmpl  $4,28(%%rdi) \n\t"
+                "jl  .floatdone \n\t"
+                "je  .dofloat7 \n\t"
                 "movsd  56(%%rsi),%%xmm7 \n\t"
+                "jmp .floatdone \n\t"
+            ".dofloat7: \n\t"
+                "movss  56(%%rsi),%%xmm7 \n\t"
+
+            ".floatdone: \n\t"
             : 
-            : "S"(strbuf)
+            : "S"(floatstack),"D"(floatSizes)
             );
         }           
         __asm__ (
@@ -895,21 +972,15 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             "pop %%r8 \n\t"
             "pop %%r9 \n\t"
             "call   *%%rax \n\t"
+            "add    %%rbx, %%rsp \n\t" // Restore stack pointer (note have popped 6 registers)
             : "=a"(int64result),"=d"(dummy1),"=c"(dummy1),"=S"(dummy3),"=D"(dummy4)
-            : "c"(len),"S"(strbuf),"a"(fh)
+            : "c"(len),"b"(len-REGPARAMS*REGSIZE),"S"(strbuf),"a"(fh)
             );
         
-        // Restore stack pointer
-        __asm__  __volatile__(
-            "add    %%rcx, %%rsp \n\t"
-            : 
-        : "c"(len-6*REGSIZE)        // have popped 6 registers
-            );
-
         // Get real (float/double) return values;
         if(isRealvalue)
         {
-            if(len <= 4)
+            if(resultsize <= 4)
             {
                 __asm__  __volatile__(
                     "movss  %%xmm0,(%%rdi) \n\t"
@@ -929,7 +1000,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         else {
             intresult = (int)int64result;
         }
-#else // _ARCH_X86_
+ #elif defined(_ARCH_X86_)
         int dummy1, dummy2,dummy3;
         __asm__ __volatile__(
             "push   %%ebx \n\t"
@@ -949,7 +1020,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         // Get real (float/double) return values;
         if(isRealvalue)
         {
-            if(len <= 4)
+            if(resultsize <= 4)
             {
                 __asm__  __volatile__(
                     "fstps (%%edi) \n\t"
@@ -966,21 +1037,167 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
                 );
             }
         }
-#endif
-
-#endif
-
-// AARCH32/64 Procedure Call Standard
-#elif defined(_ARCH_ARM32_) || defined(_ARCH_ARM64_)
-        // ARMFIX: ARM AAPCS is different than X86 in that it uses registers for
-        // both arguments and returns values.
+ #elif defined(_ARCH_ARM32_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0042e/IHI0042E_aapcs.pdf
+  #ifdef MAXFPREGS
+        void * floatstack = fstack.getFloatMem();
+        if (floatstack) {
+            unsigned * floatSizes = fstack.getFloatSizes();
+           __asm__ __volatile__ (
+           ".doparm0: \n\t"
+               "ldr  r0,[%[sizes],#0] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat0 \n\t"
+               "fldd  d0,[%[vals], #0] \n\t"
+               "b .doparm1 \n\t"
+           ".dofloat0: \n\t"
+               "flds  s0,[%[vals], #0] \n\t"
+
+           ".doparm1: \n\t"
+               "ldr  r0,[%[sizes],#4] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat1 \n\t"
+               "fldd  d1,[%[vals], #8] \n\t"
+               "b .doparm2 \n\t"
+           ".dofloat1: \n\t"
+               "flds  s2,[%[vals], #8] \n\t"
+
+           ".doparm2: \n\t"
+               "ldr  r0,[%[sizes],#8] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat2 \n\t"
+               "fldd  d2,[%[vals], #16] \n\t"
+               "b .doparm3 \n\t"
+           ".dofloat2: \n\t"
+               "flds  s4,[%[vals], #16] \n\t"
+
+           ".doparm3: \n\t"
+               "ldr  r0,[%[sizes],#12] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat3 \n\t"
+               "fldd  d3,[%[vals], #24] \n\t"
+               "b .doparm4 \n\t"
+           ".dofloat3: \n\t"
+               "flds  s6,[%[vals], #24] \n\t"
+
+           ".doparm4: \n\t"
+               "ldr  r0,[%[sizes],#16] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat4 \n\t"
+               "fldd  d4,[%[vals], #32] \n\t"
+               "b .doparm5 \n\t"
+           ".dofloat4: \n\t"
+               "flds  s8,[%[vals], #32] \n\t"
+
+           ".doparm5: \n\t"
+               "ldr  r0,[%[sizes],#20] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat4 \n\t"
+               "fldd  d5,[%[vals], #40] \n\t"
+               "b .doparm6 \n\t"
+           ".dofloat5: \n\t"
+               "flds  s10,[%[vals], #40] \n\t"
+
+           ".doparm6: \n\t"
+               "ldr  r0,[%[sizes],#24] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat6 \n\t"
+               "fldd  d6,[%[vals], #48] \n\t"
+               "b .doparm7 \n\t"
+           ".dofloat6: \n\t"
+               "flds  s12,[%[vals], #48] \n\t"
+
+           ".doparm7: \n\t"
+               "ldr  r0,[%[sizes],#28] \n\t"
+               "cmp  r0, #4 \n\t"
+               "blt  .floatdone \n\t"
+               "beq  .dofloat7 \n\t"
+               "fldd  d7,[%[vals], #56] \n\t"
+               "b .floatdone \n\t"
+           ".dofloat7: \n\t"
+               "flds  s14,[%[vals], #56] \n\t"
+
+            ".floatdone: \n\t"
+            :
+            : [vals] "r"(floatstack), [sizes] "r"(floatSizes)
+            : "r0"
+           );
+        }
+  #endif
+        assertex((len & 7) == 4);  // We need to make sure we add an ODD number of words to stack, so that it gets 8-byte aligned once pc is pushed by the call
+        register unsigned _intresult asm("r0");                       // Specific register for result
+        register unsigned _intresulthigh asm("r1");                   // Specific register for result
+        register unsigned _poplen asm("r4") = len-REGPARAMS*REGSIZE;  // Needs to survive the call
+        register void *_fh asm("r5") = fh;                             // Needs to survive until the call
+        __asm__ __volatile__ (
+            "subs sp, sp, %[len] \n\t"        // Make space on stack
+            "mov r2, sp \n\t"                 // r2 = destination for loop
+            ".repLoop: \n\t"
+            "ldrb r3, [%[strbuf]], #1 \n\t"   // copy a byte from src array to r3
+            "strb r3, [r2], #1 \n\t"          // and then from r3 onto stack
+            "subs %[len], %[len], #1 \n\t"    // decrement and repeat
+            "bne .repLoop \n\t"
+            "pop {r0,r1,r2,r3} \n\t"          // first 4 parameters go in registers
+            "blx %[fh] \n\t"                  // make the call
+            "adds sp, sp, %[poplen] \n\t"     // Restore stack pointer (note have popped 4 registers, so poplen is len - 16)
+            : "=r"(_intresult), "=r"(_intresulthigh)
+            : [len] "r"(len), [poplen] "r"(_poplen), [strbuf] "r"(strbuf), [fh] "r"(_fh)
+            : "r2","r3","lr"                  // function we call may corrupt lr
+            );
+        intresult = _intresult;
+        intresulthigh = _intresulthigh;
+        if (isRealvalue)
+        {
+  #ifdef MAXFPREGS
+            if(resultsize <= 4)
+            {
+                __asm__  __volatile__(
+                    "fsts  s0,[%[fresult]] \n\t"
+                    :
+                    : [fresult] "r"(&(floatresult))
+                );
+            }
+            else
+            {
+                __asm__  __volatile__(
+                    "fstd  d0,[%[fresult]] \n\t"
+                    :
+                    : [fresult] "r"(&(doubleresult))
+                );
+            }
+  #else
+            if(resultsize <= 4)
+            {
+                floatresult = *(float*)&intresult;
+            }
+            else
+            {
+                union
+                {
+                    struct { int lo, int hi } i;
+                    double d;
+                } u;
+                u.lo = intresult;
+                u.hi = intresulthigh;
+                doubleresult = u.d;
+            }
+  #endif
+        }
+ #elif defined(_ARCH_ARM64_)
         // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
         UNIMPLEMENTED;
-#else
+ #else
         // Unknown architecture
         UNIMPLEMENTED;
-#endif
+ #endif
+#endif //win32
     }
     catch (...) {
         FreeSharedObject(hDLL);
@@ -1753,9 +1970,23 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             break;
         }
     case no_add:
-        return applyBinaryFold(expr, addValues);
+        {
+            IHqlExpression * left = expr->queryChild(0);
+            IHqlExpression * right = expr->queryChild(1);
+            if (isZero(left))
+                return ensureExprType(right, expr->queryType());
+            if (isZero(right))
+                return ensureExprType(left, expr->queryType());
+            return applyBinaryFold(expr, addValues);
+        }
     case no_sub:
+    {
+        IHqlExpression * left = expr->queryChild(0);
+        IHqlExpression * right = expr->queryChild(1);
+        if (isZero(right))
+            return ensureExprType(left, expr->queryType());
         return applyBinaryFold(expr, subtractValues);
+    }
     case no_hash32:
     case no_hash64:
         {
@@ -1766,15 +1997,28 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         }
     case no_mul:
         {
+            IHqlExpression * left = expr->queryChild(0);
+            IHqlExpression * right = expr->queryChild(1);
             //Multiply by zero (from constant folding count(ds)) can reduce a non-constant dataset to constant
-            if (isZero(expr->queryChild(0)) || isZero(expr->queryChild(1)))
+            if (isZero(left) || isZero(right))
             {
                 OwnedHqlExpr zero = getSizetConstant(0);
                 return ensureExprType(zero, expr->queryType());
             }
+            if (matchesConstantValue(left, 1))
+                return ensureExprType(right, expr->queryType());
+            if (matchesConstantValue(right, 1))
+                return ensureExprType(left, expr->queryType());
             return applyBinaryFold(expr, multiplyValues);
         }
     case no_div:
+        if (matchesConstantValue(expr->queryChild(1), 1))
+        {
+            IHqlExpression * left = expr->queryChild(0);
+            if (left->queryType()->isInteger())
+                return ensureExprType(left, expr->queryType());
+        }
+        //fall through
     case no_modulus:
         {
             IValue * leftValue = expr->queryChild(0)->queryValue();
@@ -2722,7 +2966,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             {
                 //Transform this map to a case - it will be much more efficient.
                 HqlExprArray args2;
-                CopyArray alreadyDone;
+                ICopyArray alreadyDone;
                 args2.append(*LINK(allTestField));
                 ForEachItemIn(i, args)
                 {
@@ -5610,6 +5854,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_serialize:
     case no_typetransfer:
     case no_fromxml:
+    case no_fromjson:
     case no_httpcall:
         break;
 
@@ -6263,4 +6508,96 @@ extern HQLFOLD_API void quickFoldExpressions(HqlExprArray & target, const HqlExp
     QuickConstantTransformer transformer(context, options);
     ForEachItemIn(i, source)
         target.append(*transformer.transform(&source.item(i)));
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+static bool valueInList(IHqlExpression * search, IHqlExpression * list)
+{
+    if (list->getOperator() != no_list)
+        return false;
+
+    ForEachChild(i, list)
+    {
+        if (search == list->queryChild(i))
+            return true;
+    }
+    return false;
+}
+
+static bool valueNotInList(IHqlExpression * search, IHqlExpression * list)
+{
+    if (list->getOperator() != no_list)
+        return false;
+
+    IValue * value = search->queryValue();
+    if (!value)
+        return false; // can't tell
+
+    ForEachChild(i, list)
+    {
+        IHqlExpression * cur = list->queryChild(i);
+        IValue * curValue = cur->queryValue();
+        if (!curValue || value == curValue)
+            return false;
+    }
+    return true;
+}
+
+
+//Is it guaranteed that both conditions cannot be true at the same time.  Avoid false positivies.
+//Don't try and catch all examples, just the most common possibilities.
+//This could be improved over time....
+extern HQLFOLD_API bool areExclusiveConditions(IHqlExpression * left, IHqlExpression * right)
+{
+    node_operator leftOp = left->getOperator();
+    node_operator rightOp = right->getOperator();
+
+    // Check for x = constant1, x = constant2, constant1 != constant2
+    if ((leftOp == no_eq) && (rightOp == no_eq))
+    {
+        if (left->queryChild(0) == right->queryChild(0))
+        {
+            //Can only really be sure if comparing against constants.
+            IValue * leftValue = left->queryChild(1)->queryValue();
+            IValue * rightValue = right->queryChild(1)->queryValue();
+            return (leftValue && rightValue && leftValue != rightValue);
+        }
+        return false;
+    }
+
+    // Check for NOT x, x
+    if ((leftOp == no_not) && (left->queryChild(0) == right))
+        return true;
+
+    // Check for x, NOT x
+    if ((rightOp == no_not) && (right->queryChild(0) == left))
+        return true;
+
+    // two tests against the same condition (could also pass in here if both NULL..)
+    if (left->queryChild(0) == right->queryChild(0))
+    {
+        // Check for x <op> y, x !<op> y  - no need for y to be a constant.
+        if (leftOp == getInverseOp(rightOp))
+        {
+            return left->queryChild(1) == right->queryChild(1);
+        }
+
+        // Unusual, but occured in the main example I was trying to improve
+        // x = c1, x not in [c1, ....]
+        // x = c1, x in [c2, c3, c4, c5]
+        if ((leftOp == no_eq) && (rightOp == no_notin))
+            return valueInList(left->queryChild(1),  right->queryChild(1));
+
+        if ((leftOp == no_eq) && (rightOp == no_in))
+            return valueNotInList(left->queryChild(1),  right->queryChild(1));
+
+        if ((rightOp == no_eq) && (leftOp == no_notin))
+            return valueInList(right->queryChild(1),  left->queryChild(1));
+
+        if ((rightOp == no_eq) && (leftOp == no_in))
+            return valueNotInList(right->queryChild(1),  left->queryChild(1));
+    }
+
+    return false;
 }

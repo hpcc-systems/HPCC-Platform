@@ -299,29 +299,9 @@ public:
     {
         return ctx->isBlind();
     }
-    virtual unsigned parallelJoinPreload() 
+    virtual const QueryOptions &queryOptions() const
     {
-        return ctx->parallelJoinPreload();
-    }
-    virtual unsigned concatPreload() 
-    {
-        return ctx->concatPreload();
-    }
-    virtual unsigned fetchPreload() 
-    {
-        return ctx->fetchPreload();
-    }
-    virtual unsigned fullKeyedJoinPreload() 
-    {
-        return ctx->fullKeyedJoinPreload();
-    }
-    virtual unsigned keyedJoinPreload() 
-    {
-        return ctx->keyedJoinPreload();
-    }
-    virtual unsigned prefetchProjectPreload() 
-    {
-        return ctx->prefetchProjectPreload();
+        return ctx->queryOptions();
     }
     virtual void addSlavesReplyLen(unsigned len) 
     {
@@ -358,18 +338,6 @@ public:
     virtual IDebuggableContext *queryDebugContext() const
     {
         return ctx->queryDebugContext();
-    }
-    virtual bool queryTraceActivityTimes() const
-    {
-        return ctx->queryTraceActivityTimes();
-    }
-    virtual bool queryCheckingHeap() const
-    {
-        return ctx->queryCheckingHeap();
-    }
-    virtual bool queryTimeActivities() const
-    {
-        return ctx->queryTimeActivities();
     }
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence)
     {
@@ -914,6 +882,7 @@ protected:
     mutable StatsCollector stats;
     unsigned processed;
     unsigned __int64 totalCycles;
+    unsigned __int64 localCycles;
     unsigned activityId;
     activityState state;
     bool createPending;
@@ -933,6 +902,7 @@ public:
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
         totalCycles = 0;
+        localCycles = 0;
         if (factory)
             factory->createChildQueries(childGraphs, this, _probeManager, *this);
         state=STATEreset;
@@ -951,6 +921,7 @@ public:
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
         totalCycles = 0;
+        localCycles = 0;
         state=STATEreset;
         rowAllocator = NULL;
         debugging = false;
@@ -959,15 +930,16 @@ public:
         timeActivities = defaultTimeActivities;
     }
 
-    inline ~CRoxieServerActivity()
+    ~CRoxieServerActivity()
     {
-        CriticalBlock cb(statecrit);
         if (traceStartStop)
         {
-            DBGLOG("%p destroy %d state=%s", this, activityId, queryStateText(state)); // Note- CTXLOG may not be safe
+            // There was an old comment here stating // Note- CTXLOG may not be safe
+            // However as far as I can see it should always be safe
+            DBGLOG("%p destroy %d state=%s", this, activityId, queryStateText(state));
             if (watchActivityId && watchActivityId==activityId)
             {
-                DBGLOG("WATCH: %p destroy %d state=%s", this, activityId, queryStateText(state)); // Note- CTXLOG may not be safe
+                DBGLOG("WATCH: %p destroy %d state=%s", this, activityId, queryStateText(state));
             }
         }
         if (state!=STATEreset)
@@ -975,6 +947,10 @@ public:
             DBGLOG("STATE: Activity %d destroyed but not reset", activityId);
             state = STATEreset;  // bit pointless but there you go... 
         }
+        if (factory && !debugging)
+            factory->noteProcessed(0, processed, totalCycles, localCycles);
+        if (ctx)
+            ctx->noteProcessed(*this, this, 0, processed, totalCycles, localCycles);
         basehelper.Release();
         ::Release(rowAllocator);
     }
@@ -1150,7 +1126,7 @@ public:
         if (factory)
             factory->onCreateChildQueries(_ctx, &basehelper, childGraphs);
         if (ctx)
-            timeActivities = ctx->queryTimeActivities();
+            timeActivities = ctx->queryOptions().timeActivities;
     }
 
     virtual void serializeCreateStartContext(MemoryBuffer &out)
@@ -1235,18 +1211,6 @@ public:
             return NULL;
     }
 
-    void noteProcessed(unsigned _idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
-    {
-        if (factory)
-        {
-            if (!debugging)
-                factory->noteProcessed(_idx, _processed, _totalCycles, _localCycles);
-            if (ctx)
-                ctx->noteProcessed(*this, this, _idx, _processed, _totalCycles, _localCycles);
-        }
-
-    }
-
     inline void ensureCreated()
     {
         if (createPending)
@@ -1300,7 +1264,7 @@ public:
                         CTXLOG("STATE: activity %d reset without stop", activityId);
                     stop(false);
                 }
-                if (ctx->queryTraceActivityTimes())
+                if (ctx->queryOptions().traceActivityTimes)
                 {
                     stats.dumpStats(*this);
                     StringBuffer prefix, text;
@@ -1325,11 +1289,9 @@ public:
 #endif
                 ForEachItemIn(idx, dependencies)
                     dependencies.item(idx).reset();
-                noteProcessed(0, processed, totalCycles, queryLocalCycles());
+                localCycles = queryLocalCycles();  // We can't call queryLocalCycles() in the destructor, so save the information here when we can.
                 if (input)
                     input->reset();
-                processed = 0;
-                totalCycles = 0;
             }
         }
     }
@@ -1815,7 +1777,7 @@ public:
         ctx = _ctx;
         disabled = (ctx->queryDebugContext() != NULL);
         if (ctx)
-            timeActivities = ctx->queryTimeActivities();
+            timeActivities = ctx->queryOptions().timeActivities;
     }
 
     virtual IRoxieServerActivity *queryActivity()
@@ -3117,7 +3079,7 @@ class CRemoteResultAdaptor :public CInterface, implements IRoxieInput, implement
                 {
                     if (!doContinuation(topEntry, stepExtra.returnMismatches()))
                     {
-                        unsigned last = heap.pop();
+                        unsigned last = heap.popGet();
                         if (heap.length())
                             heap.replace(last, 0);
                         removeHeap(top);
@@ -3483,13 +3445,14 @@ private:
                 logInfo.clear();
                 unsigned char loggingFlags = LOGGING_FLAGSPRESENT | LOGGING_TRACELEVELSET;
                 unsigned char ctxTraceLevel = activity.queryLogCtx().queryTraceLevel() + 1; // Avoid passing a 0
+                const QueryOptions &options = ctx->queryOptions();
                 if (activity.queryLogCtx().isIntercepted())
                     loggingFlags |= LOGGING_INTERCEPTED;
-                if (ctx->queryTraceActivityTimes())
+                if (options.traceActivityTimes)
                     loggingFlags |= LOGGING_TIMEACTIVITIES; 
                 if (activity.queryLogCtx().isBlind())
                     loggingFlags |= LOGGING_BLIND;
-                if (ctx->queryCheckingHeap())
+                if (options.checkingHeap)
                     loggingFlags |= LOGGING_CHECKINGHEAP;
                 if (ctx->queryWorkUnit())
                     loggingFlags |= LOGGING_WUID;
@@ -3758,7 +3721,7 @@ public:
         if (ctx->queryDebugContext() && ctx->queryDebugContext()->getExecuteSequentially())
             deferredStart = true;
         if (ctx)
-            timeActivities = ctx->queryTimeActivities();
+            timeActivities = ctx->queryOptions().timeActivities;
     }
 
     virtual unsigned queryId() const
@@ -8491,7 +8454,7 @@ public:
             if (traceStartStop)
                 parent->CTXLOG("%p reset Input adaptor %d stopped = %d", this, oid, stopped);
             parent->reset(oid);
-            parent->noteProcessed(oid, processed, 0, 0);
+            parent->processed += processed;
             processed = 0;
             idx = 0; // value should not be relevant really but this is the safest...
             stopped = false;
@@ -10935,15 +10898,13 @@ public:
         diskout.setown(createBufferedIOStream(io));
         if (extend)
             diskout->seek(0, IFSend);
-        tallycrc = !factory->queryQueryFactory().getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck) && !blockcompressed;
+        tallycrc = !factory->queryQueryFactory().queryOptions().skipFileFormatCrcCheck && !(helper.getFlags() & TDRnocrccheck) && !blockcompressed;
         Owned<IRowInterfaces> rowIf = createRowInterfaces(input->queryOutputMeta(), activityId, ctx->queryCodeContext());
         rowSerializer.set(rowIf->queryRowSerializer());
         unsigned rwFlags = rw_autoflush;
         if(grouped)
             rwFlags |= rw_grouped;
         if(tallycrc)
-            rwFlags |= rw_crc;
-        if(!factory->queryQueryFactory().getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
             rwFlags |= rw_crc;
         outSeq.setown(createRowWriter(diskout, rowIf, rwFlags));
     }
@@ -11151,10 +11112,13 @@ class CRoxieServerXmlWriteActivity : public CRoxieServerDiskWriteActivity
 {
     IHThorXmlWriteArg &xmlHelper;
     StringAttr rowTag;
+    ThorActivityKind kind;
+    unsigned headerLength;
+    unsigned footerLength;
 
 public:
-    CRoxieServerXmlWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerDiskWriteActivity(_factory, _probeManager), xmlHelper(static_cast<IHThorXmlWriteArg &>(helper))
+    CRoxieServerXmlWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, ThorActivityKind _kind)
+        : CRoxieServerDiskWriteActivity(_factory, _probeManager), xmlHelper(static_cast<IHThorXmlWriteArg &>(helper)), kind(_kind), headerLength(0), footerLength(0)
     {
     }
 
@@ -11175,11 +11139,23 @@ public:
 
     virtual void onExecute() 
     {
+        StringBuffer header;
         OwnedRoxieString suppliedHeader(xmlHelper.getHeader());
-        const char *header = suppliedHeader;
-        if (!header) header = "<Dataset>\n";
-        diskout->write(strlen(header), header);
-        CommonXmlWriter xmlOutput(xmlHelper.getXmlFlags());
+        if (kind==TAKjsonwrite)
+        {
+            buildJsonHeader(header, suppliedHeader, rowTag);
+            headerLength = header.length();
+        }
+        else if (suppliedHeader)
+            header.set(suppliedHeader);
+        else
+            header.set("<Dataset>\n");
+        diskout->write(header.length(), header.str());
+
+        Owned<IXmlWriterExt> writer = createIXmlWriterExt(xmlHelper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
+        writer->outputBeginArray(rowTag); //need to set this
+        writer->clear(); //but not output it
+
         loop
         {
             OwnedConstRoxieRow nextrec = input->nextInGroup();
@@ -11190,15 +11166,24 @@ public:
                     break;
             }
             processed++;
-            xmlOutput.clear().outputBeginNested(rowTag, false);
-            xmlHelper.toXML((const byte *)nextrec.get(), xmlOutput);
-            xmlOutput.outputEndNested(rowTag);
-            diskout->write(xmlOutput.length(), xmlOutput.str());
+            writer->clear().outputBeginNested(rowTag, false);
+            xmlHelper.toXML((const byte *)nextrec.get(), *writer);
+            writer->outputEndNested(rowTag);
+            diskout->write(writer->length(), writer->str());
         }
         OwnedRoxieString suppliedFooter(xmlHelper.getFooter());
-        const char * footer = suppliedFooter;
-        if (!footer) footer = "</Dataset>\n";
-        diskout->write(strlen(footer), footer);
+        StringBuffer footer;
+        if (kind==TAKjsonwrite)
+        {
+            buildJsonFooter(footer.newline(), suppliedFooter, rowTag);
+            footerLength=footer.length();
+        }
+        else if (suppliedFooter)
+            footer.append(suppliedFooter);
+        else
+            footer.append("</Dataset>");
+
+        diskout->write(footer.length(), footer);
     }
 
     virtual void reset()
@@ -11212,7 +11197,11 @@ public:
         CRoxieServerDiskWriteActivity::setFileProperties(desc);
         desc->queryProperties().setProp("@format","utf8n");
         desc->queryProperties().setProp("@rowTag",rowTag.get());
-        desc->queryProperties().setProp("@kind", "xml");
+        desc->queryProperties().setProp("@kind", (kind==TAKjsonwrite) ? "json" : "xml");
+        if (headerLength)
+            desc->queryProperties().setPropInt("@headerLength", headerLength);
+        if (footerLength)
+            desc->queryProperties().setPropInt("@footerLength", footerLength);
     }
 
     virtual bool isOutputTransformed() const { return true; }
@@ -11242,7 +11231,9 @@ public:
             {
             case TAKdiskwrite: return new CRoxieServerDiskWriteActivity(this, _probeManager);
             case TAKcsvwrite: return new CRoxieServerCsvWriteActivity(this, _probeManager);
-            case TAKxmlwrite: return new CRoxieServerXmlWriteActivity(this, _probeManager);
+            case TAKxmlwrite:
+            case TAKjsonwrite:
+                return new CRoxieServerXmlWriteActivity(this, _probeManager, kind);
             };
             throwUnexpected();
         case 1:
@@ -11416,18 +11407,7 @@ public:
 
         OwnedMalloc<char> rowBuffer(maxDiskRecordSize, true);
 
-        unsigned __int64 fileSize = 0;
         fileCrc = -1;
-        OwnedRoxieString dsName(helper.getDatasetName());
-        if (dsName.get())
-        {
-            Owned<const IResolvedFile> dsFileInfo = resolveLFN(dsName, true);
-            if (dsFileInfo)
-            {
-                fileSize = dsFileInfo->getFileSize();
-            }
-        }
-
         {
             Owned<IFileIO> io;
             try
@@ -11455,7 +11435,7 @@ public:
             buildUserMetadata(metadata);
             buildLayoutMetadata(metadata);
             unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, fileSize, nodeSize, helper.getKeyedSize(), 0);
+            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0);
             class BcWrapper : implements IBlobCreator
             {
                 IKeyBuilder *builder;
@@ -12392,7 +12372,7 @@ public:
     void start(unsigned parentExtractSize, const byte *parentExtract, bool paused, IRoxieSlaveContext *ctx)
     {
         space.reinit(CONCAT_READAHEAD);
-        puller.start(parentExtractSize, parentExtract, paused, ctx->concatPreload(), false, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().concatPreload, false, ctx);
     }
 
     void stop(bool aborting)
@@ -12490,7 +12470,7 @@ protected:
     bool grouped;
 };
 
-MAKEPointerArray(CRoxieThreadedConcatReader, ReaderArray);
+typedef CopyReferenceArrayOf<CRoxieThreadedConcatReader> ReaderArray;
 
 class CRoxieServerThreadedConcatActivity : public CRoxieServerActivity
 {
@@ -13855,7 +13835,7 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         preload = helper.getLookahead();
         if (!preload)
-            preload = ctx->prefetchProjectPreload();
+            preload = ctx->queryOptions().prefetchProjectPreload;
         space.reinit(preload);
         ready.reinit();
         puller.start(parentExtractSize, parentExtract, paused, preload, !isThreaded, ctx);
@@ -15396,7 +15376,7 @@ public:
 
     void reset(unsigned oid, unsigned _processed)
     {
-        noteProcessed(oid, _processed, 0, 0);
+        processed += _processed;
         started = false;
         error.clear();
         numActiveOutputs = numOutputs;
@@ -16079,6 +16059,14 @@ public:
     {
     }
 
+    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    {
+        CRoxieServerNaryActivity::onCreate(_ctx, _colocalParent);
+        ICodeContext * codectx = ctx->queryCodeContext();
+        inputAllocator.setown(codectx->getRowAllocator(helper.queryInputMeta(), activityId));
+        outputAllocator.setown(codectx->getRowAllocator(helper.queryOutputMeta(), activityId));
+    }
+
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerNaryActivity::start(parentExtractSize, parentExtract, paused);
@@ -16089,9 +16077,6 @@ public:
             processor.addInput(stepInput);
         }
 
-        ICodeContext * codectx = ctx->queryCodeContext();
-        Owned<IEngineRowAllocator> inputAllocator = codectx->getRowAllocator(helper.queryInputMeta(), activityId);
-        Owned<IEngineRowAllocator> outputAllocator = codectx->getRowAllocator(helper.queryOutputMeta(), activityId);
         processor.beforeProcessing(inputAllocator, outputAllocator);
     }
 
@@ -16137,6 +16122,8 @@ public:
 protected:
     IHThorNWayMergeJoinArg & helper;
     CMergeJoinProcessor & processor;
+    Owned<IEngineRowAllocator> inputAllocator;
+    Owned<IEngineRowAllocator> outputAllocator;
 };
 
 
@@ -19878,7 +19865,7 @@ public:
                     unsigned int writeFlags = serverContext->getXmlFlags();
                     if (response->mlFmt==MarkupFmt_JSON)
                         writeFlags |= XWFnoindent;
-                    writer.setown(createIXmlWriter(writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
+                    writer.setown(createIXmlWriterExt(writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
                     writer->outputBeginArray("Row");
                 }
             }
@@ -21349,7 +21336,7 @@ public:
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
-            bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false));
+            bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.queryOptions().disableLocalOptimizations);
             if (isLocal || isSimple)
             {
                 if (datafile)
@@ -21458,7 +21445,7 @@ protected:
         if (varFileInfo)
         {
             translators.setown(new TranslatorArray) ;
-            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
         }
         variableInfoPending = false;
     }
@@ -22094,7 +22081,7 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
         OwnedRoxieString indexName(indexHelper.getFileName());
         varFileInfo.setown(resolveLFN(indexName, isOpt));
         translators.setown(new TranslatorArray) ;
-        keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+        keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
         initKeySet();
         variableInfoPending = false;
     }
@@ -22480,7 +22467,7 @@ public:
         MemoryBuffer m;
         m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
         activityMeta.setown(deserializeRecordMeta(m, true));
-        enableFieldTranslation = queryFactory.getEnableFieldTranslation();
+        enableFieldTranslation = queryFactory.queryOptions().enableFieldTranslation;
         translatorArray.setown(new TranslatorArray);
         variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);
         if (!variableFileName)
@@ -22497,7 +22484,7 @@ public:
         if (keySet && keySet->length()==1 && !isLocal && (flags & (TIRlimitskips|TIRlimitcreates|TIRkeyedlimitskips|TIRkeyedlimitcreates))==0)
         {
             IKeyIndexBase *thisBase = keySet->queryKeyPart(0);
-            if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey() && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false))
+            if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey() && !_queryFactory.queryOptions().disableLocalOptimizations)
                 isSimple = true;
         }
         int cacheSize = _graphNode.getPropInt("hint[@name='cachehits']/@value", serverSideCacheSize);
@@ -23372,7 +23359,7 @@ public:
             if (varFileInfo)
                 map.setown(varFileInfo->getFileMap());
         }
-        puller.start(parentExtractSize, parentExtract, paused, ctx->fetchPreload(), false, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fetchPreload, false, ctx);
     }
 
     virtual void stop(bool aborting)
@@ -24094,10 +24081,10 @@ public:
             if (varFileInfo)
             {
                 translators.setown(new TranslatorArray);
-                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); // MORE - isLocal?
+                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation)); // MORE - isLocal?
             }
         }
-        puller.start(parentExtractSize, parentExtract, paused, ctx->fullKeyedJoinPreload(), false, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fullKeyedJoinPreload, false, ctx);
     }
 
     virtual void stop(bool aborting)
@@ -24761,7 +24748,7 @@ public:
             if (varFetchFileInfo)
                 map.setown(varFetchFileInfo->getFileMap());
         }
-        puller.start(parentExtractSize, parentExtract, paused, ctx->keyedJoinPreload(), false, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, false, ctx);
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *in)
@@ -24896,10 +24883,10 @@ public:
             if (varFileInfo)
             {
                 translators.setown(new TranslatorArray);
-                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
             }
         }
-        puller.start(parentExtractSize, parentExtract, paused, ctx->keyedJoinPreload(), isSimple, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, isSimple, ctx);
 
     }
 
@@ -25108,7 +25095,7 @@ public:
         MemoryBuffer m;
         m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
         activityMeta.setown(deserializeRecordMeta(m, true));
-        enableFieldTranslation = queryFactory.getEnableFieldTranslation();
+        enableFieldTranslation = queryFactory.queryOptions().enableFieldTranslation;
         translatorArray.setown(new TranslatorArray);
         joinFlags = helper->getJoinFlags();
         variableIndexFileName = allFilesDynamic || _queryFactory.isDynamic() || ((joinFlags & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
@@ -25124,7 +25111,7 @@ public:
         if (keySet && keySet->length()==1 && !isSimple)
         {
             IKeyIndexBase *thisBase = keySet->queryKeyPart(0);
-            if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey() && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false))
+            if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey() && !_queryFactory.queryOptions().disableLocalOptimizations)
                 isSimple = true;
             // MORE - if it's a variable filename then it MAY be simple, we don't know. Tough.
         }
@@ -25258,9 +25245,9 @@ public:
         if (soaphelper == NULL)
         {
             if (factory->getKind()==TAKhttp_rowdataset)
-                soaphelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
+                soaphelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *this, this));
             else
-                soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
+                soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *this, this));
             soaphelper->start();
         }
 
@@ -25307,7 +25294,7 @@ public:
     virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
     {
         //MORE: parentExtract not passed to start - although shouldn't be a problem.
-        soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCrow, pClientCert, *ctx, this));
+        soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCrow, pClientCert, *this, this));
         soaphelper->start();
         soaphelper->waitUntilDone();
         IException *e = soaphelper->getError();
@@ -25390,7 +25377,7 @@ public:
 
         if (soaphelper == NULL)
         {
-            soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, pClientCert, *ctx, this));
+            soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, pClientCert, *this, this));
             soaphelper->start();
         }
 
@@ -25452,7 +25439,7 @@ public:
         try
         {
             start(parentExtractSize, parentExtract, false);
-            soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCdataset, pClientCert, *ctx, this));
+            soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCdataset, pClientCert, *this, this));
             soaphelper->start();
             soaphelper->waitUntilDone();
             IException *e = soaphelper->getError();
@@ -26418,7 +26405,7 @@ public:
     virtual unsigned queryId() const { return activityId; };
     virtual const void *nextInGroup() 
     {
-        ActivityTimer t(totalCycles, ctx->queryTimeActivities(), ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, ctx->queryOptions().timeActivities, ctx->queryDebugContext());
         ASSERT(state == STATEstarted);
         ASSERT(allRead || !eof);
         if (eof)
@@ -26509,8 +26496,9 @@ protected:
     SlaveContextLogger logctx;
     Owned<const IQueryDll> queryDll;
     Owned<IRoxiePackage> package;
-    Owned<IRoxieSlaveContext> ctx;
+    Owned<IPropertyTree> stateInfo;
     Owned<IQueryFactory> queryFactory;
+    Owned<IRoxieSlaveContext> ctx;
 
     void testSetup()
     {
@@ -26525,10 +26513,11 @@ protected:
     void init()
     {
         package.setown(createRoxiePackage(NULL, NULL));
-        ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
-        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, false, false));
-        timer->reset();
+        stateInfo.setown(createPTreeFromXMLString("<test memoryLimit='50000000'/>"));
+        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, stateInfo, false, false));
+        ctx.setown(createSlaveContext(queryFactory, logctx, NULL));
+        queryActiveTimer()->reset();
     }
 
     void testActivity(IRoxieServerActivity *activity, char const * const *input, char const * const *output)

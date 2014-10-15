@@ -924,7 +924,7 @@ class CDiskGroupAggregateSlave
 {
     IHThorDiskGroupAggregateArg *helper;
     bool gathered, eoi;
-    Owned<CThorRowAggregator> localAggTable;
+    Owned<RowAggregator> localAggTable;
     Owned<IEngineRowAllocator> allocator;
     bool merging;
     Owned<IHashDistributor> distributor;
@@ -965,7 +965,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDiskReadSlaveActivityRecord::start();
         gathered = eoi = false;
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
+        localAggTable.setown(new RowAggregator(*helper, *helper));
         localAggTable->start(queryRowAllocator());
         dataLinkStart();
     }
