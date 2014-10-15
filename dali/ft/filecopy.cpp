@@ -1179,8 +1179,8 @@ void FileSprayer::calculateSprayPartition()
         partitioners.item(0).getRecordStructure(recStru);
         if (recStru.length() > 0)
         {
-            IDistributedFile * target = distributedTarget.get();
-            target->setECL(recStru.str());
+            if (distributedTarget)
+                distributedTarget->setECL(recStru.str());
         }
     }
 
@@ -2947,13 +2947,12 @@ void FileSprayer::updateTargetProperties()
             ForEach(*iter)
             {
                 const char * _propName = iter->query().queryName();
-                LOG(MCevent, unknownJob, "queryName():'%s'", _propName);
                 if (stricmp(_propName,"ECL") == 0)
                     // To prevent multiple "ECL" properties and
                     // keep existing source record structure definition
-                    curProps.setPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
+                    curProps.setPropTree(_propName,createPTreeFromIPT(&iter->query()));
                 else
-                    curProps.addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
+                    curProps.addPropTree(_propName,createPTreeFromIPT(&iter->query()));
             }
         }
     }
