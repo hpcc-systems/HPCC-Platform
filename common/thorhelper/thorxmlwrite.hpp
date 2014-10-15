@@ -57,8 +57,8 @@ public:
 
     virtual void outputInlineXml(const char *text){closeTag(); out.append(text); flush(false);} //for appending raw xml content
     virtual void outputQuoted(const char *text);
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname);
-    virtual void outputString(unsigned len, const char *field, const char *fieldname);
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
+    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
     virtual void outputBool(bool field, const char *fieldname);
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
     virtual void outputInt(__int64 field, const char *fieldname);
@@ -123,8 +123,8 @@ public:
             outputUtf8(strlen(text), text, "xml");
     }
     virtual void outputQuoted(const char *text);
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname);
-    virtual void outputString(unsigned len, const char *field, const char *fieldname);
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric=false);
+    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric=false);
     virtual void outputBool(bool field, const char *fieldname);
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
     virtual void outputInt(__int64 field, const char *fieldname);
@@ -193,7 +193,7 @@ class thorhelper_decl CommonEncodedXmlWriter : public CommonXmlWriter
 public:
     CommonEncodedXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL);
 
-    virtual void outputString(unsigned len, const char *field, const char *fieldname);
+    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
     virtual void outputBool(bool field, const char *fieldname);
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
     virtual void outputInt(__int64 field, const char *fieldname);
@@ -231,8 +231,8 @@ public:
     const char * str() const                                { return out.str(); }
 
     virtual void outputQuoted(const char *text);
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname);
-    virtual void outputString(unsigned len, const char *field, const char *fieldname);
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
+    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
     virtual void outputBool(bool field, const char *fieldname);
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
     virtual void outputInt(__int64 field, const char *fieldname);
