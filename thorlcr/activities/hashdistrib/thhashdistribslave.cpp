@@ -64,16 +64,19 @@
 #pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
 #endif
 
+// JCSMORE should really use JLog trace levels and make configurable
 #ifdef _DEBUG
 #define HDSendPrintLog(M) PROGLOG(M)
 #define HDSendPrintLog2(M,P1) PROGLOG(M,P1)
 #define HDSendPrintLog3(M,P1,P2) PROGLOG(M,P1,P2)
 #define HDSendPrintLog4(M,P1,P2,P3) PROGLOG(M,P1,P2,P3)
+#define HDSendPrintLog5(M,P1,P2,P3,P4) PROGLOG(M,P1,P2,P3,P4)
 #else
 #define HDSendPrintLog(M)
 #define HDSendPrintLog2(M,P1)
 #define HDSendPrintLog3(M,P1,P2)
 #define HDSendPrintLog4(M,P1,P2,P3)
+#define HDSendPrintLog5(M,P1,P2,P3,P4)
 #endif
 
 class CDistributorBase : public CSimpleInterface, implements IHashDistributor, implements IExceptionHandler
@@ -95,7 +98,9 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     Owned<IRowWriter> pipewr;
     roxiemem::IRowManager *rowManager;
     Owned<ISmartRowBuffer> piperd;
+    enum CompType { comp_none, comp_flz, comp_aes, comp_diff };
 
+protected:
     /*
      * CSendBucket - a collection of rows destined for a particular destination target(slave)
      */
@@ -160,19 +165,88 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         }
         unsigned queryDestination() const { return destination; }
         size32_t querySize() const { return total; }
-        bool serializeClear(MemoryBuffer &mb, size32_t limit) // returns true if sent all
+        size32_t serializeClear(MemoryBuffer &dstMb)
         {
-            CMemoryRowSerializer memSerializer(mb);
+            size32_t len = dstMb.length();
+            CMemoryRowSerializer memSerializer(dstMb);
             loop
             {
                 OwnedConstThorRow row = nextRow();
                 if (!row)
                     break;
                 owner.serializer->serialize(memSerializer, (const byte *)row.get());
-                if (mb.length()>=limit)
-                    return false;
             }
-            return true;
+            return dstMb.length()-len;
+        }
+        size32_t serializeCompressClear(MemoryBuffer &dstMb, ICompressor &compressor)
+        {
+            class CMemoryCompressedSerializer : implements IRowSerializerTarget
+            {
+                MemoryBuffer nested;
+                unsigned nesting;
+                ICompressor &compressor;
+            public:
+                CMemoryCompressedSerializer(ICompressor &_compressor) : compressor(_compressor)
+                {
+                    nesting = 0;
+                }
+                virtual void put(size32_t len, const void *ptr)
+                {
+                    if (nesting)
+                        nested.append(len, ptr);
+                    else
+                    {
+                        size32_t sz = compressor.write(ptr, len);
+                        dbgassertex(sz);
+                    }
+                }
+                virtual size32_t beginNested(size32_t count)
+                {
+                    nesting++;
+                    unsigned pos = nested.length();
+                    nested.append((size32_t)0);
+                    return pos;
+                }
+                virtual void endNested(size32_t sizePos)
+                {
+                    size32_t sz = nested.length()-(sizePos + sizeof(size32_t));
+                    nested.writeDirect(sizePos,sizeof(sz),&sz);
+                    nesting--;
+                    if (!nesting)
+                    {
+                        put(nested.length(), nested.toByteArray());
+                        nested.clear();
+                    }
+                }
+            } memSerializer(compressor);
+            size32_t compSz = 0;
+            size32_t dstPos = dstMb.length();
+            dstMb.append(compSz); // placeholder
+            void *dst = dstMb.reserve(owner.bucketSendSize * 2); // allow for worst case
+            compressor.open(dst, owner.bucketSendSize * 2);
+            loop
+            {
+                OwnedConstThorRow row = nextRow();
+                if (!row)
+                    break;
+                owner.serializer->serialize(memSerializer, (const byte *)row.get());
+            }
+            compressor.close();
+            compSz = compressor.buflen();
+            dstMb.writeDirect(dstPos, sizeof(compSz), &compSz);
+            dstMb.setLength(dstPos + sizeof(compSz) + compSz);
+            return sizeof(compSz) + compSz;
+        }
+        static void deserializeCompress(MemoryBuffer &mb, MemoryBuffer &out, IExpander &expander)
+        {
+            while (mb.remaining())
+            {
+                size32_t compSz;
+                mb.read(compSz);
+                unsigned outSize = expander.init(mb.readDirect(compSz));
+                void *buff = out.reserve(outSize);
+                expander.expand(buff);
+            }
         }
     // IRowStream impl.
         virtual const void *nextRow()
@@ -301,13 +375,14 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             Owned<CSendBucket> _sendBucket;
             unsigned nextPending;
             CTarget *target;
-
+            Owned<ICompressor> compressor;
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CWriteHandler(CSender &_owner) : owner(_owner), distributor(_owner.owner)
             {
                 target = NULL;
+                compressor.setown(distributor.getCompressor());
             }
             void init(void *startInfo)
             {
@@ -322,18 +397,25 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 unsigned dest = sendBucket->queryDestination();
                 size32_t writerTotalSz = 0;
                 size32_t sendSz = 0;
-                MemoryBuffer mb;
+                CMessageBuffer msg;
+                size32_t rawSz = 0;
                 while (!owner.aborted)
                 {
                     writerTotalSz += sendBucket->querySize();
+                    rawSz += sendBucket->querySize();
                     owner.dedup(sendBucket); // conditional
 
                     if (owner.selfPush(dest))
+                    {
+                        HDSendPrintLog2("CWriteHandler, sending raw=%d to LOCAL", rawSz);
                         distributor.addLocal(sendBucket);
+                    }
                     else // remote
                     {
-                        bool wholeBucket = sendBucket->serializeClear(mb, distributor.bucketSendSize);
-                        sendSz = mb.length();
+                        if (compressor)
+                            sendSz += sendBucket->serializeCompressClear(msg, *compressor);
+                        else
+                            sendSz += sendBucket->serializeClear(msg);
                         // NB: buckets will typically be large enough already, if not check pending buckets
                         if (sendSz < distributor.bucketSendSize)
                         {
@@ -349,18 +431,10 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                                 continue; // NB: it will flow into else "remote" arm
                             }
                         }
-                        while (!owner.aborted)
-                        {
-                            // JCSMORE check if worth compressing
-                            CMessageBuffer msg;
-                            fastLZCompressToBuffer(msg, mb.length(), mb.bufferBase());
-                            mb.clear();
-                            target->send(msg);
-                            sendSz = 0;
-                            if (wholeBucket)
-                                break;
-                            wholeBucket = sendBucket->serializeClear(mb, distributor.bucketSendSize);
-                        }
+                        target->send(msg);
+                        sendSz = 0;
+                        rawSz = 0;
+                        msg.clear();
                     }
                     owner.decTotal(writerTotalSz);
                     writerTotalSz = 0;
@@ -783,7 +857,6 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         friend class CWriteHandler;
     };
 
-protected:
     IOutputRowDeserializer *deserializer;
 
     class cRecvThread: implements IThreaded
@@ -887,6 +960,8 @@ protected:
     unsigned candidateLimit;
     unsigned targetWriterLimit;
     StringAttr id; // for tracing
+    ICompressHandler *compressHandler;
+    StringBuffer compressOptions;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -907,6 +982,20 @@ public:
         selfstopped = false;
         pull = false;
         rowManager = activity->queryJob().queryRowManager();
+
+        StringBuffer compType;
+        activity->getOpt(THOROPT_HDIST_COMP, compType);
+        activity->getOpt(THOROPT_HDIST_COMPOPTIONS, compressOptions); // e.g. for key for AES compressor
+        if (compType.length())
+        {
+            compressHandler = queryCompressHandler(compType);
+            if (NULL == compressHandler)
+                ActPrintLog("Unrecognised compressor type: %s", compType.str());
+        }
+        else
+            compressHandler = queryDefaultCompressHandler();
+        dbgassertex(compressHandler);
+        ActPrintLog("Using compressor: %s", compressHandler->queryType());
 
         allowSpill = activity->getOptBool(THOROPT_HDIST_SPILL, true);
         if (allowSpill)
@@ -933,6 +1022,16 @@ public:
             ActPrintLog(e, "HDIST: CDistributor");
             e->Release();
         }
+    }
+
+    inline ICompressor *getCompressor()
+    {
+        return compressHandler->getCompressor(compressOptions);
+    }
+
+    inline IExpander *getExpander()
+    {
+        return compressHandler->getExpander(compressOptions);
     }
 
     size32_t rowMemSize(const void *row)
@@ -1039,6 +1138,7 @@ public:
             CThorStreamDeserializerSource rowSource;
             rowSource.setStream(stream);
             unsigned left=numnodes-1;
+            Owned<IExpander> expander = getExpander();
             while (left && !aborted)
             {
 #ifdef _FULL_TRACE
@@ -1052,7 +1152,15 @@ public:
 #endif
                 if (recvMb.length())
                 {
-                    try { fastLZDecompressToBuffer(tempMb.clear(),recvMb); }
+                    try
+                    {
+                        size32_t sz = recvMb.length();
+                        if (expander)
+                            CSendBucket::deserializeCompress(recvMb, tempMb.clear(), *expander);
+                        else
+                            tempMb.clear().swapWith(recvMb);
+                        HDSendPrintLog4("recvloop, blocksize=%d, deserializedSz=%d, from=%d", sz, tempMb.length(), n+1);
+                    }
                     catch (IException *e)
                     {
                         StringBuffer senderStr;
@@ -1408,6 +1516,7 @@ class CRowPullDistributor: public CDistributorBase
         ICompare *cmp;
         IEngineRowAllocator *allocator;
         IOutputRowDeserializer *deserializer;
+        Owned<IExpander> expander;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -1422,6 +1531,7 @@ class CRowPullDistributor: public CDistributorBase
                 Owned<ISerialStream> stream = createMemoryBufferSerialStream(bufs[node]);
                 dszs[node].setStream(stream);
             }
+            expander.setown(parent.getExpander()); // NB: must be created before this passed to createRowStreamMerger
             out.setown(createRowStreamMerger(numnodes, *this, cmp));
         }
 
@@ -1453,7 +1563,10 @@ class CRowPullDistributor: public CDistributorBase
             parent.recvBlock(mb,idx);
             if (mb.length()==0)
                 return NULL;
-            fastLZDecompressToBuffer(bufs[idx],mb);
+            if (expander)
+                CSendBucket::deserializeCompress(mb, bufs[idx], *expander);
+            else
+                bufs[idx].swapWith(mb);
             return nextRow(idx);
         }
 
