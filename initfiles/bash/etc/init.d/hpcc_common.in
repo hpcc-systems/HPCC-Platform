@@ -481,27 +481,13 @@ startCmd() {
     fi
     eval $startcmd
 
-    # TODO:
-    # eventually we will want to check all processes that use sentinel files.
-    # This will allow us to ensure that when we start a process, it is guaranteed
-    # to be in a healthy state.
-    if strstr ${compType} "thor" ; then
-        WAITTIME=120
-    else
-        WAITTIME=6
-    fi
+    local WAITTIME=120
+    local RCSTART=0
 
-    RCSTART=0
-    WAITEDLONGENOUGH=0
-    if strstr ${compType} "thor" ; then
-        local SENTINELCHECK=1
-    else
-        local SENTINELCHECK=0
-    fi
-    while [[ ${WAITEDLONGENOUGH} -lt ${WAITTIME} ]]
+    while [ ${WAITTIME} -gt 0 ]
     do
-        WAITEDLONGENOUGH=`expr ${WAITEDLONGENOUGH} + 1`
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINELCHECK}
+        WAITTIME=`expr ${WAITTIME} - 1`
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
         RCSTART=$?
         if [ ${RCSTART} -eq 0 ]; then
           log_success_msg
@@ -510,21 +496,21 @@ startCmd() {
         sleep 1
     done
 
-    if [ ${WAITEDLONGENOUGH} -ge ${WAITTIME} ]; then
-      log_failure_msg "${compName} has timed out, but may still be starting"
+    if [ ${WAITTIME} -eq 0 ]; then
+        log_failure_msg "${compName} has timed out, but may still be starting"
     elif [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
-      if [ ${DEBUG} != "NO_DEBUG" ]; then
-        log_failure_msg "${compName} is not running, Pidfile exists"
-      else
-        log_failure_msg
-      fi
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            log_failure_msg "${compName} is not running, Pidfile exists"
+        else
+            log_failure_msg
+        fi
     else
-      # RCSTART -eq 2
-      if [ ${DEBUG} != "NO_DEBUG" ]; then
-        log_failure_msg "${compName} is not running, lockfile exists"
-      else
-        log_failure_msg
-      fi
+        # RCSTART -eq 2
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            log_failure_msg "${compName} is not running, lockfile exists"
+        else
+            log_failure_msg
+        fi
     fi
 
     chmod 644 ${envfile}
