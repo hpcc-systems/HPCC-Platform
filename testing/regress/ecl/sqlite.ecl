@@ -1,5 +1,8 @@
 IMPORT SqLite3;
 
+//nothor
+//Would need the database to be in a shared location for thor to work (and I don't know if sqlite is
+//safe for concurrent access)
 /*
  This example illustrates various calls to embdded SQLite code
  */
