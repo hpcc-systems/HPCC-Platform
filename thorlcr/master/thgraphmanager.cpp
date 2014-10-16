@@ -665,13 +665,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     cycle_t startCycles = get_cycles_now();
     unsigned totalTimeNs = 0;
     unsigned totalThisTimeNs = 0;
-    StatisticsFilter summaryTimeFilter(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, SMeasureTimeNs, StTimeElapsed);
-    Owned<IConstWUStatistic> totalThorTime = getStatistic(&workunit, summaryTimeFilter);
-    Owned<IConstWUStatistic> totalThisThorTime = workunit.getStatistic(queryStatisticsComponentName(), GLOBAL_SCOPE, StTimeElapsed);
-    if (totalThorTime)
-        totalTimeNs = totalThorTime->getValue();
-    if (totalThisThorTime)
-        totalThisTimeNs = totalThisThorTime->getValue();
+    getWorkunitTotalTime(&workunit, "thor", totalTimeNs, totalThisTimeNs);
 
     Owned<IConstWUQuery> query = workunit.getQuery(); 
     SCMStringBuffer soName;

@@ -194,7 +194,8 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.30")] bool ThorLCR(false);
     [min_ver("1.01")] int EventSchedule;
     [min_ver("1.02")] bool HaveSubGraphTimings;
-    [min_ver("1.28")] string TotalThorTime;
+    [min_ver("1.28"), depr_ver("1.53")] string TotalThorTime;
+    [min_ver("1.53")] string TotalClusterTime;
 
     ESPstruct ECLQuery Query;
     [min_ver("1.03")] ESParray<ESPstruct ECLHelpFile> Helpers;
@@ -1564,7 +1565,7 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
 };
 
 ESPservice [
-    version("1.52"), default_client_version("1.52"),
+    version("1.53"), default_client_version("1.53"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
