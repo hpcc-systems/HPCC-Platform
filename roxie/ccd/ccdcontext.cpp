@@ -1016,6 +1016,8 @@ public:
 class CSlaveContext : public CInterface, implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:
+    Owned<IConstWUGraphProgress> progress;  // These need to be destroyed very late (particularly, after the childgraphs)
+    Owned<IWUGraphStats> graphStats;
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<IRowManager> rowManager; // NOTE: the order of destruction here is significant. For leak check to work destroy this BEFORE allAllocators, but after most other things
     Owned <IDebuggableContext> debugContext;
@@ -1362,9 +1364,6 @@ public:
             return libraryQuery->lookupGraph("graph1", probeManager, *this, parentActivity);
         }
     }
-
-    Owned<IConstWUGraphProgress> progress;
-    Owned<IWUGraphStats> graphStats;
 
     void beginGraph(const char *graphName)
     {

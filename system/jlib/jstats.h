@@ -406,6 +406,8 @@ class jlib_decl StatisticsMapping
 public:
     //Takes a list of StatisticKind terminated by StKindNone
     StatisticsMapping(StatisticKind kind, ...);
+    //Takes an existing Mapping, and extends it with a list of StatisticKind terminated by StKindNone
+    StatisticsMapping(const StatisticsMapping &, ...);
     //Accepts all StatisticKind values
     StatisticsMapping();
 
@@ -475,11 +477,13 @@ public:
     inline CRuntimeStatistic & queryStatistic(StatisticKind kind)
     {
         unsigned index = queryMapping().getIndex(kind);
+        dbgassertex(index < mapping.numStatistics());
         return values[index];
     }
     inline const CRuntimeStatistic & queryStatistic(StatisticKind kind) const
     {
         unsigned index = queryMapping().getIndex(kind);
+        dbgassertex(index < mapping.numStatistics());
         return values[index];
     }
 

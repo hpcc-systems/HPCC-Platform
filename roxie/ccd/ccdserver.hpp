@@ -212,6 +212,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
     virtual IDefRecordMeta *queryActivityMeta() const = 0;
     virtual unsigned numInputs() const = 0;
+    virtual const StatisticsMapping &queryStatsMapping() const = 0;
 };
 interface IGraphResult : public IInterface
 {

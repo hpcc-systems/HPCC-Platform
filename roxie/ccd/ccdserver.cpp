@@ -376,6 +376,29 @@ protected:
 
 //=================================================================================
 
+// General activity statistics
+
+static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
+                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StKindNone);
+static const StatisticsMapping joinStatistics(actStatistics, StNumAtmostTriggered, StKindNone);
+static const StatisticsMapping keyedJoinStatistics(joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                                    StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
+                                                    StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
+                                                    StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
+                                                    StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
+                                                    StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                    StNumDiskRejected, StKindNone);
+static const StatisticsMapping indexStatistics(actStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                                StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
+                                                StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
+                                                StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
+                                                StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                StNumIndexRowsRead, StKindNone);
+static const StatisticsMapping diskStatistics(actStatistics, StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
+                                               StNumDiskRejected, StKindNone);
+
+//=================================================================================
+
 class CRoxieServerActivityFactoryBase : public CActivityFactory, implements IRoxieServerActivityFactory
 {
 protected:
@@ -593,6 +616,10 @@ public:
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {
         // Most activities have nothing to say...
+    }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return actStatistics; // Overridden by anyone that needs more
     }
 };
 
@@ -852,10 +879,6 @@ private:
     IRoxieServerActivityCopyArray & activities;
 };
 
-
-static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
-                                             StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped);
-
 class CRoxieServerActivity : public CInterface, implements IRoxieServerActivity, implements IRoxieInput, implements IRoxieContextLogger
 {
 protected:
@@ -885,12 +908,11 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager,
-                         const StatisticsMapping& _statsMapping = actStatistics)
+    CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : factory(_factory), 
           basehelper(_factory->getHelper()),
           activityId(_factory->queryId()),
-          stats(_statsMapping)
+          stats(_factory ? factory->queryStatsMapping() : actStatistics)
     {
         input = NULL;
         ctx = NULL;
@@ -2467,7 +2489,7 @@ public:
                     logctx.CTXLOG("CRoxieServerSideCache::findCachedResult cache hit");
                 logctx.noteStatistic(StNumServerCacheHits, 1);
                 return NULL;
-                // Because IMessageResult cannot be replayed, this echeme is flawed. I'm leaving the code here just as a stats gatherer to see how useful it would have been....
+                // Because IMessageResult cannot be replayed, this scheme is flawed. I'm leaving the code here just as a stats gatherer to see how useful it would have been....
                 //IRoxieServerQueryPacket *ret = new CRoxieServerQueryPacket(p);
                 //ret->setResult(found->getResult());
                 //return ret;
@@ -12325,6 +12347,10 @@ public:
     }
 
     virtual unsigned numInputs() const { return 2; }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return joinStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -16392,6 +16418,10 @@ public:
         //I don't think the action version of this is implemented - but this would be the code
         return isRoot && !meta.queryOriginal();
     }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return allStatistics;  // Child queries...
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerRemoteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, bool _isRoot)
@@ -17259,6 +17289,11 @@ public:
     {
         return new CRoxieServerSelfJoinActivity(this, _probeManager);
     }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return joinStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerSelfJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -18051,6 +18086,11 @@ public:
     {
         return new CRoxieServerLookupJoinActivity(this, _probeManager, useFewTable);
     }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return joinStatistics;
+    }
 protected:
     bool useFewTable;
 };
@@ -18447,6 +18487,10 @@ public:
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
         return new CRoxieServerAllJoinActivity(this, _probeManager);
+    }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return joinStatistics;
     }
 };
 
@@ -21384,6 +21428,10 @@ public:
             }
         }
     }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return diskStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
@@ -22513,6 +22561,10 @@ public:
         return activityMeta;
     }
 
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return indexStatistics;
+    }
 };
 
 class CRoxieServerIndexReadActivityFactory : public CRoxieServerBaseIndexActivityFactory
@@ -23486,6 +23538,10 @@ public:
                     addXrefFileInfo(reply, temp);
             }
         }
+    }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return diskStatistics;
     }
 };
 
@@ -25131,6 +25187,11 @@ public:
             return new CRoxieServerKeyedJoinActivity(this, _probeManager, 
                 headId, keySet, translatorArray, indexReadMeta, 
                 tailId, map, joinFlags, isLocal);
+    }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return keyedJoinStatistics;
     }
 
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const

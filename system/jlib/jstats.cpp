@@ -688,7 +688,24 @@ StatisticsMapping::StatisticsMapping(StatisticKind kind, ...)
         unsigned next  = va_arg(args, unsigned);
         if (!next)
             break;
-        indexToKind.append(next);
+        indexToKind.appendUniq(next);
+    }
+    va_end(args);
+    createMappings();
+}
+
+StatisticsMapping::StatisticsMapping(const StatisticsMapping &from, ...)
+{
+    ForEachItemIn(idx, from.indexToKind)
+        indexToKind.append(from.indexToKind.item(idx));
+    va_list args;
+    va_start(args, from);
+    for (;;)
+    {
+        unsigned next  = va_arg(args, unsigned);
+        if (!next)
+            break;
+        indexToKind.appendUniq(next);
     }
     va_end(args);
     createMappings();
@@ -1317,8 +1334,12 @@ void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & othe
     ForEachItemIn(i, other)
     {
         StatisticKind kind = other.getKind(i);
-        StatsMergeAction mergeAction = queryMergeMode(kind);
-        mergeStatistic(kind, other.getStatisticValue(kind), mergeAction);
+        unsigned __int64 value = other.getStatisticValue(kind);
+        if (value)
+        {
+            StatsMergeAction mergeAction = queryMergeMode(kind);
+            mergeStatistic(kind, other.getStatisticValue(kind), mergeAction);
+        }
     }
 }
 
@@ -1326,10 +1347,13 @@ void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContext
 {
     ForEachItem(iStat)
     {
-        StatisticKind kind = getKind(iStat);
         unsigned __int64 value = values[iStat].getClear();
-        for (unsigned iTarget = 0; iTarget < numTargets; iTarget++)
-            targets[iTarget]->noteStatistic(kind, value);
+        if (value)
+        {
+            StatisticKind kind = getKind(iStat);
+            for (unsigned iTarget = 0; iTarget < numTargets; iTarget++)
+                targets[iTarget]->noteStatistic(kind, value);
+        }
     }
     reportIgnoredStats();
 }
@@ -1338,9 +1362,13 @@ void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) 
 {
     ForEachItem(i)
     {
-        StatisticKind kind = getKind(i);
-        StatsMergeAction mergeAction = queryMergeMode(kind);
-        target.updateStatistic(kind, values[i].get(), mergeAction);
+        unsigned __int64 value = values[i].get();
+        if (value)
+        {
+            StatisticKind kind = getKind(i);
+            StatsMergeAction mergeAction = queryMergeMode(kind);
+            target.updateStatistic(kind, values[i].get(), mergeAction);
+        }
     }
     reportIgnoredStats();
 }
@@ -1348,7 +1376,7 @@ void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) 
 void CRuntimeStatisticCollection::reportIgnoredStats() const
 {
     if (values[mapping.numStatistics()].getClear())
-        DBGLOG("Some statistics were addded but thrown away");
+        DBGLOG("Some statistics were added but thrown away");
 }
 
 StringBuffer & CRuntimeStatisticCollection::toXML(StringBuffer &str) const
