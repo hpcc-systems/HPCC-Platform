@@ -17,6 +17,7 @@
 
 import lib_stringlib;
 import std.str;
+import std.system.thorlib;
 
 nameRecord := RECORD
     STRING name;
@@ -47,6 +48,10 @@ tempname1 := getTempFilename2() : INDEPENDENT;
 tempname2 := getTempFilename3() : INDEPENDENT;
 tempname3 := getTempFilename4() : INDEPENDENT;
 
+tempname1s := tempname1 + thorlib.node();
+tempname2s := tempname2 + thorlib.node();
+tempname3s := tempname3 + thorlib.node();
+
 #IF (__OS__ = 'windows')
   STRING catCmd(STRING filename) := 'cmd /C cat > ' + filename;
 #ELSE
@@ -73,13 +78,13 @@ csvRec := { STRING lout; };
 
 SEQUENTIAL(
  PARALLEL(
-  OUTPUT(d1,,PIPE(catCmd(tempname1))),
-  OUTPUT(d4,,PIPE(catCmd(tempname2), csv)),
-  OUTPUT(d1,,PIPE(catCmd(tempname3), xml(noroot)))
+  OUTPUT(d1,,PIPE(catCmd(tempname1s))),
+  OUTPUT(d4,,PIPE(catCmd(tempname2s), csv)),
+  OUTPUT(d1,,PIPE(catCmd(tempname3s), xml(noroot)))
  ),
  PARALLEL(
-  OUTPUT(PIPE('sort ' + tempname2, csvRec, csv)),
-  OUTPUT(PIPE('cat ' + tempname3, houseRecord, xml('Dataset/Row')))
+  OUTPUT(PIPE('sort ' + tempname2s, csvRec, csv)),
+  OUTPUT(PIPE('cat ' + tempname3s, houseRecord, xml('Dataset/Row')))
  )
 );
 

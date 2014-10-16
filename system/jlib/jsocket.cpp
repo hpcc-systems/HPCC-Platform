@@ -2559,9 +2559,10 @@ bool isInterfaceIp(const IpAddress &ip, const char *ifname)
 
 bool getInterfaceIp(IpAddress &ip,const char *ifname)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
     return false;
 #else
+    static bool recursioncheck = false;
     ip.ipset(NULL);
     int fd = socket(AF_INET, SOCK_DGRAM, 0);  // IPV6 TBD
     if (fd<0)
@@ -2590,7 +2591,11 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
             IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
             if (ioctl(fd, SIOCGIFFLAGS, item) < 0)
             {
-                DBGLOG("Error retrieving interface flags for interface %s", item->ifr_name);
+                if (!recursioncheck) {
+                    recursioncheck = true;
+                    DBGLOG("Error retrieving interface flags for interface %s", item->ifr_name);
+                    recursioncheck = false;
+                }
                 continue;
             }
             bool isLoopback = iptest.isLoopBack() || ((item->ifr_flags & IFF_LOOPBACK) != 0);
