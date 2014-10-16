@@ -23,7 +23,7 @@
 
 #include "jliball.hpp"
 
-static int compInt(const int* a, const int* b)
+static int compInt(int* a, int* b)
 {
     if(*a == *b)
         return 0;
@@ -386,7 +386,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     }
 
     bool isDS = isDataset(xpath);
-    ArrayOf<int> A;
+    IntArray A;
     if(t1->hasChildren() && t2->hasChildren())
     {
         int num1 = t1->numChildren();
@@ -528,12 +528,12 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         bool cmpResult = true;
         if(m_ordsen)
         {
-            ArrayOf<int> B;
+            IntArray B;
             ForEachItemIn(x, A)
                 B.append(x);
             B.sort(compInt);
             for(unsigned int k = 0; k < A.length(); k++)
-                if(A[k] != B[k])
+                if(A.item(k) != B.item(k))
                 {
                     cmpResult = false;
                     break;
@@ -960,7 +960,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                 tmpptrs1[i] = ptrs1[i];
             for(i = 0; i < num2; i++)
             tmpptrs2[i] = ptrs2[i];
-            ArrayOf<int> A;
+            IntArray A;
             for(i = 0; i < num1; i++)
             {
                 if(!tmpptrs1[i])
@@ -1019,10 +1019,10 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
             delete[] tmpptrs1;
             delete[] tmpptrs2;
 
-            ArrayOf<int> B;
+            IntArray B;
             for(unsigned k = 0; k < A.length(); k++)
             {
-                B.append(A[k]);
+                B.append(A.item(k));
             }
             B.sort(compInt);
             //printf("--------------\n");
@@ -1030,7 +1030,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
             {
                 //printf("%d %d\n", A[k], B[k]);
                 if(A.item(k) != B.item(k))
-                    A[k] = -1;
+                    A.replace(-1, k);
             }
 
             int ind = 0;
@@ -1068,7 +1068,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                                 const char* did2 = ptrs2[j]->queryProp("did");
                                 if(did2 && *did2 && strcmp(did, did2) == 0)
                                 {
-                                    if(A[ind] != -1)
+                                    if(A.item(ind) != -1)
                                     {
                                         diffPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
                                         ptrs1[i] = NULL;
@@ -1083,7 +1083,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                                 bool isEqual = cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
                                 if(isEqual)
                                 {
-                                    if(A[ind] != -1)
+                                    if(A.item(ind) != -1)
                                     {
                                         ptrs1[i] = NULL;
                                         ptrs2[j] = NULL;
