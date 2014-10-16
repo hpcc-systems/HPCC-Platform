@@ -481,48 +481,38 @@ startCmd() {
     fi
     eval $startcmd
 
-    if strstr ${compType} "thor" ; then
-        sleep 15
-        WAITTIME=30
-    else
-        sleep 1
-        WAITTIME=5
-    fi
+    local WAITTIME=120
+    local RCSTART=0
 
-    RCSTART=0
-    WAITEDLONGENOUGH=0
-    while [[ ${WAITEDLONGENOUGH} -lt ${WAITTIME} ]]
+    while [ ${WAITTIME} -gt 0 ]
     do
-        WAITEDLONGENOUGH=`expr ${WAITEDLONGENOUGH}+1`
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0 
+        WAITTIME=`expr ${WAITTIME} - 1`
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
         RCSTART=$?
         if [ ${RCSTART} -eq 0 ]; then
-          log_success_msg 
+          log_success_msg
           return 0;
         fi
         sleep 1
     done
 
-    if [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "${compName} is not running, Pidfile exists"
-       else
-          log_failure_msg 
-       fi
-    elif [ $RCSTART -eq 2 ];then
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "${compName} is not running, lockfile exists"
-       else
-          log_failure_msg
-       fi
+    if [ ${WAITTIME} -eq 0 ]; then
+        log_failure_msg "${compName} has timed out, but may still be starting"
+    elif [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            log_failure_msg "${compName} is not running, Pidfile exists"
+        else
+            log_failure_msg
+        fi
     else
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "Failed : Could not bring up Component"
-       else
-          log_failure_msg
-       fi
+        # RCSTART -eq 2
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+            log_failure_msg "${compName} is not running, lockfile exists"
+        else
+            log_failure_msg
+        fi
     fi
-   
+
     chmod 644 ${envfile}
 
     return ${RCSTART}

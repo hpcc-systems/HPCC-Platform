@@ -776,8 +776,6 @@ int main( int argc, char *argv[]  )
         addAbortHandler(ControlHandler);
         masterSlaveMpTag = allocateClusterMPTag();
 
-        writeSentinelFile(sentinelFile);
-
         if (registry->connect())
         {
             PROGLOG("verifying mp connection to rest of cluster");
@@ -788,6 +786,8 @@ int main( int argc, char *argv[]  )
 
             LOG(daliAuditLogCat, ",Progress,Thor,Startup,%s,%s,%s,%s",nodeGroup.str(),thorname,queueName.str(),logUrl.str());
             auditStartLogged = true;
+
+            writeSentinelFile(sentinelFile);
 
             thorMain(logHandler);
             LOG(daliAuditLogCat, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
