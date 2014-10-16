@@ -590,7 +590,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       const char *netAddress = pComputer->queryProp("@netAddress");
       StringBuffer xpath;
       const char* name = pComputer->queryProp(XML_ATTR_NAME);
-      bool isHPCCNode = false, isSqlOrLdap = false;
+      bool isNonHPCCNode = true;
 
       xpath.clear().appendf(XML_TAG_SOFTWARE"/*[//"XML_ATTR_COMPUTER"='%s']", name);
       Owned<IPropertyTreeIterator> it = pEnv->getElements(xpath.str());
@@ -599,17 +599,18 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       {
         IPropertyTree* pComponent = &it->query();
 
-        if (!strcmp(pComponent->queryName(), "MySQLProcess") ||
-            !strcmp(pComponent->queryName(), "LDAPServerProcess"))
-          isSqlOrLdap = true;
+        if (!strcmp(pComponent->queryName(), "LDAPServerProcess") ||
+            !strcmp(pComponent->queryName(), "MySQLProcess"))
+            // because if either blacklisted components are also on a machine that
+            // has a valid component, we still want to show that machine.
+            continue;
         else
-        {
-          isHPCCNode = true;
-          break;
-        }
+            // iterator is valid, and not blacklisted
+            isNonHPCCNode = false;
+            break;
       }
 
-      if (!isHPCCNode && isSqlOrLdap)
+      if (isNonHPCCNode)
         continue;
 
       out.appendf("%s,", netAddress  ? netAddress : "");
