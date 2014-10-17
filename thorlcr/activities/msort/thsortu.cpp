@@ -938,7 +938,11 @@ public:
                             if (cmp>0) 
                                 state = JSrightgrouponly;
                             else if (cmp<0) 
+                            {
+                                activity.logRow("prev: ", *allocatorL->queryOutputMeta(), prevleft);
+                                activity.logRow("next: ", *allocatorL->queryOutputMeta(), nextleft);
                                 throw MakeStringException(-1,"JOIN LHS not in sorted order");
+                            }
                         }
                         else
                             state = JSrightgrouponly;
