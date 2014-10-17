@@ -1258,13 +1258,6 @@ public:
                     StringBuffer prefix, text;
                     getLogPrefix(prefix);
                     stats.toStr(text);
-                    // MORE - probably don't need these any more - covered by the stats above
-                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
-                    text.clear().appendf("records processed - %d", processed);
-                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
-                    text.clear().appendf("total time - %d us", (unsigned) (cycle_to_nanosec(totalCycles.totalCycles)/1000));
-                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
-                    text.clear().appendf("local time - %d us", (unsigned) (cycle_to_nanosec(queryLocalCycles())/1000));
                     CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
                 }
                 state = STATEreset;
@@ -1453,14 +1446,6 @@ public:
         else if (traceStartStop)
             CTXLOG("lateStart activity NOT stopping input late as prefiltered");
         CRoxieServerActivity::stop(aborting);
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        __int64 localCycles = totalCycles.totalCycles - input->queryTotalCycles();
-        if (localCycles < 0)
-            localCycles = 0;
-        return localCycles;
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -1748,7 +1733,7 @@ class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, im
     bool disabled;
     RecordPullerThread puller;
     unsigned preload;
-    ActivityTimeAccumulator totalCycles;
+    unsigned __int64 totalCycles;
     IRoxieSlaveContext *ctx;
     bool timeActivities;
 
@@ -1759,6 +1744,7 @@ public:
         eof = false;
         disabled = false;
         ctx = NULL;
+        totalCycles = 0;
         timeActivities = defaultTimeActivities;
     }
 
@@ -1783,7 +1769,6 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        totalCycles.totalCycles = 0;
         if (disabled)
             puller.queryInput()->start(parentExtractSize, parentExtract, paused);
         else
@@ -1842,12 +1827,12 @@ public:
 
     virtual unsigned __int64 queryTotalCycles() const
     {
-        return totalCycles.totalCycles;
+        return totalCycles;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 ret = totalCycles.totalCycles - puller.queryInput()->queryTotalCycles();
+        __int64 ret = totalCycles - puller.queryInput()->queryTotalCycles();
         if (ret < 0) ret = 0;
         return ret;
     }
@@ -1859,7 +1844,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        SimpleActivityTimer t(totalCycles, timeActivities);
         if (disabled)
             return puller.queryInput()->nextInGroup();
         else
@@ -3390,7 +3375,7 @@ public:
     ruid_t ruid;
     mutable CriticalSection buffersCrit;
     unsigned processed;
-    ActivityTimeAccumulator totalCycles;
+    unsigned __int64 totalCycles;
     bool timeActivities;
 
 //private:   //vc6 doesn't like this being private yet accessed by nested class...
@@ -3852,7 +3837,7 @@ public:
 
     virtual unsigned __int64 queryTotalCycles() const
     {
-        return totalCycles.totalCycles;
+        return totalCycles;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -3898,7 +3883,7 @@ public:
             }
             deferredStart = false;
         }
-        ActivityTimer t(totalCycles, timeActivities);
+        SimpleActivityTimer t(totalCycles, timeActivities);
         if (processed==stopAfter)
             return NULL;
         if (allread)
@@ -3922,7 +3907,7 @@ public:
     virtual const void *nextInGroup()
     {
         // If we are merging then we need to do a heapsort on all 
-        ActivityTimer t(totalCycles, timeActivities);
+        SimpleActivityTimer t(totalCycles, timeActivities);
         if (activity.queryLogCtx().queryTraceLevel() > 10)
         {
             activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextInGroup()");
@@ -5490,24 +5475,21 @@ private:
 
 class CPseudoRoxieInput : public CInterface, implements IRoxieInput
 {
-protected:
-    unsigned __int64 totalCycles;
 public:
     IMPLEMENT_IINTERFACE;
     
     CPseudoRoxieInput()
     { 
-        totalCycles = 0;
     }
 
     virtual unsigned __int64 queryTotalCycles() const
     {
-        return totalCycles;
+        return 0;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        return totalCycles;
+        return 0;
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -5527,7 +5509,7 @@ public:
     virtual IOutputMetaData * queryOutputMeta() const { throwUnexpected(); }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) { }
     virtual void stop(bool aborting) { }
-    virtual void reset() { totalCycles = 0; }
+    virtual void reset() { }
     virtual void checkAbort() { }
     virtual unsigned queryId() const { throwUnexpected(); }
     virtual void resetEOF() { }
@@ -5551,7 +5533,6 @@ public:
     virtual void reset()
     { 
         input->reset();
-        totalCycles = 0;
     }
     virtual void checkAbort() 
     {
@@ -5568,12 +5549,14 @@ public:
         return input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
+    virtual unsigned __int64 queryTotalCycles() const
+    {
+        return input->queryTotalCycles();
+    }
+
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 ret = totalCycles - input->queryTotalCycles();
-        if (ret < 0) 
-            ret = 0;
-        return ret;
+        return input->queryLocalCycles();
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -19393,11 +19376,6 @@ public:
         executed = false;
         exception.clear();
         CRoxieServerActivity::reset();
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return totalCycles.totalCycles;
     }
 
     virtual const void *nextInGroup()

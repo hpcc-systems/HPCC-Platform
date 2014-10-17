@@ -137,13 +137,16 @@ public:
         totalCycles = 0;
         endCycles = 0;
         firstRow = 0;
+        firstExitCycles = 0;
     }
-//protected:
+public:
     unsigned __int64 startCycles; // Wall clock time of first entry to this activity
     unsigned __int64 totalCycles; // Time spent in this activity
     unsigned __int64 endCycles;   // Wall clock time of last entry to this activity
     unsigned __int64 firstRow;    // Timestamp of first row
+    unsigned __int64 firstExitCycles;    // Wall clock time of first exit from this activity
     inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
+    inline unsigned __int64 latency() const { return cycle_to_nanosec(firstExitCycles-startCycles); }
 };
 
 #ifdef TIME_ACTIVITIES
@@ -155,15 +158,17 @@ class ActivityTimer
     ActivityTimeAccumulator &accumulator;
 protected:
     const bool enabled;
+    bool isFirstRow;
 public:
-    inline ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
-    : accumulator(_accumulator), enabled(_enabled)
+    ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
+    : accumulator(_accumulator), enabled(_enabled), isFirstRow(false)
     {
         if (enabled)
         {
             startCycles = get_cycles_now();
             if (!accumulator.firstRow)
             {
+                isFirstRow = true;
                 accumulator.startCycles = startCycles;
                 accumulator.firstRow = getTimeStampNowValue();
             }
@@ -172,7 +177,7 @@ public:
             startCycles = 0;
     }
 
-    inline ~ActivityTimer()
+    ~ActivityTimer()
     {
         if (enabled)
         {
@@ -180,6 +185,35 @@ public:
             accumulator.endCycles = nowCycles;
             unsigned __int64 elapsedCycles = nowCycles - startCycles;
             accumulator.totalCycles += elapsedCycles;
+            if (isFirstRow)
+                accumulator.firstExitCycles = nowCycles;
+        }
+    }
+};
+
+class SimpleActivityTimer
+{
+    unsigned __int64 startCycles;
+    unsigned __int64 &accumulator;
+protected:
+    const bool enabled;
+public:
+    inline SimpleActivityTimer(unsigned __int64 &_accumulator, const bool _enabled)
+    : accumulator(_accumulator), enabled(_enabled)
+    {
+        if (enabled)
+            startCycles = get_cycles_now();
+        else
+            startCycles = 0;
+    }
+
+    inline ~SimpleActivityTimer()
+    {
+        if (enabled)
+        {
+            cycle_t nowCycles = get_cycles_now();
+            unsigned __int64 elapsedCycles = nowCycles - startCycles;
+            accumulator += elapsedCycles;
         }
     }
 };
@@ -187,6 +221,10 @@ public:
 struct ActivityTimer
 {
     inline ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled) { }
+};
+struct SimpleActivityTimer
+{
+    inline SimpleActivityTimer(unsigned __int64 &_accumulator, const bool _enabled) { }
 };
 #endif
 
