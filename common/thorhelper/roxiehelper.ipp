@@ -57,8 +57,6 @@ enum TracingCategory
 {
     LOG_TRACING,
     LOG_ERROR,
-    LOG_TIMING,
-    LOG_STATISTICS,
     LOG_STATVALUES,
 };
 

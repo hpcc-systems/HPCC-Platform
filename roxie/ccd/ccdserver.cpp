@@ -314,9 +314,9 @@ public:
     {
         return ctx->getLibraryGraph(extra, parentActivity);
     }
-    virtual void noteProcessed(const IRoxieContextLogger &_activityContext, const IRoxieServerActivity *_activity, unsigned _idx, unsigned _processed,  const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void noteProcessed(const IRoxieServerActivity *_activity, unsigned _idx, unsigned _processed,  const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
     {
-        ctx->noteProcessed(_activityContext, _activity, _idx, _processed, _totalCycles, _localCycles);
+        ctx->noteProcessed(_activity, _idx, _processed, _totalCycles, _localCycles);
     }
     virtual IProbeManager *queryProbeManager() const
     {
@@ -971,7 +971,7 @@ public:
         }
         if (ctx)
         {
-            ctx->noteProcessed(*this, this, 0, processed, totalCycles, localCycles);
+            ctx->noteProcessed(this, 0, processed, totalCycles, localCycles);
             ctx->mergeStats(stats);
         }
         basehelper.Release();
@@ -1252,13 +1252,6 @@ public:
                     if (traceStartStop || traceLevel > 2)
                         CTXLOG("STATE: activity %d reset without stop", activityId);
                     stop(false);
-                }
-                if (ctx->queryOptions().traceActivityTimes)
-                {
-                    StringBuffer prefix, text;
-                    getLogPrefix(prefix);
-                    stats.toStr(text);
-                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
                 }
                 state = STATEreset;
 #ifdef TRACE_STARTSTOP
@@ -3423,7 +3416,7 @@ private:
                 const QueryOptions &options = ctx->queryOptions();
                 if (activity.queryLogCtx().isIntercepted())
                     loggingFlags |= LOGGING_INTERCEPTED;
-                if (options.traceActivityTimes)
+                if (options.timeActivities)
                     loggingFlags |= LOGGING_TIMEACTIVITIES; 
                 if (activity.queryLogCtx().isBlind())
                     loggingFlags |= LOGGING_BLIND;

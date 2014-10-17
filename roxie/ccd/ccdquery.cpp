@@ -288,7 +288,6 @@ QueryOptions::QueryOptions()
     enableFieldTranslation = fieldTranslationEnabled;
     skipFileFormatCrcCheck = false;
     stripWhitespaceFromStoredDataset = ((ptr_ignoreWhiteSpace & defaultXmlReadFlags) != 0);
-    traceActivityTimes = false;   // No global default for this
     timeActivities = defaultTimeActivities;
 }
 
@@ -313,7 +312,6 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     skipFileFormatCrcCheck = other.skipFileFormatCrcCheck;
     stripWhitespaceFromStoredDataset = other.stripWhitespaceFromStoredDataset;
     timeActivities =other.timeActivities;
-    traceActivityTimes = other.traceActivityTimes;
 }
 
 void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
@@ -347,7 +345,6 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(skipFileFormatCrcCheck, wu, "skipFileFormatCrcCheck");
     updateFromWorkUnit(stripWhitespaceFromStoredDataset, wu, "stripWhitespaceFromStoredDataset");
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
-    updateFromWorkUnit(traceActivityTimes, wu, "traceActivityTimes");
 }
 
 void QueryOptions::updateFromWorkUnitM(memsize_t &value, IConstWorkUnit &wu, const char *name)
@@ -391,7 +388,6 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(skipFileFormatCrcCheck, ctx, "_SkipFileFormatCrcCheck", "@skipFileFormatCrcCheck");
         updateFromContext(stripWhitespaceFromStoredDataset, ctx, "_StripWhitespaceFromStoredDataset", "@stripWhitespaceFromStoredDataset");
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
-        updateFromContext(traceActivityTimes, ctx, "@timing", "_TraceActivityTimes");
     }
 }
 
@@ -437,7 +433,7 @@ void QueryOptions::setFromSlaveLoggingFlags(unsigned loggingFlags)
 {
     // MORE - priority/timelimit ?
     checkingHeap = (loggingFlags & LOGGING_CHECKINGHEAP) != 0;
-    traceActivityTimes = (loggingFlags & LOGGING_TIMEACTIVITIES) != 0;
+    timeActivities = (loggingFlags & LOGGING_TIMEACTIVITIES) != 0;
 }
 
 //----------------------------------------------------------------------------------------------

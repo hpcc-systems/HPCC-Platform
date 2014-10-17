@@ -102,7 +102,7 @@ CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFac
     queryFactory(_queryFactory),
     helperFactory(_helperFactory),
     kind(_kind),
-    mystats(allStatistics)
+    mystats(allStatistics)  // We COULD cut down this list but it would complicate the structure, and we do actually track more in the factory than in the activity
 {
     if (helperFactory)
     {

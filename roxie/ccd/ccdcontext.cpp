@@ -1210,16 +1210,8 @@ public:
         return logctx.queryTraceLevel();
     }
 
-    virtual void noteProcessed(const IRoxieContextLogger &activityContext, const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void noteProcessed(const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
     {
-        if (options.traceActivityTimes)
-        {
-            StringBuffer text, prefix;
-            text.appendf("%s outputIdx %d processed %d total %d us local %d us",
-                getActivityText(activity->getKind()), _idx, _processed, (unsigned) (cycle_to_nanosec(_totalCycles.totalCycles)/1000), (unsigned)(cycle_to_nanosec(_localCycles)/1000));
-            activityContext.getLogPrefix(prefix);
-            CTXLOGa(LOG_TIMING, prefix.str(), text.str());
-        }
         if (graphStats)
         {
             IStatisticGatherer & builder = graphStats->queryStatsBuilder();
@@ -2691,9 +2683,6 @@ public:
         rowManager->setMemoryLimit(options.memoryLimit);
         authToken.append(httpHelper.queryAuthToken());
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
-
-        if (options.traceActivityTimes)
-            options.timeActivities = true;
     }
 
     virtual roxiemem::IRowManager &queryRowManager()

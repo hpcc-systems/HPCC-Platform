@@ -466,7 +466,6 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     intercept = false;
     debuggerActive = false;
     checkingHeap = false;
-    traceActivityTimes = false;
     stats.reset();
     start = msTick();
     if (packet)
@@ -487,8 +486,6 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 ctxTraceLevel = (*traceInfo++ - 1); // avoid null byte here in case anyone still thinks there's just a null-terminated string
                 traceLength--;
             }
-            if (loggingFlags & LOGGING_TIMEACTIVITIES)
-                traceActivityTimes = true;
             if (loggingFlags & LOGGING_BLIND)
                 blind = true;
             if (loggingFlags & LOGGING_CHECKINGHEAP)

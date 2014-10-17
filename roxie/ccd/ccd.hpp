@@ -511,8 +511,6 @@ public:
         {
         case LOG_TRACING: return "TRACE";
         case LOG_ERROR: return "ERROR";
-        case LOG_TIMING: return "TIMING";
-        case LOG_STATISTICS: return "STATISTICS";
         case LOG_STATVALUES: return "STATVALUES";
         default: return "UNKNOWN";
         }
@@ -787,7 +785,6 @@ class SlaveContextLogger : public StringContextLogger
 {
     Owned<IMessagePacker> output;
     bool anyOutput;
-    bool traceActivityTimes;
     bool debuggerActive;
     bool checkingHeap;
     IpAddress ip;
