@@ -7826,7 +7826,11 @@ void CHThorDiskReadBaseActivity::resolve()
     else
     {
         ldFile.setown(agent.resolveLFN(mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
-        logicalFileName.set(mangledHelperFileName.str());
+        if ( mangledHelperFileName.charAt(0) == '~')
+            logicalFileName.set(mangledHelperFileName.str()+1);
+        else
+            logicalFileName.set(mangledHelperFileName.str());
+
         if (ldFile)
         {
             Owned<IFileDescriptor> fdesc;
