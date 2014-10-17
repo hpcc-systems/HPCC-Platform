@@ -1172,7 +1172,7 @@ void FileSprayer::calculateSprayPartition()
     ForEachItemIn(idx2, partitioners)
         partitioners.item(idx2).getResults(partition);
 
-    if (partitioners.ordinality() > 0)
+    if ((partitioners.ordinality() > 0) && !srcAttr->hasProp("ECL"))
     {
         // Store discovered CSV record structure into target logical file.
         StringBuffer recStru;
@@ -2944,15 +2944,8 @@ void FileSprayer::updateTargetProperties()
 
             // and simple (top level) elements
             Owned<IPropertyTreeIterator> iter = srcAttr->getElements("*");
-            ForEach(*iter)
-            {
-                const char * _propName = iter->query().queryName();
-                if (stricmp(_propName,"ECL") == 0)
-                    // To prevent multiple "ECL" properties and
-                    // keep existing source record structure definition
-                    curProps.setPropTree(_propName,createPTreeFromIPT(&iter->query()));
-                else
-                    curProps.addPropTree(_propName,createPTreeFromIPT(&iter->query()));
+            ForEach(*iter) {
+                curProps.addPropTree(iter->query().queryName(),createPTreeFromIPT(&iter->query()));
             }
         }
     }
