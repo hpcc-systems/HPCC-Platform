@@ -314,9 +314,13 @@ public:
     {
         return ctx->getLibraryGraph(extra, parentActivity);
     }
-    virtual void noteProcessed(const IRoxieServerActivity *_activity, unsigned _idx, unsigned _processed,  const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void noteProcessed(const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed) const
     {
-        ctx->noteProcessed(_activity, _idx, _processed, _totalCycles, _localCycles);
+        ctx->noteProcessed(activity, _idx, _processed);
+    }
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const IRoxieServerActivity *_activity, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    {
+        ctx->mergeActivityStats(fromStats, _activity, _totalCycles, _localCycles);
     }
     virtual IProbeManager *queryProbeManager() const
     {
@@ -353,10 +357,6 @@ public:
     virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
     {
         return ctx->getWorkunitRowReader(wuid, name, sequence, xmlTransformer, rowAllocator, isGrouped);
-    }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from)
-    {
-        ctx->mergeStats(from);
     }
 protected:
     IRoxieSlaveContext * ctx;
@@ -487,16 +487,26 @@ public:
         CActivityFactory::mergeStats(from);
     }
 
-    virtual void noteProcessed(unsigned idx, unsigned _processed,  const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void noteProcessed(unsigned _idx, unsigned _processed) const
     {
-        if (_processed || _totalCycles.totalCycles || _localCycles)
+        dbgassertex(!_idx);
+        if (_processed)
+        {
+            CriticalBlock b(statsCrit);
+            processed += processed;
+        }
+    }
+
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    {
+        if (_totalCycles.totalCycles || _localCycles)
         {
             CriticalBlock b(statsCrit);
             dbgassertex(_totalCycles.totalCycles >= _localCycles);
-            processed += _processed;
             totalCycles += _totalCycles.totalCycles;
             localCycles += _localCycles;
         }
+        CActivityFactory::mergeStats(fromStats);
     }
 
     virtual void noteStarted() const
@@ -800,14 +810,12 @@ protected:
         }
     }
 
-    virtual void noteProcessed(unsigned idx, unsigned _processed,  const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
-    {
-        assertex(numOutputs ? idx < numOutputs : idx==0);
-        CriticalBlock b(statsCrit);
-        processedArray[idx] += _processed;
-        totalCycles += _totalCycles.totalCycles;
-        localCycles += _localCycles;
-    }
+    virtual void noteProcessed(unsigned idx, unsigned _processed) const
+     {
+         assertex(numOutputs ? idx < numOutputs : idx==0);
+         CriticalBlock b(statsCrit);
+         processedArray[idx] += _processed;
+     }
 
     virtual void noteStarted(unsigned idx) const
     {
@@ -966,13 +974,15 @@ public:
         }
         if (factory && !debugging)
         {
-            factory->noteProcessed(0, processed, totalCycles, localCycles);
-            factory->mergeStats(stats);
+            if (processed)
+                factory->noteProcessed(0, processed);
+            factory->mergeActivityStats(stats, totalCycles, localCycles);
         }
         if (ctx)
         {
-            ctx->noteProcessed(this, 0, processed, totalCycles, localCycles);
-            ctx->mergeStats(stats);
+            if (processed)
+                ctx->noteProcessed(this, 0, processed);
+            ctx->mergeActivityStats(stats, this, totalCycles, localCycles);
         }
         basehelper.Release();
         ::Release(rowAllocator);
@@ -3485,12 +3495,14 @@ public:
         memset(buffers, 0, (numChannels+1)*sizeof(ChannelBuffer *));
         parentExtractSize = 0;
         parentExtract = NULL;
+        debugContext = NULL;
         owner = NULL;
         mergeOrder = NULL;
         deferredStart = false;
         processed = 0;
         sentSequence = 0;
         resendSequence = 0;
+        totalCycles = 0;
         serverSideCache = activity.queryServerSideCache();
         bufferStream.setown(createMemoryBufferSerialStream(tempRowBuffer));
         rowSource.setStream(bufferStream);
@@ -8308,7 +8320,7 @@ public:
         unsigned idx;
         unsigned oid;
         unsigned processed;
-        ActivityTimeAccumulator totalCycles;
+        unsigned __int64 totalCycles;  // We track this per output so that the pullers get a meaningful value to use when calculating their localtime
 
     public:
         IMPLEMENT_IINTERFACE;
@@ -8319,6 +8331,7 @@ public:
             oid = 0;
             idx = 0;
             processed = 0;
+            totalCycles = 0;
             eofpending = false;
             eof = false;
             stopped = false;
@@ -8328,6 +8341,12 @@ public:
         {
             if (traceStartStop)
                 DBGLOG("%p ~OutputAdaptor %d", this, oid);
+            if (processed && parent && parent->factory)
+            {
+                parent->factory->noteProcessed(oid, processed);
+                if (parent->ctx)
+                    parent->ctx->noteProcessed(parent, oid, processed);
+            }
         }
 
         void init()
@@ -8336,7 +8355,6 @@ public:
                 DBGLOG("%p init Input adaptor %d", this, oid);
             idx = 0;
             processed = 0;
-            totalCycles.totalCycles = 0;
             eofpending = false;
             eof = false;
             stopped = false;
@@ -8359,12 +8377,12 @@ public:
         
         virtual unsigned __int64 queryTotalCycles() const
         {
-            return totalCycles.totalCycles;
+            return totalCycles;
         }
 
         virtual unsigned __int64 queryLocalCycles() const
         {
-            return 0;
+            return 0;  // Should never be called
         }
 
         virtual IRoxieInput *queryInput(unsigned idx) const
@@ -8374,7 +8392,7 @@ public:
 
         virtual const void * nextInGroup()
         {
-            ActivityTimer t(totalCycles, parent->timeActivities);
+            SimpleActivityTimer t(totalCycles, parent->timeActivities);
             if (eof)
                 return NULL;
             const void *ret = parent->readBuffered(idx, oid);
@@ -8428,8 +8446,6 @@ public:
             if (traceStartStop)
                 parent->CTXLOG("%p reset Input adaptor %d stopped = %d", this, oid, stopped);
             parent->reset(oid);
-            parent->processed += processed;
-            processed = 0;
             idx = 0; // value should not be relevant really but this is the safest...
             stopped = false;
         };
@@ -8508,7 +8524,7 @@ public:
     const void *readBuffered(unsigned idx, unsigned oid)
     {
         CriticalBlock b(crit);
-        ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. Is that right?
+        ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
         if (idx == headIdx) // test once without getting the crit2 sec
         {
             CriticalUnblock b1(crit);
@@ -8666,11 +8682,6 @@ public:
         if (state != STATEreset) // make sure input is only reset once
             CRoxieServerActivity::reset();
     };
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return 0;
-    }
 
     virtual const void *nextInGroup()
     {
@@ -15164,6 +15175,18 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             init();
         }
 
+        ~OutputAdaptor()
+        {
+            if (traceStartStop)
+                DBGLOG("%p ~OutputAdaptor %d", this, oid);
+            if (processed && parent && parent->factory)
+            {
+                parent->factory->noteProcessed(oid, processed);
+                if (parent->ctx)
+                    parent->ctx->noteProcessed(parent, oid, processed);
+            }
+        }
+
         void init()
         {
             processed = 0;
@@ -15193,7 +15216,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
 
         virtual void reset()
         {
-            parent->reset(oid, processed);
+            parent->reset(oid);
             CExtractMapperInput::reset();
             init();
         };
@@ -15352,9 +15375,8 @@ public:
         }
     }
 
-    void reset(unsigned oid, unsigned _processed)
+    void reset(unsigned oid)
     {
-        processed += _processed;
         started = false;
         error.clear();
         numActiveOutputs = numOutputs;

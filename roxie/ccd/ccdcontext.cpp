@@ -1210,34 +1210,44 @@ public:
         return logctx.queryTraceLevel();
     }
 
-    virtual void noteProcessed(const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void noteProcessed(const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed) const
+    {
+        if (_processed)
+        {
+            if (graphStats)
+            {
+                IStatisticGatherer & builder = graphStats->queryStatsBuilder();
+                StatsSubgraphScope graphScope(builder, activity->querySubgraphId());
+                StatsEdgeScope scope(builder, activity->queryId(), _idx);
+                builder.addStatistic(StNumRowsProcessed, _processed);
+            }
+            logctx.noteStatistic(StNumRowsProcessed, _processed);
+        }
+    }
+
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const IRoxieServerActivity *activity, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
     {
         if (graphStats)
         {
             IStatisticGatherer & builder = graphStats->queryStatsBuilder();
             StatsSubgraphScope graphScope(builder, activity->querySubgraphId());
-
+            StatsActivityScope scope(builder, activity->queryId());
+            if (_totalCycles.totalCycles)
             {
-                StatsActivityScope scope(builder, activity->queryId());
-                //MORE: This is potentially problematic if noteProcessed is called for multiple edges => check if totalCycles is 0.
-                //There should really be two separate functions - one to update activity statistics, and another for edge statistics
-                if (_totalCycles.totalCycles)
-                {
-                    builder.addStatistic(StWhenFirstRow, (_totalCycles.firstRow));
-                    builder.addStatistic(StTimeElapsed, (_totalCycles.elapsed()));
-                    builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(_totalCycles.totalCycles));
-                    builder.addStatistic(StTimeLocalExecute, cycle_to_nanosec(_localCycles));
-                }
+                builder.addStatistic(StWhenFirstRow, (_totalCycles.firstRow));
+                builder.addStatistic(StTimeElapsed, (_totalCycles.elapsed()));
+                builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(_totalCycles.totalCycles));
+                builder.addStatistic(StTimeLocalExecute, cycle_to_nanosec(_localCycles));
             }
-
-            if (_processed)
+            ForEachItemIn(i, fromStats)
             {
-                StatsEdgeScope scope(builder, activity->queryId(), _idx);
-                builder.addStatistic(StNumRowsProcessed, _processed);
+                StatisticKind kind = fromStats.getKind(i);
+                unsigned __int64 value = fromStats.getStatisticValue(kind);
+                if (value)
+                    builder.addStatistic(kind, value);
             }
         }
-        if (_processed)
-            logctx.noteStatistic(StNumRowsProcessed, _processed);
+        logctx.mergeStats(fromStats);
     }
 
     virtual void checkAbort()
