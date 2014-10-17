@@ -395,7 +395,7 @@ define([
                     Cluster: { label: this.i18n.Cluster, width: 90 },
                     RoxieCluster: { label: this.i18n.RoxieCluster, width: 99 },
                     State: { label: this.i18n.State, width: 90 },
-                    TotalThorTime: { label: this.i18n.TotalThorTime, width: 117 }
+                    TotalClusterTime: { label: this.i18n.TotalClusterTime, width: 117 }
                 }
             }, this.id + "WorkunitsGrid");
 

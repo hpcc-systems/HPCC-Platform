@@ -45,8 +45,8 @@ define([
 
         _watched: [],
         preRequest: function (request) {
-            if (request.Sortby && request.Sortby === "TotalThorTime") {
-                request.Sortby = "ThorTime";
+            if (request.Sortby && request.Sortby === "TotalClusterTime") {
+                request.Sortby = "ClusterTime";
             }
         },
         create: function (id) {

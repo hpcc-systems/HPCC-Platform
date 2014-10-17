@@ -506,7 +506,7 @@ define({root:
     Top: "Top",
     ToSizes: "To Sizes",
     TotalSize: "Total Size",
-    TotalThorTime: "Total Thor Time",
+    TotalClusterTime: "Total Cluster Time",
     TransitionGuide: "Transition Guide",
     Tree: "Tree",
     Type: "Type",
