@@ -212,6 +212,8 @@
 #define HQLERR_StreamInputUsedDirectly          4192
 #define HQLERR_MaxlengthExceedsLimit            4193
 #define HQLERR_CouldNotGenerateDefault          4194
+#define HQLERR_DistributionVariableLengthX      4195
+#define HQLERR_DistributionUnsupportedTypeXX    4196
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -532,6 +534,8 @@
 #define HQLWRN_AmbiguousRollupNoGroup_Text      "ROLLUP condition - no fields are preserved in the transform - not converted to GROUPed ROLLUP"
 #define HQLWRN_GlobalActionDependendOnScope_Text "Global action appears to be context dependent - this may cause a dataset not active error"
 #define HQLWRN_NoThorContextDependent_Text      "NOTHOR expression%s appears to access a parent dataset - this may cause a dataset not active error"
+#define HQLERR_DistributionVariableLengthX_Text "DISTRIBUTION does not support variable length field '%s'"
+#define HQLERR_DistributionUnsupportedTypeXX_Text "DISTRIBUTION does not support field '%s' with type %s"
 
 #define HQLERR_OrderOnVarlengthStrings_Text     "Rank/Ranked not supported on variable length strings"
 #define HQLERR_DistributionNoSequence_Text      "DISTRIBUTION() only supported at the outer level"

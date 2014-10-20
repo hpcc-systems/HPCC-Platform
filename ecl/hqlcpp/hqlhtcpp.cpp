@@ -10025,7 +10025,7 @@ void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpressio
     {
         if (maxlength)
         {
-            maxRecordSize = getIntValue(maxlength->queryChild(0), 0);
+            maxRecordSize = (size32_t)getIntValue(maxlength->queryChild(0), 0);
             if (maxRecordSize == 0)
                 maxRecordSize = getMaxRecordSize(newRecord);
         }
@@ -18015,8 +18015,35 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribution(BuildCtx & ctx, I
         unwindChildren(selects, fields);
     else
         expandDistributionFields(dataset->queryRecord(), selects, dataset);
-    unsigned numFields = selects.ordinality();
 
+    ForEachItemIn(i, selects)
+    {
+        IHqlExpression & cur = selects.item(i);
+        ITypeInfo * type = cur.queryType();
+        switch (type->getTypeCode())
+        {
+        case type_boolean:
+        case type_real:
+        case type_int:
+        case type_swapint:
+        case type_packedint:
+            break;
+        case type_string:
+        case type_data:
+        case type_qstring:
+            if (type->getSize() == UNKNOWN_LENGTH)
+                throwError1(HQLERR_DistributionVariableLengthX, cur.queryChild(1)->queryId()->str());
+            break;
+        default:
+            {
+                StringBuffer typeName;
+                getFriendlyTypeStr(type, typeName);
+                throwError2(HQLERR_DistributionUnsupportedTypeXX, cur.queryChild(1)->queryId()->str(), typeName.str());
+            }
+        }
+    }
+
+    unsigned numFields = selects.ordinality();
     doBuildDistributionClearFunc(instance->startctx, dataset, selects);
     doBuildDistributionNextFunc(instance->startctx, dataset, selects);
     doBuildDistributionDestructFunc(instance->startctx, numFields);
