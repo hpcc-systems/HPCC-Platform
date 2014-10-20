@@ -314,13 +314,13 @@ public:
     {
         return ctx->getLibraryGraph(extra, parentActivity);
     }
-    virtual void noteProcessed(const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed) const
+    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed) const
     {
-        ctx->noteProcessed(activity, _idx, _processed);
+        ctx->noteProcessed(subgraphId, activityId, _idx, _processed);
     }
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const IRoxieServerActivity *_activity, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
     {
-        ctx->mergeActivityStats(fromStats, _activity, _totalCycles, _localCycles);
+        ctx->mergeActivityStats(fromStats, subgraphId, activityId, _totalCycles, _localCycles);
     }
     virtual IProbeManager *queryProbeManager() const
     {
@@ -981,8 +981,8 @@ public:
         if (ctx)
         {
             if (processed)
-                ctx->noteProcessed(this, 0, processed);
-            ctx->mergeActivityStats(stats, this, totalCycles, localCycles);
+                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed);
+            ctx->mergeActivityStats(stats, factory->querySubgraphId(), activityId, totalCycles, localCycles);
         }
         basehelper.Release();
         ::Release(rowAllocator);
@@ -4076,33 +4076,7 @@ public:
                                 throwUnexpected();
                             break;
                         }
-                            // MORE - ROXIE_ALIVE perhaps should go here too
-                        case ROXIE_TRACEINFO:
-                        {
-                            Owned<IMessageUnpackCursor> extra = mr->getCursor(rowManager);
-                            loop
-                            {
-                                RecordLengthType *rowlen = (RecordLengthType *) extra->getNext(sizeof(RecordLengthType));
-                                if (rowlen)
-                                {
-                                    char *logInfo = (char *) extra->getNext(*rowlen);
-                                    MemoryBuffer buf;
-                                    buf.setBuffer(*rowlen, logInfo, false);
-                                    if (*logInfo == LOG_STATVALUES)
-                                    {
-                                        buf.skip(1);
-                                        activity.mergeStats(buf);
-                                    }
-                                    else
-                                        activity.queryLogCtx().CTXLOGl(new LogItem(buf));
-                                    ReleaseRoxieRow(rowlen);
-                                    ReleaseRoxieRow(logInfo);
-                                }
-                                else
-                                    break;
-                            }
-                            break;
-                        }
+                        // MORE - ROXIE_ALIVE perhaps should go here too
                         default:
                             if (ctxTraceLevel > 3)
                                 activity.queryLogCtx().CTXLOG("Discarding packet %p - original %p is NULL or has result already", mr.get(), original);
@@ -4198,13 +4172,45 @@ public:
                                 char *logInfo = (char *) extra->getNext(*rowlen);
                                 MemoryBuffer buf;
                                 buf.setBuffer(*rowlen, logInfo, false);
-                                if (*logInfo == LOG_STATVALUES)
+                                switch ((TracingCategory) *logInfo)
                                 {
+                                case LOG_TRACING:
+                                case LOG_ERROR:
+                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
+                                    break;
+                                case LOG_STATVALUES:
                                     buf.skip(1);
                                     activity.mergeStats(buf);
+                                    break;
+                                case LOG_CHILDCOUNT:
+                                case LOG_CHILDSTATS:
+                                    unsigned graphId, childId;
+                                    buf.skip(1);
+                                    buf.read(graphId);
+                                    buf.read(childId);
+                                    if (*logInfo == LOG_CHILDCOUNT)
+                                    {
+                                        unsigned childProcessed;
+                                        unsigned idx;
+                                        buf.read(childProcessed);
+                                        buf.read(idx);
+                                        if (traceLevel > 5)
+                                            activity.queryLogCtx().CTXLOG("Processing ChildCount %d idx %d for child %d subgraph %d", childProcessed, idx, childId, graphId);
+                                        activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed);
+                                    }
+                                    else
+                                    {
+                                        ActivityTimeAccumulator dummy; // We could serialize from slave? Would get confusing though
+                                        CRuntimeStatisticCollection childStats(allStatistics);
+                                        childStats.deserialize(buf);
+                                        if (traceLevel > 5)
+                                        {
+                                            StringBuffer s;
+                                            activity.queryLogCtx().CTXLOG("Processing ChildStats for child %d subgraph %d: %s", childId, graphId, childStats.toStr(s).str());
+                                        }
+                                        activity.queryContext()->mergeActivityStats(childStats, graphId, childId, dummy, 0);
+                                    }
                                 }
-                                else
-                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
                                 ReleaseRoxieRow(rowlen);
                                 ReleaseRoxieRow(logInfo);
                             }
@@ -8345,7 +8351,7 @@ public:
             {
                 parent->factory->noteProcessed(oid, processed);
                 if (parent->ctx)
-                    parent->ctx->noteProcessed(parent, oid, processed);
+                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed);
             }
         }
 
@@ -15183,7 +15189,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             {
                 parent->factory->noteProcessed(oid, processed);
                 if (parent->ctx)
-                    parent->ctx->noteProcessed(parent, oid, processed);
+                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed);
             }
         }
 

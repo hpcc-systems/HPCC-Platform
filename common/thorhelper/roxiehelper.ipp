@@ -58,6 +58,8 @@ enum TracingCategory
     LOG_TRACING,
     LOG_ERROR,
     LOG_STATVALUES,
+    LOG_CHILDSTATS,
+    LOG_CHILDCOUNT,
 };
 
 class LogItem;

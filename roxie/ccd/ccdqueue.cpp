@@ -530,6 +530,39 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     }
 }
 
+
+void SlaveContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed) const
+{
+    if (output && mergeSlaveStatistics)
+    {
+        MemoryBuffer buf;
+        buf.append((char) LOG_CHILDCOUNT); // A special log entry for the stats
+        buf.append(subGraphId);
+        buf.append(actId);
+        buf.append(idx);
+        buf.append(processed);
+    }
+}
+
+void SlaveContextLogger::putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const
+{
+    if (output && mergeSlaveStatistics)
+    {
+        MemoryBuffer buf;
+        buf.append((char) LOG_CHILDSTATS); // A special log entry for the stats
+        buf.append(subGraphId);
+        buf.append(actId);
+        if (stats.serialize(buf))
+        {
+            unsigned len = buf.length();
+            void *ret = output->getBuffer(len, true);
+            memcpy(ret, buf.toByteArray(), len);
+            output->putBuffer(ret, len, true);
+            anyOutput = true;
+        }
+    }
+}
+
 void SlaveContextLogger::flush()
 {
     if (output)

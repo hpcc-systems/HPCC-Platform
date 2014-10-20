@@ -62,7 +62,7 @@ interface IRoxieSlaveActivity : extends IInterface
 
 interface ISlaveActivityFactory : extends IActivityFactory
 {
-    virtual IRoxieSlaveActivity *createActivity(IRoxieContextLogger &logctx, IRoxieQueryPacket *packet) const = 0;
+    virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const = 0;
     virtual StringBuffer &toString(StringBuffer &ret) const = 0;
     virtual const char *queryQueryName() const = 0;
     virtual void addChildQuery(unsigned id, ActivityArray *childQuery) = 0;

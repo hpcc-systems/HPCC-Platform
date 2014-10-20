@@ -1445,7 +1445,7 @@ public:
         return strdup(result ? result : defaultValue);
     }
 
-    virtual IRoxieSlaveContext *createSlaveContext(const IRoxieContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
+    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
     {
         throwUnexpected();   // only implemented in derived slave class
     }
@@ -1842,7 +1842,7 @@ public:
     {
     }
 
-    virtual IRoxieSlaveContext *createSlaveContext(const IRoxieContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
+    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
     {
         return ::createSlaveContext(this, logctx, packet, hasChildren);
     }
