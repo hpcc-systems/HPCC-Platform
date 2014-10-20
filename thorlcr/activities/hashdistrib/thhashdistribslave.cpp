@@ -192,7 +192,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         {
             CDistributorBase &owner;
             unsigned target;
-            unsigned activeWriters;
+            atomic_t activeWriters;
             bool senderFinished;
             CSendBucketQueue pendingBuckets;
             mutable CriticalSection crit;
@@ -200,7 +200,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         public:
             CTarget(CDistributorBase &_owner, unsigned _target) : owner(_owner), target(_target)
             {
-                activeWriters = 0;
+                atomic_set(&activeWriters, 0);
                 senderFinished = false;
             }
             ~CTarget()
@@ -217,7 +217,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                     ::Release(sendBucket);
                 }
                 bucket.clear();
-                activeWriters = 0;
+                atomic_set(&activeWriters, 0);
                 senderFinished = false;
             }
             unsigned getNumPendingBuckets() const
@@ -238,15 +238,15 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             }
             void incActiveWriters()
             {
-                ++activeWriters;
+                atomic_inc(&activeWriters);
             }
             void decActiveWriters()
             {
-                --activeWriters;
+                atomic_dec(&activeWriters);
             }
             unsigned getActiveWriters() const
             {
-                return activeWriters;
+                return atomic_read(&activeWriters);
             }
             bool getSenderFinished() const
             {
@@ -613,8 +613,9 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                         if (maxSz)
                         {
                             // pick candidates that are at >= 50% size of largest
-                            candidates.kill();
+                            candidates.clear();
                             bool doSelf = false;
+                            unsigned inactiveWriters = queryInactiveWriters();
                             for (unsigned i=0; i<owner.numnodes; i++)
                             {
                                 CSendBucket *bucket = targets.item(i)->queryBucket();
@@ -623,7 +624,6 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                                     size32_t bucketSz = bucket->querySize();
                                     if (bucketSz >= maxSz/2)
                                     {
-                                        CriticalBlock b(activeWritersLock);
                                         if (0 == targets.item(i)->getActiveWriters()) // only if there are no active writer threads for this target
                                         {
                                             if (i==self)
@@ -632,7 +632,10 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                                             {
                                                 candidates.append(i);
                                                 HDSendPrintLog4("c[%d], rows=%d, size=%d", i, bucket->count(), bucketSz);
-                                                if (candidates.ordinality() >= queryInactiveWriters())
+                                                /* NB: in theory could be more if some finished since checking, but that's okay
+                                                 * some candidates, or free space will be picked up in next section
+                                                 */
+                                                if (candidates.ordinality() >= inactiveWriters)
                                                     break;
                                             }
                                         }
@@ -644,15 +647,6 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                             {
                                 if (0 == queryInactiveWriters())
                                     break;
-                                else if (1 == candidates.ordinality())
-                                {
-                                    unsigned c = candidates.item(0);
-                                    CSendBucket *bucket = targets.item(c)->queryBucket();
-                                    assertex(bucket);
-                                    HDSendPrintLog3("process exceeded: send to %d, size=%d", c, bucket->querySize());
-                                    add(targets.item(c)->getBucketClear());
-                                    break;
-                                }
                                 else
                                 {
                                     unsigned pos = getRandom()%candidates.ordinality();
