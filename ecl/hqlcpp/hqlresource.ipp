@@ -38,12 +38,47 @@ enum ResourceType {
 class CResourceOptions
 {
 public:
-    CResourceOptions() { memset(this, 0, sizeof(*this)); state.updateSequence = 0; }
+    CResourceOptions(UniqueSequenceCounter & _spillSequence)
+    : spillSequence(_spillSequence)
+    {
+        filteredSpillThreshold = 0;
+        minimizeSpillSize = 0;
+        allowThroughSpill = false;
+        allowThroughResult = false;
+        cloneFilteredIndex = false;
+        spillSharedConditionals = false;
+        shareDontExpand = false;
+        useGraphResults = false;
+        noConditionalLinks = false;
+        minimiseSpills = false;
+        hoistResourced = false;
+        isChildQuery = false;
+        groupedChildIterators = false;
+        allowSplitBetweenSubGraphs = false;
+        preventKeyedSplit = false;
+        preventSteppedSplit = false;
+        minimizeSkewBeforeSpill = false;
+        expandSingleConstRow = false;
+        createSpillAsDataset = false;
+        optimizeSharedInputs = false;
+        combineSiblings = false;
+        actionLinkInNewGraph = false;
+        convertCompoundToExecuteWhen = false;
+        useResultsForChildSpills = false;
+        alwaysUseGraphResults = false;
+        newBalancedSpotter = false;
+        graphIdExpr = NULL;
+        nextResult = 0;
+        clusterSize = 0;
+        targetClusterType = ThorLCRCluster;
+        state.updateSequence = 0;
+    }
 
     IHqlExpression * createSpillName(bool isGraphResult);
     void noteGraphsChanged() { state.updateSequence++; }
 
 public:
+    UniqueSequenceCounter & spillSequence;
     unsigned filteredSpillThreshold;
     unsigned minimizeSpillSize;
     bool     allowThroughSpill;
@@ -427,7 +462,7 @@ class EclResourcer
     friend class SelectHoistTransformer;
     friend class CSplitterInfo;
 public:
-    EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions);
+    EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions, UniqueSequenceCounter & _spillSequence);
     ~EclResourcer();
 
     void resourceGraph(IHqlExpression * expr, HqlExprArray & transformed);
