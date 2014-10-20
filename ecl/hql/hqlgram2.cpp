@@ -7011,6 +7011,16 @@ void HqlGram::checkIndexRecordTypes(IHqlExpression * index, const attribute & er
 {
     IHqlExpression * record = index->queryChild(1);
     checkIndexRecordType(record, numPayloadFields(index), false, errpos);
+    IHqlExpression * ds = index->queryChild(0)->queryNormalizedSelector();
+    IHqlExpression * filename = index->queryChild(2);
+    if (filename->usesSelector(ds))
+    {
+        if (filename->getOperator() == no_select)
+            reportError(ERR_INDEX_DEPEND_DATASET, errpos, "INDEX Filename cannot be dependent on the input dataset.  Field '%s' used from the index.",
+                    filename->queryChild(1)->queryId()->str());
+        else
+            reportError(ERR_INDEX_DEPEND_DATASET, errpos, "INDEX filename cannot be dependent on the input dataset.");
+    }
 }
 
 IHqlExpression * HqlGram::createRecordFromDataset(IHqlExpression * ds)
