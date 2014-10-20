@@ -473,6 +473,7 @@ public:
     IHqlExpression * createLocationAttr(const attribute & errpos);
     IHqlExpression * createSortExpr(node_operator op, attribute & dsAttr, const attribute & orderAttr, HqlExprArray & args);
     IHqlExpression * createIffDataset(IHqlExpression * record, IHqlExpression * value);
+    IHqlExpression * createSetRange(attribute & array, attribute & range);
 
     bool isSingleValuedExpressionList(const attribute & attr);
     bool convertAllToAttribute(attribute &atr);

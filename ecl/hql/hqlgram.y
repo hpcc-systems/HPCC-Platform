@@ -5565,7 +5565,8 @@ primexpr1
                             parser->normalizeExpression($1);
                             if ($1.queryExpr()->isList())
                             {
-                                $$.setExpr(parser->createListIndex($1, $3, NULL), $1);
+                                $$.setExpr(parser->createSetRange($1, $3));
+                                $$.setPosition($1);
                             }
                             else
                             {

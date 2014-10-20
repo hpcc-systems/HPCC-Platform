@@ -269,6 +269,53 @@ static IECLError * createErrorVA(WarnErrorCategory category, ErrorSeverity sever
     return createECLError(category, severity, errNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
 }
 
+IHqlExpression * HqlGram::createSetRange(attribute & array, attribute & range)
+{
+    switch (range.queryExpr()->getOperator())
+    {
+    case no_range :
+    case no_rangefrom :
+    case no_rangeto :
+    case no_rangecommon :
+        {
+            OwnedHqlExpr rangeExpr = range.getExpr();
+            ITypeInfo * elementType = array.queryExpr()->queryType()->queryChildType();
+            OwnedHqlExpr field = createField(valueId, LINK(elementType), NULL);
+            OwnedHqlExpr record = createRecord(field);
+            OwnedHqlExpr dsFromList = createDataset(no_temptable, array.getExpr(), record.getClear());
+            OwnedHqlExpr dsChooseN;
+            switch (rangeExpr->getOperator())
+            {
+            case no_range :
+                {
+                    Owned<ITypeInfo> indexType = makeIntType(8, true);
+                    IHqlExpression * from = ensureExprType(rangeExpr->queryChild(0), indexType);
+                    IHqlExpression * to = ensureExprType(rangeExpr->queryChild(1), indexType);
+                    OwnedHqlExpr length = createValue(no_add, LINK(indexType), createValue(no_sub, LINK(indexType), to, from), createConstant(indexType->castFrom(true, (__int64)1)));
+                    dsChooseN.setown(createDataset(no_choosen, dsFromList.getClear(), createComma(length.getClear(), LINK(from))));
+                    break;
+                }
+            case no_rangeto :
+                {
+                    IHqlExpression * length = rangeExpr->queryChild(0);
+                    dsChooseN.setown(createDataset(no_choosen, dsFromList.getClear(), LINK(length)));
+                    break;
+                }
+            case no_rangefrom :
+            case no_rangecommon :
+                {
+                    IHqlExpression * from = rangeExpr->queryChild(0);
+                    dsChooseN.setown(createDataset(no_choosen, dsFromList.getClear(), createComma(createConstant(CHOOSEN_ALL_LIMIT), LINK(from))));
+                    break;
+                }
+            }
+            return createValue(no_createset, makeSetType(LINK(elementType)), LINK(dsChooseN), createSelectExpr(LINK(dsChooseN), field.getClear()));
+        }
+    default :
+        return createListIndex(array, range, NULL);
+    }
+}
+
 void HqlGram::gatherActiveParameters(HqlExprCopyArray & target)
 {
     ForEachItemIn(i2, defineScopes)

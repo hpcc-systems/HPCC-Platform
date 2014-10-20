@@ -7444,6 +7444,7 @@ IHqlExpression * getSimpleListIndex(BuildCtx & ctx, IHqlExpression * expr)
         return NULL;
     }
     OwnedHqlExpr folded = foldHqlExpression(index);
+    assertex(folded->queryValue());
     __int64 which = folded->queryValue()->getIntValue();
     if ((which > 0) && (which <= set->numChildren()))
         return LINK(set->queryChild((unsigned)which-1));
