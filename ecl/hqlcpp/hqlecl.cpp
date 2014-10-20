@@ -486,7 +486,7 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
         }
     }
 
-    unsigned elapsedCycles = get_cycles_now() - startCycles;
+    cycle_t elapsedCycles = get_cycles_now() - startCycles;
     if (wu->getDebugValueBool("addTimingToWorkunit", true))
         updateWorkunitTimeStat(wu, SSTcompilestage, "compile:write c++", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
 }
@@ -546,7 +546,7 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     else
         PrintLog("Failed to compile %s", wuname);
 
-    unsigned elapsedCycles = get_cycles_now() - startCycles;
+    cycle_t elapsedCycles = get_cycles_now() - startCycles;
     //For eclcc the workunit has been written to the resource - so any further timings will not be preserved -> need to report differently
     queryActiveTimer()->addTiming("compile:compile c++", elapsedCycles);
 
