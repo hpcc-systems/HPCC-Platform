@@ -1712,7 +1712,7 @@ protected:
                     default:
                         throwUnexpected();
                 }
-                joinHelper->init(left, rightStream, leftAllocator, rightAllocator, ::queryRowMetaData(leftITDL), &abortSoon);
+                joinHelper->init(left, rightStream, leftAllocator, rightAllocator, ::queryRowMetaData(leftITDL));
                 return;
             }
             else
@@ -1879,6 +1879,8 @@ public:
             rhsDistributor->abort();
         if (lhsDistributor)
             lhsDistributor->abort();
+        if (joinHelper)
+            joinHelper->stop();
     }
     virtual void stop()
     {
