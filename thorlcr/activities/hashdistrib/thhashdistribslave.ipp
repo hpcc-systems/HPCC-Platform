@@ -39,7 +39,7 @@ IHashDistributor *createHashDistributor(
     ICommunicator &comm, 
     mptag_t tag, 
     bool dedup,
-    IStopInput *istop);
+    IStopInput *istop, const char *id=NULL); // id optional, used for tracing to identify which distributor if >1 in activity
 
 CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, bool ordered);
 
