@@ -729,88 +729,9 @@ public:
     {
         return wuid.get();
     }
-};
-
-// Used as a base class by classes that want to intercept statistics but pass on other logging (i.e. slave or server activity classes)
-// Note that the stats are upmerged on destruction
-// Also note that we assume single-threaded access to stats.
-
-class IndirectContextLogger : public CInterface, implements IRoxieContextLogger
-{
-protected:
-    SlaveContextLogger *logctx;
-    bool aborted;
-    mutable CRuntimeStatisticCollection stats;
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    IndirectContextLogger(SlaveContextLogger *_logctx, const StatisticsMapping & _statsMapping)
-    : logctx(_logctx), stats(_statsMapping)
-    {
-        aborted = false;
-    }
-    ~IndirectContextLogger()
-    {
-        if (logctx)
-            logctx->mergeStats(stats);
-    }
-    inline SlaveContextLogger & querySlaveLogContext()
-    {
-        return *logctx;
-    }
     inline void abort()
     {
         aborted = true;
     }
-    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
-    {
-        if (aborted)
-            throw MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
-        stats.addStatistic(kind, value);
-    }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
-    {
-        stats.merge(from);
-    }
-    virtual const CRuntimeStatisticCollection &queryStats() const
-    {
-        return stats;
-    }
-
-    // The rest are passthroughs
-
-    virtual unsigned queryTraceLevel() const
-    {
-        return logctx ? logctx->queryTraceLevel() : traceLevel;
-    }
-    virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
-    {
-        return logctx ? logctx->getLogPrefix(ret) : ret;
-    }
-    virtual bool isIntercepted() const
-    {
-        return logctx ? logctx->isIntercepted() : false;
-    }
-    virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
-    {
-        if (logctx)
-            logctx->CTXLOGa(category, prefix, text);
-    }
-    virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
-    {
-        if (logctx)
-            logctx->CTXLOGaeva(E, file, line, prefix, format, args);
-    }
-    virtual void CTXLOGl(LogItem *log) const
-    {
-        if (logctx)
-            logctx->CTXLOGl(log);
-    }
-    virtual bool isBlind() const
-    {
-        return logctx ? logctx->isBlind() : blindLogging;
-    }
 };
-
 #endif

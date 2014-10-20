@@ -287,7 +287,7 @@ protected:
 class CRoxieSlaveActivity : public CInterface, implements IRoxieSlaveActivity, implements ICodeContext
 {
 protected:
-    Owned <IndirectContextLogger> logctx;
+    SlaveContextLogger &logctx;
     Linked<IRoxieQueryPacket> packet;
     mutable Owned<IRoxieSlaveContext> queryContext; // bit of a hack but easier than changing the ICodeContext callback interface to remove const
     const CSlaveActivityFactory *basefactory;
@@ -329,14 +329,14 @@ protected:
 
     virtual void onCreate()
     {
-        queryContext.setown(basefactory->createSlaveContext(logctx->querySlaveLogContext(), packet));
+        queryContext.setown(basefactory->createSlaveContext(logctx, packet));
 #ifdef _DEBUG
         // MORE - need to consider debugging....
         if (probeAllRows)
             probeManager.setown(createProbeManager());
-        basefactory->createChildQueries(childGraphs, basehelper, probeManager, queryContext, logctx->querySlaveLogContext());
+        basefactory->createChildQueries(childGraphs, basehelper, probeManager, queryContext, logctx);
 #else
-        basefactory->createChildQueries(childGraphs, basehelper, NULL, queryContext, logctx->querySlaveLogContext());
+        basefactory->createChildQueries(childGraphs, basehelper, NULL, queryContext, logctx);
 #endif
         if (meta.needsSerializeDisk())
             serializer.setown(meta.createDiskSerializer(queryContext->queryCodeContext(), basefactory->queryId()));
@@ -354,7 +354,7 @@ protected:
             unsigned checksum;
             serializedCreate.read(checksum);
             OwnedRoxieString fname(queryDynamicFileName());
-            varFileInfo.setown(querySlaveDynamicFileCache()->lookupDynamicFile(*logctx, fname, cacheDate, checksum, &packet->queryHeader(), isOpt, true));
+            varFileInfo.setown(querySlaveDynamicFileCache()->lookupDynamicFile(logctx, fname, cacheDate, checksum, &packet->queryHeader(), isOpt, true));
             setVariableFileInfo();
         }
     }
@@ -364,9 +364,8 @@ protected:
     }
 
     CRoxieSlaveActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_factory)
-        : packet(_packet), basefactory(_factory)
+        : logctx(_logctx), packet(_packet), basefactory(_factory)
     {
-        logctx.setown(new IndirectContextLogger(&_logctx, allStatistics));
         allowFieldTranslation = _factory->getEnableFieldTranslation();
         resent = packet->getContinuationLength() != 0;
         serializedCreate.setBuffer(packet->getContextLength(), (void *) packet->queryContextData(), false);
@@ -383,7 +382,7 @@ protected:
 
     ~CRoxieSlaveActivity()
     {
-        basefactory->mergeStats(logctx->queryStats());
+        basefactory->mergeStats(logctx.queryStats());
         ::Release(basehelper);
     }
 
@@ -401,7 +400,7 @@ public:
 
     virtual bool check()
     {
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         doCheck(output);
         output->flush(true);
         return true;
@@ -417,13 +416,13 @@ public:
 
     virtual void abort() 
     {
-        if (logctx->queryTraceLevel() > 2)
+        if (logctx.queryTraceLevel() > 2)
         {
             StringBuffer s;
-            logctx->CTXLOG("Aborting running activity: %s", packet->queryHeader().toString(s).str());
+            logctx.CTXLOG("Aborting running activity: %s", packet->queryHeader().toString(s).str());
         }
         aborted = true;
-        logctx->abort();
+        logctx.abort();
         if (queryContext)
         {
             Owned<IException> E = MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
@@ -440,12 +439,12 @@ public:
     {
         RoxiePacketHeader &header = packet->queryHeader();
         StringBuffer s;
-        logctx->CTXLOG("%sLIMIT EXCEEDED: %s", keyed ? "KEYED " : "", header.toString(s).str());
+        logctx.CTXLOG("%sLIMIT EXCEEDED: %s", keyed ? "KEYED " : "", header.toString(s).str());
         header.activityId = keyed ? ROXIE_KEYEDLIMIT_EXCEEDED : ROXIE_LIMIT_EXCEEDED;
-        Owned<IMessagePacker> output = ROQ->createOutputStream(header, false, *logctx);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(header, false, logctx);
         output->flush(true);
         aborted = true;
-        logctx->abort();
+        logctx.abort();
     }
 
     virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal)
@@ -573,7 +572,7 @@ public:
     {
         if (text && *text)
         {
-            logctx->CTXLOG("USER: %s", text);
+            logctx.CTXLOG("USER: %s", text);
             return strlen(text);
         }
         else
@@ -581,7 +580,7 @@ public:
     }
     virtual const IContextLogger &queryContextLogger() const
     {
-        return *logctx;
+        return logctx;
     }
 
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const 
@@ -944,7 +943,7 @@ public:
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieDiskReadBaseActivity::process");
         atomic_inc(&diskReadStarted);
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         doProcess(output);
         helper->setCallback(NULL);
         if (aborted)
@@ -2314,7 +2313,7 @@ public:
         {
             MTIME_SECTION(queryActiveTimer(), "CParallelRoxieActivity::process");
             atomic_inc(&diskReadStarted);
-            Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+            Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
             class casyncfor: public CAsyncFor
             {
                 CIArrayOf<CRoxieDiskReadBaseActivity> &parts;
@@ -3107,7 +3106,7 @@ protected:
             }
             if (allKeys->numParts())
             {
-                tlk.setown(createKeyMerger(allKeys, 0, 0, logctx));
+                tlk.setown(createKeyMerger(allKeys, 0, 0, &logctx));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -3120,7 +3119,7 @@ protected:
             IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
             if (filechanged)
             {
-                tlk.setown(createKeyManager(k, 0, logctx));
+                tlk.setown(createKeyManager(k, 0, &logctx));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -3238,27 +3237,27 @@ public:
             assertex(numSeeks); // Given that we put the first seek in here to there should always be at least one!
             steppingRow = smartStepInfoValue; // the first of them...
             stepExtra.set(flags, NULL);
-            if (logctx->queryTraceLevel() > 10)
+            if (logctx.queryTraceLevel() > 10)
             {
-                logctx->CTXLOG("%d seek rows provided. mismatch(%d) readahead(%d) onlyfirst(%d)", numSeeks,
+                logctx.CTXLOG("%d seek rows provided. mismatch(%d) readahead(%d) onlyfirst(%d)", numSeeks,
                        (int)stepExtra.returnMismatches(), (int)stepExtra.readAheadManyResults(), (int)stepExtra.onlyReturnFirstSeekMatch());
 
-                if (logctx->queryTraceLevel() > 15)
+                if (logctx.queryTraceLevel() > 15)
                 {
                     for (unsigned i = 0; i < numSeeks; i++)
                     {
                         StringBuffer b;
                         for (unsigned j = 0; j < steppingLength; j++)
                             b.appendf("%02x ", steppingRow[i*steppingLength + j]);
-                        logctx->CTXLOG("Seek row %d: %s", i+1, b.str());
+                        logctx.CTXLOG("Seek row %d: %s", i+1, b.str());
                     }
                 }
             }
         }
         else
         {
-            if (logctx->queryTraceLevel() > 10)
-                logctx->CTXLOG("0 seek rows provided.");
+            if (logctx.queryTraceLevel() > 10)
+                logctx.CTXLOG("0 seek rows provided.");
         }
     }
 
@@ -3361,7 +3360,7 @@ public:
                 i++;
             }
             if (allKeys->numParts())
-                tlk.setown(::createKeyMerger(allKeys, 0, steppingOffset, logctx));
+                tlk.setown(::createKeyMerger(allKeys, 0, steppingOffset, &logctx));
             else
                 tlk.clear();
             createSegmentMonitorsPending = true;
@@ -3443,7 +3442,7 @@ public:
         }
         unsigned __int64 stopAfter = readHelper->getChooseNLimit();
 
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
 
         unsigned totalSizeSent = 0;
@@ -3473,8 +3472,8 @@ public:
                         keyprocessed++;
                         if ((keyedLimit != (unsigned __int64) -1) && keyprocessed > keyedLimit)
                         {
-                            logctx->noteStatistic(StNumIndexAccepted, keyprocessed-keyprocessedBefore);
-                            logctx->noteStatistic(StNumIndexRejected, skipped);
+                            logctx.noteStatistic(StNumIndexAccepted, keyprocessed-keyprocessedBefore);
+                            logctx.noteStatistic(StNumIndexRejected, skipped);
                             limitExceeded(true);
                             break;
                         }
@@ -3512,27 +3511,27 @@ public:
                             callback.finishedRow();
                             if (transformedSize)
                             {
-                                if (logctx->queryTraceLevel() > 15)
+                                if (logctx.queryTraceLevel() > 15)
                                 {
                                     StringBuffer b;
                                     for (unsigned j = 0; j < (steppingLength ? steppingLength : 6); j++)
                                         b.appendf("%02x ", keyRow[steppingOffset + j]);
-                                    logctx->CTXLOG("Returning seek row %s", b.str());
+                                    logctx.CTXLOG("Returning seek row %s", b.str());
                                 }
 
                                 // Did get a match
                                 processed++;
                                 if (limit && processed > limit)
                                 {
-                                    logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                                    logctx->noteStatistic(StNumIndexRejected, skipped);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     limitExceeded(false); 
                                     break;
                                 }
                                 if (processed > stopAfter)
                                 {
-                                    logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                                    logctx->noteStatistic(StNumIndexRejected, skipped);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     return output.getClear();
                                 }
                                 rowBuilder.writeToOutput(transformedSize, true);
@@ -3569,19 +3568,19 @@ public:
                         }
                         if (continuationNeeded && !continuationFailed)
                         {
-                            if (logctx->queryTraceLevel() > 10)
-                                logctx->CTXLOG("Indexread returning partial result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
+                            if (logctx.queryTraceLevel() > 10)
+                                logctx.CTXLOG("Indexread returning partial result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
                             if (sendContinuation(output))
                             {
-                                logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                                logctx->noteStatistic(StNumIndexRejected, skipped);
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, skipped);
                                 return output.getClear();
                             }
                             else
                             {
                                 // This is actually pretty fatal for smart-stepping case
-                                if (logctx->queryTraceLevel())
-                                    logctx->CTXLOG("Indexread unable to return partial result set");
+                                if (logctx.queryTraceLevel())
+                                    logctx.CTXLOG("Indexread unable to return partial result set");
                                 continuationFailed = true;
                             }
                         }
@@ -3596,14 +3595,14 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL.... MORE is this the right place to put it or should it be inside the loop??
         {
-            if (logctx->queryTraceLevel() > 10 && !aborted)
+            if (logctx.queryTraceLevel() > 10 && !aborted)
             {
-                logctx->CTXLOG("Indexread returning result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
+                logctx.CTXLOG("Indexread returning result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
                 if (steppingOffset)
-                    logctx->CTXLOG("Indexread return: steppingOffset %d, steppingRow %p, stepExtra.returnMismatches() %d",steppingOffset, steppingRow, (int) stepExtra.returnMismatches());
+                    logctx.CTXLOG("Indexread return: steppingOffset %d, steppingRow %p, stepExtra.returnMismatches() %d",steppingOffset, steppingRow, (int) stepExtra.returnMismatches());
             }
-            logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-            logctx->noteStatistic(StNumIndexRejected, skipped);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         if (aborted)
             return NULL;
@@ -3717,7 +3716,7 @@ public:
         }
         unsigned __int64 stopAfter = normalizeHelper->getChooseNLimit();
 
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
         unsigned totalSizeSent = 0;
         unsigned skipped = 0;
@@ -3739,8 +3738,8 @@ public:
                     keyprocessed++;
                     if (keyedLimit && processed > keyedLimit)
                     {
-                        logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                        logctx->noteStatistic(StNumIndexRejected, skipped);
+                        logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                        logctx.noteStatistic(StNumIndexRejected, skipped);
                         limitExceeded(true);
                         break;
                     }
@@ -3757,15 +3756,15 @@ public:
                                 processed++;
                                 if (processed > rowLimit)
                                 {
-                                    logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                                    logctx->noteStatistic(StNumIndexRejected, skipped);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     limitExceeded(false); 
                                     break;
                                 }
                                 if (processed > stopAfter)
                                 {
-                                    logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                                    logctx->noteStatistic(StNumIndexRejected, skipped);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     return output.getClear();
                                 }
 
@@ -3778,8 +3777,8 @@ public:
                         {
                             if (sendContinuation(output))
                             {
-                                logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                                logctx->noteStatistic(StNumIndexRejected, skipped);
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, skipped);
                                 return output.getClear();
                             }
                             else
@@ -3797,8 +3796,8 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-            logctx->noteStatistic(StNumIndexRejected, skipped);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         if (aborted)
             return NULL;
@@ -3872,7 +3871,7 @@ public:
     virtual IMessagePacker *process()
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieIndexCountActivity ::process");
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         unsigned skipped = 0;
 
         unsigned processedBefore = processed;
@@ -3933,8 +3932,8 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-            logctx->noteStatistic(StNumIndexRejected, skipped);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         if (aborted)
             return NULL;
@@ -3994,7 +3993,7 @@ public:
     virtual IMessagePacker *process()
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieIndexAggregateActivity ::process");
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
         OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
 
@@ -4031,8 +4030,8 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-            logctx->noteStatistic(StNumIndexRejected, skipped);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         if (aborted)
             return NULL;
@@ -4141,8 +4140,8 @@ public:
     virtual IMessagePacker *process()
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieIndexGroupAggregateActivity ::process");
-        Owned<IRowManager> rowManager = roxiemem::createRowManager(0, NULL, *logctx, NULL, true); // MORE - should not really use default limits
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+        Owned<IRowManager> rowManager = roxiemem::createRowManager(0, NULL, logctx, NULL, true); // MORE - should not really use default limits
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
         unsigned processedBefore = processed;
         try
@@ -4213,7 +4212,7 @@ public:
         results.reset();
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
         }
         if (aborted)
             return NULL;
@@ -4341,7 +4340,7 @@ public:
 IMessagePacker *CRoxieFetchActivityBase::process()
 {
     MTIME_SECTION(queryActiveTimer(), "CRoxieFetchActivityBase::process");
-    Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+    Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     unsigned accepted = 0;
     unsigned rejected = 0;
     unsigned __int64 rowLimit = helper->getRowLimit();
@@ -4375,9 +4374,9 @@ IMessagePacker *CRoxieFetchActivityBase::process()
             accepted++;
             if (accepted > rowLimit)
             {
-                logctx->noteStatistic(StNumDiskSeeks, accepted+rejected);
-                logctx->noteStatistic(StNumDiskAccepted, accepted);
-                logctx->noteStatistic(StNumDiskRejected, rejected);
+                logctx.noteStatistic(StNumDiskSeeks, accepted+rejected);
+                logctx.noteStatistic(StNumDiskAccepted, accepted);
+                logctx.noteStatistic(StNumDiskRejected, rejected);
                 limitExceeded();
                 return NULL;
             }
@@ -4385,9 +4384,9 @@ IMessagePacker *CRoxieFetchActivityBase::process()
         else
             rejected++;
     }
-    logctx->noteStatistic(StNumDiskSeeks, accepted+rejected);
-    logctx->noteStatistic(StNumDiskAccepted, accepted);
-    logctx->noteStatistic(StNumDiskRejected, rejected);
+    logctx.noteStatistic(StNumDiskSeeks, accepted+rejected);
+    logctx.noteStatistic(StNumDiskAccepted, accepted);
+    logctx.noteStatistic(StNumDiskRejected, rejected);
     if (aborted)
         return NULL;
     else
@@ -4707,7 +4706,7 @@ public:
             Owned<IRoxieQueryPacket> indexPacket = createRoxiePacket(indexPacketData);
             Owned<ISlaveActivityFactory> indexActivityFactory = factory->queryQueryFactory().getSlaveActivityFactory(indexActivityId.activityId);
             assertex(indexActivityFactory != NULL);
-            rootIndexActivity.setown(indexActivityFactory->createActivity(logctx->querySlaveLogContext(), indexPacket));
+            rootIndexActivity.setown(indexActivityFactory->createActivity(logctx, indexPacket));
             rootIndex = rootIndexActivity->queryIndexReadActivity();
     
             varFileInfo.setown(rootIndex->getVarFileInfo());
@@ -4747,7 +4746,7 @@ IRoxieSlaveActivity *CRoxieKeyedJoinIndexActivityFactory::createActivity(SlaveCo
 IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
 {
     MTIME_SECTION(queryActiveTimer(), "CRoxieKeyedJoinIndexActivity::process");
-    Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+    Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     IOutputMetaData *joinFieldsMeta = helper->queryJoinFieldsRecordSize();
     Owned<IEngineRowAllocator> joinFieldsAllocator = getRowAllocator(joinFieldsMeta, basefactory->queryId());
     OptimizedKJRowBuilder rowBuilder(joinFieldsAllocator, joinFieldsMeta, output);
@@ -4793,11 +4792,11 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
             if (rootIndex)
                 rootIndex->mergeSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
-            if (logctx->queryTraceLevel() >= 20)
+            if (logctx.queryTraceLevel() >= 20)
             {
                 StringBuffer out;
                 printKeyedValues(out, tlk, helper->queryIndexRecordSize());
-                logctx->CTXLOG("Using filter %s", out.str());
+                logctx.CTXLOG("Using filter %s", out.str());
             }
 
             if (!resent && (atmost != (unsigned) -1) && ((atmost > preabortKeyedJoinsThreshold) || (joinFlags & JFcountmatchabortlimit) || (keepLimit != 0)))  
@@ -4806,13 +4805,13 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                 if (precount > atmost)
                 {
                     candidateCount = atmost+1;
-                    if (logctx->queryTraceLevel() > 5)
-                        logctx->CTXLOG("Pre-aborting since candidate count is at least %"I64F"d", precount);
+                    if (logctx.queryTraceLevel() > 5)
+                        logctx.CTXLOG("Pre-aborting since candidate count is at least %"I64F"d", precount);
                 }
                 else
                 {
-                    if (logctx->queryTraceLevel() > 10)
-                        logctx->CTXLOG("NOT Pre-aborting since candidate count is %"I64F"d", precount);
+                    if (logctx.queryTraceLevel() > 10)
+                        logctx.CTXLOG("NOT Pre-aborting since candidate count is %"I64F"d", precount);
                     tlk->reset(false);
                 }
             }
@@ -4839,13 +4838,13 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         }
                         if (processed > rowLimit)
                         {
-                            if (logctx->queryTraceLevel() > 1)
+                            if (logctx.queryTraceLevel() > 1)
                             {
                                 StringBuffer s;
-                                logctx->CTXLOG("limit exceeded for %s", packet->queryHeader().toString(s).str());
+                                logctx.CTXLOG("limit exceeded for %s", packet->queryHeader().toString(s).str());
                             }
-                            logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                            logctx->noteStatistic(StNumIndexRejected, rejected);
+                            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                            logctx.noteStatistic(StNumIndexRejected, rejected);
                             limitExceeded();
                             return NULL;
                         }
@@ -4883,8 +4882,8 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                                 siLen = si.length() - sizeof(siLen);
                                 si.writeDirect(0, sizeof(siLen), &siLen);
                                 output->sendMetaInfo(si.toByteArray(), si.length());
-                                logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-                                logctx->noteStatistic(StNumIndexRejected, rejected);
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, rejected);
                                 return output.getClear();
                             }
                             else
@@ -4921,8 +4920,8 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
     }
     if (tlk)
     {
-        logctx->noteStatistic(StNumIndexAccepted, processed-processedBefore);
-        logctx->noteStatistic(StNumIndexRejected, rejected);
+        logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+        logctx.noteStatistic(StNumIndexRejected, rejected);
     }
     if (aborted)
         return NULL;
@@ -5034,7 +5033,7 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
 {
     MTIME_SECTION(queryActiveTimer(), "CRoxieKeyedJoinFetchActivity::process");
     // MORE - where we are returning everything there is an optimization or two to be had
-    Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+    Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     unsigned processed = 0;
     unsigned skipped = 0;
     unsigned __int64 rowLimit = helper->getRowLimit();
@@ -5080,9 +5079,9 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
             processed++;
             if (processed > rowLimit)
             {
-                logctx->noteStatistic(StNumDiskSeeks, processed+skipped);
-                logctx->noteStatistic(StNumDiskAccepted, processed);
-                logctx->noteStatistic(StNumDiskRejected, skipped);
+                logctx.noteStatistic(StNumDiskSeeks, processed+skipped);
+                logctx.noteStatistic(StNumDiskAccepted, processed);
+                logctx.noteStatistic(StNumDiskRejected, skipped);
                 limitExceeded();
                 return NULL;
             }
@@ -5099,9 +5098,9 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
         }
         inputData += inputSize;
     }
-    logctx->noteStatistic(StNumDiskSeeks, processed+skipped);
-    logctx->noteStatistic(StNumDiskAccepted, processed);
-    logctx->noteStatistic(StNumDiskRejected, skipped);
+    logctx.noteStatistic(StNumDiskSeeks, processed+skipped);
+    logctx.noteStatistic(StNumDiskAccepted, processed);
+    logctx.noteStatistic(StNumDiskRejected, skipped);
     if (aborted)
         return NULL;
     else
@@ -5157,7 +5156,7 @@ public:
     {
         MTIME_SECTION(queryActiveTimer(), "CRoxieRemoteActivity ::process");
 
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, *logctx);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         unsigned __int64 rowLimit = remoteHelper->getRowLimit();
 
         rtlRowBuilder remoteExtractBuilder;
