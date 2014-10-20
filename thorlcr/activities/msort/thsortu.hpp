@@ -53,7 +53,6 @@ interface IJoinHelper: public IRowStream
             IEngineRowAllocator *allocatorL,
             IEngineRowAllocator *allocatorR,
             IOutputMetaData * outputmetaL,   // for XML output 
-            bool *_abort,
             IMulticoreIntercept *mcoreintercept=NULL
         )=0;
 
