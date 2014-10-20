@@ -376,6 +376,7 @@ define({root:
     RequestSchema: "Request Schema",
     Reschedule: "Reschedule",
     Reset: "Reset",
+    ResetThisQuery: "Reset This Query?",
     ResetViewToSelection: "Reset View to Selection",
     Resource: "Resource",
     Resources: "Resources",
