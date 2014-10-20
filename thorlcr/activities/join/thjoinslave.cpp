@@ -496,7 +496,7 @@ public:
             ActPrintLog("JOIN barrier.1 raised");
 
             // primaryWriter will keep as much in memory as possible.
-            Owned<IRowWriterMultiReader> primaryWriter = createOverflowableBuffer(*this, this, false);
+            Owned<IRowWriterMultiReader> primaryWriter = createOverflowableBuffer(*this, primaryRowIf, false);
             primaryStream.setown(sorter->startMerge(totalrows));
             copyRowStream(primaryStream, primaryWriter);
             primaryStream.setown(primaryWriter->getReader()); // NB: rhsWriter no longer needed after this point
