@@ -188,6 +188,89 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
      */
     class CSender : public CSimpleInterface, implements IThreadFactory, implements IExceptionHandler
     {
+        class CTarget
+        {
+            CDistributorBase &owner;
+            unsigned target;
+            unsigned activeWriters;
+            bool senderFinished;
+            CSendBucketQueue pendingBuckets;
+            mutable CriticalSection crit;
+            Owned<CSendBucket> bucket;
+        public:
+            CTarget(CDistributorBase &_owner, unsigned _target) : owner(_owner), target(_target)
+            {
+                activeWriters = 0;
+                senderFinished = false;
+            }
+            ~CTarget()
+            {
+                reset();
+            }
+            void reset()
+            {
+                loop
+                {
+                    CSendBucket *sendBucket = pendingBuckets.dequeueNow();
+                    if (!sendBucket)
+                        break;
+                    ::Release(sendBucket);
+                }
+                bucket.clear();
+                activeWriters = 0;
+                senderFinished = false;
+            }
+            unsigned getNumPendingBuckets() const
+            {
+                return pendingBuckets.ordinality();
+            }
+            CSendBucket *dequeuePendingBucket()
+            {
+                return pendingBuckets.dequeueNow();
+            }
+            void enqueuePendingBucket(CSendBucket *bucket)
+            {
+                pendingBuckets.enqueue(bucket);
+            }
+            CriticalSection &queryCrit() const
+            {
+                return crit;
+            }
+            void incActiveWriters()
+            {
+                ++activeWriters;
+            }
+            void decActiveWriters()
+            {
+                --activeWriters;
+            }
+            unsigned getActiveWriters() const
+            {
+                return activeWriters;
+            }
+            bool getSenderFinished() const
+            {
+                return senderFinished;
+            }
+            void setSenderFinished(bool tf)
+            {
+                senderFinished = tf;
+            }
+            CSendBucket *queryBucket()
+            {
+                return bucket;
+            }
+            CSendBucket *queryBucketCreate()
+            {
+                if (!bucket)
+                    bucket.setown(new CSendBucket(owner, target));
+                return bucket;
+            }
+            CSendBucket *getBucketClear()
+            {
+                return bucket.getClear();
+            }
+        };
         /*
          * CWriterHandler, a per thread class and member of the writerPool
          * a write handler, is given an initial CSendBucket and handles the dedup(if applicable)
@@ -240,7 +323,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                             // more added to dest I'm processing?
                             {
                                 CriticalBlock b(owner.activeWritersLock);
-                                sendBucket.setown(owner.pendingBuckets.item(dest)->dequeueNow());
+                                sendBucket.setown(owner.targets.item(dest)->dequeuePendingBucket());
                             }
                             if (sendBucket)
                             {
@@ -280,63 +363,44 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             bool stop() { return true; }
         };
 
-        OwnedMalloc<unsigned> activeWriters;
         CDistributorBase &owner;
         mutable CriticalSection activeWritersLock;
         mutable SpinLock totalSzLock;
         SpinLock doDedupLock;
-        PointerIArrayOf<CSendBucket> buckets;
         UnsignedArray candidates;
         size32_t totalSz;
         bool senderFull, doDedup, aborted, initialized;
         Semaphore senderFullSem;
         Linked<IException> exception;
-        OwnedMalloc<bool> senderFinished;
         unsigned numFinished, dedupSamples, dedupSuccesses, self;
         Owned<IThreadPool> writerPool;
-        PointerArrayOf<CSendBucketQueue> pendingBuckets;
-        PointerArrayOf<CriticalSection> dstCrits;
-        unsigned numActiveWriters;
+        unsigned totalActiveWriters;
+        PointerArrayOf<CTarget> targets;
 
         void init()
         {
-            unsigned n;
-            for (unsigned n=0; n<owner.numnodes; n++)
-                buckets.append(NULL);
             totalSz = 0;
             senderFull = false;
-            senderFinished.allocateN(owner.numnodes, true);
-            activeWriters.allocateN(owner.numnodes, true);
             numFinished = 0;
             dedupSamples = dedupSuccesses = 0;
             doDedup = owner.doDedup;
             writerPool.setown(createThreadPool("HashDist writer pool", this, this, owner.writerPoolSize, 5*60*1000));
             self = owner.activity->queryJob().queryMyRank()-1;
-            for (n=0; n<owner.numnodes; n++)
-            {
-                pendingBuckets.append(new CSendBucketQueue);
-                dstCrits.append(new CriticalSection);
-            }
-            numActiveWriters = 0;
+
+            targets.ensure(owner.numnodes);
+            for (unsigned n=0; n<owner.numnodes; n++)
+                targets.append(new CTarget(owner, n));
+
+            totalActiveWriters = 0;
             aborted = false;
             initialized = true;
         }
         void reset()
         {
-            assertex(0 == numActiveWriters);
+            assertex(0 == totalActiveWriters);
             // unless it was aborted, there shouldn't be any pending or non-null buckets
             for (unsigned n=0; n<owner.numnodes; n++)
-            {
-                CSendBucketQueue *queue = pendingBuckets.item(n);
-                loop
-                {
-                    CSendBucket *bucket = queue->dequeueNow();
-                    if (!bucket)
-                        break;
-                    ::Release(bucket);
-                }
-                buckets.replace(NULL, n);
-            }
+                targets.item(n)->reset();
             totalSz = 0;
             senderFull = false;
             numFinished = 0;
@@ -352,7 +416,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         unsigned queryInactiveWriters() const
         {
             CriticalBlock b(activeWritersLock);
-            return owner.writerPoolSize - numActiveWriters;
+            return owner.writerPoolSize - totalActiveWriters;
         }
         void dedup(CSendBucket *sendBucket)
         {
@@ -382,39 +446,17 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 }
             }
         }
-        CSendBucket *queryBucket(unsigned n)
-        {
-            return buckets.item(n);
-        }
-        CSendBucket *queryBucketCreate(unsigned n)
-        {
-            CSendBucket *bucket = buckets.item(n);
-            if (!bucket)
-            {
-                bucket = new CSendBucket(owner, n);
-                buckets.replace(bucket, n);
-            }
-            return bucket;
-        }
-        CSendBucket *getBucketClear(unsigned n)
-        {
-            Linked<CSendBucket> bucket = buckets.item(n);
-            if (!bucket)
-                return NULL;
-            buckets.replace(NULL, n);
-            return bucket.getClear();
-        }
         void send(unsigned dest, CMessageBuffer &mb)
         {
-            CriticalBlock b(* dstCrits.item(dest));
-            if (!senderFinished[dest])
+            CriticalBlock b(targets.item(dest)->queryCrit());
+            if (!targets.item(dest)->getSenderFinished())
             {
                 if (selfPush(dest))
                     assertex(dest != self);
                 if (!owner.sendBlock(dest, mb))
                 {
                     ActPrintLog(owner.activity, "CDistributorBase::sendBlock stopped slave %d", dest+1);
-                    senderFinished[dest] = true;
+                    targets.item(dest)->setSenderFinished(true);
                     numFinished++;
                 }
             }
@@ -473,19 +515,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             if (initialized)
             {
                 for (unsigned n=0; n<owner.numnodes; n++)
-                {
-                    CSendBucketQueue *queue = pendingBuckets.item(n);
-                    CriticalSection *dstCrit = dstCrits.item(n);
-                    loop
-                    {
-                        CSendBucket *bucket = queue->dequeueNow();
-                        if (!bucket)
-                            break;
-                        ::Release(bucket);
-                    }
-                    delete queue;
-                    delete dstCrit;
-                }
+                    delete targets.item(n);
             }
         }
         CSendBucket *getAnotherBucket(unsigned &next)
@@ -495,14 +525,14 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             loop
             {
                 unsigned current=next;
-                unsigned c = pendingBuckets.item(current)->ordinality();
+                unsigned c = targets.item(current)->getNumPendingBuckets();
                 ++next;
                 if (next>=owner.numnodes)
                     next = 0;
                 if (c)
                 {
-                    if (!owner.targetWriterLimit || (activeWriters[current] < owner.targetWriterLimit))
-                        return pendingBuckets.item(current)->dequeueNow();
+                    if (!owner.targetWriterLimit || (targets.item(current)->getActiveWriters() < owner.targetWriterLimit))
+                        return targets.item(current)->dequeuePendingBucket();
                 }
                 if (next == start)
                     return NULL;
@@ -510,13 +540,13 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         }
         void add(CSendBucket *bucket)
         {
-            if (owner.selfstopped && !senderFinished[self])
+            if (owner.selfstopped && !targets.item(self)->getSenderFinished())
             {
-                senderFinished[self] = true;
+                targets.item(self)->setSenderFinished(true);
                 ++numFinished;
             }
             unsigned dest = bucket->queryDestination();
-            if (senderFinished[dest])
+            if (targets.item(dest)->getSenderFinished())
             {
                 HDSendPrintLog2("CSender::add disposing of bucket [finished(%d)]", dest);
                 bucket->Release();
@@ -524,24 +554,24 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             else
             {
                 CriticalBlock b(activeWritersLock);
-                if ((numActiveWriters < owner.writerPoolSize) && (!owner.targetWriterLimit || (activeWriters[dest] < owner.targetWriterLimit)))
+                if ((totalActiveWriters < owner.writerPoolSize) && (!owner.targetWriterLimit || (targets.item(dest)->getActiveWriters() < owner.targetWriterLimit)))
                 {
-                    HDSendPrintLog3("CSender::add (new thread), dest=%d, active=%d", dest, numActiveWriters);
+                    HDSendPrintLog3("CSender::add (new thread), dest=%d, active=%d", dest, totalActiveWriters);
                     writerPool->start(bucket);
                 }
                 else // an existing writer will pick up
-                    pendingBuckets.item(dest)->enqueue(bucket);
+                    targets.item(dest)->enqueuePendingBucket(bucket);
             }
         }
         void addActiveWriter(unsigned n)
         {
-            activeWriters[n]++;
-            ++numActiveWriters;
+            targets.item(n)->incActiveWriters();
+            ++totalActiveWriters;
         }
         void removeActiveWriter(unsigned n)
         {
-            --activeWriters[n];
-            --numActiveWriters;
+            targets.item(n)->decActiveWriters();
+            --totalActiveWriters;
         }
         void process(IRowStream *input)
         {
@@ -566,7 +596,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                         {
                             for (unsigned i=0; i<owner.numnodes; i++)
                             {
-                                CSendBucket *bucket = queryBucket(i);
+                                CSendBucket *bucket = targets.item(i)->queryBucket();
                                 if (bucket)
                                 {
                                     size32_t bucketSz = bucket->querySize();
@@ -587,14 +617,14 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                             bool doSelf = false;
                             for (unsigned i=0; i<owner.numnodes; i++)
                             {
-                                CSendBucket *bucket = queryBucket(i);
+                                CSendBucket *bucket = targets.item(i)->queryBucket();
                                 if (bucket)
                                 {
                                     size32_t bucketSz = bucket->querySize();
                                     if (bucketSz >= maxSz/2)
                                     {
                                         CriticalBlock b(activeWritersLock);
-                                        if (0 == activeWriters[i]) // only if there are no active writer threads for this target
+                                        if (0 == targets.item(i)->getActiveWriters()) // only if there are no active writer threads for this target
                                         {
                                             if (i==self)
                                                 doSelf = true; // always send to self if candidate
@@ -617,20 +647,20 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                                 else if (1 == candidates.ordinality())
                                 {
                                     unsigned c = candidates.item(0);
-                                    CSendBucket *bucket = queryBucket(c);
+                                    CSendBucket *bucket = targets.item(c)->queryBucket();
                                     assertex(bucket);
                                     HDSendPrintLog3("process exceeded: send to %d, size=%d", c, bucket->querySize());
-                                    add(getBucketClear(c));
+                                    add(targets.item(c)->getBucketClear());
                                     break;
                                 }
                                 else
                                 {
                                     unsigned pos = getRandom()%candidates.ordinality();
                                     unsigned c = candidates.item(pos);
-                                    CSendBucket *bucket = queryBucket(c);
+                                    CSendBucket *bucket = targets.item(c)->queryBucket();
                                     assertex(bucket);
                                     HDSendPrintLog3("process exceeded: send to %d, size=%d", c, bucket->querySize());
-                                    add(getBucketClear(c));
+                                    add(targets.item(c)->getBucketClear());
                                     if (limit)
                                     {
                                         --limit;
@@ -642,10 +672,10 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                             }
                             if (doSelf)
                             {
-                                CSendBucket *bucket = queryBucket(self);
+                                CSendBucket *bucket = targets.item(self)->queryBucket();
                                 assertex(bucket);
                                 HDSendPrintLog2("process exceeded: doSelf, size=%d", bucket->querySize());
-                                add(getBucketClear(self));
+                                add(targets.item(self)->getBucketClear());
                             }
                         }
                         {
@@ -673,11 +703,11 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                     if (!row)
                         break;
                     unsigned dest = owner.ihash->hash(row)%owner.numnodes;
-                    if (senderFinished[dest]) // does this need to be thread safe?
+                    if (targets.item(dest)->getSenderFinished()) // does this need to be thread safe?
                         ReleaseThorRow(row);
                     else
                     {
-                        CSendBucket *bucket = queryBucketCreate(dest);
+                        CSendBucket *bucket = targets.item(dest)->queryBucketCreate();
                         size32_t rs;
                         bucket->add(row, rs);
                         totalSent++;
@@ -688,7 +718,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                         if (bucket->querySize() >= owner.bucketSendSize)
                         {
                             HDSendPrintLog3("adding new bucket: %d, size = %d", bucket->queryDestination(), bucket->querySize());
-                            add(getBucketClear(dest));
+                            add(targets.item(dest)->getBucketClear());
                         }
                     }
                 }
@@ -708,7 +738,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 ForEach(*iter)
                 {
                     unsigned dest=iter->get();
-                    Owned<CSendBucket> bucket = getBucketClear(dest);
+                    Owned<CSendBucket> bucket = targets.item(dest)->getBucketClear();
                     HDSendPrintLog4("Looking at last bucket(%d): %d, size = %d", dest, bucket.get()?bucket->queryDestination():0, bucket.get()?bucket->querySize():-1);
                     if (bucket && bucket->querySize())
                     {
