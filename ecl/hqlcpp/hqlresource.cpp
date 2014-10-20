@@ -539,7 +539,7 @@ IHqlExpression * CResourceOptions::createSpillName(bool isGraphResult)
 
     StringBuffer s;
     s.append("~spill::");
-    getUniqueId(s);
+    appendUniqueId(s, spillSequence.next());
     return createConstant(s.str());
 }
 
@@ -1260,7 +1260,7 @@ IHqlExpression * ResourcerInfo::createSpillName()
         else if (useGlobalResult())
         {
             StringBuffer valueText;
-            getUniqueId(valueText.append("spill"));
+            appendUniqueId(valueText.append("spill"), options->spillSequence.next());
             spillName.setown(createConstant(valueText.str()));
         }
         else
@@ -1886,7 +1886,8 @@ IHqlExpression * ResourcerInfo::wrapRowOwn(IHqlExpression * expr)
 
 //---------------------------------------------------------------------------
 
-EclResourcer::EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions)
+EclResourcer::EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions, UniqueSequenceCounter & spillSequence)
+: options(spillSequence)
 { 
     wu.set(_wu);
     errors = &_errors;
@@ -5672,7 +5673,7 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
 {
     HqlExprArray transformed;
     {
-        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
+        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions(), translator.querySpillSequence());
         if (graphIdExpr)
             resourcer.setNewChildQuery(graphIdExpr, 0);
 
@@ -5690,7 +5691,7 @@ static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCo
     HqlExprArray transformed;
     unsigned totalResults;
     {
-        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
+        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions(), translator.querySpillSequence());
         if (isChild)
             resourcer.setChildQuery(true);
         resourcer.setNewChildQuery(graphIdExpr, numResults);
@@ -5738,7 +5739,7 @@ IHqlExpression * resourceRemoteGraph(HqlCppTranslator & translator, IHqlExpressi
 {
     HqlExprArray transformed;
     {
-        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
+        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions(), translator.querySpillSequence());
 
         resourcer.resourceRemoteGraph(expr, transformed);
     }

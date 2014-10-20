@@ -1887,6 +1887,7 @@ public:
     inline unsigned __int64 getUniqueId() { return ::getUniqueId(); } //{ return ++nextUid; }
     inline StringBuffer & getUniqueId(StringBuffer & target) { return appendUniqueId(target, getUniqueId()); }
     inline unsigned curGraphSequence() const { return activeGraph ? graphSeqNumber : 0; }
+    UniqueSequenceCounter & querySpillSequence() { return spillSequence; }
 
 public:
     void traceExpression(const char * title, IHqlExpression * expr, unsigned level=500);
@@ -1944,6 +1945,7 @@ protected:
     unsigned            nextFieldId;
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
+    UniqueSequenceCounter spillSequence;
     
 #ifdef SPOT_POTENTIAL_COMMON_ACTIVITIES
     LocationArray       savedActivityLocations;
