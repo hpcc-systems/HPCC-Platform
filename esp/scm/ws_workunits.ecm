@@ -1403,7 +1403,8 @@ ESPenum QuerySetQueryActionTypes : string
     ToggleSuspend("ToggleSuspend"),
     Activate("Activate"),
     Delete("Delete"),
-    RemoveAllAliases("RemoveAllAliases")
+    RemoveAllAliases("RemoveAllAliases"),
+    ResetQueryStats("ResetQueryStats")
 };
 
 ESPStruct QuerySetQueryClientState

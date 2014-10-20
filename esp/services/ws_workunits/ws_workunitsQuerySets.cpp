@@ -1837,6 +1837,8 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
 
     Owned<IProperties> queryIds = createProperties();
     expandQueryActionTargetList(queryIds, queryset, req.getQueries(), req.getAction());
+    if (req.getAction() == CQuerySetQueryActionTypes_ResetQueryStats)
+        return resetQueryStats(context, req.getQuerySetName(), queryIds, resp);
 
     IArrayOf<IEspQuerySetQueryActionResult> results;
     Owned<IPropertyIterator> it = queryIds->getIterator();
@@ -2425,4 +2427,71 @@ bool CWsWorkunitsEx::onWUQueryGetGraph(IEspContext& context, IEspWUQueryGetGraph
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
+}
+
+bool CWsWorkunitsEx::resetQueryStats(IEspContext& context, const char* target, IProperties* queryIds, IEspWUQuerySetQueryActionResponse& resp)
+{
+    IArrayOf<IEspQuerySetQueryActionResult> results;
+    Owned<IEspQuerySetQueryActionResult> result = createQuerySetQueryActionResult();
+    try
+    {
+        StringBuffer control;
+        Owned<IPropertyIterator> it = queryIds->getIterator();
+        ForEach(*it)
+        {
+            const char *querySetId = it->getPropKey();
+            if (querySetId && *querySetId)
+                control.appendf("<Query id='%s'/>", querySetId);
+        }
+        if (!control.length())
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "CWsWorkunitsEx::resetQueryStats: Query ID not specified");
+
+        control.insert(0, "<control:resetquerystats>");
+        control.append("</control:resetquerystats>");
+
+        if (!sendControlQuery(context, target, control.str(), ROXIECONNECTIONTIMEOUT))
+            throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "CWsWorkunitsEx::resetQueryStats: Failed to send roxie control query");
+
+        result->setMessage("Query stats reset succeeded");
+        result->setSuccess(true);;
+    }
+    catch(IMultiException *me)
+    {
+        StringBuffer msg;
+        result->setMessage(me->errorMessage(msg).str());
+        result->setCode(me->errorCode());
+        result->setSuccess(false);
+        me->Release();
+    }
+    catch(IException *e)
+    {
+        StringBuffer msg;
+        result->setMessage(e->errorMessage(msg).str());
+        result->setCode(e->errorCode());
+        result->setSuccess(false);
+        e->Release();
+    }
+    results.append(*result.getClear());
+    resp.setResults(results);
+    return true;
+}
+
+IPropertyTree* CWsWorkunitsEx::sendControlQuery(IEspContext& context, const char* target, const char* query, unsigned timeout)
+{
+    if (!target || !*target)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "CWsWorkunitsEx::sendControlQuery: target not specified");
+
+    if (!query || !*query)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "CWsWorkunitsEx::sendControlQuery: Control query not specified");
+
+    Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
+    if (!info || (info->getPlatform()!=RoxieCluster)) //Only support roxie for now
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "CWsWorkunitsEx::sendControlQuery: Invalid target name %s", target);
+
+    const SocketEndpointArray &eps = info->getRoxieServers();
+    if (eps.empty())
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "CWsWorkunitsEx::sendControlQuery: Server not found for %s", target);
+
+    Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), timeout);
+    return sendRoxieControlQuery(sock, query, timeout);
 }

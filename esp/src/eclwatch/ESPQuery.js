@@ -22,6 +22,7 @@ define([
     "dojo/_base/Deferred",
     "dojo/store/Observable",
     "dojo/Stateful",
+    "dojo/topic",
 
     "dojox/xml/parser",
 
@@ -30,7 +31,7 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit"
-], function (declare, arrayUtil, lang, i18n, nlsHPCC, Deferred, Observable, Stateful,
+], function (declare, arrayUtil, lang, i18n, nlsHPCC, Deferred, Observable, Stateful, topic,
         parser,
         WsWorkunits, WsEcl, ESPRequest, ESPUtil, ESPWorkunit) {
 
@@ -101,6 +102,7 @@ define([
     });
 
     var Query = declare([ESPUtil.Singleton], {
+        i18n: nlsHPCC,
         constructor: function (args) {
             this.inherited(arguments);
             if (args) {
@@ -150,6 +152,20 @@ define([
             }
             return deferred.promise;
         },
+        showResetQueryStatsResponse: function (responses) {
+            var result = responses[0].WUQuerySetQueryActionResponse.Results.Result[0];
+            var sv = "Message";
+            var msg = result.Message;
+            if (result.Success == 0) {
+                sv = "Error";
+                msg = this.i18n.Exception + ": code=" + result.Code + " message=" + result.Message;
+            }
+            topic.publish("hpcc/brToaster", {
+                Severity: sv,
+                Source: "WsWorkunits.WUQuerysetQueryAction",
+                Exceptions: [{ Source: "ResetQueryStats", Message: msg }]
+            });
+        },
         doAction: function (action) {
             var context = this;
             return WsWorkunits.WUQuerysetQueryAction([{
@@ -158,6 +174,8 @@ define([
                 Name: this.Name
             }], action).then(function (responses) {
                 context.refresh();
+                if (action == 'ResetQueryStats')
+                    context.showResetQueryStatsResponse(responses);
                 return response;
             });
         },
@@ -166,6 +184,9 @@ define([
         },
         setActivated: function (activated) {
             return this.doAction(activated ? "Activate" : "Deactivate");
+        },
+        doReset: function () {
+            return this.doAction("ResetQueryStats");
         },
         doDelete: function () {
             return this.doAction("Delete");
