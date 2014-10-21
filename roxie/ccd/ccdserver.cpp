@@ -1736,7 +1736,7 @@ class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, im
     bool disabled;
     RecordPullerThread puller;
     unsigned preload;
-    unsigned __int64 totalCycles;
+    cycle_t totalCycles;
     IRoxieSlaveContext *ctx;
     bool timeActivities;
 
@@ -3378,7 +3378,7 @@ public:
     ruid_t ruid;
     mutable CriticalSection buffersCrit;
     unsigned processed;
-    unsigned __int64 totalCycles;
+    cycle_t totalCycles;
     bool timeActivities;
 
 //private:   //vc6 doesn't like this being private yet accessed by nested class...
@@ -8326,7 +8326,7 @@ public:
         unsigned idx;
         unsigned oid;
         unsigned processed;
-        unsigned __int64 totalCycles;  // We track this per output so that the pullers get a meaningful value to use when calculating their localtime
+        cycle_t totalCycles;  // We track this per output so that the pullers get a meaningful value to use when calculating their localtime
 
     public:
         IMPLEMENT_IINTERFACE;

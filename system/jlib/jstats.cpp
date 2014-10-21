@@ -499,6 +499,7 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(DiskAccepted) },
     { NUMSTAT(DiskRejected) },
     { TIMESTAT(Soapcall) },
+    { TIMESTAT(FirstExecute) },
 };
 
 

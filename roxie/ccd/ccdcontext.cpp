@@ -2704,20 +2704,10 @@ public:
             IStatisticGatherer & builder = graphStats->queryStatsBuilder();
             StatsSubgraphScope graphScope(builder, subgraphId);
             StatsActivityScope scope(builder, activityId);
-            if (_totalCycles.totalCycles)
-            {
-                builder.addStatistic(StWhenFirstRow, (_totalCycles.firstRow));
-                builder.addStatistic(StTimeElapsed, (_totalCycles.elapsed()));
-                builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(_totalCycles.totalCycles));
+            _totalCycles.addStatistics(builder);
+            if (_localCycles)
                 builder.addStatistic(StTimeLocalExecute, cycle_to_nanosec(_localCycles));
-            }
-            ForEachItemIn(i, fromStats)
-            {
-                StatisticKind kind = fromStats.getKind(i);
-                unsigned __int64 value = fromStats.getStatisticValue(kind);
-                if (value)
-                    builder.addStatistic(kind, value);
-            }
+            fromStats.recordStatistics(builder);
         }
         logctx.mergeStats(fromStats);
     }

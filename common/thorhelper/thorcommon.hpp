@@ -140,13 +140,27 @@ public:
         firstExitCycles = 0;
     }
 public:
-    unsigned __int64 startCycles; // Wall clock time of first entry to this activity
-    unsigned __int64 totalCycles; // Time spent in this activity
-    unsigned __int64 endCycles;   // Wall clock time of last entry to this activity
-    unsigned __int64 firstRow;    // Timestamp of first row
-    unsigned __int64 firstExitCycles;    // Wall clock time of first exit from this activity
+    cycle_t startCycles; // Wall clock time of first entry to this activity
+    cycle_t totalCycles; // Time spent in this activity
+    cycle_t endCycles;   // Wall clock time of last entry to this activity
+    unsigned __int64 firstRow; // Timestamp of first row (nanoseconds since epoch)
+    cycle_t firstExitCycles;    // Wall clock time of first exit from this activity
+
+    // Return the total amount of time (in nanoseconds) spent in this activity (first entry to last exit)
     inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
+    // Return the total amount of time (in nanoseconds) spent in the first call of this activity (first entry to first exit)
     inline unsigned __int64 latency() const { return cycle_to_nanosec(firstExitCycles-startCycles); }
+
+    void addStatistics(IStatisticGatherer & builder) const
+    {
+        if (totalCycles)
+        {
+            builder.addStatistic(StWhenFirstRow, firstRow);
+            builder.addStatistic(StTimeElapsed, elapsed());
+            builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
+            builder.addStatistic(StTimeFirstExecute, latency());
+        }
+    }
 };
 
 #ifdef TIME_ACTIVITIES
@@ -183,7 +197,7 @@ public:
         {
             cycle_t nowCycles = get_cycles_now();
             accumulator.endCycles = nowCycles;
-            unsigned __int64 elapsedCycles = nowCycles - startCycles;
+            cycle_t elapsedCycles = nowCycles - startCycles;
             accumulator.totalCycles += elapsedCycles;
             if (isFirstRow)
                 accumulator.firstExitCycles = nowCycles;
@@ -193,12 +207,12 @@ public:
 
 class SimpleActivityTimer
 {
-    unsigned __int64 startCycles;
-    unsigned __int64 &accumulator;
+    cycle_t startCycles;
+    cycle_t &accumulator;
 protected:
     const bool enabled;
 public:
-    inline SimpleActivityTimer(unsigned __int64 &_accumulator, const bool _enabled)
+    inline SimpleActivityTimer(cycle_t &_accumulator, const bool _enabled)
     : accumulator(_accumulator), enabled(_enabled)
     {
         if (enabled)
@@ -212,7 +226,7 @@ public:
         if (enabled)
         {
             cycle_t nowCycles = get_cycles_now();
-            unsigned __int64 elapsedCycles = nowCycles - startCycles;
+            cycle_t elapsedCycles = nowCycles - startCycles;
             accumulator += elapsedCycles;
         }
     }

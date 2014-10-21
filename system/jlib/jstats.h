@@ -98,7 +98,7 @@ enum StatisticMeasure
     St ## NodeMax ## y = (St ## x ## y | StNodeMax),
 
 //The values in this enumeration are stored persistently.  The associated values must not be changed.
-//If you add an entry here you must also update queryMeasure(), queryStatisticName() and queryTreeTag()
+//If you add an entry here you must also update statsMetaData
 //NOTE: All statistic names should be unique with the type prefix removed. Since the prefix is replaced with Skew/Min/etc.
 enum StatisticKind
 {
@@ -160,6 +160,7 @@ enum StatisticKind
     StNumDiskRejected,
 
     StTimeSoapcall,                     // Time spent waiting for soapcalls
+    StTimeFirstExecute,                 // Time waiting for first record from this activity
 
     StMax,
 
