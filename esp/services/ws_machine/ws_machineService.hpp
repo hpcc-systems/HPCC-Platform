@@ -365,34 +365,34 @@ public:
     }
 };
 
-class CStateHash : public CInterface
+interface IStateHash : extends IInterface
 {
-    BoolHash   hash;
+    virtual unsigned queryID() = 0;
+    virtual unsigned queryCount() = 0;
+    virtual void incrementCount() = 0;
+};
+
+class CStateHash : public CInterface, implements IStateHash
+{
+    unsigned   id;
     unsigned   count;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CStateHash(const char* _hash) : hash(_hash), count(1)
-    {
-        hash.setValue(_hash, true);
-    };
+    CStateHash(unsigned _id, unsigned _count) : id(_id), count(_count) { };
 
-    bool matchHash(const char* _hash)
-    {
-        bool match = hash.getValue(_hash);
-        if (match)
-            count++;
-        return match;
-    }
-
-    unsigned getCount() { return count; }
+    virtual unsigned queryID() { return id; }
+    virtual unsigned queryCount() { return count; }
+    virtual void incrementCount() { count++; };
 };
+
+typedef MapStringToMyClass<IStateHash> StateHashes;
 
 class CRoxieStateData : public CInterface
 {
     BoolHash   ipAddress;
     StringAttr hash;
-    int        hashID; //the position inside cluster's state hash list - used to set the majorHash flag in updateMajorRoxieStateHash().
+    unsigned   hashID; //the position inside cluster's state hash list - used to set the majorHash flag in updateMajorRoxieStateHash().
     bool       majorHash; //whether its state hash is the same as the most of other roxie cluster nodes or not.
     bool       ok;
     bool       attached;
@@ -400,13 +400,18 @@ class CRoxieStateData : public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieStateData(const char* _ipAddress, int _hashID) : hashID(_hashID), majorHash(true), ok(false), attached(false), detached(false)
+    CRoxieStateData(const char* _ipAddress, unsigned _hashID) : hashID(_hashID), majorHash(true), ok(false), attached(false), detached(false)
     {
         ipAddress.setValue(_ipAddress, true);
     };
 
-    bool matchIPAddress(const char* _ipAddress) { return ipAddress.getValue(_ipAddress); }
-    int getHashID() { return hashID; }
+    bool matchIPAddress(const char* _ipAddress)
+    {
+        bool* match = ipAddress.getValue(_ipAddress);
+        return (match && *match);
+    }
+    unsigned getHashID() { return hashID; }
+    const char* getHash() { return hash.get(); }
     void setMajorHash(bool _majorHash) { majorHash = _majorHash; }
 
     void setState(bool _ok, bool _attached, bool _detached, const char* _hash)
@@ -712,7 +717,8 @@ public:
 
     void appendRoxieClusters(const char* clusterName)
     {
-        if (uniqueRoxieClusters.getValue(clusterName))
+        bool* found = uniqueRoxieClusters.getValue(clusterName);
+        if (found && *found)
             return;
 
         roxieClusters.append(clusterName);
@@ -798,9 +804,10 @@ private:
     void doPostProcessing(CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap);
     void processValue(const char *oid, const char *value, const bool bShow, CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap);
     void addIpAddressesToBuffer( void** buffer, unsigned& count, const char* address);
+
     void readRoxieStatus(const Owned<IPropertyTree> controlResp, CIArrayOf<CRoxieStateData>& roxieStates);
-    int addRoxieStateHash(const char* hash, CIArrayOf<CStateHash>& stateHashes);
-    void updateMajorRoxieStateHash(CIArrayOf<CStateHash>& stateHashes, CIArrayOf<CRoxieStateData>& roxieStates);
+    unsigned addRoxieStateHash(const char* hash, StateHashes& stateHashes, unsigned& totalUniqueHashes);
+    void updateMajorRoxieStateHash(StateHashes& stateHashes, CIArrayOf<CRoxieStateData>& roxieStates);
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
 
     //Still used in StartStop/Rexec, so keep them for now.

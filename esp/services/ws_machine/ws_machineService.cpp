@@ -457,7 +457,8 @@ void Cws_machineEx::setProcessRequest(CGetMachineInfoData& machineInfoData, Bool
         valuesToBeChecked.append(numAddr);
         if (machineInfoData.getOptions().getGetSoftwareInfo())
             valuesToBeChecked.appendf(":%s:%s:%d", processTypeStr.str(), compName, processNumber);
-        if (uniqueProcesses.getValue(valuesToBeChecked.str()))
+        bool* found = uniqueProcesses.getValue(valuesToBeChecked.str());
+        if (found && *found)
             continue;
         uniqueProcesses.setValue(valuesToBeChecked.str(), true);
 
@@ -819,7 +820,8 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
             const char* directory0 = directories.item(i);
             if (uniqueRoxieProcesses)//to avoid duplicate entries for roxie (one machine has only one roxie process).
             {
-                if (uniqueRoxieProcesses->getValue(name0))
+                bool* found = uniqueRoxieProcesses->getValue(name0);
+                if (found && *found)
                     continue;
                 uniqueRoxieProcesses->setValue(name0, true);
             }
@@ -877,7 +879,8 @@ bool Cws_machineEx::isLegacyFilter(const char* processType, const char* dependen
 
     StringBuffer filterString;
     filterString.appendf("%s:%s", processType, dependency);
-    if (m_legacyFilters.getValue(filterString.str()))
+    bool* found = m_legacyFilters.getValue(filterString.str());
+    if (found && *found)
         return true;
 
     return false;
@@ -885,50 +888,60 @@ bool Cws_machineEx::isLegacyFilter(const char* processType, const char* dependen
 
 //The stateHashes stores different state hashes in one roxie cluster.
 //It also stores how many roxie nodes have the same state hashes.
-int Cws_machineEx::addRoxieStateHash(const char* hash, CIArrayOf<CStateHash>& stateHashes)
+unsigned Cws_machineEx::addRoxieStateHash(const char* hash, StateHashes& stateHashes, unsigned& totalUniqueHashes)
 {
     if (!hash || !*hash)
         return -1;
-    ForEachItemIn(i, stateHashes)
+
+    unsigned hashID = 0;
+    IStateHash* stateHash = stateHashes.getValue(hash);
+    if (stateHash)
     {
-        CStateHash& stateHash = stateHashes.item(i);
-        //if the 'hash' matches this 'stateHash', the matchHash() increases the count for this 'stateHash' by 1.
-        if (stateHash.matchHash(hash))
-            return i;
+        //if the stateHashes already has the same 'hash', increases the count for the 'stateHash'.
+        //The 'StateHash' with the highest count will be the 'Major StateHash'.
+        //If a roxie node does not contain the 'Major StateHash', it has a 'mismatch' state hash.
+        hashID = stateHash->queryID();
+        stateHash->incrementCount();
     }
-    stateHashes.append(*new CStateHash(hash));
-    return stateHashes.length() - 1;
+    else
+    {
+        //Add a new 'StateHash'. Set its hashID to totalUniqueHashes and set its count to 1.
+        hashID = totalUniqueHashes;
+        stateHashes.setValue(hash, new CStateHash(hashID, 1));
+        totalUniqueHashes++;
+    }
+    return hashID;
 }
 
-void Cws_machineEx::updateMajorRoxieStateHash(CIArrayOf<CStateHash>& stateHashes, CIArrayOf<CRoxieStateData>& roxieStates)
+void Cws_machineEx::updateMajorRoxieStateHash(StateHashes& stateHashes, CIArrayOf<CRoxieStateData>& roxieStates)
 {
-    if (stateHashes.length() < 2)
-        return;
-
     //Find out which state hash is for the most of the roxie nodes inside this roxie cluster.
-    unsigned majorHash = 0;
+    unsigned majorHashID = 0;
     unsigned majorHashCount = 0;
-    ForEachItemIn(i, stateHashes)
+    HashIterator hashes(stateHashes);
+    ForEach(hashes)
     {
-        unsigned hashCount = stateHashes.item(i).getCount();
+        IStateHash *hash = stateHashes.mapToValue(&hashes.query());
+        unsigned hashCount = hash->queryCount();
         if (majorHashCount >= hashCount)
             continue;
         majorHashCount = hashCount;
-        majorHash = i;
+        majorHashID = hash->queryID();
     }
 
-    //Set the MajorHash to false if the roxie node has a different hash.
+    //Set the MajorHash to false if the roxie node's HashID() != majorHashID.
     ForEachItemIn(ii, roxieStates)
     {
         CRoxieStateData& roxieState = roxieStates.item(ii);
-        if (roxieState.getHashID() != majorHash)
+        if (roxieState.getHashID() != majorHashID)
             roxieState.setMajorHash(false);
     }
 }
 
 void Cws_machineEx::readRoxieStatus(const Owned<IPropertyTree> controlResp, CIArrayOf<CRoxieStateData>& roxieStates)
 {
-    CIArrayOf<CStateHash> stateHashes;
+    StateHashes stateHashes;
+    unsigned totalUniqueHashes = 0;
     Owned<IPropertyTreeIterator> roxieEndpoints = controlResp->getElements("Endpoint");
     ForEach(*roxieEndpoints)
     {
@@ -952,11 +965,12 @@ void Cws_machineEx::readRoxieStatus(const Owned<IPropertyTree> controlResp, CIAr
 
         StringArray locations;
         locations.appendListUniq(ep, ":");
-        Owned<CRoxieStateData> roxieState = new CRoxieStateData(locations.item(0), addRoxieStateHash(stateHash, stateHashes));
+        Owned<CRoxieStateData> roxieState = new CRoxieStateData(locations.item(0), addRoxieStateHash(stateHash, stateHashes, totalUniqueHashes));
         roxieState->setState(ok, attached, detached, stateHash);
         roxieStates.append(*roxieState.getClear());
     }
-    updateMajorRoxieStateHash(stateHashes, roxieStates);
+    if (totalUniqueHashes > 1)
+        updateMajorRoxieStateHash(stateHashes, roxieStates);
 }
 
 void Cws_machineEx::getRoxieStateInfo(CRoxieStateInfoThreadParam* param)

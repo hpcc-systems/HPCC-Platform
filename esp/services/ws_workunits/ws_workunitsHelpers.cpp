@@ -1068,7 +1068,10 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
         {
             SCMStringBuffer processName;
             thorInstances->str(processName);
-            if ((processName.length() < 1) || uniqueProcesses.getValue(processName.str()))
+            if (processName.length() < 1)
+                continue;
+            bool* found = uniqueProcesses.getValue(processName.str());
+            if (found && *found)
                 continue;
 
             uniqueProcesses.setValue(processName.str(), true);
