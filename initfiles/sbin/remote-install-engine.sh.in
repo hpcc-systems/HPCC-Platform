@@ -59,23 +59,22 @@ checkUser(){
 pkgCmd(){
     if [ "$1" == "deb" ]; then
         if [ "$2" == "install" ]; then
-            PKGCMD="dpkg -i"
+            PKGCMD="dpkg -E -i $PKG &> $outputFile; apt-get install -f -y &> $outputFile;"
         elif [ "$2" == "upgrade" ]; then
-            PKGCMD="dpkg -i"
+            PKGCMD="dpkg -E -i $PKG &> $outputFile; apt-get install -f -y &> $outputFile;"
         else
             echo "Bad option type."
             exit 1
         fi
     elif [ "$1" == "rpm" ]; then
         if [ "$2" == "install" ]; then
-            PKGCMD="rpm  -ivh"
+            PKGCMD="yum install --nogpgcheck -y $PKG &> $outputFile"
         elif [ "$2" == "upgrade" ]; then
-            PKGCMD="rpm -Uvh"
+            PKGCMD="yum install --nogpgcheck -y $PKG &> $outputFile"
         else
             echo "Bad option type."
             exit 1
         fi
-        [ $WITH_PLUGINS -eq 1 ] && PKGCMD="$PKGCMD --nodeps"
     else
         echo "BAD Package type."
         exit 1
@@ -96,13 +95,23 @@ checkInstall(){
 
 checkUpgrade(){
     if [ "${_INSTALLED}" == "1" ]; then
-        _VERSION=`cat ${INSTALL_DIR}${CONFIG_DIR}/version`
-        _PKG=`echo $PKG | grep -c "${_VERSION}"`
-        if [ "${_PKG}" == "1" ]; then
-            _UPGRADE=0
-        else
-            _UPGRADE=1
+      if [ "${OSPKG}" == "deb" ]; then
+        dpkg --compare-versions "$(dpkg -I $PKG | grep "Version" | awk '{print $2}')" le "$(dpkg -s hpccsystems-platform | grep "Version" | awk '{print $2}')"
+        _UPGRADE=$?
+        if [ $_UPGRADE -eq 0 ]; then
+          echo "Package $PKG is not an upgrade"
         fi
+      fi
+      if [ "${OSPKG}" == "rpm" ]; then
+        local current=$( yum info hpccsystems-platform | grep "^Release" | awk '{print $3}' )
+        local new=$( rpm -qp --info ${PKG} | grep "^Release" | awk '{print $3}' )
+        if [[ $current == $new ]] || [[ $current > $new ]]; then
+          echo "Package $PKG is not an upgrade"
+          _UPGRADE=0
+        else
+          _UPGRADE=1
+        fi
+      fi
     fi
 }
 
@@ -110,15 +119,14 @@ installPkg(){
     checkInstall
     if [ "${_INSTALLED}" == "0" ]; then
         pkgCmd $OSPKG "install"
-        $PKGCMD $PKG 1>/dev/null 2>&1;
     elif [ "${_UPGRADE}" == "1" ]; then
         pkgCmd $OSPKG "upgrade"
-        $PKGCMD $PKG 1>/dev/null 2>&1;
     fi
-    checkInstall
-    if [ "${_INSTALLED}" == "0" ]; then
-        echo "Failed to install ${PKG} (missing dependencies?)"
-        exit 1
+    # if installed but not upgrade, $PKGCMD will be null, and $? = 0 from eval.
+    eval $PKGCMD
+    if [ $? -ne 0 ]; then
+      echo "FAILED on Package Command: ${PKGCMD}"
+      exit 1
     fi
 }
 
@@ -189,6 +197,10 @@ if [ $# -eq 0 ]; then
 fi
 
 PKG=$1
+outputFile="${REMOTE_INSTALL}/remote-install.log"
+if [ -e ${outputFile} ]; then
+    rm -rf ${outputFile}
+fi
 
 pkgtype=`echo "$PKG" | grep -i rpm`
 if [ -z $pkgtype ]; then
