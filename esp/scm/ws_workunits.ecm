@@ -73,6 +73,8 @@ ESPStruct [nil_remove] ECLGraph
     [min_ver("1.09")] bool Complete;
     [min_ver("1.14")] bool Failed;
     int64 RunningId;
+    [min_ver("1.53")]string WhenStarted;
+    [min_ver("1.53")]string WhenFinished;
 };
 //  ===========================================================================
 ESPStruct [nil_remove] ECLGraphEx
