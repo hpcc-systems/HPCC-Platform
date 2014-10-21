@@ -96,6 +96,11 @@ static IXmlSchema* createXmlSchema(const char* schema)
     return creator(schema);
 }
 
+#ifdef _USE_OPENLDAP
+const char* defaultAuthCookieName = "ESPAUTH";
+const unsigned defaultAuthCookieMaxAge = 600;
+#endif
+
 EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const char *procname)
 {
     Owned<IPropertyTree> proc_cfg = getProcessConfig(tree, procname);
@@ -350,6 +355,16 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
             }
         }
     }
+#ifdef _USE_OPENLDAP
+    const char* _authCookieName = proc_cfg? proc_cfg->queryProp("Authentication/@authCookieName") : NULL;
+    if (_authCookieName && *_authCookieName)
+        authCookieName.set(_authCookieName);
+    else
+        authCookieName.set(defaultAuthCookieName);
+    authCookieMaxAgeSec = proc_cfg? proc_cfg->getPropInt("Authentication/@authCookieMaxAgeSec", 0) : 0;
+    if (authCookieMaxAgeSec < 1)
+        authCookieMaxAgeSec = defaultAuthCookieMaxAge;
+#endif
 
     if(m_secmgr.get())
     {
@@ -543,6 +558,9 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
 
 bool EspHttpBinding::doAuth(IEspContext* ctx)
 {
+    if (ctx->isAuthorized())
+        return true;
+
     if(m_authtype.length() == 0 || stricmp(m_authtype.str(), "Basic") == 0)
     {
         return basicAuth(ctx);
@@ -2319,3 +2337,123 @@ void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, M
         DBGLOG("Unexpected error: parsing XML: %s", e->errorMessage(msg).str());
     }
 }
+
+#ifdef _USE_OPENLDAP
+void EspHttpBinding::addCookie(const char *name, const char *value, const char *expires, CHttpResponse* response)
+{
+    CEspCookie* cookie = new CEspCookie(name, value);
+    if (expires && *expires)
+        cookie->setExpires(expires);
+    response->addCookie(cookie);
+}
+
+void EspHttpBinding::addAuthCookie(unsigned authCookieMaxAge, const char *username, const char *password, CHttpResponse* response)
+{
+    StringBuffer encryptedAuthString;
+    VStringBuffer authString("%s:%s", username, password);
+    encrypt(encryptedAuthString, authString.str());
+
+    char expiresTime[64];
+    time_t tExpires;
+    time(&tExpires);
+    tExpires += authCookieMaxAge;
+#ifdef _WIN32
+    struct tm *gmtExpires;
+    gmtExpires = gmtime(&tExpires);
+    strftime(expiresTime, 64, "%a, %d %b %Y %H:%M:%S GMT", gmtExpires);
+#else
+    struct tm gmtExpires;
+    gmtime_r(&tExpires, &gmtExpires);
+    strftime(expiresTime, 64, "%a, %d %b %Y %H:%M:%S GMT", &gmtExpires);
+#endif //_WIN32
+
+    addCookie(authCookieName, encryptedAuthString.str(), expiresTime, response);
+}
+
+bool EspHttpBinding::readAuthCookie(CHttpRequest* request, StringBuffer& userId, StringBuffer& password)
+{
+    CEspCookie* authCookie = request->queryCookie(authCookieName);
+    if (!authCookie)
+        return false;
+
+    const char* authString = authCookie->getValue();
+    if (!authString || !*authString)
+        return false;
+
+    StringArray strList;
+    StringBuffer decryptedAuthString;
+    decrypt(decryptedAuthString, authString);
+    strList.appendListUniq(decryptedAuthString, ":");
+    if (strList.length() < 2)
+        return false;
+
+    const char *_userId = strList.item(0);
+    const char *_password = strList.item(1);
+    if (_userId && *_userId)
+        userId.set(_userId);
+    if (_password && *_password)
+        password.set(_password);
+
+    return (_userId && *_userId && _password && *_password);
+}
+
+espAuthState_ EspHttpBinding::checkUserAuth(CHttpRequest* request, CHttpResponse* response, StringBuffer& message, IEspContext* ctx)
+{
+    if(!m_authmap.get()) //No auth requirement
+        return authSucceeded;
+
+    const char* authMethod = queryAuthMethod();
+    if (!authMethod || !*authMethod || strieq(authMethod, "none") || strieq(authMethod, "local") || strieq(authMethod, "UserDefined"))
+        return authSucceeded;
+
+    StringBuffer path;
+    request->getPath(path);
+    if(!path.length())
+        throw MakeStringException(-1, "Path is empty for http request");
+
+    ISecResourceList* rlist = m_authmap->getResourceList(path.str());
+    if(!rlist) //No auth requirement for the path. Should we also check auth in this case?
+        return authSucceeded;
+
+    bool readAuthFromCookie = false;
+    StringBuffer userNameBuf, passwordBuf, peerStr, pathStr;
+    IProperties *params = request->queryParameters();
+    const char *userName=(params)?params->queryProp("username") : NULL;
+    const char *password=(params)?params->queryProp("password") : NULL;
+    if (!userName || !*userName || !password || !*password)
+    {
+        if (!readAuthCookie(request, userNameBuf, passwordBuf))
+        {
+            DBGLOG("GET %s, from %s@%s", request->getPath(pathStr).str(), userNameBuf.length()?
+                userNameBuf.str() : "unknown", request->getPeer(peerStr).str());
+            return authFailed;
+        }
+        userName = userNameBuf.str();
+        password = passwordBuf.str();
+        readAuthFromCookie = true;
+    }
+
+    DBGLOG("GET %s, from %s@%s", request->getPath(pathStr).str(), userName, request->getPeer(peerStr).str());
+    ctx->setUserID(userName);
+    ctx->setPassword(password);
+    ctx->setAuthenticationMethod(authMethod);
+    ctx->setResources(rlist);
+    populateRequest(request);
+
+    if (!doAuth(ctx))
+    {
+        message.set("Log on failed. Please try again.");
+        return authFailed;
+    }
+
+    addAuthCookie(authCookieMaxAgeSec, userName, password, response);
+
+    return readAuthFromCookie? authSucceeded : authSucceededNow;
+}
+
+void EspHttpBinding::userLogOut(CHttpRequest* request, CHttpResponse* response, IEspContext* ctx)
+{
+    //Clear the auth cookie
+    addCookie(authCookieName, "NULL", "Thu, 01 Jan 1970 00:00:01 GMT", response);
+}
+#endif

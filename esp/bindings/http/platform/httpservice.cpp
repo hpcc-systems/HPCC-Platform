@@ -104,20 +104,9 @@ CEspHttpServer::~CEspHttpServer()
     }
 }
 
-typedef enum espAuthState_
-{
-    authUnknown,
-    authRequired,
-    authProvided,
-    authSucceeded,
-    authPending,
-    authFailed
-} EspAuthState;
-
-
 bool CEspHttpServer::rootAuth(IEspContext* ctx)
 {
-    if (!m_apport->rootAuthRequired())
+    if (ctx->isAuthorized() || !m_apport->rootAuthRequired())
         return true;
 
     bool ret=false;
@@ -261,8 +250,27 @@ int CEspHttpServer::processRequest()
         IEspContext* ctx = m_request->queryContext();
         ctx->setServiceName(serviceName.str());
 
+        if (!m_request->isSoapMessage())
+        {
+            StringBuffer message;
+            EspHttpBinding* authbinding = dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
+            authState = authbinding->checkUserAuth(m_request.get(), m_response.get(), message, ctx);
+            if (authState == authFailed)
+            {
+                notifyUserLogOn(message.str(), m_response.get(), ctx);
+                return 0;
+            }
+            else if (authState == authSucceededNow)
+            {
+                handleUserLogOn(m_request.get(), m_response.get(), ctx, serviceName, methodName, method, stype);
+                return 0;
+            }
+            else
+                ctx->setAuthorized(true);
+        }
+
         bool isSoapPost=(stricmp(method.str(), POST_METHOD) == 0 && m_request->isSoapMessage());
-        if (!isSoapPost)
+        if (!isSoapPost && (authState != authSucceeded))
         {
             StringBuffer peerStr, pathStr;
             const char *userid=ctx->queryUserId();
@@ -307,6 +315,11 @@ int CEspHttpServer::processRequest()
 #ifdef _USE_OPENLDAP
                 if (strieq(methodName.str(), "updatepasswordinput"))//process before authentication check
                     return onUpdatePasswordInput(m_request.get(), m_response.get());
+                else if (strieq(methodName.str(), "logout"))
+                {
+                    handleUserLogOut(m_request.get(), m_response.get(), ctx);
+                    return 0;
+                }
 #endif
                 if (!rootAuth(ctx) )
                     return 0;
@@ -390,7 +403,7 @@ int CEspHttpServer::processRequest()
                     }
                     
                     thebinding->populateRequest(m_request.get());
-                    if(thebinding->authRequired(m_request.get()) && !thebinding->doAuth(ctx))
+                    if ((authState != authSucceeded) && thebinding->authRequired(m_request.get()) && !thebinding->doAuth(ctx))
                     {
                         authState=authRequired;
                         if(isSoapPost)
@@ -497,6 +510,61 @@ int CEspHttpServer::processRequest()
 
     return 0;
 }
+
+#ifdef _USE_OPENLDAP
+#define LEGACY_ECLWATCH
+void CEspHttpServer::notifyUserLogOn(const char* prompt, CHttpResponse* response, IEspContext* ctx)
+{
+#ifndef LEGACY_ECLWATCH
+    //TOAsk: Should I send HTTP 401 or throw a 401 exception?
+    EspHttpBinding* thebinding = dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
+    StringBuffer realmbuf;
+    if(thebinding)
+        realmbuf.append(thebinding->getChallengeRealm());
+    if(!realmbuf.length())
+        realmbuf.append("ESP");
+    response->sendBasicChallenge(realmbuf.str(), true);
+#else
+    StringBuffer html;
+    m_apport->getUserLogOnHtml(ctx, prompt, html);
+    response->setContent(html.length(), html.str());
+    response->setContentType("text/html; charset=UTF-8");
+    response->setStatus(HTTP_STATUS_OK);
+    response->send();
+#endif
+    DBGLOG("User authentication required");
+}
+
+void CEspHttpServer::handleUserLogOn(CHttpRequest* request, CHttpResponse* response, IEspContext* ctx, StringBuffer& service, StringBuffer& serviceMethod, StringBuffer& httpMethod, sub_service& subService)
+{
+#ifndef LEGACY_ECLWATCH
+    html.append("<UserLogOn>OK</UserLogOn>");
+    response->setContent(html.length(), html.str());
+    response->setContentType("text/html; charset=UTF-8");
+    response->setStatus(HTTP_STATUS_OK);
+    response->send();
+#else
+    response->redirect(*request,"/");
+#endif
+}
+
+void CEspHttpServer::handleUserLogOut(CHttpRequest* request, CHttpResponse* response, IEspContext* ctx)
+{
+    EspHttpBinding* authbinding = dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
+    authbinding->userLogOut(request, response, ctx);
+
+    StringBuffer html;
+#ifndef LEGACY_ECLWATCH
+    html.append("<UserLogOut>OK</UserLogOut>");
+#else
+    m_apport->getUserLogOutHtml(html);
+#endif
+    response->setContent(html.length(), html.str());
+    response->setContentType("text/html; charset=UTF-8");
+    response->setStatus(HTTP_STATUS_OK);
+    response->send();
+}
+#endif
 
 int CEspHttpServer::onGetApplicationFrame(CHttpRequest* request, CHttpResponse* response, IEspContext* ctx)
 {

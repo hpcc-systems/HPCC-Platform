@@ -27,6 +27,17 @@
 #include "bindutil.hpp"
 #include "seclib.hpp"
 
+typedef enum espAuthState_
+{
+    authUnknown,
+    authRequired,
+    authProvided,
+    authSucceeded,
+    authSucceededNow,
+    authPending,
+    authFailed
+} EspAuthState;
+
 class CMethodInfo : public CInterface
 {
 public:
@@ -143,6 +154,10 @@ private:
     StringAttrMapping desc_map;
     StringAttrMapping help_map;
 
+#ifdef _USE_OPENLDAP
+    StringAttr              authCookieName;
+    unsigned                authCookieMaxAgeSec;
+#endif
 protected:
     MethodInfoArray m_methods;
     bool                    m_includeSoapTest;
@@ -171,6 +186,13 @@ public:
     virtual bool rootAuthRequired();
     virtual bool authRequired(CHttpRequest *request);
     virtual bool doAuth(IEspContext* ctx);
+#ifdef _USE_OPENLDAP
+    void addCookie(const char *name, const char *value, const char *expires, CHttpResponse* response);
+    void addAuthCookie(unsigned authCookieMaxAge, const char *username, const char *password, CHttpResponse* response);
+    bool readAuthCookie(CHttpRequest* request, StringBuffer& userId, StringBuffer& password);
+    espAuthState_ checkUserAuth(CHttpRequest* request, CHttpResponse* response, StringBuffer& message, IEspContext* ctx);
+    virtual void userLogOut(CHttpRequest* request, CHttpResponse* response, IEspContext* ctx);
+#endif
     virtual void populateRequest(CHttpRequest *request);
     virtual void getNavSettings(int &width, bool &resizable, bool &scroll){width=165;resizable=false;scroll=true;}
     virtual const char* getRootPage(IEspContext* ctx) {return NULL;}

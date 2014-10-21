@@ -82,6 +82,9 @@ public:
 #ifdef _USE_OPENLDAP
     virtual int onUpdatePasswordInput(CHttpRequest* request, CHttpResponse* response);
     virtual int onUpdatePassword(CHttpRequest* request, CHttpResponse* response);
+    virtual void notifyUserLogOn(const char* prompt, CHttpResponse* response, IEspContext* ctx);
+    virtual void handleUserLogOn(CHttpRequest* request, CHttpResponse* response, IEspContext* ctx, StringBuffer& service, StringBuffer& serviceMethod, StringBuffer& httpMethod, sub_service& subService);
+    virtual void handleUserLogOut(CHttpRequest* request, CHttpResponse* response, IEspContext* ctx);
 #endif
 
 

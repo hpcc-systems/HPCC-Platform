@@ -285,6 +285,20 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="authCookieName" use="optional" default="ESPAUTH">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Specify the name of authentication cookie.</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="authCookieMaxAgeSec" use="optional" default="600">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Specify expiration time in seconds for authentication cookie.</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="HTTPS" minOccurs="0">

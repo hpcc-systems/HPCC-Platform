@@ -154,13 +154,18 @@ const StringBuffer &CEspApplicationPort::getTitleBarHtml(IEspContext& ctx, bool 
     if (xslp)
     {
         StringBuffer titleBarXml;
-        const char* user = ctx.queryUserId();
-                if (!user || !*user)
-            titleBarXml.appendf("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>"
-                "<LoginId>&lt;nobody&gt;</LoginId><NoUser>1</NoUser></EspHeader>", build_ver, viewConfig);
-                else
-            titleBarXml.appendf("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>"
-                "<LoginId>%s</LoginId></EspHeader>", build_ver, viewConfig, user);
+        titleBarXml.appendf("<EspHeader><BuildVersion>%s</BuildVersion><ConfigAccess>%d</ConfigAccess>", build_ver, viewConfig);
+
+        const char* authMethod = ctx.getAuthenticationMethod();
+        if (authMethod && !strieq(authMethod, "none") && !strieq(authMethod, "local"))
+        {
+            titleBarXml.append("<LogOut>1</LogOut>");
+            const char* user = ctx.queryUserId();
+            if (user && *user)
+                titleBarXml.appendf("<LoginId>%s</LoginId>", user);
+        }
+
+        titleBarXml.append("</EspHeader>");
 
         if (rawXml)
         {
@@ -516,6 +521,37 @@ void CEspBinding::getDynNavData(IEspContext &context, IProperties *params, IProp
 }
 
 #ifdef _USE_OPENLDAP
+void CEspApplicationPort::getUserLogOnHtml(IEspContext* context, const char* message, StringBuffer& content)
+{
+    if (!xslp)
+    {
+        ERRLOG("XSL conversion not found");
+        return;
+    }
+
+    if (message && *message)
+        content.setf("<UserLogOn><Message>%s</Message></UserLogOn>", message);
+    else
+        content.set("<UserLogOn><Message>Please log on.</Message></UserLogOn>");
+
+    Owned<IXslTransform> xform = xslp->createXslTransform();
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/userlogon.xsl").str());
+    xform->setXmlSource(content.str(), content.length()+1);
+    xform->transform(content.clear());
+    return;
+}
+
+void CEspApplicationPort::getUserLogOutHtml(StringBuffer& content)
+{
+    content.set("<UserLogOut><Message>Log out successfully.</Message></UserLogOut>");
+    Owned<IXslTransform> xform = xslp->createXslTransform();
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/userlogout.xsl").str());
+    xform->setXmlSource(content.str(), content.length()+1);
+    xform->transform(content.clear());
+
+    return;
+}
+
 void CEspApplicationPort::onUpdatePasswordInput(IEspContext &context, StringBuffer& html)
 {
     StringBuffer xml;

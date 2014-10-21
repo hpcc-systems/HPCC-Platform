@@ -81,6 +81,8 @@
                         <xsl:with-param name="ldapAuthMethod" select="@ldapAuthMethod"/>
                         <xsl:with-param name="ldapConnections" select="@ldapConnections"/>
                         <xsl:with-param name="passwordExpirationWarningDays" select="@passwordExpirationWarningDays"/>
+                        <xsl:with-param name="authCookieName" select="@authCookieName"/>
+                        <xsl:with-param name="authCookieMaxAgeSec" select="@authCookieMaxAgeSec"/>
                         <xsl:with-param name="localDomain" select="/Environment/Hardware/Computer[@name=$computerName]/@domain"/>
                     </xsl:call-template>
                 </xsl:if>
@@ -306,6 +308,8 @@
         <xsl:param name="ldapConnections"/>
         <xsl:param name="localDomain"/>
         <xsl:param name="passwordExpirationWarningDays"/>
+        <xsl:param name="authCookieName"/>
+        <xsl:param name="authCookieMaxAgeSec"/>
         <xsl:variable name="ldapServerNode" select="/Environment/Software/LDAPServerProcess[@name=$ldapServer]"/>
         <xsl:if test="not($ldapServerNode)">
            <xsl:message terminate="yes">LDAP server is either not specified or is invalid!</xsl:message>
@@ -335,6 +339,22 @@
                             <xsl:value-of select="$passwordExpirationWarningDays"/>
                         </xsl:when>
                         <xsl:otherwise>10</xsl:otherwise>
+                    </xsl:choose>
+                </xsl:attribute>
+                <xsl:attribute name="authCookieName">
+                    <xsl:choose>
+                        <xsl:when test="string($authCookieName) != ''">
+                            <xsl:value-of select="$authCookieName"/>
+                        </xsl:when>
+                        <xsl:otherwise>ESPAUTH</xsl:otherwise>
+                    </xsl:choose>
+                </xsl:attribute>
+                <xsl:attribute name="authCookieMaxAgeSec">
+                    <xsl:choose>
+                        <xsl:when test="string($authCookieMaxAgeSec) != ''">
+                            <xsl:value-of select="$authCookieMaxAgeSec"/>
+                        </xsl:when>
+                        <xsl:otherwise>600</xsl:otherwise>
                     </xsl:choose>
                 </xsl:attribute>
                 <xsl:variable name="ldapAddress">

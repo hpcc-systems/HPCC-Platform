@@ -154,6 +154,10 @@ interface IEspContext : extends IInterface
 
     virtual void setAcceptLanguage(const char * acceptLanguage) = 0;
     virtual StringBuffer& getAcceptLanguage(StringBuffer& acceptLanguage) = 0;
+    virtual const char * getAuthenticationMethod()=0;
+    virtual void setAuthenticationMethod(const char *  method)=0;
+    virtual bool isAuthorized()=0;
+    virtual void setAuthorized(bool _authorized)=0;
 };
 
 
