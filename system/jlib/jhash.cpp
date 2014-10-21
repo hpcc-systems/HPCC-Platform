@@ -99,7 +99,7 @@ unsigned hashc( const unsigned char *k, unsigned length, unsigned initval)
 template <typename T>
 inline unsigned doHashValue( T value, unsigned initval)
 {
-    //If values are to be consistent with hashn() assumes little-endian
+    //The values returned from this function are only consistent with those from hashn() if running on little endian architecture
     unsigned hash = initval;
     unsigned char c;
     for (unsigned i=0; i < sizeof(T); i++)

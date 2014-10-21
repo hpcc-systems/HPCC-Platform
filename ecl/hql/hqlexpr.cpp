@@ -4768,8 +4768,8 @@ CUsedTables::~CUsedTables()
     }
     else if (numTables != 0)
     {
-        for (unsigned i2=numActiveTables; i2 < numTables; i2++)
-            tables.multi[i2]->Release();
+        for (unsigned i=numActiveTables; i < numTables; i++)
+            tables.multi[i]->Release();
         delete [] tables.multi;
     }
 }

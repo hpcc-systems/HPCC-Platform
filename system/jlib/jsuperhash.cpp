@@ -104,7 +104,7 @@ SuperHashTable::~SuperHashTable()
 void SuperHashTable::dumpStats()
 {
     if (tablecount && search_tot && search_num)
-        printf("Hash table %d entries, %d size, average search length %d(%d/%d)) max %d\n", tablecount, tablesize,
+        printf("Hash table %d entries, %d size, average search length %d(%d/%d) max %d\n", tablecount, tablesize,
                (int) (search_tot/search_num), search_tot, search_num, search_max);
 }
 #endif
