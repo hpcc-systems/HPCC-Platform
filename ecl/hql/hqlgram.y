@@ -6136,14 +6136,19 @@ primexpr1
                             $$.setExpr(createValue(no_isomitted, makeBoolType(), value.getClear()));
                         }
     | FAILCODE          {   $$.setExpr(createValue(no_failcode, makeIntType(4, true))); }
+    | FAILCODE '(' ')'  {   $$.setExpr(createValue(no_failcode, makeIntType(4, true))); }
     | FAILMESSAGE       {   $$.setExpr(createValue(no_failmessage, makeStringType(UNKNOWN_LENGTH, NULL, NULL))); }
+    | FAILMESSAGE '(' ')' {   $$.setExpr(createValue(no_failmessage, makeStringType(UNKNOWN_LENGTH, NULL, NULL))); }
     | FAILMESSAGE '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_string, false);
                             $$.setExpr(createValue(no_failmessage, makeStringType(UNKNOWN_LENGTH, NULL, NULL), $3.getExpr()));
                         }
     | EVENTNAME         {   $$.setExpr(createValue(no_eventname, makeStringType(UNKNOWN_LENGTH, NULL, NULL))); }
+    | EVENTNAME '(' ')' {   $$.setExpr(createValue(no_eventname, makeStringType(UNKNOWN_LENGTH, NULL, NULL))); }
     | EVENTEXTRA        {   $$.setExpr(createValue(no_eventextra, makeStringType(UNKNOWN_LENGTH, NULL, NULL))); }
+    | EVENTEXTRA '(' ')'
+                        {   $$.setExpr(createValue(no_eventextra, makeStringType(UNKNOWN_LENGTH, NULL, NULL))); }
     | EVENTEXTRA '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_string, false);
@@ -6277,6 +6282,30 @@ primexpr1
                             $$.setExpr(createValue(no_matchlength, LINK(parser->uint4Type))); //, parser->createUniqueId()));
                         }
     | MATCHPOSITION
+                        {
+                            $$.setExpr(createValue(no_matchposition, LINK(parser->uint4Type))); //, parser->createUniqueId()));
+                        }
+    | MATCHED '(' ')'
+                        {
+                            $$.setExpr(createValue(no_matched, makeBoolType())); //, parser->createUniqueId()));
+                        }
+    | MATCHTEXT '(' ')'
+                        {
+                            $$.setExpr(createValue(no_matchtext, makeStringType(UNKNOWN_LENGTH, NULL, NULL))); //, parser->createUniqueId()));
+                        }
+    | MATCHUNICODE '(' ')'
+                        {
+                            $$.setExpr(createValue(no_matchunicode, makeUnicodeType(UNKNOWN_LENGTH, NULL))); //, parser->createUniqueId()));
+                        }
+    | MATCHUTF8 '(' ')'
+                        {
+                            $$.setExpr(createValue(no_matchutf8, makeUtf8Type(UNKNOWN_LENGTH, NULL))); //, parser->createUniqueId()));
+                        }
+    | MATCHLENGTH '(' ')'
+                        {
+                            $$.setExpr(createValue(no_matchlength, LINK(parser->uint4Type))); //, parser->createUniqueId()));
+                        }
+    | MATCHPOSITION '(' ')'
                         {
                             $$.setExpr(createValue(no_matchposition, LINK(parser->uint4Type))); //, parser->createUniqueId()));
                         }

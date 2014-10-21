@@ -823,6 +823,13 @@ IHqlExpression * HqlGram::translateFieldsToNewScope(IHqlExpression * expr, IHqlS
     return expr->clone(args);
 }
 
+void HqlGram::checkSensibleId(const attribute & attr, IIdAtom * id)
+{
+    IAtom * name = id->lower();
+    if (name == skipAtom || name == eventExtraAtom || name == eventNameAtom || name == failCodeAtom || name == failMessageAtom || name == countAtom || name == counterAtom)
+        reportWarning(CategorySyntax, SeverityError, ERR_DUBIOUS_NAME, attr.pos, "Identifier '%s' clashes with a reserved symbol", name->str());
+}
+
 DefineIdSt * HqlGram::createDefineId(int scope, ITypeInfo * ownedType)
 { 
     DefineIdSt* defineid = new DefineIdSt();
@@ -6020,6 +6027,7 @@ void HqlGram::checkFormals(IIdAtom * name, HqlExprArray& parms, HqlExprArray& de
 
 void HqlGram::addParameter(const attribute & errpos, IIdAtom * name, ITypeInfo* type, IHqlExpression* defValue)
 {
+    checkSensibleId(errpos, name);
     HqlExprArray attrs;
     endList(attrs);
     if (hasAttribute(fieldsAtom, attrs))
@@ -6033,6 +6041,7 @@ void HqlGram::addParameter(const attribute & errpos, IIdAtom * name, ITypeInfo* 
 
 void HqlGram::addFunctionParameter(const attribute & errpos, IIdAtom * name, ITypeInfo* type, IHqlExpression* defValue)
 {
+    checkSensibleId(errpos, name);
     ActiveScopeInfo & activeScope = defineScopes.tos();
     OwnedHqlExpr formals = activeScope.createFormals(false);
     OwnedHqlExpr defaults = activeScope.createDefaults();
@@ -6048,6 +6057,7 @@ void HqlGram::addFunctionParameter(const attribute & errpos, IIdAtom * name, ITy
 
 void HqlGram::addFunctionProtoParameter(const attribute & errpos, IIdAtom * name, IHqlExpression * donor, IHqlExpression* defValue)
 {
+    checkSensibleId(errpos, name);
     assertex(donor->isFunction());
 
     HqlExprArray attrs;
@@ -9030,6 +9040,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
     // env symbol
     IIdAtom * name = defineid->id;
     checkNotAlreadyDefined(name, idattr);
+    checkSensibleId(idattr, name);
 
     ActiveScopeInfo & activeScope = defineScopes.tos();
     if (activeScope.templateAttrContext)
