@@ -180,7 +180,7 @@
                             <tr>
                                 <td></td>
                                 <td>
-                                    Password to open ZAP(optional):<input type="password" id="Password" name="Password"/>
+                                    Password to open ZAP (optional):<input type="password" id="Password" name="Password"/>
                                 </td>
                             </tr>
                             <tr>
