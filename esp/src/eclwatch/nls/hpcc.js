@@ -481,6 +481,7 @@ define({root:
     title_LZBrowse: "Landing Zones",
     title_MemberOf: "Member Of",
     title_Members: "Members",
+    title_LibrariesUsed: "Libraries Used",
     title_QuerySetDetails: "Query Details",
     title_QuerySetErrors: "Errors",
     title_QuerySetLogicalFiles: "Logical Files",
