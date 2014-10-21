@@ -827,7 +827,7 @@ void HqlGram::checkSensibleId(const attribute & attr, IIdAtom * id)
 {
     IAtom * name = id->lower();
     if (name == skipAtom || name == eventExtraAtom || name == eventNameAtom || name == failCodeAtom || name == failMessageAtom || name == countAtom || name == counterAtom)
-        reportWarning(CategorySyntax, SeverityError, ERR_DUBIOUS_NAME, attr.pos, "Identifier '%s' clashes with a reserved symbol", name->str());
+        reportError(ERR_DUBIOUS_NAME, attr.pos, "Identifier '%s' clashes with a reserved symbol", name->str());
 }
 
 DefineIdSt * HqlGram::createDefineId(int scope, ITypeInfo * ownedType)
