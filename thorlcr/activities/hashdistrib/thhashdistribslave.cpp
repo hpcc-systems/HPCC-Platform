@@ -3399,7 +3399,7 @@ public:
                     throwUnexpected();
             }
         }
-        joinhelper->init(strmL, strmR, ::queryRowAllocator(inL), ::queryRowAllocator(inR), ::queryRowMetaData(inL), &abortSoon);
+        joinhelper->init(strmL, strmR, ::queryRowAllocator(inL), ::queryRowAllocator(inR), ::queryRowMetaData(inL));
         dataLinkStart();
     }
     void stopInput()
@@ -3452,6 +3452,8 @@ public:
             lhsDistributor->abort();
         if (rhsDistributor)
             rhsDistributor->abort();
+        if (joinhelper)
+            joinhelper->stop();
     }
     CATCH_NEXTROW()
     {
