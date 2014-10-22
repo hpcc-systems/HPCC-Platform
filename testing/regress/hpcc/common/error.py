@@ -28,7 +28,11 @@ ERROR = {
     "3001": "Return diff does not match.",
     "4000": "Unknown cluster!",
     "4001": "No ECl file!",
-    "5000": "Missing argument of -X parameter!\nIt should be 'name=val[,name2=val2..]'"
+    "5000": "Missing argument of -X parameter!\nIt should be 'name=val[,name2=val2..]'",
+    "6000": "HPCC System not istalled!",
+    "6001": "HPCC System doesn't run!",
+    "6002": "OS error when try to call ecl command!",
+    "6003": "Parameter error when try to call ecl command!",
 }
 
 
