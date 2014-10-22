@@ -421,9 +421,9 @@ define([
 
         refreshData: function () {
             if (lang.exists("params.Wuid", this)) {
-                this.refreshGraphFromWU(this.wu, this.graphName);
+                this.loadGraphFromWu(this.wu, this.graphName, true);
             } else if (lang.exists("params.QueryId", this)) {
-                this.refreshGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
+                this.loadGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
             }
         },
 
@@ -465,7 +465,7 @@ define([
             this.loadEdges();
         },
 
-        loadGraphFromWu: function (wu, graphName) {
+        loadGraphFromWu: function (wu, graphName, refresh) {
             var deferred = new Deferred();
             this.main.setMessage(this.i18n.FetchingData);
             var context = this;
@@ -473,7 +473,7 @@ define([
                 context.main.setMessage("");
                 context.loadGraphFromXGMML(xgmml, svg);
                 deferred.resolve();
-            });
+            }, refresh);
             return deferred.promise;
         },
 
