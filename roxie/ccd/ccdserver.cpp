@@ -19579,7 +19579,12 @@ public:
 
     virtual void stop(bool aborting)
     {
-        if (state != STATEstopped)
+        if (state == STATEreset)
+        {
+            stopDependencies(savedExtractSize, savedExtract, WhenSuccessId);
+            stopDependencies(savedExtractSize, savedExtract, WhenFailureId);
+        }
+        else if (state != STATEstopped)
         {
             stopDependencies(savedExtractSize, savedExtract, aborting ? WhenSuccessId : WhenFailureId);  // These ones don't get executed
             executeDependencies(savedExtractSize, savedExtract, aborting ? WhenFailureId : WhenSuccessId); // These ones do

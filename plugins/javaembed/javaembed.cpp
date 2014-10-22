@@ -1297,13 +1297,16 @@ public:
         {
             prevtext.clear();
             // Name should be in the form class.method:signature
-            const char *funcname = strchr(text, '.');
+            const char *funcname = strrchr(text, '.');
             if (!funcname)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text.str());
             const char *signature = strchr(funcname, ':');
             if (!signature)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text.str());
             StringBuffer classname(funcname-text, text);
+            // While it's probably preferred for people to use . as the separator in nested classes (to match java import statement),
+            // we accept / too (to match what you would see in the jar)
+            classname.replace('/', '.');
             funcname++;  // skip the '.'
             StringBuffer methodname(signature-funcname, funcname);
             signature++; // skip the ':'

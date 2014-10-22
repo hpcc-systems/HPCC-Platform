@@ -8734,13 +8734,16 @@ simpleDataSet
                             $$.setExpr(createDataset(no_preload, $3.getExpr(), $4.getExpr()));
                             $$.setPosition($1);
                         }
-    | SAMPLE '(' startTopFilter ',' const ')' endTopFilter
+    | SAMPLE '(' dataSet ',' expression ')'
                         {
+                            parser->normalizeExpression($5, type_int, false);
                             $$.setExpr(createDataset(no_sample, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
-    | SAMPLE '(' startTopFilter ',' const ',' const ')' endTopFilter
+    | SAMPLE '(' dataSet ',' expression ',' expression ')'
                         {
+                            parser->normalizeExpression($5, type_int, false);
+                            parser->normalizeExpression($7, type_int, false);
                             $$.setExpr(createDataset(no_sample, $3.getExpr(), createComma($5.getExpr(), $7.getExpr())));
                             $$.setPosition($1);
                         }
