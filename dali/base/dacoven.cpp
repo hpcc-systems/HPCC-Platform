@@ -1021,7 +1021,6 @@ DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
         Owned<IGroup> group = createIGroup(1,&foreignnode); 
         foreign.setown(createCommunicator(group));
         foreign->sendRecv(mb,RANK_RANDOM,MPTAG_DALI_COVEN_REQUEST);
-        foreignnode.serialize(mb);
         mb.read(next);
         if ((next==0)&&mb.remaining())  // server exception
             throw deserializeException(mb);
