@@ -48,9 +48,7 @@ class Suite:
             self.dynamicSources=checkClusters(self.dynamicSources,  "Dynamic source")
             pass
 
-        # If there are some temprary files left, then remove them
-        for file in glob.glob(self.dir_ec+'/_tmp*.ecl'):
-            os.unlink(file)
+        self.cleanUp()
 
         self.buildSuite(args, isSetup, fileList)
 
@@ -160,6 +158,12 @@ class Suite:
     def getSuiteName(self):
         return self.name
 
+    def cleanUp(self):
+        # If there are some temporary files left, then remove them
+        for file in glob.glob(self.dir_ec+'/_temp*.ecl'):
+            os.unlink(file)
+
     def close(self):
         for ecl in self.suite:
             ecl.close()
+        self.cleanUp()
