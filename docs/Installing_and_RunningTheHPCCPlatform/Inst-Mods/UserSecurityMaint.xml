@@ -186,7 +186,7 @@
         </orderedlist></para>
     </sect3>
 
-    <sect3>
+    <sect3 role="brk">
       <title>Setting and modifying user permissions</title>
 
       <para>Access to ECL Watch and its features is controlled using a login
@@ -398,6 +398,78 @@
 
           <listitem>
             <para>The changes are automatically saved. Close the tab.</para>
+          </listitem>
+        </orderedlist>
+      </sect4>
+
+      <sect4>
+        <title>To promote a user to an Administrator</title>
+
+        <para>To modify a users credentials you must have Administrator level
+        access. To promote a user to an HPCC Administrator, add the user to
+        the <emphasis role="bold">Administrators</emphasis> group.</para>
+
+        <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu. <graphic
+        fileref="../../images/Permissions001.jpg" /></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click on the <emphasis role="bold">Users<emphasis>
+            tab</emphasis></emphasis>.</para>
+
+            <para>The users display in a list.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the user (or users) to promote. Check the box next to
+            the Username to select.</para>
+
+            <para>This enables the Users action buttons.</para>
+          </listitem>
+
+          <listitem>
+            <!--NOTE: UPdate this image***-->
+
+            <para>Press the <emphasis role="bold">Open</emphasis> action
+            button. <graphic fileref="../../images/Perm008.jpg" /></para>
+
+            <para>A tab opens for each user selected. On that tab there are
+            three sub-tabs.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the tab for the user to modify (if more than one
+            user selected, repeat for each user).</para>
+
+            <para>On the user's tab there are three sub-tabs.</para>
+
+            <para>Click on the <emphasis role="bold">Member Of</emphasis>
+            sub-tab. <graphic fileref="../../images/Perm016.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Select <emphasis role="bold">Administrators</emphasis> by
+            placing a check in box.</para>
+
+            <para><variablelist>
+                <varlistentry>
+                  <term>NOTE:</term>
+
+                  <listitem>
+                    <para>The name of the default Administrator group could
+                    vary. For example, in Active Directory, it is
+                    "Administrators", in Open LDAP it is "Directory
+                    Administrators".</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
+          </listitem>
+
+          <listitem>
+            <para>The changes are automatically saved. Close the
+            tab(s).</para>
           </listitem>
         </orderedlist>
       </sect4>
