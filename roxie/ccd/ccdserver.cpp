@@ -24045,7 +24045,7 @@ public:
           puller(false),
           isLocal(_isLocal)
     {
-        variableIndexFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        variableIndexFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         indexReadInputRecordVariable = indexReadMeta->isVariableSize();
         indexReadInput = NULL;
         rootIndex = NULL;
@@ -24871,7 +24871,7 @@ public:
           keySet(_keySet),
           translators(_translators)
     {
-        variableIndexFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        variableIndexFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         indexReadInputRecordVariable = indexReadMeta->isVariableSize();
     }
 
@@ -25136,7 +25136,7 @@ public:
         enableFieldTranslation = queryFactory.queryOptions().enableFieldTranslation;
         translatorArray.setown(new TranslatorArray);
         joinFlags = helper->getJoinFlags();
-        variableIndexFileName = allFilesDynamic || _queryFactory.isDynamic() || ((joinFlags & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        variableIndexFileName = allFilesDynamic || _queryFactory.isDynamic() || ((joinFlags & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         variableFetchFileName = allFilesDynamic || _queryFactory.isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         if (!variableIndexFileName)
         {

@@ -203,7 +203,12 @@
 
     <para>This section contains the information to install and implement LDAP
     based authentication. LDAP Authentication provides the most options for
-    securing your system, or parts of your system.</para>
+    securing your system, or parts of your system. In addition to these
+    configuration settings you must run the <emphasis
+    role="bold">initldap</emphasis> utility to create the appropriate OUs and
+    the default HPCC Admin user on your LDAP server.</para>
+
+    <!--***Note: (9/2014) Adding Documentation for initLdap.*** -->
 
     <sect3>
       <title>Connect to Configuration Manager</title>
@@ -552,6 +557,35 @@
           </tbody>
         </tgroup>
       </informaltable></para>
+  </sect2>
+
+  <sect2>
+    <title>Installing the Default Admin user</title>
+
+    <para>After enabling your configuration for LDAP security, you need to run
+    the <emphasis role="bold">initldap</emphasis> utility that installs the
+    initial security components and the default users.</para>
+
+    <sect3>
+      <title>The initldap Utility</title>
+
+      <para>The initldap utility is used to create the HPCC Administrator's
+      user account and the HPCC OUs. The initldap utility uses the settings in
+      the LDAPServer component(s) in the environment.xml bound to the
+      configured ESPs.</para>
+
+      <para>Once you complete your configuration, (add the LDAPServer
+      components and distribute your environment.xml file) you must then run
+      the <emphasis role="bold">initldap</emphasis> utility.</para>
+
+      <programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting>
+
+      <para>The <emphasis role="bold">initldap</emphasis> utility prompts you
+      for LDAP Administrator credentials. Enter the appropriate values when
+      prompted. The initldap utility uses those values to initialize the LDAP
+      server and create the HPCC System User. It also creates all of the
+      required OUs.</para>
+    </sect3>
 
     <sect3>
       <title>Using the addScopes tool</title>
@@ -560,19 +594,19 @@
       “hpccinternal::&lt;user&gt;” file scope is also created granting new
       users full access to that scope and restricting access to other users.
       This file scope is used to store temporary HPCC files such as spill
-      files and temp files. </para>
+      files and temp files.</para>
 
       <para>If you are enabling LDAP file scope security and already have user
       accounts, you should run the addScopes utility program to create the
-      hpccinternal::&lt;user&gt; scope for those existing users. </para>
+      hpccinternal::&lt;user&gt; scope for those existing users.</para>
 
       <para>Users which already have this scope defined are ignored and so it
-      can be used on both new and legacy ESP user accounts safely. </para>
+      can be used on both new and legacy ESP user accounts safely.</para>
 
       <para>The tool is located in the <emphasis
       role="bold">/opt/HPCCSystems/bin/</emphasis> folder and to run it you
       must pass the location of <emphasis role="bold">daliconf.xml</emphasis>,
-      for example: </para>
+      for example:</para>
 
       <para><programlisting>/opt/HPCCSystems/bin/addScopes /var/lib/HPCCSystems/mydali/daliconf.xml</programlisting></para>
     </sect3>
