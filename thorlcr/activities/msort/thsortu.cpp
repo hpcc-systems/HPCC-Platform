@@ -319,7 +319,7 @@ class CJoinHelper : public CSimpleInterface, implements IJoinHelper
     OwnedConstThorRow defaultRight;
     Linked<IRowStream> strmL;
     Linked<IRowStream> strmR;
-    bool *abort;
+    bool abort;
     bool nextleftgot;
     bool nextrightgot;
     unsigned atmost;
@@ -390,7 +390,6 @@ public:
             IEngineRowAllocator *_allocatorL,
             IEngineRowAllocator *_allocatorR,
             IOutputMetaData * _outputmeta,
-            bool *_abort,
             IMulticoreIntercept *_mcoreintercept)
     {
         //DebugBreak();
@@ -462,7 +461,7 @@ public:
             size32_t sz = helper->createDefaultRight(r);
             defaultRight.setown(r.finalizeRowClear(sz));
         }
-        abort = _abort;
+        abort = false;
         atmost = helper->getJoinLimit();
         if (atmost)
             assertex(!rightouter);
@@ -803,7 +802,7 @@ public:
     retry:
             ret.clear();
             do {
-                if (*abort) 
+                if (abort)
                     return NULL;
                 switch (state) {
                 case JSonfail:
@@ -938,7 +937,11 @@ public:
                             if (cmp>0) 
                                 state = JSrightgrouponly;
                             else if (cmp<0) 
+                            {
+                                activity.logRow("prev: ", *allocatorL->queryOutputMeta(), prevleft);
+                                activity.logRow("next: ", *allocatorL->queryOutputMeta(), nextleft);
                                 throw MakeStringException(-1,"JOIN LHS not in sorted order");
+                            }
                         }
                         else
                             state = JSrightgrouponly;
@@ -961,7 +964,7 @@ public:
         CATCH_MEMORY_EXCEPTIONS
         return ret.getClear();;
     }
-    virtual void stop() { }
+    virtual void stop() { abort = true; }
     virtual rowcount_t getLhsProgress() const { return lhsProgressCount; }
     virtual rowcount_t getRhsProgress() const { return rhsProgressCount; }
 };
@@ -989,7 +992,7 @@ class SelfJoinHelper: public CSimpleInterface, implements IJoinHelper
     OwnedConstThorRow defaultLeft;
     OwnedConstThorRow defaultRight;
     Owned<IRowStream> strm;
-    bool *abort;
+    bool abort;
     unsigned atmost;
     rowcount_t progressCount;
     unsigned joinCounter;
@@ -1021,7 +1024,6 @@ public:
             IEngineRowAllocator *_allocatorL,
             IEngineRowAllocator *,
             IOutputMetaData * _outputmeta,
-            bool *_abort,
             IMulticoreIntercept *_mcoreintercept)
     {
         //DebugBreak();
@@ -1066,7 +1068,7 @@ public:
             size32_t sz = helper->createDefaultRight(r);
             defaultRight.setown(r.finalizeRowClear(sz));
         }
-        abort = _abort;
+        abort = false;
         atmost = helper->getJoinLimit();
         if (atmost)
             assertex(!rightouter);
@@ -1109,7 +1111,7 @@ public:
 retry:
             ret.clear();
             do {
-                if (*abort) 
+                if (abort)
                     return NULL;
                 switch (state) {
                 case JSonfail:
@@ -1300,7 +1302,7 @@ retry:
         CATCH_MEMORY_EXCEPTIONS
         return ret.getClear();
     }
-    virtual void stop() { }
+    virtual void stop() { abort = true; }
     virtual rowcount_t getLhsProgress() const { return progressCount; }
     virtual rowcount_t getRhsProgress() const { return progressCount; }
 };
@@ -1590,11 +1592,10 @@ public:
             IEngineRowAllocator *allocatorL,
             IEngineRowAllocator *allocatorR,
             IOutputMetaData * outputmetaL,   // for XML output 
-            bool *_abort,
             IMulticoreIntercept *_mcoreintercept
         )
     {
-        if (!jhelper->init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,this))
+        if (!jhelper->init(strmL,strmR,allocatorL,allocatorR,outputmetaL,this))
             return false;
         if (rightouter) {
             RtlDynamicRowBuilder r(allocatorL);
@@ -1621,6 +1622,10 @@ public:
         if (jhelper)
             return jhelper->getRhsProgress();
         return 0;
+    }
+    virtual void stop()
+    {
+        jhelper->stop();
     }
 };
 
@@ -1750,11 +1755,10 @@ public:
             IEngineRowAllocator *allocatorL,
             IEngineRowAllocator *allocatorR,
             IOutputMetaData * outputmetaL,   // for XML output 
-            bool *_abort,
             IMulticoreIntercept *_mcoreintercept
         )
     {
-        if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,this))
+        if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,this))
             return false;
         stopped = false;
         for (unsigned i=0;i<numworkers;i++)
@@ -1798,6 +1802,7 @@ public:
         if (stopped)
             return;
         stopped = true;
+        CMultiCoreJoinHelperBase::stop();
         for (unsigned i=0;i<numworkers;i++)
             workers[i]->rowStream->stop();
     }
@@ -1926,20 +1931,12 @@ public:
 
     ~CMultiCoreUnorderedJoinHelper()
     {
-        if (!reader.join(1000*60))
-            ERRLOG("~CMulticoreUnorderedJoinHelper reader join timed out");
-        for (unsigned i=0;i<numworkers;i++) {
-            if (!workers[i]->join(1000*60))
-                ERRLOG("~CMulticoreUnorderedJoinHelper worker[%d] join timed out",i);
-        }
-        while (workqueue.ordinality())
-            delete workqueue.dequeue();
+        stop();
         for (unsigned i=0;i<numworkers;i++) 
             delete workers[i];
         delete [] workers;
         ::Release(jhelper);
     }
-
     void stopWorkers()
     {
         for (unsigned i=0;i<numworkers;i++)
@@ -1954,11 +1951,10 @@ public:
             IEngineRowAllocator *allocatorL,
             IEngineRowAllocator *allocatorR,
             IOutputMetaData * outputmetaL,   // for XML output 
-            bool *_abort,
             IMulticoreIntercept *_mcoreintercept
         )
     {
-        if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,this))
+        if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,this))
             return false;
         workqueue.setLimit(numworkers+1);
         rowWriter.setown(multiWriter->getWriter());
@@ -1985,6 +1981,18 @@ public:
     }
     virtual void stop()
     {
+        CMultiCoreJoinHelperBase::stop();
+        workqueue.stop();
+        multiWriter->abort();
+        if (!reader.join(1000*60))
+            ERRLOG("~CMulticoreUnorderedJoinHelper reader join timed out");
+        for (unsigned i=0;i<numworkers;i++)
+        {
+            if (!workers[i]->join(1000*60))
+                ERRLOG("~CMulticoreUnorderedJoinHelper worker[%d] join timed out",i);
+        }
+        while (workqueue.ordinality())
+            delete workqueue.dequeueNow();
     }
 
 // IMulticoreIntercept impl.

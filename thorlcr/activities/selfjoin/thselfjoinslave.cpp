@@ -180,9 +180,15 @@ public:
         strm.setown(isLightweight? doLightweightSelfJoin() : (isLocal ? doLocalSelfJoin() : doGlobalSelfJoin()));
         assertex(strm);
 
-        joinhelper->init(strm, NULL, ::queryRowAllocator(inputs.item(0)), ::queryRowAllocator(inputs.item(0)), ::queryRowMetaData(inputs.item(0)), &abortSoon);
+        joinhelper->init(strm, NULL, ::queryRowAllocator(inputs.item(0)), ::queryRowAllocator(inputs.item(0)), ::queryRowMetaData(inputs.item(0)));
     }
 
+    virtual void abort()
+    {
+        CSlaveActivity::abort();
+        if (joinhelper)
+            joinhelper->stop();
+    }
     virtual void stop()
     {
         if (input)

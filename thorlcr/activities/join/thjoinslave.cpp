@@ -306,7 +306,7 @@ public:
         }
         if (!leftStream.get()||!rightStream.get())
             throw MakeActivityException(this, TE_FailedToStartJoinStreams, "Failed to start join streams");
-        joinhelper->init(leftStream, rightStream, ::queryRowAllocator(inputs.item(0)),::queryRowAllocator(inputs.item(1)),::queryRowMetaData(inputs.item(0)), &abortSoon);
+        joinhelper->init(leftStream, rightStream, ::queryRowAllocator(inputs.item(0)),::queryRowAllocator(inputs.item(1)),::queryRowMetaData(inputs.item(0)));
     }
     void stopLeftInput()
     {
@@ -335,6 +335,12 @@ public:
             stopLeftInput();
         else
             stopRightInput();
+    }
+    void abort()
+    {
+        CSlaveActivity::abort();
+        if (joinhelper)
+            joinhelper->stop();
     }
     void stop() 
     {

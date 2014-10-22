@@ -938,6 +938,9 @@ public:
     unsigned queryMaxCores() const { return maxCores; }
     IRowInterfaces *getRowInterfaces();
 
+    bool appendRowXml(StringBuffer & target, IOutputMetaData & meta, const void * row) const;
+    void logRow(const char * prefix, IOutputMetaData & meta, const void * row);
+
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) { }
     virtual void clearConnections() { }
     virtual void releaseIOs() { }

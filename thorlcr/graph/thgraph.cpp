@@ -2909,6 +2909,39 @@ void CActivityBase::kill()
     ownedResults.clear();
 }
 
+bool CActivityBase::appendRowXml(StringBuffer & target, IOutputMetaData & meta, const void * row) const
+{
+    if (!meta.hasXML())
+    {
+        target.append("<xml-unavailable/>");
+        return false;
+    }
+
+    try
+    {
+        CommonXmlWriter xmlWrite(XWFnoindent);
+        meta.toXML((byte *) row, xmlWrite);
+        target.append(xmlWrite.str());
+        return true;
+    }
+    catch (IException * e)
+    {
+        e->Release();
+        target.append("<invalid-row/>");
+        return false;
+    }
+}
+
+void CActivityBase::logRow(const char * prefix, IOutputMetaData & meta, const void * row)
+{
+    bool blindLogging = false; // MORE: should check a workunit/global option
+    if (meta.hasXML() && !blindLogging)
+    {
+        StringBuffer xml;
+        appendRowXml(xml, meta, row);
+    }
+}
+
 void CActivityBase::ActPrintLog(const char *format, ...)
 {
     va_list args;

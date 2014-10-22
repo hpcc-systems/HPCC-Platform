@@ -631,7 +631,7 @@ EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstri
  * Creates a file monitor job in the DFU Server. If an appropriately named file arrives in this interval it will fire
  * the event with the name of the triggering object as the event subtype (see the EVENT function).
  *
- * @param eventName     The user-defined name of the event to fire when the filename appears. This value is used as
+ * @param eventToFire   The user-defined name of the event to fire when the filename appears. This value is used as
  *                      the first parameter to the EVENT function.
  * @param name          The name of the logical file to monitor.  This may contain wildcard characters ( * and ?)
  * @param shotCount     The number of times to generate the event before the monitoring job completes. A value
@@ -640,8 +640,8 @@ EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstri
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fMonitorLogicalFileName(varstring eventName, varstring name, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.fMonitorLogicalFileName(eventName, name, shotCount, espServerIpPort);
+EXPORT varstring fMonitorLogicalFileName(varstring eventToFire, varstring name, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+    lib_fileservices.FileServices.fMonitorLogicalFileName(eventToFire, name, shotCount, espServerIpPort);
 
 /**
  * Same as fMonitorLogicalFileName, but does not return the DFU Workunit ID.
@@ -649,14 +649,14 @@ EXPORT varstring fMonitorLogicalFileName(varstring eventName, varstring name, in
  * @see fMonitorLogicalFileName
  */
 
-EXPORT MonitorLogicalFileName(varstring eventName, varstring name, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.MonitorLogicalFileName(eventName, name, shotCount, espServerIpPort);
+EXPORT MonitorLogicalFileName(varstring eventToFire, varstring name, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+    lib_fileservices.FileServices.MonitorLogicalFileName(eventToFire, name, shotCount, espServerIpPort);
 
 /**
  * Creates a file monitor job in the DFU Server. If an appropriately named file arrives in this interval it will fire
  * the event with the name of the triggering object as the event subtype (see the EVENT function).
  *
- * @param eventName     The user-defined name of the event to fire when the filename appears. This value is used as
+ * @param eventToFire   The user-defined name of the event to fire when the filename appears. This value is used as
  *                      the first parameter to the EVENT function.
  * @param ip            The the IP address for the file to monitor. This may be omitted if the filename parameter
  *                      contains a complete URL.
@@ -668,8 +668,8 @@ EXPORT MonitorLogicalFileName(varstring eventName, varstring name, integer4 shot
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fMonitorFile(varstring eventName, varstring ip, varstring filename, boolean subDirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.fMonitorFile(eventName, ip, filename, subDirs, shotCount, espServerIpPort);
+EXPORT varstring fMonitorFile(varstring eventToFire, varstring ip, varstring filename, boolean subDirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+    lib_fileservices.FileServices.fMonitorFile(eventToFire, ip, filename, subDirs, shotCount, espServerIpPort);
 
 /**
  * Same as fMonitorFile, but does not return the DFU Workunit ID.
@@ -677,8 +677,8 @@ EXPORT varstring fMonitorFile(varstring eventName, varstring ip, varstring filen
  * @see fMonitorFile
  */
 
-EXPORT MonitorFile(varstring eventName, varstring ip, varstring filename, boolean subdirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.MonitorFile(eventName, ip, filename, subdirs, shotCount, espServerIpPort);
+EXPORT MonitorFile(varstring eventToFire, varstring ip, varstring filename, boolean subdirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+    lib_fileservices.FileServices.MonitorFile(eventToFire, ip, filename, subdirs, shotCount, espServerIpPort);
 
 /**
  * Waits for the specified DFU workunit to finish.
