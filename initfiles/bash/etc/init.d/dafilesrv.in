@@ -39,7 +39,7 @@
 # Provides: dafilesrv
 
 ##-----------------------------------------------------------------------------
-#                         General Purpose Functions                           
+#                         General Purpose Functions
 ##-----------------------------------------------------------------------------
 
 ###<REPLACE>###
@@ -90,7 +90,7 @@ check_group ${group}
 if [ $? -ne 1 ];then
    echo "Group for user ${user} does not exist on the system. Exiting....."
    exit 3
-fi 
+fi
 
 
 COMPS=`${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list`
@@ -113,7 +113,7 @@ done
 ##################################################################################
 
 if [ -z "${component}" ] ; then
-    log_msg_failure "dafilesrv is not configured to run on this node"
+    log_failure_msg "dafilesrv is not configured to run on this node"
     exit 3
 fi
 
@@ -157,7 +157,7 @@ for C in ${component} ; do
     fi
     eval $xcmd
     STATUS=$?
-done 
+done
 exit ${STATUS}
 
 
