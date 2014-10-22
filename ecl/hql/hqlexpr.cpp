@@ -4721,7 +4721,8 @@ inline void addHiddenTable(HqlExprCopyArray & array, IHqlExpression * ds)
 
 inline void addActiveTable(HqlExprCopyArray & array, IHqlExpression * ds)
 {
-    //left.subfield  should be reduced the base cursor
+    //Sometimes the "dataset" passed in happens to be a no_select of a row field from a dataset.
+    //We need to record the root selector/cursor, so ensure we have that.
     ds = queryDatasetCursor(ds);
 
 //  This test is valid once the tree is normalized, but now this can be called on a parse tree.
