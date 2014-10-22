@@ -948,7 +948,7 @@ private:
 class EclCmdGetName : public EclCmdCommon
 {
 public:
-    EclCmdGetName()
+    EclCmdGetName() : optListLimit(100)
     {
         optObj.accept = eclObjWuid;
     }
@@ -968,6 +968,10 @@ public:
             {
                 optObj.type = eclObjWuid;
                 retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
+            {
                 continue;
             }
             if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
@@ -990,6 +994,10 @@ public:
             return 0;
 
         req->setWuid(optName.get());
+
+        if (optListLimit)
+            req->setCount(optListLimit);
+
         Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
 
         if (!resp->getCount_isNull())
@@ -1011,13 +1019,16 @@ public:
             "\n"
             "ecl getname --wuid <WUID>\n"
             "\n"
-            "   WUID                   workunit ID\n",
+            "   WUID                   workunit ID\n"
+            " Options:\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n",
             stdout);
         EclCmdCommon::usage();
     }
 private:
     StringAttr         optName;
     EclObjectParameter optObj;
+    unsigned int       optListLimit;
 };
 
 class EclCmdGetWuid : public EclCmdCommon
