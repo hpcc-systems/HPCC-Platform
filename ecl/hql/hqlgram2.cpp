@@ -826,7 +826,11 @@ IHqlExpression * HqlGram::translateFieldsToNewScope(IHqlExpression * expr, IHqlS
 void HqlGram::checkSensibleId(const attribute & attr, IIdAtom * id)
 {
     IAtom * name = id->lower();
-    if (name == skipAtom || name == eventExtraAtom || name == eventNameAtom || name == failCodeAtom || name == failMessageAtom || name == countAtom || name == counterAtom)
+    if (name == skipAtom || name == eventExtraAtom || name == eventNameAtom || name == failCodeAtom ||
+        name == failMessageAtom || name == countAtom || name == counterAtom ||
+        name == matchedAtom || name == matchTextAtom || name == matchUnicodeAtom ||
+        name == matchUtf8Atom || name == matchLengthAtom || name == matchPositionAtom
+        )
         reportError(ERR_DUBIOUS_NAME, attr.pos, "Identifier '%s' clashes with a reserved symbol", name->str());
 }
 
