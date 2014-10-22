@@ -1449,6 +1449,10 @@ class Python27EmbedContext : public CInterfaceOf<IEmbedContext>
 public:
     virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
     {
+        return createFunctionContextEx(NULL, flags, options);
+    }
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    {
         if (!threadContext)
         {
             if (!globalState.isInitialized())

@@ -933,6 +933,10 @@ public:
     }
     virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
     {
+        return createFunctionContextEx(NULL, flags, options);
+    }
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    {
         if (flags & EFimport)
             UNSUPPORTED("IMPORT");
         if (!theFunctionContext)

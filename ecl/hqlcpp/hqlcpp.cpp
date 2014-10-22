@@ -11601,7 +11601,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     OwnedHqlExpr pluginPtr = createQuoted("Owned<IEmbedContext> __plugin", makeBoolType());  // Not really bool - at some point ECL may support without this aliasing...
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
     StringBuffer createParam;
-    createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContext(");
+    createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(ctx,");
     createParam.append(isImport ? "EFimport" : "EFembed");
     if (returnType->getTypeCode()==type_void)
         createParam.append("|EFnoreturn");

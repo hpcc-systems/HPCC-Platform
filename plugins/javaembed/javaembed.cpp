@@ -2309,6 +2309,10 @@ class JavaEmbedContext : public CInterfaceOf<IEmbedContext>
 public:
     virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
     {
+        return createFunctionContextEx(NULL, flags, options);
+    }
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    {
         assertex(flags & EFimport);
         return new JavaEmbedImportContext(queryContext(), options);
     }
