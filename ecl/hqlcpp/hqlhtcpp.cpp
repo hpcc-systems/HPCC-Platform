@@ -15671,8 +15671,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySample(BuildCtx & ctx, IHqlExp
 {
     StringBuffer s;
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * sampleExpr = queryRealChild(expr, 2);
-    unsigned sample = (unsigned)getIntValue(sampleExpr, 1);
+    LinkedHqlExpr sampleExpr = queryRealChild(expr, 2);
+    if (!sampleExpr)
+        sampleExpr.setown(getSizetConstant(1));
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
 
@@ -15682,11 +15683,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySample(BuildCtx & ctx, IHqlExp
     buildInstancePrefix(instance);
 
     doBuildUnsignedFunction(instance->startctx, "getProportion", expr->queryChild(1));
-
-    BuildCtx funcctx2(instance->startctx);
-    funcctx2.addQuotedCompound("virtual unsigned getSampleNumber()");
-    s.clear().append("return ").append(sample).append(";");
-    funcctx2.addQuoted(s);
+    doBuildUnsignedFunction(instance->startctx, "getSampleNumber", sampleExpr);
 
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
