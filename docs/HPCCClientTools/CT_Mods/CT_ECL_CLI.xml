@@ -3458,7 +3458,9 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
 
         <para>Examples:</para>
 
-        <programlisting>ecl getname -wu W20140516-111213</programlisting>
+        <programlisting>ecl getname -wu W20140516-111213
+ecl getname -wu W201407*
+</programlisting>
 
         <para></para>
 
@@ -3476,13 +3478,20 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                 </row>
 
                 <row>
+                  <entry>--wuid</entry>
+
+                  <entry>The WUID (Workunit ID)</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
                 </row>
 
                 <row>
-                  <entry>-wu</entry>
+                  <entry>--limit=&lt;limit&gt;</entry>
 
-                  <entry>The WUID (Workunit ID)</entry>
+                  <entry>This sets the result limit. This is useful when using
+                  wildcards in a request. (Default is 100)</entry>
                 </row>
 
                 <row>
