@@ -49,7 +49,7 @@ class Suite:
             pass
 
         # If there are some temprary files left, then remove them
-        for file in glob.glob(self.dir_ec+'/_tmp*.ecl'):
+        for file in glob.glob(self.dir_ec+'/_temp*.ecl'):
             os.unlink(file)
 
         self.buildSuite(args, isSetup, fileList)
@@ -163,3 +163,7 @@ class Suite:
     def close(self):
         for ecl in self.suite:
             ecl.close()
+
+        # If there are some temprary files left, then remove them
+        for file in glob.glob(self.dir_ec+'/_temp*.ecl'):
+            os.unlink(file)

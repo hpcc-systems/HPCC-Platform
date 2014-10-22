@@ -312,6 +312,11 @@ class Regression:
 
         except Exception as e:
             self.StopTimeoutThread()
+            suite.close()
+            raise(e)
+
+        except KeyboardInterrupt as e:
+            suite.close()
             raise(e)
 
 
@@ -391,8 +396,12 @@ class Regression:
 
         except Exception as e:
             self.StopTimeoutThread()
+            suite.close()
             raise(e)
 
+        except KeyboardInterrupt as e:
+            suite.close()
+            raise(e)
 
     def runSuiteQ(self, clusterName, eclfile):
         report = self.buildLogging(clusterName)
@@ -430,6 +439,11 @@ class Regression:
 
         except Exception as e:
             self.StopTimeoutThread()
+            eclfile.close()
+            raise(e)
+
+        except KeyboardInterrupt as e:
+            eclfile.close()
             raise(e)
 
     def runQuery(self, cluster, query, report, cnt=1, publish=False,  th = 0):
