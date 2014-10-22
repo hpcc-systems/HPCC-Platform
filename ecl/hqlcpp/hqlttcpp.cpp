@@ -12494,11 +12494,10 @@ IHqlExpression * HqlTreeNormalizer::createTransformedSelector(IHqlExpression * e
     throwUnexpected();
 }
 
-IHqlExpression * normalizeRecord(HqlCppTranslator & translator, IHqlExpression * record)
+IHqlExpression * normalizeExpression(HqlCppTranslator & translator, IHqlExpression * expr)
 {
     HqlTreeNormalizer normalizer(translator);
-    HqlExprArray transformed;
-    return normalizer.transformRoot(record);
+    return normalizer.transformRoot(expr);
 }
 
 void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)

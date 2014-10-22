@@ -1229,7 +1229,7 @@ protected:
 void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs);
 IHqlExpression * normalizeHqlTree(HqlCppTranslator & translator, IHqlExpression * expr);
 // more: This really shouldn't need a translator argument - but it is a bit of a god class, and error reporting needs splitting from it.
-IHqlExpression * normalizeRecord(HqlCppTranslator & translator, IHqlExpression * expr);     
+IHqlExpression * normalizeExpression(HqlCppTranslator & translator, IHqlExpression * expr);
 
 IHqlExpression * removeNamedSymbols(IHqlExpression * expr);
 void hoistNestedCompound(HqlCppTranslator & _translator, HqlExprArray & exprs);

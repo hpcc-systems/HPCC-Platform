@@ -96,24 +96,53 @@ private:
     unsigned numActiveTables;
 };
 
+class HQL_API UsedExpressionHashTable : public SuperHashTableOf<IHqlExpression, IHqlExpression>
+{
+public:
+    UsedExpressionHashTable() : SuperHashTableOf<IHqlExpression,IHqlExpression>(false) {}
+    ~UsedExpressionHashTable() { releaseAll(); }
+
+    inline void zap(IHqlExpression & expr) { remove(&expr); }
+
+protected:
+    virtual void onAdd(void *next) {}
+    virtual void onRemove(void *) {}
+    virtual bool matchesFindParam(const void * _element, const void * _key, unsigned fphash) const
+    {
+        const IHqlExpression * element = static_cast<const IHqlExpression *>(_element);
+        const IHqlExpression * key = static_cast<const IHqlExpression *>(_key);
+        return element==key;
+    }
+    virtual unsigned getHashFromElement(const void * et) const
+    {
+        return static_cast<const IHqlExpression *>(et)->getHash();
+    }
+    virtual unsigned getHashFromFindParam(const void * et) const
+    {
+        return static_cast<const IHqlExpression *>(et)->getHash();
+    }
+    inline const void * getFindParam(const void * et) const { return et; }
+};
+
+
 class HQL_API CUsedTablesBuilder
 {
 public:
     void addNewTable(IHqlExpression * expr);
-    void addHiddenTable(IHqlExpression * expr, IHqlExpression * selSeq);
+    void addHiddenSelector(IHqlExpression * expr);
     void addActiveTable(IHqlExpression * expr);
     void cleanupProduction();
-    inline void removeActive(IHqlExpression * expr) { inScopeTables.zap(*expr); }
+    inline void removeActive(IHqlExpression * expr) { inScopeTables.remove(expr); }
     void removeParent(IHqlExpression * expr);
     void removeActiveRecords();
     void removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right);
-    void set(CUsedTables & tables) { tables.set(inScopeTables, newScopeTables); }
+    void set(CUsedTables & tables);
 
     inline bool isIndependentOfScope() const { return inScopeTables.ordinality() == 0; }
 
 protected:
-    HqlExprCopyArray inScopeTables;     // may need to rename, since use has changed.
-    HqlExprCopyArray newScopeTables;
+    UsedExpressionHashTable inScopeTables;     // may need to rename, since use has changed.
+    UsedExpressionHashTable newScopeTables;
 };
 
 class HQL_API CHqlExpression : public CInterfaceOf<IHqlExpression>
@@ -193,8 +222,10 @@ protected:
     virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
 
 public:
+#if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
     virtual void Link(void) const;
     virtual bool Release(void) const;
+#endif
 
     virtual ~CHqlExpression();
 
@@ -694,8 +725,8 @@ protected:
 
 protected:
     Linked<ISourcePath> sourcePath;
-    int lineno;
-    int column;
+    unsigned lineno;
+    unsigned column;
 };
 
 class HQL_API CHqlAnnotationExtraBase: public CHqlAnnotation
@@ -1086,6 +1117,8 @@ public:
     virtual StringBuffer & appendStringFromMem(StringBuffer & out, const void * data) {assertex(!"tbd"); return out; }
     virtual unsigned getCrc();
     virtual bool assignableFrom(ITypeInfo * source);
+    virtual IHqlExpression * castToExpression() { return this; }
+    virtual IHqlScope * castToScope() { return this; }
 
     virtual void serialize(MemoryBuffer &) { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
@@ -1608,6 +1641,8 @@ public:
     virtual unsigned getCrc();
 
     virtual const char *queryTypeName()  { return queryName()->str(); }
+    virtual IHqlExpression * castToExpression() { return this; }
+    virtual IHqlScope * castToScope() { return NULL; }
     
     virtual unsigned getCardinality()           { return 0; }
     virtual bool isInteger()                    { return false; }
@@ -1750,6 +1785,8 @@ public:
     virtual IInterface * queryModifierExtra()   { return NULL; }
     virtual StringBuffer & appendStringFromMem(StringBuffer & out, const void * data) {assertex(!"tbd"); return out; }
     virtual unsigned getCrc();
+    virtual IHqlExpression * castToExpression() { return this; }
+    virtual IHqlScope * castToScope() { return NULL; }
 
     virtual void serialize(MemoryBuffer &) { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }

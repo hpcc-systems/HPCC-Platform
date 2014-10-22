@@ -64,6 +64,8 @@ public:
     virtual unsigned getCrc();
     virtual typemod_t queryModifier()           { return typemod_none; }
     virtual IInterface * queryModifierExtra()   { return NULL; }
+    virtual IHqlExpression * castToExpression() { return NULL; }
+    virtual IHqlScope * castToScope()           { return NULL; }
 
     virtual void serialize(MemoryBuffer &tgt)   { tgt.append((unsigned char) getTypeCode()); }
     virtual void deserialize(MemoryBuffer &tgt) { UNIMPLEMENTED; }
