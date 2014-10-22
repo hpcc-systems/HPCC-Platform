@@ -370,7 +370,10 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                     target->decActiveWriters();
                     sendBucket.setown(owner.getAnotherBucket(nextPending));
                     if (!sendBucket)
+                    {
+                        target = NULL; // will be reinitialized to new target in init(), when thread pool thread is reused
                         break;
+                    }
                     dest = sendBucket->queryDestination();
                     target = owner.targets.item(dest);
                     target->incActiveWriters();
