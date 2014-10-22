@@ -28,7 +28,7 @@ import glob
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath, checkClusters
+from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath, checkClusters, checkHpccStatus
 from hpcc.common.error import Error
 
 # For coverage
@@ -123,6 +123,11 @@ class RegressMain:
                 self.regress.runSuite(cluster, self.regress.suites[cluster])
 
     def main(self):
+        try:
+            checkHpccStatus()
+        except Error as e:
+            exit(e.getErrorCode());
+
         prog = "ecl-test"
         description = 'HPCC Platform Regression suite'
         pythonVer = getVersionNumbers()
@@ -203,6 +208,7 @@ class RegressMain:
 
         self.args = parser.parse_args()
         try:
+            self.regress = None
             if self.args.X[0]== "5000":
                 self.regress = None
                 raise Error(self.args.X[0])

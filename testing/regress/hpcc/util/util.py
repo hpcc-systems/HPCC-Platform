@@ -21,6 +21,7 @@ import argparse
 import platform
 import logging
 import os
+import subprocess
 
 from ..common.error import Error
 from ..common.shell import Shell
@@ -174,3 +175,45 @@ def checkClusters(clusters,  targetSet):
                 raise Error("4000")
 
     return  targetClusters
+
+def checkHpccStatus():
+    status='OK'
+    try:
+        myProc = subprocess.Popen(["ecl --version"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+        result = myProc.stdout.read() + myProc.stderr.read()
+        results = result.split('\n')
+        for line in results:
+            if 'not found' in line:
+                err = Error("6000")
+                logging.error("%s. %s:'%s'" % (1,  err,  line))
+                raise  err
+                break
+
+        myProc = subprocess.Popen("ecl getname --wuid 'W*'",  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+        result  = myProc.stdout.read() + myProc.stderr.read()
+        results = result.split('\n')
+        for line in results:
+            if "Error connecting" in line:
+                err = Error("6001")
+                logging.error("%s. %s:'%s'" % (1,  err,  line))
+                raise (err)
+                break
+
+            if "command not found" in line:
+                err = Error("6002")
+                logging.error("%s. %s:'%s'" % (1,  err,  line))
+                raise (err)
+                break
+
+    except  OSError:
+        err = Error("6002")
+        logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+        raise Error(err)
+
+    except ValueError:
+        err = Error("6003")
+        logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+        raise Error(err)
+
+    finally:
+        pass
