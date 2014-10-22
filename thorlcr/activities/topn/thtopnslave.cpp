@@ -193,7 +193,7 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         input = inputs.item(0);
         startInput(input);
         inputStopped = false;
@@ -224,7 +224,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon || eos)
             return NULL;
         if (NULL == out)

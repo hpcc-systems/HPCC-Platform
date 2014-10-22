@@ -228,7 +228,7 @@ public:
 
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
 
         Linked<IRowInterfaces> primaryRowIf, secondaryRowIf;
@@ -376,7 +376,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if(joinhelper) 
         {
             OwnedConstThorRow row = joinhelper->nextRow();
@@ -613,7 +613,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         bool matched = true;
         OwnedConstThorRow next = processor.nextGE(seek, numFields, matched, stepExtra);
         if (next)

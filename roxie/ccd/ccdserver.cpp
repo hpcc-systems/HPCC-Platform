@@ -314,9 +314,13 @@ public:
     {
         return ctx->getLibraryGraph(extra, parentActivity);
     }
-    virtual void noteProcessed(const IRoxieContextLogger &_activityContext, const IRoxieServerActivity *_activity, unsigned _idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
+    virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed) const
     {
-        ctx->noteProcessed(_activityContext, _activity, _idx, _processed, _totalCycles, _localCycles);
+        ctx->noteProcessed(subgraphId, activityId, _idx, _processed);
+    }
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    {
+        ctx->mergeActivityStats(fromStats, subgraphId, activityId, _totalCycles, _localCycles);
     }
     virtual IProbeManager *queryProbeManager() const
     {
@@ -354,10 +358,6 @@ public:
     {
         return ctx->getWorkunitRowReader(wuid, name, sequence, xmlTransformer, rowAllocator, isGrouped);
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from)
-    {
-        ctx->mergeStats(from);
-    }
 protected:
     IRoxieSlaveContext * ctx;
 };
@@ -373,6 +373,29 @@ protected:
 #define SOAP_SPLIT_THRESHOLD 64000u
 #define SOAP_SPLIT_RESERVE 65535u
 #endif
+
+//=================================================================================
+
+// General activity statistics
+
+static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
+                                              StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StKindNone);
+static const StatisticsMapping joinStatistics(actStatistics, StNumAtmostTriggered, StKindNone);
+static const StatisticsMapping keyedJoinStatistics(joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                                    StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
+                                                    StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
+                                                    StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
+                                                    StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
+                                                    StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                    StNumDiskRejected, StKindNone);
+static const StatisticsMapping indexStatistics(actStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                                StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
+                                                StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
+                                                StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
+                                                StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                StNumIndexRowsRead, StKindNone);
+static const StatisticsMapping diskStatistics(actStatistics, StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
+                                               StNumDiskRejected, StKindNone);
 
 //=================================================================================
 
@@ -464,18 +487,26 @@ public:
         CActivityFactory::mergeStats(from);
     }
 
-    virtual void noteProcessed(unsigned idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
+    virtual void noteProcessed(unsigned _idx, unsigned _processed) const
     {
-        if (_processed || _totalCycles || _localCycles)
+        dbgassertex(!_idx);
+        if (_processed)
         {
             CriticalBlock b(statsCrit);
-#ifdef _DEBUG
-            assertex(_totalCycles >= _localCycles);
-#endif
-            processed += _processed;
-            totalCycles += _totalCycles;
+            processed += processed;
+        }
+    }
+
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    {
+        if (_totalCycles.totalCycles || _localCycles)
+        {
+            CriticalBlock b(statsCrit);
+            dbgassertex(_totalCycles.totalCycles >= _localCycles);
+            totalCycles += _totalCycles.totalCycles;
             localCycles += _localCycles;
         }
+        CActivityFactory::mergeStats(fromStats);
     }
 
     virtual void noteStarted() const
@@ -595,6 +626,10 @@ public:
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {
         // Most activities have nothing to say...
+    }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return actStatistics; // Overridden by anyone that needs more
     }
 };
 
@@ -775,14 +810,12 @@ protected:
         }
     }
 
-    virtual void noteProcessed(unsigned idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
-    {
-        assertex(numOutputs ? idx < numOutputs : idx==0);
-        CriticalBlock b(statsCrit);
-        processedArray[idx] += _processed;
-        totalCycles += _totalCycles;
-        localCycles += _localCycles;
-    }
+    virtual void noteProcessed(unsigned idx, unsigned _processed) const
+     {
+         assertex(numOutputs ? idx < numOutputs : idx==0);
+         CriticalBlock b(statsCrit);
+         processedArray[idx] += _processed;
+     }
 
     virtual void noteStarted(unsigned idx) const
     {
@@ -872,8 +905,8 @@ protected:
 
     mutable CRuntimeStatisticCollection stats;
     unsigned processed;
-    unsigned __int64 totalCycles;
-    unsigned __int64 localCycles;
+    ActivityTimeAccumulator totalCycles;
+    cycle_t localCycles;
     unsigned activityId;
     activityState state;
     bool createPending;
@@ -883,17 +916,16 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager) 
+    CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : factory(_factory), 
           basehelper(_factory->getHelper()),
           activityId(_factory->queryId()),
-          stats(allStatistics)
+          stats(_factory ? factory->queryStatsMapping() : actStatistics)
     {
         input = NULL;
         ctx = NULL;
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
-        totalCycles = 0;
         localCycles = 0;
         if (factory)
             factory->createChildQueries(childGraphs, this, _probeManager, *this);
@@ -912,7 +944,6 @@ public:
         ctx = NULL;
         meta.set(basehelper.queryOutputMeta());
         processed = 0;
-        totalCycles = 0;
         localCycles = 0;
         state=STATEreset;
         rowAllocator = NULL;
@@ -943,13 +974,15 @@ public:
         }
         if (factory && !debugging)
         {
-            factory->noteProcessed(0, processed, totalCycles, localCycles);
-            factory->mergeStats(stats);
+            if (processed)
+                factory->noteProcessed(0, processed);
+            factory->mergeActivityStats(stats, totalCycles, localCycles);
         }
         if (ctx)
         {
-            ctx->noteProcessed(*this, this, 0, processed, totalCycles, localCycles);
-            ctx->mergeStats(stats);
+            if (processed)
+                ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed);
+            ctx->mergeActivityStats(stats, factory->querySubgraphId(), activityId, totalCycles, localCycles);
         }
         basehelper.Release();
         ::Release(rowAllocator);
@@ -1089,7 +1122,6 @@ public:
         if (needsAllocator())
             createRowAllocator();
         processed = 0;
-        totalCycles = 0;
         if (factory)
             factory->onCreateChildQueries(_ctx, &basehelper, childGraphs);
         if (ctx)
@@ -1158,12 +1190,12 @@ public:
 
     virtual unsigned __int64 queryTotalCycles() const
     {
-        return totalCycles;
+        return totalCycles.totalCycles;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 ret = totalCycles;
+        __int64 ret = totalCycles.totalCycles;
         if (input) ret -= input->queryTotalCycles();
         if (ret < 0) 
             ret = 0;
@@ -1230,20 +1262,6 @@ public:
                     if (traceStartStop || traceLevel > 2)
                         CTXLOG("STATE: activity %d reset without stop", activityId);
                     stop(false);
-                }
-                if (ctx->queryOptions().traceActivityTimes)
-                {
-                    StringBuffer prefix, text;
-                    getLogPrefix(prefix);
-                    stats.toStr(text);
-                    // MORE - probably don't need these any more - covered by the stats above
-                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
-                    text.clear().appendf("records processed - %d", processed);
-                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
-                    text.clear().appendf("total time - %d us", (unsigned) (cycle_to_nanosec(totalCycles)/1000));
-                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
-                    text.clear().appendf("local time - %d us", (unsigned) (cycle_to_nanosec(queryLocalCycles())/1000));
-                    CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
                 }
                 state = STATEreset;
 #ifdef TRACE_STARTSTOP
@@ -1431,14 +1449,6 @@ public:
         else if (traceStartStop)
             CTXLOG("lateStart activity NOT stopping input late as prefiltered");
         CRoxieServerActivity::stop(aborting);
-    }
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        __int64 localCycles = totalCycles - input->queryTotalCycles();
-        if (localCycles < 0)
-            localCycles = 0;
-        return localCycles;
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -1726,7 +1736,7 @@ class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, im
     bool disabled;
     RecordPullerThread puller;
     unsigned preload;
-    unsigned __int64 totalCycles;
+    cycle_t totalCycles;
     IRoxieSlaveContext *ctx;
     bool timeActivities;
 
@@ -1736,8 +1746,8 @@ public:
     {
         eof = false;
         disabled = false;
-        totalCycles = 0;
         ctx = NULL;
+        totalCycles = 0;
         timeActivities = defaultTimeActivities;
     }
 
@@ -1762,7 +1772,6 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        totalCycles = 0;
         if (disabled)
             puller.queryInput()->start(parentExtractSize, parentExtract, paused);
         else
@@ -1838,7 +1847,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        SimpleActivityTimer t(totalCycles, timeActivities);
         if (disabled)
             return puller.queryInput()->nextInGroup();
         else
@@ -1957,9 +1966,9 @@ public:
         __int64 inputCycles = input->queryTotalCycles();
         __int64 input1Cycles = input1->queryTotalCycles();
         if (puller)
-            ret = totalCycles - (inputCycles > input1Cycles ? inputCycles : input1Cycles);
+            ret = totalCycles.totalCycles - (inputCycles > input1Cycles ? inputCycles : input1Cycles);
         else
-            ret = totalCycles - (inputCycles + input1Cycles);
+            ret = totalCycles.totalCycles - (inputCycles + input1Cycles);
         if (ret < 0) 
             ret = 0;
         return ret;
@@ -2026,7 +2035,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = totalCycles;
+        __int64 localCycles = totalCycles.totalCycles;
         for (unsigned i = 0; i < numInputs; i++)
             localCycles -= inputArray[i]->queryTotalCycles();
         if (localCycles < 0)
@@ -2156,7 +2165,7 @@ public:
             {
                 start(parentExtractSize, parentExtract, false);
                 {
-                    ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext()); // unfortunately this is not really best place for seeing in debugger.
+                    ActivityTimer t(totalCycles, timeActivities); // unfortunately this is not really best place for seeing in debugger.
                     onExecute();
                 }
                 stop(false);
@@ -2468,7 +2477,7 @@ public:
                     logctx.CTXLOG("CRoxieServerSideCache::findCachedResult cache hit");
                 logctx.noteStatistic(StNumServerCacheHits, 1);
                 return NULL;
-                // Because IMessageResult cannot be replayed, this echeme is flawed. I'm leaving the code here just as a stats gatherer to see how useful it would have been....
+                // Because IMessageResult cannot be replayed, this scheme is flawed. I'm leaving the code here just as a stats gatherer to see how useful it would have been....
                 //IRoxieServerQueryPacket *ret = new CRoxieServerQueryPacket(p);
                 //ret->setResult(found->getResult());
                 //return ret;
@@ -3369,7 +3378,7 @@ public:
     ruid_t ruid;
     mutable CriticalSection buffersCrit;
     unsigned processed;
-    unsigned __int64 totalCycles;
+    cycle_t totalCycles;
     bool timeActivities;
 
 //private:   //vc6 doesn't like this being private yet accessed by nested class...
@@ -3417,7 +3426,7 @@ private:
                 const QueryOptions &options = ctx->queryOptions();
                 if (activity.queryLogCtx().isIntercepted())
                     loggingFlags |= LOGGING_INTERCEPTED;
-                if (options.traceActivityTimes)
+                if (options.timeActivities)
                     loggingFlags |= LOGGING_TIMEACTIVITIES; 
                 if (activity.queryLogCtx().isBlind())
                     loggingFlags |= LOGGING_BLIND;
@@ -3486,13 +3495,14 @@ public:
         memset(buffers, 0, (numChannels+1)*sizeof(ChannelBuffer *));
         parentExtractSize = 0;
         parentExtract = NULL;
+        debugContext = NULL;
         owner = NULL;
         mergeOrder = NULL;
         deferredStart = false;
         processed = 0;
-        totalCycles = 0;
         sentSequence = 0;
         resendSequence = 0;
+        totalCycles = 0;
         serverSideCache = activity.queryServerSideCache();
         bufferStream.setown(createMemoryBufferSerialStream(tempRowBuffer));
         rowSource.setStream(bufferStream);
@@ -3718,7 +3728,6 @@ public:
         mu.clear();
         contextCached = false;
         processed = 0;
-        totalCycles = 0;
         resendSequence = 0;
         sentSequence = 0;
         for (unsigned channel = 0; channel <= numChannels; channel++)
@@ -3738,7 +3747,6 @@ public:
             activity.queryLogCtx().CTXLOG("RRAstart");
 #endif
         owner->start(parentExtractSize, parentExtract, paused);
-        totalCycles = 0;
     }
 
     void checkAbort()
@@ -3880,7 +3888,7 @@ public:
             }
             deferredStart = false;
         }
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        SimpleActivityTimer t(totalCycles, timeActivities);
         if (processed==stopAfter)
             return NULL;
         if (allread)
@@ -3904,7 +3912,7 @@ public:
     virtual const void *nextInGroup()
     {
         // If we are merging then we need to do a heapsort on all 
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        SimpleActivityTimer t(totalCycles, timeActivities);
         if (activity.queryLogCtx().queryTraceLevel() > 10)
         {
             activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextInGroup()");
@@ -4068,33 +4076,7 @@ public:
                                 throwUnexpected();
                             break;
                         }
-                            // MORE - ROXIE_ALIVE perhaps should go here too
-                        case ROXIE_TRACEINFO:
-                        {
-                            Owned<IMessageUnpackCursor> extra = mr->getCursor(rowManager);
-                            loop
-                            {
-                                RecordLengthType *rowlen = (RecordLengthType *) extra->getNext(sizeof(RecordLengthType));
-                                if (rowlen)
-                                {
-                                    char *logInfo = (char *) extra->getNext(*rowlen);
-                                    MemoryBuffer buf;
-                                    buf.setBuffer(*rowlen, logInfo, false);
-                                    if (*logInfo == LOG_STATVALUES)
-                                    {
-                                        buf.skip(1);
-                                        activity.mergeStats(buf);
-                                    }
-                                    else
-                                        activity.queryLogCtx().CTXLOGl(new LogItem(buf));
-                                    ReleaseRoxieRow(rowlen);
-                                    ReleaseRoxieRow(logInfo);
-                                }
-                                else
-                                    break;
-                            }
-                            break;
-                        }
+                        // MORE - ROXIE_ALIVE perhaps should go here too
                         default:
                             if (ctxTraceLevel > 3)
                                 activity.queryLogCtx().CTXLOG("Discarding packet %p - original %p is NULL or has result already", mr.get(), original);
@@ -4190,13 +4172,45 @@ public:
                                 char *logInfo = (char *) extra->getNext(*rowlen);
                                 MemoryBuffer buf;
                                 buf.setBuffer(*rowlen, logInfo, false);
-                                if (*logInfo == LOG_STATVALUES)
+                                switch ((TracingCategory) *logInfo)
                                 {
+                                case LOG_TRACING:
+                                case LOG_ERROR:
+                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
+                                    break;
+                                case LOG_STATVALUES:
                                     buf.skip(1);
                                     activity.mergeStats(buf);
+                                    break;
+                                case LOG_CHILDCOUNT:
+                                case LOG_CHILDSTATS:
+                                    unsigned graphId, childId;
+                                    buf.skip(1);
+                                    buf.read(graphId);
+                                    buf.read(childId);
+                                    if (*logInfo == LOG_CHILDCOUNT)
+                                    {
+                                        unsigned childProcessed;
+                                        unsigned idx;
+                                        buf.read(childProcessed);
+                                        buf.read(idx);
+                                        if (traceLevel > 5)
+                                            activity.queryLogCtx().CTXLOG("Processing ChildCount %d idx %d for child %d subgraph %d", childProcessed, idx, childId, graphId);
+                                        activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed);
+                                    }
+                                    else
+                                    {
+                                        ActivityTimeAccumulator dummy; // We could serialize from slave? Would get confusing though
+                                        CRuntimeStatisticCollection childStats(allStatistics);
+                                        childStats.deserialize(buf);
+                                        if (traceLevel > 5)
+                                        {
+                                            StringBuffer s;
+                                            activity.queryLogCtx().CTXLOG("Processing ChildStats for child %d subgraph %d: %s", childId, graphId, childStats.toStr(s).str());
+                                        }
+                                        activity.queryContext()->mergeActivityStats(childStats, graphId, childId, dummy, 0);
+                                    }
                                 }
-                                else
-                                    activity.queryLogCtx().CTXLOGl(new LogItem(buf));
                                 ReleaseRoxieRow(rowlen);
                                 ReleaseRoxieRow(logInfo);
                             }
@@ -4589,7 +4603,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
@@ -4666,7 +4680,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -4737,7 +4751,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -4813,7 +4827,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -4883,7 +4897,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -4959,7 +4973,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         loop
         {
@@ -5105,7 +5119,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void *ret =helper.next();
         if (ret)
         {
@@ -5162,7 +5176,7 @@ public:
         {
             start(parentExtractSize, parentExtract, false);
             {
-                ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+                ActivityTimer t(totalCycles, timeActivities);
                 MemoryBuffer result;
                 IRecordSize * inputMeta = input->queryOutputMeta();
                 loop
@@ -5255,7 +5269,7 @@ public:
     virtual bool needsAllocator() const { return true; }
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         // Filtering empty rows, returns the next valid row
         while (curRow < numRows)
         {
@@ -5342,7 +5356,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void *ret = wuReader->nextInGroup();
         if (ret)
             processed++;
@@ -5472,24 +5486,21 @@ private:
 
 class CPseudoRoxieInput : public CInterface, implements IRoxieInput
 {
-protected:
-    unsigned __int64 totalCycles;
 public:
     IMPLEMENT_IINTERFACE;
     
     CPseudoRoxieInput()
     { 
-        totalCycles = 0;
     }
 
     virtual unsigned __int64 queryTotalCycles() const
     {
-        return totalCycles;
+        return 0;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        return totalCycles;
+        return 0;
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -5509,7 +5520,7 @@ public:
     virtual IOutputMetaData * queryOutputMeta() const { throwUnexpected(); }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) { }
     virtual void stop(bool aborting) { }
-    virtual void reset() { totalCycles = 0; }
+    virtual void reset() { }
     virtual void checkAbort() { }
     virtual unsigned queryId() const { throwUnexpected(); }
     virtual void resetEOF() { }
@@ -5533,7 +5544,6 @@ public:
     virtual void reset()
     { 
         input->reset();
-        totalCycles = 0;
     }
     virtual void checkAbort() 
     {
@@ -5550,12 +5560,14 @@ public:
         return input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
+    virtual unsigned __int64 queryTotalCycles() const
+    {
+        return input->queryTotalCycles();
+    }
+
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 ret = totalCycles - input->queryTotalCycles();
-        if (ret < 0) 
-            ret = 0;
-        return ret;
+        return input->queryLocalCycles();
     }
 
     virtual IRoxieInput *queryInput(unsigned idx) const
@@ -5765,7 +5777,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = iter->nextInGroup();
         if (next)
         {
@@ -5849,7 +5861,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = streamInput->nextInGroup();
         if (next)
         {
@@ -6114,7 +6126,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = iter ? iter->nextInGroup() : NULL;
         if (next)
         {
@@ -6273,7 +6285,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
@@ -6424,7 +6436,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next;
         loop
         {
@@ -6456,7 +6468,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next;
         loop
         {
@@ -6554,7 +6566,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (first)
         {
             kept = input->nextInGroup();
@@ -6747,7 +6759,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (first)
         {
             calcNextDedupAll();
@@ -6919,7 +6931,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         while(!eof)
         {
             const void * next = input->nextInGroup();
@@ -6999,7 +7011,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!readFirstRow)
         {
             left.setown(input->nextInGroup());
@@ -7096,7 +7108,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             while (curRow == numThisRow)
@@ -7228,7 +7240,7 @@ public:
 
     const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             if (!buffer)
@@ -7329,7 +7341,7 @@ public:
 
     const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             if (!curParent)
@@ -8053,7 +8065,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!readInput)
         {
             if (sortAlgorithm == unknownSort)
@@ -8201,7 +8213,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void *ret = input->nextInGroup();
         if (ret && prev && compare->docompare(prev, ret) > 0)
         {
@@ -8220,7 +8232,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void *ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && prev && compare->docompare(prev, ret) > 0)
         {
@@ -8314,7 +8326,7 @@ public:
         unsigned idx;
         unsigned oid;
         unsigned processed;
-        unsigned __int64 totalCycles;
+        cycle_t totalCycles;  // We track this per output so that the pullers get a meaningful value to use when calculating their localtime
 
     public:
         IMPLEMENT_IINTERFACE;
@@ -8335,6 +8347,12 @@ public:
         {
             if (traceStartStop)
                 DBGLOG("%p ~OutputAdaptor %d", this, oid);
+            if (processed && parent && parent->factory)
+            {
+                parent->factory->noteProcessed(oid, processed);
+                if (parent->ctx)
+                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed);
+            }
         }
 
         void init()
@@ -8343,7 +8361,6 @@ public:
                 DBGLOG("%p init Input adaptor %d", this, oid);
             idx = 0;
             processed = 0;
-            totalCycles = 0;
             eofpending = false;
             eof = false;
             stopped = false;
@@ -8371,7 +8388,7 @@ public:
 
         virtual unsigned __int64 queryLocalCycles() const
         {
-            return 0;
+            return 0;  // Should never be called
         }
 
         virtual IRoxieInput *queryInput(unsigned idx) const
@@ -8381,7 +8398,7 @@ public:
 
         virtual const void * nextInGroup()
         {
-            ActivityTimer t(totalCycles, parent->timeActivities, parent->ctx->queryDebugContext());
+            SimpleActivityTimer t(totalCycles, parent->timeActivities);
             if (eof)
                 return NULL;
             const void *ret = parent->readBuffered(idx, oid);
@@ -8435,8 +8452,6 @@ public:
             if (traceStartStop)
                 parent->CTXLOG("%p reset Input adaptor %d stopped = %d", this, oid, stopped);
             parent->reset(oid);
-            parent->processed += processed;
-            processed = 0;
             idx = 0; // value should not be relevant really but this is the safest...
             stopped = false;
         };
@@ -8515,7 +8530,7 @@ public:
     const void *readBuffered(unsigned idx, unsigned oid)
     {
         CriticalBlock b(crit);
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext()); // NOTE - time spent waiting for crit not included here. Is that right?
+        ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
         if (idx == headIdx) // test once without getting the crit2 sec
         {
             CriticalUnblock b1(crit);
@@ -8673,11 +8688,6 @@ public:
         if (state != STATEreset) // make sure input is only reset once
             CRoxieServerActivity::reset();
     };
-
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return 0;
-    }
 
     virtual const void *nextInGroup()
     {
@@ -8851,7 +8861,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         while (!waitForPipe())
         {
             if (!pipe)
@@ -8994,7 +9004,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         while (!waitForPipe())
         {
             if (!pipe)
@@ -9311,7 +9321,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         assertex(rows != NULL);
         const void * next = rows->nextRow();
         if (next)
@@ -9374,7 +9384,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         loop
@@ -9410,7 +9420,7 @@ public:
     {
         //Could assert that this isn't grouped
         // MORE - will need rethinking once we rethink the nextSteppedGE interface for global smart-stepping.
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -9541,7 +9551,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             if (eof)
@@ -9580,7 +9590,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -9696,7 +9706,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         CriticalBlock b(ecrit);
         if (exception)
             throw(exception.getLink());
@@ -9725,7 +9735,7 @@ public:
         {
             try
             {
-                ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+                ActivityTimer t(totalCycles, timeActivities);
                 executed = true;
                 start(parentExtractSize, parentExtract, false);
                 helper.action();
@@ -9846,7 +9856,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         loop
@@ -9940,7 +9950,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done)
             return NULL;
 
@@ -10043,7 +10053,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (gathered.ordinality() == 0)
         {
             curIndex = 0;
@@ -10253,7 +10263,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         const void * ret;
@@ -10323,7 +10333,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -10422,7 +10432,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -10512,7 +10522,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         const void * ret = input->nextInGroup();
@@ -10527,7 +10537,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -10614,7 +10624,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         if (processed==choosenLimit)
@@ -10730,7 +10740,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         return input->nextInGroup();
     }
 };
@@ -11978,7 +11988,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             switch (state)
@@ -12330,6 +12340,10 @@ public:
     }
 
     virtual unsigned numInputs() const { return 2; }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return joinStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -12543,7 +12557,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         loop
@@ -12663,7 +12677,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!curInput)
             return NULL;  // eof
         const void * next = curInput->nextInGroup();
@@ -12789,7 +12803,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!foundInput)
         {
             foundInput = true;
@@ -13062,7 +13076,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (first)
         {
             permute();
@@ -13153,7 +13167,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -13248,7 +13262,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             ConstPointerArray group;
@@ -13361,7 +13375,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             const void * left = input->nextInGroup();
@@ -13502,7 +13516,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -13596,7 +13610,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         loop
@@ -13683,7 +13697,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             OwnedConstRoxieRow in = input->nextInGroup();
@@ -13858,7 +13872,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         loop
@@ -14112,7 +14126,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         unsigned emptyIterations = 0;
@@ -14430,7 +14444,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             if (eof)
@@ -14844,7 +14858,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!evaluated)
         {
             executeEntireGraph();
@@ -15049,7 +15063,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * ret = resultInput->nextInGroup();
         if (ret)
             processed++;
@@ -15167,6 +15181,18 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
             init();
         }
 
+        ~OutputAdaptor()
+        {
+            if (traceStartStop)
+                DBGLOG("%p ~OutputAdaptor %d", this, oid);
+            if (processed && parent && parent->factory)
+            {
+                parent->factory->noteProcessed(oid, processed);
+                if (parent->ctx)
+                    parent->ctx->noteProcessed(parent->querySubgraphId(), parent->activityId, oid, processed);
+            }
+        }
+
         void init()
         {
             processed = 0;
@@ -15196,7 +15222,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
 
         virtual void reset()
         {
-            parent->reset(oid, processed);
+            parent->reset(oid);
             CExtractMapperInput::reset();
             init();
         };
@@ -15355,9 +15381,8 @@ public:
         }
     }
 
-    void reset(unsigned oid, unsigned _processed)
+    void reset(unsigned oid)
     {
-        processed += _processed;
         started = false;
         error.clear();
         numActiveOutputs = numOutputs;
@@ -15544,7 +15569,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = totalCycles;
+        __int64 localCycles = totalCycles.totalCycles;
         ForEachItemIn(i, selectedInputs)
         {
             localCycles -= selectedInputs.item(i)->queryTotalCycles();
@@ -15966,7 +15991,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = merger.nextRow();
         if (next)
             processed++;
@@ -15975,7 +16000,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = merger.nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
@@ -16080,7 +16105,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = processor.nextInGroup();
         if (next)
             processed++;
@@ -16089,7 +16114,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * next = processor.nextGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
@@ -16237,7 +16262,7 @@ public:
 
     const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!selectedInput)
             return NULL;
         return selectedInput->nextInGroup();
@@ -16258,7 +16283,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!selectedInput)
             return NULL;
         return selectedInput->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -16397,6 +16422,10 @@ public:
         //I don't think the action version of this is implemented - but this would be the code
         return isRoot && !meta.queryOriginal();
     }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return allStatistics;  // Child queries...
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerRemoteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, bool _isRoot)
@@ -16443,7 +16472,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             right.setown(input->nextInGroup());
@@ -16531,7 +16560,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
 
         try
         {
@@ -16629,7 +16658,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (first)
         {
             next = input->nextInGroup();
@@ -16710,7 +16739,7 @@ public:
 
     const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         const void *ret;
@@ -16810,7 +16839,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done)
             return NULL;
         done = true;
@@ -17114,7 +17143,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (limitedhelper)
         {
             while(!eof) //limited match join
@@ -17263,6 +17292,11 @@ public:
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
         return new CRoxieServerSelfJoinActivity(this, _probeManager);
+    }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return joinStatistics;
     }
 };
 
@@ -17727,7 +17761,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if(!table)
             loadRight();
         switch (activityKind)
@@ -18056,6 +18090,11 @@ public:
     {
         return new CRoxieServerLookupJoinActivity(this, _probeManager, useFewTable);
     }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return joinStatistics;
+    }
 protected:
     bool useFewTable;
 };
@@ -18257,7 +18296,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if(!started)
         {
             started = true;
@@ -18453,6 +18492,10 @@ public:
     {
         return new CRoxieServerAllJoinActivity(this, _probeManager);
     }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return joinStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerAllJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -18574,7 +18617,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         if (curIndex >= sortedCount)
@@ -18637,7 +18680,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * ret = input->nextInGroup();
         if (ret)
         {
@@ -18654,7 +18697,7 @@ public:
     }
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
@@ -18745,7 +18788,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!started)
             pullInput();
         if (buff.isItem(index))
@@ -18828,7 +18871,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         try
         {
             const void *ret = input->nextInGroup();
@@ -18852,7 +18895,7 @@ public:
     {
         try
         {
-            ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+            ActivityTimer t(totalCycles, timeActivities);
             const void * ret = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (ret && wasCompleteMatch)
                 processed++;
@@ -18933,7 +18976,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (!started)
             pullInput();
         if (buff.isItem(index))
@@ -19096,7 +19139,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (in)
         {
             const void *ret = in->nextInGroup();
@@ -19185,7 +19228,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = totalCycles;
+        __int64 localCycles = totalCycles.totalCycles;
         localCycles -= inputTrue->queryTotalCycles();
         if (inputFalse)
             localCycles -= inputFalse->queryTotalCycles();
@@ -19237,7 +19280,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         IRoxieInput *in = cond ? inputTrue  : inputFalse;
         if (in)
         {
@@ -19356,11 +19399,6 @@ public:
         CRoxieServerActivity::reset();
     }
 
-    virtual unsigned __int64 queryLocalCycles() const
-    {
-        return totalCycles;
-    }
-
     virtual const void *nextInGroup()
     {
         throwUnexpected(); // I am nobody's input
@@ -19387,7 +19425,7 @@ public:
     {
         bool cond;
         {
-            ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+            ActivityTimer t(totalCycles, timeActivities);
             cond = helper.getCondition();
         }
         stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
@@ -19551,7 +19589,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext()); // bit of a waste of time....
+        ActivityTimer t(totalCycles, timeActivities); // bit of a waste of time....
         return input->nextInGroup();
     }
 
@@ -19735,7 +19773,7 @@ public:
 
     virtual const void * nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             if (rowIter->isValid())
@@ -20158,7 +20196,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             if(xmlParser)
@@ -21036,7 +21074,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done) return NULL;
         done = true;
 
@@ -21204,7 +21242,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done) return NULL;
         const void * ret = gatherMerged();
         done = true;
@@ -21271,7 +21309,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done)
             return NULL;
 
@@ -21388,6 +21426,10 @@ public:
                     addXrefFileInfo(reply, temp);
             }
         }
+    }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return diskStatistics;
     }
 };
 
@@ -21658,7 +21700,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         try
         {
             const void *ret = remote.nextInGroup();
@@ -21938,7 +21980,7 @@ public:
 
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         try
         {
             unsigned seeklen = 0;
@@ -22211,7 +22253,7 @@ public:
 
     virtual const void *nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
         if (firstRead)
@@ -22518,6 +22560,10 @@ public:
         return activityMeta;
     }
 
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return indexStatistics;
+    }
 };
 
 class CRoxieServerIndexReadActivityFactory : public CRoxieServerBaseIndexActivityFactory
@@ -22566,7 +22612,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done) return NULL;
         done = true;
         size32_t rowSize = meta.getFixedSize();
@@ -22703,7 +22749,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done) return NULL;
         done = true;
         unsigned __int64 totalCount = 0;
@@ -22824,7 +22870,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done) return NULL;
         done = true;
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
@@ -22930,7 +22976,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (done) return NULL;
         const void * ret = gatherMerged();
         done = true;
@@ -23113,7 +23159,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof)
             return NULL;
 
@@ -23492,6 +23538,10 @@ public:
             }
         }
     }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return diskStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerFetchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
@@ -23816,7 +23866,7 @@ public:
     bool eof;
     bool isSimple;
     bool allPulled;
-    unsigned __int64 totalCycles;
+    ActivityTimeAccumulator totalCycles;
     unsigned activityId;
     RecordPullerThread &puller;
     SafeQueueOf<const void, true> injected; // Used in isSimple mode
@@ -23834,7 +23884,6 @@ public:
           activityId(_activity.queryId())
     {
         joinProcessed = 0;
-        totalCycles = 0;
         allPulled = false;
         eof = false;
     }
@@ -23849,7 +23898,7 @@ public:
     {
         eof = false;
         joinProcessed = 0;
-        totalCycles = 0;
+        totalCycles.totalCycles = 0;
         allPulled = false;
         assertex(ready.ordinality()==0);
         CRemoteResultAdaptor::start(parentExtractSize, parentExtract, paused);
@@ -23879,7 +23928,7 @@ public:
 
     virtual unsigned __int64 queryTotalCycles() const
     {
-        return totalCycles;
+        return totalCycles.totalCycles;
     }
 
     virtual IOutputMetaData * queryOutputMeta() const
@@ -23889,7 +23938,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             if (eof)
@@ -24386,7 +24435,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = remote.totalCycles;
+        __int64 localCycles = remote.totalCycles.totalCycles;
         localCycles -= puller.queryTotalCycles(); // MORE - debatable... but probably fair.
         if (localCycles < 0)
             localCycles = 0;
@@ -24405,8 +24454,8 @@ public:
 
     virtual void reset()
     {
-        totalCycles = remote.totalCycles;
-        remote.totalCycles = 0;
+        totalCycles.totalCycles = remote.totalCycles.totalCycles;
+        remote.totalCycles.totalCycles = 0;
         processed = remote.joinProcessed;
         remote.joinProcessed = 0;
         defaultRight.clear();
@@ -25139,6 +25188,11 @@ public:
                 tailId, map, joinFlags, isLocal);
     }
 
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return keyedJoinStatistics;
+    }
+
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {
         if (datafile)
@@ -25223,7 +25277,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if(eof) return NULL;
 
         if (soaphelper == NULL)
@@ -25356,7 +25410,7 @@ public:
 
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, timeActivities);
         if(eof) return NULL;
 
         if (soaphelper == NULL)
@@ -26334,7 +26388,7 @@ class TestInput : public CInterface, implements IRoxieInput
     unsigned endSeen;
     bool eof;
     unsigned count;
-    unsigned __int64 totalCycles;
+    ActivityTimeAccumulator totalCycles;
     size32_t recordSize;
     unsigned activityId;
 
@@ -26352,7 +26406,6 @@ public:
         endSeen = 0;
         recordSize = testMeta.getFixedSize();
         state = STATEreset;
-        totalCycles = 0;
         activityId = 1;
     }
     virtual IOutputMetaData * queryOutputMeta() const { return &testMeta; }
@@ -26380,7 +26433,7 @@ public:
     virtual void reset() 
     {
         ASSERT(state == STATEstopped);
-        eof = false; count = 0; endSeen = 0; allRead = false; state = STATEreset; totalCycles = 0;
+        eof = false; count = 0; endSeen = 0; allRead = false; state = STATEreset;
     }
     virtual void resetEOF()
     {
@@ -26390,7 +26443,7 @@ public:
     virtual unsigned queryId() const { return activityId; };
     virtual const void *nextInGroup() 
     {
-        ActivityTimer t(totalCycles, ctx->queryOptions().timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, ctx->queryOptions().timeActivities);
         ASSERT(state == STATEstarted);
         ASSERT(allRead || !eof);
         if (eof)
@@ -26421,8 +26474,8 @@ public:
             return true;
         return false;
     }
-    virtual unsigned __int64 queryTotalCycles() const { return totalCycles; }
-    virtual unsigned __int64 queryLocalCycles() const { return totalCycles; }
+    virtual unsigned __int64 queryTotalCycles() const { return totalCycles.totalCycles; }
+    virtual unsigned __int64 queryLocalCycles() const { return totalCycles.totalCycles; }
     virtual IRoxieInput *queryInput(unsigned idx) const
     {
         return NULL;

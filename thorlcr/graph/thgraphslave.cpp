@@ -115,7 +115,6 @@ public:
 CSlaveActivity::CSlaveActivity(CGraphElementBase *_container) : CActivityBase(_container)
 {
     data = NULL;
-    totalCycles = 0;
 }
 
 CSlaveActivity::~CSlaveActivity()
@@ -289,7 +288,7 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
 
 unsigned __int64 CSlaveActivity::queryTotalCycles() const
 {
-    return totalCycles;
+    return totalCycles.totalCycles;
 }
 
 void CSlaveActivity::serializeStats(MemoryBuffer &mb)

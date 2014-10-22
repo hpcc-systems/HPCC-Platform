@@ -21,6 +21,7 @@
 #include "jiface.hpp"
 #include "jcrc.hpp"
 #include "jsort.hpp"
+#include "jdebug.hpp"
 #include "eclhelper.hpp"
 #include "thorhelper.hpp"
 #include "thorxmlwrite.hpp"
@@ -126,39 +127,106 @@ extern THORHELPER_API void testDiskSort();
 
 
 #define TIME_ACTIVITIES
-interface IActivityTimer : extends IInterface
+class ActivityTimeAccumulator
 {
-    virtual unsigned __int64 getCyclesAdjustment() const = 0;
+    friend class ActivityTimer;
+public:
+    ActivityTimeAccumulator()
+    {
+        startCycles = 0;
+        totalCycles = 0;
+        endCycles = 0;
+        firstRow = 0;
+        firstExitCycles = 0;
+    }
+public:
+    cycle_t startCycles; // Wall clock time of first entry to this activity
+    cycle_t totalCycles; // Time spent in this activity
+    cycle_t endCycles;   // Wall clock time of last entry to this activity
+    unsigned __int64 firstRow; // Timestamp of first row (nanoseconds since epoch)
+    cycle_t firstExitCycles;    // Wall clock time of first exit from this activity
+
+    // Return the total amount of time (in nanoseconds) spent in this activity (first entry to last exit)
+    inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
+    // Return the total amount of time (in nanoseconds) spent in the first call of this activity (first entry to first exit)
+    inline unsigned __int64 latency() const { return cycle_to_nanosec(firstExitCycles-startCycles); }
+
+    void addStatistics(IStatisticGatherer & builder) const
+    {
+        if (totalCycles)
+        {
+            builder.addStatistic(StWhenFirstRow, firstRow);
+            builder.addStatistic(StTimeElapsed, elapsed());
+            builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
+            builder.addStatistic(StTimeFirstExecute, latency());
+        }
+    }
 };
+
 #ifdef TIME_ACTIVITIES
 #include "jdebug.hpp"
+
 class ActivityTimer
 {
     unsigned __int64 startCycles;
-    unsigned __int64 &accumulator;
+    ActivityTimeAccumulator &accumulator;
 protected:
     const bool enabled;
-    IActivityTimer *iActivityTimer;
+    bool isFirstRow;
 public:
-    inline ActivityTimer(unsigned __int64 &_accumulator, const bool _enabled, IActivityTimer *_iActivityTimer) : accumulator(_accumulator), enabled(_enabled), iActivityTimer(_iActivityTimer)
+    ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
+    : accumulator(_accumulator), enabled(_enabled), isFirstRow(false)
     {
         if (enabled)
         {
             startCycles = get_cycles_now();
-            if (iActivityTimer)
-                startCycles -= iActivityTimer->getCyclesAdjustment();
+            if (!accumulator.firstRow)
+            {
+                isFirstRow = true;
+                accumulator.startCycles = startCycles;
+                accumulator.firstRow = getTimeStampNowValue();
+            }
         }
         else
             startCycles = 0;
     }
 
-    inline ~ActivityTimer()
+    ~ActivityTimer()
     {
         if (enabled)
         {
-            unsigned __int64 elapsedCycles = get_cycles_now() - startCycles;
-            if (iActivityTimer)
-                elapsedCycles -= iActivityTimer->getCyclesAdjustment();
+            cycle_t nowCycles = get_cycles_now();
+            accumulator.endCycles = nowCycles;
+            cycle_t elapsedCycles = nowCycles - startCycles;
+            accumulator.totalCycles += elapsedCycles;
+            if (isFirstRow)
+                accumulator.firstExitCycles = nowCycles;
+        }
+    }
+};
+
+class SimpleActivityTimer
+{
+    cycle_t startCycles;
+    cycle_t &accumulator;
+protected:
+    const bool enabled;
+public:
+    inline SimpleActivityTimer(cycle_t &_accumulator, const bool _enabled)
+    : accumulator(_accumulator), enabled(_enabled)
+    {
+        if (enabled)
+            startCycles = get_cycles_now();
+        else
+            startCycles = 0;
+    }
+
+    inline ~SimpleActivityTimer()
+    {
+        if (enabled)
+        {
+            cycle_t nowCycles = get_cycles_now();
+            cycle_t elapsedCycles = nowCycles - startCycles;
             accumulator += elapsedCycles;
         }
     }
@@ -166,7 +234,11 @@ public:
 #else
 struct ActivityTimer
 {
-    inline ActivityTimer(unsigned __int64 &_accumulator, const bool _enabled, IActivityTimer *_iActivityTimer) { }
+    inline ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled) { }
+};
+struct SimpleActivityTimer
+{
+    inline SimpleActivityTimer(unsigned __int64 &_accumulator, const bool _enabled) { }
 };
 #endif
 

@@ -114,7 +114,6 @@ public:
     bool skipFileFormatCrcCheck;
     bool stripWhitespaceFromStoredDataset;
     bool timeActivities;
-    bool traceActivityTimes;
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);
@@ -130,7 +129,7 @@ private:
 
 interface IQueryFactory : extends IInterface
 {
-    virtual IRoxieSlaveContext *createSlaveContext(const IRoxieContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const = 0;
+    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const = 0;
     virtual IActivityGraph *lookupGraph(const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const = 0;
     virtual ISlaveActivityFactory *getSlaveActivityFactory(unsigned id) const = 0;
     virtual IRoxieServerActivityFactory *getRoxieServerActivityFactory(unsigned id) const = 0;

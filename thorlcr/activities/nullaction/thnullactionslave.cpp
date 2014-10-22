@@ -39,14 +39,14 @@ public:
     } 
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         dataLinkStart();
     }
     void stop() { dataLinkStop(); }
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         return NULL;
     }
     bool isGrouped() { return false; }

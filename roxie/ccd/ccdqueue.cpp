@@ -466,7 +466,6 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     intercept = false;
     debuggerActive = false;
     checkingHeap = false;
-    traceActivityTimes = false;
     stats.reset();
     start = msTick();
     if (packet)
@@ -487,8 +486,6 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 ctxTraceLevel = (*traceInfo++ - 1); // avoid null byte here in case anyone still thinks there's just a null-terminated string
                 traceLength--;
             }
-            if (loggingFlags & LOGGING_TIMEACTIVITIES)
-                traceActivityTimes = true;
             if (loggingFlags & LOGGING_BLIND)
                 blind = true;
             if (loggingFlags & LOGGING_CHECKINGHEAP)
@@ -530,6 +527,39 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     {
         StringContextLogger::set("");
         channel = 0;
+    }
+}
+
+
+void SlaveContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed) const
+{
+    if (output && mergeSlaveStatistics)
+    {
+        MemoryBuffer buf;
+        buf.append((char) LOG_CHILDCOUNT); // A special log entry for the stats
+        buf.append(subGraphId);
+        buf.append(actId);
+        buf.append(idx);
+        buf.append(processed);
+    }
+}
+
+void SlaveContextLogger::putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const
+{
+    if (output && mergeSlaveStatistics)
+    {
+        MemoryBuffer buf;
+        buf.append((char) LOG_CHILDSTATS); // A special log entry for the stats
+        buf.append(subGraphId);
+        buf.append(actId);
+        if (stats.serialize(buf))
+        {
+            unsigned len = buf.length();
+            void *ret = output->getBuffer(len, true);
+            memcpy(ret, buf.toByteArray(), len);
+            output->putBuffer(ret, len, true);
+            anyOutput = true;
+        }
     }
 }
 

@@ -299,7 +299,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         CDedupRollupBaseActivity::start();
         dataLinkStart();
     }
@@ -342,7 +342,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos)
             return NULL;
         checkFirstRow();
@@ -416,7 +416,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         CDedupBaseSlaveActivity::start();
 
         lastEog = false;
@@ -427,7 +427,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos)
             return NULL;
 
@@ -486,7 +486,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         CDedupRollupBaseActivity::start();
         dataLinkStart();
     }
@@ -503,7 +503,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos) return NULL;
         checkFirstRow();
         if (eog())
@@ -577,7 +577,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         input = inputs.item(0);
         eoi = false;
         startInput(input);
@@ -590,7 +590,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!eoi)
         {
             CThorExpandingRowArray rows(*this, queryRowInterfaces(input));

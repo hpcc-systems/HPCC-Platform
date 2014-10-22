@@ -77,14 +77,14 @@ public:
     }
     void start()
     {   
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         matched = 0;
         abortSoon = !helper->canMatchAny();
         CFilterSlaveActivityBase::start();
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         while(!abortSoon)
         {
             OwnedConstThorRow row = input->nextRow();
@@ -116,7 +116,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         while (!abortSoon)
         {
             OwnedConstThorRow ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -186,14 +186,14 @@ public:
     }
     void start()
     {   
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         abortSoon = !helper->canMatchAny();
         recordCount = 0;
         CFilterSlaveActivityBase::start();
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         while (!abortSoon)
         {
             OwnedConstThorRow row = input->nextRow();
@@ -257,13 +257,13 @@ public:
     }
     void start()
     {   
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         abortSoon = !helper->canMatchAny();
         CFilterSlaveActivityBase::start();
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         while (!abortSoon)
         {
             if (groupStream)
@@ -302,7 +302,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon)
             return NULL;
 

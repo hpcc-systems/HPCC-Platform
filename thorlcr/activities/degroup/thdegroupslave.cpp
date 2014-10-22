@@ -39,7 +39,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         input = inputs.item(0);
 
         startInput(input);
@@ -53,7 +53,7 @@ public:
     }
     CATCH_NEXTROW()
     {   
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon)
         {
             OwnedConstThorRow row = input->ungroupedNextRow();
@@ -73,7 +73,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon)
         {
             OwnedConstThorRow row = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);

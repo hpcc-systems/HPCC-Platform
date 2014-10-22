@@ -31,6 +31,7 @@
 #include "platform.h"
 #include "slave.hpp"
 #include "thormisc.hpp"
+#include "thorcommon.hpp"
 #include "thgraph.hpp"
 #include "jdebug.hpp"
 
@@ -44,7 +45,7 @@ class graphslave_decl CSlaveActivity : public CActivityBase
 
 protected:
     IPointerArrayOf<IThorDataLink> inputs, outputs;
-    unsigned __int64 totalCycles;
+    ActivityTimeAccumulator totalCycles;
     MemoryBuffer startCtx;
 
 public:
@@ -68,7 +69,7 @@ public:
     void startInput(IThorDataLink *itdl, const char *extra=NULL);
     void stopInput(IRowStream *itdl, const char *extra=NULL);
 
-    unsigned __int64 &getTotalCyclesRef() { return totalCycles; }
+    ActivityTimeAccumulator &getTotalCyclesRef() { return totalCycles; }
     unsigned __int64 queryLocalCycles() const;
     virtual unsigned __int64 queryTotalCycles() const; // some acts. may calculate accumulated total from inputs (e.g. splitter)
     virtual void serializeStats(MemoryBuffer &mb);
