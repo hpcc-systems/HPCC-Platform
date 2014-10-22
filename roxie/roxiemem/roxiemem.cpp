@@ -116,6 +116,8 @@ inline VALUE_TYPE align_pow2(VALUE_TYPE value, ALIGN_TYPE alignment)
 
 #define PAGES(x, alignment)    (((x) + ((alignment)-1)) / (alignment))           // hope the compiler converts to a shift
 
+//---------------------------------------------------------------------------------------------------------------------
+
 typedef MapBetween<unsigned, unsigned, memsize_t, memsize_t> MapActivityToMemsize;
 
 static CriticalSection heapBitCrit;
@@ -123,6 +125,7 @@ static CriticalSection heapBitCrit;
 static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
 {
     if (heapBase) return;
+
     // CriticalBlock b(heapBitCrit); // unnecessary - must call this exactly once before any allocations anyway!
     heapBitmapSize = (pages + UNSIGNED_BITS - 1) / UNSIGNED_BITS;
     heapTotalPages = heapBitmapSize * UNSIGNED_BITS;
@@ -2573,7 +2576,7 @@ protected:
 };
 
 //Constants are here to ensure they can all be constant folded
-const unsigned roundupDoubleLimit = 2048;  // Values up to this limit are rounded to the nearest power of 2
+const unsigned roundupDoubleLimit = MAX_SIZE_DIRECT_BUCKET;  // Values up to this limit are directly mapped to a bucket size
 const unsigned roundupStepSize = 4096;  // Above the roundupDoubleLimit memory for a row is allocated in this size step
 const unsigned limitStepBlock = FixedSizeHeaplet::maxHeapSize()/MAX_FRAC_ALLOCATOR;  // until it gets to this size
 const unsigned numStepBlocks = PAGES(limitStepBlock, roundupStepSize); // how many step blocks are there?
@@ -2596,6 +2599,36 @@ public:
     void * & row;
 };
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static unsigned numDirectBuckets;
+//This array contains details of the actual sizes that are used to allocate an item of size bytes.
+//The entry allocSize((size-1)/ALLOC_ALIGNMENT is a value that indicates which heap and the size of that heap
+//NOTE: using "size-1" ensures that values X*ALLOC_ALIGNMENT-(ALLOC_ALIGNMENT-1)..X*ALLOC_ALIGNMENT are mapped to the same bin
+static unsigned allocSizeMapping[MAX_SIZE_DIRECT_BUCKET/ALLOC_ALIGNMENT+1];
+
+const static unsigned defaultAllocSizes[] = { 16, 32, 64, 128, 256, 512, 1024, 2048, 0 };
+
+void initAllocSizeMappings(const unsigned * sizes)
+{
+    size32_t bucketSize = sizes[0];
+    unsigned bucket = 0;
+    for (unsigned size=ALLOC_ALIGNMENT; size <= MAX_SIZE_DIRECT_BUCKET; size += ALLOC_ALIGNMENT)
+    {
+        if (size > bucketSize)
+        {
+            bucket++;
+            dbgassertex(bucketSize < sizes[bucket]);
+            bucketSize = sizes[bucket];
+        }
+        allocSizeMapping[(size-1)/ALLOC_ALIGNMENT] = ROUNDED(bucket, bucketSize);
+    }
+    assertex(sizes[bucket+1] == 0);
+    numDirectBuckets = bucket+1;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 
 class CChunkingRowManager : public CInterface, implements IRowManager
@@ -2838,38 +2871,16 @@ public:
     {
         dbgassertex((size >= FixedSizeHeaplet::chunkHeaderSize) && (size <= FixedSizeHeaplet::maxHeapSize() + FixedSizeHeaplet::chunkHeaderSize));
         //MORE: A binary chop on sizes is likely to be better.
-        if (size<=256)
-        {
-            if (size<=64)
-            {
-                if (size<=32)
-                {
-                    if (size<=16)
-                        return ROUNDED(0, 16);
-                    return ROUNDED(1, 32);
-                }
-                return ROUNDED(2, 64);
-            }
-            if (size<=128)
-                return ROUNDED(3, 128);
-            return ROUNDED(4, 256);
-        }
-        if (size<=1024)
-        {
-            if (size<=512)
-                return ROUNDED(5, 512);
-            return ROUNDED(6, 1024);
-        }
-        if (size<=2048)
-            return ROUNDED(7, 2048);
+        if (size <= MAX_SIZE_DIRECT_BUCKET)
+            return allocSizeMapping[(size-1)/ALLOC_ALIGNMENT];
 
         if (size <= maxStepSize)
         {
             size32_t blocks = PAGES(size, roundupStepSize);
-            return ROUNDED(7 + blocks, blocks * roundupStepSize);
+            return ROUNDED((numDirectBuckets-1) + blocks, blocks * roundupStepSize);
         }
 
-        unsigned baseBlock = 7;
+        unsigned baseBlock = (numDirectBuckets-1);
         if (hasAnyStepBlocks)
             baseBlock += numStepBlocks;
 
@@ -4136,6 +4147,9 @@ void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); 
 
 extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports)
 {
+    if (numDirectBuckets == 0)
+        throw MakeStringException(ROXIEMM_HEAP_ERROR, "createRowManager() called before setTotalMemoryLimit()");
+
     return new CChunkingRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks, outputOOMReports);
 }
 
@@ -4145,7 +4159,7 @@ extern void setMemoryStatsInterval(unsigned secs)
     lastStatsCycles = get_cycles_now();
 }
 
-extern void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t largeBlockSize, ILargeMemCallback * largeBlockCallback)
+extern void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
 {
     assertex(largeBlockSize == align_pow2(largeBlockSize, HEAP_ALIGNMENT_SIZE));
     unsigned totalMemoryLimit = (unsigned) (max / HEAP_ALIGNMENT_SIZE);
@@ -4155,6 +4169,7 @@ extern void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t la
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: Setting memory limit to %"I64F"d bytes (%u pages)", (unsigned __int64) max, totalMemoryLimit);
     initializeHeap(allowHugePages, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
+    initAllocSizeMappings(allocSizes ? allocSizes : defaultAllocSizes);
 }
 
 extern memsize_t getTotalMemoryLimit()
@@ -4407,6 +4422,7 @@ protected:
 
         memsize_t memory = (useLargeMemory ? largeMemory : smallMemory) * (unsigned __int64)0x100000U;
         initializeHeap(false, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
+        initAllocSizeMappings(defaultAllocSizes);
     }
 
     void testCleanup()
@@ -5343,6 +5359,7 @@ protected:
     void testRoundup()
     {
         Owned<IRowManager> rowManager = createRowManager(1, NULL, logctx, NULL);
+        CChunkingRowManager * managerObject = static_cast<CChunkingRowManager *>(rowManager.get());
         const unsigned maxFrac = firstFractionalHeap;
 
         const void * tempRow[MAX_FRAC_ALLOCATOR];
@@ -5653,7 +5670,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(false, memorySize, 0, NULL);
+        setTotalMemoryLimit(false, memorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
@@ -5849,7 +5866,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(false, hugeMemorySize, 0, NULL);
+        setTotalMemoryLimit(false, hugeMemorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
