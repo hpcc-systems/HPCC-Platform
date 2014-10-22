@@ -31,7 +31,7 @@ rule clause := NounPhrase Verb NounPhrase;
 
 results := 
     record
-        MATCHED;
+        MATCHED();
         Subject :=  MATCHTEXT(NounPhrase[1]);
         Object  :=  MATCHTEXT(NounPhrase[2]);
         Action :=  MATCHTEXT(Verb[1]);

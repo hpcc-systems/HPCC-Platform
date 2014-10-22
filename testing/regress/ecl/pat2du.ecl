@@ -20,7 +20,7 @@ pattern a := 'a';
 pattern b := 'b';
 
 token astar := repeat(a);
-token aplus := validate(astar, length(matchtext) > 0, length(matchunicode) > 0);
+token aplus := validate(astar, length(matchtext) > 0, length(matchunicode()) > 0);
 token a5 := validate(astar, length(matchtext) = 5, length(matchunicode) = 5);
 token a4to6 := validate(astar, length(matchtext) between four and 6, length(matchunicode) between four and 6);
 
