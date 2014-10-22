@@ -196,7 +196,7 @@ void CMasterWatchdogBase::main()
         {
             HeartBeatPacketHeader hb;
             MemoryBuffer progressData;
-            unsigned sz;
+            unsigned sz = 0;
             try
             {
                 sz = readPacket(hb, progressData);
