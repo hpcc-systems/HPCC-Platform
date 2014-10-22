@@ -2141,7 +2141,7 @@ const char * const helpText[] = {
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
-    "    -Dname=value  Override the setting of a particular attribute",
+    "!   -Dname=value  Override the definition of a global attribute 'name'",
     "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
     "!   --deny=str    Disallow use of named feature",
     "    -help, --help Display this message",

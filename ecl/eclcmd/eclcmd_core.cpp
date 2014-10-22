@@ -51,6 +51,21 @@ size32_t getMaxRequestEntityLength(EclCmdCommon &cmd)
     return config->getPropInt("Software[1]/EspProcess[1]/EspProtocol[@type='http_protocol'][1]/@maxRequestEntityLength");
 }
 
+void expandDefintionsAsDebugValues(const IArrayOf<IEspNamedValue> & definitions, IArrayOf<IEspNamedValue> & debugValues)
+{
+    ForEachItemIn(i, definitions)
+    {
+        IEspNamedValue &item = definitions.item(i);
+        const char *name = item.getName();
+        const char *value = item.getValue();
+
+        StringBuffer passThroughName;
+        passThroughName.append("eclcc-D").append(name).append("-").append(i);
+        addNamedValue(passThroughName, value, debugValues);
+    }
+
+}
+
 bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
 {
     bool useCompression = false;
@@ -119,6 +134,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         req->setQueryMainDefinition(cmd.optAttributePath);
     if (cmd.optSnapshot.length())
         req->setSnapshot(cmd.optSnapshot);
+    expandDefintionsAsDebugValues(cmd.definitions, cmd.debugValues);
     if (cmd.debugValues.length())
     {
         req->setDebugValues(cmd.debugValues);
@@ -591,6 +607,7 @@ public:
             req->setInput(optInput.get());
         req->setExceptionSeverity(optExceptionSeverity); //throws exception if invalid value
 
+        expandDefintionsAsDebugValues(definitions, debugValues);
         if (debugValues.length())
             req->setDebugValues(debugValues);
         if (variables.length())
