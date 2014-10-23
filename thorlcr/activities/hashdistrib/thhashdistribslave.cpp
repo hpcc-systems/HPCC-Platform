@@ -1465,6 +1465,7 @@ public:
         : CDistributorBase(activity, doDedup, istop), comm(_comm), tag(_tag)
     {
         pull = true;
+        targetWriterLimit = 1; // >1 target writer can cause packets to be received out of order
         tag = _tag;
         diskcached = (cBuf **)calloc(numnodes,sizeof(cBuf *));
         bufs = new CMessageBuffer[numnodes];
