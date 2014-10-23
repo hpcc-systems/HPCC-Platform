@@ -9711,6 +9711,23 @@ mode
                                 args.add(*createConstant("xml"), 0);
                             $$.setExpr(createValue(no_xml, makeNullType(), args));
                         }
+    | JSON_TOKEN         {   $$.setExpr(createValue(no_json));    }
+    | JSON_TOKEN '(' xmlOptions ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+
+                            //Create expression in a form that is backward compatible
+                            IHqlExpression * name = queryAttribute(rowAtom, args);
+                            if (name)
+                            {
+                                args.add(*LINK(name->queryChild(0)), 0);
+                                args.zap(*name);
+                            }
+                            else
+                                args.add(*createConstant("json"), 0);
+                            $$.setExpr(createValue(no_json, makeNullType(), args));
+                        }
     | pipe
     ;
 

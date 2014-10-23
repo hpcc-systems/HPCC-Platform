@@ -1098,6 +1098,7 @@ const char *getOpString(node_operator op)
     case no_flat: return "FLAT";
     case no_csv: return "CSV";
     case no_xml: return "XML";
+    case no_json: return "JSON";
 
     case no_when: return "WHEN";
     case no_priority: return "PRIORITY";

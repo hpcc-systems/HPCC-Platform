@@ -526,6 +526,7 @@ protected:
             return createRoxieServerDegroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcsvread:
         case TAKxmlread:
+        case TAKjsonread:
         case TAKdiskread:
         {       
             if (node.getPropBool("att[@name='_isSpill']/@value", false) || node.getPropBool("att[@name='_isSpillGlobal']/@value", false))
@@ -1681,6 +1682,7 @@ class CSlaveQueryFactory : public CQueryFactory
         case TAKcsvread:
         case TAKxmlread:
         case TAKdiskread:
+        case TAKjsonread:
             if (node.getPropBool("att[@name='_isSpill']/@value", false) || node.getPropBool("att[@name='_isSpillGlobal']/@value", false))
                 return;
             break;
@@ -1731,6 +1733,7 @@ class CSlaveQueryFactory : public CQueryFactory
                     newAct = createRoxieCsvReadActivityFactory(node, subgraphId, *this, helperFactory);
                     break;
                 case TAKxmlread:
+                case TAKjsonread:
                     newAct = createRoxieXmlReadActivityFactory(node, subgraphId, *this, helperFactory);
                     break;
                 case TAKdisknormalize:

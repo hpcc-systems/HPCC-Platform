@@ -631,6 +631,7 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
             {
             case no_csv:
             case no_xml:
+            case no_json:
                 temp.append(getOpString(expr->getOperator())).append(" ");
                 break;
             }

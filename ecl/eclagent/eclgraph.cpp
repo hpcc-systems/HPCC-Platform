@@ -257,6 +257,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKcsvread:
         return createCsvReadActivity(agent, activityId, subgraphId, (IHThorCsvReadArg &)arg, kind);
     case TAKxmlread:
+    case TAKjsonread:
         return createXmlReadActivity(agent, activityId, subgraphId, (IHThorXmlReadArg &)arg, kind);
     case TAKlocalresultread:
         return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, node->getPropInt("att[@name='_graphId']/@value"));

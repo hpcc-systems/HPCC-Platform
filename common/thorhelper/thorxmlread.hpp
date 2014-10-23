@@ -217,6 +217,11 @@ thorhelper_decl IXMLParse *createXMLParseString(const char *str, const char *xpa
 thorhelper_decl size32_t createRowFromXml(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
 thorhelper_decl const void * createRowFromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
 
+thorhelper_decl IXMLParse *createJSONParse(const char *filename, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions=ptr_none, bool contentRequired=true);
+thorhelper_decl IXMLParse *createJSONParse(ISimpleReadStream &stream, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions=ptr_none, bool contentRequired=true);
+thorhelper_decl IXMLParse *createJSONParse(const void *buffer, unsigned bufLen, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions=ptr_none, bool contentRequired=true);
+thorhelper_decl IXMLParse *createJSONParseString(const char *str, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions=ptr_none, bool contentRequired=true);
+
 thorhelper_decl size32_t createRowFromJson(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
 thorhelper_decl const void * createRowFromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
 

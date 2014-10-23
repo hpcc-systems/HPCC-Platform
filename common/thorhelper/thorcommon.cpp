@@ -704,6 +704,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKchildthroughnormalize:  return "Normalize";
     case TAKcsvread:                return "Csv Read";
     case TAKxmlread:                return "Xml Read";
+    case TAKjsonread:               return "Json Read";
     case TAKlocalresultread:        return "Read Local Result";
     case TAKlocalresultwrite:       return "Local Result";
     case TAKcombine:                return "Combine";
@@ -812,6 +813,7 @@ extern bool isActivitySource(ThorActivityKind kind)
     case TAKchildgroupaggregate:
     case TAKcsvread:
     case TAKxmlread:
+    case TAKjsonread:
     case TAKlocalresultread:
     case TAKsimpleaction:
     case TAKlocalstreamread:

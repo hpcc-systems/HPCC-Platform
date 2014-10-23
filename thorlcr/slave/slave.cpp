@@ -659,6 +659,7 @@ public:
                 ret = createXmlParseSlave(this);
                 break;
             case TAKxmlread:
+            case TAKjsonread:
                 ret = createXmlReadSlave(this);
                 break;
             case TAKxmlwrite:

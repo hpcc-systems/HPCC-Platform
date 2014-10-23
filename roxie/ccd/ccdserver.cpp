@@ -20698,7 +20698,10 @@ public:
             rowTransformer.set(readHelper->queryTransformer());
             assertex(reader != NULL);
             OwnedRoxieString xmlIterator(readHelper->getXmlIteratorPath());
-            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?ptr_noRoot:ptr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
+            if (factory->getKind()==TAKjsonread)
+                xmlParser.setown(createJSONParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?ptr_noRoot:ptr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
+            else
+                xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?ptr_noRoot:ptr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
         }
     }
 
@@ -21395,6 +21398,7 @@ public:
             return new CRoxieServerCsvReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager,
                                                    quotes, separators, terminators, escapes);
         case TAKxmlread:
+        case TAKjsonread:
             return new CRoxieServerXmlReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
         case TAKdiskread:
             return new CRoxieServerDiskReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);

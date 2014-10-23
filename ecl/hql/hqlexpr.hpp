@@ -528,6 +528,7 @@ enum _node_operator {
         no_pat_x_before_y,              // look ahead assertion
         no_pat_x_after_y,               // look behind assertion
         no_xml,
+        no_json,
         no_compound_fetch,
         no_pat_index,
         no_pat_beginpattern,            // marks the start of a global/child pattern.

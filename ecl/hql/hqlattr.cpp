@@ -515,6 +515,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_joined:
     case no_any:
     case no_xml:
+    case no_json:
     case no_distributer:
     case no_keyed:
     case no_sortpartition:

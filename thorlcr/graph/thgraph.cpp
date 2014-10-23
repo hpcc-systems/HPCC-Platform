@@ -305,6 +305,7 @@ bool isDiskInput(ThorActivityKind kind)
     {
         case TAKcsvread:
         case TAKxmlread:
+        case TAKjsonread:
         case TAKdiskread:
         case TAKdisknormalize:
         case TAKdiskaggregate:
@@ -1013,6 +1014,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKindexread:
         case TAKindexnormalize:
         case TAKxmlread:
+        case TAKjsonread:
         case TAKdiskexists:
         case TAKindexexists:
         case TAKchildexists:

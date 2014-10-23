@@ -133,6 +133,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKchildthroughnormalize] = "childthroughnormalize";
     kindArray[TAKcsvread] = "csvread";
     kindArray[TAKxmlread] = "xmlread";
+    kindArray[TAKjsonread] = "jsonread";
     kindArray[TAKlocalresultread] = "localresultread";
     kindArray[TAKlocalresultwrite] = "localresultwrite";
     kindArray[TAKcombine] = "combine";
