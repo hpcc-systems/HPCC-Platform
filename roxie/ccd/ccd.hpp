@@ -401,6 +401,7 @@ extern bool mergeSlaveStatistics;
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
 extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
+extern bool selfTestMode;
 
 extern unsigned roxiePort;     // If listening on multiple, this is the first. Used for lock cascading
 

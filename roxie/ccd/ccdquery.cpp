@@ -1634,9 +1634,8 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
         ::Release(dll);
         return cached;
     }
-    if (dll)
+    if (dll && !selfTestMode)
     {
-        checkWorkunitVersionConsistency(dll);
         Owned<ISharedOnceContext> sharedOnceContext;
         IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
         if (workflow && workflow->hasProp("Item[@mode='once']"))

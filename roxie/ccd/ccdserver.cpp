@@ -8484,7 +8484,7 @@ public:
     unsigned minIndex(unsigned exceptOid)
     {
         // MORE - yukky code (and slow). Could keep them heapsorted by idx or something
-        // this is trying to determine whethwe any of the adaptors will in the future read a given record
+        // this is trying to determine whether any of the adaptors will in the future read a given record
         unsigned minIdx = (unsigned) -1;
         for (unsigned i = 0; i < numOutputs; i++)
         {
@@ -8575,7 +8575,7 @@ public:
         if (!idx)
         {
             unsigned min = minIndex(oid);
-            if (min > tailIdx)
+            if (min > tailIdx) // NOTE - this includes the case where min==(unsigned) -1, meaning no other active pullers
             {
                 tailIdx++;
                 const void *ret = buffer.dequeue(); // no need to link - last puller
@@ -26527,6 +26527,16 @@ public:
 bool MergeActivityTest::isDedup = false;
 extern "C" IHThorArg * mergeActivityTestFactory() { return new MergeActivityTest; }
 
+struct SplitActivityTest : public ccdserver_hqlhelper::CThorSplitArg {
+public:
+    virtual unsigned numBranches() { return 2; }
+    virtual IOutputMetaData * queryOutputMeta()
+    {
+        return &testMeta;
+    }
+};
+extern "C" IHThorArg * splitActivityTestFactory() { return new SplitActivityTest; }
+
 class CcdServerTest : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE(CcdServerTest);
@@ -26537,6 +26547,7 @@ class CcdServerTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testMerge);
         CPPUNIT_TEST(testMergeDedup);
         CPPUNIT_TEST(testMiscellaneous);
+        CPPUNIT_TEST(testSplitter);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 protected:
@@ -26572,15 +26583,15 @@ protected:
         testActivity(activity, input, NULL, output);
     }
 
-    void testActivity(IRoxieServerActivity *activity, char const * const *input, char const * const *input2, char const * const *output)
+    void testActivity(IRoxieServerActivity *activity, char const * const *input, char const * const *input2, char const * const *output, unsigned outputIdx = 0)
     {
         TestInput in(ctx, input);
         TestInput in2(ctx, input2);
-        IRoxieInput *out = activity->queryOutput(0);
-        IOutputMetaData *meta = out->queryOutputMeta();
         activity->setInput(0, &in);
         if (input2)
             activity->setInput(1, &in2);
+        IRoxieInput *out = activity->queryOutput(outputIdx);
+        IOutputMetaData *meta = out->queryOutputMeta();
         void *buf = alloca(meta->getFixedSize());
 
         for (unsigned iteration = 0; iteration < 8; iteration++)
@@ -26635,6 +26646,72 @@ protected:
             ctx->queryRowManager().reportLeaks();
             ASSERT(ctx->queryRowManager().numPagesAfterCleanup(true) == 0);
         }
+    }
+
+    void testSplitActivity(IRoxieServerActivityFactory *factory, char const * const *input, char const * const *output, unsigned numOutputs)
+    {
+        Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
+        TestInput in(ctx, input);
+        activity->setInput(0, &in);
+        ArrayOf<IRoxieInput *> out;
+        for (unsigned i = 0; i < numOutputs; i++)
+        {
+            out.append(activity->queryOutput(i));
+        }
+        activity->onCreate(ctx, NULL);
+
+        class casyncfor: public CAsyncFor
+        {
+        public:
+            casyncfor(CcdServerTest *_parent, IRoxieServerActivity *_activity, ArrayOf<IRoxieInput *> &_outputs, char const * const *_input, char const * const *_output)
+            : parent(_parent), activity(_activity), outputs(_outputs), input(_input), output(_output)
+            {}
+            void Do(unsigned i)
+            {
+                IRoxieInput *out = outputs.item(i);
+                out->start(0, NULL, false);
+                IOutputMetaData *meta = out->queryOutputMeta();
+                void *buf = alloca(meta->getFixedSize());
+                unsigned count = 0;
+                loop
+                {
+                    const void *next = out->nextInGroup();
+                    if (!next)
+                    {
+                        ASSERT(output[count++] == NULL);
+                        next = out->nextInGroup();
+                        if (!next)
+                        {
+                            ASSERT(output[count++] == NULL);
+                            break;
+                        }
+                    }
+                    ASSERT(output[count] != NULL);
+                    unsigned outsize = meta->getRecordSize(next);
+                    memset(buf, 0, outsize);
+                    strncpy((char *) buf, output[count++], outsize);
+                    ASSERT(memcmp(next, buf, outsize) == 0);
+                    ReleaseRoxieRow(next);
+                }
+                out->stop(false);
+            }
+        private:
+            IRoxieServerActivity *activity;
+            ArrayOf<IRoxieInput *> &outputs;
+            char const * const *input;
+            char const * const *output;
+            CcdServerTest *parent;
+        } afor(this, activity, out, input, output);
+        afor.For(numOutputs, 1);
+
+        ASSERT(in.state == TestInput::STATEstopped);
+        for (unsigned i2 = 0; i2 < numOutputs; i2++)
+        {
+            out.item(i2)->reset();
+        }
+        ASSERT(in.state == TestInput::STATEreset);
+        ctx->queryRowManager().reportLeaks();
+        ASSERT(ctx->queryRowManager().numPagesAfterCleanup(true) == 0);
     }
 
     static int compareFunc(const void *l, const void *r)
@@ -26846,6 +26923,23 @@ protected:
         // Should really test WHICH side gets kept...
         // Should test with more than 2 inputs...
         DBGLOG("testMergeDedup done");
+    }
+
+    void testSplitter()
+    {
+        DBGLOG("testSplit");
+        init();
+        Owned <IRoxieServerActivityFactory> factory = createRoxieServerThroughSpillActivityFactory(*queryFactory, splitActivityTestFactory, 2);
+        factory->setInput(0,0,0);
+        Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
+
+        const char * test[] = { NULL, NULL };
+        const char * test12345[] = { "1", "2", "3", "4", "5", NULL, NULL };
+
+        testSplitActivity(factory, test, test, 2);
+        testSplitActivity(factory, test12345, test12345, 2);
+
+        DBGLOG("testSplit done");
     }
 
     void testMiscellaneous()
