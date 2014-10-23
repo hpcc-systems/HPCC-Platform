@@ -466,6 +466,7 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     intercept = false;
     debuggerActive = false;
     checkingHeap = false;
+    aborted = false;
     stats.reset();
     start = msTick();
     if (packet)
