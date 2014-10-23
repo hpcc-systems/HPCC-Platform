@@ -476,7 +476,18 @@ public:
         clusterInfo.clear();
         workunit->setState(WUStateCompiling);
         workunit->commit();
-        bool ok = compile(wuid, clusterTypeString(platform, true), clusterName.str());
+        bool ok = false;
+        try
+        {
+            ok = compile(wuid, clusterTypeString(platform, true), clusterName.str());
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            addExceptionToWorkunit(workunit, ExceptionSeverityError, "eclccserver", e->errorCode(), msg.str(), NULL, 0, 0);
+            e->Release();
+        }
         if (ok)
         {
             workunit->setState(WUStateCompiled);
