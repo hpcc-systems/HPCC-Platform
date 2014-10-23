@@ -174,7 +174,7 @@ public:
     {
         fposHash = new CFPosHandler(*iFetchHandler, offsetCount, offsetTable);
         keyIn.set(_keyIn);
-        distributor = createHashDistributor(&owner, owner.queryContainer().queryJob().queryJobComm(), tag, false, this);
+        distributor = createHashDistributor(&owner, owner.queryContainer().queryJob().queryJobComm(), tag, false, this, "FetchStream");
         keyOutStream.setown(distributor->connect(keyRowIf, keyIn, fposHash, NULL));
     }
     virtual IRowStream *queryOutput() { return this; }

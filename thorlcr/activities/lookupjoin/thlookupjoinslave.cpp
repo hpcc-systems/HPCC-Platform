@@ -1407,9 +1407,9 @@ protected:
     {
         if (!rhsDistributor)
         {
-            rhsDistributor.setown(createHashDistributor(this, queryJob().queryJobComm(), rhsDistributeTag, false, NULL));
+            rhsDistributor.setown(createHashDistributor(this, queryJob().queryJobComm(), rhsDistributeTag, false, NULL, "RHS"));
             right.setown(rhsDistributor->connect(queryRowInterfaces(rightITDL), right.getClear(), rightHash, NULL));
-            lhsDistributor.setown(createHashDistributor(this, queryJob().queryJobComm(), lhsDistributeTag, false, NULL));
+            lhsDistributor.setown(createHashDistributor(this, queryJob().queryJobComm(), lhsDistributeTag, false, NULL, "LHS"));
             left.setown(lhsDistributor->connect(queryRowInterfaces(leftITDL), left.getClear(), leftHash, NULL));
         }
     }
@@ -1530,6 +1530,7 @@ protected:
                     // Have to keep broadcastSpillingLock locked until sort and calculate are done
                     uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted);
                     rhsCollated = true;
+                    ActPrintLog("Collated all RHS rows");
                 }
             }
             if (!doPerformLocalLookup()) // check again after processing above
@@ -1600,6 +1601,10 @@ protected:
 
                 if (rhsCollated)
                 {
+                    /* JCSMORE - I think 'right' must be empty if here (if rhsCollated=true)
+                     * so above streams.append(*right.getLink()); should go in else block below only AFAICS
+                     */
+
                     // NB: If spilt after rhsCollated, callback will have cleared and compacted
                     streams.append(*rhs.createRowStream()); // NB: will kill array when stream exhausted
                 }
