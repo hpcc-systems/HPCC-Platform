@@ -2491,7 +2491,10 @@ public:
 bool addCompressorHandler(ICompressHandler *handler)
 {
     if (compressors.lookup(handler->queryType()))
+    {
+        handler->Release();
         return false; // already registered
+    }
     compressors.append(* handler);
     return true;
 }
@@ -2500,6 +2503,8 @@ bool removeCompressorHandler(ICompressHandler *handler)
 {
     return compressors.zap(* handler);
 }
+
+Linked<ICompressHandler> defaultCompressor;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -2515,14 +2520,14 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     class CFLZCompressHandler : public CCompressHandlerBase
     {
     public:
-        CFLZCompressHandler(const char *type) : CCompressHandlerBase(type) { }
+        CFLZCompressHandler() : CCompressHandlerBase("FLZ") { }
         virtual ICompressor *getCompressor(const char *options) { return createFastLZCompressor(); }
         virtual IExpander *getExpander(const char *options) { return createFastLZExpander(); }
     };
     class CAESCompressHandler : public CCompressHandlerBase
     {
     public:
-        CAESCompressHandler(const char *type) : CCompressHandlerBase(type) { }
+        CAESCompressHandler() : CCompressHandlerBase("AES") { }
         virtual ICompressor *getCompressor(const char *options)
         {
             assertex(options);
@@ -2537,13 +2542,15 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     class CDiffCompressHandler : public CCompressHandlerBase
     {
     public:
-        CDiffCompressHandler(const char *type) : CCompressHandlerBase(type) { }
+        CDiffCompressHandler() : CCompressHandlerBase("DIFF") { }
         virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
         virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
     };
-    addCompressorHandler(new CFLZCompressHandler("FLZ"));
-    addCompressorHandler(new CAESCompressHandler("AES"));
-    addCompressorHandler(new CDiffCompressHandler("DIFF"));
+    ICompressHandler *flzCompressor = new CFLZCompressHandler();
+    addCompressorHandler(flzCompressor);
+    addCompressorHandler(new CAESCompressHandler());
+    addCompressorHandler(new CDiffCompressHandler());
+    defaultCompressor.set(flzCompressor);
     return true;
 }
 
@@ -2552,17 +2559,17 @@ ICompressHandler *queryCompressHandler(const char *type)
     return compressors.lookup(type);
 }
 
-static StringAttr defaultCompressorType = "FLZ";
 void setDefaultCompressor(const char *type)
 {
-    if (NULL == queryCompressHandler(type))
+    ICompressHandler *_defaultCompressor = queryCompressHandler(type);
+    if (!_defaultCompressor)
         throw MakeStringException(-1, "setDefaultCompressor: '%s' compressor not registered", type);
-    defaultCompressorType.set(type);
+    defaultCompressor.set(_defaultCompressor);
 }
 
 ICompressHandler *queryDefaultCompressHandler()
 {
-    return compressors.lookup(defaultCompressorType);
+    return defaultCompressor;
 }
 
 ICompressor *getCompressor(const char *type, const char *options)
