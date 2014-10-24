@@ -153,8 +153,8 @@
         </figure></para>
 
       <para>The EventName is a created when scheduling a workunit. The
-      EventText is an accompanying sub event (see <link
-      linkend="WHEN">WHEN</link>).</para>
+      EventText is an accompanying sub event <link
+      linkend="WHEN"></link>.</para>
 
       <para>You can trigger an event by entering the EventName and Event Text
       in the entry boxes and then pressing the <emphasis
