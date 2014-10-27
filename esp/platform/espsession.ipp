@@ -33,6 +33,7 @@ private:
     StringAttr m_commentURL;
     StringAttr m_domain;
     StringAttr m_ports;
+    StringAttr expires;
     int        m_maxage;
     StringAttr m_path;
     bool       m_secure;
@@ -174,6 +175,16 @@ public:
         m_version = version;
     }
 
+    const char* getExpires()
+    {
+        return expires.get();
+    }
+
+    void setExpires(const char* _expires)
+    {
+        expires.set(_expires);
+    }
+
     void appendToRequestHeader(StringBuffer& buf)
     {
         buf.append(m_name.get()).append("=").append(m_value.get());
@@ -197,6 +208,8 @@ public:
             buf.append("; Domain=").append(m_domain.get());
         if(m_secure)
             buf.append("; Secure");
+        if (expires.length() > 0)
+            buf.append("; Expires=").append(expires.get());
         if(m_version >= 1)
         {
             buf.append("; Version=").append(m_version);     

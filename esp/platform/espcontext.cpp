@@ -75,6 +75,9 @@ private:
     bool        m_hasException;
     int         m_exceptionCode;
 
+    StringAttr  authenticationMethod;
+    bool        authorized;
+
     ESPSerializationFormat respSerializationFormat;
 
 public:
@@ -86,6 +89,7 @@ public:
         m_creationTime = msTick();
         m_active=ActiveRequests::getCount();
         respSerializationFormat=ESPSerializationANY;
+        authorized =  false;
     }
 
     ~CEspContext()
@@ -470,6 +474,26 @@ public:
         }
 
         DBGLOG("TxSummary[%s]", logstr.str());
+    }
+
+    virtual void setAuthenticationMethod(const char* method)
+    {
+        authenticationMethod.set(method);
+    }
+
+    virtual const char * getAuthenticationMethod()
+    {
+        return authenticationMethod.get();
+    }
+
+    virtual void setAuthorized(bool _authorized)
+    {
+        authorized = _authorized;
+    }
+
+    virtual bool isAuthorized()
+    {
+        return authorized;
     }
 
     virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}
