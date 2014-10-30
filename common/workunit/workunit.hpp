@@ -198,19 +198,32 @@ interface IXmlToRawTransformer;
 interface IPropertyTree;
 interface IPropertyTreeIterator;
 
-interface IConstWUGraph : extends IInterface
+
+enum WUGraphState
 {
-    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const = 0;
-    virtual IStringVal & getDOT(IStringVal & ret) const = 0;
+    WUGraphUnknown = 0,
+    WUGraphComplete = 1,
+    WUGraphRunning = 2,
+    WUGraphFailed = 3,
+    WUGraphPaused = 4
+};
+
+interface IConstWUGraphMeta : extends IInterface
+{
     virtual IStringVal & getName(IStringVal & ret) const = 0;
     virtual IStringVal & getLabel(IStringVal & ret) const = 0;
     virtual IStringVal & getTypeName(IStringVal & ret) const = 0;
     virtual WUGraphType getType() const = 0;
-    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const = 0;
-    virtual IPropertyTree * getXGMMLTreeRaw() const = 0;
-    virtual bool isValid() const = 0;
+    virtual WUGraphState getState() const = 0;
 };
 
+interface IConstWUGraph : extends IConstWUGraphMeta
+{
+    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const = 0;
+    virtual IStringVal & getDOT(IStringVal & ret) const = 0;
+    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const = 0;
+    virtual IPropertyTree * getXGMMLTreeRaw() const = 0;
+};
 
 interface IWUGraph : extends IConstWUGraph
 {
@@ -225,6 +238,11 @@ interface IWUGraph : extends IConstWUGraph
 interface IConstWUGraphIterator : extends IScmIterator
 {
     virtual IConstWUGraph & query() = 0;
+};
+
+interface IConstWUGraphMetaIterator : extends IScmIterator
+{
+    virtual IConstWUGraphMeta & query() = 0;
 };
 
 
@@ -737,16 +755,6 @@ enum WUSubscribeOptions
 
 interface IWUGraphProgress;
 interface IPropertyTree;
-enum WUGraphState
-{
-    WUGraphUnknown = 0,
-    WUGraphComplete = 1,
-    WUGraphRunning = 2,
-    WUGraphFailed = 3,
-    WUGraphPaused = 4
-};
-
-
 
 enum WUFileKind
 {
@@ -849,6 +857,7 @@ interface IConstWorkUnit : extends IInterface
     virtual unsigned getExceptionCount() const = 0;
     virtual IConstWUExceptionIterator & getExceptions() const = 0;
     virtual IConstWUResult * getGlobalByName(const char * name) const = 0;
+    virtual IConstWUGraphMetaIterator & getGraphsMeta(WUGraphType type) const = 0;
     virtual IConstWUGraphIterator & getGraphs(WUGraphType type) const = 0;
     virtual IConstWUGraph * getGraph(const char * name) const = 0;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const = 0;
@@ -975,6 +984,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void deschedule() = 0;
     virtual unsigned addLocalFileUpload(LocalFileUploadType type, const char * source, const char * destination, const char * eventTag) = 0;
     virtual IWUResult * updateGlobalByName(const char * name) = 0;
+    virtual IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml) = 0;
     virtual IWUGraph * updateGraph(const char * name) = 0;
     virtual IWUQuery * updateQuery() = 0;
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create) = 0;
