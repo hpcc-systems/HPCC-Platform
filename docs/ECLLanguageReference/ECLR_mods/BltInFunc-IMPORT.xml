@@ -75,7 +75,12 @@
   <programlisting>IMPORT Python;
 
 INTEGER addthree(INTEGER p) := IMPORT(Python, 'python_mod_name.addThree');
-</programlisting>
+
+//Java Example setting the classpath
+IMPORT java;
+STRING jcat(STRING a, STRING b) := IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;'
+                                          : classpath('/opt/HPCCSystems/classes/'));
+jcat('I',' concatenate');</programlisting>
 
   <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
   linkend="EMBED_Structure">EMBED Structure</link></para>
