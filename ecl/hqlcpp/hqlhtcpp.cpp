@@ -5666,9 +5666,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         ForEachItemIn(i2, graphs)
         {
             GeneratedGraphInfo & cur = graphs.item(i2);
-            Owned<IWUGraph> wug = wu()->updateGraph(cur.name);
-            wug->setXGMMLTree(cur.xgmml.getClear());
-            wug->setType(GraphTypeActivities);
+            Owned<IWUGraph> wug = wu()->createGraph(cur.name, GraphTypeActivities, cur.xgmml.getClear());
             wug->setLabel(cur.label);
         }
 

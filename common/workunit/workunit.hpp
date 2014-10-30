@@ -208,7 +208,6 @@ interface IConstWUGraph : extends IInterface
     virtual WUGraphType getType() const = 0;
     virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const = 0;
     virtual IPropertyTree * getXGMMLTreeRaw() const = 0;
-    virtual bool isValid() const = 0;
 };
 
 
@@ -975,6 +974,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void deschedule() = 0;
     virtual unsigned addLocalFileUpload(LocalFileUploadType type, const char * source, const char * destination, const char * eventTag) = 0;
     virtual IWUResult * updateGlobalByName(const char * name) = 0;
+    virtual IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml) = 0;
     virtual IWUGraph * updateGraph(const char * name) = 0;
     virtual IWUQuery * updateQuery() = 0;
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create) = 0;

@@ -730,6 +730,7 @@ public:
     void deschedule();
     unsigned addLocalFileUpload(LocalFileUploadType type, char const * source, char const * destination, char const * eventTag);
     IWUResult * updateGlobalByName(const char * name);
+    IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml);
     IWUGraph * updateGraph(const char * name);
     IWUQuery * updateQuery();
     IWUWebServicesInfo* updateWebServicesInfo(bool create);
@@ -1205,6 +1206,8 @@ public:
             { return c->addLocalFileUpload(type, source, destination, eventTag); }
     virtual IWUResult * updateGlobalByName(const char * name)
             { return c->updateGlobalByName(name); }
+    virtual IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml)
+            { return c->createGraph(name, type, xgmml); }
     virtual IWUGraph * updateGraph(const char * name) 
             { return c->updateGraph(name); }
     virtual IWUQuery * updateQuery()
@@ -1653,7 +1656,6 @@ public:
     virtual WUGraphType getType() const;
     virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const;
     virtual IPropertyTree * getXGMMLTreeRaw() const;
-    virtual bool isValid() const;
 
     virtual void setName(const char *str);
     virtual void setLabel(const char *str);
@@ -6670,7 +6672,7 @@ IWUGraph* CLocalWorkUnit::createGraph()
     CriticalBlock block(crit);
     ensureGraphsUnpacked();
     loadGraphs();
-    if (!graphs.length())
+    if (!graphs.ordinality())
         p->addPropTree("Graphs", createPTree("Graphs"));
     IPropertyTree *r = p->queryPropTree("Graphs");
     IPropertyTree *s = r->addPropTree("Graph", createPTree());
@@ -6681,16 +6683,31 @@ IWUGraph* CLocalWorkUnit::createGraph()
     return q;
 }
 
+IWUGraph * CLocalWorkUnit::createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml)
+{
+    CriticalBlock block(crit);
+    ensureGraphsUnpacked();
+    Linked<IConstWUGraph> existing = getGraph(name);
+    if (existing)
+        throwUnexpected();
+
+    if (!graphs.length())
+        p->addPropTree("Graphs", createPTree("Graphs"));
+    IPropertyTree *r = p->queryPropTree("Graphs");
+    IPropertyTree *s = r->addPropTree("Graph", createPTree());
+    IWUGraph* q = new CLocalWUGraph(*this, LINK(s));
+    graphs.append(*LINK(q));
+    q->setName(name);
+    q->setXGMMLTree(xgmml);
+    q->setType(type);
+    return q;
+}
+
 IWUGraph * CLocalWorkUnit::updateGraph(const char * name)
 {
     CriticalBlock block(crit);
     ensureGraphsUnpacked();
-    IConstWUGraph *existing = getGraph(name);
-    if (existing)
-        return (IWUGraph *) existing;
-    IWUGraph * q = createGraph();
-    q->setName(name);
-    return q;
+    return (IWUGraph *)getGraph(name);
 }
 
 IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *name) const
@@ -6851,12 +6868,6 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
             mergeProgress(nodeIterator->query(), *progressTree, progressV);
         return copy.getClear();
     }
-}
-
-bool CLocalWUGraph::isValid() const
-{
-    // JCSMORE - I can't really see why this is necessary, a graph cannot be empty.
-    return p->hasProp("xgmml/graph/node") || p->hasProp("xgmml/graphBin");
 }
 
 WUGraphType CLocalWUGraph::getType() const
