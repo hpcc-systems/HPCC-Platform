@@ -711,8 +711,6 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
         ForEach(*it)
         {
             IConstWUGraph &graph = it->query();
-            if(!graph.isValid())
-                continue;
 
             SCMStringBuffer name, label, type;
             graph.getName(name);
