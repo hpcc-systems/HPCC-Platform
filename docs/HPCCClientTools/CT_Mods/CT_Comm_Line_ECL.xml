@@ -82,7 +82,7 @@
                 <row>
                   <entry><emphasis>queue=</emphasis></entry>
 
-                  <entry>The name of the ECL server queue.</entry>
+                  <entry>The name of the job queue.</entry>
                 </row>
 
                 <row>
@@ -178,7 +178,7 @@
 
           <programlisting>server=10.150.50.12
 cluster=training
-queue=eclserver_training
+queue=trainingQueue
 user=rtor
 password=password</programlisting>
 
