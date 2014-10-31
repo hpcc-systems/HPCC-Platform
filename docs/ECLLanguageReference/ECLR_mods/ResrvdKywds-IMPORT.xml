@@ -96,6 +96,8 @@
   <emphasis>folder</emphasis>) available for use in the current ECL
   code.</para>
 
+  <para></para>
+
   <para>Example:</para>
 
   <programlisting>IMPORT $;                               //makes all definitions from the same folder available
@@ -113,6 +115,8 @@ IMPORT $.^.^.SomeOtherModule            //makes available the definitions from S
 IMPORT SomeFolder.SomeFile;             //make the specific file available
 
 IMPORT SomeReallyLongFolderName AS SN;  //alias the long name as "SN"
+
+IMPORT ^ as root;                       //allows access to non-modules defined in the root of the repository
 
 IMPORT Def1,Def2 FROM Fred;             //makes Def1 and Def2 from Fred folder available, unqualified
 
