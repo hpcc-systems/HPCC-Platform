@@ -25,17 +25,19 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/ws_access",
+    "hpcc/ws_account",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC,
                 registry,
                 editor,
-                GridDetailsWidget, WsAccess, ESPUtil) {
+                GridDetailsWidget, WsAccess, WsAccount, ESPUtil) {
     return declare("MemberOfWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_MemberOf,
         idProperty: "__hpcc_id",
+        currentUser: null,
 
         //  Hitched Actions  ---
         _onRefresh: function (args) {
@@ -44,11 +46,27 @@ define([
 
         //  Implementation  ---
         init: function (params) {
+            var context = this;
             if (this.inherited(arguments))
                 return;
 
+            WsAccount.MyAccount({
+            }).then(function (response) {
+                if (lang.exists("MyAccountResponse.username", response)) {
+                    context.currentUser = response.MyAccountResponse.username;
+                }
+            });
+
             this.store = WsAccess.CreateGroupsStore(params.username, false);
             this.grid.setStore(this.store);
+            this.grid.on("dgrid-datachange", function(event){
+                if (dojoConfig.isAdmin && params.username === context.currentUser && event.oldValue === true) {
+                    var msg = confirm(context.i18n.RemoveUser + " " + event.rowId + ". " + context.i18n.ConfirmRemoval);
+                    if (!msg){
+                        event.preventDefault();
+                    }
+                }
+            });
             this._refreshActionState();
         },
 
