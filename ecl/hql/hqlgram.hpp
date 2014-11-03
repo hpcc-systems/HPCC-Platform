@@ -116,6 +116,11 @@ public:
         assertex(atr_type==t_defineid);
         return defineid;
     }
+    inline IIdAtom * queryId() const
+    {
+        assertex(atr_type==t_catom);
+        return cname;
+    }
     
     /* getters */
     inline IFileContents * getContents()
@@ -424,6 +429,7 @@ public:
     void checkFieldnameValid(const attribute &errpos, IIdAtom * name);
     void checkList(attribute &atr);
     void checkScalar(attribute &atr);
+    void checkSensibleId(const attribute & attr, IIdAtom * id);
     void checkUseLocation(const attribute & errpos);
     void checkCosort(IHqlExpression * sortlist, IHqlExpression * partition, const attribute & ea);
     ITypeInfo * checkPromoteNumeric(attribute &a1, bool extendPrecision);
