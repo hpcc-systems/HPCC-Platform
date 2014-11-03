@@ -667,7 +667,7 @@ void slaveMain()
     {
         // should prob. error here
     }
-    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)gmemSize) * 0x100000, 0, NULL);
+    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)gmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
     CJobListener jobListener;
     CThorResourceSlave slaveResource;

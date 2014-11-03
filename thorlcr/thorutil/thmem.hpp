@@ -547,4 +547,7 @@ extern graph_decl ILargeMemLimitNotify *createMultiThorResourceMutex(const char 
 
 extern graph_decl void setThorVMSwapDirectory(const char *swapdir);
 
+//The following array defines the buckets that are created for pooling row allocations.  The sizes must be in ascending order, and terminated with 0
+const static unsigned thorAllocSizes[] = { 16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048, 0 };
+
 #endif

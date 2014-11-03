@@ -58,6 +58,7 @@
 #define UNKNOWN_ROWSET_ID               0x000F8421              // Use as the allocatorId for a rowset from an unknown activity
 #define UNKNOWN_ACTIVITY                123456789
 
+#define MAX_SIZE_DIRECT_BUCKET          2048                    // Sizes below this are directly mapped to a particular bucket
 #define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
 #define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks
 
@@ -497,7 +498,7 @@ interface IDataBufferManager : extends IInterface
 
 extern roxiemem_decl IDataBufferManager *createDataBufferManager(size32_t size);
 extern roxiemem_decl void setMemoryStatsInterval(unsigned secs);
-extern roxiemem_decl void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t largeBlockSize, ILargeMemCallback * largeBlockCallback);
+extern roxiemem_decl void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback);
 extern roxiemem_decl memsize_t getTotalMemoryLimit();
 extern roxiemem_decl void releaseRoxieHeap();
 extern roxiemem_decl bool memPoolExhausted();

@@ -2012,8 +2012,6 @@ void EclAgent::runProcess(IEclProcess *process)
 {
     assertex(rowManager==NULL);
     allocatorMetaCache.setown(createRowAllocatorCache(this));
-    rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
-    setHThorRowManager(rowManager.get());
 
     //Get memory limit. Workunit specified value takes precedence over config file
     int memLimitMB = agentTopology->getPropInt("@defaultMemoryLimitMB", DEFAULT_MEM_LIMIT);
@@ -2032,8 +2030,10 @@ void EclAgent::runProcess(IEclProcess *process)
     }
 #endif
     memsize_t memLimitBytes = (memsize_t)memLimitMB * 1024 * 1024;
-    roxiemem::setTotalMemoryLimit(allowHugePages, memLimitBytes, 0, NULL);
+    roxiemem::setTotalMemoryLimit(allowHugePages, memLimitBytes, 0, NULL, NULL);
 
+    rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
+    setHThorRowManager(rowManager.get());
     rowManager->setActivityTracking(queryWorkUnit()->getDebugValueBool("traceRoxiePeakMemory", false));
 
     if (debugContext)

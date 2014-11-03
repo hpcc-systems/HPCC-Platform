@@ -758,7 +758,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         bool allowHugePages = topology->getPropBool("@heapUseHugePages", false);
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000;  // 1 Gb;
-        roxiemem::setTotalMemoryLimit(allowHugePages, totalMemoryLimit, 0, NULL);
+        roxiemem::setTotalMemoryLimit(allowHugePages, totalMemoryLimit, 0, NULL, NULL);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
