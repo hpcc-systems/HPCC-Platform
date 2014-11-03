@@ -84,6 +84,7 @@ define([
             this.graphsTab = registry.byId(this.id + "_Graphs");
             this.logicalFilesTab = registry.byId(this.id + "_QuerySetLogicalFiles");
             this.superFilesTab = registry.byId(this.id + "_QuerySetSuperFiles");
+            this.librariesUsedTab = registry.byId(this.id + "_LibrariesUsed");
             this.workunitsTab = registry.byId(this.id + "_Workunit");
             this.testPagesTab = registry.byId(this.id + "_TestPages");
         },
@@ -155,6 +156,12 @@ define([
             } else if (currSel.id == this.superFilesTab.id && !this.superFilesTabLoaded) {
                 this.superFilesTabLoaded = true;
                 this.superFilesTab.init({
+                    QuerySetId:this.params.QuerySetId,
+                    Id: this.params.Id
+                });
+            } else if (currSel.id == this.librariesUsedTab.id && !this.librariesUsedTabLoaded) {
+                this.librariesUsedTabLoaded = true;
+                this.librariesUsedTab.init({
                     QuerySetId:this.params.QuerySetId,
                     Id: this.params.Id
                 });
@@ -241,6 +248,15 @@ define([
                     }
                     this.superFilesTab.set("tooltip", tooltip);
                 }
+            } else if (name === "LibrariesUsed") {
+                this.librariesUsedTab.set("title", this.i18n.LibrariesUsed + " (" + newValue.Item.length + ")");
+                var tooltip = "";
+                for (var i = 0; i < newValue.Item.length; ++i) {
+                    if (tooltip != "")
+                        tooltip += "\n";
+                    tooltip += newValue.Item[i];
+                }
+                this.librariesUsedTab.set("tooltip", tooltip);
             } else if (name === "Clusters") {
                 if (lang.exists("ClusterQueryState.length", newValue)) {
                     this.errorsTab.set("title", this.i18n.ErrorsStatus + " (" + newValue.ClusterQueryState.length + ")");
