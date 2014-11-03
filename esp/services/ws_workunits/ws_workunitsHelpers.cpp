@@ -767,6 +767,17 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
                 g->setRunningId(id);
             }
 
+            if (version >= 1.53)
+            {
+                SCMStringBuffer s;
+                Owned<IConstWUStatistic> whenGraphStarted = cw->getStatistic(NULL, name.str(), StWhenGraphStarted);
+                Owned<IConstWUStatistic> whenGraphFinished = cw->getStatistic(NULL, name.str(), StWhenGraphFinished);
+                if (whenGraphStarted)
+                    g->setWhenStarted(whenGraphStarted->getFormattedValue(s).str());
+                if (whenGraphFinished)
+                    g->setWhenFinished(whenGraphFinished->getFormattedValue(s).str());
+            }
+
             Owned<IConstWUGraphProgress> progress = cw->getGraphProgress(name.str());
             if (progress)
             {
