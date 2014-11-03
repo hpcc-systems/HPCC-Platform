@@ -831,6 +831,7 @@
               <input type="hidden" id="ProblemDescription" name="ProblemDescription" value=""/>
               <input type="hidden" id="WhatChanged" name="WhatChanged" value=""/>
               <input type="hidden" id="WhereSlow" name="WhereSlow" value=""/>
+              <input type="hidden" id="Password" name="Password" value=""/>
               <input type="button" name="Type" value="Save" class="sbutton" onclick="updateWorkunit('{$wuid}');">
                         <xsl:if test="number(AccessFlag) &lt; 7">
                           <xsl:attribute name="disabled">disabled</xsl:attribute>

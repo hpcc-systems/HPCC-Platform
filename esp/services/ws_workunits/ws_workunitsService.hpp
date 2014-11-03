@@ -256,9 +256,13 @@ public:
     bool onWUCheckFeatures(IEspContext &context, IEspWUCheckFeaturesRequest &req, IEspWUCheckFeaturesResponse &resp);
 
 private:
-#ifdef _USE_ZLIB
-    void addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr);
-#endif
+    void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
+    void createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
+    void createZAPWUXMLFile(WsWuInfo &winfo, const char* pathNameStr);
+    void createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
+    void createZAPFile(const char* fileName, size32_t len, const void* data);
+    void cleanZAPFolder(IFile* zipDir, bool removeFolder);
+
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
     StringAttr daliServers;
