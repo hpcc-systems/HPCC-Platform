@@ -34,7 +34,10 @@
           <entry>A comma-delimited list of folder or file names in the
           repository. The dollar sign ($) makes all definitions in the current
           folder available. The caret symbol (^) can be used as shorthand for
-          the container of the current folder.</entry>
+          the container of the current folder. Using a caret within the module
+          specifier (such as, myModule.^) selects the container of that
+          folder. A leading caret specifies the logical root of the file
+          tree.</entry>
         </row>
 
         <row>
@@ -98,7 +101,7 @@
 
   <para></para>
 
-  <para>Example:</para>
+  <para>Examples:</para>
 
   <programlisting>IMPORT $;                               //makes all definitions from the same folder available
 
