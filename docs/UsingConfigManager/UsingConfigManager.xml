@@ -1922,7 +1922,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           unset, Thor[master] detects total physical memory and allocates 75%
           of it. If there are multiple slaves per node (slavesPerNode&gt;1) it
           divides the total among the slaves. If globalMemorySize is defined,
-          then it allocates that amount of memory to each slave. </para>
+          then it allocates that amount of memory to each slave. The
+          masterMemorySize attribute allocates memory for the Thor master. If
+          omitted, Thor master uses globalMemorySize, or the default 75% of
+          memory.</para>
 
           <para>On systems with a lot of memory, the default 75% of physical
           memory is probably too conservative and reserving total physical
