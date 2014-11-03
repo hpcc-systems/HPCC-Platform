@@ -1914,6 +1914,36 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS" />
           </para>
 
+          <para>
+            <emphasis role="bold">Thor Memory Settings</emphasis>
+          </para>
+
+          <para>If <emphasis role="bold">globalMemorySize</emphasis> is left
+          unset, Thor[master] detects total physical memory and allocates 75%
+          of it. If there are multiple slaves per node (slavesPerNode&gt;1) it
+          divides the total among the slaves. If globalMemorySize is defined,
+          then it allocates that amount of memory to each slave. </para>
+
+          <para>On systems with a lot of memory, the default 75% of physical
+          memory is probably too conservative and reserving total physical
+          minus 2GB (for the OS and other processes) is sensible. You should
+          then divide that number by the number of slavesPerNode. </para>
+
+          <para>If there are multiple Thors sharing the same nodes, then
+          globalMemorySize must be configured to take that into account.
+          </para>
+
+          <para>For example, if there are 2 Thors each with 2 slaves per box,
+          that will mean there are 4 slaves per physical node. So the
+          globalMemorySize setting should use this calculation: </para>
+
+          <programlisting>globalMemorySize = (total-physical-memory)-2GB / (2*2) </programlisting>
+
+          <para>Without any specified setting, Thor assumes it has exclusive
+          access to the memory and would therefore use too much (because each
+          Thor is unaware of the other's configuration and memory usage).
+          </para>
+
           <!--configMgr-Thor-Attribute-Include-XXX-->
 
           <para>
