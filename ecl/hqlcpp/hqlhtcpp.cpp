@@ -6303,6 +6303,8 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_externalcall:
                 if (expr->isAction())
                     result = doBuildActivityAction(ctx, expr, isRoot);
+                else if (expr->isDatarow())
+                    result = doBuildActivityCreateRow(ctx, expr, false);
                 else if (hasStreamedModifier(expr->queryType()))
                 {
                     result = doBuildActivityStreamedCall(ctx, expr);
@@ -6317,14 +6319,17 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_left:
             case no_right:
             case no_top:
+            case no_activetable:
             case no_id2blob:
             case no_typetransfer:
             case no_rows:
             case no_xmlproject:
             case no_libraryinput:
-            case no_activetable:
             case no_translated:
-                result = doBuildActivityChildDataset(ctx, expr);
+                if (expr->isDatarow())
+                    result = doBuildActivityCreateRow(ctx, expr, false);
+                else
+                    result = doBuildActivityChildDataset(ctx, expr);
                 break;
             case no_compound_inline:
                 result = doBuildActivityChildDataset(ctx, expr->queryChild(0));
@@ -6369,7 +6374,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_datasetfromrow:
                 {
                     OwnedHqlExpr row = expr->cloneAllAnnotations(expr->queryChild(0));  // preserve any position information....
-                    if ((getNumActivityArguments(expr) == 0) && canProcessInline(&ctx, row) && (row->getOperator() != no_getgraphresult))
+                    if (worthGeneratingRowAsSingleActivity(row))
                         result = doBuildActivityCreateRow(ctx, row, false);
                     else
                         result = buildCachedActivity(ctx, row);
@@ -6702,10 +6707,8 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivitySequentialParallel(ctx, expr, isRoot);
                 break;
             case no_activerow:
-                {
-                    OwnedHqlExpr row = createDatasetFromRow(LINK(expr));
-                    return buildCachedActivity(ctx, row);
-                }
+                result = doBuildActivityCreateRow(ctx, expr, false);
+                break;
             case no_assert_ds:
                 result = doBuildActivityAssert(ctx, expr);
                 break;
@@ -6749,8 +6752,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                     return doBuildActivityAction(ctx, expr, isRoot);
                 if (expr->isDatarow())
                 {
-                    OwnedHqlExpr row = createDatasetFromRow(LINK(expr));
-                    return buildCachedActivity(ctx, row);
+                    return doBuildActivityCreateRow(ctx, expr, false);
                 }
                 else
                 {
@@ -16736,7 +16738,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
     return instance->getBoundActivity();
 }
 
-
 //NB: Also used to create row no_null as an activity.
 ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHqlExpression * expr, bool isDataset)
 {
@@ -16794,7 +16795,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     if (isDataset)
         associateSkipReturnMarker(funcctx, queryBoolExpr(false), selfCursor);
 
-    buildAssign(funcctx, self, expr);
+    LinkedHqlExpr cseExpr = expr;
+    if (options.spotCSE)
+        cseExpr.setown(spotScalarCSE(cseExpr, NULL, options.spotCseInIfDatasetConditions));
+
+    buildAssign(funcctx, self, cseExpr);
     buildReturnRecordSize(funcctx, selfCursor);
 
     doBuildTempTableFlags(instance->startctx, expr, valuesAreConstant);

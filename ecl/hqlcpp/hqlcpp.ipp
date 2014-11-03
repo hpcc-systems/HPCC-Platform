@@ -1234,6 +1234,7 @@ public:
     void doBuildDatasetLimit(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
     bool doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
     bool doBuildDictionaryInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
+    void doBuildDatasetNull(IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
 
     void doBuildCheckDatasetLimit(BuildCtx & ctx, IHqlExpression * expr, const CHqlBoundExpr & bound);
 

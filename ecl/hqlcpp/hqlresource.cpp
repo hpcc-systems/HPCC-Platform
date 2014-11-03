@@ -2599,6 +2599,7 @@ void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, ResourcerInfo *
 
     //If child queries are supported then don't hoist the expressions if they might only be evaluated once
     //because they may be conditional
+    bool alwaysOnce = false;
     switch (expr->getOperator())
     {
     case no_setresult:
@@ -2606,6 +2607,11 @@ void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, ResourcerInfo *
         //set results, only done once=>don't hoist conditionals
         locator.findSplitPoints(expr, last, max, true, true);
         return;
+    case no_createrow:
+    case no_datasetfromrow:
+    case no_projectrow:
+        alwaysOnce = true;
+        break;
     case no_loop:
         if ((options.targetClusterType == ThorLCRCluster) && !options.isChildQuery)
         {
@@ -2621,7 +2627,7 @@ void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, ResourcerInfo *
         break;
     }
     locator.findSplitPoints(expr, 0, first, true, true);          // IF() conditions only evaluated once... => don't force
-    locator.findSplitPoints(expr, last, max, true, false);
+    locator.findSplitPoints(expr, last, max, true, alwaysOnce);
 }
 
 
@@ -4416,7 +4422,7 @@ bool EclResourcer::optimizeAggregate(IHqlExpression * expr)
         return false;
 
     ResourcerInfo * selectNthInfo = queryResourceInfo(selectNth);
-    if (selectNthInfo->numExternalUses)
+    if (!selectNthInfo || selectNthInfo->numExternalUses)
         return false;
 
     IHqlExpression * aggregate = selectNth->queryChild(0);      // no_newaggregate

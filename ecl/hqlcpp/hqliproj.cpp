@@ -1354,13 +1354,13 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             gatherFieldsUsed(expr, extra);
             return;
         case no_activerow:
-            assertex(extra->activityKind() == SimpleActivity);
-            allowActivity = false;
-            Parent::analyseExpr(expr);
-            allowActivity = true;
-            activities.append(*LINK(expr));
-            gatherFieldsUsed(expr, extra);
-            return;
+            {
+                assertex(extra->activityKind() == SourceActivity);
+                allowActivity = false;
+                Parent::analyseExpr(expr);
+                allowActivity = true;
+                break;
+            }
         case no_attr:
         case no_attr_expr:
         case no_attr_link:
@@ -1940,7 +1940,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
             return ScalarSelectActivity;
         return NonActivity;
     case no_activerow:
-        return SimpleActivity;
+        return SourceActivity;
     case no_attr:
     case no_attr_expr:
     case no_attr_link:
@@ -2136,8 +2136,6 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_keypatch:
         return NonActivity;
     case no_datasetfromrow:
-        if (getNumActivityArguments(expr) == 0)
-            return SourceActivity;
         return SimpleActivity;
     case no_newtransform:
     case no_transform:
