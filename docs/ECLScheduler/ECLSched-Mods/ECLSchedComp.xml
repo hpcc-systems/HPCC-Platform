@@ -153,13 +153,12 @@
         </figure></para>
 
       <para>The EventName is a created when scheduling a workunit. The
-      EventText is an accompanying sub event (see <link
-      linkend="WHEN">WHEN</link>).</para>
+      EventText is an accompanying sub event.</para>
 
       <para>You can trigger an event by entering the EventName and Event Text
       in the entry boxes and then pressing the <emphasis
       role="bold">PushEvent</emphasis> button. This is the same as triggering
-      an event using NOTIFY (see <link linkend="NOTIFY">NOTIFY</link>).</para>
+      an event using NOTIFY.</para>
 
       <sect2>
         <title>Scheduler Workunit List</title>
