@@ -226,7 +226,7 @@ y3 := PROJECT(ds, t3(LEFT));
 OUTPUT(y3);     
 
 //Example using MODULE structure to return multiple values from a FUNCTION
-OperateOnNumbers(Number1, number2) := FUNCTION
+OperateOnNumbers(Number1, Number2) := FUNCTION
   result := MODULE
     EXPORT Multiplied  := Number1 * Number2;
     EXPORT Differenced := Number1 - Number2;
