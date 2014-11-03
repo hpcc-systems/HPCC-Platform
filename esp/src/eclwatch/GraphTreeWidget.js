@@ -358,6 +358,14 @@ define([
             this.xgmmlDialog.show();
         },
 
+        isWorkunit: function () {
+            return lang.exists("params.Wuid", this);
+        },
+
+        isQuery: function () {
+            return lang.exists("params.QueryId", this);
+        },
+
         init: function (params) {
             if (this.inherited(arguments))
                 return;
@@ -372,7 +380,7 @@ define([
                 dotAttrs = dotAttrs.replace("\ngraph[splines=\"line\"];", "\n//graph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
             }
-            if (params.Wuid) {
+            if (this.isWorkunit()) {
                 this.graphName = params.GraphName;
                 this.wu = ESPWorkunit.Get(params.Wuid);
 
@@ -395,7 +403,7 @@ define([
                         }
                     });
                 });
-            } else if (params.QueryId) {
+            } else if (this.isQuery()) {
                 this.targetQuery = params.Target;
                 this.queryId = params.QueryId;
                 this.graphName = params.GraphName;
@@ -420,9 +428,9 @@ define([
         },
 
         refreshData: function () {
-            if (lang.exists("params.Wuid", this)) {
+            if (this.isWorkunit()) {
                 this.loadGraphFromWu(this.wu, this.graphName, true);
-            } else if (lang.exists("params.QueryId", this)) {
+            } else if (this.isQuery()) {
                 this.loadGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
             }
         },
@@ -557,7 +565,11 @@ define([
                     }
                 })
             ];
-            this.treeStore.appendColumns(columns, ["name"], ["DescendantCount", "ecl", "definition", "SubgraphCount", "ActivityCount", "ChildCount", "Depth"], ["label"]);
+            if (this.isWorkunit()) {
+                this.treeStore.appendColumns(columns, ["name"], ["DescendantCount", "ecl", "definition", "SubgraphCount", "ActivityCount", "ChildCount", "Depth"]);
+            } else if (this.isQuery()) {
+                this.treeStore.appendColumns(columns, ["localTime", "totalTime", "label", "ecl"], ["DescendantCount", "definition", "SubgraphCount", "ActivityCount", "ChildCount", "Depth"]);
+            }
             this.treeGrid.set("query", {id:"0"});
             this.treeGrid.set("columns", columns);
             this.treeGrid.refresh();
