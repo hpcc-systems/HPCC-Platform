@@ -44,7 +44,7 @@ static void roxie_server_usage()
 
 int main(int argc, const char *argv[])
 {
-    for (unsigned i=0; i<argc; i++)
+    for (unsigned i=0; i<(unsigned)argc; i++)
     {
         if (stricmp(argv[i], "--help")==0 ||
             stricmp(argv[i], "-h")==0)

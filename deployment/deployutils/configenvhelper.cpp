@@ -826,7 +826,7 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
         RemoveSlaves(pRoxie, true);
         RemoveSlaves(pRoxie, false);
 
-        for (int i=0; i<computers.size(); i++)
+        for (unsigned i=0; i<computers.size(); i++)
         {
           IPropertyTree* pComputer = computers[i];
           const char* szComputer = pComputer->queryProp(XML_ATTR_NAME);

@@ -108,7 +108,7 @@ public:
         nr10pct = nr / 10;
         nr150pct = (unsigned)((double)nr * 1.5);
         record = (char *)malloc(rs);
-        for (int i=0;i<rs;i++)
+        for (unsigned i=0;i<rs;i++)
             record[i] = 'a';
         record[rs-1] = '\n';
 
@@ -163,7 +163,7 @@ protected:
             unsigned iter = nr / 40;
 
             __int64 pos = 0;
-            for (int i=0;i<nr;i++)
+            for (unsigned i=0;i<nr;i++)
             {
                 ifileio->write(pos, rs, record);
                 pos += rs;
@@ -189,7 +189,7 @@ protected:
             ifileio = ifile->open(IFOread, extraFlags);
 
             pos = 0;
-            for (int i=0;i<nr;i++)
+            for (unsigned i=0;i<nr;i++)
             {
                 ifileio->read(pos, rs, record);
                 pos += rs;

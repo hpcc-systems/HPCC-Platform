@@ -1232,9 +1232,9 @@ void EclGraph::execute(const byte * parentExtract)
         StringBuffer description;
         formatGraphTimerLabel(description, queryGraphName(), 0, 0);
 
-        unsigned totalTimeNs = 0;
-        unsigned totalThisTimeNs = 0;
-        unsigned elapsedNs = milliToNano(elapsed);
+        unsigned __int64 totalTimeNs = 0;
+        unsigned __int64 totalThisTimeNs = 0;
+        unsigned __int64 elapsedNs = milliToNano(elapsed);
         const char *totalTimeStr = "Total cluster time";
         getWorkunitTotalTime(wu, "hthor", totalTimeNs, totalThisTimeNs);
 

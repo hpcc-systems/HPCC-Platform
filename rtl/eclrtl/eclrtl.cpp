@@ -5404,7 +5404,7 @@ ECLRTL_API void xmlDecodeStrX(size32_t & outLen, char * & out, size32_t inLen, c
 
 bool hasPrefix(const UChar * ustr, const UChar * end, const char * str, unsigned len)
 {
-    if (end - ustr < len)
+    if ((unsigned)(end - ustr) < len)
         return false;
     while (len--)
     {

@@ -746,13 +746,13 @@ public:
         else if (dval == 0)
             timeoutMS = WAIT_FOREVER;
         else
-            timeoutMS = dval * 1000;
+            timeoutMS = (unsigned)(dval * 1000);
 
         dval = helper->getTimeLimit();
         if (dval <= 0.0)
             timeLimitMS = WAIT_FOREVER;
         else
-            timeLimitMS = dval * 1000;
+            timeLimitMS = (unsigned)(dval * 1000);
 
         if (wscType == STsoap)
         {
@@ -1816,7 +1816,7 @@ public:
                 __int64 elapsedNs = cycle_to_nanosec(endCycles-startCycles);
                 master->logctx.noteStatistic(StTimeSoapcall, elapsedNs);
                 checkTimeLimitExceeded(&remainingMS);
-                ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider(nanoToMilli(elapsedNs), master->flags&SOAPFencoding?true:false);
+                ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider((unsigned)nanoToMilli(elapsedNs), master->flags&SOAPFencoding?true:false);
                 processResponse(url, response, meta);
                 delete meta;
                 break;

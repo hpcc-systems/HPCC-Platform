@@ -79,7 +79,7 @@ public:
     { 
         if (m_attrs) 
         { 
-            for (int i=0; i<m_nAttrs; i++)
+            for (size_t i=0; i<m_nAttrs; i++)
                 m_attrs[i]->Release();
             delete[] m_attrs; 
         } 
@@ -96,8 +96,8 @@ public:
     const char* queryName() { return m_name.get(); }
 
     size_t getAttrCount() { return m_nAttrs; }
-    IXmlAttribute* queryAttr(int idx) { assert(idx>=0 && idx<m_nAttrs); return m_attrs[idx]; }
-    const char* queryAttrName(int idx) { assert(idx>=0 && idx<m_nAttrs); return m_attrs[idx]->queryName(); }
+    IXmlAttribute* queryAttr(int idx) { assert(idx>=0 && (unsigned)idx<m_nAttrs); return m_attrs[idx]; }
+    const char* queryAttrName(int idx) { assert(idx>=0 && (unsigned)idx<m_nAttrs); return m_attrs[idx]->queryName(); }
 
     void setDefaultValue(const char* v) {  m_defValue.set(v); }
     bool hasDefaultValue() {  return m_defValue.get()!=NULL; }

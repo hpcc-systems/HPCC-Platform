@@ -415,7 +415,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     init_signals();
 
     // stand alone usage only, not server
-    for (unsigned i=0; i<argc; i++)
+    for (unsigned i=0; i<(unsigned)argc; i++)
     {
         if (stricmp(argv[i], "--help")==0 ||
             stricmp(argv[i], "-h")==0)
@@ -895,17 +895,17 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         {
             numChannels = numNodes;
             unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 1);
-            for (int i=0; i<numNodes; i++)
+            for (unsigned i=0; i<numNodes; i++)
             {
                 // Note this code is a little confusing - easy to get the cyclic offset backwards
                 // cyclic offset means node n+offset has copy 2 for channel n, so node n has copy 2 for channel n-offset
-                int channel = i+1;
-                for (int copy=0; copy<numDataCopies; copy++)
+                int channel = (int)i+1;
+                for (unsigned copy=0; copy<numDataCopies; copy++)
                 {
                     if (channel < 1)
                         channel = channel + numNodes;
                     addChannel(i, channel, copy);
-                    channel = channel - cyclicOffset;
+                    channel -= cyclicOffset;
                 }
             }
         }
@@ -914,10 +914,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!channelsPerNode)
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channelsPerNode should be > 0");
             numChannels = numNodes * channelsPerNode;
-            for (int i=0; i<numNodes; i++)
+            for (unsigned i=0; i<numNodes; i++)
             {
-                int channel = i+1;
-                for (int copy=0; copy<channelsPerNode; copy++)
+                int channel = (int)(i+1);
+                for (unsigned copy=0; copy<channelsPerNode; copy++)
                 {
                     addChannel(i, channel, copy);
                     channel += numNodes;
@@ -930,11 +930,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not an integer");
             numChannels = numNodes / numDataCopies;
             int channel = 1;
-            for (int i=0; i<numNodes; i++)
+            for (unsigned i=0; i<numNodes; i++)
             {
                 addChannel(i, channel, 0);
                 channel++;
-                if (channel > numChannels)
+                if ((unsigned)channel > numChannels)
                     channel = 1;
             }
         }

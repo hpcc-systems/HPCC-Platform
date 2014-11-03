@@ -346,7 +346,8 @@ void WsWuInfo::addTimerToList(SCMStringBuffer& name, const char * scope, IConstW
     name.s.replace('_', ' '); // yuk!
     t->setName(name.str());
     t->setValue(fd.str());
-    t->setCount(stat.getCount());
+    //MORE: This could overflow.
+    t->setCount((unsigned)stat.getCount());
 
     if (version > 1.19)
     {
@@ -375,7 +376,7 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
     try
     {
         unsigned __int64 totalThorTimeValue = 0;
-        unsigned totalThorTimerCount = 0; //Do we need this?
+        unsigned __int64 totalThorTimerCount = 0; //Do we need this?
 
         IArrayOf<IEspECLTimer> timers;
         StatisticsFilter filter;
@@ -425,7 +426,7 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
             else
                 t->setName(TOTALTHORTIME);
             t->setValue(totalThorTimeText.str());
-            t->setCount(totalThorTimerCount);
+            t->setCount((unsigned)totalThorTimerCount);
             timers.append(*t.getLink());
         }
 
@@ -807,7 +808,7 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, uns
         unsigned subGraphId;
         if (parseGraphScope(scope.str(), graphName, graphNum, subGraphId))
         {
-            unsigned time = nanoToMilli(cur.getValue());
+            unsigned time = (unsigned)nanoToMilli(cur.getValue());
 
             SCMStringBuffer name;
             cur.getDescription(name, true);
@@ -846,7 +847,7 @@ void WsWuInfo::legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingDat
 
         if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
         {
-            unsigned time = nanoToMilli(cur.getValue());
+            unsigned time = (unsigned)nanoToMilli(cur.getValue());
 
             Owned<IEspECLTimingData> g = createECLTimingData();
             g->setName(name.str());
@@ -920,7 +921,7 @@ unsigned WsWuInfo::getTotalThorTime()
     Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
     ForEach(*times)
     {
-        totalThorTimeMS += nanoToMilli(times->query().getValue());
+        totalThorTimeMS += (unsigned)nanoToMilli(times->query().getValue());
     }
 
     return totalThorTimeMS;
@@ -938,7 +939,7 @@ unsigned WsWuInfo::getLegacyTotalThorTime()
     {
         times->query().getDescription(oldname, false);      // description will be set up
         if (streq(oldname.str(), TOTALTHORTIME))
-            return nanoToMilli(times->query().getValue());
+            return (unsigned)nanoToMilli(times->query().getValue());
     }
     return 0;
 }

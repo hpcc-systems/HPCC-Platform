@@ -860,7 +860,7 @@ static void httpGetDirectory(CHttpRequest* request, CHttpResponse* response, con
         StringBuffer s;
         entry->setProp("name", dir->getName(s));
         if (!dir->isDir())
-            entry->setPropInt("size", dir->getFileSize());
+            entry->setPropInt64("size", dir->getFileSize());
         CDateTime cdt;
         dir->getModifiedTime(cdt);
         entry->setProp("modified", cdt.getString(s.clear(), false));

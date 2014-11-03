@@ -663,8 +663,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     workunit.getWuid(wuid);
     const char *totalTimeStr = "Total thor time";
     cycle_t startCycles = get_cycles_now();
-    unsigned totalTimeNs = 0;
-    unsigned totalThisTimeNs = 0;
+    unsigned __int64 totalTimeNs = 0;
+    unsigned __int64 totalThisTimeNs = 0;
     getWorkunitTotalTime(&workunit, "thor", totalTimeNs, totalThisTimeNs);
 
     Owned<IConstWUQuery> query = workunit.getQuery(); 

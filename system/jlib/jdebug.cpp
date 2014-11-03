@@ -516,7 +516,7 @@ public:
             cb.report(ts.scope, ts.description, cycle_to_nanosec(ts.totalcycles), cycle_to_nanosec(ts.maxcycles), ts.count);
         }
     }
-    virtual void addTiming(const char * scope, unsigned __int64 cycles)
+    virtual void addTiming(const char * scope, cycle_t cycles)
     {
         CriticalBlock b(c);
         TimeSectionInfo *info = sections->find(scope);
@@ -600,7 +600,7 @@ public:
             PrintLog(getTimings(str).str());
         }
     }
-    virtual void mergeTiming(const char * scope, const __int64 totalcycles, const __int64 maxcycles, const unsigned count)
+    virtual void mergeTiming(const char * scope, cycle_t totalcycles, cycle_t maxcycles, const unsigned count)
     {
         CriticalBlock b(c);
         TimeSectionInfo *info = sections->find(scope);

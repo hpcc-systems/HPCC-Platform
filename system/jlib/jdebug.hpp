@@ -91,8 +91,8 @@ class StringBuffer;
 class MemoryBuffer;
 struct ITimeReporter : public IInterface
 {
-  virtual void addTiming(const char * scope, unsigned __int64 cycles) = 0;
-  virtual void mergeTiming(const char * scope, const __int64 totalcycles, const __int64 maxcycles, const unsigned count) = 0;
+  virtual void addTiming(const char * scope, cycle_t cycles) = 0;
+  virtual void mergeTiming(const char * scope, cycle_t totalcycles, cycle_t maxcycles, const unsigned count) = 0;
   virtual unsigned numSections() = 0;
   virtual __int64 getTime(unsigned idx) = 0;
   virtual __int64 getMaxTime(unsigned idx) = 0;

@@ -164,7 +164,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     
     if(m_secmgr.get() == NULL)
     {
-        for(int i = 0; i < features.length(); i++)
+        for(unsigned i = 0; i < features.length(); i++)
         {
             const char* feature = features.item(i);
             if(feature != NULL && feature[0] != 0)
@@ -184,7 +184,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
 
     std::map<std::string, std::string> namemap;
 
-    int i;
+    unsigned i;
     for(i = 0; i < features.length(); i++)
     {
         const char* feature = features.item(i);

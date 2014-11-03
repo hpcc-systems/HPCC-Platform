@@ -142,7 +142,7 @@ public:
         if (now > goTime)
             return 0;
         else
-            return goTime - now;
+            return (unsigned)(goTime - now);
     }
 };
 

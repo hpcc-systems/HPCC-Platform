@@ -318,7 +318,7 @@ public:
     {
         ctx->noteProcessed(subgraphId, activityId, _idx, _processed);
     }
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
     {
         ctx->mergeActivityStats(fromStats, subgraphId, activityId, _totalCycles, _localCycles);
     }
@@ -497,7 +497,7 @@ public:
         }
     }
 
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
     {
         if (_totalCycles.totalCycles || _localCycles)
         {

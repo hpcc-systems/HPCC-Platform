@@ -164,7 +164,7 @@ public:
         input = inputs.item(0);
         startInput(input);
         dataLinkStart();
-        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & helper->getJoinFlags());
+        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & helper->getJoinFlags()) != 0);
         bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
 
         if (helper->getJoinFlags()&JFlimitedprefixjoin) {

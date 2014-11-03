@@ -1771,7 +1771,7 @@ static void workunittimings(const char *wuid)
             {
                 if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0))
                 {
-                    unsigned time = (iter->query().getPropInt64("@value") / 1000000);
+                    unsigned time = (unsigned)(iter->query().getPropInt64("@value") / 1000000);
                     displayGraphTiming(name.str(), time);
                 }
             }
@@ -2054,11 +2054,11 @@ struct CTreeItem : public CInterface
     String *tail;
     CTreeItem *parent;
     unsigned index;
-    unsigned startOffset;
-    unsigned endOffset;
-    unsigned adjust;
+    offset_t startOffset;
+    offset_t endOffset;
+    offset_t adjust;
     bool supressidx;
-    CTreeItem(CTreeItem *_parent, String *_tail, unsigned _index, unsigned _startOffset)
+    CTreeItem(CTreeItem *_parent, String *_tail, unsigned _index, offset_t _startOffset)
     {
         parent = LINK(_parent);
         startOffset = _startOffset;
@@ -2082,8 +2082,8 @@ struct CTreeItem : public CInterface
         if ((index!=0)||tail->IsShared())
             xpath.append('[').append(index+1).append(']');
     }
-    unsigned size() { return endOffset?(endOffset-startOffset):0; }
-    unsigned adjustedSize(bool &adjusted) { adjusted = (adjust!=0); return size()-adjust; }
+    offset_t size() { return endOffset?(endOffset-startOffset):0; }
+    offset_t adjustedSize(bool &adjusted) { adjusted = (adjust!=0); return size()-adjust; }
 };
 
 class CXMLSizesParser : public CInterface
@@ -2104,7 +2104,7 @@ class CXMLSizesParser : public CInterface
         {
             CTreeItem **left = (CTreeItem **)_left;
             CTreeItem **right = (CTreeItem **)_right;
-            return ((*right)->size() - (*left)->size());
+            return (int)((*right)->size() - (*left)->size());
         }
     public:
 
@@ -2145,7 +2145,7 @@ class CXMLSizesParser : public CInterface
             assertex(tos);
             tos->endOffset = endOffset;
             bool adjusted;
-            unsigned sz = tos->adjustedSize(adjusted);
+            offset_t sz = tos->adjustedSize(adjusted);
             if (sz>=limit)
             {
                 CTreeItem *parent = tos->parent;
@@ -2170,7 +2170,7 @@ class CXMLSizesParser : public CInterface
                 CTreeItem &match = arr.item(m);
                 StringBuffer xpath;
                 match.getXPath(xpath);
-                printf("xpath=%s, size=%d\n", xpath.str(), match.size());
+                printf("xpath=%s, size=%"I64F"d\n", xpath.str(), match.size());
             }
         }
         void printResultTree()
@@ -2181,14 +2181,14 @@ class CXMLSizesParser : public CInterface
             ForEachItemIn(i, arr) {
                 CTreeItem &item = arr.item(i);
                 bool adjusted;
-                unsigned sz = item.adjustedSize(adjusted);
+                offset_t sz = item.adjustedSize(adjusted);
                 if (sz>=limit) {
                     res.clear();
                     item.getXPath(res);
                     if (adjusted)
                         res.append(" (rest)");
                     res.padTo(40);
-                    res.appendf(" %10d(%5.2f%%)",sz,((float)sz*100.0)/(float)totalSize);
+                    res.appendf(" %10"I64F"d(%5.2f%%)",sz,((float)sz*100.0)/(float)totalSize);
                     printf("%s\n",res.str());
                 }
             }

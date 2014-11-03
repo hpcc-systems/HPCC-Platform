@@ -492,7 +492,7 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
     if(httptest_tracelevel > 5)
         fprintf(m_ofile, ">>sending out request to %s:%d for %d times\n", m_host.str(), m_port, times);
 
-    __int64 start = msTick();
+    unsigned start = msTick();
     int slowest = 0;
     int fastest = 2147483647;
     for(int i = 0; i < times; i++)
@@ -540,7 +540,7 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
         if(httptest_tracelevel > 10)
             fprintf(m_ofile, "%s%s%s\n", sepstr, request.str(), sepstr);
 
-        __int64 start1 = msTick();
+        unsigned start1 = msTick();
 
         socket->write(request.str(), request.length());
 
@@ -564,7 +564,7 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
         socket->shutdown();
         socket->close();
         fflush(m_ofile);
-        __int64 end1 = msTick();
+        unsigned end1 = msTick();
         int duration = end1 - start1;
         if(duration <= fastest)
             fastest = duration;
@@ -575,7 +575,7 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
             fprintf(stderr, "sent out %d\n", i);
     }
 
-    __int64 end = msTick();
+    unsigned end = msTick();
     stat.msecs = end - start;
     stat.numrequests = times;
     stat.totalreqlen = times * request.length();
