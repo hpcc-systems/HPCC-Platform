@@ -158,6 +158,7 @@ bool extractEclCmdOption(bool & option, IProperties * globals, const char * envN
 bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval);
 
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
+void addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValue> &values);
 
 enum eclObjParameterType
 {
@@ -256,6 +257,7 @@ public:
             "   --ecl-only             Send ecl text to hpcc without generating archive\n"
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
             "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
+            "   -Dname=value           Override the definition of a global attribute 'name'\n"
             " eclcc options:\n"
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
@@ -272,6 +274,7 @@ public:
     StringAttr optAttributePath;
     StringAttr optSnapshot;
     IArrayOf<IEspNamedValue> debugValues;
+    IArrayOf<IEspNamedValue> definitions;
     unsigned optResultLimit;
     bool optNoArchive;
     bool optLegacy;

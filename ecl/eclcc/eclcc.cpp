@@ -299,6 +299,7 @@ protected:
     void processFile(EclCompileInstance & info);
     void processReference(EclCompileInstance & instance, const char * queryAttributePath);
     void processBatchFiles();
+    void processDefinitions(EclRepositoryArray & repositories);
     void reportCompileErrors(IErrorReceiver & errorProcessor, const char * processName);
     void setDebugOption(const char * name, bool value);
     void usage();
@@ -338,6 +339,7 @@ protected:
     StringArray inputFileNames;
     StringArray applicationOptions;
     StringArray debugOptions;
+    StringArray definitions;
     StringArray warningMappings;
     StringArray compileOptions;
     StringArray linkOptions;
@@ -1216,6 +1218,47 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 }
 
+void EclCC::processDefinitions(EclRepositoryArray & repositories)
+{
+    ForEachItemIn(iDef, definitions)
+    {
+        const char * definition = definitions.item(iDef);
+        StringAttr name;
+        StringBuffer value;
+        const char * eq = strchr(definition, '=');
+        if (eq)
+        {
+            name.set(definition, eq-definition);
+            value.append(eq+1);
+        }
+        else
+        {
+            name.set(definition);
+            value.append("true");
+        }
+        value.append(";");
+
+        StringAttr module;
+        const char * attr;
+        const char * dot = strrchr(name, '.');
+        if (dot)
+        {
+            module.set(name, dot-name);
+            attr = dot+1;
+        }
+        else
+        {
+            module.set("");
+            attr = name;
+        }
+
+        //Create a repository with just that attribute.
+        Owned<IFileContents> contents = createFileContentsFromText(value, NULL);
+        repositories.append(*createSingleDefinitionEclRepository(module, attr, contents));
+    }
+}
+
+
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
 {
     instance.srcArchive.setown(createPTreeFromXMLString(archiveXML, ipt_caseInsensitive));
@@ -1226,6 +1269,20 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     {
         IPropertyTree &item = iter->query();
         instance.wu->setDebugValue(item.queryProp("@name"), item.queryProp("@value"), true);
+    }
+
+    //Mainly for testing...
+    Owned<IPropertyTreeIterator> iterDef = archiveTree->getElements("Definition");
+    ForEach(*iterDef)
+    {
+        IPropertyTree &item = iterDef->query();
+        const char * name = item.queryProp("@name");
+        const char * value = item.queryProp("@value");
+        StringBuffer definition;
+        definition.append(name);
+        if (value)
+            definition.append('=').append(value);
+        definitions.append(definition);
     }
 
     const char * queryText = archiveTree->queryProp("Query");
@@ -1260,6 +1317,8 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         archiveCollection.setown(createArchiveEclCollection(archiveTree));
 
     EclRepositoryArray repositories;
+    //Items first in the list have priority -Dxxx=y overrides all
+    processDefinitions(repositories);
     repositories.append(*LINK(pluginsRepository));
     if (archiveTree->getPropBool("@useLocalSystemLibraries", false)) // Primarily for testing.
         repositories.append(*LINK(libraryRepository));
@@ -1297,6 +1356,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     }
 
     repositories.append(*createRepository(archiveCollection));
+
     instance.dataServer.setown(createCompoundRepository(repositories));
 
     //Ensure classes are not linked by anything else
@@ -1363,6 +1423,8 @@ void EclCC::processFile(EclCompileInstance & instance)
             expandedSourceName.append(curFilename);
 
         EclRepositoryArray repositories;
+        //Items first in the list have priority -Dxxx=y overrides all
+        processDefinitions(repositories);
         repositories.append(*LINK(pluginsRepository));
         repositories.append(*LINK(libraryRepository));
         if (bundlesRepository)
@@ -1793,6 +1855,10 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             else
                 deniedPermissions.append(tempArg);
         }
+        else if (iter.matchFlag(tempArg, "-D"))
+        {
+            definitions.append(tempArg);
+        }
         else if (iter.matchFlag(optArchive, "-E"))
         {
         }
@@ -2075,6 +2141,7 @@ const char * const helpText[] = {
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
+    "!   -Dname=value  Override the definition of a global attribute 'name'",
     "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
     "!   --deny=str    Disallow use of named feature",
     "    -help, --help Display this message",

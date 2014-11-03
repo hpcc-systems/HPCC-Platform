@@ -10082,10 +10082,18 @@ inline bool isDollarModule(IHqlExpression * expr)
     return expr->isAttribute() && (expr->queryName() == selfAtom);
 }
 
+inline bool isRootModule(IHqlExpression * expr)
+{
+    return expr->isAttribute() && (expr->queryName() == _root_Atom);
+}
+
 IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpression * expr)
 {
     if (isDollarModule(expr))
         return LINK(queryExpression(globalScope));
+    if (isRootModule(expr))
+        return LINK(queryExpression(lookupCtx.queryRepository()->queryRootScope()));
+
     IAtom * name = expr->queryName();
     if ((name != _dot_Atom) && (name != _container_Atom))
     {
@@ -10206,8 +10214,16 @@ void HqlGram::processImport(attribute & modulesAttr, IIdAtom * aliasName)
     {
         IHqlExpression & cur = modules.item(i);
         //IMPORT $; is a no-op.  Don't add the real name of the $ module into scope
-        if (!aliasName && isDollarModule(&cur))
-            continue;
+        if (!aliasName)
+        {
+            if (isDollarModule(&cur))
+                continue;
+            if (isRootModule(&cur))
+            {
+                reportError(ERR_BAD_IMPORT, modulesAttr, "An alias name must be provided when importing ^");
+                return;
+            }
+        }
 
         OwnedHqlExpr module = resolveImportModule(modulesAttr, &cur);
         if (module)

@@ -713,6 +713,9 @@ importId
     | '$'               {
                             $$.setExpr(createAttribute(selfAtom), $1);
                         }
+    | '^'               {
+                            $$.setExpr(createAttribute(_root_Atom), $1);
+                        }
     | importId '.' UNKNOWN_ID
                         {
                             $$.setExpr(createAttribute(_dot_Atom, $1.getExpr(), createId($3.getId())), $1);

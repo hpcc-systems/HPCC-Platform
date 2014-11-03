@@ -256,9 +256,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         {
             //Allow eclcc-xx-<n> so that multiple values can be passed through for the same named debug symbol
             const char * start = option + (*option=='-' ? 1 : 6);
-            const char * dash = strchr(start, '-');     // position of second dash, if present
+            const char * dash = strrchr(start, '-');     // position of second dash, if present
             StringAttr optName;
-            if (dash)
+            if (dash && (dash != start))
                 optName.set(start, dash-start);
             else
                 optName.set(start);
@@ -278,14 +278,19 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 eclccCmd.appendf(" -I%s", value);
             else if (stricmp(optName, "libraryPath") == 0)
                 eclccCmd.appendf(" -L%s", value);
-            else if (stricmp(start, "-allow")==0 || stricmp(optName, "-allow")==0)
+            else if (stricmp(optName, "-allow")==0)
             {
                 if (isLocal)
                     throw MakeStringException(0, "eclcc-allow option can not be set per-workunit");  // for security reasons
-                eclccCmd.appendf(" -%s=%s", start, value);
+                eclccCmd.appendf(" -%s=%s", optName.get(), value);
+            }
+            else if (*optName == 'd')
+            {
+                //Short term work around for the problem that all debug names get lower-cased
+                eclccCmd.appendf(" -D%s=%s", optName.get()+1, value);
             }
             else
-                eclccCmd.appendf(" -%s=%s", start, value);
+                eclccCmd.appendf(" -%s=%s", optName.get(), value);
         }
         else if (strchr(option, '-'))
         {

@@ -410,6 +410,20 @@ public:
                     cmdLine.append('=').append(value);
             }
         }
+        if (cmd.definitions.length())
+        {
+            ForEachItemIn(i, cmd.definitions)
+            {
+                IEspNamedValue &item = cmd.definitions.item(i);
+                const char *name = item.getName();
+                const char *value = item.getValue();
+                cmdLine.append(" \"-D").append(name);
+                if (value)
+                    cmdLine.append('=').append(value);
+                cmdLine.append("\"");
+            }
+            cmd.definitions.kill();
+        }
         if ((int)cmd.optResultLimit > 0)
         {
             cmdLine.append(" -fapplyInstantEclTransformations=1");
@@ -555,6 +569,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         return EclCmdOptionMatch;
     }
     if (matchVariableOption(iter, 'f', debugValues))
+        return EclCmdOptionMatch;
+    if (matchVariableOption(iter, 'D', definitions))
         return EclCmdOptionMatch;
     if (iter.matchPathFlag(optLibPath, ECLOPT_LIB_PATH_S))
         return EclCmdOptionMatch;
