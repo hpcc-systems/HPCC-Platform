@@ -47,7 +47,7 @@
 #define WUERR_PackageAlreadyExists              5022
 #define WUERR_MismatchClusterType               5023
 #define WUERR_InvalidDll                        5024
-#define WUERR_WorkunitPublished                 5005 // that's bizarre!
-#define WUERR_GraphProgressWriteUnsupported     5025
+#define WUERR_WorkunitPublished                 5025
+#define WUERR_GraphProgressWriteUnsupported     5026
 
 #endif
