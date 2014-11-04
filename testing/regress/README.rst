@@ -15,13 +15,18 @@ Command:
 Result:
 
 |
-|       usage: ecl-test [-h] [--version] [--config [CONFIG]]
-|                       [--loglevel [{info,debug}]] [--suiteDir [SUITEDIR]]
-|                       [--timeout [TIMEOUT]] [--keyDir [KEYDIR]]
+|       usage: ecl-test [-h] [--config [CONFIG]]
+|                       [--loglevel [{info,debug}]]
+|                       [--suiteDir [SUITEDIR]]
+|                       [--timeout [TIMEOUT]]
+|                       [--keyDir [KEYDIR]]
 |                       [--ignoreResult]
 |                       [-X name1=value1[,name2=value2...]]
 |                       [-f optionA=valueA[,optionB=valueB...]]
+|                       [--pq threadNumber]
 |                       [--dynamic source=cluster_list|all]
+|                       [--runclass class[,class,...]]
+|                       [--excludeclass class[,class,...]]
 |                       {list,setup,run,query} ...
 | 
 |       HPCC Platform Regression suite
@@ -35,7 +40,6 @@ Result:
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
-|        --version, -v            show program's version number and exit
 |        --config [CONFIG]        config file to use. Default: ecl-test.json.
 |        --loglevel [{info,debug}]
 |                                 set the log level. Use debug for more detailed logfile.
@@ -44,13 +48,19 @@ Result:
 |        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
 |        --keyDir [KEYDIR], -k [KEYDIR]
 |                                 key file directory to compare test output. Default value defined in regress.json config file.
-|        --ignoreResult, -i    completely ignore the result.
+|        --ignoreResult, -i       completely ignore the result.
 |        -X name1=value1[,name2=value2...]
 |                                 sets the stored input value (stored('name')).
 |        -f optionA=valueA[,optionB=valueB...]
 |                                 set an ECL option (equivalent to #option).
+|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |        --dynamic source=cluster_list|all
 |                                 execute ECL query through a generated stub with source cluster(s).
+|        --runclass class[,class,...], -r class[,class,...]
+|                                 run subclass(es) of the suite. Default value is 'all'
+|        --excludeclass class[,class,...], -e class[,class,...]
+|                                 exclude subclass(es) of the suite. Default value is 'none'
+|
 
 Important!
     There is a bug in Python argparse library whichis impacts the quoted parameters. So either in -X or -f or both contains a value with space(s) inside then the whole argument should be put in double quote!
@@ -76,13 +86,17 @@ Command:
 Result:
 
 |
-|       usage: ecl-test list [-h]
+|       usage: ecl-test list [-h] [--config [CONFIG]]
+|                            [--loglevel [{info,debug}]]
 |
 |       positional arguments:
 |        targets                  print target clusters from config (ecl-test.json by default).
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
+|        --config [CONFIG]        config file to use. Default: ecl-test.json
+|        --loglevel [{info,debug}]
+|                                 set the log level. Use debug for more detailed logfile.
 |
 
 Parameters of Regression Suite setup sub-command:
@@ -95,14 +109,44 @@ Command:
 Result:
 
 |
-|       usage: ecl-test setup [-h] [--target [target_cluster_list | all]]
+|       usage: ecl-test setup [-h] [--config [CONFIG]]
+|                             [--loglevel [{info,debug}]]
+|                             [--suiteDir [SUITEDIR]]
+|                             [--timeout [TIMEOUT]]
+|                             [--keyDir [KEYDIR]]
+|                             [--ignoreResult]
+|                             [-X name1=value1[,name2=value2...]]
+|                             [-f optionA=valueA[,optionB=valueB...]]
 |                             [--pq threadNumber]
+|                             [--dynamic source=cluster_list|all]
+|                             [--runclass class[,class,...]]
+|                             [--excludeclass class[,class,...]]
+|                             [--target [target_cluster_list | all]]
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
+|        --config [CONFIG]        config file to use. Default: ecl-test.json.
+|        --loglevel [{info,debug}]
+|                                 set the log level. Use debug for more detailed logfile.
+|        --suiteDir [SUITEDIR], -s [SUITEDIR]
+|                                 suiteDir to use. Default value is the current directory and it can handle relative path.
+|        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|        --keyDir [KEYDIR], -k [KEYDIR]
+|                                 key file directory to compare test output. Default value defined in regress.json config file.
+|        --ignoreResult, -i       completely ignore the result.
+|        -X name1=value1[,name2=value2...]
+|                                 sets the stored input value (stored('name')).
+|        -f optionA=valueA[,optionB=valueB...]
+|                                 set an ECL option (equivalent to #option).
+|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --dynamic source=cluster_list|all
+|                                 execute ECL query through a generated stub with source cluster(s).
+|        --runclass class[,class,...], -r class[,class,...]
+|                                 run subclass(es) of the suite. Default value is 'all'
+|        --excludeclass class[,class,...], -e class[,class,...]
+|                                 exclude subclass(es) of the suite. Default value is 'none'
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
 |                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
-|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
 Parameters of Regression Suite run sub-command:
@@ -115,20 +159,47 @@ Command:
 Result:
 
 |
-|       usage: ecl-test run [-h] [--target [target_cluster_list | all]] [--publish]
+|       usage: ecl-test run [-h][--config [CONFIG]]
+|                           [--loglevel [{info,debug}]]
+|                           [--suiteDir [SUITEDIR]]
+|                           [--timeout [TIMEOUT]]
+|                           [--keyDir [KEYDIR]]
+|                           [--ignoreResult]
+|                           [-X name1=value1[,name2=value2...]]
+|                           [-f optionA=valueA[,optionB=valueB...]]
 |                           [--pq threadNumber]
-|                           [--runclass [class]] [--excludeclass [class]]
+|                           [--dynamic source=cluster_list|all]
+|                           [--runclass class[,class,...]]
+|                           [--excludeclass class[,class,...]]
+|                           [--target [target_cluster_list | all]]
+|                           [--publish]
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
-|        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the suite on target cluster(s). If target = 'all' then run suite on all clusters. If undefined the config 'defaultTargetClusters' value will be used.
-|        --publish, -p            publish compiled query instead of run.
+|        --config [CONFIG]        config file to use. Default: ecl-test.json.
+|        --loglevel [{info,debug}]
+|                                 set the log level. Use debug for more detailed logfile.
+|        --suiteDir [SUITEDIR], -s [SUITEDIR]
+|                                 suiteDir to use. Default value is the current directory and it can handle relative path.
+|        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|        --keyDir [KEYDIR], -k [KEYDIR]
+|                                 key file directory to compare test output. Default value defined in regress.json config file.
+|        --ignoreResult, -i       completely ignore the result.
+|        -X name1=value1[,name2=value2...]
+|                                 sets the stored input value (stored('name')).
+|        -f optionA=valueA[,optionB=valueB...]
+|                                 set an ECL option (equivalent to #option).
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --dynamic source=cluster_list|all
+|                                 execute ECL query through a generated stub with source cluster(s).
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
+|        --target [target_cluster_list | all], -t [target_cluster_list | all]
+|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
+|        --publish, -p            publish compiled query instead of run.
+|
 
 
 Parameters of Regression Suite query sub-command:
@@ -141,8 +212,20 @@ Command:
 Result:
 
 |
-|       usage: ecl-test query [-h] [--target [target_cluster_list | all]] [--publish]
+|       usage: ecl-test query [-h] [--config [CONFIG]]
+|                             [--loglevel [{info,debug}]]
+|                             [--suiteDir [SUITEDIR]]
+|                             [--timeout [TIMEOUT]]
+|                             [--keyDir [KEYDIR]]
+|                             [--ignoreResult]
+|                             [-X name1=value1[,name2=value2...]]
+|                             [-f optionA=valueA[,optionB=valueB...]]
 |                             [--pq threadNumber]
+|                             [--dynamic source=cluster_list|all]
+|                             [--runclass class[,class,...]]
+|                             [--excludeclass class[,class,...]]
+|                             [--target [target_cluster_list | all]]
+|                             [--publish]
 |                             ECL_query [ECL_query ...]
 |
 |       positional arguments:
@@ -150,10 +233,29 @@ Result:
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
+|        --config [CONFIG]        config file to use. Default: ecl-test.json.
+|        --loglevel [{info,debug}]
+|                                 set the log level. Use debug for more detailed logfile.
+|        --suiteDir [SUITEDIR], -s [SUITEDIR]
+|                                 suiteDir to use. Default value is the current directory and it can handle relative path.
+|        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|        --keyDir [KEYDIR], -k [KEYDIR]
+|                                 key file directory to compare test output. Default value defined in regress.json config file.
+|        --ignoreResult, -i       completely ignore the result.
+|        -X name1=value1[,name2=value2...]
+|                                 sets the stored input value (stored('name')).
+|        -f optionA=valueA[,optionB=valueB...]
+|                                 set an ECL option (equivalent to #option).
+|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --dynamic source=cluster_list|all
+|                                 execute ECL query through a generated stub with source cluster(s).
+|        --runclass class[,class,...], -r class[,class,...]
+|                                 run subclass(es) of the suite. Default value is 'all'
+|        --excludeclass class[,class,...], -e class[,class,...]
+|                                 exclude subclass(es) of the suite. Default value is 'none'
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the query on target cluster(s). If target = 'all' then run query on all clusters. If undefined the config 'defaultTargetClusters' value will be used.
+|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
 |        --publish, -p            publish compiled query instead of run.
-|        --pq threadNumber        parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )
 |
 
 Steps to run Regression Suite
