@@ -76,6 +76,33 @@ define([
             this._onRefresh();
         },
 
+        _onWUPause: function (event, params) {
+            arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
+                if (this.activity.isInstanceOfWorkunit(item)) {
+                    item.pause();
+                }
+            }, this);
+            this._onRefresh();
+        },
+
+        _onWUPauseNow: function (event, params) {
+            arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
+                if (this.activity.isInstanceOfWorkunit(item)) {
+                    item.pauseNow();
+                }
+            }, this);
+            this._onRefresh();
+        },
+
+        _onWUResume: function (event, params) {
+            arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
+                if (this.activity.isInstanceOfWorkunit(item)) {
+                    item.resume();
+                }
+            }, this);
+            this._onRefresh();
+        },
+
         _onWUAbort: function (event, params) {
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
                 if (this.activity.isInstanceOfWorkunit(item)) {
@@ -251,6 +278,27 @@ define([
                 label: this.i18n.Abort,
                 onClick: function (event) {
                     context._onWUAbort(event);
+                }
+            }).placeAt(this.openButton.domNode, "after");
+            this.wuResumeButton = new Button({
+                id: this.id + "WUResumeButton",
+                label: this.i18n.Resume,
+                onClick: function (event) {
+                    context._onWUResume(event);
+                }
+            }).placeAt(this.openButton.domNode, "after");
+            this.wuPauseNowButton = new Button({
+                id: this.id + "WUPauseNowButton",
+                label: this.i18n.PauseNow,
+                onClick: function (event) {
+                    context._onWUPauseNow(event);
+                }
+            }).placeAt(this.openButton.domNode, "after");
+            this.wuPauseButton = new Button({
+                id: this.id + "WUPauseButton",
+                label: this.i18n.Pause,
+                onClick: function (event) {
+                    context._onWUPause(event);
                 }
             }).placeAt(this.openButton.domNode, "after");
 
@@ -496,6 +544,9 @@ define([
             this.clusterResumeButton.set("disabled", !clusterPausedSelected);
             this.clusterClearButton.set("disabled", !clusterHasItems);
             this.openButton.set("disabled", !wuSelected && !thorClusterSelected);
+            this.wuPauseButton.set("disabled", !wuSelected);
+            this.wuPauseNowButton.set("disabled", !wuSelected);
+            this.wuResumeButton.set("disabled", !wuSelected);
             this.wuAbortButton.set("disabled", !wuSelected);
             this.wuHighPriorityButton.set("disabled", !wuCanHigh);
             this.wuNormalPriorityButton.set("disabled", !wuCanNormal);
