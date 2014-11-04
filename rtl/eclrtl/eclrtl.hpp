@@ -426,7 +426,7 @@ inline void rtlWriteInt4(void * data, unsigned value) { *(unsigned *)data = valu
 ECLRTL_API void rtlWriteInt5(void * data, unsigned __int64 value);
 ECLRTL_API void rtlWriteInt6(void * data, unsigned __int64 value);
 ECLRTL_API void rtlWriteInt7(void * data, unsigned __int64 value);
-inline void rtlWriteInt8(void * data, unsigned value) { *(unsigned __int64 *)data = value; }
+inline void rtlWriteInt8(void * data, unsigned __int64 value) { *(unsigned __int64 *)data = value; }
 inline void rtlWriteSize32t(void * data, unsigned value) { *(size32_t *)data = value; }
 ECLRTL_API void rtlWriteInt(void * self, __int64 val, unsigned length);
 
