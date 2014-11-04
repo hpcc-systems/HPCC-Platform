@@ -819,9 +819,11 @@ interface IEmbedFunctionContext : extends IInterface
 
 enum EmbedFlags { EFembed = 1, EFimport = 2, EFnoreturn = 4, EFnoparams = 8 }; // For createFunctionContext flags
 
+interface ICodeContext;
 interface IEmbedContext : extends IInterface
 {
-    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) = 0;
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options) = 0; // legacy
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options) = 0;
     // MORE - add syntax checked here!
 };
 
