@@ -372,6 +372,15 @@ define([
         setToFailed: function () {
             return this._action("setToFailed");
         },
+        pause: function () {
+            return this._action("Pause");
+        },
+        pauseNow: function () {
+            return this._action("PauseNow");
+        },
+        resume: function () {
+            return this._action("Resume");
+        },
         abort: function () {
             return this._action("Abort");
         },

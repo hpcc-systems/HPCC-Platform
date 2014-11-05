@@ -314,6 +314,7 @@ define({root:
     Path: "Path",
     PathMask: "Path Mask",
     Pause: "Pause",
+    PauseNow: "Pause Now",
     PctComplete: "% Complete",
     PercentDone: "Percent Done",
     PerformingLayout: "Performing Layout...",
