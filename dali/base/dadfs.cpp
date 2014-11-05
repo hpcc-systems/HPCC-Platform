@@ -7221,6 +7221,8 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
     if (logicalname->isMulti()) 
         // don't bother checking because the sub file creation will
         return new CDistributedSuperFile(this,*logicalname,user,transaction); // temp superfile
+    if (strchr(logicalname->get(), '*')) // '*' only wildcard supported. NB: This is a temporary fix (See: HPCC-12523)
+        throw MakeStringException(-1, "Invalid filename lookup: %s", logicalname->get());
     Owned<IDfsLogicalFileNameIterator> redmatch;
     loop
     {
