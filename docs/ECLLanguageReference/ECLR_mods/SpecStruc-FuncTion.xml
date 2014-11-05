@@ -223,7 +223,21 @@ myRecord t3(myRecord l) := TRANSFORM
 END;
 
 y3 := PROJECT(ds, t3(LEFT));
-OUTPUT(y3);        </programlisting>
+OUTPUT(y3);     
+
+//Example using MODULE structure to return multiple values from a FUNCTION
+OperateOnNumbers(Number1, Number2) := FUNCTION
+  result := MODULE
+    EXPORT Multiplied  := Number1 * Number2;
+    EXPORT Differenced := Number1 - Number2;
+    EXPORT Summed      := Number1 + Number2;  
+  END;
+  RETURN result;
+END;
+
+OperateOnNumbers(23,22).Multiplied;
+OperateOnNumbers(23,22).Differenced;
+OperateOnNumbers(23,22).Summed;   </programlisting>
 
   <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>,
   <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link

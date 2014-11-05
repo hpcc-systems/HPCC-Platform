@@ -69,10 +69,6 @@
                                 <label class="Prompt" for="${id}IsLibrary">${i18n.IsLibrary}:</label>
                                 <div id="${id}IsLibrary"></div>
                             </li>
-                            <li>
-                                <label class="Prompt" for="${id}LibrariesUsed">${i18n.LibrariesUsed}:</label>
-                                <div id="${id}LibrariesUsed"></div>
-                            </li>
                         </ul>
                     </form>
                 </div>
@@ -82,6 +78,8 @@
             <div id="${id}_QuerySetLogicalFiles" title="${i18n.LogicalFiles}" data-dojo-props="delayWidget: 'QuerySetLogicalFilesWidget'" data-dojo-type="DelayLoadWidget">
             </div>
             <div id="${id}_QuerySetSuperFiles" title="${i18n.SuperFiles}" data-dojo-props="delayWidget: 'QuerySetSuperFilesWidget'" data-dojo-type="DelayLoadWidget">
+            </div>
+            <div id="${id}_LibrariesUsed" title="${i18n.LibrariesUsed}" data-dojo-props="delayWidget: 'LibrariesUsedWidget'" data-dojo-type="DelayLoadWidget">
             </div>
             <div id="${id}_Graphs" title="${i18n.Graphs}" data-dojo-props="delayWidget: 'GraphsWidget'" data-dojo-type="DelayLoadWidget">
             </div>

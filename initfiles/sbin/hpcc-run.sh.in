@@ -96,7 +96,7 @@ doOneIP(){
           rc=${PIPESTATUS[0]}
           echo
           return $rc
-    
+
        fi
    else
        echo "$_ip: Cannot Ping host? (Host Alive?)"
@@ -128,12 +128,7 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
               CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
           fi
           echo "\$IP: Running \$CMD";
-          if [ $concurrent -ne 1 ]
-          then
-              CMD="\$CMD | tee $hpccStatusFile"
-          else
-              CMD="\$CMD > $hpccStatusFile"
-          fi
+          CMD="\$CMD | tee $hpccStatusFile"
           ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD;
           rc=\${PIPESTATUS[0]}
 
@@ -155,7 +150,7 @@ SCRIPTFILE
 }
 
 runScript() {
-    if [ $concurrent -ne 1 ] && [ $hasPython -eq 1 ]; then
+    if [ "$RUN_CLUSTER_DISPLAY_OUTPUT" = "FALSE" ] && [ $hasPython -eq 1 ]; then
         OPTIONS="${OPTIONS:+"$OPTIONS "}-n ${concurrent}"
         eval ${INSTALL_DIR}/sbin/cluster_script.py -f ${scriptFile} "$OPTIONS"
         rc=$?
@@ -176,7 +171,7 @@ doSetup() {
      scriptFile=/tmp/${action}_setup_$$
      createScript $scriptFile $action "setup" $comp
      runScript
-     [ $concurrent -ne 1 ] && report "${action} setup"
+     report "${action} setup"
 }
 
 doStatus() {
@@ -184,7 +179,7 @@ doStatus() {
      scriptFile=/tmp/${action}_status_$$
      createScript $scriptFile $action "status" $comp
      runScript
-     [ $concurrent -ne 1 ] && report "${action} status"
+     report "${action} status"
 }
 
 doStop() {
@@ -201,10 +196,6 @@ doStop() {
         runScript $IPsExcludeDIP
         report "${action} stop" $DIP
         doOneIP $DIP $action "stop" $comp
-        if [ "${action}" = "hpcc-init" ]; then
-            echo "Service dafilesrv is still running".
-            echo "To stop it, run \"service dafilesrv stop\"."
-        fi
     fi
 }
 
@@ -252,13 +243,15 @@ report() {
     _title=$1
     hostToSkip=$2
 
-    ls ${reportDir} | while read _host
-    do
-       [ "$_host" = "$hostToSkip" ] && continue
-       echo "$_host $_title :"
-       cat ${reportDir}/$_host | grep -v "ervice dafilesrv" | grep -v -e "^[[:space:]]*$" 
-       echo
-    done
+    if [ "$RUN_CLUSTER_DISPLAY_OUTPUT" = "FALSE" ]; then
+        ls ${reportDir} | while read _host
+        do
+            [ "$_host" = "$hostToSkip" ] && continue
+            echo "$_host $_title :"
+            cat ${reportDir}/$_host | grep -v "ervice dafilesrv" | grep -v -e "^[[:space:]]*$"
+            echo
+        done
+    fi
 }
 
 
@@ -300,6 +293,7 @@ expected_python_version=2.6
 is_python_installed $expected_python_version
 [ $? -eq 0 ] && hasPython=1
 concurrent=0
+RUN_CLUSTER_DISPLAY_OUTPUT=FALSE
 
 OPTIONS="-e $configfile -s ${SECTION:-DEFAULT}"
 
@@ -312,7 +306,7 @@ while true ; do
             shift 2 ;;
         -a|--action) action=$2
             shift 2 ;;
-        -n|--concurrent) 
+        -n|--concurrent)
             if [ -n "$2" ] && [[ $2 =~ ^[1-9][0-9]*$ ]] && [ $concurrent -ne 1 ]; then
                 concurrent=$2
             fi
@@ -341,23 +335,23 @@ case "$action" in
         ;;
 esac
 
-for arg; do 
-    arg=$arg; 
+for arg; do
+    arg=$arg;
     case "$arg" in
-        start) 
+        start)
             doStart
             ;;
-        stop) 
+        stop)
             doStop
             ;;
         restart)
             doStop
             doStart
             ;;
-        status) 
+        status)
             doStatus
             ;;
-        setup) 
+        setup)
             doSetup
             ;;
         *) print_usage;;

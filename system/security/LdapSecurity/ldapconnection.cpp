@@ -970,6 +970,7 @@ public:
     }
     CLDAPGetValuesLenWrapper(LDAP *ld, LDAPMessage *msg, const char * attr)
     {
+        bvalues = NULL;
         getValues(ld,msg,attr);
     }
 
