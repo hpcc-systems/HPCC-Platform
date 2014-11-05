@@ -1207,8 +1207,8 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                             message.appendf("Cannot delete %s: file not found", fileName);
                         else
                             message.appendf("Cannot delete %s on %s: file not found", fileName, nodeGroup);
+                        PROGLOG("CWsDfuEx::DFUDeleteFiles: %s", message.str());
                         setDeleteFileResults(fileName, nodeGroup, true, message, returnStr, actionResults);
-                        PROGLOG("Deleted Logical File: %s by: %s\n",fileNameAndNodeGroup, username.str());
                         filesCannotBeDeleted.append(fileNameAndNodeGroup);
                         continue;
                     }
