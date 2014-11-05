@@ -1099,7 +1099,7 @@ class HqlLex
     private:
         static void doEnterEmbeddedMode(yyscan_t yyscanner);
         void declareXmlSymbol(const YYSTYPE & errpos, const char *name);
-        StringBuffer &lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &value);
+        bool lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &value);
         void setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *value, bool append);
         IIterator *getSubScopes(const YYSTYPE & errpos, const char *name, bool doAll);
         IXmlScope *queryTopXmlScope();
