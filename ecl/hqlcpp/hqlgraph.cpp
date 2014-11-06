@@ -260,9 +260,7 @@ void LogicalGraphCreator::createLogicalGraph(HqlExprArray & exprs)
         createRootGraphActivity(&exprs.item(i));
 //  endSubGraph();
 
-    Owned<IWUGraph> wug = wu->updateGraph("Logical");
-    wug->setXGMMLTree(graph.getClear());
-    wug->setType(GraphTypeEcl);
+    Owned<IWUGraph> wug = wu->createGraph("Logical", GraphTypeEcl, graph.getClear());
 }
 
 

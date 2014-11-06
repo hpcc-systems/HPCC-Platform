@@ -178,31 +178,29 @@ bool CWUXMLInfo::buildXmlWuidInfo(IConstWorkUnit &wu, StringBuffer& wuStructure,
 bool CWUXMLInfo::buildXmlGraphList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
 {
     try {
-      SCMStringBuffer buf;
+        SCMStringBuffer buf;
 
         IPropertyTree* resultTree = XMLStructure.addPropTree("WUGraphs", createPTree(ipt_caseInsensitive));
         Owned<IConstWUGraphIterator> graphs = &wu.getGraphs(GraphTypeAny);
         ForEach(*graphs)
         {
             IConstWUGraph &graph = graphs->query();
-            if(!graph.isValid())
-                continue;
-            IPropertyTree * p   =   resultTree->addPropTree("WUGraph", createPTree(ipt_caseInsensitive));
-            p->setProp("Wuid",      wu.getWuid(buf).str());
-         buf.clear();
-            p->setProp("Name",      graph.getName(buf).str());
-         buf.clear();
-         // MORE? (debugging)
-            p->setPropInt("Running",    (((wu.getState() == WUStateRunning)||(wu.getState() == WUStateDebugPaused)||(wu.getState() == WUStateDebugRunning)) ? 1 : 0));
+            IPropertyTree * p = resultTree->addPropTree("WUGraph", createPTree(ipt_caseInsensitive));
+            p->setProp("Wuid", wu.getWuid(buf).str());
+            buf.clear();
+            p->setProp("Name", graph.getName(buf).str());
+            buf.clear();
+            // MORE? (debugging)
+            p->setPropInt("Running", (((wu.getState() == WUStateRunning)||(wu.getState() == WUStateDebugPaused)||(wu.getState() == WUStateDebugRunning)) ? 1 : 0));
         }
     }
-    catch(IException* e){   
-      StringBuffer msg;
-      e->errorMessage(msg);
+    catch(IException* e) {
+        StringBuffer msg;
+        e->errorMessage(msg);
         WARNLOG("%s", msg.str());
         e->Release();
     }
-    catch(...){
+    catch(...) {
         WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlGraphList");
     }
     return true;

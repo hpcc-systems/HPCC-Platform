@@ -247,6 +247,13 @@ public:
         formatVersion = 0;
         progress = NULL;
     }
+    CConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *allProgress) : wuid(_wuid), graphName(_graphName)
+    {
+        progress = allProgress->queryPropTree(graphName);
+        formatVersion = progress->getPropInt("@format");
+        connectedWrite = false; // should never be
+        connected = true;
+    }
     void connect()
     {
         conn.clear();
@@ -260,6 +267,8 @@ public:
     void lockWrite()
     {
         if (connectedWrite) return;
+        if (!rootPath.length())
+            throw MakeStringException(WUERR_GraphProgressWriteUnsupported, "Writing to graph progress unsupported in this context");
         // JCSMORE - look at using changeMode here.
         if (conn)
             conn.clear();
@@ -629,6 +638,7 @@ public:
     virtual unsigned getTimerCount() const;
     virtual unsigned getApplicationValueCount() const;
     virtual IConstWUGraphIterator & getGraphs(WUGraphType type) const;
+    virtual IConstWUGraphMetaIterator & getGraphsMeta(WUGraphType type) const;
     virtual IConstWUGraph * getGraph(const char *name) const;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const;
     virtual IStringVal & getJobName(IStringVal & str) const;
@@ -761,6 +771,7 @@ public:
     void deschedule();
     unsigned addLocalFileUpload(LocalFileUploadType type, char const * source, char const * destination, char const * eventTag);
     IWUResult * updateGlobalByName(const char * name);
+    IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml);
     IWUGraph * updateGraph(const char * name);
     IWUQuery * updateQuery();
     IWUWebServicesInfo* updateWebServicesInfo(bool create);
@@ -1009,6 +1020,8 @@ public:
             { return c->getApplicationValueCount(); }
     virtual IConstWUGraphIterator & getGraphs(WUGraphType type) const
             { return c->getGraphs(type); }
+    virtual IConstWUGraphMetaIterator & getGraphsMeta(WUGraphType type) const
+            { return c->getGraphsMeta(type); }
     virtual IConstWUGraph * getGraph(const char *name) const
             { return c->getGraph(name); }
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const
@@ -1251,6 +1264,8 @@ public:
             { return c->addLocalFileUpload(type, source, destination, eventTag); }
     virtual IWUResult * updateGlobalByName(const char * name)
             { return c->updateGlobalByName(name); }
+    virtual IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml)
+            { return c->createGraph(name, type, xgmml); }
     virtual IWUGraph * updateGraph(const char * name) 
             { return c->updateGraph(name); }
     virtual IWUQuery * updateQuery()
@@ -1701,9 +1716,9 @@ public:
     virtual IStringVal & getLabel(IStringVal & ret) const;
     virtual IStringVal & getTypeName(IStringVal & ret) const;
     virtual WUGraphType getType() const;
+    virtual WUGraphState getState() const;
     virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const;
     virtual IPropertyTree * getXGMMLTreeRaw() const;
-    virtual bool isValid() const;
 
     virtual void setName(const char *str);
     virtual void setLabel(const char *str);
@@ -6735,6 +6750,14 @@ IStringVal& CLocalWUGraph::getLabel(IStringVal &str) const
     }
 }
 
+WUGraphState CLocalWUGraph::getState() const
+{
+    Owned<IConstWUGraphProgress> graphProgress = owner.getGraphProgress(p->queryProp("@name"));
+    if (!graphProgress)
+        return WUGraphUnknown;
+    return graphProgress->queryGraphState();
+}
+
 
 IStringVal& CLocalWUGraph::getXGMML(IStringVal &str, bool mergeProgress) const
 {
@@ -6867,6 +6890,112 @@ void CLocalWorkUnit::setHash(unsigned __int64 hash)
     p->setPropInt64("@hash", hash);
 }
 
+IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
+{
+    /* NB: this method should be 'cheap', loadGraphs() creates IConstWUGraph interfaces to the graphs
+     * it does not actually pull the graph data. We only use IConstWUGraphMeta here, which never probes the xgmml
+     * This method also connects to the graph progress (/GraphProgress/<wuid>) using a single connection, in order
+     * to get state information, it does not pull all the progress data.
+     */
+
+    CriticalBlock block(crit);
+    loadGraphs();
+
+    class CConstWUGraphMetaIterator: public CInterface, implements IConstWUGraphMetaIterator, implements IConstWUGraphMeta
+    {
+        StringAttr wuid;
+        WUGraphType type;
+        Owned<IConstWUGraphIterator> graphIter;
+        IConstWUGraph *curGraph;
+        Owned<IConstWUGraphProgress> curGraphProgress;
+        Linked<IPropertyTree> graphProgress;
+        Owned<IRemoteConnection> progressConn;
+        bool match()
+        {
+            return (GraphTypeAny == type) || (type == graphIter->query().getType());
+        }
+
+        void setCurrent(IConstWUGraph &graph)
+        {
+            curGraph = &graph;
+            SCMStringBuffer graphName;
+            curGraph->getName(graphName);
+            if (progressConn->queryRoot())
+                curGraphProgress.setown(new CConstGraphProgress(wuid, graphName.str(), progressConn->queryRoot()));
+        }
+    public:
+        IMPLEMENT_IINTERFACE;
+        CConstWUGraphMetaIterator(const char *_wuid, IConstWUGraphIterator *_graphIter, WUGraphType _type)
+            : wuid(_wuid), graphIter(_graphIter), type(_type)
+        {
+            curGraph = NULL;
+            StringBuffer progressPath;
+            progressPath.append("/GraphProgress/").append(wuid);
+            progressConn.setown(querySDS().connect(progressPath.str(), myProcessSession(), RTM_NONE, SDS_LOCK_TIMEOUT));
+        }
+        virtual bool first()
+        {
+            curGraph = NULL;
+            curGraphProgress.clear();
+            if (!graphIter->first())
+                return false;
+            if (match())
+            {
+                setCurrent(graphIter->query());
+                return true;
+            }
+            return next();
+        }
+        virtual bool next()
+        {
+            while (graphIter->next())
+            {
+                if (match())
+                {
+                    setCurrent(graphIter->query());
+                    return true;
+                }
+            }
+            curGraph = NULL;
+            curGraphProgress.clear();
+            return false;
+        }
+        virtual bool isValid()
+        {
+            return NULL != curGraph;
+        }
+        virtual IConstWUGraphMeta & query()
+        {
+            return *this;
+        }
+        // IConstWUGraphMeta
+        virtual IStringVal & getName(IStringVal & ret) const
+        {
+            return curGraph->getName(ret);
+        }
+        virtual IStringVal & getLabel(IStringVal & ret) const
+        {
+            return curGraph->getLabel(ret);
+        }
+        virtual IStringVal & getTypeName(IStringVal & ret) const
+        {
+            return curGraph->getTypeName(ret);
+        }
+        virtual WUGraphType getType() const
+        {
+            return curGraph->getType();
+        }
+        virtual WUGraphState getState() const
+        {
+            if (!curGraphProgress)
+                return WUGraphUnknown;
+            return curGraphProgress->queryGraphState();
+        }
+    };
+    IConstWUGraphIterator *graphIter = new CArrayIteratorOf<IConstWUGraph,IConstWUGraphIterator> (graphs, 0, (IConstWorkUnit *) this);
+    return * new CConstWUGraphMetaIterator(p->queryName(), graphIter, type);
+}
+
 IConstWUGraphIterator& CLocalWorkUnit::getGraphs(WUGraphType type) const
 {
     CriticalBlock block(crit);
@@ -6941,7 +7070,7 @@ IWUGraph* CLocalWorkUnit::createGraph()
     CriticalBlock block(crit);
     ensureGraphsUnpacked();
     loadGraphs();
-    if (!graphs.length())
+    if (!graphs.ordinality())
         p->addPropTree("Graphs", createPTree("Graphs"));
     IPropertyTree *r = p->queryPropTree("Graphs");
     IPropertyTree *s = r->addPropTree("Graph", createPTree());
@@ -6952,16 +7081,31 @@ IWUGraph* CLocalWorkUnit::createGraph()
     return q;
 }
 
+IWUGraph * CLocalWorkUnit::createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml)
+{
+    CriticalBlock block(crit);
+    ensureGraphsUnpacked();
+    Linked<IConstWUGraph> existing = getGraph(name);
+    if (existing)
+        throwUnexpected();
+
+    if (!graphs.length())
+        p->addPropTree("Graphs", createPTree("Graphs"));
+    IPropertyTree *r = p->queryPropTree("Graphs");
+    IPropertyTree *s = r->addPropTree("Graph", createPTree());
+    IWUGraph* q = new CLocalWUGraph(*this, LINK(s));
+    graphs.append(*LINK(q));
+    q->setName(name);
+    q->setXGMMLTree(xgmml);
+    q->setType(type);
+    return q;
+}
+
 IWUGraph * CLocalWorkUnit::updateGraph(const char * name)
 {
     CriticalBlock block(crit);
     ensureGraphsUnpacked();
-    IConstWUGraph *existing = getGraph(name);
-    if (existing)
-        return (IWUGraph *) existing;
-    IWUGraph * q = createGraph();
-    q->setName(name);
-    return q;
+    return (IWUGraph *)getGraph(name);
 }
 
 IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *name) const
@@ -7122,12 +7266,6 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
             mergeProgress(nodeIterator->query(), *progressTree, progressV);
         return copy.getClear();
     }
-}
-
-bool CLocalWUGraph::isValid() const
-{
-    // JCSMORE - I can't really see why this is necessary, a graph cannot be empty.
-    return p->hasProp("xgmml/graph/node") || p->hasProp("xgmml/graphBin");
 }
 
 WUGraphType CLocalWUGraph::getType() const
