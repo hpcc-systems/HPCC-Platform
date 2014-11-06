@@ -59,6 +59,11 @@
                         actionWorkunits('Delete');
                       }
 
+                      function resetQuery() {
+                          if (confirm("Reset This Query?"))
+                              actionWorkunits('ResetQueryStats');
+                      }
+
                       function toggleQuery() {
                         actionWorkunits('ToggleSuspend');
                       }
@@ -77,14 +82,27 @@
                           return soapXML;
                       }
 
+                      function showResetQueryStatsResponse(doc) {
+                          var response = doc.getElementsByTagName('WUQuerySetQueryActionResponse');
+                          if (response == undefined || response.length < 1)
+                              alert('<No result returned>');
+
+                          var results = response[0].getElementsByTagName('Result');
+                          if (results == undefined || results.length < 1)
+                              alert('<No result returned>');
+                          alert(results[0].childNodes[0].nodeValue);
+                      }
+
                       function actionWorkunits(Action) {
                           var connectionCallback = {
                               success: function(o) {
                                   var xmlDoc = o.responseXML;
-                                  if (Action == 'Delete') {
-                                    document.location.replace( "/WsWorkunits/WUQuerysetDetails?QuerySetName=" + querySet);
+                                  if (Action == 'ResetQueryStats') {
+                                      showResetQueryStatsResponse(xmlDoc.documentElement);
+                                  } else if (Action == 'Delete') {
+                                      document.location.replace( "/WsWorkunits/WUQuerysetDetails?QuerySetName=" + querySet);
                                   } else {
-                                    document.location.replace(document.location.href);
+                                      document.location.replace(document.location.href);
                                   }
                               },
                               failure: function(o) {
@@ -294,6 +312,7 @@
                       </xsl:if>
                     </table>
                 </form>
+                <input id="resetBtn" type="button" value="Reset" onclick="resetQuery();"> </input>
                 <input id="deleteBtn" type="button" value="Delete" onclick="deleteQuery();"> </input>
             </body>
         </html>

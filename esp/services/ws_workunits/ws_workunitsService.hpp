@@ -262,6 +262,8 @@ private:
     void createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
     void createZAPFile(const char* fileName, size32_t len, const void* data);
     void cleanZAPFolder(IFile* zipDir, bool removeFolder);
+    IPropertyTree* sendControlQuery(IEspContext &context, const char* target, const char* query, unsigned timeout);
+    bool resetQueryStats(IEspContext &context, const char* target, IProperties* queryIds, IEspWUQuerySetQueryActionResponse& resp);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
