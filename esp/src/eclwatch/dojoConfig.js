@@ -35,7 +35,7 @@ var dojoConfig = (function () {
             return this.getURL("img/" + name);
         },
         getImageHTML: function (name, tooltip) {
-            return "<img src='" + this.getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + "/>";
+            return "<img src='" + this.getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + " class='iconAlign'/>";
         },
         packages: [{
             name: "d3",
