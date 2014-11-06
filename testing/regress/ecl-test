@@ -52,9 +52,7 @@ class RegressMain:
             exit()
         eclfiles=[]   # List for ECL filenames to be executed
         for ecl in self.args.query:
-            if not ('.ecl' in ecl):
-                logging.error("%s. Not an ECL file:'%s'!" % (1,  ecl))
-            elif  ('*' in ecl) or ('?' in ecl):
+            if  ('*' in ecl) or ('?' in ecl):
                 # If there is any wildcard in ECL file name, resolve it
                 eclwild = os.path.join(self.regress.dir_ec, ecl)
                 eclfiles.extend( glob.glob(eclwild))
