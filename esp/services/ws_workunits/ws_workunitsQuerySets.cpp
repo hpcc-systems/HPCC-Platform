@@ -1593,6 +1593,69 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         WsWuInfo winfo(context, wuid);
         resp.setResourceURLCount(winfo.getResourceURLCount());
     }
+    if (req.getIncludeWsEclAddresses())
+    {
+        StringBuffer daliAddress;
+        if (!daliServers.isEmpty())
+        {
+            const char *finger = daliServers.get();
+            while (*finger && !strchr(":;,", *finger))
+                daliAddress.append(*finger++);
+        }
+
+        StringArray wseclAddresses;
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (env)
+        {
+            Owned<IPropertyTree> root = &env->getPTree();
+            Owned<IPropertyTreeIterator> services = root->getElements("Software/EspService[Properties/@type='ws_ecl']");
+            StringArray serviceNames;
+            VStringBuffer xpath("Target[@name='%s']", querySet);
+            ForEach(*services)
+            {
+                IPropertyTree &service = services->query();
+                if (!service.hasProp("Target") || service.hasProp(xpath))
+                    serviceNames.append(service.queryProp("@name"));
+            }
+
+            Owned<IPropertyTreeIterator> processes = root->getElements("Software/EspProcess");
+            ForEach(*processes)
+            {
+                StringArray netAddrs;
+                IPropertyTree &process = processes->query();
+                Owned<IPropertyTreeIterator> instances = process.getElements("Instance");
+                ForEach(*instances)
+                {
+                    IPropertyTree &instance = instances->query();
+                    const char *netAddr = instance.queryProp("@netAddress");
+                    if (!netAddr || !*netAddr)
+                        continue;
+                    if (streq(netAddr, ".") && daliAddress.length())
+                        netAddrs.append(daliAddress);
+                    else
+                        netAddrs.append(netAddr);
+                }
+                Owned<IPropertyTreeIterator> bindings = process.getElements("EspBinding");
+                ForEach(*bindings)
+                {
+                    IPropertyTree &binding = bindings->query();
+                    const char *srvName = binding.queryProp("@service");
+                    if (!serviceNames.contains(srvName))
+                        continue;
+                    const char *port = binding.queryProp("@port");
+                    if (!port || !*port)
+                        continue;
+                    ForEachItemIn(i, netAddrs)
+                    {
+                        VStringBuffer wseclAddr("%s:%s", netAddrs.item(i), port);
+                        wseclAddresses.append(wseclAddr);
+                    }
+                }
+            }
+        }
+        resp.setWsEclAddresses(wseclAddresses);
+    }
 
     return true;
 }
