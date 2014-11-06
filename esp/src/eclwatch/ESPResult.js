@@ -16,6 +16,8 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/array",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/Deferred",
     "dojo/_base/lang",
     "dojo/dom-construct",
@@ -26,7 +28,7 @@ define([
     "hpcc/ESPBase",
     "hpcc/ESPRequest",
     "hpcc/WsWorkunits"
-], function (declare, arrayUtil, Deferred, lang, domConstruct,
+], function (declare, arrayUtil, i18n, nlsHPCC, Deferred, lang, domConstruct,
             parser, entities,
             ESPBase, ESPRequest, WsWorkunits) {
 
@@ -74,6 +76,7 @@ define([
     });
 
     var Result = declare(null, {
+        i18n: nlsHPCC,
         store: null,
         Total: "-1",
 
@@ -227,6 +230,12 @@ define([
                     var name = node.getAttribute("name");
                     var type = node.getAttribute("type");
                     var children = this.getRowStructureFromSchema(node, name + "_");
+                    var keyed = null;
+                    var appInfo = this.getFirstSchemaNode(node, "appinfo");
+                    if (appInfo) {
+                        keyed = appInfo.getAttribute("hpcc:keyed");
+                    }
+                    var column = null;
                     var context = this;
                     if (name && name.indexOf("__hidden", name.length - "__hidden".length) !== -1) {
                     } else if (name && type) {
@@ -235,64 +244,57 @@ define([
                                 name: name
                             };
                             this.parseName(nameObj);
-                            retVal.push({
+                            column = {
                                 label: nameObj.displayName,
                                 field: prefix + name,
                                 width: nameObj.width,
-                                className: "resultGridCell",
                                 formatter: function (cell, row) {
                                     return cell;
-                                },
-                                sortable: false
-                            });
+                                }
+                            };
                         } else if (name.indexOf("__javascript", name.length - "__javascript".length) !== -1) {
                             var nameObj = {
                                 name: name
                             };
                             this.parseName(nameObj);
-                            retVal.push({
+                            column = {
                                 label: nameObj.displayName,
                                 field: prefix + name,
                                 width: nameObj.width,
-                                className: "resultGridCell",
                                 renderCell: function(row, cell, node, options) {
                                     context.injectJavascript(cell, row, node, this.width)
-                                },
-                                sortable: false
-                            });
+                                }
+                            };
                         } else {
-                            retVal.push({
+                            column = {
                                 label: name,
                                 field: prefix + name,
-                                width: this.extractWidth(type, name) * 9,
-                                className: "resultGridCell",
-                                sortable: false
-                            });
+                                width: this.extractWidth(type, name) * 9
+                            };
                         }
                     } else if (children) {
                         var childWidth = 10;  //  Allow for html table
                         arrayUtil.forEach(children, function(item, idx) {
                             childWidth += item.width;
                         });
-                        /*
-                        retVal.push({
-                            label: name,
-                            children: children,
-                            width: childWidth,
-                            className: "resultGridCell",
-                            sortable: false
-                        });
-                        */
-                        retVal.push({
+                        column = {
                             label: name,
                             field: name,
                             renderCell: function(row, cell, node, options) {
                                 context.rowToTable(cell, row, node);
                             },
-                            width: childWidth,
-                            className: "resultGridCell",
-                            sortable: false
-                        });
+                            width: childWidth
+                        };
+                    }
+                    if (column) {
+                        column.__hpcc_keyed = keyed;
+                        column.className = "resultGridCell";
+                        column.sortable = false;
+                        column.width += keyed ? 16 : 0;
+                        column.renderHeaderCell = function (node) {
+                            node.innerHTML = this.label + (this.__hpcc_keyed ? dojoConfig.getImageHTML("index.png", context.i18n.Index) : "");
+                        };
+                        retVal.push(column);
                     }
                 }
             }

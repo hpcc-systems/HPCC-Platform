@@ -179,7 +179,7 @@ define([
                         if (item.label !== "##") {
                             var textBox = new TextBox({
                                 title: item.label,
-                                label: item.label,
+                                label: item.label + (item.__hpcc_keyed ? " (i)" : ""),
                                 name: item.field,
                                 colSpan: 2
                             });
