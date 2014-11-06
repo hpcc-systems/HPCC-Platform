@@ -744,28 +744,31 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
         bool running = (!(st==WUStateFailed || st==WUStateAborted || st==WUStateCompleted) && cw->getRunningGraph(runningGraph,id));
 
         IArrayOf<IEspECLGraph> graphs;
-        Owned<IConstWUGraphIterator> it = &cw->getGraphs(GraphTypeAny);
+        Owned<IConstWUGraphMetaIterator> it = &cw->getGraphsMeta(GraphTypeAny);
         ForEach(*it)
         {
-            IConstWUGraph &graph = it->query();
-            if(!graph.isValid())
-                continue;
+            IConstWUGraphMeta &graph = it->query();
 
             SCMStringBuffer name, label, type;
             graph.getName(name);
             graph.getLabel(label);
 
             graph.getTypeName(type);
+            WUGraphState graphState = graph.getState();
 
             Owned<IEspECLGraph> g= createECLGraph("","");
             g->setName(name.str());
             g->setLabel(label.str());
             g->setType(type.str());
-            if(running && strcmp(name.str(),runningGraph.str())==0)
+            if (WUGraphComplete == graphState)
+                g->setComplete(true);
+            else if (running && (WUGraphRunning == graphState))
             {
                 g->setRunning(true);
                 g->setRunningId(id);
             }
+            else if (version > 1.13 && (WUGraphFailed == graphState))
+                g->setFailed(true);
 
             if (version >= 1.53)
             {

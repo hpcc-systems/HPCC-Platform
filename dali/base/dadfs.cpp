@@ -1305,16 +1305,38 @@ public:
         if (!lfn.isExternal() && !checkLogicalName(lfn,user,true,true,true,"remove"))
             ThrowStringException(-1, "Logical Name fails for removal on %s", lfn.get());
 
-        // Transaction files have already been unlocked at this point, delete all remaining files
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, true, false, true, NULL, SDS_SUB_LOCK_TIMEOUT);
-        if (!file.get())
-            return;
-        StringBuffer reason;
-        if (!file->canRemove(reason, false))
-            ThrowStringException(-1, "Can't remove %s: %s", lfn.get(), reason.str());
+        loop
+        {
+            // Transaction files have already been unlocked at this point, delete all remaining files
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, true, false, true, NULL, SDS_SUB_LOCK_TIMEOUT);
+            if (!file.get())
+                return;
+            StringBuffer reason;
+            if (!file->canRemove(reason, false))
+                ThrowStringException(-1, "Can't remove %s: %s", lfn.get(), reason.str());
 
-        // This will do the right thing for either super-files and logical-files.
-        file->detach();
+            // This will do the right thing for either super-files and logical-files.
+            try
+            {
+                file->detach(0); // 0 == timeout immediately if cannot get exclusive lock
+                return;
+            }
+            catch (ISDSException *e)
+            {
+                switch (e->errorCode())
+                {
+                    case SDSExcpt_LockTimeout:
+                    case SDSExcpt_LockHeld:
+                        e->Release();
+                        break;
+                    default:
+                        throw;
+                }
+            }
+            file.clear();
+            PROGLOG("CDelayedDelete: pausing");
+            Sleep(SDS_TRANSACTION_RETRY/2+(getRandom()%SDS_TRANSACTION_RETRY));
+        }
     }
 };
 
