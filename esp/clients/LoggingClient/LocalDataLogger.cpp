@@ -167,9 +167,11 @@ MemoryBuffer& CLocalDataLogger::readData(MemoryBuffer& dataCached,const char* ca
                     if (io)
                     {
                         DBGLOG("Managed to open");
-                        //MORE: Should check size isn't > 2^32
-                        size32_t filesize = io->size();
-                        io->read(0, filesize, dataCached.reserveTruncate(filesize));
+                        offset_t filesize = io->size();
+                        size32_t memfilesize = (size32_t)filesize;
+                        //Check size isn't >= 2^32
+                        assertex(filesize == memfilesize);
+                        io->read(0, filesize, dataCached.reserveTruncate(memfilesize));
                         DBGLOG("Managed to read");
                         return dataCached;
                     }

@@ -2104,7 +2104,14 @@ class CXMLSizesParser : public CInterface
         {
             CTreeItem **left = (CTreeItem **)_left;
             CTreeItem **right = (CTreeItem **)_right;
-            return (int)((*right)->size() - (*left)->size());
+            offset_t leftSize = (*left)->size();
+            offset_t rightSize = (*right)->size();
+            if (rightSize > leftSize)
+                return +1;
+            else if (rightSize < leftSize)
+                return -1;
+            else
+                return 0;
         }
     public:
 

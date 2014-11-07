@@ -741,7 +741,7 @@ public:
         logUserMsg = (flags & SOAPFlogusermsg) != 0;
 
         double dval = helper->getTimeout(); // In seconds, but may include fractions of a second...
-        if (dval == -1.0) //not provided
+        if (dval < 0.0) //not provided, or out of range
             timeoutMS = 300*1000; // 300 second default
         else if (dval == 0)
             timeoutMS = WAIT_FOREVER;

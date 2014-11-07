@@ -346,7 +346,7 @@ void WsWuInfo::addTimerToList(SCMStringBuffer& name, const char * scope, IConstW
     name.s.replace('_', ' '); // yuk!
     t->setName(name.str());
     t->setValue(fd.str());
-    //MORE: This could overflow.
+    //Theoretically this could overflow, in practice it is unlikely - fix in the new stats interface when implemented
     t->setCount((unsigned)stat.getCount());
 
     if (version > 1.19)
