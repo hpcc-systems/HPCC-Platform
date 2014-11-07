@@ -14686,7 +14686,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
 
     IHqlExpression * record = expr->queryRecord();
     HqlExprArray args;
-    args.append(*createSerializer(ctx, record, serializeForm, kind));
+    args.append(*createSerializer(funcctx, record, serializeForm, kind));
     args.append(*ensureActiveRow(dataset));
     Owned<ITypeInfo> type = makeTransformType(record->getType());
     OwnedHqlExpr call = bindFunctionCall(func, args, type);
