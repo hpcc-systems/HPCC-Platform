@@ -712,6 +712,10 @@ margin-left:-20px;
     width: 64em;
 }
 
+.dijitPlaceHolder {
+    pointer-events: none;
+}
+
 .smallForm .dijitValidationTextBoxLabel {
     width: auto;
 }
