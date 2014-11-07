@@ -26970,6 +26970,7 @@ protected:
         doTestSplitter(1);
         doTestSplitter(2);
         doTestSplitter(3);
+        doTestSplitter(10);
     }
 
     void testMiscellaneous()
