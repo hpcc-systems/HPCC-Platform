@@ -1595,14 +1595,6 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     }
     if (req.getIncludeWsEclAddresses())
     {
-        StringBuffer daliAddress;
-        if (!daliServers.isEmpty())
-        {
-            const char *finger = daliServers.get();
-            while (*finger && !strchr(":;,", *finger))
-                daliAddress.append(*finger++);
-        }
-
         StringArray wseclAddresses;
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
         Owned<IConstEnvironment> env = factory->openEnvironment();
@@ -1631,10 +1623,10 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
                     const char *netAddr = instance.queryProp("@netAddress");
                     if (!netAddr || !*netAddr)
                         continue;
-                    if (streq(netAddr, ".") && daliAddress.length())
-                        netAddrs.append(daliAddress);
+                    if (streq(netAddr, "."))
+                        netAddrs.appendUniq(envLocalAddress); //not necessarily local to this server
                     else
-                        netAddrs.append(netAddr);
+                        netAddrs.appendUniq(netAddr);
                 }
                 Owned<IPropertyTreeIterator> bindings = process.getElements("EspBinding");
                 ForEach(*bindings)
@@ -1643,7 +1635,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
                     const char *srvName = binding.queryProp("@service");
                     if (!serviceNames.contains(srvName))
                         continue;
-                    const char *port = binding.queryProp("@port");
+                    const char *port = binding.queryProp("@port"); //should always be an integer, but we're just concatenating strings
                     if (!port || !*port)
                         continue;
                     ForEachItemIn(i, netAddrs)

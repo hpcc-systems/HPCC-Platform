@@ -262,6 +262,7 @@ private:
 #endif
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
+    StringBuffer envLocalAddress;
     StringAttr daliServers;
     Owned<DataCache> dataCache;
     Owned<ArchivedWuCache> archivedWuCache;
