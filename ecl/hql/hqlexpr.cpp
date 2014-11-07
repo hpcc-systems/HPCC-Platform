@@ -161,6 +161,7 @@ static IHqlExpression * cachedLocalAttribute;
 static IHqlExpression * constantTrue;
 static IHqlExpression * constantFalse;
 static IHqlExpression * defaultSelectorSequenceExpr;
+static IHqlExpression * dummyVirtualSeq;
 static IHqlExpression * newSelectAttrExpr;
 static IHqlExpression * recursiveExpr;
 static IHqlExpression * processingMarker;
@@ -240,6 +241,7 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     constantTrue = createConstant(createBoolValue(true));
     constantFalse = createConstant(createBoolValue(false));
     defaultSelectorSequenceExpr = createAttribute(_selectorSequence_Atom);
+    dummyVirtualSeq =  createSequence(no_attr, makeNullType(), _virtualSeq_Atom, 0);
     newSelectAttrExpr = createExprAttribute(newAtom);
     recursiveExpr = createAttribute(recursiveAtom);
     processingMarker = createValue(no_processing, makeNullType());
@@ -264,6 +266,7 @@ MODULE_EXIT()
     processingMarker->Release();
     recursiveExpr->Release();
     newSelectAttrExpr->Release();
+    dummyVirtualSeq->Release();
     defaultSelectorSequenceExpr->Release();
     constantFalse->Release();
     constantTrue->Release();
@@ -10946,14 +10949,32 @@ struct CallExpansionContext
 extern IHqlExpression * expandFunctionCall(CallExpansionContext & ctx, IHqlExpression * call);
 
 
+//#define TRACE_BINDING
 static HqlTransformerInfo parameterBindTransformerInfo("ParameterBindTransformer");
 class ParameterBindTransformer : public QuickHqlTransformer
 {
 public:
-    ParameterBindTransformer(CallExpansionContext & _ctx) 
+    ParameterBindTransformer(CallExpansionContext & _ctx, IHqlExpression * _call)
     : QuickHqlTransformer(parameterBindTransformerInfo, _ctx.errors), 
-      ctx(_ctx)
+      ctx(_ctx), call(_call)
     {
+        depth = 0;
+        maxDepth = 0;
+    }
+    ~ParameterBindTransformer()
+    {
+#ifdef TRACE_BINDING
+        if (maxDepth > 200)
+        {
+            printf("Bind max(%u): ", maxDepth);
+            printf("%s(", call->queryId()->str());
+            ForEachChild(i, call)
+            {
+                printf("%s:%p ", getOpString(call->queryChild(i)->getOperator()), call->queryChild(i));
+            }
+            printf(")\n");
+        }
+#endif
     }
 
     IHqlExpression * createExpandedCall(IHqlExpression * call);
@@ -10966,7 +10987,16 @@ protected:
         if (expr->isFullyBound() && !containsCall(expr, ctx.forceOutOfLineExpansion))
             return LINK(expr);
 
+#ifdef TRACE_BINDING
+        depth++;
+        if (depth > maxDepth)
+            maxDepth = depth;
+        IHqlExpression * ret = QuickHqlTransformer::createTransformed(expr);
+        depth--;
+        return ret;
+#else
         return QuickHqlTransformer::createTransformed(expr);
+#endif
     }
 
     virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
@@ -11099,6 +11129,9 @@ protected:
 
 protected:
     CallExpansionContext & ctx;
+    IHqlExpression * call;
+    unsigned depth;
+    unsigned maxDepth;
 };
 
 
@@ -11140,7 +11173,12 @@ IHqlExpression * ParameterBindTransformer::createBoundBody(IHqlExpression *funcd
         case no_outofline:
             {
                 if (ctx.forceOutOfLineExpansion)
+                {
+                    //No arguments to the function => transforming will do nothing
+                    if (actuals.ordinality() == 0)
+                        return LINK(body->queryChild(0));
                     return transform(body->queryChild(0));
+                }
 
                 HqlExprArray args;
                 args.append(*LINK(body));
@@ -11149,11 +11187,19 @@ IHqlExpression * ParameterBindTransformer::createBoundBody(IHqlExpression *funcd
                 break;
             }
         default:
+            //No arguments to the function => transforming will do nothing
+            if (actuals.ordinality() == 0)
+                return LINK(body);
             return transform(body);
         }
     }
     else
-        newFuncdef.setown(transform(funcdef));
+    {
+        if (actuals.ordinality() == 0)
+            newFuncdef.set(funcdef);
+        else
+            newFuncdef.setown(transform(funcdef));
+    }
 
     HqlExprArray clonedActuals;
     appendArray(clonedActuals, actuals);
@@ -11169,7 +11215,8 @@ IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression * c
     while (actuals.ordinality() && actuals.tos().isAttribute())
         actuals.pop();
 
-    return createExpandedCall(call->queryBody()->queryFunctionDefinition(), actuals);
+    IHqlExpression * funcdef = call->queryBody()->queryFunctionDefinition();
+    return createExpandedCall(funcdef, actuals);
 }
 
 IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression *funcdef, const HqlExprArray & resolvedActuals)
@@ -11453,20 +11500,42 @@ static IHqlExpression * createNormalizedCall(IHqlExpression *funcdef, const HqlE
 
 inline IHqlExpression * expandFunctionalCallBody(CallExpansionContext & ctx, IHqlExpression * call)
 {
-    ParameterBindTransformer binder(ctx);
+    ParameterBindTransformer binder(ctx, call);
     return binder.createExpandedCall(call);
 }
+
+static IHqlExpression * normalizeTrailingAttributes(IHqlExpression * call)
+{
+    unsigned num = call->numChildren();
+    if (num == 0)
+        return LINK(call);
+
+    IHqlExpression * last = call->queryChild(num-1);
+    if (!last->isAttribute())
+        return LINK(call);
+
+    if (last->queryName() != _virtualSeq_Atom)
+        return LINK(call);
+
+    HqlExprArray actuals;
+    unwindChildren(actuals, call);
+    actuals.pop();
+    actuals.append(*LINK(dummyVirtualSeq));
+    return call->clone(actuals);
+}
+
 
 static IHqlExpression * cachedExpandFunctionCallBody(CallExpansionContext & ctx, IHqlExpression * call)
 {
     if (ctx.functionCache)
     {
-        CHqlCachedBoundFunction *cache2 = new CHqlCachedBoundFunction(call, ctx.forceOutOfLineExpansion);
+        OwnedHqlExpr normalizedCall = normalizeTrailingAttributes(call);
+        CHqlCachedBoundFunction *cache2 = new CHqlCachedBoundFunction(normalizedCall, ctx.forceOutOfLineExpansion);
         Owned<CHqlCachedBoundFunction> cache = static_cast<CHqlCachedBoundFunction *>(cache2->closeExpr());
         if (cache->bound)
             return LINK(cache->bound);
 
-        IHqlExpression *ret = expandFunctionalCallBody(ctx, call);
+        IHqlExpression *ret = expandFunctionalCallBody(ctx, normalizedCall);
 
         cache->bound.set(ret);
         ctx.functionCache->append(*cache.getClear());
