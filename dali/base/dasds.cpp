@@ -7541,7 +7541,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
             try
             {
                 loop
-                {                       
+                {
                     try
                     {
                         Owned<IPropertyTreeIterator> iter = root->getElements(xpath+1);
@@ -7556,8 +7556,13 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                                 freeExistingLocks.add(existing);
                                 {
                                     unsigned remaining;
-                                    if (tm.timedout(&remaining))
-                                        throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
+                                    if (timeout)
+                                    {
+                                        if (tm.timedout(&remaining))
+                                            throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
+                                    }
+                                    else
+                                        remaining = 0; // a timeout of 0 means fail immediately if locked
                                     CConnectExistingLockCallback connectLockCallback(xpath, connectionId, existing, &connectCrit);
                                     lock(existing, xpath, connectionId, sessionId, mode, remaining, connectLockCallback);
                                 }
