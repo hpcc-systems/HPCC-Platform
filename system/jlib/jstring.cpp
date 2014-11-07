@@ -87,13 +87,24 @@ StringBuffer::StringBuffer(const StringBuffer & value)
     append(value);
 }
 
-void    StringBuffer::setBuffer(size32_t buffLen, char * newBuff, size32_t strLen)
+StringBuffer::~StringBuffer()
 {
+    dbgassertex(buffer);
+    freeBuffer();
+}
+
+void StringBuffer::freeBuffer()
+{
+    if (buffer != internalBuffer)
+        free(buffer);
+}
+
+void StringBuffer::setBuffer(size32_t buffLen, char * newBuff, size32_t strLen)
+{
+    assertex(newBuff);
     assertex(buffLen>0 && newBuff!=NULL && strLen<buffLen);
 
-    if (buffer)
-        free(buffer);
-
+    freeBuffer();
     buffer = newBuff;
     maxLen=buffLen;
     curLen=strLen;
@@ -118,13 +129,16 @@ void StringBuffer::_realloc(size32_t newLen)
                 newMax += newMax;
         }
         char * newStr;
-        if(!newMax || !(newStr=(char *)realloc(buffer, newMax)))
+        char * originalBuffer = (buffer == internalBuffer) ? NULL : buffer;
+        if(!newMax || !(newStr=(char *)realloc(originalBuffer, newMax)))
         {
             DBGLOG("StringBuffer::_realloc: Failed to realloc = %d, oldMax = %d", newMax, maxLen);
             PrintStackReport();
             PrintMemoryReport();
             throw MakeStringException(MSGAUD_operator, -1, "StringBuffer::_realloc: Failed to realloc = %d, oldMax = %d", newMax, maxLen);
-        }       
+        }
+        if (buffer == internalBuffer)
+            memcpy(newStr, internalBuffer, curLen);
         buffer = newStr;
         maxLen = newMax;
     }
@@ -133,16 +147,22 @@ void StringBuffer::_realloc(size32_t newLen)
 
 char * StringBuffer::detach()
 {
-    if (buffer)
+    dbgassertex(buffer);
+    char * result;
+    if (buffer == internalBuffer)
+    {
+        result = (char *)malloc(curLen+1);
+        memcpy(result, buffer, curLen);
+    }
+    else
     {
         if (maxLen>curLen+1+DETACH_GRANULARITY)
             buffer = (char *)realloc(buffer,curLen+1); // shrink
-        buffer[curLen] = '\0';          // There is always room for this null
-        char *ret = buffer;
-        init();
-        return ret;
+        result = buffer;
     }
-    return strdup(TheNullStr);
+    result[curLen] = '\0';          // There is always room for this null
+    init();
+    return result;
 }
 
 StringBuffer & StringBuffer::append(char value)
@@ -461,7 +481,7 @@ void StringBuffer::setLength(unsigned len)
     curLen = len;
 }
 
-char *  StringBuffer::reserve(size32_t size)
+char * StringBuffer::reserve(size32_t size)
 {
     ensureCapacity(size);
     char *ret = buffer+curLen;
@@ -469,10 +489,23 @@ char *  StringBuffer::reserve(size32_t size)
     return ret;
 }
 
-char *  StringBuffer::reserveTruncate(size32_t size)
+char * StringBuffer::reserveTruncate(size32_t size)
 {
     size32_t newMax = curLen+size+1;
-    if (newMax != maxLen) {
+    if (buffer == internalBuffer)
+    {
+        if (newMax > InternalBufferSize)
+        {
+            char * newStr = (char *)malloc(newMax);
+            if (!newStr)
+                throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %d, oldMax = %d", newMax, maxLen);
+            memcpy(newStr, buffer, curLen);
+            buffer = newStr;
+            maxLen = newMax;
+        }
+    }
+    else if (newMax != maxLen)
+    {
         char * newStr = (char *) realloc(buffer, newMax);
         if (!newStr)
             throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %d, oldMax = %d", newMax, maxLen);
@@ -486,26 +519,63 @@ char *  StringBuffer::reserveTruncate(size32_t size)
 
 void StringBuffer::swapWith(StringBuffer &other)
 {
-    size32_t tmpsz = curLen;
-    curLen = other.curLen;
-    other.curLen = tmpsz;
-    tmpsz = maxLen;
+    size_t tempMax = maxLen;
     maxLen = other.maxLen;
-    other.maxLen = tmpsz;
-    char *tmpbuf = buffer;
-    buffer = other.buffer;
-    other.buffer = tmpbuf;
+    other.maxLen = tempMax;
+
+    //Swap lengths, but keep local vairables with the old values for later
+    size32_t thisLen = curLen;
+    size32_t otherLen = other.curLen;
+    curLen = otherLen;
+    other.curLen = thisLen;
+
+    char * thisBuffer = buffer;
+    char * otherBuffer = other.buffer;
+    if (useInternal())
+    {
+        if (other.useInternal())
+        {
+            char temp[InternalBufferSize];
+            memcpy(temp, thisBuffer, thisLen);
+            memcpy(thisBuffer, otherBuffer, otherLen);
+            memcpy(otherBuffer, temp, thisLen);
+            //buffers already points in the correct place
+        }
+        else
+        {
+            memcpy(other.internalBuffer, thisBuffer, thisLen);
+            buffer = otherBuffer;
+            other.buffer = other.internalBuffer;
+        }
+    }
+    else
+    {
+        if (other.useInternal())
+        {
+            memcpy(internalBuffer, otherBuffer, otherLen);
+            buffer = internalBuffer;
+            other.buffer = thisBuffer;
+        }
+        else
+        {
+            buffer = otherBuffer;
+            other.buffer = thisBuffer;
+        }
+    }
 }
 
 void StringBuffer::kill()
 {
-    if (buffer)
-        free(buffer);
+    freeBuffer();
     init();
 }
 
 void StringBuffer::getChars(int srcBegin, int srcEnd, char * target) const
 {
+    if (srcBegin < 0)
+        srcBegin = 0;
+    if ((unsigned)srcEnd > curLen)
+        srcEnd = curLen;
     const int len = srcEnd - srcBegin;
     if (target && buffer && len > 0)
         memcpy(target, buffer + srcBegin, len);
@@ -760,43 +830,40 @@ void StringBuffer::setCharAt(unsigned offset, char value)
 
 StringBuffer & StringBuffer::toLowerCase()
 {
-    if (buffer)
+    size32_t l = curLen;
+    for (size32_t i = 0; i < l; i++)
     {
-        int l = curLen;
-        for (int i = 0; i < l; i++)
-            if (isupper(buffer[i]))
-                buffer[i] = tolower(buffer[i]);
+        if (isupper(buffer[i]))
+            buffer[i] = tolower(buffer[i]);
     }
     return *this;
 }
 
 StringBuffer & StringBuffer::toUpperCase()
 {
-    if (buffer)
+    size32_t l = curLen;
+    for (size32_t i = 0; i < l; i++)
     {
-        int l = curLen;
-        for (int i = 0; i < l; i++)
-            if (islower(buffer[i]))
-                buffer[i] = toupper(buffer[i]);
+        if (islower(buffer[i]))
+            buffer[i] = toupper(buffer[i]);
     }
     return *this;
 }
 
 StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 {
-    if (buffer)
+    size32_t l = curLen;
+    for (size32_t i = 0; i < l; i++)
     {
-        int l = curLen;
-        for (int i = 0; i < l; i++)
-            if (buffer[i] == oldChar)
-         {
-                buffer[i] = newChar;
+        if (buffer[i] == oldChar)
+        {
+            buffer[i] = newChar;
             if (newChar == '\0')
             {
-                 curLen = i;
-               break;
+                curLen = i;
+                break;
             }
-         }
+        }
     }
     return *this;
 }
@@ -804,7 +871,7 @@ StringBuffer & StringBuffer::replace(char oldChar, char newChar)
 // this method will replace all occurrances of "oldStr" with "newStr"
 StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newStr)
 {
-    if (buffer)
+    if (curLen)
     {
         const char* s = str();  // get null terminated version of the string
         int left = length();
@@ -841,30 +908,24 @@ StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newSt
 
 StringBuffer & StringBuffer::stripChar(char oldChar)
 {
-    if (buffer)
+    size32_t delta = 0;
+    size32_t l = curLen;
+    for (size32_t i = 0; i < l; i++)
     {
-        size32_t delta = 0;
-        size32_t l = curLen;
-        for (size32_t i = 0; i < l; i++)
-        {
-            if (buffer[i] == oldChar)
-                delta++;
-            else if (delta)
-                buffer[i-delta] = buffer[i];
-        }
-        curLen = curLen - delta;
+        if (buffer[i] == oldChar)
+            delta++;
+        else if (delta)
+            buffer[i-delta] = buffer[i];
     }
+    if (delta)
+        curLen = curLen - delta;
     return *this;
 }
 
 const char * StringBuffer::toCharArray() const
 {
-    if (buffer)
-    {
-        buffer[curLen] = '\0';          // There is always room for this null
-        return buffer;
-    }
-    return TheNullStr;
+    buffer[curLen] = '\0';          // There is always room for this null
+    return buffer;
 }
 
 //===========================================================================

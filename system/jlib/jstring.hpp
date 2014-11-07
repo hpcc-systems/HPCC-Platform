@@ -33,13 +33,14 @@ interface IFile;
 
 class jlib_decl StringBuffer
 {
+    enum { InternalBufferSize = 32 };
 public:
     StringBuffer();
     StringBuffer(String & value);
     StringBuffer(const char *value);
     StringBuffer(unsigned len, const char *value);
     StringBuffer(const StringBuffer & value);
-    inline ~StringBuffer() { free(buffer); }
+    ~StringBuffer();
 
     inline size32_t length() const                      { return curLen; }
     inline void     Release() const                     { delete this; }    // for consistency even though not link counted
@@ -139,17 +140,20 @@ private: // long depreciated
     StringBuffer &  insert(int offset, long value);
 
 protected:
+    inline bool useInternal() const { return buffer == internalBuffer; }
     void init()
     {
-        buffer = NULL;
+        buffer = internalBuffer;
         curLen = 0;
-        maxLen = 0;
+        maxLen = InternalBufferSize;
     }
+    void freeBuffer();
     void _insert(unsigned offset, size32_t insertLen);
     void _realloc(size32_t newLen);
 
 private:    
-    mutable char *  buffer;
+    char                internalBuffer[InternalBufferSize];
+    char *              buffer;
     size32_t            curLen;
     size32_t            maxLen;
 };
