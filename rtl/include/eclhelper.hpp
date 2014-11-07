@@ -36,7 +36,6 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 #ifndef CHEAP_UCHAR_DEF
 #include "unicode/utf.h"
 #endif
-#include "jstring.hpp"
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
@@ -161,13 +160,6 @@ public:
     virtual void outputQuoted(const char *text) = 0;
     virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric = false) = 0;
     virtual void outputBool(bool field, const char *fieldname) = 0;
-    virtual void outputBool(const char * field, const char *fieldname)
-    {
-        if (field && *field)
-            outputBool(strToBool(field), fieldname);
-        else
-            outputBool(false, fieldname);
-    }
     virtual void outputData(unsigned len, const void *field, const char *fieldname) = 0;
     virtual void outputInt(__int64 field, const char *fieldname) = 0;
     virtual void outputUInt(unsigned __int64 field, const char *fieldname) = 0;
