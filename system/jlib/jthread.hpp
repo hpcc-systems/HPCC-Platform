@@ -246,6 +246,8 @@ extern jlib_decl StringBuffer &getThreadName(int thandle,unsigned logtid,StringB
 // Simple pipe process support
 interface ISimpleReadStream;
 
+#define START_FAILURE (199) // return code if program cannot be started
+
 interface IPipeProcess: extends IInterface
 {
     virtual bool run(const char *title,const char *prog, const char *dir,
