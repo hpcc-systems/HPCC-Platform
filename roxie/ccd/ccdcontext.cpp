@@ -1339,8 +1339,8 @@ public:
                 graph->abort();
             if (workUnit)
             {
-                unsigned totalTimeNs = 0;
-                unsigned totalThisTimeNs = 0;
+                unsigned __int64 totalTimeNs = 0;
+                unsigned __int64 totalThisTimeNs = 0;
                 const char *totalTimeStr = "Total cluster time";
                 getWorkunitTotalTime(workUnit, "roxie", totalTimeNs, totalThisTimeNs);
 
@@ -2346,7 +2346,7 @@ public:
         slaveLogCtx.putStatProcessed(subgraphId, activityId, _idx, _processed);
     }
 
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
     {
         const SlaveContextLogger &slaveLogCtx = static_cast<const SlaveContextLogger &>(logctx);
         slaveLogCtx.putStats(subgraphId, activityId, fromStats);
@@ -2709,7 +2709,7 @@ public:
         }
     }
 
-    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, unsigned __int64 _localCycles) const
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId, const ActivityTimeAccumulator &_totalCycles, cycle_t _localCycles) const
     {
         if (graphStats)
         {

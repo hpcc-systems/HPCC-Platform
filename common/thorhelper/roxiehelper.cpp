@@ -905,7 +905,7 @@ void FlushingStringBuffer::encodeData(const void *data, unsigned len)
     else
     {
         const byte *field = (const byte *) data;
-        for (int i = 0; i < len; i++)
+        for (unsigned i = 0; i < len; i++)
         {
             append(hexchar[field[i] >> 4]);
             append(hexchar[field[i] & 0x0f]);

@@ -212,7 +212,7 @@ public:
         {
             case TAKjoin:
             {
-                bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & helper->getJoinFlags());
+                bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & helper->getJoinFlags()) != 0);
                 bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                 joinhelper.setown(createJoinHelper(*this, helperjn, this, hintparallelmatch, hintunsortedoutput));
                 break;

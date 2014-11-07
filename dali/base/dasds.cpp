@@ -5359,8 +5359,8 @@ public:
                         offset_t fSize = iFileIO->size();
                         if (fSize > lastGood)
                         {
-                            size32_t diff = fSize - lastGood;
-                            LOG(MCoperatorError, unknownJob, "Delta file '%s', has %d bytes of trailing data (possible power loss during save?), file size: %"I64F"d, last committed size: %"I64F"d", filename, diff, fSize, lastGood);
+                            offset_t diff = fSize - lastGood;
+                            LOG(MCoperatorError, unknownJob, "Delta file '%s', has %"I64F"d bytes of trailing data (possible power loss during save?), file size: %"I64F"d, last committed size: %"I64F"d", filename, diff, fSize, lastGood);
                             LOG(MCoperatorError, unknownJob, "Resetting delta file '%s' to size: %"I64F"d", filename, lastGood);
                             iFileIO->close();
                             backup(filename);

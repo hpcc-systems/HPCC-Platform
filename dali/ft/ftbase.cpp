@@ -599,7 +599,7 @@ void OutputProgress::restore(IPropertyTree * tree)
     outputCRC = tree->getPropInt("@outputCRC");
     outputLength = tree->getPropInt64("@outputLength");
     resultTime.setString(tree->queryProp("@modified"));
-    hasCompressed = tree->getPropInt("@compressed");
+    hasCompressed = tree->getPropBool("@compressed");
     compressedPartSize = tree->getPropInt64("@compressedPartSize");
 }
 

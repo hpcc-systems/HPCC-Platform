@@ -471,7 +471,7 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
             throw MakeStringException(1, "File %s only read %llu of %llu bytes", file->queryFilename(), size-readPos, size);
 
         readPos += sizeRead;
-        md5_append(&context, (const unsigned char *)contents, sizeRead);
+        md5_append(&context, (const unsigned char *)contents, (int)sizeRead);
     }
     md5_finish(&context,digest);
 

@@ -97,7 +97,7 @@ int CDataOutputCache::writeOutput()
         try {
             outputstream->writeBytes(finger, len);
         }
-        catch (IException *e) {
+        catch (IException *) {
             delete mb;
             throw;
         }

@@ -1613,7 +1613,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
         assertex(maxPort >= minPort);
         Owned<IJSOCK_Exception> lastErr;
         unsigned numPorts = maxPort - minPort + 1;
-        for (int retries = 0; retries < numPorts * 3; retries++)
+        for (unsigned retries = 0; retries < numPorts * 3; retries++)
         {
             port = minPort + getRandom() % numPorts;
             try

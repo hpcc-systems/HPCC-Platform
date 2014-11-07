@@ -259,7 +259,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             }
             inline bool getSenderFinished() const
             {
-                return atomic_read(&senderFinished);
+                return atomic_read(&senderFinished) != 0;
             }
             inline void checkSenderFinished()
             {
@@ -3480,7 +3480,7 @@ public:
             {
                 case TAKhashjoin:
                     {
-                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & joinargs->getJoinFlags());
+                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & joinargs->getJoinFlags()) != 0);
                         bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                         joinhelper.setown(createJoinHelper(*this, joinargs, this, hintparallelmatch, hintunsortedoutput));
                     }

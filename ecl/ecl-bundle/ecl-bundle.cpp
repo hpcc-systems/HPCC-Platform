@@ -496,7 +496,7 @@ public:
     virtual bool checkDependencies(const IBundleCollection &allBundles, const IBundleInfo *bundle, bool going) const
     {
         bool ok = true;
-        for (int i = 0; i < depends.length(); i++)
+        for (unsigned i = 0; i < depends.length(); i++)
         {
             if (!checkDependency(allBundles, depends.item(i), bundle, going))
                 ok = false;
@@ -566,7 +566,7 @@ private:
         else if (depVersions.length() > 1)
         {
             bool ok = false;
-            for (int i = 1; i < depVersions.length(); i++)
+            for (unsigned i = 1; i < depVersions.length(); i++)
                 if (dependentBundle->checkVersion(depVersions.item(i)))
                     ok = true;
             if (!ok)
@@ -602,7 +602,7 @@ private:
         StringBuffer cleaned;
         found++;  // skip the '
         unsigned foundLen = re.findlen()-2; // and the trailing ''
-        for (int i = 0; i < foundLen; i++)
+        for (unsigned i = 0; i < foundLen; i++)
         {
             unsigned char c = found[i];
             if (c=='\\')
@@ -1126,7 +1126,7 @@ private:
                 if (depVersions.length() > 1)
                 {
                     matching = false;
-                    for (int i = 1; i < depVersions.length(); i++)
+                    for (unsigned i = 1; i < depVersions.length(); i++)
                         if (dependentBundle->checkVersion(depVersions.item(i)))
                             matching = true;
                     if (!matching)

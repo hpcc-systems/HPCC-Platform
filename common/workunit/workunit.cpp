@@ -10723,7 +10723,7 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *ti
     }
 }
 
-extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const char* creator, unsigned& totalTimeNs, unsigned& totalThisTimeNs)
+extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const char* creator, unsigned __int64 & totalTimeNs, unsigned __int64 & totalThisTimeNs)
 {
     StatisticsFilter summaryTimeFilter(SCTsummary, creator, SSTglobal, GLOBAL_SCOPE, SMeasureTimeNs, StTimeElapsed);
     Owned<IConstWUStatistic> totalThorTime = getStatistic(workunit, summaryTimeFilter);

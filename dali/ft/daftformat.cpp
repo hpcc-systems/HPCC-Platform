@@ -673,7 +673,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
             fieldName.setCharAt(0, '_');
         }
 
-        for ( int i = 1; i < fieldName.length(); i++)
+        for ( unsigned i = 1; i < fieldName.length(); i++)
         {
             act = fieldName.charAt(i);
             if ( !(isalnum(act) || act == '_' || act == '$') )
@@ -1002,7 +1002,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
             fieldName.setCharAt(0, '_');
         }
 
-        for ( int i = 1; i < fieldName.length(); i++)
+        for ( unsigned i = 1; i < fieldName.length(); i++)
         {
             act = fieldName.charAt(i);
             if ( !(isalnum(act) || act == '_' || act == '$') )
