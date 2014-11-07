@@ -2279,17 +2279,22 @@ public:
     CSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, bool _hasChildren)
     : CRoxieContextBase(_factory, _logctx)
     {
-        header = &_packet->queryHeader();
-        const byte *traceInfo = _packet->queryTraceInfo();
-        options.setFromSlaveLoggingFlags(*traceInfo);
-        bool debuggerActive = (*traceInfo & LOGGING_DEBUGGERACTIVE) != 0 && _hasChildren;  // No option to debug simple remote activity
-        if (debuggerActive)
+        if (_packet)
         {
-            CSlaveDebugContext *slaveDebugContext = new CSlaveDebugContext(this, logctx, *header);
-            slaveDebugContext->init(_packet);
-            debugContext.setown(slaveDebugContext);
-            probeManager.setown(createDebugManager(debugContext, "slaveDebugger"));
+            header = &_packet->queryHeader();
+            const byte *traceInfo = _packet->queryTraceInfo();
+            options.setFromSlaveLoggingFlags(*traceInfo);
+            bool debuggerActive = (*traceInfo & LOGGING_DEBUGGERACTIVE) != 0 && _hasChildren;  // No option to debug simple remote activity
+            if (debuggerActive)
+            {
+                CSlaveDebugContext *slaveDebugContext = new CSlaveDebugContext(this, logctx, *header);
+                slaveDebugContext->init(_packet);
+                debugContext.setown(slaveDebugContext);
+                probeManager.setown(createDebugManager(debugContext, "slaveDebugger"));
+            }
         }
+        else
+            assertex(selfTestMode);
     }
     virtual void beforeDispose()
     {

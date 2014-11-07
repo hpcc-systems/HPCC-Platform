@@ -115,6 +115,7 @@ unsigned preabortKeyedJoinsThreshold = 100;
 unsigned preabortIndexReadsThreshold = 100;
 bool preloadOnceData;
 bool reloadRetriesFailed;
+bool selfTestMode = false;
 
 unsigned memoryStatsInterval = 0;
 memsize_t defaultMemoryLimit;
@@ -428,7 +429,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     #ifdef _USE_CPPUNIT
     if (argc>=2 && stricmp(argv[1], "-selftest")==0)
     {
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_prefix);
+        selfTestMode = true;
+        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
         CppUnit::TextUi::TestRunner runner;
         if (argc==2)
         {

@@ -717,8 +717,7 @@ typedef CResolvedPackage<CRoxiePackageNode> CRoxiePackage;
 IRoxiePackage *createRoxiePackage(IPropertyTree *p, IRoxiePackageMap *packages)
 {
     Owned<CRoxiePackage> pkg = new CRoxiePackage(p);
-    if (packages)
-        pkg->resolveBases(packages);
+    pkg->resolveBases(packages);
     return pkg.getClear();
 }
 
