@@ -43,6 +43,10 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual size32_t length() const = 0;
     virtual const char *str() const = 0;
     virtual void rewindTo(unsigned int prevlen) = 0;
+    virtual void outputNumericString(const char *field, const char *fieldname)
+    {
+        outputCString(field, fieldname);
+    }
 };
 
 class thorhelper_decl CommonXmlWriter : public CInterface, implements IXmlWriterExt
@@ -57,8 +61,8 @@ public:
 
     virtual void outputInlineXml(const char *text){closeTag(); out.append(text); flush(false);} //for appending raw xml content
     virtual void outputQuoted(const char *text);
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
-    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname);
+    virtual void outputString(unsigned len, const char *field, const char *fieldname);
     virtual void outputBool(bool field, const char *fieldname);
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
     virtual void outputInt(__int64 field, const char *fieldname);
@@ -123,8 +127,8 @@ public:
             outputUtf8(strlen(text), text, "xml");
     }
     virtual void outputQuoted(const char *text);
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric=false);
-    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric=false);
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname);
+    virtual void outputString(unsigned len, const char *field, const char *fieldname);
     virtual void outputBool(bool field, const char *fieldname);
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
     virtual void outputInt(__int64 field, const char *fieldname);
@@ -142,6 +146,7 @@ public:
     virtual void outputEndArray(const char *fieldname);
     virtual void outputSetAll();
     virtual void outputXmlns(const char *name, const char *uri){}
+    virtual void outputNumericString(const char *field, const char *fieldname);
 
     //IXmlWriterExt
     virtual IXmlWriterExt & clear();
@@ -193,7 +198,7 @@ class thorhelper_decl CommonEncodedXmlWriter : public CommonXmlWriter
 public:
     CommonEncodedXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL);
 
-    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
+    virtual void outputString(unsigned len, const char *field, const char *fieldname);
     virtual void outputBool(bool field, const char *fieldname);
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
     virtual void outputInt(__int64 field, const char *fieldname);
@@ -231,8 +236,8 @@ public:
     const char * str() const                                { return out.str(); }
 
     virtual void outputQuoted(const char *text);
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
-    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric);
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname);
+    virtual void outputString(unsigned len, const char *field, const char *fieldname);
     virtual void outputBool(bool field, const char *fieldname);
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
     virtual void outputInt(__int64 field, const char *fieldname);

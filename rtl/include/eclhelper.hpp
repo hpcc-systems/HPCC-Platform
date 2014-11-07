@@ -158,7 +158,7 @@ interface IXmlWriter : public IInterface
 {
 public:
     virtual void outputQuoted(const char *text) = 0;
-    virtual void outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric = false) = 0;
+    virtual void outputString(unsigned len, const char *field, const char *fieldname) = 0;
     virtual void outputBool(bool field, const char *fieldname) = 0;
     virtual void outputData(unsigned len, const void *field, const char *fieldname) = 0;
     virtual void outputInt(__int64 field, const char *fieldname) = 0;
@@ -167,7 +167,7 @@ public:
     virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) = 0;
     virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) = 0;
     virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) = 0;
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric = false) = 0;
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname) = 0;
     virtual void outputBeginDataset(const char *dsname, bool nestChildren) = 0;
     virtual void outputEndDataset(const char *dsname) = 0;
     virtual void outputBeginNested(const char *fieldname, bool nestChildren) = 0;
@@ -178,7 +178,7 @@ public:
     virtual void outputEndArray(const char *fieldname) = 0;
     virtual void outputInlineXml(const char *text) = 0; //for appending raw xml content
     virtual void outputXmlns(const char *name, const char *uri) = 0;
-    inline void outputCString(const char *field, const char *fieldname, bool isnumeric = false) { outputString((size32_t)strlen(field), field, fieldname, isnumeric); }
+    inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
 };
 
 interface IFieldProcessor : public IInterface

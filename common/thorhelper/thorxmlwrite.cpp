@@ -75,7 +75,7 @@ void CommonXmlWriter::outputQuoted(const char *text)
     out.append(text);
 }
 
-void CommonXmlWriter::outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric)
+void CommonXmlWriter::outputString(unsigned len, const char *field, const char *fieldname)
 {
     if (flags & XWFtrim)
         len = rtlTrimStrLen(len, field);
@@ -94,7 +94,7 @@ void CommonXmlWriter::outputString(unsigned len, const char *field, const char *
 }
 
 
-void CommonXmlWriter::outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric)
+void CommonXmlWriter::outputQString(unsigned len, const char *field, const char *fieldname)
 {
     MemoryAttr tempBuffer;
     char * temp;
@@ -103,7 +103,8 @@ void CommonXmlWriter::outputQString(unsigned len, const char *field, const char 
     else
         temp = (char *)tempBuffer.allocate(len);
     rtlQStrToStr(len, temp, len, field);
-    outputString(len, temp, fieldname, isnumeric);
+//    outputString(len, temp, fieldname, isnumeric);
+    outputString(len, temp, fieldname);
 }
 
 
@@ -439,17 +440,31 @@ void CommonJsonWriter::outputQuoted(const char *text)
     appendJSONValue(out, NULL, text);
 }
 
-void CommonJsonWriter::outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric)
+void CommonJsonWriter::outputNumericString(const char *field, const char *fieldname)
+{
+    unsigned len = (size32_t)strlen(field);
+
+    if (flags & XWFtrim)
+        len = rtlTrimStrLen(len, field);
+    if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
+        return;
+    checkDelimit();
+
+    appendJSONStringValue(out, checkItemName(fieldname), len, field, true, false);
+}
+
+void CommonJsonWriter::outputString(unsigned len, const char *field, const char *fieldname)
 {
     if (flags & XWFtrim)
         len = rtlTrimStrLen(len, field);
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
     checkDelimit();
-    appendJSONStringValue(out, checkItemName(fieldname), len, field, !isnumeric);
+
+    appendJSONStringValue(out, checkItemName(fieldname), len, field, true);
 }
 
-void CommonJsonWriter::outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric)
+void CommonJsonWriter::outputQString(unsigned len, const char *field, const char *fieldname)
 {
     MemoryAttr tempBuffer;
     char * temp;
@@ -458,7 +473,8 @@ void CommonJsonWriter::outputQString(unsigned len, const char *field, const char
     else
         temp = (char *)tempBuffer.allocate(len);
     rtlQStrToStr(len, temp, len, field);
-    outputString(len, temp, fieldname, isnumeric);
+    //outputString(len, temp, fieldname, isnumeric);
+    outputString(len, temp, fieldname);
 }
 
 void CommonJsonWriter::outputBool(bool field, const char *fieldname)
@@ -790,7 +806,7 @@ CommonEncodedXmlWriter::CommonEncodedXmlWriter(unsigned _flags, unsigned initial
 {
 }
 
-void CommonEncodedXmlWriter::outputString(unsigned len, const char *field, const char *fieldname, bool isnumeric)
+void CommonEncodedXmlWriter::outputString(unsigned len, const char *field, const char *fieldname)
 {
     if (flags & XWFtrim)
         len = rtlTrimStrLen(len, field);
@@ -1015,13 +1031,13 @@ void SimpleOutputWriter::outputQuoted(const char *text)
     out.append(text);
 }
 
-void SimpleOutputWriter::outputString(unsigned len, const char *field, const char *, bool isnumeric)
+void SimpleOutputWriter::outputString(unsigned len, const char *field, const char *)
 {
     outputFieldSeparator();
     out.append(len, field);
 }
 
-void SimpleOutputWriter::outputQString(unsigned len, const char *field, const char *fieldname, bool isnumeric)
+void SimpleOutputWriter::outputQString(unsigned len, const char *field, const char *fieldname)
 {
     MemoryAttr tempBuffer;
     char * temp;
@@ -1030,7 +1046,7 @@ void SimpleOutputWriter::outputQString(unsigned len, const char *field, const ch
     else
         temp = (char *)tempBuffer.allocate(len);
     rtlQStrToStr(len, temp, len, field);
-    outputString(len, temp, fieldname, isnumeric);
+    outputString(len, temp, fieldname);
 }
 
 void SimpleOutputWriter::outputBool(bool field, const char *)
