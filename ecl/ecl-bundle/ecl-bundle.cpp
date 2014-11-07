@@ -28,9 +28,6 @@
 #include "eclcmd.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
-#ifdef _SUPPORT_CURL
-#include "curl/curl.h"
-#endif
 
 #define ECLCC_ECLBUNDLE_PATH "ECLCC_ECLBUNDLE_PATH"
 #define HPCC_FILEHOOKS_PATH "HPCC_FILEHOOKS_PATH"
@@ -104,7 +101,7 @@ static bool versionOk(const char *versionPresent, const char *minOk, const char 
 
 //--------------------------------------------------------------------------------------------------------------
 
-unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *args, const char *input)
+unsigned doPipeCommand(StringBuffer &output, const char *cmd, const char *args, const char *input)
 {
     try
     {
@@ -159,7 +156,7 @@ static const char *queryPlatformVersion()
     if (!platformVersionDone)
     {
         StringBuffer output;
-        doEclCommand(output, "eclcc", "--nologfile --version", NULL);
+        doPipeCommand(output, "eclcc", "--nologfile --version", NULL);
         RegExpr re("_[0-9]+[.][0-9]+[.][0-9]+");
         const char *found = re.find(output);
         if (!found)
@@ -310,15 +307,6 @@ void doDeleteOnCloseDown()
         }
     }
 }
-#ifdef _SUPPORT_CURL
-// Callback for curl to write data to a file
-size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
-{
-    size_t written;
-    written = fwrite(ptr, size, nmemb, stream);
-    return written;
-}
-#endif
 
 StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
 {
@@ -339,39 +327,24 @@ StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
             splitFilename(bundleName, NULL, NULL, &fetchedLocation, NULL);
             StringBuffer output;
             VStringBuffer params("clone --depth=1 %s %s", bundleName, fetchedLocation.str());
-            doEclCommand(output, "git", params, NULL);
+            unsigned retCode = doPipeCommand(output, "git", params, NULL);
             if (optVerbose)
                 printf("%s", output.str());
+            if (retCode == START_FAILURE)
+                throw makeStringExceptionV(0, "Could not retrieve repository %s: git executable missing?", bundleName);
         }
         else
         {
-#ifdef _SUPPORT_CURL
-            CURL *curl = curl_easy_init();
-            if (curl)
-            {
-                fetchedLocation.append(tmp).append(PATHSEPCHAR);
-                splitFilename(bundleName, NULL, NULL, &fetchedLocation, &fetchedLocation);
-                FILE *fp = fopen(fetchedLocation, "wb");
-                curl_easy_setopt(curl, CURLOPT_URL, bundleName);
-                curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-                curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-                if (optVerbose)
-                    printf("Downloading %s\n", fetchedLocation.str());
-                CURLcode res = curl_easy_perform(curl);
-                StringBuffer curlError;
-                if (res != CURLE_OK)
-                    curlError.append(curl_easy_strerror(res));
-                curl_easy_cleanup(curl);  // always cleanup
-                fclose(fp);
-                if (res != CURLE_OK)
-                    throw makeStringExceptionV(0, "Could not retrieve url %s: %s", bundleName, curlError.str());
-            }
-            else
-                throw makeStringException(0, "curl_easy_init failed");
-#else
-            throw makeStringException(0, "Program was built without libcurl support - url fetching is not available");
-#endif
+            // Use curl executable
+            fetchedLocation.append(tmp).append(PATHSEPCHAR);
+            splitFilename(bundleName, NULL, NULL, &fetchedLocation,  &fetchedLocation);
+            StringBuffer output;
+            VStringBuffer params("-o %s %s", fetchedLocation.str(), bundleName);
+            unsigned retCode = doPipeCommand(output, "curl", params, NULL);
+            if (optVerbose)
+                printf("%s", output.str());
+            if (retCode == START_FAILURE)
+                throw makeStringExceptionV(0, "Could not retrieve url %s: curl executable missing?", bundleName);
         }
     }
     else
@@ -412,7 +385,7 @@ public:
                                     " [ (UTF8) COUNT(b.authors) ] + B.authors + "
                                     " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn + "
                                     " [ (UTF8) #IFDEFINED(B.platformVersion, '')]", bundleName.str());
-            if (doEclCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
+            if (doPipeCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
                 throw MakeStringException(0, "%s cannot be parsed as a bundle\n", bundle);
             // output should contain [ 'name', 'version', etc ... ]
             if (optVerbose)
@@ -543,12 +516,12 @@ public:
                                 "#END\n"
                 , cleanName.str());
         StringBuffer output;
-        if (doEclCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
+        if (doPipeCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
         {
             printf("%s\n", output.str());
             printf("%s selftests cannot be compiled\n", cleanName.str());
         }
-        int retcode = doEclCommand(output, exeFileName, "", NULL);
+        int retcode = doPipeCommand(output, exeFileName, "", NULL);
         printf("%s\n", output.str());
         if (retcode > 0)
         {
@@ -1021,7 +994,7 @@ protected:
     void getCompilerPaths()
     {
         StringBuffer output;
-        doEclCommand(output, "eclcc", "--nologfile -showpaths", NULL);
+        doPipeCommand(output, "eclcc", "--nologfile -showpaths", NULL);
         extractValueFromEnvOutput(bundlePath, output, ECLCC_ECLBUNDLE_PATH);
         extractValueFromEnvOutput(hooksPath, output, HPCC_FILEHOOKS_PATH);
     }

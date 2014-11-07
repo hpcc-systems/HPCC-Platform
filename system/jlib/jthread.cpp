@@ -1615,8 +1615,6 @@ public:
 
 #define WHITESPACE " \t\n\r"
 
-#define START_FAILURE (199)
-
 static unsigned dowaitpid(HANDLE pid, int mode)
 {
     while (pid != (HANDLE)-1) {

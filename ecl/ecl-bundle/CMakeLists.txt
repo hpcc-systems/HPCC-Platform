@@ -25,7 +25,6 @@
 
 project( ecl-bundle )
 
-
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS
@@ -54,15 +53,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/ecl/eclcmd
     )
 
-if (USE_CURL)
-  ADD_PLUGIN(ecl-bundle-curl PACKAGES CURL OPTION SUPPORT_CURL)
-  IF (${SUPPORT_CURL})
-    ADD_DEFINITIONS( -D_SUPPORT_CURL )
-    message("Include should be at ${CURL_INCLUDE_DIRS}")
-    include_directories(${CURL_INCLUDE_DIRS})
-  ENDIF()
-endif()
-
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( ecl-bundle ${SRCS} )
@@ -72,10 +62,6 @@ target_link_libraries ( ecl-bundle
         esphttp
         workunit
     )
-
-IF (${SUPPORT_CURL})
-  target_link_libraries ( ecl-bundle ${CURL_LIBRARIES})
-ENDIF()
 
 if ( UNIX )
     install ( PROGRAMS ecl-bundle.install DESTINATION etc/init.d/install COMPONENT Runtime )
