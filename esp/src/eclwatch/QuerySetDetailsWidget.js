@@ -98,7 +98,6 @@ define([
                 activate: this.query.setActivated(activated)
             });
         },
-
         _onReset:function(){
             if (confirm(this.i18n.ResetThisQuery)) {
                 this.query.doReset();
