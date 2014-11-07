@@ -28,6 +28,9 @@
 #include "eclcmd.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
+#ifdef _SUPPORT_CURL
+#include "curl/curl.h"
+#endif
 
 #define ECLCC_ECLBUNDLE_PATH "ECLCC_ECLBUNDLE_PATH"
 #define HPCC_FILEHOOKS_PATH "HPCC_FILEHOOKS_PATH"
@@ -137,7 +140,7 @@ unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *args, c
             error.append(read, buf);
         }
         if (optVerbose && (ret > 0 || error.length()))
-            printf("eclcc return code was %d, output to stderr:\n%s", ret, error.str());
+            printf("%s return code was %d, output to stderr:\n%s", cmd, ret, error.str());
         return ret;
     }
     catch (IException *E)
@@ -230,6 +233,11 @@ void recursiveRemoveDirectory(IFile *dir, bool isDryRun)
         dir->remove();
 }
 
+static bool isUrl(const char *str)
+{
+    return strstr(str, ":/") != NULL;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 
 interface IBundleCollection;
@@ -280,6 +288,96 @@ interface IBundleCollection : extends IInterface
     virtual IBundleInfo *queryBundle(const char *name, const char *version) const = 0;  // returns active if version==NULL
     virtual bool checkDependencies(const IBundleInfo *bundle, bool going) const = 0;
 };
+
+StringArray deleteOnCloseDown;
+
+void doDeleteOnCloseDown()
+{
+    ForEachItemIn(idx, deleteOnCloseDown)
+    {
+        const char *goer = deleteOnCloseDown.item(idx);
+        try
+        {
+            Owned<IFile> goFile = createIFile(goer);
+            recursiveRemoveDirectory(goFile, false);
+        }
+        catch (IException *E)
+        {
+            StringBuffer m;
+            E->errorMessage(m);
+            printf("Error: %s\n", m.str());
+            E->Release();
+        }
+    }
+}
+#ifdef _SUPPORT_CURL
+// Callback for curl to write data to a file
+size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+    size_t written;
+    written = fwrite(ptr, size, nmemb, stream);
+    return written;
+}
+#endif
+
+StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
+{
+    // If the bundle name looks like a url, fetch it somewhere temporary first...
+    if (isUrl(bundleName))
+    {
+        // Put it into a temp directory - we need the filename to be right
+        const char *tmp = tmpnam(NULL);
+        recursiveCreateDirectory(tmp);
+        deleteOnCloseDown.append(tmp);
+        if (optVerbose)
+            printf("mkdir %s\n", tmp);
+
+        const char *ext = pathExtension(bundleName);
+        if (ext && strcmp(ext, ".git")==0)
+        {
+            fetchedLocation.append(tmp).append(PATHSEPCHAR);
+            splitFilename(bundleName, NULL, NULL, &fetchedLocation, NULL);
+            StringBuffer output;
+            VStringBuffer params("clone --depth=1 %s %s", bundleName, fetchedLocation.str());
+            doEclCommand(output, "git", params, NULL);
+            if (optVerbose)
+                printf("%s", output.str());
+        }
+        else
+        {
+#ifdef _SUPPORT_CURL
+            CURL *curl = curl_easy_init();
+            if (curl)
+            {
+                fetchedLocation.append(tmp).append(PATHSEPCHAR);
+                splitFilename(bundleName, NULL, NULL, &fetchedLocation, &fetchedLocation);
+                FILE *fp = fopen(fetchedLocation, "wb");
+                curl_easy_setopt(curl, CURLOPT_URL, bundleName);
+                curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+                if (optVerbose)
+                    printf("Downloading %s\n", fetchedLocation.str());
+                CURLcode res = curl_easy_perform(curl);
+                StringBuffer curlError;
+                if (res != CURLE_OK)
+                    curlError.append(curl_easy_strerror(res));
+                curl_easy_cleanup(curl);  // always cleanup
+                fclose(fp);
+                if (res != CURLE_OK)
+                    throw makeStringExceptionV(0, "Could not retrieve url %s: %s", bundleName, curlError.str());
+            }
+            else
+                throw makeStringException(0, "curl_easy_init failed");
+#else
+            throw makeStringException(0, "Program was built without libcurl support - url fetching is not available");
+#endif
+        }
+    }
+    else
+        fetchedLocation.append(bundleName); // Assume local
+    return fetchedLocation;
+}
 
 class CBundleInfo : public CInterfaceOf<IBundleInfo>
 {
@@ -930,7 +1028,7 @@ protected:
     bool isFromFile() const
     {
         // If a supplied bundle id contains pathsep or ., assume a filename or directory is being supplied
-        return strchr(optBundle, PATHSEPCHAR) != NULL || strchr(optBundle, '.') != NULL;
+        return strchr(optBundle, PATHSEPCHAR) != NULL || strchr(optBundle, '.') != NULL || isUrl(optBundle);
     }
     StringAttr optBundle;
     StringBuffer bundlePath;
@@ -1086,7 +1184,11 @@ public:
     {
         Owned<const IBundleInfo> bundle;
         if (isFromFile())
-            bundle.setown(new CBundleInfo(optBundle));
+        {
+            StringBuffer useName;
+            fetchURL(optBundle, useName);
+            bundle.setown(new CBundleInfo(useName));
+        }
         else
         {
             CBundleCollection allBundles(bundlePath, optBundle);
@@ -1105,7 +1207,7 @@ public:
                 "\n"
                 "ecl bundle info <bundle> \n"
                 " Options:\n"
-                "   <bundle>               The name of a bundle file, or installed bundle\n"
+                "   <bundle>               The name or URL of a bundle file, or installed bundle\n"
                );
         EclCmdBundleBaseWithVersion::usage();
     }
@@ -1139,11 +1241,13 @@ public:
 
     virtual int processCMD()
     {
-        Owned<IFile> bundleFile = createIFile(optBundle.get());
+        StringBuffer useName;
+        fetchURL(optBundle, useName);
+        Owned<IFile> bundleFile = createIFile(useName);
         if (bundleFile->exists())
         {
             bool ok = true;
-            Owned<IBundleInfo> bundle = new CBundleInfo(optBundle);
+            Owned<IBundleInfo> bundle = new CBundleInfo(useName);
             bundle->checkValid();
             const char *version = bundle->queryVersion();
             printf("Installing bundle %s version %s\n", bundle->queryBundleName(), version);
@@ -1255,7 +1359,7 @@ public:
                 "\n"
                 "ecl bundle install <bundle> \n"
                 " Options:\n"
-                "   <bundle>               The name of a bundle file\n"
+                "   <bundle>               The name or URL of a bundle file\n"
                 "   --dryrun               Print what would be installed, but do not copy\n"
                 "   --force                Install even if required dependencies missing\n"
                 "   --keepprior            Do not remove an previous versions of the bundle\n"
@@ -1363,7 +1467,11 @@ public:
     {
         Owned<const IBundleInfo> bundle;
         if (isFromFile())
-            bundle.setown(new CBundleInfo(optBundle));
+        {
+            StringBuffer useName;
+            fetchURL(optBundle, useName);
+            bundle.setown(new CBundleInfo(useName));
+        }
         else
         {
             CBundleCollection allBundles(bundlePath, optBundle);
@@ -1382,7 +1490,7 @@ public:
                 "\n"
                 "ecl bundle info <bundle> \n"
                 " Options:\n"
-                "   <bundle>               The name of a bundle file, or installed bundle\n"
+                "   <bundle>               The name or URL of a bundle file, or installed bundle\n"
                );
         EclCmdBundleBaseWithVersion::usage();
     }
@@ -1583,6 +1691,7 @@ int main(int argc, const char *argv[])
         E->Release();
         exitCode = 2;
     }
+    doDeleteOnCloseDown();
     removeFileHooks();
     releaseAtoms();
     exit(exitCode);
