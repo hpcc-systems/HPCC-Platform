@@ -423,6 +423,7 @@ class CRoxiePackageNode : extends CPackageNode, implements IRoxiePackage
 protected:
     static CResolvedFileCache daliFiles;
     mutable CResolvedFileCache fileCache;
+    IArrayOf<IResolvedFile> files;  // Used when preload set
 
     virtual aindex_t getBaseCount() const = 0;
     virtual const CRoxiePackageNode *getBaseNode(aindex_t pos) const = 0;
@@ -591,6 +592,28 @@ protected:
         return NULL;
     }
 
+    void checkPreload()
+    {
+        if (isPreload())
+        {
+            // Look through all files and resolve them now
+            Owned<IPropertyTreeIterator> supers = node->getElements("SuperFile");
+            ForEach(*supers)
+            {
+                IPropertyTree &super = supers->query();
+                const char *name = super.queryProp("@id");
+                if (name)
+                {
+                    const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL);
+                    if (resolved)
+                    {
+                        files.append(*const_cast<IResolvedFile *>(resolved));
+                    }
+                }
+            }
+        }
+    }
+
     // default constructor for derived class use
     CRoxiePackageNode()
     {
@@ -691,6 +714,10 @@ public:
     virtual bool isCompulsory() const
     {
         return CPackageNode::isCompulsory();
+    }
+    virtual bool isPreload() const
+    {
+        return CPackageNode::isPreload();
     }
     virtual const IPropertyTree *queryTree() const
     {

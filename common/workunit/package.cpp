@@ -80,6 +80,11 @@ ISimpleSuperFileEnquiry *CPackageNode::resolveSuperFile(const char *superFileNam
     return NULL;
 }
 
+void CPackageNode::checkPreload()
+{
+    // Only implemented in derived classes
+}
+
 // Load mergedEnvironment from local XML node
 void CPackageNode::loadEnvironment()
 {

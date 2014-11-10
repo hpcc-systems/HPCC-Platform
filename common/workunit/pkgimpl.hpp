@@ -106,6 +106,11 @@ protected:
         return (node) ? node->getPropBool("@compulsory", false) : false;
     }
 
+    virtual bool isPreload() const
+    {
+        return (node) ? node->getPropBool("@preload", false) : false;
+    }
+
     virtual bool resolveLocally() const
     {
         if (isCompulsory())
@@ -161,6 +166,8 @@ public:
     {
         return node;
     }
+
+    virtual void checkPreload();
 
     virtual bool validate(StringArray &warn, StringArray &err) const;
 };
@@ -232,6 +239,7 @@ public:
                 }
                 while(baseIterator->next());
             }
+            TYPE::checkPreload();
             baseResolution=basesResolved;
         }
     }
