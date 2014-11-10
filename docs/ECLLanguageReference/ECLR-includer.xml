@@ -939,11 +939,7 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-CheckPoint.xml"
-                xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-DEPRICATED.xml"
+        <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-DEPRICATED.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 

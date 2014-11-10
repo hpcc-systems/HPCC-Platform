@@ -177,6 +177,5 @@
        // and write the file to the AnotherThor cluster</programlisting>
 
   <para>See Also: <link linkend="STORED">STORED</link>, <link
-  linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link
-  linkend="CHECKPOINT">CHECKPOINT</link></para>
+  linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, </para>
 </sect1>
