@@ -52,8 +52,8 @@ public:
     inline void *       bufferBase() const { return ptr; } // like get except non-const
 
 private:
-    size32_t      len;
-    void *      ptr;
+    void * ptr;
+    size32_t len;
 };
 
 

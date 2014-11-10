@@ -1764,7 +1764,8 @@ IPropertyTree *PTree::setPropTree(const char *xpath, IPropertyTree *val)
         if (branch == this)
         {   
             IPropertyTree *_val = ownPTree(val);
-            PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+            dbgassertex(QUERYINTERFACE(_val, PTree));
+            PTree *__val = static_cast<PTree *>(_val);
             __val->setName(prop);
             addingNewElement(*_val, ANE_SET);
             if (!checkChildren()) createChildMap();
@@ -1789,7 +1790,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
             if (!*x++)
             {
                 IPropertyTree *_val = ownPTree(val);
-                PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+                dbgassertex(QUERYINTERFACE(_val, PTree));
+                PTree *__val = static_cast<PTree *>(_val);
                 __val->setName(xpath);
                 addingNewElement(*_val, -1);
                 if (checkChildren())
@@ -1798,7 +1800,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                     if (child)
                     {
                         __val->setParent(this);
-                        PTree *tree = QUERYINTERFACE(child, PTree); assertex(tree);
+                        dbgassertex(QUERYINTERFACE(child, PTree));
+                        PTree *tree = static_cast<PTree *>(child);
                         if (tree->value && tree->value->isArray())
                             tree->value->addElement(_val);
                         else
@@ -1807,7 +1810,7 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                             array->addElement(LINK(child));
                             array->addElement(_val);
                             IPropertyTree *container = create(xpath, array);
-                            PTree *_tree = QUERYINTERFACE(child, PTree); assertex(_tree); _tree->setParent(this);
+                            tree->setParent(this);
                             children->replace(xpath, container);
                         }
                         return _val;
@@ -1836,13 +1839,15 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                     throw MakeIPTException(-1, "addPropTree: qualifier unmatched %s", xpath);
             }
             IPropertyTree *_val = ownPTree(val);
-            PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+            dbgassertex(QUERYINTERFACE(_val, PTree));
+            PTree *__val = static_cast<PTree *>(_val);
             __val->setName(path);
             addingNewElement(*_val, pos);
             if (child)
             {
                 __val->setParent(this);
-                PTree *tree = QUERYINTERFACE(child, PTree); assertex(tree);
+                dbgassertex(QUERYINTERFACE(child, PTree));
+                PTree *tree = static_cast<PTree *>(child);
                 if (tree->value && tree->value->isArray())
                 {
                     if (-1 == pos)
@@ -4955,7 +4960,7 @@ public:
                                     while (t != tb && isspace(*(--t)));
                                     mark.setLength((size32_t)(t-tb+1));
                                 }
-                            }   
+                            }
                             stateInfo->tagText.ensureCapacity(mark.length());
                             _decodeXML(r, mark.toCharArray(), stateInfo->tagText);
                         }

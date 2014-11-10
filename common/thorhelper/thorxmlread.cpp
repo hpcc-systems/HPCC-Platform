@@ -1464,10 +1464,7 @@ public:
 
         const char *str = queryProp(path);
         if (!str) return _default;
-
-        CriticalBlock b(crit);
-        cnv2Latin1((size32_t)strlen(str), str, sharedResult.clear());
-        return atoi64_l((const char *)sharedResult.toByteArray(), sharedResult.length());
+        return _atoi64(str);
     }
     virtual void readQString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default)
     {
