@@ -1293,6 +1293,7 @@ interface IWorkflowScheduleConnection : extends IInterface
     virtual bool queryActive() = 0;
     virtual bool pull(IWorkflowItemArray * workflow) = 0;
     virtual void push(const char * name, const char * text) = 0;
+    virtual void remove() = 0;
 };
 
 

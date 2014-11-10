@@ -10020,6 +10020,15 @@ public:
         eventQueue->addPropTree("Item", eventItem.getLink());
     }
 
+    virtual void remove()
+    {
+        if (baseconn)
+        {
+            baseconn->close(true);
+            baseconn.clear();
+        }
+    }
+
 private:
     void resetItemStateAndDependents(IWorkflowItemArray * workflow, unsigned wfid) const
     {
