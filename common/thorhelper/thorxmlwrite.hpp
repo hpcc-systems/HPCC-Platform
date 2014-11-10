@@ -43,10 +43,7 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual size32_t length() const = 0;
     virtual const char *str() const = 0;
     virtual void rewindTo(unsigned int prevlen) = 0;
-    virtual void outputNumericString(const char *field, const char *fieldname)
-    {
-        outputCString(field, fieldname);
-    }
+    virtual void outputNumericString(const char *field, const char *fieldname) = 0;
 };
 
 class thorhelper_decl CommonXmlWriter : public CInterface, implements IXmlWriterExt
@@ -91,6 +88,11 @@ public:
             UNIMPLEMENTED;
 
         if (prevlen < out.length()) out.setLength(prevlen);
+    }
+
+    virtual void outputNumericString(const char *field, const char *fieldname)
+    {
+        outputCString(field, fieldname);
     }
 
 protected:
