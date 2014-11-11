@@ -860,7 +860,7 @@ static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr, bool opti
     return ret;
 }
 
-static GraphLocalisation queryGetGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
+static GraphLocalisation getGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
 {
     TransformMutexBlock lock;
     return doGetGraphLocalisation(expr, optimizeParentAccess);
@@ -877,7 +877,7 @@ GraphLocalisation HqlCppTranslator::getGraphLocalisation(IHqlExpression * expr, 
     if (targetThor() && !isInsideChildQuery)
         return GraphNonLocal;
 
-    return queryGetGraphLocalisation(expr, options.optimizeParentAccess);
+    return ::getGraphLocalisation(expr, options.optimizeParentAccess);
 }
 
 bool HqlCppTranslator::isNeverDistributed(IHqlExpression * expr)

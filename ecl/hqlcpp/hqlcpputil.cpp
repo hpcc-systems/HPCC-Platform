@@ -478,6 +478,7 @@ bool worthGeneratingRowAsSingleActivity(IHqlExpression * expr)
         case no_if:
             return worthGeneratingRowAsSingleActivity(expr->queryChild(1)) && worthGeneratingRowAsSingleActivity(expr->queryChild(2));
         default:
+            //Do not generate no_getgraph result - better as separate activities
             return false;
         }
         expr = expr->queryChild(0);
