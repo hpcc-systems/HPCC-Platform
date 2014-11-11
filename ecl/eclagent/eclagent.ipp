@@ -853,7 +853,7 @@ private:
         unsigned sourceId;
         unsigned outputIndex;
 
-        StringBuffer edgeId;
+        StringAttr edgeId;
 
     public:
         IMPLEMENT_IINTERFACE;
@@ -861,7 +861,9 @@ private:
         LegacyInputProbe(IHThorInput *_in, EclSubGraph *_owner, unsigned _sourceId, int outputidx)
             : in(_in), owner(_owner), sourceId(_sourceId), outputIndex(outputidx)
         {
-            edgeId.append(_sourceId).append("_").append(outputidx);
+            StringBuffer edgeIdText;
+            edgeIdText.append(_sourceId).append("_").append(outputidx);
+            edgeId.setown(edgeIdText);
             maxRowSize = 0;
         }
 

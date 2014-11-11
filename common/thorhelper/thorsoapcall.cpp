@@ -83,8 +83,8 @@ class Url : public CInterface, implements IInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    StringBuffer method;
-    StringBuffer host;
+    StringAttr method;
+    StringAttr host;
     unsigned port;
     StringBuffer path;
     StringBuffer userPasswordPair;
@@ -155,7 +155,7 @@ public:
         {
             *p = 0;
             p += 3; // skip past the colon-slash-slash
-            method.append(urltext);
+            method.set(urltext);
             urltext = p;
         }
         else
@@ -179,7 +179,7 @@ public:
 
             port = atoi(p);
 
-            host.append(urltext);
+            host.set(urltext);
 
             if ((p = strchr(p, '/')) != NULL)
                 path.append(p);
@@ -201,12 +201,12 @@ public:
                 *p = 0;
                 p++;
 
-                host.append(urltext);
+                host.set(urltext);
                 path.append("/").append(p);
             }
             else
             {
-                host.append(urltext);
+                host.set(urltext);
                 path.append("/");
             }
         }

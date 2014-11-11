@@ -1128,13 +1128,17 @@ class TextIRBuilder : public CInterfaceOf<IEclBuilder>
         Definition(const char * prefix, id_t _id, bool expandInline) : id(_id)
         {
             if (!expandInline)
-                idText.append("%").append(prefix).append(id);
+            {
+                StringBuffer s;
+                s.append("%").append(prefix).append(id);
+                idText.setown(s);
+            }
         }
 
         inline bool expandInline() const { return idText.length() == 0; }
 
     public:
-        StringBuffer idText;
+        StringAttr idText;
         id_t id;
     };
 

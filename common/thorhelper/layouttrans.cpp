@@ -75,9 +75,11 @@ MappingLevel::MappingLevel(FieldMapping::List & _mappings) : topLevel(true), map
 
 MappingLevel::MappingLevel(MappingLevel * parent, char const * name, FieldMapping::List & _mappings) : topLevel(false), mappings(_mappings)
 {
+    StringBuffer fullScope;
     if(!parent->topLevel)
-        scope.append(parent->scope).append(scopeSeparator);
-    scope.append(name);
+        fullScope.append(parent->scope).append(scopeSeparator);
+    fullScope.append(name);
+    scope.setown(fullScope.detach());
 }
 
 void MappingLevel::calculateMappings(IDefRecordElement const * diskRecord, unsigned numKeyedDisk, IDefRecordElement const * activityRecord, unsigned numKeyedActivity)

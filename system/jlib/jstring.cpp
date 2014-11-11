@@ -1258,6 +1258,22 @@ void StringAttr::setown(const char * _text)
   text = (char *)_text;
 }
 
+void StringAttr::set(const StringBuffer & source)
+{
+    if (source.length())
+        set(source.str());
+    else
+        clear();
+}
+
+void StringAttr::setown(StringBuffer & source)
+{
+    if (source.length())
+        setown(source.detach());
+    else
+        clear();
+}
+
 void StringAttr::toLowerCase()
 {
     if (text)

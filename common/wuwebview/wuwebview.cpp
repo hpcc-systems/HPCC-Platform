@@ -58,7 +58,7 @@ public:
             if (queryname)
                 buffer.append(queryname);
             buffer.append("Response");
-            if (flags & WWV_INCL_NAMESPACES && ns.length())
+            if ((flags & WWV_INCL_NAMESPACES) && ns.length())
                 buffer.append(" xmlns=\"").append(ns.str()).append('\"');
             buffer.append('>');
         }

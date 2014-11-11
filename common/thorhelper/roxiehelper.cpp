@@ -632,21 +632,24 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupF
     assertex(contentHead.length()==0 && contentTail.length()==0);
     if (mlFmt==MarkupFmt_JSON)
     {
-        contentHead.append("{");
-        contentTail.append("}");
+        contentHead.set("{");
+        contentTail.set("}");
     }
     else
     {
-        contentHead.append(
+        StringBuffer headText, tailText;
+        headText.append(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
             "<soap:Body>");
         if (arrayMode)
         {
-            contentHead.append("<").append(queryName).append("ResponseArray>");
-            contentTail.append("</").append(queryName).append("ResponseArray>");
+            headText.append("<").append(queryName).append("ResponseArray>");
+            tailText.append("</").append(queryName).append("ResponseArray>");
         }
-        contentTail.append("</soap:Body></soap:Envelope>");
+        tailText.append("</soap:Body></soap:Envelope>");
+        contentHead.set(headText);
+        contentTail.set(tailText);
     }
 }
 
