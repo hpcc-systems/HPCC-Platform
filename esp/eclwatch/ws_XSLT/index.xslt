@@ -745,7 +745,7 @@
                 <xsl:when test="$warning !=''">
                     <xsl:value-of select="$warning"/>
                 </xsl:when>
-                <xsl:when test="$clusterType = 'DFUserver' or $clusterType = 'ECLCCserver' or $clusterType = 'ECLagent'">
+                <xsl:when test="$clusterType = 'DFUserver' or $clusterType = 'ECLserver' or $clusterType = 'ECLCCserver' or $clusterType = 'ECLagent'">
                     <xsl:choose>
                         <xsl:when test="$queueStatus='paused'"> Queue paused </xsl:when>
                         <xsl:when test="$queueStatus='stopped'"> Queue stopped </xsl:when>
