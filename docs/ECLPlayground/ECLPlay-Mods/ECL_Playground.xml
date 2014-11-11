@@ -114,6 +114,7 @@
         contains the <emphasis>Editor</emphasis> area and the <emphasis>Graph
         Viewer</emphasis>. The Sample code drop list is at the top right. The
         bottom portion of the page displays the results.</para>
+
         <!--***NEW INTERFACE DESCR***-->
 
         <para>The ECL Playground comes with a set of ready to run sample ECL
@@ -200,9 +201,9 @@
       </sect2>
 
       <sect2 role="brk">
-        <title>ECL Playground from a Workunit</title>
+        <title>ECL from a Workunit</title>
 
-        <para>You can access ECL Playground from a Workunit Details page in
+        <para>You can access ECL code from inside a Workunit Details page in
         ECL Watch.<orderedlist>
             <listitem>
               <?dbfo keep-together="always"?>
@@ -231,29 +232,14 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Click on the<emphasis role="bold"> Playground
-              </emphasis>tab to open the workunit in the Playground.<figure>
-                  <title>ECL Playground link</title>
+              <para>Click on the<emphasis role="bold"> ECL </emphasis>tab to
+              view the workunit's ECL code.<figure>
+                  <title>ECL link</title>
 
                   <mediaobject>
                     <imageobject>
                       <imagedata fileref="../../images/ECLP_008.jpg"
                                  vendor="eclwatchSS" />
-                    </imageobject>
-                  </mediaobject>
-                </figure></para>
-            </listitem>
-
-            <listitem>
-              <?dbfo keep-together="always"?>
-
-              <para>You can then edit the ECL and resubmit to see the results.
-              This creates a new workunit. <figure>
-                  <title>Workunit in ECL Playground</title>
-
-                  <mediaobject>
-                    <imageobject>
-                      <imagedata fileref="../../images/ECLP_009.jpg" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
