@@ -637,7 +637,7 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupF
     }
     else
     {
-        StringBuffer headText, tailText;
+        StringAttrBuilder headText(contentHead), tailText(contentTail);
         headText.append(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
@@ -648,8 +648,6 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupF
             tailText.append("</").append(queryName).append("ResponseArray>");
         }
         tailText.append("</soap:Body></soap:Envelope>");
-        contentHead.set(headText);
-        contentTail.set(tailText);
     }
 }
 

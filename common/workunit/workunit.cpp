@@ -8776,9 +8776,8 @@ void CLocalWUException::setExceptionColumn(unsigned c)
 
 CLocalWUAppValue::CLocalWUAppValue(IPropertyTree *props,unsigned child): p(props)
 {
-    StringBuffer propPath;
+    StringAttrBuilder propPath(prop);
     propPath.append("*[").append(child).append("]");
-    prop.setown(propPath);
 }
 
 IStringVal & CLocalWUAppValue::getApplication(IStringVal & str) const

@@ -861,9 +861,8 @@ private:
         LegacyInputProbe(IHThorInput *_in, EclSubGraph *_owner, unsigned _sourceId, int outputidx)
             : in(_in), owner(_owner), sourceId(_sourceId), outputIndex(outputidx)
         {
-            StringBuffer edgeIdText;
+            StringAttrBuilder edgeIdText(edgeId);
             edgeIdText.append(_sourceId).append("_").append(outputidx);
-            edgeId.setown(edgeIdText);
             maxRowSize = 0;
         }
 

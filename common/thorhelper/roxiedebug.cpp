@@ -870,13 +870,12 @@ DebugActivityRecord::DebugActivityRecord (IActivityBase *_activity, unsigned _it
 {
     localCycles = 0;
     totalCycles = 0;
-    StringBuffer fullId;
+    StringAttrBuilder fullId(idText);
     fullId.append(activity->queryId());
     if (iteration || channel) 
         fullId.appendf(".%d", iteration);
     if (channel) 
         fullId.appendf("#%d", channel);
-    idText.set(fullId);
 }
 
 void DebugActivityRecord::outputId(IXmlWriter *output, const char *fieldName)

@@ -87,6 +87,14 @@ StringBuffer::StringBuffer(const StringBuffer & value)
     append(value);
 }
 
+StringBuffer::StringBuffer(bool useInternal)
+{
+    if (useInternal)
+        init();
+    else
+        initNoInternal();
+}
+
 StringBuffer::~StringBuffer()
 {
     dbgassertex(buffer);
@@ -102,12 +110,12 @@ void StringBuffer::freeBuffer()
 void StringBuffer::setBuffer(size32_t buffLen, char * newBuff, size32_t strLen)
 {
     assertex(newBuff);
-    assertex(buffLen>0 && newBuff!=NULL && strLen<buffLen);
+    assertex(buffLen>0 && strLen<buffLen);
 
     freeBuffer();
     buffer = newBuff;
-    maxLen=buffLen;
-    curLen=strLen;
+    maxLen = buffLen;
+    curLen = strLen;
 }
 
 void StringBuffer::_realloc(size32_t newLen)
@@ -130,14 +138,14 @@ void StringBuffer::_realloc(size32_t newLen)
         }
         char * newStr;
         char * originalBuffer = (buffer == internalBuffer) ? NULL : buffer;
-        if(!newMax || !(newStr=(char *)realloc(originalBuffer, newMax)))
+        if (!newMax || !(newStr=(char *)realloc(originalBuffer, newMax)))
         {
             DBGLOG("StringBuffer::_realloc: Failed to realloc = %d, oldMax = %d", newMax, maxLen);
             PrintStackReport();
             PrintMemoryReport();
             throw MakeStringException(MSGAUD_operator, -1, "StringBuffer::_realloc: Failed to realloc = %d, oldMax = %d", newMax, maxLen);
         }
-        if (buffer == internalBuffer)
+        if (useInternal())
             memcpy(newStr, internalBuffer, curLen);
         buffer = newStr;
         maxLen = newMax;
@@ -519,31 +527,35 @@ char * StringBuffer::reserveTruncate(size32_t size)
 
 void StringBuffer::swapWith(StringBuffer &other)
 {
+    //Swap max
     size_t tempMax = maxLen;
     maxLen = other.maxLen;
     other.maxLen = tempMax;
 
-    //Swap lengths, but keep local vairables with the old values for later
+    //Swap lengths
     size32_t thisLen = curLen;
     size32_t otherLen = other.curLen;
     curLen = otherLen;
     other.curLen = thisLen;
 
+    //Swap buffers
     char * thisBuffer = buffer;
     char * otherBuffer = other.buffer;
     if (useInternal())
     {
         if (other.useInternal())
         {
+            //NOTE: The c++ compiler can generate better code for the fixed size memcpy than it can
+            //      if only the required characters are copied.
             char temp[InternalBufferSize];
-            memcpy(temp, thisBuffer, thisLen);
-            memcpy(thisBuffer, otherBuffer, otherLen);
-            memcpy(otherBuffer, temp, thisLen);
-            //buffers already points in the correct place
+            memcpy(temp, thisBuffer, InternalBufferSize);
+            memcpy(thisBuffer, otherBuffer, InternalBufferSize);
+            memcpy(otherBuffer, temp, InternalBufferSize);
+            //buffers already point in the correct place
         }
         else
         {
-            memcpy(other.internalBuffer, thisBuffer, thisLen);
+            memcpy(other.internalBuffer, thisBuffer, InternalBufferSize);
             buffer = otherBuffer;
             other.buffer = other.internalBuffer;
         }
@@ -552,7 +564,7 @@ void StringBuffer::swapWith(StringBuffer &other)
     {
         if (other.useInternal())
         {
-            memcpy(internalBuffer, otherBuffer, otherLen);
+            memcpy(internalBuffer, otherBuffer, InternalBufferSize);
             buffer = internalBuffer;
             other.buffer = thisBuffer;
         }
@@ -562,6 +574,23 @@ void StringBuffer::swapWith(StringBuffer &other)
             other.buffer = thisBuffer;
         }
     }
+}
+
+void StringBuffer::setown(StringBuffer &other)
+{
+    maxLen = other.maxLen;
+    curLen = other.curLen;
+    freeBuffer();
+    if (other.useInternal())
+    {
+        memcpy(internalBuffer, other.internalBuffer, InternalBufferSize);
+        buffer = internalBuffer;
+    }
+    else
+    {
+        buffer = other.buffer;
+    }
+    other.init();
 }
 
 void StringBuffer::kill()
@@ -936,6 +965,17 @@ VStringBuffer::VStringBuffer(const char* format, ...)
     va_start(args,format);
     valist_appendf(format,args);
     va_end(args);
+}
+
+//===========================================================================
+
+StringAttrBuilder::StringAttrBuilder(StringAttr & _target) : StringBuffer(false), target(_target)
+{
+}
+
+StringAttrBuilder::~StringAttrBuilder()
+{
+    target.setown(*this);
 }
 
 //===========================================================================

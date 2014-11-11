@@ -127,10 +127,11 @@ public:
     ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize)
     : flags(_flags), pkgid(_pkgid), noDfsResolution(noDfs), calcFileSize(calcSize), fileSize(0), numParts(0)
     {
-        StringBuffer logicalNameText, daliipText;
-        logicalNameText.set(skipForeign(lfn, &daliipText)).toLowerCase();
-        logicalName.set(logicalNameText);
-        daliip.set(daliipText);
+        {
+            //Scope ensures strings are assigned
+            StringAttrBuilder logicalNameText(logicalName), daliipText(daliip);
+            logicalNameText.set(skipForeign(lfn, &daliipText)).toLowerCase();
+        }
         if (daliip.length())
             flags |= RefFileForeign;
         else
@@ -350,9 +351,7 @@ IPropertyTree *ReferencedFile::getSpecifiedOrRemoteFileTree(IUserDescriptor *use
     Owned<IPropertyTree> fileTree = getRemoteFileTree(user, remote, remotePrefix);
     if (!fileTree)
         return NULL;
-    StringBuffer daliipText;
-    remote->endpoint().getUrlStr(daliipText);
-    daliip.set(daliipText);
+    StringAttrBuilder daliipText(daliip);
     filePrefix.set(remotePrefix);
     return fileTree.getClear();
 }

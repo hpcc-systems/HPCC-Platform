@@ -1129,9 +1129,8 @@ class TextIRBuilder : public CInterfaceOf<IEclBuilder>
         {
             if (!expandInline)
             {
-                StringBuffer s;
+                StringAttrBuilder s(idText);
                 s.append("%").append(prefix).append(id);
-                idText.setown(s);
             }
         }
 
