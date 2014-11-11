@@ -74,6 +74,7 @@
 #define WRN_RESERVED_FUTURE         1050 /* Identifier likely to be reserved in future versions */
 #define WRN_SILLY_EXISTS            1051
 #define WRN_INT_OR_RANGE_EXPECTED   1052 /* Integer or integer range (i.e. 2..3) expected when real detected */
+#define WRN_UNRESOLVED_SYMBOL       1053
 //#define ECL_WARN_END          1100
 
 ///////////////////////////////////////////////////////////////////////////////

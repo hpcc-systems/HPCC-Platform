@@ -1535,7 +1535,7 @@ void HqlLex::doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int ex
 
     StringBuffer in;
     in.append(len, text);
-    lookupXmlSymbol(errpos, in.str(), out);
+    bool matched = lookupXmlSymbol(errpos, in.str(), out);
     if (stringify)
     {
         char *expanded = (char *) malloc(out.length()*2 + 3); // maximum it could be (might be a bit big for alloca)
@@ -1578,7 +1578,12 @@ void HqlLex::doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int ex
             pushText(out.str());
         }
         else
+        {
+            //Don't report errors accessing attributes, but do complain about missing symbols
+            if (!matched && (*text != '@'))
+                reportError(errpos, WRN_UNRESOLVED_SYMBOL, "Symbol %%%s not resolved", text);
             pushText(" 0");
+        }
     }
 }
 
@@ -2001,7 +2006,7 @@ IXmlScope *HqlLex::ensureTopXmlScope()
     return top;
 }
 
-StringBuffer &HqlLex::lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &ret)
+ bool HqlLex::lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &ret)
 {
     if (*name==0)
         name=NULL;
@@ -2009,7 +2014,7 @@ StringBuffer &HqlLex::lookupXmlSymbol(const YYSTYPE & errpos, const char *name, 
     IXmlScope *top = ensureTopXmlScope();
     bool idFound = top->getValue(name, ret);
     if (idFound)
-    	return ret;
+        return true;
 
     HqlLex * lexer = parentLex;
     while (lexer && !idFound)
@@ -2019,7 +2024,7 @@ StringBuffer &HqlLex::lookupXmlSymbol(const YYSTYPE & errpos, const char *name, 
     	lexer = lexer->parentLex;
     }
 
-    return ret;
+    return idFound;
 }
 
 void HqlLex::setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *value, bool append)
