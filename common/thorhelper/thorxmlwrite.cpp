@@ -449,7 +449,6 @@ void CommonJsonWriter::outputNumericString(const char *field, const char *fieldn
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
     checkDelimit();
-
     appendJSONStringValue(out, checkItemName(fieldname), len, field, true, false);
 }
 
@@ -460,7 +459,6 @@ void CommonJsonWriter::outputString(unsigned len, const char *field, const char 
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
     checkDelimit();
-
     appendJSONStringValue(out, checkItemName(fieldname), len, field, true);
 }
 
@@ -473,7 +471,6 @@ void CommonJsonWriter::outputQString(unsigned len, const char *field, const char
     else
         temp = (char *)tempBuffer.allocate(len);
     rtlQStrToStr(len, temp, len, field);
-    //outputString(len, temp, fieldname, isnumeric);
     outputString(len, temp, fieldname);
 }
 

@@ -85,7 +85,7 @@ public:
     virtual void rewindTo(unsigned int prevlen)
     {
         if (flusher)
-            UNIMPLEMENTED;
+            throwUnexpected();
 
         if (prevlen < out.length()) out.setLength(prevlen);
     }
