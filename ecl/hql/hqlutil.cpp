@@ -1861,32 +1861,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
             return 1;
         return 0;
     case no_datasetfromrow:
-        {
-            IHqlExpression * row = expr->queryChild(0);
-            //Is this special casing really the best way to handle this?  I'm not completely convinced.
-            loop
-            {
-                switch (row->getOperator())
-                {
-                case no_selectnth:
-                case no_split:
-                case no_spill:
-                    return 1;
-                case no_alias:
-                case no_alias_scope:
-                case no_nofold:
-                case no_nohoist:
-                case no_section:
-                case no_sectioninput:
-                case no_globalscope:
-                case no_thisnode:
-                    break;
-                default:
-                    return 0;
-                }
-                row = row->queryChild(0);
-            }
-        }
+    case no_projectrow:
     case no_fetch:
     case no_mapto:
     case no_evaluate:
@@ -2025,8 +2000,6 @@ bool isSourceActivity(IHqlExpression * expr, bool ignoreCompound)
     case no_compound_childgroupaggregate:
     case no_compound_inline:
         return !ignoreCompound;
-    case no_datasetfromrow:
-        return (getNumActivityArguments(expr) == 0);
     }
     return false;
 }
@@ -5274,7 +5247,7 @@ IHqlExpression * queryUncastExpr(IHqlExpression * expr)
     }
 }
 
-bool isSimpleTransformToMergeWith(IHqlExpression * expr, int & varSizeCount)
+static bool isSimpleTransformToMergeWith(IHqlExpression * expr, int & varSizeCount)
 {
     ForEachChild(i, expr)
     {
@@ -5319,6 +5292,11 @@ bool isSimpleTransformToMergeWith(IHqlExpression * expr)
     return isSimpleTransformToMergeWith(expr, varSizeCount) && varSizeCount < 3;
 }
 
+bool isSimpleTransform(IHqlExpression * expr)
+{
+    int varSizeCount = 0;
+    return isSimpleTransformToMergeWith(expr, varSizeCount);
+}
 
 
 bool isConstantDataset(IHqlExpression * expr)

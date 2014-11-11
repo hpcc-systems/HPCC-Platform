@@ -91,6 +91,7 @@ extern HQL_API unsigned getFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned getFlatFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
 extern HQL_API bool isTrivialSelectN(IHqlExpression * expr);
+
 extern HQL_API IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int64 topNlimit);
 
 extern HQL_API IHqlExpression * queryAttributeChild(IHqlExpression * expr, IAtom * name, unsigned idx);
@@ -186,6 +187,7 @@ extern HQL_API bool isConstantTransform(IHqlExpression * transform);
 extern HQL_API bool isConstantDataset(IHqlExpression * expr);
 extern HQL_API bool isConstantDictionary(IHqlExpression * expr);
 extern HQL_API bool isSimpleTransformToMergeWith(IHqlExpression * expr);
+extern HQL_API bool isSimpleTransform(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryUncastExpr(IHqlExpression * expr);
 extern HQL_API bool areConstant(const HqlExprArray & args);
 extern HQL_API bool getFoldedConstantText(StringBuffer& ret, IHqlExpression * expr);

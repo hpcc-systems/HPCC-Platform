@@ -2066,20 +2066,8 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
         doBuildStmtFail(ctx, expr->queryChild(1));
         //fallthrough
     case no_null:
-        {
-            tgt.count.setown(getSizetConstant(0));
-            tgt.length.setown(getSizetConstant(0));
-            IHqlExpression * record = expr->queryRecord();
-            Owned<ITypeInfo> type;
-            if (expr->isDictionary())
-                type.setown(makeDictionaryType(makeRowType(record->getType())));
-            else
-                type.setown(makeTableType(makeRowType(record->getType())));
-            if ((format == FormatLinkedDataset) || (format == FormatArrayDataset) || expr->isDictionary())
-                type.setown(setLinkCountedAttr(type, true));
-            tgt.expr.setown(createValue(no_nullptr, makeReferenceModifier(type.getClear())));
-            return;
-        }
+        doBuildDatasetNull(expr, tgt, format);
+        return;
     case no_translated:
         expandTranslated(expr, tgt);
         return;
@@ -2760,6 +2748,22 @@ void HqlCppTranslator::doBuildDatasetLimit(BuildCtx & ctx, IHqlExpression * expr
 
     doBuildCheckDatasetLimit(ctx, expr, tgt);
 }
+
+void HqlCppTranslator::doBuildDatasetNull(IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format)
+{
+     tgt.count.setown(getSizetConstant(0));
+     tgt.length.setown(getSizetConstant(0));
+     IHqlExpression * record = expr->queryRecord();
+     Owned<ITypeInfo> type;
+     if (expr->isDictionary())
+         type.setown(makeDictionaryType(makeRowType(record->getType())));
+     else
+         type.setown(makeTableType(makeRowType(record->getType())));
+     if ((format == FormatLinkedDataset) || (format == FormatArrayDataset) || expr->isDictionary())
+         type.setown(setLinkCountedAttr(type, true));
+     tgt.expr.setown(createValue(no_nullptr, makeReferenceModifier(type.getClear())));
+}
+
 
 class ConstantRow : public CInterface
 {

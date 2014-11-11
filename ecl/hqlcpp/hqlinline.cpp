@@ -320,9 +320,15 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return RETevaluate;
     case no_translated:
         return RETassign|RETiterate|RETevaluate;
+    case no_projectrow:
+        {
+            unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
+            if (childFlags == 0)
+                return 0;
+            return RETevaluate;
+        }
     case no_null:
     case no_temprow:
-    case no_projectrow:
     case no_left:
     case no_right:
     case no_top:
@@ -741,19 +747,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimize
         ///    return GraphNoAccess;
         return GraphCoLocal;
     case no_datasetfromrow:
-        {
-            if (getNumActivityArguments(expr) != 0)
-                return GraphNeverAccess;
-
-            IHqlExpression * row = expr->queryChild(0);
-            switch (row->getOperator())
-            {
-            case no_createrow:
-            case no_null:
-                return queryActivityLocalisation(row, optimizeParentAccess);
-            }
-            break;
-        }
+        return GraphNeverAccess;
     case no_workunit_dataset:
         return GraphCoLocal; // weird exception in roxie
     case no_getgraphresult:
@@ -867,6 +861,12 @@ static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr, bool opti
     return ret;
 }
 
+static GraphLocalisation getGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
+{
+    TransformMutexBlock lock;
+    return doGetGraphLocalisation(expr, optimizeParentAccess);
+}
+
 bool HqlCppTranslator::isAlwaysCoLocal()
 {
     return targetHThor();
@@ -878,8 +878,7 @@ GraphLocalisation HqlCppTranslator::getGraphLocalisation(IHqlExpression * expr, 
     if (targetThor() && !isInsideChildQuery)
         return GraphNonLocal;
 
-    TransformMutexBlock lock;
-    return doGetGraphLocalisation(expr, options.optimizeParentAccess);
+    return ::getGraphLocalisation(expr, options.optimizeParentAccess);
 }
 
 bool HqlCppTranslator::isNeverDistributed(IHqlExpression * expr)
