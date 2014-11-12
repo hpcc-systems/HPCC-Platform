@@ -1,0 +1,6 @@
+<Dataset name='x'>
+ <Row><line>This</line><__fileposition__>0</__fileposition__></Row>
+ <Row><line>is</line><__fileposition__>8</__fileposition__></Row>
+ <Row><line>the</line><__fileposition__>14</__fileposition__></Row>
+ <Row><line>result</line><__fileposition__>21</__fileposition__></Row>
+</Dataset>
