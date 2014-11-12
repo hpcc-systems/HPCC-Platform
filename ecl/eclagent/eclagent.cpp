@@ -1824,6 +1824,8 @@ void EclAgent::doProcess()
                 w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), logname.str());
 
             eclccCodeVersion = w->getCodeVersion();
+            if (eclccCodeVersion == 0)
+                throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
             if (checkVersion && ((eclccCodeVersion > ACTIVITY_INTERFACE_VERSION) || (eclccCodeVersion < MIN_ACTIVITY_INTERFACE_VERSION)))
                 failv(0, "Workunit was compiled for eclagent interface version %d, this eclagent requires version %d..%d", eclccCodeVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
             if(noRetry && (w->getState() == WUStateFailed))
