@@ -6977,7 +6977,7 @@ IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
             curGraph = &graph;
             SCMStringBuffer graphName;
             curGraph->getName(graphName);
-            if (progressConn->queryRoot())
+            if (progressConn)
                 curGraphProgress.setown(new CConstGraphProgress(wuid, graphName.str(), progressConn->queryRoot()));
         }
     public:

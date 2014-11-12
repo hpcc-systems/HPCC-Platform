@@ -31,11 +31,13 @@ define([
     "dgrid/Keyboard",
     "dgrid/Selection",
     "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/ColumnHider",
+    "dgrid/extensions/ColumnReorder",
     "dgrid/extensions/DijitRegistry",
     "dgrid/extensions/Pagination"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Stateful, query, json,
     registry, Tooltip,
-    Grid, OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, Pagination) {
+    Grid, OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, ColumnReorder, DijitRegistry, Pagination) {
 
     var SingletonData = declare([Stateful], {
         //  Attributes  ---
@@ -259,7 +261,7 @@ define([
             var baseClass = [];
             var params = {};
             if (pagination) {
-                baseClass = [Grid, Pagination, ColumnResizer, Keyboard, DijitRegistry];
+                baseClass = [Grid, Pagination, ColumnResizer, ColumnHider, ColumnReorder, Keyboard, DijitRegistry];
                 lang.mixin(params, {
                     rowsPerPage: 50,
                     pagingLinks: 1,
@@ -268,7 +270,7 @@ define([
                     pageSizeOptions: [25, 50, 100, 1000]
                 });
             } else {
-                baseClass = [OnDemandGrid, ColumnResizer, Keyboard, DijitRegistry];
+                baseClass = [OnDemandGrid, ColumnResizer, ColumnHider, ColumnReorder, Keyboard, DijitRegistry];
             }
             if (selection) {
                 baseClass.push(Selection);
