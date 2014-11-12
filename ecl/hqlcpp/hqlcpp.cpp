@@ -5868,7 +5868,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             if (curTarget->length)
                 args.append(*LINK(curTarget->length));
             args.append(*createValue(no_reference, curTarget->expr->getType(), LINK(curTarget->expr)));
-            if (hasLinkCountedModifier(retType) && hasNonNullRecord(retType) && getBoolAttribute(external, allocatorAtom, true))
+            if (hasLinkCountedModifier(retType) && getBoolAttribute(external, allocatorAtom, true))
                 args.append(*createRowAllocator(ctx, ::queryRecord(retType)));
 
             localBound.setFromTarget(*curTarget);
