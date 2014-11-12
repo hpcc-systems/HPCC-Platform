@@ -1642,7 +1642,6 @@ enum {
     JFmanylookup                 = 0x00008000,
     JFparallel                   = 0x00010000,
     JFsequential                 = 0x00020000,
-    JFkeepsorted                 = 0x00040000,
     JFcountmatchabortlimit       = 0x00080000,
     JFreorderable                = 0x00100000,
     JFtransformmatchesleft       = 0x00200000,

@@ -3398,7 +3398,7 @@ public:
     { 
         CHThorThreadedActivityBase::ready(); 
 
-        preserveOrder = ((helper.getJoinFlags() & JFkeepsorted) != 0) || agent.queryWorkUnit()->getDebugValueBool("__hthor_kj_always_preserve_order", DEFAULT_KJ_PRESERVES_ORDER);
+        preserveOrder = ((helper.getJoinFlags() & JFreorderable) == 0);
         preserveGroups = helper.queryOutputMeta()->isGrouped();
         needsDiskRead = helper.diskAccessRequired();
         extractJoinFields = ((helper.getJoinFlags() & JFextractjoinfields) != 0);

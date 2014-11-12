@@ -1729,6 +1729,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
         DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
         DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
+        DebugOption(options.keyedJoinPreservesOrder,"keyedJoinPreservesOrder",true),
     };
 
     //get options values from workunit
