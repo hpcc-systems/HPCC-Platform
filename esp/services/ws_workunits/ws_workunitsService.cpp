@@ -417,6 +417,17 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     refreshValidClusters();
 
     daliServers.set(cfg->queryProp("Software/EspProcess/@daliServers"));
+    const char *computer = cfg->queryProp("Software/EspProcess/@computer");
+    if (daliServers.isEmpty() || !computer || streq(computer, "localhost")) //otherwise can't assume environment "." netAddresses are the same as my address
+        queryHostIP().getIpText(envLocalAddress);
+    else
+    {
+        //a bit weird, but other netAddresses in the environment are not the same localhost as this server
+        //use the address of the DALI
+        const char *finger = daliServers.get();
+        while (*finger && !strchr(":;,", *finger))
+            envLocalAddress.append(*finger++);
+    }
 
     wuActionTable.setValue("delete", ActionDelete);
     wuActionTable.setValue("abort", ActionAbort);
