@@ -259,6 +259,7 @@
 #define HQLWRN_AmbiguousRollupNoGroup           4542
 #define HQLWRN_GlobalActionDependendOnScope     4543
 #define HQLWRN_NoThorContextDependent           4544
+#define HQLWRN_OnlyLocalMergeJoin               4545
 
 //Temporary errors
 #define HQLERR_OrderOnVarlengthStrings          4601
@@ -534,6 +535,8 @@
 #define HQLWRN_AmbiguousRollupNoGroup_Text      "ROLLUP condition - no fields are preserved in the transform - not converted to GROUPed ROLLUP"
 #define HQLWRN_GlobalActionDependendOnScope_Text "Global action appears to be context dependent - this may cause a dataset not active error"
 #define HQLWRN_NoThorContextDependent_Text      "NOTHOR expression%s appears to access a parent dataset - this may cause a dataset not active error"
+#define HQLWRN_OnlyLocalMergeJoin_Text          "Only LOCAL versions of %s are currently supported on THOR"
+
 #define HQLERR_DistributionVariableLengthX_Text "DISTRIBUTION does not support variable length field '%s'"
 #define HQLERR_DistributionUnsupportedTypeXX_Text "DISTRIBUTION does not support field '%s' with type %s"
 

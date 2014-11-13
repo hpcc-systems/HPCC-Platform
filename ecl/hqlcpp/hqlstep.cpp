@@ -848,10 +848,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMerge(BuildCtx & ctx, IHql
 
 ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, IHqlExpression * expr)
 {
+    node_operator op = expr->getOperator();
+    if (targetThor() && !isLocalActivity(expr) && !isGroupedActivity(expr) && !insideChildQuery(ctx))
+    {
+        WARNING1(CategoryUnexpected, HQLWRN_OnlyLocalMergeJoin, getOpString(op));
+        OwnedHqlExpr localExpr = appendLocalAttribute(expr);
+        return doBuildActivityNWayMergeJoin(ctx, localExpr);
+    }
+
     IHqlExpression * dataset = expr->queryChild(0);
     CIArrayOf<ABoundActivity> inputs;
     bool isNWayInput = buildNWayInputs(inputs, ctx, dataset);
-    node_operator op = expr->getOperator();
 
     ThorActivityKind kind = (op == no_mergejoin) ? TAKnwaymergejoin : TAKnwayjoin;
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, "NWayMergeJoin");
