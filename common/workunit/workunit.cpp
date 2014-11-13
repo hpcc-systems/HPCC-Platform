@@ -257,11 +257,9 @@ public:
         rootPath.append("/GraphProgress/").append(wuid).append('/').append(graphName).append('/');
         connected = connectedWrite = false;
         formatVersion = 0;
-        progress = NULL;
     }
-    CConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *allProgress) : wuid(_wuid), graphName(_graphName)
+    CConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *_progress) : wuid(_wuid), graphName(_graphName), progress(_progress)
     {
-        progress = allProgress->queryPropTree(graphName);
         formatVersion = progress->getPropInt("@format");
         connectedWrite = false; // should never be
         connected = true;
@@ -272,7 +270,7 @@ public:
         packProgress(wuid,false);
         conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
 
-        progress = conn->queryRoot();
+        progress.set(conn->queryRoot());
         formatVersion = progress->getPropInt("@format");
         connected = true;
     }
@@ -287,7 +285,7 @@ public:
         else
             packProgress(wuid,false);
         conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
-        progress = conn->queryRoot();
+        progress.set(conn->queryRoot());
         if (!progress->hasChildren()) // i.e. blank.
         {
             formatVersion = PROGRESS_FORMAT_V;
@@ -527,7 +525,7 @@ private:
 
 private:
     Owned<IRemoteConnection> conn;
-    IPropertyTree* progress;
+    Linked<IPropertyTree> progress;
     StringAttr wuid, graphName;
     StringBuffer rootPath;
     bool connected, connectedWrite;
@@ -6965,7 +6963,6 @@ IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
         Owned<IConstWUGraphIterator> graphIter;
         IConstWUGraph *curGraph;
         Owned<IConstWUGraphProgress> curGraphProgress;
-        Linked<IPropertyTree> graphProgress;
         Owned<IRemoteConnection> progressConn;
         bool match()
         {
@@ -6978,7 +6975,15 @@ IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
             SCMStringBuffer graphName;
             curGraph->getName(graphName);
             if (progressConn)
-                curGraphProgress.setown(new CConstGraphProgress(wuid, graphName.str(), progressConn->queryRoot()));
+            {
+                IPropertyTree *progress = progressConn->queryRoot()->queryPropTree(graphName.str());
+                if (progress)
+                {
+                    curGraphProgress.setown(new CConstGraphProgress(wuid, graphName.str(), progress));
+                    return;
+                }
+            }
+            curGraphProgress.clear();
         }
     public:
         IMPLEMENT_IINTERFACE;
