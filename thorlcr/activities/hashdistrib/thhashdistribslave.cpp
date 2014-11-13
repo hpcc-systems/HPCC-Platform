@@ -98,7 +98,6 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     Owned<IRowWriter> pipewr;
     roxiemem::IRowManager *rowManager;
     Owned<ISmartRowBuffer> piperd;
-    enum CompType { comp_none, comp_flz, comp_aes, comp_diff };
 
 protected:
     /*
@@ -988,14 +987,21 @@ public:
         activity->getOpt(THOROPT_HDIST_COMPOPTIONS, compressOptions); // e.g. for key for AES compressor
         if (compType.length())
         {
-            compressHandler = queryCompressHandler(compType);
-            if (NULL == compressHandler)
-                ActPrintLog("Unrecognised compressor type: %s", compType.str());
+            if (0 == stricmp("NONE", compType))
+                compressHandler = NULL;
+            else
+            {
+                compressHandler = queryCompressHandler(compType);
+                if (NULL == compressHandler)
+                {
+                    compressHandler = queryDefaultCompressHandler();
+                    ActPrintLog("Unrecognised compressor type '%s', will use default", compType.str());
+                }
+            }
         }
         else
             compressHandler = queryDefaultCompressHandler();
-        dbgassertex(compressHandler);
-        ActPrintLog("Using compressor: %s", compressHandler->queryType());
+        ActPrintLog("Using compressor: %s", compressHandler ? compressHandler->queryType() : "NONE");
 
         allowSpill = activity->getOptBool(THOROPT_HDIST_SPILL, true);
         if (allowSpill)
@@ -1026,12 +1032,12 @@ public:
 
     inline ICompressor *getCompressor()
     {
-        return compressHandler->getCompressor(compressOptions);
+        return compressHandler ? compressHandler->getCompressor(compressOptions) : NULL;
     }
 
     inline IExpander *getExpander()
     {
-        return compressHandler->getExpander(compressOptions);
+        return compressHandler ? compressHandler->getExpander(compressOptions) : NULL;
     }
 
     size32_t rowMemSize(const void *row)
