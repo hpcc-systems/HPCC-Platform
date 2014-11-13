@@ -248,9 +248,8 @@ public:
         formatVersion = 0;
         progress = NULL;
     }
-    CConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *allProgress) : wuid(_wuid), graphName(_graphName)
+    CConstGraphProgress(const char *_wuid, const char *_graphName, IPropertyTree *_progress) : wuid(_wuid), graphName(_graphName), progress(_progress)
     {
-        progress = allProgress->queryPropTree(graphName);
         formatVersion = progress->getPropInt("@format");
         connectedWrite = false; // should never be
         connected = true;
@@ -6637,7 +6636,6 @@ IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
         Owned<IConstWUGraphIterator> graphIter;
         IConstWUGraph *curGraph;
         Owned<IConstWUGraphProgress> curGraphProgress;
-        Linked<IPropertyTree> graphProgress;
         Owned<IRemoteConnection> progressConn;
         bool match()
         {
@@ -6650,7 +6648,15 @@ IConstWUGraphMetaIterator& CLocalWorkUnit::getGraphsMeta(WUGraphType type) const
             SCMStringBuffer graphName;
             curGraph->getName(graphName);
             if (progressConn)
-                curGraphProgress.setown(new CConstGraphProgress(wuid, graphName.str(), progressConn->queryRoot()));
+            {
+                IPropertyTree *progress = progressConn->queryRoot()->queryPropTree(graphName.str());
+                if (progress)
+                {
+                    curGraphProgress.setown(new CConstGraphProgress(wuid, graphName.str(), progress));
+                    return;
+                }
+            }
+            curGraphProgress.clear();
         }
     public:
         IMPLEMENT_IINTERFACE;
