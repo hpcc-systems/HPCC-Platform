@@ -124,6 +124,15 @@ public:
         SCMStringBuffer dllName;
         Owned<IConstWUQuery> q = wu->getQuery();
         q->getQueryDllName(dllName);
+        if (dllName.length() == 0)
+        {
+            SCMStringBuffer wuid;
+            wu->getWuid(wuid);
+            if (wu->getCodeVersion() == 0)
+                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s that hasn't been compiled", wuid.str());
+            else
+                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s with no associated dll", wuid.str());
+        }
         return getQueryDll(dllName.str(), false);
     }
     virtual HelperFactory *getFactory(const char *helperName) const
@@ -1608,6 +1617,8 @@ static void checkWorkunitVersionConsistency(const IQueryDll *dll)
 {
     assertex(dll->queryWorkUnit());
     unsigned wuVersion = dll->queryWorkUnit()->getCodeVersion();
+    if (wuVersion == 0)
+        throw makeStringException(ROXIE_MISMATCH, "Attempting to execute a workunit that hasn't been compiled");
     if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
         throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
 

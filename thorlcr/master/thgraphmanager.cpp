@@ -500,6 +500,8 @@ void CJobManager::run()
             workunit.setown(factory->openWorkUnit(wuid, false));
             if (!workunit) // check workunit is available and ready to run.
                 throw MakeStringException(0, "Could not locate workunit %s", wuid);
+            if (workunit->getCodeVersion() == 0)
+                throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
             if ((workunit->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (workunit->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION))
                 throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor requires version %d..%d", workunit->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
             allDone = doit(workunit, graphName, agentep);
