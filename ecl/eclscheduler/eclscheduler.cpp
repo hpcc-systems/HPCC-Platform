@@ -135,7 +135,20 @@ private:
         wfconn->lock();
         wfconn->push(name, text);
         if(!wfconn->queryActive())
-            runWorkUnit(wuid);
+        {
+            if (!runWorkUnit(wuid))
+            {
+                //The work unit failed to run for some reason.. check if it has disappeared
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid, false);
+                if (!w)
+                {
+                    ERRLOG("Scheduled workunit %s no longer exists - descheduling", wuid);
+                    descheduleWorkunit(wuid);
+                    wfconn->remove();
+                }
+            }
+        }
         wfconn->unlock();
     }
 
