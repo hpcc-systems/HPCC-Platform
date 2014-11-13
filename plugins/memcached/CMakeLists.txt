@@ -37,10 +37,8 @@ if (USE_MEMCACHED)
              ./../../system/include
              ./../../rtl/eclrtl
              ./../../rtl/include
-             ./../../rtl/nbcd
              ./../../common/deftype
              ./../../common/workunit
-             ./../../ecl/hql
              ./../../system/jlib
              ${LIBMEMCACHED_INCLUDE_DIR}
         )
@@ -55,7 +53,7 @@ if (USE_MEMCACHED)
       set_target_properties( memcached PROPERTIES NO_SONAME 1 )
     endif()
 
-    install ( TARGETS memcached DESTINATION plugins )
+    install ( TARGETS memcached DESTINATION plugins)
 
     target_link_libraries ( memcached
         eclrtl

@@ -20,9 +20,7 @@
 #include "eclrtl.hpp"
 #include "jexcept.hpp"
 #include "jstring.hpp"
-#include "cstring"
 #include "workunit.hpp"
-#include "hqlerrors.hpp"
 
 #include <libmemcached-1.0/memcached.h>
 #include <libmemcachedutil-1.0/pool.h>
@@ -38,166 +36,162 @@ ECL_MEMCACHED_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = MEMCACHED_VERSION;
-    pb->moduleName = "lib_eclmemcached";
-    pb->ECL = NULL;//EclDefinition;
+    pb->moduleName = "memcached";
+    pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
-    pb->description = "ECL plugin library for the C++ API libmemcached (http://libmemcached.org/)\n";
+    pb->description = "ECL plugin library for the C/C++ API libmemcached (http://libmemcached.org/)\n";
     return true;
 }
 
 namespace MemCachedPlugin {
-    IPluginContext * parentCtx = NULL;
-    unsigned unitExpire = 86400;//1 day (secs)
+IPluginContext * parentCtx = NULL;
+static const unsigned unitExpire = 86400;//1 day (secs)
 
-    enum eclDataType {
-        ECL_BOOLEAN,
-        ECL_DATA,
-        ECL_INTEGER4,
-        ECL_INTEGER8,
-        ECL_REAL4,
-        ECL_REAL8,
-        ECL_STRING,
-        ECL_UTF8,
-        ECL_UNICODE,
-        ECL_UNSIGNED4,
-        ECL_UNSIGNED8,
-        ECL_NONE
-    };
+enum eclDataType {
+    ECL_BOOLEAN,
+    ECL_DATA,
+    ECL_INTEGER,
+    ECL_REAL,
+    ECL_STRING,
+    ECL_UTF8,
+    ECL_UNICODE,
+    ECL_UNSIGNED,
+    ECL_NONE
+};
 
-    const char * enumToStr(eclDataType type)
+const char * enumToStr(eclDataType type)
+{
+    switch(type)
     {
-        switch(type)
-        {
-        case ECL_BOOLEAN:
-            return "BOOLEAN";
-        case ECL_INTEGER4:
-            return "INTEGER4";
-        case ECL_INTEGER8:
-            return "INTEGER8";
-        case ECL_UNSIGNED4:
-            return "UNSIGNED4";
-        case ECL_UNSIGNED8:
-            return "UNSIGNED8";
-        case ECL_REAL4:
-            return "REAL4";
-        case ECL_REAL8:
-            return "REAL8";
-        case ECL_STRING:
-            return "STRING";
-        case ECL_UTF8:
-            return "UTF8";
-        case ECL_UNICODE:
-            return "UNICODE";
-        case ECL_DATA:
-            return "DATA/DATASET";
-        case ECL_NONE:
-            return "Nonexistent";
-        default:
-            return "UNKNOWN";
-        }
+    case ECL_BOOLEAN:
+        return "BOOLEAN";
+    case ECL_INTEGER:
+        return "INTEGER";
+    case ECL_UNSIGNED:
+        return "UNSIGNED";
+    case ECL_REAL:
+        return "REAL";
+    case ECL_STRING:
+        return "STRING";
+    case ECL_UTF8:
+        return "UTF8";
+    case ECL_UNICODE:
+        return "UNICODE";
+    case ECL_DATA:
+        return "DATA";
+    case ECL_NONE:
+        return "Nonexistent";
+    default:
+        return "UNKNOWN";
     }
+}
 
-    class MCached : public CInterface
-    {
-    public :
-        MCached(const char * servers, ICodeContext * _ctx);
-        ~MCached();
+class MCached : public CInterface
+{
+public :
+    MCached(const char * servers, ICodeContext * _ctx);
+    ~MCached();
 
-        //set
-        template <class type> bool set(const char * partitionKey, const char * key, type value, unsigned expire, eclDataType eclType);
-        template <class type> bool set(const char * partitionKey, const char * key, size32_t valueLength, const type * value, unsigned expire, eclDataType eclType);
-        //get
-        template <class type> void get(const char * partitionKey, const char * key, size_t & valueLength, type & value, eclDataType eclType);
-        template <class type> void get(const char * partitionKey, const char * key, size_t & valueLength, type * & value, eclDataType eclType);
-        void getVoidPtrLenPair(const char * partitionKey, const char * key, size32_t & valueLength, void * & value, eclDataType eclType);
+    //set
+    template <class type> bool set(const char * partitionKey, const char * key, type value, unsigned expire, eclDataType eclType);
+    template <class type> bool set(const char * partitionKey, const char * key, size32_t valueLength, const type * value, unsigned expire, eclDataType eclType);
+    //get
+    template <class type> void get(const char * partitionKey, const char * key, type & value, eclDataType eclType);
+    template <class type> void get(const char * partitionKey, const char * key, size_t & valueLength, type * & value, eclDataType eclType);
+    void getVoidPtrLenPair(const char * partitionKey, const char * key, size_t & valueLength, void * & value, eclDataType eclType);
 
-        bool clear(unsigned when);
-        bool exist(const char * key, const char * partitionKey);
-        eclDataType getKeyType(const char * key, const char * partitionKey);
+    bool clear(unsigned when);
+    bool exist(const char * key, const char * partitionKey);
+    eclDataType getKeyType(const char * key, const char * partitionKey);
 
-        bool isSameConnection(const char * _servers, ICodeContext * _ctx) const;
+    bool isSameConnection(const char * _servers, ICodeContext * _ctx) const;
+    void updateCtx(ICodeContext * _ctx) {ctx = _ctx;}
 
-    private :
-        void assertServerVersionHomogeneity();
-        void assertAtLeastSingleServerUp();
-        void assertAllServersUp();
-        void assertOnError(memcached_return_t error);
-        void connect();
-        bool logErrorOnFail(memcached_return_t error);
-        void assertKeyTypeMismatch(const char * key, uint32_t flag, eclDataType type);
-        void logKeyTypeMismatch(const char * key, uint32_t flag, eclDataType eclType);
-        void * cpy(const char * src, size_t length, eclDataType t);
-        void logServerStats();
-        void init();
-        void invokeSecurity();
-        void setSettings();
-        void assertPool();//For internal purposes to insure correct order of the above processes and instantiation.
+private :
+    void assertServerVersionHomogeneity();
+    void assertAtLeastSingleServerUp();
+    void assertAllServersUp();
+    void assertOnError(memcached_return_t error);
+    void connect();
+    bool logErrorOnFail(memcached_return_t error);
+    void assertKeyTypeMismatch(const char * key, uint32_t flag, eclDataType type);
+    void logKeyTypeMismatch(const char * key, uint32_t flag, eclDataType eclType);
+    void * cpy(const char * src, size_t length);
+    void logServerStats();
+    void init();
+    void invokeSecurity();
+    void setSettings();
+    void assertPool();//For internal purposes to insure correct order of the above processes and instantiation.
 
-    private :
-        ICodeContext * ctx;
-        memcached_st * connection;
-        memcached_pool_st * pool;
-        Owned<String> servers;
-        static bool alreadyInitialized;
-    };
+private :
+    ICodeContext * ctx;
+    memcached_st * connection;
+    memcached_pool_st * pool;
+    StringAttr servers;
+    static bool alreadyInitialized;
+};
 
 #define OwnedMCached Owned<MemCachedPlugin::MCached>
 
-    static CriticalSection crit;
-    static OwnedMCached cachedConnection;
+static CriticalSection crit;
+static OwnedMCached cachedConnection;
 
-    MCached * createConnection(const char * servers, ICodeContext * _ctx)
+MCached * createConnection(const char * servers, ICodeContext * _ctx)
+{
+    CriticalBlock block(crit);
+    if (!cachedConnection)
     {
-        CriticalBlock block(crit);
-        if (!cachedConnection)
-        {
-            cachedConnection.set(new MemCachedPlugin::MCached(servers, _ctx));
-            return LINK(cachedConnection);
-        }
-
-        if (cachedConnection->isSameConnection(servers, _ctx))
-            return LINK(cachedConnection);
-
         cachedConnection.set(new MemCachedPlugin::MCached(servers, _ctx));
         return LINK(cachedConnection);
     }
 
-    //-------------------------------------------SET-----------------------------------------
-    template<class type> bool MSet(ICodeContext * _ctx, const char * _servers, const char * partitionKey, const char * key, type value, unsigned expire, eclDataType eclType)
+    if (cachedConnection->isSameConnection(servers, _ctx))
     {
-        OwnedMCached connection = createConnection(_servers, _ctx);
-        bool success = connection->set(partitionKey, key, value, expire, eclType);
-        return success;
+        cachedConnection->updateCtx(_ctx);
+        return LINK(cachedConnection);
     }
-    //Set pointer types
-    template<class type> bool MSet(ICodeContext * _ctx, const char * _servers, const char * partitionKey, const char * key, size32_t valueLength, const type * value, unsigned expire, eclDataType eclType)
-    {
-        OwnedMCached connection = createConnection(_servers, _ctx);
-        bool success = connection->set(partitionKey, key, valueLength, value, expire, eclType);
-        return success;
-    }
-    //-------------------------------------------GET-----------------------------------------
-    template<class type> void MGet(ICodeContext * _ctx, const char * servers, const char * partitionKey, const char * key, size_t & returnLength, type & returnValue, eclDataType eclType)
-    {
-        OwnedMCached connection = createConnection(servers, _ctx);
-        connection->get(partitionKey, key, returnLength, returnValue, eclType);
-    }
-    template<class type> void MGet(ICodeContext * _ctx, const char * servers, const char * partitionKey, const char * key, size_t & returnLength, type * & returnValue, eclDataType eclType)
-    {
-        OwnedMCached connection = createConnection(servers, _ctx);
-        connection->get(partitionKey, key, returnLength, returnValue, eclType);
-    }
-    void MGetVoidPtrLenPair(ICodeContext * _ctx, const char * servers, const char * partitionKey, const char * key, size32_t & returnLength, void * & returnValue, eclDataType eclType)
-    {
-        OwnedMCached connection = createConnection(servers, _ctx);
-        connection->getVoidPtrLenPair(partitionKey, key, returnLength, returnValue, eclType);
-    }
+
+    cachedConnection.set(new MemCachedPlugin::MCached(servers, _ctx));
+    return LINK(cachedConnection);
+}
+
+//-------------------------------------------SET-----------------------------------------
+template<class type> bool MSet(ICodeContext * _ctx, const char * _servers, const char * partitionKey, const char * key, type value, unsigned expire, eclDataType eclType)
+{
+    OwnedMCached connection = createConnection(_servers, _ctx);
+    bool success = connection->set(partitionKey, key, value, expire, eclType);
+    return success;
+}
+//Set pointer types
+template<class type> bool MSet(ICodeContext * _ctx, const char * _servers, const char * partitionKey, const char * key, size32_t valueLength, const type * value, unsigned expire, eclDataType eclType)
+{
+    OwnedMCached connection = createConnection(_servers, _ctx);
+    bool success = connection->set(partitionKey, key, valueLength, value, expire, eclType);
+    return success;
+}
+//-------------------------------------------GET-----------------------------------------
+template<class type> void MGet(ICodeContext * _ctx, const char * servers, const char * partitionKey, const char * key, type & returnValue, eclDataType eclType)
+{
+    OwnedMCached connection = createConnection(servers, _ctx);
+    connection->get(partitionKey, key, returnValue, eclType);
+}
+template<class type> void MGet(ICodeContext * _ctx, const char * servers, const char * partitionKey, const char * key, size_t & returnLength, type * & returnValue, eclDataType eclType)
+{
+    OwnedMCached connection = createConnection(servers, _ctx);
+    connection->get(partitionKey, key, returnLength, returnValue, eclType);
+}
+void MGetVoidPtrLenPair(ICodeContext * _ctx, const char * servers, const char * partitionKey, const char * key, size_t & returnLength, void * & returnValue, eclDataType eclType)
+{
+    OwnedMCached connection = createConnection(servers, _ctx);
+    connection->getVoidPtrLenPair(partitionKey, key, returnLength, returnValue, eclType);
+}
 }//close namespace
+
 //----------------------------------SET----------------------------------------
 template<class type> bool MemCachedPlugin::MCached::set(const char * partitionKey, const char * key, type value, unsigned expire, eclDataType eclType)
 {
     const char * _value = reinterpret_cast<const char *>(&value);//Do this even for char * to prevent compiler complaining
-    return !logErrorOnFail(memcached_set_by_key(connection, partitionKey, strlen(partitionKey), key, strlen(key), _value, (size_t)(sizeof(value)), (time_t)(expire*unitExpire), (uint32_t)eclType));
+    return !logErrorOnFail(memcached_set_by_key(connection, partitionKey, strlen(partitionKey), key, strlen(key), _value, sizeof(value), (time_t)(expire*unitExpire), (uint32_t)eclType));
 }
 template<class type> bool MemCachedPlugin::MCached::set(const char * partitionKey, const char * key, size32_t valueLength, const type * value, unsigned expire, eclDataType eclType)
 {
@@ -205,21 +199,21 @@ template<class type> bool MemCachedPlugin::MCached::set(const char * partitionKe
     return !logErrorOnFail(memcached_set_by_key(connection, partitionKey, strlen(partitionKey), key, strlen(key), _value, (size_t)(valueLength), (time_t)(expire*unitExpire), (uint32_t)eclType));
 }
 //----------------------------------GET----------------------------------------
-template<class type> void MemCachedPlugin::MCached::get(const char * partitionKey, const char * key, size_t & returnLength, type & returnValue, eclDataType eclType)
+template<class type> void MemCachedPlugin::MCached::get(const char * partitionKey, const char * key, type & returnValue, eclDataType eclType)
 {
     uint32_t flag;
+    size_t returnLength;
     memcached_return_t error;
 
     char * _value = memcached_get_by_key(connection, partitionKey, strlen(partitionKey), key, strlen(key), &returnLength, &flag, &error);
     assertOnError(error);
     logKeyTypeMismatch(key, flag, eclType);
 
-    type * returnValueType = NULL;//ref or ptr???
-    if (sizeof(*returnValueType)!=returnLength)
+    if (sizeof(type)!=returnLength)
         rtlFail(0, "MemCachedPlugin: ERROR - Requested type of different size from that stored. Check logs for more information.");
     memcpy(&returnValue, _value, returnLength);
 
-    delete[] _value;
+    free(_value);
 }
 template<class type> void MemCachedPlugin::MCached::get(const char * partitionKey, const char * key, size_t & returnLength, type * & returnValue, eclDataType eclType)
 {
@@ -230,10 +224,10 @@ template<class type> void MemCachedPlugin::MCached::get(const char * partitionKe
     assertOnError(error);
     logKeyTypeMismatch(key, flag, eclType);
 
-    returnValue = reinterpret_cast<type*>(cpy(_value, returnLength, eclType));
-    delete[] _value;
+    returnValue = reinterpret_cast<type*>(cpy(_value, returnLength));
+    free(_value);
 }
-void MemCachedPlugin::MCached::getVoidPtrLenPair(const char * partitionKey, const char * key, size32_t & returnLength, void * & returnValue, eclDataType eclType)
+void MemCachedPlugin::MCached::getVoidPtrLenPair(const char * partitionKey, const char * key, size_t & returnLength, void * & returnValue, eclDataType eclType)
 {
     size_t returnValueLength;
     uint32_t flag;
@@ -244,8 +238,8 @@ void MemCachedPlugin::MCached::getVoidPtrLenPair(const char * partitionKey, cons
     logKeyTypeMismatch(key, flag, eclType);
 
     returnLength = (size32_t)(returnValueLength);
-    returnValue = reinterpret_cast<void*>(cpy(_value, returnLength, eclType));
-    delete[] _value;
+    returnValue = reinterpret_cast<void*>(cpy(_value, returnLength));
+    free(_value);
 }
 
 bool MemCachedPlugin::MCached::alreadyInitialized = false;
@@ -256,7 +250,7 @@ MemCachedPlugin::MCached::MCached(const char * _servers, ICodeContext * _ctx) : 
 {
     connection = NULL;
     pool = NULL;
-    servers.set(new String(_servers));
+    servers.set(_servers);
 
     pool = memcached_pool(_servers, strlen(_servers));
     assertPool();//invokeSecurity does this so should remove this instance
@@ -293,16 +287,16 @@ bool MemCachedPlugin::MCached::isSameConnection(const char * _servers, ICodeCont
     if (!_servers)
         return false;
 
-    return servers->equalsIgnoreCase(_servers);
+    return stricmp(servers.get(), _servers) == 0;
 }
 
 void MemCachedPlugin::MCached::assertPool()
 {
-    if(!pool)
-        rtlFail(0, "MemCachedPlugin:INTERNAL ERROR - Failed to instantiate server pool.");
+    if (!pool)
+        rtlFail(0, "Memcached Plugin:INTERNAL ERROR - Failed to instantiate server pool.");
 }
 
-void * MemCachedPlugin::MCached::cpy(const char * src, size_t length, eclDataType eclType)
+void * MemCachedPlugin::MCached::cpy(const char * src, size_t length)
 {
     void * value = rtlMalloc(length);
     return memcpy(value, src, length);
@@ -321,11 +315,11 @@ void MemCachedPlugin::MCached::assertAllServersUp()
     {
         if (stats[i].pid == -1)//probably not the best test?
         {
-            delete[] stats;
-            rtlFail(0, "MemCachedPlugin: Failed to connect to ALL server(s). Check memcached daemons on all requested servers and that \"memcached -B ascii\" was not used.");
+            free(stats);
+            rtlFail(0, "Memcached Plugin: Failed connecting to ALL servers. Check memcached on all servers and \"memcached -B ascii\" not used.");
         }
     }
-    delete[] stats;
+    free(stats);
 }
 //-----------------------------------------------------------------------------
 void MemCachedPlugin::MCached::assertAtLeastSingleServerUp()
@@ -334,7 +328,7 @@ void MemCachedPlugin::MCached::assertAtLeastSingleServerUp()
     char * args = NULL;
 
     if (!connection)
-        rtlFail(0, "MemCachedPlugin:INTERNAL ERROR - connection referenced without being instantiated.");
+        rtlFail(0, "Memcached Plugin:INTERNAL ERROR - connection referenced without being instantiated.");
 
     memcached_stat_st * stats = memcached_stat(connection, args, &error);
     //assertOnError(error);//Asserting this here will cause a fail if a server is not up and with only a SOME ERRORS WERE REPORTED message.
@@ -344,12 +338,12 @@ void MemCachedPlugin::MCached::assertAtLeastSingleServerUp()
     {
         if (stats[i].pid > -1)//not sure if this is the  best test?
         {
-            delete[] stats;
+            free(stats);
             return;
         }
     }
-    delete[] stats;
-    rtlFail(0, "MemCachedPlugin: Failed to connect to at least a single servers. Check memcached daemons on all requested servers and that \"memcached -B ascii\" was not used.");
+    free(stats);
+    rtlFail(0, "Memcached Plugin: Failed connecting to any server. Check memcached on all servers and \"memcached -B ascii\" not used.");
 }
 
 bool MemCachedPlugin::MCached::logErrorOnFail(memcached_return_t error)
@@ -357,14 +351,18 @@ bool MemCachedPlugin::MCached::logErrorOnFail(memcached_return_t error)
     if (error == MEMCACHED_SUCCESS)
         return false;
 
-    ctx->addWuException(memcached_strerror(connection, error), ERR_FROM_PLUGIN, ExceptionSeverityWarning, "");
+    StringBuffer msg = "Memcached Plugin: ";
+    ctx->addWuException(msg.append(memcached_strerror(connection, error)).str(), ERR_FROM_PLUGIN, ExceptionSeverityInformation, "");
     return true;
 }
 
 void MemCachedPlugin::MCached::assertOnError(memcached_return_t error)
 {
     if (error != MEMCACHED_SUCCESS)
-        rtlFail(0, memcached_strerror(connection, error));
+    {
+        StringBuffer msg = "Memcached Plugin: ";
+        rtlFail(0, msg.append(memcached_strerror(connection, error)).str());
+    }
 }
 
 bool MemCachedPlugin::MCached::clear(unsigned when)
@@ -375,7 +373,15 @@ bool MemCachedPlugin::MCached::clear(unsigned when)
 
 bool MemCachedPlugin::MCached::exist(const char * key, const char * partitionKey)
 {
-    return !logErrorOnFail(memcached_exist_by_key(connection, partitionKey, strlen(partitionKey), key, strlen(key)));
+    memcached_return_t error = memcached_exist_by_key(connection, partitionKey, strlen(partitionKey), key, strlen(key));
+
+    if (error == MEMCACHED_SUCCESS)
+        return true;
+    else if (error == MEMCACHED_NOTFOUND)
+        return false;
+
+    logErrorOnFail(error);
+    return false;
 }
 
 MemCachedPlugin::eclDataType MemCachedPlugin::MCached::getKeyType(const char * key, const char * partitionKey)
@@ -390,15 +396,18 @@ MemCachedPlugin::eclDataType MemCachedPlugin::MCached::getKeyType(const char * k
     else if (error == MEMCACHED_NOTFOUND)
         return ECL_NONE;
     else
-        rtlFail(0, memcached_strerror(connection, error));
+    {
+        StringBuffer msg = "Memcached Plugin: ";
+        rtlFail(0, msg.append(memcached_strerror(connection, error)).str());
+    }
 }
 
 void MemCachedPlugin::MCached::logKeyTypeMismatch(const char * key, uint32_t flag, eclDataType eclType)
 {
-    if (flag !=  eclType)
+    if (flag && eclType != ECL_DATA && flag != eclType)
     {
-        StringBuffer msg = "MemCachedPlugin: The key (";
-        msg.append(key).append(") to fetch is of type ").append(enumToStr((eclDataType)(flag))).append(", not ").append(enumToStr(eclType)).append(" as requested.\n");
+        StringBuffer msg = "Memcached Plugin: The key '";
+        msg.append(key).append("' to fetch is of type ").append(enumToStr((eclDataType)(flag))).append(", not ").append(enumToStr(eclType)).append(" as requested.\n");
         ctx->addWuException(msg.str(), WRN_FROM_PLUGIN, ExceptionSeverityInformation, "");
     }
 }
@@ -407,7 +416,7 @@ void MemCachedPlugin::MCached::assertKeyTypeMismatch(const char * key, uint32_t 
 {
     if (flag !=  eclType)
     {
-        StringBuffer msg = "MemCachedPlugin: The key (";
+        StringBuffer msg = "Memcached Plugin: The key (";
         msg.append(key).append(") to fetch is of type ").append(enumToStr((eclDataType)(flag))).append(", not ").append(enumToStr(eclType)).append(" as requested.\n");
         rtlFail(0, msg.str());
     }
@@ -429,8 +438,8 @@ void MemCachedPlugin::MCached::logServerStats()
         statsStr.append("libmemcached server stat - ").append(keys[i]).append(":").append(value).newline();
     } while (keys[++i]);
     ctx->logString(statsStr.str());
-    delete[] stats;
-    delete[] keys;
+    free(stats);
+    free(keys);
 }
 
 void MemCachedPlugin::MCached::init()
@@ -519,11 +528,11 @@ void MemCachedPlugin::MCached::assertServerVersionHomogeneity()
     {
         if (strcmp(stats[i].version, stats[i++].version) != 0)
         {
-            delete[] stats;
-            rtlFail(0, "MemCachedPlugin: Inhomogeneous versions of memcached across servers.");
+            free(stats);
+            rtlFail(0, "Memcached Plugin: Inhomogeneous versions of memcached across servers.");
         }
     }
-    delete[] stats;
+    free(stats);
 }
 //--------------------------------------------------------------------------------
 //                           ECL SERVICE ENTRYPOINTS
@@ -534,14 +543,12 @@ ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MClear(ICodeContext * _ctx, const char
     bool returnValue = connection->clear(0);
     return returnValue;
 }
-
 ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MExist(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
 {
     OwnedMCached connection = MemCachedPlugin::createConnection(servers, _ctx);
     bool returnValue = connection->exist(key, partitionKey);
     return returnValue;
 }
-
 ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
 {
     OwnedMCached connection = MemCachedPlugin::createConnection(servers, _ctx);
@@ -550,37 +557,25 @@ ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * _ctx, 
 }
 //-----------------------------------SET------------------------------------------
 //NOTE: These were all overloaded by 'value' type, however; this caused problems since ecl implicitly casts and doesn't type check.
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, size32_t valueLength, char * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, size32_t valueLength, const char * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, valueLength, value, expire, MemCachedPlugin::ECL_STRING);
 }
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, size32_t valueLength, UChar * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, size32_t valueLength, const UChar * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, (valueLength)*sizeof(UChar), value, expire, MemCachedPlugin::ECL_UNICODE);
 }
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, signed int value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
-{
-    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_INTEGER4);
-}
 ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, signed __int64 value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
-    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_INTEGER8);
-}
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, unsigned int value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
-{
-    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_UNSIGNED4);
+    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_INTEGER);
 }
 ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, unsigned __int64 value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
-    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_UNSIGNED8);
-}
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, float value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
-{
-    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_REAL4);
+    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_UNSIGNED);
 }
 ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, double value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
-    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_REAL8);
+    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, value, expire, MemCachedPlugin::ECL_REAL);
 }
 ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSet(ICodeContext * _ctx, const char * servers, const char * key, bool value, const char * partitionKey, unsigned expire)
 {
@@ -590,11 +585,7 @@ ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSetData(ICodeContext * _ctx, const ch
 {
     return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, valueLength, value, expire, MemCachedPlugin::ECL_DATA);
 }
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSetData(ICodeContext * _ctx, const char * servers, const char * key, size32_t valueLength, void * value, const char * partitionKey, unsigned expire)
-{
-    return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, valueLength, value, expire, MemCachedPlugin::ECL_DATA);
-}
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * _ctx, const char * servers, const char * key, size32_t valueLength, char * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * _ctx, const char * servers, const char * key, size32_t valueLength, const char * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     return MemCachedPlugin::MSet(_ctx, servers, partitionKey, key, rtlUtf8Size(valueLength, value), value, expire, MemCachedPlugin::ECL_UTF8);
 }
@@ -602,50 +593,25 @@ ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * _ctx, const ch
 ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MGetBool(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
 {
     bool value;
-    size_t valueLength;
-    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, valueLength, value, MemCachedPlugin::ECL_BOOLEAN);
-    return value;
-}
-ECL_MEMCACHED_API float ECL_MEMCACHED_CALL MGetFloat(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
-{
-    float value;
-    size_t valueLength;
-    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, valueLength, value, MemCachedPlugin::ECL_REAL4);
+    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, value, MemCachedPlugin::ECL_BOOLEAN);
     return value;
 }
 ECL_MEMCACHED_API double ECL_MEMCACHED_CALL MGetDouble(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
 {
     double value;
-    size_t valueLength;
-    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, valueLength, value, MemCachedPlugin::ECL_REAL8);
-    return value;
-}
-ECL_MEMCACHED_API signed int ECL_MEMCACHED_CALL MGetInt4(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
-{
-    signed int value;
-    size_t valueLength;
-    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, valueLength, value, MemCachedPlugin::ECL_INTEGER4);
+    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, value, MemCachedPlugin::ECL_REAL);
     return value;
 }
 ECL_MEMCACHED_API signed __int64 ECL_MEMCACHED_CALL MGetInt8(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
 {
     signed __int64 value;
-    size_t valueLength;
-    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, valueLength, value, MemCachedPlugin::ECL_INTEGER8);
-    return value;
-}
-ECL_MEMCACHED_API unsigned int ECL_MEMCACHED_CALL MGetUint4(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
-{
-    unsigned int value;
-    size_t valueLength;
-    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, valueLength, value, MemCachedPlugin::ECL_UNSIGNED4);
+    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, value, MemCachedPlugin::ECL_INTEGER);
     return value;
 }
 ECL_MEMCACHED_API unsigned __int64 ECL_MEMCACHED_CALL MGetUint8(ICodeContext * _ctx, const char * servers, const char * key, const char * partitionKey)
 {
     unsigned __int64 value;
-    size_t valueLength;
-    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, valueLength, value, MemCachedPlugin::ECL_UNSIGNED8);
+    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, value, MemCachedPlugin::ECL_UNSIGNED);
     return value;
 }
 ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetStr(ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * servers, const char * key, const char * partitionKey)
@@ -656,9 +622,9 @@ ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetStr(ICodeContext * _ctx, size32_t 
 }
 ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetUChar(ICodeContext * _ctx, size32_t & returnLength, UChar * & returnValue,  const char * servers, const char * key, const char * partitionKey)
 {
-    size_t _returnLength;
-    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, _returnLength, returnValue, MemCachedPlugin::ECL_UNICODE);
-    returnLength = static_cast<size32_t>(_returnLength/sizeof(UChar));
+    size_t _returnSize;
+    MemCachedPlugin::MGet(_ctx, servers, partitionKey, key, _returnSize, returnValue, MemCachedPlugin::ECL_UNICODE);
+    returnLength = static_cast<size32_t>(_returnSize/sizeof(UChar));
 }
 ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetUtf8(ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * servers, const char * key, const char * partitionKey)
 {
@@ -668,5 +634,7 @@ ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetUtf8(ICodeContext * _ctx, size32_t
 }
 ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetData(ICodeContext * _ctx, size32_t & returnLength, void * & returnValue, const char * servers, const char * key, const char * partitionKey)
 {
-    MemCachedPlugin::MGetVoidPtrLenPair(_ctx, servers, partitionKey, key, returnLength, returnValue, MemCachedPlugin::ECL_DATA);
+    size_t _returnLength;
+    MemCachedPlugin::MGetVoidPtrLenPair(_ctx, servers, partitionKey, key, _returnLength, returnValue, MemCachedPlugin::ECL_DATA);
+    returnLength = static_cast<size32_t>(_returnLength);
 }
