@@ -10496,7 +10496,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             //virtual const char * getFileName() = 0;
             if (filename && filename->getOperator() != no_pipe)
             {
-                buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(expr));
+                bool isDynamic = expr->hasAttribute(resultAtom) || hasDynamicFilename(expr);
+                buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, isDynamic);
                 if (!filename->isConstant())
                     constFilename = false;
             }
