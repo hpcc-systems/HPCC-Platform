@@ -261,7 +261,8 @@ class graph_decl CThorExpandingRowArray : public CSimpleInterface
         virtual void unlock() const {  }
     } dummyLock;
 
-    bool _ensure(rowidx_t requiredRows, unsigned maxSpillCost);
+    inline bool doResize(void **&_rows, rowidx_t requiredRows, bool copy, unsigned maxSpillCost, memsize_t &newCapacity, const char *errMsg);
+    bool _resize(rowidx_t requiredRows, unsigned maxSpillCost);
     const void *_allocateRowTable(rowidx_t num, unsigned maxSpillCost);
 
 // for direct access by another CThorExpandingRowArray only
@@ -276,14 +277,13 @@ protected:
     roxiemem::IRowManager *rowManager;
     const void **rows;
     void **stableTable;
-    bool throwOnOom; // tested during array expansion (ensure())
+    bool throwOnOom; // tested during array expansion (resize())
     bool allowNulls;
     StableSortFlag stableSort;
     rowidx_t maxRows;  // Number of rows that can fit in the allocated memory.
     rowidx_t numRows;  // High water mark of rows added
     unsigned defaultMaxSpillCost;
 
-    void init(rowidx_t initialSize);
     const void *allocateRowTable(rowidx_t num);
     const void *allocateRowTable(rowidx_t num, unsigned maxSpillCost);
     rowidx_t getNewSize(rowidx_t requiredRows);
@@ -319,7 +319,7 @@ public:
         assertex(row || allowNulls);
         if (numRows >= maxRows)
         {
-            if (!ensure(numRows+1))
+            if (!resize(numRows+1))
                 return false;
         }
         rows[numRows++] = row;
@@ -384,9 +384,9 @@ public:
     void deserializeRow(IRowDeserializerSource &in); // NB single row not NULL
     void deserialize(size32_t sz, const void *buf);
     void deserializeExpand(size32_t sz, const void *data);
-    bool ensure(rowidx_t requiredRows);
-    bool ensure(rowidx_t requiredRows, unsigned maxSpillCost);
-    void compact();
+    bool resize(rowidx_t requiredRows);
+    bool resize(rowidx_t requiredRows, unsigned maxSpillCost);
+    void compact(unsigned maxSpillCost);
     virtual IThorArrayLock &queryLock() { return dummyLock; }
 
 friend class CThorSpillableRowArray;
@@ -420,7 +420,7 @@ public:
     inline void setDefaultMaxSpillCost(unsigned defaultMaxSpillCost) { CThorExpandingRowArray::setDefaultMaxSpillCost(defaultMaxSpillCost); }
     inline unsigned queryDefaultMaxSpillCost() const { return CThorExpandingRowArray::queryDefaultMaxSpillCost(); }
     void kill();
-    void compact();
+    void compact(unsigned maxSpillCost);
     void flush();
     inline bool isFlushed() const { return numRows == numCommitted(); }
     inline bool append(const void *row) __attribute__((warn_unused_result))
@@ -429,7 +429,7 @@ public:
         assertex(row || allowNulls);
         if (numRows >= maxRows)
         {
-            if (!ensure(numRows+1))
+            if (!resize(numRows+1))
             {
                 flush();
                 if (numRows >= maxRows)
@@ -491,7 +491,7 @@ public:
     }
     void deserialize(size32_t sz, const void *buf, bool hasNulls){ CThorExpandingRowArray::deserialize(sz, buf); }
     void deserializeRow(IRowDeserializerSource &in) { CThorExpandingRowArray::deserializeRow(in); }
-    bool ensure(rowidx_t requiredRows) { return CThorExpandingRowArray::ensure(requiredRows); }
+    bool resize(rowidx_t requiredRows) { return CThorExpandingRowArray::resize(requiredRows); }
     void transferRowsCopy(const void **outRows, bool takeOwnership);
     void readBlock(const void **outRows, rowidx_t readRows);
 
@@ -517,7 +517,7 @@ interface IThorRowCollectorCommon : extends IInterface
     virtual void transferRowsIn(CThorExpandingRowArray &src) = 0;
     virtual void transferRowsIn(CThorSpillableRowArray &src) = 0;
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50) = 0;
-    virtual void ensure(rowidx_t max) = 0;
+    virtual void resize(rowidx_t max) = 0;
     virtual void setOptions(unsigned options) = 0;
 };
 
