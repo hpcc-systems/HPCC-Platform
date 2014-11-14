@@ -230,6 +230,11 @@ class CConstGraphProgress : public CInterface, implements IConstWUGraphProgress
         }
         return *elem;
     }
+    void clearConnection()
+    {
+        conn.clear();
+        progress.clear();
+    }
 public:
     IMPLEMENT_IINTERFACE;
     static void deleteWuidProgress(const char *wuid)
@@ -254,7 +259,7 @@ public:
     }
     void connect()
     {
-        conn.clear();
+        clearConnection();
         packProgress(wuid,false);
         conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
 
@@ -269,7 +274,7 @@ public:
             throw MakeStringException(WUERR_GraphProgressWriteUnsupported, "Writing to graph progress unsupported in this context");
         // JCSMORE - look at using changeMode here.
         if (conn)
-            conn.clear();
+            clearConnection();
         else
             packProgress(wuid,false);
         conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
@@ -287,7 +292,7 @@ public:
     {
         connected = false;
         connectedWrite = false;
-        conn.clear();
+        clearConnection();
     }
     IPropertyTree &updateNode(WUGraphIDType nodeId, WUNodeIDType id)
     {
