@@ -3425,7 +3425,7 @@ protected:
         callbacks.removeRowBuffer(callback);
     }
 
-    virtual bool compactRows(memsize_t count, const void * * rows)
+    virtual memsize_t compactRows(memsize_t count, const void * * rows)
     {
         HeapCompactState state;
         bool memoryAvailable = false;
@@ -3438,7 +3438,7 @@ protected:
                 rows[i] = packed;  // better to always assign
             }
         }
-        return (state.numPagesEmptied != 0);
+        return state.numPagesEmptied;
     }
 
     virtual void reportMemoryUsage(bool peak) const
@@ -3789,7 +3789,7 @@ const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state
             return ret;
         }
         prev = finger;
-        dbgassertex(((ChunkedHeaplet*)finger)->numChunks() == maxChunksPerPage());
+        dbgassertex((chunkedFinger->numChunks() == maxChunksPerPage()) || (chunkedFinger->numChunks() == 0));
         finger = getNext(finger);
     }
     return ptr;
@@ -5496,10 +5496,10 @@ protected:
         unsigned expectedPages = (numRowsLeft + rowsPerPage-1)/rowsPerPage;
         ASSERT(numPagesFull == numPagesBefore);
         unsigned startTime = msTick();
-        bool compacted = rowManager->compactRows(numRows, rows);
+        memsize_t compacted = rowManager->compactRows(numRows, rows);
         unsigned endTime = msTick();
         unsigned numPagesAfter = rowManager->numPagesAfterCleanup(false);
-        if (compacted != (numPagesBefore != numPagesAfter))
+        if ((compacted>0) != (numPagesBefore != numPagesAfter))
             DBGLOG("Compacted not returned correctly");
         ASSERT(compacted == (numPagesBefore != numPagesAfter));
         DBGLOG("Compacting %d[%d] (%d->%d cf %d) Before: Time taken %d", numRows, milliFraction, numPagesBefore, numPagesAfter, expectedPages, endTime-startTime);
