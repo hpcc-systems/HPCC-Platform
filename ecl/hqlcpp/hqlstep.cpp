@@ -851,7 +851,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     node_operator op = expr->getOperator();
     if (targetThor() && !isLocalActivity(expr) && !isGroupedActivity(expr) && !insideChildQuery(ctx))
     {
-        WARNING1(CategoryUnexpected, HQLWRN_OnlyLocalMergeJoin, getOpString(op));
+        //Should default to an error in a later version, but LOCAL wasn't allowed on MERGEJOIN so make a warning for now.
+        reportWarning(CategoryUnexpected, SeverityUnknown, NULL, ECODETEXT(HQLWRN_OnlyLocalMergeJoin), getOpString(op));
         OwnedHqlExpr localExpr = appendLocalAttribute(expr);
         return doBuildActivityNWayMergeJoin(ctx, localExpr);
     }

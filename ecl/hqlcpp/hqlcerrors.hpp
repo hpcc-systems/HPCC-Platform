@@ -590,9 +590,9 @@
 #define HQLERR_ReadSpillBeforeWriteFix_Text     "INTERNAL: Attempt to read spill file %s before it is written.  Try adding #option ('allowThroughSpill', false); to the query."
 #define HQLERR_CouldNotGenerateDefault_Text     "INTERNAL: Could not generate default value for field %s"
 
-#define WARNINGAT(cat, e, x)                 reportWarning(cat, e, x, x##_Text)
-#define WARNINGAT1(cat, e, x, a)             reportWarning(cat, e, x, x##_Text, a)
-#define WARNINGAT2(cat, e, x, a, b)          reportWarning(cat, e, x, x##_Text, a, b)
-#define WARNINGAT3(cat, e, x, a, b, c)       reportWarning(cat, e, x, x##_Text, a, b, c)
+#define WARNINGAT(cat, e, x)                 reportWarning(cat, SeverityUnknown, e, x, x##_Text)
+#define WARNINGAT1(cat, e, x, a)             reportWarning(cat, SeverityUnknown, e, x, x##_Text, a)
+#define WARNINGAT2(cat, e, x, a, b)          reportWarning(cat, SeverityUnknown, e, x, x##_Text, a, b)
+#define WARNINGAT3(cat, e, x, a, b, c)       reportWarning(cat, SeverityUnknown, e, x, x##_Text, a, b, c)
 
 #endif

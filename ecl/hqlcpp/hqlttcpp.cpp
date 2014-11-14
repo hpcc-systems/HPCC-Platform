@@ -2251,7 +2251,7 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 
             if (equalities.ordinality() == 0)
             {
-                translator.reportWarning(CategoryEfficiency, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
+                translator.reportWarning(CategoryEfficiency, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
             }
             else
             {
@@ -5680,7 +5680,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                         throwError1(HQLERR_DuplicateDefinitionDiffType, s.str());
                 }
                 else if (translator.queryOptions().allowStoredDuplicate)            // only here as a temporary workaround
-                    translator.reportWarning(CategoryMistake, queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
+                    translator.reportWarning(CategoryMistake, SeverityUnknown, queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
                 else
                 {
                     if (queryLocationIndependent(prevValue) != queryLocationIndependent(value))
@@ -7414,9 +7414,9 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                             s.append(" in ").append(symbol->queryName());
                     }
                     if (op == no_nothor)
-                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
+                        translator.reportWarning(CategoryMistake, SeverityUnknown, queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
                     else
-                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
+                        translator.reportWarning(CategoryMistake, SeverityUnknown, queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
                 }
                 if (value->getOperator() == no_createset)
                 {

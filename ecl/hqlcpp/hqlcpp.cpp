@@ -2033,12 +2033,12 @@ bool HqlCppTranslator::getDebugFlag(const char * name, bool defValue)
     return wu()->getDebugValueBool(name, defValue);
 }
 
-void HqlCppTranslator::doReportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg)
+void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg)
 {
     Owned<IECLError> warnError;
     if (!location)
         location = queryActiveActivityLocation();
-    ErrorSeverity severity = queryDefaultSeverity(category);
+    ErrorSeverity severity = (explicitSeverity == SeverityUnknown) ? queryDefaultSeverity(category) : explicitSeverity;
     if (location)
         warnError.setown(createECLError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
     else
@@ -2047,14 +2047,14 @@ void HqlCppTranslator::doReportWarning(WarnErrorCategory category, IHqlExpressio
     errorProcessor->report(warnError);
 }
 
-void HqlCppTranslator::reportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg, ...)
+void HqlCppTranslator::reportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg, ...)
 {
     StringBuffer s;
     va_list args;
     va_start(args, msg);
     s.valist_appendf(msg, args);
     va_end(args);
-    doReportWarning(category, location, id, s.str());
+    doReportWarning(category, explicitSeverity, location, id, s.str());
 }
 
 void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, const char * msg, ...)
@@ -2064,7 +2064,7 @@ void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, co
     va_start(args, msg);
     s.valist_appendf(msg, args);
     va_end(args);
-    doReportWarning(category, NULL, id, s.str());
+    doReportWarning(category, SeverityUnknown, NULL, id, s.str());
 }
 
 void HqlCppTranslator::addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * text, IHqlExpression * location)
