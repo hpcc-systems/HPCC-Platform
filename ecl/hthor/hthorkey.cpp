@@ -28,7 +28,6 @@
 
 #define MAX_FETCH_LOOKAHEAD 1000
 #define IGNORE_FORMAT_CRC_MISMATCH_WHEN_NO_METADATA
-#define DEFAULT_KJ_PRESERVES_ORDER 1
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;

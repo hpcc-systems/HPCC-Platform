@@ -69,7 +69,6 @@
 #define FETCHKEY_HEADER_SIZE (sizeof(offset_t)+sizeof(void *))
 #define DEFAULTMAXRESULTPULLPOOL 1
 #define DEFAULTFREEQSIZE 10
-#define DEFAULT_KJ_PRESERVES_ORDER 1
 #define LOWTHROTTLE_GRANULARITY 10
 
 class CJoinGroup;
