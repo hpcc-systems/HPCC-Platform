@@ -69,7 +69,6 @@
 #define FETCHKEY_HEADER_SIZE (sizeof(offset_t)+sizeof(void *))
 #define DEFAULTMAXRESULTPULLPOOL 1
 #define DEFAULTFREEQSIZE 10
-#define DEFAULT_KJ_PRESERVES_ORDER 1
 #define LOWTHROTTLE_GRANULARITY 10
 
 class CJoinGroup;
@@ -2039,7 +2038,7 @@ public:
         startInput(input);
         inputHelper = LINK(input->queryFromActivity()->queryContainer().queryHelper());
         inputStopped = false;
-        preserveOrder = ((joinFlags & JFkeepsorted) != 0) || (container.queryJob().getWorkUnitValueInt("kj_always_preserve_order", DEFAULT_KJ_PRESERVES_ORDER) != 0);
+        preserveOrder = ((joinFlags & JFreorderable) == 0);
         preserveGroups = input->isGrouped();
         ActPrintLog("KJ: parallelLookups=%d, freeQSize=%d, preserveGroups=%s, preserveOrder=%s", parallelLookups, freeQSize, preserveGroups?"true":"false", preserveOrder?"true":"false");
 

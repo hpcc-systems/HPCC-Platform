@@ -2813,7 +2813,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Tag a keyed join as ordered in the platforms that ensure it does remain ordered.  Extend if the others do.
     if (isKeyedJoin(expr))
     {
-        if (translator.targetRoxie() && !expr->hasAttribute(_ordered_Atom))
+        if ((translator.targetRoxie() || options.keyedJoinPreservesOrder) && !expr->hasAttribute(_ordered_Atom) && !expr->hasAttribute(unorderedAtom))
             return appendOwnedOperand(expr, createAttribute(_ordered_Atom));
         return NULL;
     }

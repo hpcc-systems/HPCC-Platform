@@ -735,6 +735,7 @@ struct HqlCppOptions
     bool                alwaysUseGraphResults;
     bool                reportAssertFilenameTail;
     bool                newBalancedSpotter;
+    bool                keyedJoinPreservesOrder;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
