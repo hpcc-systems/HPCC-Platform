@@ -2137,7 +2137,7 @@ const char * const helpText[] = {
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",
     "!   -checkVersion Enable/disable ecl version checking from archives",
-    "!   --component   Set the name of the component this is executing on behalf of"
+    "!   --component   Set the name of the component this is executing on behalf of",
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
@@ -2180,6 +2180,7 @@ const char * const helpText[] = {
     "! -fmaxCompileThreads     Number of compiler instances to compile the c++",
     "! -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
     "! -fpickBestEngine        Allow simple thor queries to be passed to thor",
+    "! -fsaveCppTempFiles      Retain the generated c++ files",
     "! -fshowActivitySizeInGraph Show estimates of generated c++ size in the graph",
     "! -fshowMetaInGraph       Add distribution/sort orders to the graph",
     "! -fshowRecordCountInGraph Show estimates of record counts in the graph",
