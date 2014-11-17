@@ -62,8 +62,13 @@ extern graph_decl ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *act
                                                       size32_t buffsize);
 
 // Multiple readers, one writer
+interface ISharedSmartBufferCallback
+{
+    virtual void paged() = 0;
+};
 interface ISharedSmartBuffer : extends IRowWriter
 {
+    virtual void putRow(const void *row, ISharedSmartBufferCallback *callback) = 0; // extended form of putRow, which signals when pages out via callback
     virtual IRowStream *queryOutput(unsigned output) = 0;
     virtual void cancel()=0;
     virtual void reset() = 0;

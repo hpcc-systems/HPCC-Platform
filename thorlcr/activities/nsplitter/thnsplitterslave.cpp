@@ -66,7 +66,8 @@ class NSplitterSlaveActivity : public CSlaveActivity
     bool spill;
     bool eofHit;
     bool inputsConfigured;
-    CriticalSection startLock;
+    bool pendingWrite;
+    CriticalSection startLock, writeAheadCrit1, writeAheadCrit2;
     unsigned nstopped;
     rowcount_t recsReady;
     IThorDataLink *input;
@@ -74,44 +75,27 @@ class NSplitterSlaveActivity : public CSlaveActivity
     Owned<IException> startException, writeAheadException;
     Owned<ISharedSmartBuffer> smartBuf;
 
+    // NB: CWriter only used by 'balanced' splitter, which blocks write when too far ahead
     class CWriter : public CSimpleInterface, IThreaded
     {
         NSplitterSlaveActivity &parent;
         CThreadedPersistent threaded;
-        Semaphore sem;
         bool stopped;
-        rowcount_t writerMax;
-        unsigned requestN;
-        SpinLock recLock;
 
     public:
         CWriter(NSplitterSlaveActivity &_parent) : parent(_parent), threaded("CWriter", this)
         {
             stopped = true;
-            writerMax = 0;
-            requestN = 1000;
         }
         ~CWriter() { stop(); }
         virtual void main()
         {
-            loop
-            {
-                sem.wait();
-                if (stopped) break;
-                rowcount_t request;
-                {
-                    SpinBlock block(recLock);
-                    request = writerMax;
-                }
-                parent.writeahead(request, stopped);
-                if (parent.eofHit)
-                    break;
-            }
+            while (!stopped && !parent.eofHit)
+                parent.writeahead(0, stopped); // intentional to avoid 'current' check and write as much as possible, it will block in smartBuf..
         }
         void start()
         {
             stopped = false;
-            writerMax = 0;
             threaded.start();
         }
         virtual void stop()
@@ -119,20 +103,8 @@ class NSplitterSlaveActivity : public CSlaveActivity
             if (!stopped)
             {
                 stopped = true;
-                sem.signal();
                 threaded.join();
             }
-        }
-        void more(rowcount_t &max) // called if output hit it's max, returns new max
-        {
-            if (stopped) return;
-            SpinBlock block(recLock);
-            if (writerMax <= max)
-            {
-                writerMax += requestN;
-                sem.signal();
-            }
-            max = writerMax;
         }
     } writer;
     class CNullInput : public CSplitterOutputBase
@@ -240,6 +212,7 @@ public:
         nstopped = 0;
         eofHit = inputsConfigured = false;
         recsReady = 0;
+        pendingWrite = false;
     }
     void ensureInputsConfigured()
     {
@@ -247,6 +220,7 @@ public:
         if (inputsConfigured)
             return;
         inputsConfigured = true;
+        pendingWrite = false;
         unsigned noutputs = container.connectedOutputs.getCount();
         ActPrintLog("Number of connected outputs: %d", noutputs);
         if (1 == noutputs)
@@ -309,11 +283,6 @@ public:
         else
             spill = dV>0;
     }
-    inline void more(rowcount_t &max)
-    {
-        ActivityTimer t(totalCycles, queryTimeActivities());
-        writer.more(max);
-    }
     void prepareInput(unsigned output)
     {
         CriticalBlock block(startLock);
@@ -348,7 +317,8 @@ public:
                             smartBuf->queryOutput(o)->stop();
                     }
                 }
-                writer.start();
+                if (spill)
+                    writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
             }
             catch (IException *e) { 
                 startException.setown(e); 
@@ -362,15 +332,32 @@ public:
             throw LINK(writeAheadException);
         return row.getClear();
     }
-    void writeahead(const rowcount_t &requested, const bool &stopped)
+    rowcount_t writeahead(rowcount_t current, const bool &stopped)
     {
         if (eofHit)
-            return;
-        
+            return recsReady;
+
+        ActivityTimer t(totalCycles, queryTimeActivities());
+        {
+            CriticalBlock b(writeAheadCrit1);
+            if (current < recsReady || pendingWrite)
+                return recsReady;
+
+            pendingWrite = true;
+        }
+        CriticalBlock b(writeAheadCrit2);
+        class CSharedSmartCallback : implements ISharedSmartBufferCallback
+        {
+            bool pagedOut;
+        public:
+            CSharedSmartCallback() { pagedOut = false; }
+            virtual void paged() { pagedOut = true; }
+            bool done() const { return pagedOut; }
+        } cb;
         OwnedConstThorRow row;
         loop
         {
-            if (abortSoon || stopped || requested<recsReady)
+            if (abortSoon || stopped || cb.done())
                 break;
             try
             {
@@ -381,7 +368,7 @@ public:
                     if (row)
                     {
                         ++recsReady;
-                        smartBuf->putRow(NULL);
+                        smartBuf->putRow(NULL, &cb);
                     }
                 }
             }
@@ -394,8 +381,10 @@ public:
                 break;
             }
             ++recsReady;
-            smartBuf->putRow(row.getClear()); // can block if mem limited, but other readers can progress which is the point
+            smartBuf->putRow(row.getClear(), &cb); // can block if mem limited, but other readers can progress which is the point
         }
+        pendingWrite = false;
+        return recsReady;
     }
     void inputStopped()
     {
@@ -457,7 +446,7 @@ void CSplitterOutput::stop()
 const void *CSplitterOutput::nextRow()
 {
     if (rec == max)
-        activity.more(max);
+        max = activity.writeahead(max, activity.queryAbortSoon());
     ActivityTimer t(totalCycles, activity.queryTimeActivities());
     const void *row = activity.nextRow(output); // pass ptr to max if need more
     ++rec;
