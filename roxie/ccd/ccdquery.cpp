@@ -288,6 +288,7 @@ QueryOptions::QueryOptions()
     concatPreload = defaultConcatPreload;
     fetchPreload = defaultFetchPreload;
     prefetchProjectPreload = defaultPrefetchProjectPreload;
+    bindCores = coresPerQuery;
 
     checkingHeap = defaultCheckingHeap;
     disableLocalOptimizations = false;  // No global default for this
@@ -311,6 +312,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     concatPreload = other.concatPreload;
     fetchPreload = other.fetchPreload;
     prefetchProjectPreload = other.prefetchProjectPreload;
+    bindCores = other.bindCores;
 
     checkingHeap = other.checkingHeap;
     disableLocalOptimizations = other.disableLocalOptimizations;
@@ -344,6 +346,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(concatPreload, wu, "concatPreload");
     updateFromWorkUnit(fetchPreload, wu, "fetchPreload");
     updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
+    updateFromWorkUnit(bindCores, wu, "bindCores");
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
     updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
@@ -387,6 +390,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(concatPreload, ctx, "@concatPreload", "_ConcatPreload");
         updateFromContext(fetchPreload, ctx, "@fetchPreload", "_FetchPreload");
         updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
+        updateFromContext(bindCores, ctx, "@bindCores", "_bindCores");
 
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
         // Note: disableLocalOptimizations is not permitted at context level (too late)

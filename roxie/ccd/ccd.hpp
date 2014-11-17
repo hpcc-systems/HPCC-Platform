@@ -435,6 +435,7 @@ extern unsigned defaultPrefetchProjectPreload;
 extern bool defaultCheckingHeap;
 
 extern unsigned slaveQueryReleaseDelaySeconds;
+extern unsigned coresPerQuery;
 
 extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;

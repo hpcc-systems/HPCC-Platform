@@ -716,6 +716,10 @@ public:
 
 class RoxieListener : public Thread, implements IRoxieListener, implements IThreadFactory
 {
+#ifndef _WIN32
+    cpu_set_t cpuMask;
+#endif
+    unsigned lastCore;
 public:
     IMPLEMENT_IINTERFACE;
     RoxieListener(unsigned _poolSize, bool _suspended) : Thread("RoxieListener")
@@ -725,6 +729,28 @@ public:
         poolSize = _poolSize;
         threadsActive = 0;
         maxThreadsActive = 0;
+#ifndef _WIN32
+        if (coresPerQuery)
+        {
+            if (sched_getaffinity(0, sizeof(cpu_set_t), &cpuMask))
+            {
+                if (traceLevel)
+                    DBGLOG("Unable to get CPU affinity - ignoring coresPerQuery");
+                coresPerQuery = 0;
+            }
+            else if (traceLevel)
+            {
+                StringBuffer trace;
+                for (unsigned core = 0; core < CPU_SETSIZE; core++)
+                {
+                    if (CPU_ISSET(core, &cpuMask))
+                        trace.appendf(",%d", core);
+                }
+                if (trace.length())
+                    DBGLOG("Process affinity is set to use  core(s) %s", trace.str()+1);
+            }
+        }
+#endif
     }
 
     virtual void start()
@@ -814,6 +840,41 @@ public:
         info.append("</ACCESSINFO>\n");
     }
 
+    void setAffinity(int numCores)
+    {
+#ifndef _WIN32
+        if (numCores > 0)
+        {
+            cpu_set_t threadMask;
+            CPU_ZERO_S(sizeof(cpu_set_t), &threadMask);
+            unsigned cores = 0;
+            unsigned offset = lastCore;
+            unsigned core;
+            for (core = 0; core < CPU_SETSIZE; core++)
+            {
+                unsigned useCore = (core + offset) % CPU_SETSIZE;
+                if (CPU_ISSET(useCore, &cpuMask))
+                {
+                    CPU_SET(useCore, &threadMask);
+                    cores++;
+                    if (cores == numCores)
+                    {
+                        lastCore = useCore+1;
+                        break;
+                    }
+                }
+            }
+            if (traceLevel > 3)
+                traceAffinity(&threadMask);
+            pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &threadMask);
+        }
+        else
+            if (traceLevel > 3)
+                traceAffinity(&cpuMask);
+            pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuMask);
+#endif
+    }
+
 protected:
     unsigned poolSize;
     bool running;
@@ -827,6 +888,18 @@ protected:
     friend class ActiveQueryLimiter;
 
 private:
+    void traceAffinity(cpu_set_t *mask)
+    {
+        StringBuffer trace;
+        for (unsigned core = 0; core < CPU_SETSIZE; core++)
+        {
+            if (CPU_ISSET(core, mask))
+                trace.appendf(",%d", core);
+        }
+        if (trace.length())
+            DBGLOG("Process affinity is set to use  core(s) %s", trace.str()+1);
+    }
+
     CIArrayOf<AccessTableEntry> accessTable;
 };
 
@@ -1190,6 +1263,9 @@ public:
                         logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
                     throw e;
                 }
+                int bindCores = wu->getDebugValueInt("bindCores", coresPerQuery);
+                if (bindCores > 0)
+                    pool->setAffinity(bindCores);
             }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
@@ -1657,6 +1733,10 @@ readAnother:
                         if (queryFactory)
                         {
                             queryFactory->checkSuspended();
+                            int bindCores = queryFactory->queryOptions().bindCores;
+                            bindCores = queryXml->getPropInt("@bindCores", bindCores);
+                            if (bindCores > 0)
+                                pool->setAffinity(bindCores);
                             bool stripWhitespace = queryFactory->queryOptions().stripWhitespaceFromStoredDataset;
                             stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
                             PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
