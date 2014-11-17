@@ -8528,31 +8528,34 @@ public:
 
     const void *readBuffered(unsigned &idx, unsigned oid)
     {
-        CriticalBlock b(crit);
-        ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
+        //False positives are fine, false negatives are not.. so headIdx must only be updated when a row will be available.
         if (idx == headIdx) // test once without getting the crit2 sec
         {
-            CriticalUnblock b1(crit); // Allow other pullers to read (so long as they are not at the head)
             CriticalBlock b2(crit2);  // but only one puller gets to read the head
-            if (error)
-            {
-                throw error.getLink();
-            }
             if (idx == headIdx) // test again now that we have it 
             {
+                ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
+                if (error)
+                    throw error.getLink();
+
                 try
                 {
                     const void *row = input->nextInGroup();
-                    CriticalBlock b3(crit);
-                    headIdx++;
-                    idx++;
                     if (activeOutputs==1)
                     {
 #ifdef TRACE_SPLIT
                         CTXLOG("spill %d optimised return of %p", activityId, row);
 #endif
+                        headIdx++;
+                        idx++;
                         return row;  // optimization for the case where only one output still active.
                     }
+                    CriticalBlock b(crit);
+                    headIdx++;
+                    idx++;
+                    if (activeOutputs==1)
+                        return row;  // optimization for the case where only one output still active.
+
                     buffer.enqueue(row);
                     if (row) LinkRoxieRow(row);
                     return row;
@@ -8573,6 +8576,9 @@ public:
                 }
             }
         }
+
+        CriticalBlock b(crit);
+        ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
         unsigned lidx = idx - tailIdx;
         idx++;
         if (!lidx)
