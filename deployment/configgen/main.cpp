@@ -427,12 +427,11 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
         //If this is ldap server name, lookup and add its IP address
         if (0==strcmp(attrs->queryName(), "@name"))
         {
-          StringBuffer sb(attrs->queryValue());
-          StringBuffer * ldapIP = ldapServers.getValue(sb);
-          if (ldapIP->str())
+          StringBuffer * ldapIP = ldapServers.getValue(attrs->queryValue());
+          if (ldapIP)
           {
             out.appendf("@ldapAddress,%s\n",ldapIP->str());
-            ldapServers.setValue(attrs->queryValue(), NULL);
+            ldapServers.remove(attrs->queryValue());//ensure this server only listed once
           }
           else
           {
