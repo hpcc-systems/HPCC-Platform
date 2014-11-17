@@ -209,9 +209,9 @@ public:
             loop
             {
                 str.append(item(i).queryName());
-                str.append('/');
                 if (++i >= ordinality())
                     break;
+                str.append('/');
             }
         }
         return str;
