@@ -227,7 +227,8 @@ bool DirectDiskDataSource::init()
     if (!transformedMeta)
         transformedMeta.set(returnedMeta);
 
-    addFileposition();
+    if (!isWorkunitResult())
+        addFileposition();
     physical.init(df);
     if (diskMeta->isFixedSize())
     {
