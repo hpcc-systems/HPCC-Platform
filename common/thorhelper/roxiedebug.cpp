@@ -410,7 +410,7 @@ public:
     virtual void outputInlineXml(const char *xml){}
     virtual void outputQuoted(const char *text) { }
 
-    virtual void outputString(unsigned len, const char *field, const char *fieldname) 
+    virtual void outputString(unsigned len, const char *field, const char *fieldname)
     {
         if (!matchSeen && checkFieldName(fieldname) && (len >= searchStringLength))
         {
@@ -480,7 +480,7 @@ public:
     {
         // Searching/breaking on unicode not supported at the moment
     }
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname) 
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname)
     {
         if (!matchSeen && checkFieldName(fieldname))
         {

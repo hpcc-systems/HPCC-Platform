@@ -13,3 +13,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+# Component: esp_services_common
+
+project( esp_services_common )
+
+set ( SRCS
+    ${HPCC_SOURCE_DIR}/esp/services/common/wsexcept.cpp
+)
