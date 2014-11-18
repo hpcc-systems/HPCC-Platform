@@ -381,6 +381,7 @@ PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const ch
     if (!prevtext || strcmp(text, prevtext) != 0)
     {
         prevtext.clear();
+        text.stripChar('\r');
         script.setown(globalState.compileScript(text));
         prevtext.set(utf, bytes);
     }
