@@ -42,6 +42,7 @@ class Suite:
         self.exclude = []
         self.publish = []
         self.isDynamicSource=False
+        self.dynamicSources=[]
         if args.dynamic != 'None':
             self.isDynamicSource=True
             self.dynamicSources=args.dynamic[0].replace('source=', '').replace('\'','').split(',')
@@ -124,19 +125,58 @@ class Suite:
                     self.publish.append(eclfile.getBaseEcl())
 
     def addFileToSuite(self, eclfile):
-        if eclfile.testDynamicSource() and self.isDynamicSource:
+        haveVersions = eclfile.testVesion()
+        haveDynamicSources = eclfile.testDynamicSource() or self.isDynamicSource
+        if haveDynamicSources or haveVersions:
             # going through the source lists
             basename = eclfile.getEcl()
-            for source in self.dynamicSources:
-                # generates ECLs based on sources
-                eclfile = ECLFile(basename, self.dir_a, self.dir_ex,
-                                  self.dir_r,  self.name, self.args)
-                eclfile.setDynamicSource(source)
+            dynFiles = []
+            if self.isDynamicSource and eclfile.testDynamicSource():
+                # We have ECL file with //dynamic tag and we hae --dynamic CLI parameter
+                # Generates stub for all sources
+                for source in self.dynamicSources:
+                    dynFiles.append({'basename':basename, 'source':source})
+                pass
+            elif eclfile.testDynamicSource() :
+                # We have ECL file with //dynamic tag generate stub to standalone run
+                dynFiles.append({'basename':basename, 'source':'Test'})
+            else:
+                # We have simple (or only //version taged) ECL run it as is
+                dynFiles.append({'basename':basename, 'source':None})
+            files=[]
+            if haveVersions:
+                versions = eclfile.getVersions()
+                for dynFile in dynFiles:
+                    versionId = 1
+                    for version in versions:
+                        files.append({'basename':dynFile['basename'],  'source':dynFile['source'],  'version':version,  'id':versionId })
+                        versionId += 1
+                        pass
+                pass
+            else:
+                files = dynFiles
+
+            # We have a list of combined list of dynamic source and version
+            # generate ECLs to suite
+            for file in files:
+                generatedEclFile = ECLFile(basename, self.dir_a, self.dir_ex,
+                                 self.dir_r,  self.name, self.args)
+
+                if 'version' in file:
+                    generatedEclFile.setDParameters(file['version'])
+                    generatedEclFile.setVersionId(file['id'])
+
+                if file['source'] != None:
+                    generatedEclFile.setDynamicSource(file['source'])
+
                 # add newly generated ECL to suite
-                self.suite.append(eclfile)
-            pass
+                self.suite.append(generatedEclFile)
+
+            # Clean-up, the original eclfile object not necessary anymore
+            eclfile.close()
         else:
             self.suite.append(eclfile)
+        pass
 
     def testPublish(self, ecl):
         if ecl in self.publish:

@@ -635,6 +635,10 @@ The format of the output is the same as 'run', except all dynamic executed ECL f
     To use dynamic source to execute same ECL with different source
 //dynamic:source
 
+    To allow multiple tests to be generated from a single source file
+    The regression suite engine executes the file once for each //version line in the file. It is compiled with command line option -Dn1=v1 -Dn2=v2 etc.
+    The string value should quoted with \'. Can be used in conjunction with //dynamic:source tag and --dynamic CLI parameter.
+//version <n1>=<v1>,<n2>=<v2>,...
 
 8. Key file handling:
 ---------------------

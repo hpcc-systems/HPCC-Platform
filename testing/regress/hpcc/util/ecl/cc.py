@@ -36,7 +36,7 @@ class ECLCC(Shell):
 
     def getArchive(self, ecl):
         try:
-            if ecl.testDynamicSource():
+            if ecl.testDynamicSource() or ecl.testVesion():
                 stub = ecl.getRealEclSource()
                 # do eclcc with stdin
                 return self.__ECLCC()('-E', stub)
@@ -52,6 +52,7 @@ class ECLCC(Shell):
         self.addIncludePath(ecl.dir_ec)
         dirname = ecl.dir_a
         filename = ecl.getArchive()
+
         if not os.path.isdir(dirname):
             os.mkdir(dirname)
         if os.path.isfile(filename):

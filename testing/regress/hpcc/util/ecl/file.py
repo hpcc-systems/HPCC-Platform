@@ -72,6 +72,12 @@ class ECLFile:
         self.abortReason =''
         self.tags={}
         self.tempFile=None
+        self.paramD=[]
+        self.isVersions=False
+        self.version=''
+        self.versionId=0
+        self.dynamicSource = ''
+        #self.isDynamicSource=False
 
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
@@ -171,9 +177,17 @@ class ECLFile:
         return os.path.join(self.dir_r, self.xml_r)
 
     def getArchive(self):
-        logging.debug("%3d. getArchive (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
-        if self.isDynamicSource:
-            dynamicFilename='archive_' + self.basename + '_'+ self.dynamicSource+'.xml'
+        logging.debug("%3d. getArchive (isDynamicSource:'%s', isVersions:'%s')", self.taskId, self.isDynamicSource,  self.isVersions )
+        if self.isDynamicSource or self.isVersions:
+            dynamicFilename='archive_' + self.basename
+
+            if self.isDynamicSource:
+                dynamicFilename+= '_'+ self.dynamicSource
+
+            if self.isVersions:
+                 dynamicFilename+= '_v'+ str(self.versionId)
+
+            dynamicFilename += '.xml'
             return os.path.join(self.dir_a, dynamicFilename)
         else:
             return os.path.join(self.dir_a, self.xml_a)
@@ -182,7 +196,7 @@ class ECLFile:
         return os.path.join(self.dir_ec, self.ecl)
 
     def getRealEclSource(self):
-        logging.debug("%3d. getRealEclSource (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
+        logging.debug("%3d. getRealEclSource (isDynamicSource:'%s', isVersions:'%s')", self.taskId, self.isDynamicSource, self.isVersions )
         if self.isDynamicSource:
             # generate stub and return with it
             self.tempFile = tempfile.NamedTemporaryFile(prefix='_temp',  suffix='.ecl', dir=self.dir_ec)
@@ -190,8 +204,10 @@ class ECLFile:
             self.tempFile.write(self.basename+'.execute(source := \''+self.dynamicSource+'\');\n')
             self.tempFile.flush()
             # now return with the generated
+            logging.debug("%3d. return with '%s'", self.taskId, self.tempFile.name)
             return os.path.join(self.dir_ec, self.tempFile.name)
         else:
+            logging.debug("%3d. return with '%s'", self.taskId, self.ecl)
             return os.path.join(self.dir_ec, self.ecl)
 
     def getBaseEcl(self):
@@ -201,9 +217,20 @@ class ECLFile:
         return self.basename
 
     def getBaseEclRealName(self):
-        logging.debug("%3d. getBaseEclRealName (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
-        if self.isDynamicSource:
-            realName = self.basename + '.ecl ( source: ' + self.dynamicSource + ' )'
+        logging.debug("%3d. getBaseEclRealName (isDynamicSource:'%s', isVersions:'%s')", self.taskId, self.isDynamicSource,  self.isVersions)
+        if self.isDynamicSource or self.isVersions:
+            realName = self.basename + '.ecl ( '
+            if self.isDynamicSource:
+                realName += 'source: ' + self.dynamicSource
+                if self.isVersions:
+                    realName += ', '
+                else:
+                    realName += ' '
+
+            if self.isVersions:
+                realName += 'version: ' + self.getVersion()  + ' '
+
+            realName += ')'
         else:
             realName = self.getBaseEcl()
         return realName
@@ -327,6 +354,36 @@ class ECLFile:
             logging.debug("%3d. testDynamicSource() returns with: %s",  self.taskId,  self.isDynamicSource)
         return self.isDynamicSource
 
+    # Test (and read all) //version tag in the ECL file
+    def testVesion(self):
+        if self.isVersions == False:
+            tag = b'//version'
+            logging.debug("%3d. testVesion (ecl:'%s', tag:'%s')", self.taskId, self.ecl, tag)
+            retVal = False
+            self.versions = []
+            eclText = open(self.getEcl(), 'rb')
+            for line in eclText:
+                if tag in line.lower():
+                    items = line.replace(tag, '').strip().replace('"', '')
+                    if '=' in items:
+                        self.versions.append(items)
+                        retVal = True
+                        self.isVersions = True
+                        pass
+        logging.debug("%3d. testVesion() returns with isVersions = '%s'", self.taskId,  self.isVersions)
+        return self.isVersions
+
+    # Return an array of all //version tag from the original ECL file
+    def getVersions(self):
+        return self.versions
+
+    # Return the //version tag parameters from the generated ECL
+    def getVersion(self):
+        return self.version
+
+    def setVersionId(self,  id):
+        self.versionId=id
+
     def getTimeout(self):
         timeout = 0
         # Standard string has a problem with unicode characters
@@ -416,3 +473,14 @@ class ECLFile:
     def getDynamicSource(self):
         return self.dynamicSource
 
+    # Set -D parameter(s) (and generate version string for logger)
+    def setDParameters(self,  param):
+        self.version = param.replace(',',  ', ')
+        param = '-D'+param.replace(',', ' -D')+''
+        self.paramD = param.split(' ')
+        self.isVersions = True
+
+    # Return the -D parameters
+    def getDParameters(self):
+        logging.debug("%3d. getDParameters (ecl:'%s', D parameters are:'%s')", self.taskId,  self.ecl, self.paramD)
+        return self.paramD
