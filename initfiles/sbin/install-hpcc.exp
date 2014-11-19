@@ -53,7 +53,8 @@ proc checkSSHConnection {} {
    global ip user password prompt
 
    set timeout 60
-   spawn ssh ${user}@${ip}
+   # JIRA 12585 in chance root user cannot ssh with key pairs
+   spawn su ${user} -c "ssh ${user}@${ip}"
    expect {
       *?assword:* {
          send "${password}\r";
@@ -82,7 +83,7 @@ proc copyPayload {} {
    global ip user password prompt
 
    set timeout 300
-   spawn scp /tmp/remote_install.tgz ${user}@${ip}:~;
+   spawn su ${user} -c "scp /tmp/remote_install.tgz ${user}@${ip}:~;"
    expect {
       *?assword:* {
          send "${password}\r";
@@ -109,7 +110,7 @@ proc expandPayload {} {
    global ip user password prompt
 
    set timeout 180
-   spawn ssh ${user}@${ip} "cd /; tar -zxf ~/remote_install.tgz"
+   spawn su ${user} -c "ssh ${user}@${ip} \"cd /; tar -zxf ~/remote_install.tgz\""
    expect {
       *?assword:* {
          send "${password}\r"
@@ -139,7 +140,7 @@ proc runPayload {} {
    set timeout 60
 
    expect -re $
-   spawn ssh ${user}@${ip}
+   spawn su ${user} -c "ssh ${user}@${ip}"
    expect {
       *?assword:* {
          send "${password}\r"
@@ -160,7 +161,7 @@ proc runPayload {} {
    expect -re $
    send "${cmd_prefix} ${remote_install}/remote-install-engine.sh ${remote_install}/${basepkg}\r"
    expect {
-      *?assword:* {
+      "*[sudo] password for*" {
          send "${password}\r"
          exp_continue
       } "*?ermission denied*" {
