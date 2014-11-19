@@ -71,9 +71,7 @@ interface IJobQueueConst: extends IInterface
     virtual unsigned copyItems(CJobQueueContents &dest)=0;  // takes a snapshot copy of the entire queue (returns number copied)
     virtual bool getLastDequeuedInfo(StringAttr &wuid, CDateTime &enqueuedt, int &priority)=0;
     virtual void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state, StringBuffer& stateDetails)=0;
-
     virtual void getState(StringBuffer& state, StringBuffer& stateDetails)=0;
-    virtual void getWUIDs(StringArray& ids)=0;
 };
 
 interface IJobQueue: extends IJobQueueConst
@@ -142,7 +140,6 @@ interface IJobQueue: extends IJobQueueConst
 interface IJQSnapshot : extends IInterface
 {
     virtual IJobQueueConst *getJobQueue(const char *name)=0;
-    virtual bool isJQSnapshotValid(unsigned timeOutSeconds)=0;
 };
 
 extern WORKUNIT_API IJQSnapshot *createJQSnapshot();

@@ -87,6 +87,7 @@ public:
     CWsSMCQueue clusterQueue;
     CWsSMCQueue agentQueue;
     CWsSMCQueue serverQueue;
+    StringArray queuedWUIDs;
 
     CWsSMCTargetCluster(){};
     virtual ~CWsSMCTargetCluster(){};
@@ -108,22 +109,20 @@ class CActivityInfo : public CInterface, implements IInterface
     IArrayOf<IEspServerJobQueue> serverJobQueues;
     IArrayOf<IEspDFUJob> DFURecoveryJobs;
 
-    IPropertyTree* serverStatusRoot;
-
-    void readTargetClusterInfo(CConstWUClusterInfoArray& clusters);
-    void readTargetClusterInfo(IConstWUClusterInfo& cluster, CWsSMCTargetCluster* targetCluster);
-    bool findQueueInStatusServer(const char* serverName, const char* queueName);
+    void readTargetClusterInfo(CConstWUClusterInfoArray& clusters, IPropertyTree* serverStatusRoot);
+    void readTargetClusterInfo(IConstWUClusterInfo& cluster, IPropertyTree* serverStatusRoot, CWsSMCTargetCluster* targetCluster);
+    bool findQueueInStatusServer(IPropertyTree* serverStatusRoot, const char* serverName, const char* queueName);
     const char *getStatusServerTypeName(WsSMCStatusServerType type);
-    void readActiveWUsAndQueuedWUs(IPropertyTree* envRoot);
-    void readRunningWUsOnStatusServer(WsSMCStatusServerType statusServerType);
+    bool readJobQueue(const char* queueName, StringArray& wuids, StringBuffer& state, StringBuffer& stateDetails);
+    void readActiveWUsAndQueuedWUs(IPropertyTree* envRoot, IPropertyTree* serverStatusRoot);
+    void readRunningWUsOnStatusServer(IPropertyTree* serverStatusRoot, WsSMCStatusServerType statusServerType);
     void readWUsInTargetClusterJobQueues(CIArrayOf<CWsSMCTargetCluster>& targetClusters);
     void readWUsInTargetClusterJobQueue(CWsSMCTargetCluster& targetCluster, CWsSMCQueue& jobQueue, const char* queueName);
-    void readWUIDsInJobQueue(const char* queueName, StringArray& wuidList);
-    void readRunningWUsAndJobQueueforOtherStatusServers();
+    void readRunningWUsAndJobQueueforOtherStatusServers(IPropertyTree* serverStatusRoot);
     void createActiveWorkUnit(Owned<IEspActiveWorkunit>& ownedWU, const char* wuid, const char* location,
         unsigned index, const char* serverName, const char* queueName, const char* instanceName, const char* targetClusterName, bool useContext);
-    void getDFUServersAndWUs(IPropertyTree* envRoot);
-    unsigned readDFUWUIDs(const char* queueName, StringArray& wuidList);
+    void getDFUServersAndWUs(IPropertyTree* envRoot, IPropertyTree* serverStatusRoot);
+    unsigned readDFUWUIDs(IPropertyTree* serverStatusRoot, const char* queueName, StringArray& wuidList);
     void readDFUWUDetails(const char* queueName, const char* serverName, StringArray& wuidList, unsigned runningWUCount);
     void getDFURecoveryJobs();
     void getServerJobQueue(const char* queueName, const char* serverName, const char* serverType, const char* networkAddress, unsigned port);
