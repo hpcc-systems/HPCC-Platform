@@ -420,13 +420,18 @@ ESPresponse [exceptions_inline] DFUFileViewResponse
     ESParray<ESPstruct DFULogicalFile> DFULogicalFiles;
 };
 
-ESPStruct DFUDataColumn
+ESPStruct [nil_remove] DFUDataColumn
 {
+    [min_ver("1.29")] int ColumnID;
     string ColumnLabel;
     string ColumnType;
     [min_ver("1.05")] string ColumnValue;
     int ColumnSize;
     int MaxSize;
+    [min_ver("1.29")] string ColumnEclType;
+    [min_ver("1.29")] int ColumnRawSize;
+    [min_ver("1.29")] bool IsNaturalColumn;
+    [min_ver("1.29")] bool IsKeyedColumn;
 };
 
 ESPrequest DFUGetDataColumnsRequest
@@ -651,10 +656,30 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 };
 
+ESPrequest DFUGetFileMetaDataRequest
+{
+    string LogicalFileName;
+    string ClusterName;
+    bool IncludeXmlSchema(false);
+    bool AddHeaderInXmlSchema(false);
+    bool IncludeXmlXPathSchema(false);
+    bool AddHeaderInXmlXPathSchema(false);
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataResponse
+{
+    int TotalColumnCount;
+    int KeyedColumnCount;
+    ESParray<ESPstruct DFUDataColumn> DataColumns;
+    string XmlSchema;
+    string XmlXPathSchema;
+    int64 TotalResultRows;
+};
+
 
 //  ===========================================================================
 ESPservice [
-    version("1.28"), default_client_version("1.28"),
+    version("1.29"), default_client_version("1.29"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
@@ -673,6 +698,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_getdatacolumns.xslt")] DFUGetDataColumns(DFUGetDataColumnsRequest, DFUGetDataColumnsResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_viewdata.xslt")] DFUBrowseData(DFUBrowseDataRequest, DFUBrowseDataResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_searchdata.xslt")] DFUSearchData(DFUSearchDataRequest, DFUSearchDataResponse);
+    ESPmethod DFUGetFileMetaData(DFUGetFileMetaDataRequest, DFUGetFileMetaDataResponse);
     ESPmethod DFUDefFile(DFUDefFileRequest, DFUDefFileResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/addto_superfile.xslt")] AddtoSuperfile(AddtoSuperfileRequest, AddtoSuperfileResponse);
