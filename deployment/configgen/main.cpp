@@ -718,7 +718,7 @@ int main(int argc, char** argv)
   const char* out_filename = NULL;
   const char* compName = NULL;
   const char* compType = NULL;
-  StringBuffer ipAddr = NULL;
+  StringBuffer ipAddr;
   bool generateOutput = true;
   bool listComps = false;
   bool verbose = false;

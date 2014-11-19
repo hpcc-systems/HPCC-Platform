@@ -591,7 +591,6 @@ class CXPathIterator : public CInterface, implements IPropertyTreeIterator
     UnsignedArray childPositions;
     IPropertyTree *currentChild;
     IPTIteratorCodes flags;
-    StringBuffer currentPath;
     bool validateServerIds;
 public:
     IMPLEMENT_IINTERFACE;

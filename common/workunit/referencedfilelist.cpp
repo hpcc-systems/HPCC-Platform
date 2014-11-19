@@ -127,7 +127,11 @@ public:
     ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize)
     : flags(_flags), pkgid(_pkgid), noDfsResolution(noDfs), calcFileSize(calcSize), fileSize(0), numParts(0)
     {
-        logicalName.set(skipForeign(lfn, &daliip)).toLowerCase();
+        {
+            //Scope ensures strings are assigned
+            StringAttrBuilder logicalNameText(logicalName), daliipText(daliip);
+            logicalNameText.set(skipForeign(lfn, &daliipText)).toLowerCase();
+        }
         if (daliip.length())
             flags |= RefFileForeign;
         else
@@ -157,7 +161,7 @@ public:
     virtual unsigned getFlags() const {return flags;}
     virtual const SocketEndpoint &getForeignIP(SocketEndpoint &ep) const
     {
-        if (flags & RefFileForeign && daliip.length())
+        if ((flags & RefFileForeign) && daliip.length())
             ep.set(daliip.str());
         else
             ep.set(NULL);
@@ -176,10 +180,10 @@ public:
     }
 
 public:
-    StringBuffer logicalName;
+    StringAttr logicalName;
     StringAttr pkgid;
-    StringBuffer daliip;
-    StringBuffer filePrefix;
+    StringAttr daliip;
+    StringAttr filePrefix;
     StringAttr fileSrcCluster;
     __int64 fileSize;
     unsigned numParts;
@@ -347,7 +351,7 @@ IPropertyTree *ReferencedFile::getSpecifiedOrRemoteFileTree(IUserDescriptor *use
     Owned<IPropertyTree> fileTree = getRemoteFileTree(user, remote, remotePrefix);
     if (!fileTree)
         return NULL;
-    remote->endpoint().getUrlStr(daliip);
+    StringAttrBuilder daliipText(daliip);
     filePrefix.set(remotePrefix);
     return fileTree.getClear();
 }

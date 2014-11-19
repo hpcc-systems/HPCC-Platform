@@ -235,4 +235,43 @@ protected:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileIOTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileIOTest, "JlibFileIOTest" );
 
+/* =========================================================== */
+
+class JlibStringBufferTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( JlibStringBufferTest );
+        CPPUNIT_TEST(testSwap);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    JlibStringBufferTest()
+    {
+    }
+
+    void testSwap()
+    {
+        StringBuffer l;
+        StringBuffer r;
+        for (unsigned len=0; len<40; len++)
+        {
+            const unsigned numIter = 100000000;
+            cycle_t start = get_cycles_now();
+
+            for (unsigned pass=0; pass < numIter; pass++)
+            {
+                l.swapWith(r);
+            }
+            cycle_t elapsed = get_cycles_now() - start;
+            fprintf(stdout, "iterations of size %u took %.2f\n", len, (double)cycle_to_nanosec(elapsed) / numIter);
+            l.append("a");
+            r.append("b");
+        }
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibStringBufferTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStringBufferTest, "JlibStringBufferTest" );
+
+
 #endif // _USE_CPPUNIT

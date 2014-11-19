@@ -90,8 +90,8 @@ protected:
     bool httpMode;
     bool heartbeat;
     TextMarkupFormat mlFmt;
-    StringBuffer contentHead;
-    StringBuffer contentTail;
+    StringAttr contentHead;
+    StringAttr contentTail;
     PointerArray queued;
     UnsignedArray lengths;
     unsigned sent;

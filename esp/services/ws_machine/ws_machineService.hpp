@@ -187,25 +187,20 @@ public:
 
 class CProcessData : public CInterface
 {
-    StringBuffer    m_type;
-    StringBuffer    m_name;
-    StringBuffer    m_path;
+    StringAttr    m_type;
+    StringAttr    m_name;
+    StringAttr    m_path;
     unsigned        m_processNumber;
     bool            m_multipleInstances;     //required from ProcessFilter in environment.xml
 
-    StringBuffer    m_pid;
-    StringBuffer    m_upTime;
+    StringAttr    m_pid;
+    StringAttr    m_upTime;
     set<string>     m_dependencies;
 public:
 IMPLEMENT_IINTERFACE;
 
 	CProcessData()
     {
-        m_name.clear();
-        m_type.clear();
-        m_path.clear();
-        m_pid.clear();
-        m_upTime.clear();
         m_processNumber = 0;
         m_multipleInstances = false;
         m_dependencies.clear();
@@ -214,11 +209,9 @@ IMPLEMENT_IINTERFACE;
     CProcessData(const char* name, const char* type, const char* path, unsigned processNumber):
         m_processNumber(processNumber)
     {
-        m_name = name;
-        m_type = type;
-        m_path = path;
-        m_pid.clear();
-        m_upTime.clear();
+        m_name.set(name);
+        m_type.set(type);
+        m_path.set(path);
         m_multipleInstances = false;
         m_dependencies.clear();
     }
@@ -226,7 +219,7 @@ IMPLEMENT_IINTERFACE;
 
     void setName(const char* name)
     {
-        m_name.clear().append(name);
+        m_name.set(name);
     }
 
     const char* getName()
@@ -236,7 +229,7 @@ IMPLEMENT_IINTERFACE;
 
     void setType(const char* type)
     {
-        m_type.clear().append(type);
+        m_type.set(type);
     }
 
     const char* getType()
@@ -246,7 +239,7 @@ IMPLEMENT_IINTERFACE;
 
     void setPath(const char* path)
     {
-        m_path.clear().append(path);
+        m_path.set(path);
     }
 
     const char* getPath()
@@ -256,7 +249,7 @@ IMPLEMENT_IINTERFACE;
 
     void setPID(const char* pid)
     {
-        m_pid.clear().append(pid);
+        m_pid.set(pid);
     }
 
     const char* getPID()
@@ -266,7 +259,7 @@ IMPLEMENT_IINTERFACE;
 
     void setUpTime(const char* upTime)
     {
-        m_upTime.clear().append(upTime);
+        m_upTime.set(upTime);
     }
 
     const char* getUpTime()

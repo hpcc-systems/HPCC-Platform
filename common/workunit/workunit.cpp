@@ -603,8 +603,8 @@ public:
 
 public:
     StringAttr creator;
-    StringBuffer scope;
     StringAttr description;
+    StringBuffer scope;
     StatisticMeasure measure;
     StatisticKind kind;
     StatisticCreatorType creatorType;
@@ -882,7 +882,7 @@ private:
 class CLocalWUAppValue : public CInterface, implements IConstWUAppValue
 {
     Owned<IPropertyTree> p;
-    StringBuffer prop;
+    StringAttr prop;
 public:
     IMPLEMENT_IINTERFACE;
     CLocalWUAppValue(IPropertyTree *p,unsigned child);
@@ -8776,7 +8776,8 @@ void CLocalWUException::setExceptionColumn(unsigned c)
 
 CLocalWUAppValue::CLocalWUAppValue(IPropertyTree *props,unsigned child): p(props)
 {
-    prop.append("*[").append(child).append("]");
+    StringAttrBuilder propPath(prop);
+    propPath.append("*[").append(child).append("]");
 }
 
 IStringVal & CLocalWUAppValue::getApplication(IStringVal & str) const

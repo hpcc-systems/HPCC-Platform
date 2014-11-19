@@ -63,8 +63,6 @@ const char * SimplePluginCtx::ctxQueryProp(const char *propName) const
 class HelperDll : public CInterface, implements ILoadedDllEntry
 {
     SharedObject so;
-    StringBuffer version;
-    StringBuffer fileLocation;
     StringAttr name;
     Linked<const IFileIO> dllFile;
     bool logLoad;
@@ -144,7 +142,7 @@ bool HelperDll::IsShared()
 
 const char * HelperDll::queryVersion() const
 {
-    return version.str();
+    return "";
 }
 
 void HelperDll::logLoaded()

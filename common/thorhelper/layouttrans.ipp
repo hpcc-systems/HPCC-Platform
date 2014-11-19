@@ -90,7 +90,7 @@ private:
 
 private:
     bool topLevel;
-    StringBuffer scope;
+    StringAttr scope;
     FieldMapping::List & mappings;
 };
 
