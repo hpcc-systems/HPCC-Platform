@@ -30,7 +30,10 @@ class CBitSet : public CInterface, implements IBitSet
 public:
     IMPLEMENT_IINTERFACE;
 protected:
-    UnsignedArray bits;
+    //unsigned seems to be most efficient, and required for __builtin_ffs below
+    typedef unsigned bits_t;
+    enum { BitsPerItem = sizeof(bits_t) * 8 };
+    ArrayOf<bits_t> bits;
     mutable CriticalSection crit;
 
 public:
@@ -41,9 +44,9 @@ public:
     }
     void set(unsigned n,bool val) 
     {
+        bits_t t=((bits_t)1)<<(n%BitsPerItem);
+        unsigned i=n/BitsPerItem;
         CriticalBlock block(crit);
-        unsigned t=1<<(n%32);
-        unsigned i=n/32;
         if (i>=bits.ordinality()) {
             if (!val)
                 return; // don't bother
@@ -52,7 +55,7 @@ public:
             bits.append(t);
         }
         else {
-            unsigned m=bits.item(i);
+            bits_t m=bits.item(i);
             if (val)
                 m |= t;
             else 
@@ -63,10 +66,10 @@ public:
         
     bool invert(unsigned n) 
     {
+        bits_t t=((bits_t)1)<<(n%BitsPerItem);
+        unsigned i=n/BitsPerItem;
         CriticalBlock block(crit);
         bool ret;
-        unsigned t=1<<(n%32);
-        unsigned i=n/32;
         if (i>=bits.ordinality()) {
             while (i>bits.ordinality())
                 bits.append(0);
@@ -74,7 +77,7 @@ public:
             ret = true;
         }
         else {
-            unsigned m=bits.item(i);
+            bits_t m=bits.item(i);
             ret = ((m&t)==0);
             if (ret)
                 m |= t;
@@ -87,11 +90,11 @@ public:
         
     bool test(unsigned n) 
     {
+        bits_t t=((bits_t)1)<<(n%BitsPerItem);
+        unsigned i=n/BitsPerItem;
         CriticalBlock block(crit);
-        unsigned t=1<<(n%32);
-        unsigned i=n/32;
         if (i<bits.ordinality()) {
-            unsigned m=bits.item(i);
+            bits_t m=bits.item(i);
             if (m&t)
                 return true;
         }
@@ -100,10 +103,10 @@ public:
         
     bool testSet(unsigned n,bool val) 
     {
+        bits_t t=((bits_t)1)<<(n%BitsPerItem);
+        unsigned i=n/BitsPerItem;
         CriticalBlock block(crit);
         bool ret;
-        unsigned t=1<<(n%32);
-        unsigned i=n/32;
         if (i>=bits.ordinality()) {
             ret = false;
             if (!val)
@@ -113,7 +116,7 @@ public:
             bits.append(t);
         }
         else {
-            unsigned m=bits.item(i);
+            bits_t m=bits.item(i);
             ret = (m&t)!=0;
             if (val)
                 m |= t;
@@ -126,24 +129,69 @@ public:
 
     unsigned _scan(unsigned from,bool tst,bool scninv)
     {
+        bits_t noMatchMask=tst?0:(bits_t)-1;
+        unsigned j=from%BitsPerItem;
         CriticalBlock block(crit);
         // returns index of first = val >= from
-        unsigned full=tst?0:0xffffffff;
-        unsigned j=from%32;
         unsigned n=bits.ordinality();
         unsigned i;
-        for (i=from/32;i<n;i++) {
-            unsigned m=bits.item(i);
-            if (m!=full) {
-                unsigned t = 1<<j;
-                for (;j<32;j++) {
+        for (i=from/BitsPerItem;i<n;i++) {
+            bits_t m=bits.item(i);
+            if (m!=noMatchMask)
+            {
+#if defined(__GNUC__)
+                //Use the __builtin_ffs instead of a loop to find the first bit set/cleared
+                bits_t testMask = m;
+                if (j != 0)
+                {
+                    //Set all the bottom bits to the value we're not searching for
+                    bits_t mask = (((bits_t)1)<<j)-1;
+                    if (tst)
+                        testMask &= ~mask;
+                    else
+                        testMask |= mask;
+
+                    //May possibly match exactly - if so continue main loop
+                    if (testMask==noMatchMask)
+                    {
+                        j = 0;
+                        continue;
+                    }
+                }
+
+                //Guaranteed a match at this point
+                if (tst)
+                {
+                    //Returns one plus the index of the least significant 1-bit of testMask (testMask != 0)
+                    unsigned pos = __builtin_ffs(testMask)-1;
+                    if (scninv) {
+                        bits_t t = ((bits_t)1)<<pos;
+                        m &= ~t;
+                        bits.replace(m,i);
+                    }
+                    return i*BitsPerItem+pos;
+                }
+                else
+                {
+                    //Same as above but invert the bitmask
+                    unsigned pos = __builtin_ffs(~testMask)-1;
+                    if (scninv) {
+                        bits_t t = ((bits_t)1)<<pos;
+                        m |= t;
+                        bits.replace(m,i);
+                    }
+                    return i*BitsPerItem+pos;
+                }
+#else
+                bits_t t = ((bits_t)1)<<j;
+                for (;j<BitsPerItem;j++) {
                     if (t&m) {
                         if (tst) {
                             if (scninv) {
                                 m &= ~t;
                                 bits.replace(m,i);
                             }
-                            return i*32+j;
+                            return i*BitsPerItem+j;
                         }
                     }
                     else {
@@ -152,18 +200,19 @@ public:
                                 m |= t;
                                 bits.replace(m,i);
                             }
-                            return i*32+j;
+                            return i*BitsPerItem+j;
                         }
                     }
                     t <<= 1;
                 }
+#endif
             }
             j = 0;
         }
         if (tst) 
             return (unsigned)-1;
-        unsigned ret = n*32;
-        if (n*32<from)
+        unsigned ret = n*BitsPerItem;
+        if (n*BitsPerItem<from)
             ret = from;
         if (scninv)
             set(ret,true);
@@ -182,23 +231,23 @@ public:
 
     void _incl(unsigned lo, unsigned hi,bool val)
     {
-        CriticalBlock block(crit);
         if (hi<lo)
             return;
-        unsigned j=lo%32;
-        unsigned n=bits.ordinality();
+        unsigned j=lo%BitsPerItem;
         unsigned nb=(hi-lo)+1;
+        CriticalBlock block(crit);
+        unsigned n=bits.ordinality();
         unsigned i;
-        for (i=lo/32;i<n;i++) {
-            unsigned m;
-            if ((nb>=32)&&(j==0)) {
+        for (i=lo/BitsPerItem;i<n;i++) {
+            bits_t m;
+            if ((nb>=BitsPerItem)&&(j==0)) {
                 m = i;
-                nb -= 32;
+                nb -= BitsPerItem;
             }
             else {
                 m=bits.item(i);
-                unsigned t = 1<<j;
-                for (;j<32;j++) {
+                bits_t t = ((bits_t)1)<<j;
+                for (;j<BitsPerItem;j++) {
                     if (val)
                         m |= t;
                     else
@@ -214,14 +263,14 @@ public:
             j = 0;
         }
         if (val) {
-            while (nb>=32) {
-                bits.append(0xffffffff);
-                nb-=32;
+            while (nb>=BitsPerItem) {
+                bits.append((bits_t)-1);
+                nb-=BitsPerItem;
             }
             if (nb>0) {
-                unsigned m=0;
-                unsigned t = 1<<j;
-                for (;j<32;j++) {
+                bits_t m=0;
+                bits_t t = ((bits_t)1)<<j;
+                for (;j<BitsPerItem;j++) {
                     m |= t;
                     if (--nb==0)
                         break;
@@ -267,7 +316,7 @@ public:
             bits.ensure(count);
             while (count--)
             {
-                unsigned b;
+                bits_t b;
                 buffer.read(b);
                 bits.append(b);
             }

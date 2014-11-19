@@ -24,6 +24,7 @@
 #include "jsem.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
+#include "jset.hpp"
 #include "sockfile.hpp"
 
 #include "unittests.hpp"
@@ -85,6 +86,72 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibSemTest, "JlibSemTest" );
 
 /* =========================================================== */
 
+class JlibSetTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibSetTest);
+        CPPUNIT_TEST(testSimple);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+
+    void testSet(bool initial)
+    {
+        unsigned now = msTick();
+        bool setValue = !initial;
+        bool clearValue = initial;
+        const unsigned numBits = 400;
+        for (unsigned pass=0; pass< 10000; pass++)
+        {
+            Owned<IBitSet> bs = createBitSet();
+            if (initial)
+                bs->incl(0, numBits);
+            for (unsigned i=0; i < numBits; i++)
+            {
+                ASSERT(bs->test(i) == clearValue);
+                bs->set(i, setValue);
+                ASSERT(bs->test(i) == setValue);
+
+                bs->set(i+5, setValue);
+                ASSERT(bs->scan(0, setValue) == i);
+                ASSERT(bs->scan(i+1, setValue) == i+5);
+                bs->set(i, clearValue);
+                bs->set(i+5, clearValue);
+                unsigned match1 = bs->scan(0, setValue);
+                ASSERT(match1 == initial ? -1 : numBits);
+
+                bs->invert(i);
+                ASSERT(bs->test(i) == setValue);
+                bs->invert(i);
+                ASSERT(bs->test(i) == clearValue);
+
+                bool wasSet = bs->testSet(i, setValue);
+                ASSERT(wasSet == clearValue);
+                bool wasSet2 = bs->testSet(i, clearValue);
+                ASSERT(wasSet2 == setValue);
+                ASSERT(bs->test(i) == clearValue);
+
+                bs->set(i, setValue);
+                unsigned match = bs->scanInvert(0, setValue);
+                ASSERT(match == i);
+                ASSERT(bs->test(i) == clearValue);
+            }
+        }
+        unsigned elapsed = msTick()-now;
+        fprintf(stdout, "Bit test (%u) time taken = %dms\n", initial, elapsed);
+    }
+
+    void testSimple()
+    {
+        testSet(false);
+        testSet(true);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibSetTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibSetTest, "JlibSetTest" );
+
+/* =========================================================== */
 class JlibFileIOTest : public CppUnit::TestFixture
 {
     unsigned rs, nr10pct, nr150pct;
