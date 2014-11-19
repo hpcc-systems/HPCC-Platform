@@ -161,7 +161,7 @@ proc runPayload {} {
    expect -re $
    send "${cmd_prefix} ${remote_install}/remote-install-engine.sh ${remote_install}/${basepkg}\r"
    expect {
-      "*[sudo] password for*" {
+      "*password for*" {
          send "${password}\r"
          exp_continue
       } "*?ermission denied*" {
