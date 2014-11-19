@@ -19,7 +19,7 @@
 # Hook to use a git repository for eclcc compilation
 # Files will be fetched from the remote repo before each compile
 #
-# This hook expecte environment variables to be set as follows:
+# This hook expects environment variables to be set as follows:
 # GIT_URL       - The remote repository location
 # GIT_BRANCH    - The branch/commit/tag to use  (if ommitted, master is assumed)
 # GIT_DIRECTORY - can be set to allow the dir to be maintained separately - it is
@@ -143,7 +143,14 @@ for repo in ${repositories[@]} ; do
 done
 
 cd $originalDir
-if [ -n "$GIT_VERBOSE" ]; then
+if [ -n "$IS_ECLSERVER" ]; then
+  if [ -n "$GIT_VERBOSE" ]; then
+    echo GIT: returning settings $GIT_INCLUDE_PATH 1>&2
+  fi
+  echo $GIT_INCLUDE_PATH
+else
+  if [ -n "$GIT_VERBOSE" ]; then
     echo GIT: calling eclcc $GIT_INCLUDE_PATH "$@"  1>&2
+  fi
+  eclcc $GIT_INCLUDE_PATH "$@"
 fi
-eclcc $GIT_INCLUDE_PATH "$@"
