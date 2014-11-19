@@ -14120,7 +14120,7 @@ void HqlCppTranslator::checkAmbiguousRollupCondition(IHqlExpression * expr)
         OwnedHqlExpr newSelect = replaceSelector(select, dataset->queryNormalizedSelector(), queryActiveTableSelector());
         StringBuffer selectText;
         getExprECL(newSelect, selectText);
-        reportWarning(CategoryUnexpected, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupCondition), selectText.str());
+        reportWarning(CategoryUnexpected, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupCondition), selectText.str());
     }
 }
 
