@@ -45,7 +45,7 @@ proc testWithPing {} {
          exit 1
       }
    }
-   sleep 1
+   expect -re $
    puts "${ip}: Host is alive."
 }
 
@@ -53,7 +53,8 @@ proc checkSSHConnection {} {
    global ip user password prompt
 
    set timeout 60
-   spawn ssh ${user}@${ip} 
+   # JIRA 12585 in chance root user cannot ssh with key pairs
+   spawn su ${user} -c "ssh ${user}@${ip}"
    expect {
       *?assword:* {
          send "${password}\r";
@@ -73,7 +74,7 @@ proc checkSSHConnection {} {
          send "exit\r"
       }
    }
-   expect -re .*
+   expect -re $
    interact;
 }
 
@@ -81,7 +82,7 @@ proc copyPayload {} {
    global ip user password prompt
    
    set timeout 300
-   spawn scp /tmp/remote_install.tgz ${user}@${ip}:~;
+   spawn su ${user} -c "scp /tmp/remote_install.tgz ${user}@${ip}:~;"
    expect {
       *?assword:* {
          send "${password}\r";
@@ -101,14 +102,14 @@ proc copyPayload {} {
          }
       }
    }
-   sleep 1
+   expect -re $
 }
 
 proc expandPayload {} {
    global ip user password prompt
 
    set timeout 180
-   spawn ssh ${user}@${ip} "cd /; tar -zxf ~/remote_install.tgz"
+   spawn su ${user} -c "ssh ${user}@${ip} \"cd /; tar -zxf ~/remote_install.tgz\""
    expect {
       *?assword:* {
          send "${password}\r"
@@ -128,7 +129,7 @@ proc expandPayload {} {
          }
       } 
    }
-   sleep 1
+   expect -re $
 }
 
 proc runPayload {} {
@@ -136,7 +137,7 @@ proc runPayload {} {
 
    set basepkg  [file tail  ${pkg}]
    set timeout 60
-   spawn ssh ${user}@${ip}
+   spawn su ${user} -c "ssh ${user}@${ip}"
    expect {
       *?assword:* {
          send "${password}\r"
@@ -153,9 +154,11 @@ proc runPayload {} {
          exit 1;
       } -re "${prompt}" {}
    }
+
+   expect  -re $
    send "${cmd_prefix} ${remote_install}/remote-install-engine.sh ${remote_install}/${basepkg}\r"
    expect {
-      *?assword:* {
+      "*password for*" {
          send "${password}\r"
          exp_continue
       } "*?ermission denied*" {
@@ -168,7 +171,7 @@ proc runPayload {} {
       }  -re "${prompt}" {}
    }
 
-   expect  -re .*
+   expect  -re $
    send "echo \$?\r"
    expect   -re "(\r\n| )(\[0-9]*)\r\n" {
       if { [string compare $expect_out(2,string) "0" ] == 0 } {
