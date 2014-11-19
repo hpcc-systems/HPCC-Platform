@@ -44,6 +44,7 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/ESPLogicalFile",
     "hpcc/ESPDFUWorkunit",
+    "hpcc/FileBelongsToWidget",
 
     "dojo/text!../templates/LFDetailsWidget.html",
 
@@ -57,7 +58,7 @@ define([
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit,
+                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget,
                 template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -77,6 +78,7 @@ define([
         filePartsWidget: null,
         workunitWidget: null,
         dfuWorkunitWidget: null,
+        fileBelongsTo: null,
 
         logicalFile: null,
         prevState: "",
@@ -96,6 +98,7 @@ define([
             this.dfuWorkunitWidget = registry.byId(this.id + "_DFUWorkunit");
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
+            this.fileBelongsToWidget = registry.byId(this.id + "_FileBelongs");
         },
 
         //  Hitched actions  ---
@@ -241,7 +244,12 @@ define([
                     this.dfuWorkunitWidget.init({
                         Wuid: this.logicalFile.Wuid
                     });
-                } else {
+                } else if (currSel.id == this.fileBelongsToWidget.id) {
+                    this.fileBelongsToWidget.init({
+                        NodeGroup: this.logicalFile.NodeGroup,
+                        Name: this.logicalFile.Name
+                    });
+                 } else {
                     currSel.init(currSel.params);
                 }
             }
@@ -299,6 +307,8 @@ define([
                 domClass.remove(this.id + "StateIdImage");
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
                 this.refreshActionState();
+            } else if (name === "Superfiles") {
+                this.setDisabled(this.id + "_FileBelongs", false);
             }
         },
 
