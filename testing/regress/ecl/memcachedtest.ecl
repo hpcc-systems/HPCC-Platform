@@ -18,44 +18,50 @@
 IMPORT * FROM memcached.memcached;
 
 STRING servers := '--SERVER=127.0.0.1:11211';
-MClear(servers);
+Clear(servers);
 
-MSetBoolean(servers, 'b', TRUE);
-MGetBoolean(servers, 'b');
+SetBoolean(servers, 'b', TRUE);
+GetBoolean(servers, 'b');
 
 REAL pi := 3.14159265359;
-MSetReal(servers, 'pi', pi);
-MGetReal(servers, 'pi');
+SetReal(servers, 'pi', pi);
+GetReal(servers, 'pi');
+
+SetReal(servers, 'pi', pi*2, 'part1');
+GetReal(servers, 'pi', 'part1');
+GetReal(servers, 'pi', 'root');
+
+GetReal(servers, 'pi', 'wrongPartition');
 
 INTEGER i := 12345689;
-MSetInteger(servers, 'i', i);
-MGetInteger(servers, 'i');
+SetInteger(servers, 'i', i);
+GetInteger(servers, 'i');
 
 UNSIGNED u := 7;
-MSetUnsigned(servers, 'u', u);
-MGetUnsigned(servers, 'u');
+SetUnsigned(servers, 'u', u);
+GetUnsigned(servers, 'u');
 
 STRING str  := 'supercalifragilisticexpialidocious';
-MSetString(servers, 'str', str);
-MGetString(servers, 'str');
+SetString(servers, 'str', str);
+GetString(servers, 'str');
 
 UNICODE uni := U'אבגדהוזחטיךכלםמןנסעףפץצקרשת';
-MSetUnicode(servers, 'uni', uni);
-MGetUnicode(servers, 'uni');
+SetUnicode(servers, 'uni', uni);
+GetUnicode(servers, 'uni');
 
 UTF8 utf := U'אבגדהוזחטיךכלםמןנסעףפץצקרשת';
-MSetUtf8(servers, 'utf8', utf);
-MGetUtf8(servers, 'utf8');
+SetUtf8(servers, 'utf8', utf);
+GetUtf8(servers, 'utf8');
 
 DATA mydata := x'd790d791d792d793d794d795d796d798d799d79ad79bd79cd79dd79dd79ed79fd7a0d7a1d7a2d7a3d7a4d7a5d7a6d7a7d7a8d7a9d7aa';
-MSetData(servers, 'data', mydata);
-MGetData(servers,'data');
+SetData(servers, 'data', mydata);
+GetData(servers,'data');
 
-MExist(servers, 'utf8');
-MKeyType(servers,'utf8');
+Exist(servers, 'utf8');
+KeyType(servers,'utf8');
 
 //The following test some exceptions
-MGetInteger(servers, 'pi');
-MClear(servers);
-MExist(servers, 'utf8');
-MKeyType(servers,'utf8');
+GetInteger(servers, 'pi');
+Clear(servers);
+Exist(servers, 'utf8');
+KeyType(servers,'utf8');
