@@ -164,6 +164,7 @@ public:
     OwnedHqlExpr storedName;
     OwnedHqlExpr originalLabel;
     OwnedHqlExpr sequence;
+    OwnedHqlExpr fieldFormat;
     node_operator setOp;
     node_operator persistOp;
 protected:
@@ -281,7 +282,55 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
         StringBuffer errorTemp;
         seenMeta = true;
         IAtom * kind = expr->queryChild(0)->queryName();
-        if (kind == debugAtom)
+        if (kind == webserviceAtom)
+        {
+            Owned<IWUWebServicesInfo> wsi = wu->updateWebServicesInfo(true);
+            IHqlExpression *optionsExpr = expr->queryChild(1);
+            HqlExprArray options;
+            optionsExpr->unwindList(options, no_comma);
+            ForEachItemIn(i, options)
+            {
+                IHqlExpression &optionExpr = options.item(i);
+                IAtom * optionKind = optionExpr.queryName();
+                if (optionKind==webserviceFieldsAtom)
+                {
+                    StringBuffer fields;
+                    unsigned fieldCount = optionExpr.numChildren();
+                    for (unsigned fld=0; fld<fieldCount; fld++)
+                    {
+                        OwnedHqlExpr folded = foldHqlExpression(optionExpr.queryChild(fld));
+                        IValue * fieldName = folded->queryValue();
+                        if (!fieldName)
+                            throwError1(HQLERR_ExpectedConstant, getExprECL(folded, errorTemp).str());
+                        if (fields.length())
+                            fields.append(',');
+                        fieldName->getStringValue(fields);
+                    }
+                    wsi->setText("fields", fields);
+                }
+                else if (optionKind==webserviceDescrAtom)
+                {
+                    OwnedHqlExpr folded = foldHqlExpression(optionExpr.queryChild(0));
+                    IValue * descr = folded->queryValue();
+                    if (!descr)
+                        throwError1(HQLERR_ExpectedConstant, getExprECL(folded, errorTemp).str());
+                    StringBuffer descrText;
+                    descr->getStringValue(descrText);
+                    wsi->setText("description", descrText);
+                }
+                else if (optionKind==webserviceHelpAtom)
+                {
+                    OwnedHqlExpr folded = foldHqlExpression(optionExpr.queryChild(0));
+                    IValue * help = folded->queryValue();
+                    if (!help)
+                        throwError1(HQLERR_ExpectedConstant, getExprECL(folded, errorTemp).str());
+                    StringBuffer helpText;
+                    help->getStringValue(helpText);
+                    wsi->setText("help", helpText);
+                }
+            }
+        }
+        else if (kind == debugAtom)
         {
             OwnedHqlExpr foldedName = foldHqlExpression(expr->queryChild(1));
             OwnedHqlExpr foldedValue = foldHqlExpression(expr->queryChild(2));
@@ -4969,6 +5018,8 @@ IHqlExpression * GlobalAttributeInfo::createSetValue(IHqlExpression * value, IHq
         extraSetAttr->unwindList(args, no_comma);
     if (cluster)
         args.append(*createAttribute(clusterAtom, LINK(cluster)));
+    if (fieldFormat)
+        args.append(*createAttribute(storedFieldFormatAtom, LINK(fieldFormat)));
     if (setOp == no_setresult)
         return createSetResult(args);
     return createValue(setOp, makeVoidType(), args);
@@ -5011,6 +5062,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         storedName.set(expr->queryChild(0));
         originalLabel.set(storedName);
         sequence.setown(getStoredSequenceNumber());
+        fieldFormat.set(expr->queryAttribute(storedFieldFormatAtom));
         few = true;
         break;
     case no_checkpoint:

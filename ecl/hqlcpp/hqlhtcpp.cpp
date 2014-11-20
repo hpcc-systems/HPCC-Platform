@@ -5299,12 +5299,13 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
     {
         HqlExprArray xmlnsAttrs;
         gatherAttributes(xmlnsAttrs, xmlnsAtom, originalExpr);
+        Owned<IWUResult> result;
         if (retType == type_row)
         {
             OwnedHqlExpr record = LINK(::queryRecord(schemaType));
             if (originalExpr->hasAttribute(noXpathAtom))
                 record.setown(removeAttributeFromFields(record, xpathAtom));
-            Owned<IWUResult> result = createDatasetResultSchema(seq, name, record, xmlnsAttrs, false, false);
+            result.setown(createDatasetResultSchema(seq, name, record, xmlnsAttrs, false, false));
             if (result)
                 result->setResultTotalRowCount(1);
         }
@@ -5312,7 +5313,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         {
             // Bit of a mess - should split into two procedures
             int sequence = (int) seq->queryValue()->getIntValue();
-            Owned<IWUResult> result = createWorkunitResult(sequence, name);
+            result.setown(createWorkunitResult(sequence, name));
             if(result)
             {
                 StringBuffer fieldName;
@@ -5345,6 +5346,15 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
                 }
                 addSchemaResource(sequence, resultName.str(), xml.length()+1, xml.str());
             }
+        }
+
+        IHqlExpression * format =  queryAttributeChild(originalExpr, storedFieldFormatAtom, 0);
+        if (format)
+        {
+            IHqlExpression *width =  queryAttributeChild(format, storedFieldWidthAtom, 0);
+            IHqlExpression *height =  queryAttributeChild(format, storedFieldHeightAtom, 0);
+            IHqlExpression *seq =  queryAttributeChild(format, storedFieldSequenceAtom, 0);
+            result->setResultFieldFormat(getIntValue(width), getIntValue(height), getIntValue(seq));
         }
     }
 }

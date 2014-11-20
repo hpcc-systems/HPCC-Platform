@@ -10405,6 +10405,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case DENORMALIZE: msg.append("DENORMALIZE"); break;
     case DEPRECATED: msg.append("DEPRECATED"); break;
     case DESC: msg.append("DESC"); break;
+    case DESCRIPTION: msg.append("DESCRIPTION"); break;
     case DICTIONARY: msg.append("DICTIONARY"); break;
     case DISTRIBUTE: msg.append("DISTRIBUTE"); break;
     case DISTRIBUTED: msg.append("DISTRIBUTED"); break;
@@ -10450,11 +10451,15 @@ static void getTokenText(StringBuffer & msg, int token)
     case TOK_FALSE: msg.append("FALSE"); break;
     case FIELD_REF: msg.append("<?>"); break;
     case FIELDS_REF: msg.append("<\?\?>"); break;
+    case FIELDHEIGHT: msg.append("FIELDHEIGHT"); break;
+    case FIELDS: msg.append("FIELDS"); break;
+    case FIELDWIDTH: msg.append("FIELDWIDTH"); break;
     case FILEPOSITION: msg.append("FILEPOSITION"); break;
     case FILTERED: msg.append("FILTERED"); break;
     case FIRST: msg.append("FIRST"); break;
     case TOK_FIXED: msg.append("FIXED"); break;
     case FLAT: msg.append("FLAT"); break;
+    case FORMAT: msg.append("FORMAT"); break;
     case FORMAT_ATTR: msg.append("FORMAT"); break;
     case FORWARD: msg.append("FORWARD"); break;
     case FROM: msg.append("FROM"); break;
@@ -10476,6 +10481,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case HASH64: msg.append("HASH64"); break;
     case HASHMD5: msg.append("HASHMD5"); break;
     case HAVING: msg.append("HAVING"); break;
+    case HELP: msg.append("HELP"); break;
     case HEADING: msg.append("HEADING"); break;
     case HINT: msg.append("HINT"); break;
     case HOLE: msg.append("HOLE"); break;
@@ -10633,6 +10639,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case SELF: msg.append("SELF"); break;
     case SEPARATOR: msg.append("SEPARATOR"); break;
     case __SEQUENCE__: msg.append("__SEQUENCE__"); break;
+    case SEQUENCE: msg.append("SEQUENCE"); break;
     case SEQUENTIAL: msg.append("SEQUENTIAL"); break;
     case SERVICE: msg.append("SERVICE"); break;
     case SET: msg.append("SET"); break;
@@ -10720,6 +10727,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case HASH_STORED: msg.append("#STORED"); break;
     case HASH_LINK: msg.append("#LINK"); break;
     case HASH_WORKUNIT: msg.append("#WORKUNIT"); break;
+    case HASH_WEBSERVICE: msg.append("#WEBSERVICE"); break;
     case SIMPLE_TYPE: msg.append("type-name"); break;
 
     case EQ: msg.append("="); break;

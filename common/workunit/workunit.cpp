@@ -1942,12 +1942,14 @@ public:
     virtual IStringVal& getAttributeName(IStringVal &str) const;
     virtual IStringVal& getDefaultName(IStringVal &str) const;
     virtual IStringVal& getInfo(const char *name, IStringVal &str) const;
+    virtual IStringVal& getText(const char *name, IStringVal &str) const;
     virtual unsigned getWebServicesCRC() const;
  
     virtual void        setModuleName(const char *);
     virtual void        setAttributeName(const char *);
     virtual void        setDefaultName(const char *);
     virtual void        setInfo(const char *name, const char *info);
+    virtual void        setText(const char *name, const char *info);
     virtual void        setWebServicesCRC(unsigned);
 };
 
@@ -2019,6 +2021,8 @@ public:
     virtual unsigned    getResultHash() const;
     virtual bool        getResultIsAll() const;
     virtual IProperties *queryResultXmlns();
+    virtual void getResultFieldFormat(unsigned &width, unsigned &height, unsigned &sequence) const;
+
 
     // interface IWUResult
     virtual void        setResultStatus(WUResultStatus status);
@@ -2052,6 +2056,7 @@ public:
     virtual void        setResultXML(const char *val);
     virtual void        setResultRow(unsigned len, const void * data);
     virtual void        setResultXmlns(const char *prefix, const char *uri);
+    virtual void        setResultFieldFormat(unsigned fieldLen, unsigned fieldHeight, unsigned fieldSeq);
 };
 
 class CLocalWUPlugin : public CInterface, implements IWUPlugin
@@ -5463,6 +5468,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     copyTree(p, fromP, "Results");
     copyTree(p, fromP, "Graphs");
     copyTree(p, fromP, "Workflow");
+    copyTree(p, fromP, "WebServicesInfo");
     if (all)
     {
         // 'all' mode is used when setting up a dali WU from the embedded wu in a workunit dll
@@ -7679,6 +7685,11 @@ IStringVal& CLocalWUWebServicesInfo::getInfo(const char *name, IStringVal &str) 
 
 }
 
+IStringVal& CLocalWUWebServicesInfo::getText(const char *name, IStringVal &str) const
+{
+    str.set(p->queryProp(name));
+    return str;
+}
 
 void CLocalWUWebServicesInfo::setModuleName(const char *mname)
 {
@@ -7706,6 +7717,11 @@ void CLocalWUWebServicesInfo::setInfo(const char *name, const char *info)
     unsigned len = (size32_t)strlen(info);
     serializeLPString(len, info, m);
     p->setPropBin(name, m.length(), m.toByteArray());
+}
+
+void CLocalWUWebServicesInfo::setText(const char *name, const char *info)
+{
+    p->setProp(name, info);
 }
 
 
@@ -8159,6 +8175,16 @@ IStringVal& CLocalWUResult::getResultFilename(IStringVal & str) const
     return str;
 }
 
+void CLocalWUResult::getResultFieldFormat(unsigned &width, unsigned &height, unsigned &seq) const
+{
+    IPropertyTree *format = p->queryPropTree("Format");
+    if (!format)
+        return;
+    width = format->getPropInt("@width");
+    height = format->getPropInt("@height");
+    seq = format->getPropInt("@sequence");
+}
+
 void CLocalWUResult::setResultStatus(WUResultStatus status)
 {
     setEnum(p, "@status", status, resultStatuses);
@@ -8185,6 +8211,15 @@ void CLocalWUResult::setResultXmlns(const char *prefix, const char *uri)
         xpath.append(':').append(prefix);
     p->setProp(xpath, uri);
 }
+
+void CLocalWUResult::setResultFieldFormat(unsigned width, unsigned height, unsigned seq)
+{
+    IPropertyTree *format = ensurePTree(p, "Format");
+    format->setPropInt("@width", width);
+    format->setPropInt("@height", height);
+    format->setPropInt("@sequence", seq);
+}
+
 void CLocalWUResult::setResultScalar(bool isScalar)
 {
     p->setPropInt("@isScalar", (int) isScalar);

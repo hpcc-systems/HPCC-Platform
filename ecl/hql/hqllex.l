@@ -565,6 +565,12 @@ xpathseq      ([^}\r\n])+
                             return SKIPPED; 
                         return(HASH_WORKUNIT); 
                     }
+#WEBSERVICE         {
+                        setupdatepos;
+                        if (lexer->skipNesting || lexer->macroGathering)
+                            return SKIPPED;
+                        return(HASH_WEBSERVICE);
+                    }
 __LINE__            {
                         setupdatepos; 
                         returnToken.setExpr(createIntegerConstant(lexer->yyLineNo, false));
@@ -656,6 +662,7 @@ DENORMALIZE         { RETURNSYM(DENORMALIZE); }
 DEPRECATED          { RETURNSYM(DEPRECATED); }
 DESC                { RETURNSYM(DESC); }
 DESCEND             { RETURNSYM(DESC); }
+DESCRIPTION         { RETURNSYM(DESCRIPTION); }
 DICTIONARY          { RETURNSYM(DICTIONARY); }
 DISTRIBUTE          { RETURNSYM(DISTRIBUTE); }
 DISTRIBUTED         { RETURNSYM(DISTRIBUTED); }
@@ -694,11 +701,15 @@ FAILURE             { RETURNSYM(FAILURE); }
 FEATURE             { RETURNSYM(FEATURE); }
 FETCH               { RETURNSYM(FETCH); }
 FEW                 { RETURNSYM(FEW); }
+FIELDS              { RETURNSYM(FIELDS); }
+FIELDHEIGHT         { RETURNSYM(FIELDHEIGHT); }
+FIELDWIDTH          { RETURNSYM(FIELDWIDTH); }
 FILEPOSITION        { RETURNSYM(FILEPOSITION); }
 FILTERED            { RETURNSYM(FILTERED); }
 FIRST               { RETURNSYM(FIRST); }
 FIXED               { RETURNSYM(TOK_FIXED); }
 FLAT                { RETURNSYM(FLAT); }
+FORMAT              { RETURNSYM(FORMAT); }
 FROM                { RETURNSYM(FROM); }
 FORMAT              { RETURNSYM(FORMAT_ATTR); }
 FORWARD             { RETURNSYM(FORWARD); }
@@ -717,6 +728,7 @@ GUARD               { RETURNSYM(GUARD); }
 __GROUPED__         { RETURNSYM(__GROUPED__); }
 HAVING              { RETURNSYM(HAVING); }
 HEADING             { RETURNSYM(HEADING); }
+HELP                { RETURNSYM(HELP); }
 HINT                { RETURNSYM(HINT); }
 HOLE                { RETURNSYM(HOLE); }
 HTTPCALL            { RETURNSYM(HTTPCALL); }
@@ -878,6 +890,7 @@ SECTION             { RETURNSYM(SECTION); }
 SELF                { RETURNSYM(SELF); }
 SEPARATOR           { RETURNSYM(SEPARATOR); }
 __SEQUENCE__        { RETURNSYM(__SEQUENCE__); }
+SEQUENCE            { RETURNSYM(SEQUENCE); }
 SEQUENTIAL          { RETURNSYM(SEQUENTIAL); }
 SERVICE             { RETURNHARD(SERVICE); }
 SET                 { RETURNSYM(SET); }
