@@ -721,12 +721,7 @@ interface IConstLocalFileUploadIterator : extends IScmIterator
 
 enum WUSubscribeOptions
 {
-    SubscribeOptionRunningState = 0,
-    SubscribeOptionAnyState = 1,
     SubscribeOptionAbort = 2,
-    SubscribeOptionProgress = 3,
-    SubscribeOptionAll = 4,
-    SubscribeOptionSize = 5
 };
 
 
@@ -1045,7 +1040,6 @@ interface IConstWorkUnit : extends IInterface
     virtual bool isProtected() const = 0;
     virtual bool isPausing() const = 0;
     virtual IWorkUnit & lock() = 0;
-    virtual bool reload() = 0;
     virtual void requestAbort() = 0;
     virtual void subscribe(WUSubscribeOptions options) = 0;
     virtual unsigned queryFileUsage(const char * filename) const = 0;
