@@ -36,11 +36,6 @@ class ECLCC(Shell):
 
     def getArchive(self, ecl):
         try:
-            if ecl.testDynamicSource() or ecl.testVesion():
-                stub = ecl.getRealEclSource()
-                # do eclcc with stdin
-                return self.__ECLCC()('-E', stub)
-            else:
                 file = ecl.getEcl()
                 return self.__ECLCC()('-E', file)
         except Error as err:
