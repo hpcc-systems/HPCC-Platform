@@ -74,6 +74,7 @@ EXPORT TestDate := MODULE
 
   EXPORT TestDynamicFunctions := [
     ASSERT(Date.SecondsFromParts(1999,2,1,12,34,56,FALSE) = 917872496);     // UTC
+    ASSERT(Date.SecondsFromParts(1965,2,17,0,0,0,FALSE) = -153705600);      // UTC
 
     ASSERT(Date.SecondsToParts(917872496).year = 1999);
     ASSERT(Date.SecondsToParts(917872496).month = 2);
@@ -82,12 +83,29 @@ EXPORT TestDate := MODULE
     ASSERT(Date.SecondsToParts(917872496).minute = 34);
     ASSERT(Date.SecondsToParts(917872496).second = 56);
 
+    ASSERT(Date.SecondsToParts(-153705600).year = 1965);
+    ASSERT(Date.SecondsToParts(-153705600).month = 2);
+    ASSERT(Date.SecondsToParts(-153705600).day = 17);
+    ASSERT(Date.SecondsToParts(-153705600).hour = 0);
+    ASSERT(Date.SecondsToParts(-153705600).minute = 0);
+    ASSERT(Date.SecondsToParts(-153705600).second = 0);
+
+    ASSERT(Date.SecondsToParts(0).year = 1970);     // Epoch test
+    ASSERT(Date.SecondsToParts(0).month = 1);       // Epoch test
+    ASSERT(Date.SecondsToParts(0).day = 1);         // Epoch test
+    ASSERT(Date.SecondsToParts(0).hour = 0);        // Epoch test
+    ASSERT(Date.SecondsToParts(0).minute = 0);      // Epoch test
+    ASSERT(Date.SecondsToParts(0).second = 0);      // Epoch test
+
     ASSERT(Date.DayOfWeek(20140130) = 5);   // 5=Thursday
+    ASSERT(Date.DayOfWeek(19650217) = 4);   // 4=Wednesday
+    ASSERT(Date.DayOfWeek(20530213) = 5);   // 5=Thursday
 
     ASSERT(Date.AdjustDate(20000130, month_delta:=1) = 20000301);
     ASSERT(Date.AdjustDate(20000130, month_delta:=1, day_delta:=-1) = 20000229);
     ASSERT(Date.AdjustDate(20000229, year_delta:=1) = 20010301);
     ASSERT(Date.AdjustDate(20000229, year_delta:=-1) = 19990301);
+    ASSERT(Date.AdjustDate(19650217, year_delta:=49) = 20140217);
 
     ASSERT(Date.AdjustDateBySeconds(20140130, 172800) = 20140201);
 
@@ -101,20 +119,13 @@ EXPORT TestDate := MODULE
     ASSERT(Date.AdjustSeconds(917872496, hour_delta:=1) = 917876096);
 
     ASSERT(Date.AdjustCalendar(20140130, month_delta:=1) = 20140228);
-
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=1) = 20010228);
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=4) = 20040229);
 
-    ASSERT(Date.IsValidDate(vDate, 2014, 2050));
-    ASSERT(Date.IsValidDate(vToday, 2014, 2050));
-
-    ASSERT(Date.IsValidTime(vTime));
-    ASSERT(Date.IsValidTime(vTimeLocal));
-
     ASSERT(vSeconds + vLocalTimeZoneOffset = vSecondsLocal);
 
-    ASSERT(vSeconds = TRUNCATE(vTimestamp));
-    ASSERT(vSeconds + vLocalTimeZoneOffset = TRUNCATE(vTimestampLocal));
+    ASSERT(Date.TimestampToSeconds(vTimestamp) = vSeconds);
+    ASSERT(Date.TimestampToSeconds(vTimestampLocal) = vSecondsLocal);
 
     // IsLocalDaylightSavingsInEffect() -- not possible to check without pinning both cluster location and date
 
@@ -124,12 +135,29 @@ EXPORT TestDate := MODULE
     ASSERT(Date.DatesForWeek(20141030).startDate = 20141026);
     ASSERT(Date.DatesForWeek(20141030).endDate = 20141101);
 
+    ASSERT(Date.IsValidDate(vDate, 2014, 2050));
+    ASSERT(NOT Date.IsValidDate(vDate, 2000, 2010));
+    ASSERT(Date.IsValidDate(vToday, 2014, 2050));
+    ASSERT(NOT Date.IsValidDate(vToday, 2000, 2010));
     ASSERT(Date.IsValidDate(20141030) = TRUE);
     ASSERT(Date.IsValidDate(20000229) = TRUE);
-    ASSERT(Date.IsValidDate(20010229) = FALSE);
+    ASSERT(Date.IsValidDate(20010229) = FALSE); // Invalid date (leap year check)
+    ASSERT(Date.IsValidDate(20141000) = FALSE); // Invalid day
+    ASSERT(Date.IsValidDate(20141032) = FALSE); // Invalid day
+    ASSERT(Date.IsValidDate(20000001) = FALSE); // Invalid month
+    ASSERT(Date.IsValidDate(20001301) = FALSE); // Invalid month
 
+    ASSERT(Date.IsValidTime(vTime));
+    ASSERT(Date.IsValidTime(vTimeLocal));
     ASSERT(Date.IsValidTime(123456) = TRUE);
-    ASSERT(Date.IsValidTime(123465) = FALSE);
+    ASSERT(Date.IsValidTime(123465) = FALSE); // Invalid seconds
+    ASSERT(Date.IsValidTime(127456) = FALSE); // Invalid minutes
+    ASSERT(Date.IsValidTime(243456) = FALSE); // Invalid hours
+
+    ASSERT(NOT Date.IsValidGregorianDate(16001231));
+    ASSERT(Date.IsValidGregorianDate(16010101));
+    ASSERT(Date.IsValidGregorianDate(308271231));
+    ASSERT(NOT Date.IsValidGregorianDate(308280101));
 
     ASSERT(vCreateDateTimeFromSeconds.year = 1999);
     ASSERT(vCreateDateTimeFromSeconds.month = 2);

@@ -40,7 +40,7 @@ EXPORT Time_t := UNSIGNED3;
 
 
 // A signed number holding a number of seconds.  Can be used to represent either
-// a duration or the number of seconds since epoch.
+// a duration or the number of seconds since epoch (Jan 1, 1970).
 EXPORT Seconds_t := INTEGER8;
 
 
@@ -51,10 +51,9 @@ EXPORT DateTime_rec := RECORD
 END;
 
 
-// A signed number holding a number of seconds with millisecond resolution.
-// Can be used to represent either a duration or the number of seconds since
-// epoch.
-EXPORT Timestamp_t := REAL8;
+// A signed number holding a number of microseconds.  Can be used to represent
+// either a duration or the number of microseconds since epoch (Jan 1, 1970).
+EXPORT Timestamp_t := INTEGER8;
 
 
 // Simple structure to hold interesting values from a struct tm* instance.
@@ -146,9 +145,10 @@ EXPORT Time_t TimeFromParts(UNSIGNED1 hour, UNSIGNED1 minute, UNSIGNED1 second) 
 
 
 /**
- * Combines date and time components to create a seconds type.
+ * Combines date and time components to create a seconds type.  The date must
+ * be represented within the Gregorian calendar after the year 1600.
  *
- * @param year                  The year (0-9999).
+ * @param year                  The year (1601-30827).
  * @param month                 The month (1-12).
  * @param day                   The day (1..daysInMonth).
  * @param hour                  The hour (0-23).
@@ -173,7 +173,8 @@ EXPORT Seconds_t SecondsFromParts(INTEGER2 year,
 
 /**
  * Converts the number of seconds since epoch to a structure containing
- * date and time parts.
+ * date and time parts.  The result must be representable within the
+ * Gregorian calendar after the year 1600.
  *
  * @param seconds               The number of seconds since epoch.
  * @return                      Module with exported attributes for year, month,
@@ -199,9 +200,19 @@ EXPORT SecondsToParts(Seconds_t seconds) := FUNCTION
     RETURN result;
 END;
 
+
 /**
- * Tests whether the year is a leap year in the Gregorian calendar
- * (or proleptic Gregorian).
+ * Converts the number of microseconds since epoch to the number of seconds
+ * since epoch.
+ *
+ * @param timestamp             The number of microseconds since epoch.
+ * @return                      The number of seconds since epoch.
+ */
+
+EXPORT Seconds_t TimestampToSeconds(Timestamp_t timestamp) := timestamp DIV 1000000;
+
+/**
+ * Tests whether the year is a leap year in the Gregorian calendar.
  *
  * @param year          The year (0-9999).
  * @return              True if the year is a leap year.
@@ -211,8 +222,7 @@ EXPORT BOOLEAN IsLeapYear(INTEGER2 year) := (year % 4 = 0) AND ((year % 100 != 0
 
 
 /**
- * Tests whether a date is a leap year in the Gregorian calendar
- * (or proleptic Gregorian).
+ * Tests whether a date is a leap year in the Gregorian calendar.
  *
  * @param date          The date.
  * @return              True if the year is a leap year.
@@ -242,7 +252,7 @@ EXPORT Days_t FromGregorianYMD(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) :=
     m := month + 12*a - 3;
     jd := day + (153 * m + 2) DIV 5 + 365 * y + y DIV 4 - y DIV 100 + y DIV 400;
 
-    RETURN jd + (GregorianDateOrigin-1);
+    RETURN jd + (GregorianDateOrigin - 1);
 END;
 
 
@@ -261,7 +271,7 @@ EXPORT ToGregorianYMD(Days_t days) := FUNCTION
     daysIn100Years := 25*daysIn4Years-1;
     daysIn400Years := 4*daysIn100Years+1;
 
-    // Calulate days in each of the cycles.
+    // Calculate days in each of the cycles.
     adjustedDays := days - GregorianDateOrigin;
     num400Years := adjustedDays div daysIn400Years;
     rem400Years := adjustedDays % daysIn400Years;
@@ -316,9 +326,10 @@ END;
 
 /**
  * Returns a number representing the day of the year indicated by the given date.
+ * The date must be in the Gregorian calendar after the year 1600.
  *
  * @param date          A Date_t value.
- * @return              A number (0-365) representing the number of days since
+ * @return              A number (0-366) representing the number of days since
  *                      the beginning of the year.
  */
 
@@ -335,6 +346,7 @@ END;
 
 /**
  * Returns a number representing the day of the week indicated by the given date.
+ * The date must be in the Gregorian calendar after the year 1600.
  *
  * @param date          A Date_t value.
  * @return              A number 1-7 representing the day of the week, where 1 = Sunday.
@@ -587,12 +599,13 @@ EXPORT Seconds_t SecondsFromDateTimeRec(DateTime_rec datetime, BOOLEAN is_local_
 
 
 /**
- * Converts a string to a Date_t using the relevant string format.
+ * Converts a string to a Date_t using the relevant string format.  The resulting
+ * date must be representable within the Gregorian calendar after the year 1600.
  *
  * @param date_text     The string to be converted.
  * @param format        The format of the input string.
  *                      (See documentation for strftime)
- * @return              The time that was matched in the string.  Returns 0 if failed to match.
+ * @return              The date that was matched in the string.  Returns 0 if failed to match.
  *
  * Supported characters:
     %B          Full month name
@@ -639,7 +652,7 @@ EXPORT Date_t FromString(STRING date_text, VARSTRING format) :=
  * @param date_text     The string to be converted.
  * @param format        The format of the input string.
  *                      (See documentation for strftime)
- * @return              The date that was matched in the string.  Returns 0 if failed to match.
+ * @return              The time that was matched in the string.  Returns 0 if failed to match.
  *
  * Supported characters:
     %H          Hour (two digits)
@@ -677,7 +690,7 @@ EXPORT Date_t MatchDateString(STRING date_text, SET OF VARSTRING formats) :=
  * @param time_text     The string to be converted.
  * @param formats       A set of formats to check against the string.
  *                      (See documentation for strftime)
- * @return              The date that was matched in the string.
+ * @return              The time that was matched in the string.
  *                      Returns 0 if failed to match.
  */
 
@@ -825,6 +838,7 @@ EXPORT STRING ConvertTimeFormatMultiple(STRING time_text, SET OF VARSTRING from_
 
 /**
  * Adjusts a date by incrementing or decrementing year, month and/or day values.
+ * The date must be in the Gregorian calendar after the year 1600.
  * If the new calculated date is invalid then it will be normalized according
  * to mktime() rules.  Example: 20140130 + 1 month = 20140302.
  *
@@ -846,7 +860,8 @@ EXPORT Date_t AdjustDate(Date_t date,
 
 
 /**
- * Adjusts a date by adding or subtracting seconds.  If the new calculated
+ * Adjusts a date by adding or subtracting seconds.  The date must be in the
+ * Gregorian calendar after the year 1600.  If the new calculated
  * date is invalid then it will be normalized according to mktime() rules.
  * Example: 20140130 + 172800 seconds = 20140201.
  *
@@ -899,7 +914,8 @@ EXPORT Time_t AdjustTimeBySeconds(Time_t time, INTEGER4 seconds_delta) :=
  * hours, minutes and/or seconds.  This is performed by first converting the
  * seconds into a full date/time structure, applying any delta values to
  * individual date/time components, then converting the structure back to the
- * number of seconds.  If the interim structure is found to have an invalid
+ * number of seconds.  This interim date must lie within Gregorian calendar
+ * after the year 1600.  If the interim structure is found to have an invalid
  * date/time then it will be normalized according to mktime() rules.  Therefore,
  * some delta values (such as "1 month") are actually relative to the value of
  * the seconds argument.
@@ -944,7 +960,7 @@ EXPORT Seconds_t AdjustSeconds(Seconds_t seconds,
  * will result in Feb. 28, 2014; Jan. 31, 2014 + 1 month + 1 day will result
  * in Mar. 1, 2014.
  *
- * @param date          The date to adjust.
+ * @param date          The date to adjust, in the Gregorian calendar after 1600.
  * @param year_delta    The requested change to the year value;
  *                      optional, defaults to zero.
  * @param month_delta   The requested change to the month value;
@@ -1035,15 +1051,14 @@ EXPORT Seconds_t CurrentSeconds(BOOLEAN in_local_time = FALSE) :=
 
 
 /**
- * Returns the current date and time as the number of seconds since epoch,
- * with millisecond resolution.
+ * Returns the current date and time as the number of microseconds since epoch.
  *
  * @param in_local_time     TRUE if the returned value should be local to the
  *                          cluster computing the time, FALSE for UTC.
  *                          Optional, defaults to FALSE.
  * @return                  A Timestamp_t representing the current time in
- *                          millisecond resolution in UTC or local time,
- *                          depending on the argument.
+ *                          microseconds in UTC or local time, depending on
+ *                          the argument.
  */
 
 EXPORT Timestamp_t CurrentTimestamp(BOOLEAN in_local_time = FALSE) :=
@@ -1112,9 +1127,27 @@ EXPORT BOOLEAN IsValidDate(Date_t date,
                            INTEGER2 yearLowerBound = 1800,
                            INTEGER2 yearUpperBound = 2100) := FUNCTION
     yearInBounds := (Year(date) BETWEEN yearLowerBound AND yearUpperBound);
-    matches := (date = AdjustDate(date)); // AdjustDate normalizes, so this is a validation check
+    monthInBounds := (Month(date) BETWEEN 1 AND 12);
+    maxDayInMonth := CHOOSE(Month(date),1,IF(IsLeapYear(Year(date)),29,28),31,30,31,30,31,31,30,31,30,31);
+    dayInBounds := (Day(date) BETWEEN 1 AND maxDayInMonth);
 
-    RETURN yearInBounds AND matches;
+    RETURN yearInBounds AND monthInBounds AND dayInBounds;
+END;
+
+
+/**
+ * Tests whether a date is valid in the Gregorian calendar.  The year
+ * must be between 1601 and 30827.
+ *
+ * @param date              The Date_t to validate.
+ * @return                  TRUE if the date is valid, FALSE otherwise.
+ */
+
+EXPORT BOOLEAN IsValidGregorianDate(Date_t date) := FUNCTION
+    yearInBounds := (Year(date) BETWEEN 1601 AND 30827);
+    matchesNormalized := (date = AdjustDate(date)); // AdjustDate normalizes, so this is a validation check
+
+    RETURN yearInBounds AND matchesNormalized;
 END;
 
 
@@ -1127,7 +1160,7 @@ END;
 
 EXPORT BOOLEAN IsValidTime(Time_t time) := FUNCTION
     hourInBounds := (Hour(time) BETWEEN 0 AND 23);
-    minuteInBounds := (Hour(time) BETWEEN 0 AND 59);
+    minuteInBounds := (Minute(time) BETWEEN 0 AND 59);
     secondInBounds := (Second(time) BETWEEN 0 AND 59);
 
     RETURN hourInBounds AND minuteInBounds AND secondInBounds;

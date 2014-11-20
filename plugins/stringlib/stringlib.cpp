@@ -1546,12 +1546,13 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringToTimeOfDay(size32_t lenS, const c
 STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s, bool isAllFormats, unsigned lenFormats, const void * _formats)
 {
     struct tm tm;
-    memset(&tm, 0, sizeof(tm));
 
     const char * formats = (const char *)_formats;
     for (unsigned off=0; off < lenFormats; )
     {
         const char * curFormat = formats+off;
+        
+        memset(&tm, 0, sizeof(tm));
         if (simple_strptime(lenS, s, curFormat, &tm))
             return makeDate(tm);
         off += strlen(curFormat) + 1;
@@ -1563,12 +1564,13 @@ STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s,
 STRINGLIB_API unsigned STRINGLIB_CALL slMatchTimeOfDay(size32_t lenS, const char * s, bool isAllFormats, unsigned lenFormats, const void * _formats)
 {
     struct tm tm;
-    memset(&tm, 0, sizeof(tm));
 
     const char * formats = (const char *)_formats;
     for (unsigned off=0; off < lenFormats; )
     {
         const char * curFormat = formats+off;
+        
+        memset(&tm, 0, sizeof(tm));
         if (simple_strptime(lenS, s, curFormat, &tm))
             return makeTimeOfDay(tm);
         off += strlen(curFormat) + 1;
