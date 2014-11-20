@@ -3819,8 +3819,7 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
     StringBuffer dllXML;
     if (getWorkunitXMLFromFile(dllpath.str(), dllXML))
     {
-        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
-        embeddedWU->loadXML(dllXML.str());
+        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dllXML.str());
         queryExtendedWU(wu)->copyWorkUnit(embeddedWU, true);
     }
 

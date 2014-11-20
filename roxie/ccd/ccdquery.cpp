@@ -90,8 +90,7 @@ public:
         StringBuffer wuXML;
         if (getEmbeddedWorkUnitXML(dll, wuXML))
         {
-            Owned<ILocalWorkUnit> localWU = createLocalWorkUnit();
-            localWU->loadXML(wuXML);
+            Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
             wu.setown(localWU->unlock());
         }
         CriticalBlock b(dllCacheLock);

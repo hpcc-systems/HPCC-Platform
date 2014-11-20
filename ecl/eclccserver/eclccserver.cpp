@@ -392,8 +392,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 StringBuffer wuXML;
                 if (getWorkunitXMLFromFile(realdllfilename, wuXML))
                 {
-                    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
-                    embeddedWU->loadXML(wuXML);
+                    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(wuXML);
                     queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
                     workunit->setIsClone(false);
                     SCMStringBuffer jobname;

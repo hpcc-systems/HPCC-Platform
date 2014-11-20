@@ -1199,7 +1199,6 @@ interface ILocalWorkUnit : extends IWorkUnit
 {
     virtual void serialize(MemoryBuffer & tgt) = 0;
     virtual void deserialize(MemoryBuffer & src) = 0;
-    virtual void loadXML(const char * xml) = 0;
     virtual IConstWorkUnit * unlock() = 0;
 };
 
@@ -1365,7 +1364,7 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSever
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
-extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit();
+extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
 extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack, bool includeProgress);
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress);

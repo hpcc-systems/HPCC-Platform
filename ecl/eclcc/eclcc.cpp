@@ -1389,7 +1389,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 
-    instance.wu.setown(createLocalWorkUnit());
+    instance.wu.setown(createLocalWorkUnit(NULL));
     if (optSaveQueryText)
     {
         Owned<IWUQuery> q = instance.wu->updateQuery();
@@ -1608,7 +1608,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 {
     const char * outputFilename = instance.outputFilename;
 
-    instance.wu.setown(createLocalWorkUnit());
+    instance.wu.setown(createLocalWorkUnit(NULL));
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 

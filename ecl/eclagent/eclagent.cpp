@@ -3310,8 +3310,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         if (wuXML)
         {
             //Create workunit from XML
-            standAloneWorkUnit.setown(createLocalWorkUnit());
-            standAloneWorkUnit->loadXML(wuXML->str());
+            standAloneWorkUnit.setown(createLocalWorkUnit(wuXML->str()));
             wuXML->kill();  // free up text as soon as possible.
         }
 
