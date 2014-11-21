@@ -5,7 +5,7 @@
 /* The functions defined in this module are provisional, and subject to change */
 
 IMPORT lib_stringlib.StringLib;
-IMPORT lib_timelib, lib_timelib.TimeLib;
+IMPORT lib_timelib.TimeLib;
 
 EXPORT Date := MODULE
 
@@ -54,10 +54,6 @@ END;
 // A signed number holding a number of microseconds.  Can be used to represent
 // either a duration or the number of microseconds since epoch (Jan 1, 1970).
 EXPORT Timestamp_t := INTEGER8;
-
-
-// Simple structure to hold interesting values from a struct tm* instance.
-SHARED TMPartsRec := lib_timelib.TMPartsRec;
 
 
 /**
@@ -183,16 +179,16 @@ EXPORT Seconds_t SecondsFromParts(INTEGER2 year,
  */
 
 EXPORT SecondsToParts(Seconds_t seconds) := FUNCTION
-    DATASET(TMPartsRec) parts := TimeLib.SecondsToParts(seconds);
+    parts := ROW(TimeLib.SecondsToParts(seconds));
 
     result := MODULE
-        EXPORT INTEGER2 year := parts[6].v + 1900;
-        EXPORT UNSIGNED1 month := parts[5].v + 1;
-        EXPORT UNSIGNED1 day := parts[4].v;
-        EXPORT UNSIGNED1 hour := parts[3].v;
-        EXPORT UNSIGNED1 minute := parts[2].v;
-        EXPORT UNSIGNED1 second := parts[1].v;
-        EXPORT UNSIGNED1 day_of_week := parts[7].v + 1;
+        EXPORT INTEGER2 year := parts.year + 1900;
+        EXPORT UNSIGNED1 month := parts.mon + 1;
+        EXPORT UNSIGNED1 day := parts.mday;
+        EXPORT UNSIGNED1 hour := parts.hour;
+        EXPORT UNSIGNED1 minute := parts.min;
+        EXPORT UNSIGNED1 second := parts.sec;
+        EXPORT UNSIGNED1 day_of_week := parts.wday + 1;
         EXPORT Date_t date := DateFromParts(year,month,day);
         EXPORT Time_t time := TimeFromParts(hour,minute,second);
     END;
@@ -1069,8 +1065,9 @@ EXPORT Timestamp_t CurrentTimestamp(BOOLEAN in_local_time = FALSE) :=
  * Returns the beginning and ending dates for the month surrounding the given date.
  *
  * @param as_of_date    The reference date from which the month will be
- *                      calculated.  Optional, defaults to the current date in
- *                      UTC.
+ *                      calculated.  This date must be a date within the
+ *                      Gregorian calendar.  Optional, defaults to the
+ *                      current date in UTC.
  * @return              Module with exported attributes for startDate and endDate.
  */
 
@@ -1092,19 +1089,18 @@ END;
  * (Sunday marks the beginning of a week).
  *
  * @param as_of_date    The reference date from which the week will be
- *                      calculated.  Optional, defaults to the current date in
- *                      UTC.
+ *                      calculated.  This date must be a date within the
+ *                      Gregorian calendar.  Optional, defaults to the
+ *                      current date in UTC.
  * @return              Module with exported attributes for startDate and endDate.
  */
 
 EXPORT DatesForWeek(Date_t as_of_date = CurrentDate(FALSE)) := FUNCTION
-    DATASET(TMPartsRec) lastWeekDates := TimeLib.DatesForWeek(as_of_date);
-    firstDay := lastWeekDates[1].v;
-    lastDay := lastWeekDates[2].v;
+    lastWeekDates := ROW(TimeLib.DatesForWeek(as_of_date));
 
     result := MODULE
-        EXPORT Date_t startDate := firstDay;
-        EXPORT Date_t endDate := lastDay;
+        EXPORT Date_t startDate := lastWeekDates.startDate;
+        EXPORT Date_t endDate := lastWeekDates.endDate;
     END;
 
     RETURN result;

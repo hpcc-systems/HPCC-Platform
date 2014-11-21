@@ -34,6 +34,8 @@
 
 #include "platform.h"
 #include "hqlplugins.hpp"
+#include "eclinclude4.hpp"
+#include "eclrtl.hpp"
 
 extern "C" {
 
@@ -53,7 +55,7 @@ void tlGMTime_r(const time_t* clock, struct tm* timeInfoPtr);
 time_t tlMKTime(struct tm* timeInfoPtr, bool inLocalTimeZone = true);
 
 TIMELIB_API __int64 TIMELIB_CALL tlSecondsFromParts(int year, unsigned int month, unsigned int day, unsigned int hour, unsigned int minute, unsigned int second, bool is_local_time = false);
-TIMELIB_API void TIMELIB_CALL tlSecondsToParts(size32_t &__lenResult, void* &__result, __int64 seconds);
+TIMELIB_API size32_t TIMELIB_CALL tlSecondsToParts(ARowBuilder & __self, __int64 seconds);
 TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfYear(short year, unsigned short month, unsigned short day);
 TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfWeek(short year, unsigned short month, unsigned short day);
 TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__result, unsigned int date, const char* format);
@@ -72,7 +74,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlCurrentTime(bool in_local_time);
 TIMELIB_API __int64 TIMELIB_CALL tlCurrentSeconds(bool in_local_time);
 TIMELIB_API __int64 TIMELIB_CALL tlCurrentTimestamp(bool in_local_time);
 TIMELIB_API unsigned int TIMELIB_CALL tlGetLastDayOfMonth(unsigned int date);
-TIMELIB_API void TIMELIB_CALL tlDatesForWeek(size32_t &__lenResult, void* &__result, unsigned int date);
+TIMELIB_API size32_t TIMELIB_CALL tlDatesForWeek(ARowBuilder & __self, unsigned int date);
 
 }
 #endif

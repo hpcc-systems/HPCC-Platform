@@ -36,11 +36,21 @@ static const char * compatibleVersions[] = {
 
 static const char * EclDefinition =
 "EXPORT TMPartsRec := RECORD \n"
-"  UNSIGNED4 v; \n"
+"  INTEGER4 sec; \n"
+"  INTEGER4 min; \n"
+"  INTEGER4 hour; \n"
+"  INTEGER4 mday; \n"
+"  INTEGER4 mon; \n"
+"  INTEGER4 year; \n"
+"  INTEGER4 wday; \n"
+"END;"
+"EXPORT TMDateRangeRec := RECORD \n"
+"  UNSIGNED4 startDate; \n"
+"  UNSIGNED4 endDate; \n"
 "END;"
 "EXPORT TimeLib := SERVICE\n"
 "  integer8 SecondsFromParts(integer2 year, unsigned1 month, unsigned1 day, unsigned1 hour, unsigned1 minute, unsigned1 second, boolean is_local_time) : c,pure,entrypoint='tlSecondsFromParts'; \n"
-"  DATASET(TMPartsRec) SecondsToParts(INTEGER8 seconds) : c,pure,entrypoint='tlSecondsToParts'; \n"
+"  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds) : c,pure,entrypoint='tlSecondsToParts'; \n"
 "  UNSIGNED2 GetDayOfYear(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfYear'; \n"
 "  UNSIGNED1 GetDayOfWeek(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfWeek'; \n"
 "  STRING DateToString(UNSIGNED4 date, VARSTRING format) : c,pure,entrypoint='tlDateToString'; \n"
@@ -59,7 +69,7 @@ static const char * EclDefinition =
 "  INTEGER4 CurrentSeconds(BOOLEAN in_local_time) : c,pure,entrypoint='tlCurrentSeconds'; \n"
 "  INTEGER8 CurrentTimestamp(BOOLEAN in_local_time) : c,pure,entrypoint='tlCurrentTimestamp'; \n"
 "  UNSIGNED4 GetLastDayOfMonth(UNSIGNED4 date) : c,pure,entrypoint='tlGetLastDayOfMonth'; \n"
-"  DATASET(TMPartsRec) DatesForWeek(UNSIGNED4 date) : c,pure,entrypoint='tlDatesForWeek'; \n"
+"  TRANSFORM(TMDateRangeRec) DatesForWeek(UNSIGNED4 date) : c,pure,entrypoint='tlDatesForWeek'; \n"
 "END;";
 
 TIMELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
@@ -445,25 +455,34 @@ TIMELIB_API __int64 TIMELIB_CALL tlSecondsFromParts(int year, unsigned int month
 
 //------------------------------------------------------------------------------
 
-TIMELIB_API void TIMELIB_CALL tlSecondsToParts(size32_t &__lenResult, void* &__result, __int64 seconds)
+TIMELIB_API size32_t TIMELIB_CALL tlSecondsToParts(ARowBuilder& __self, __int64 seconds)
 {
     struct tm       timeInfo;
 
+    struct TMParts
+    {
+        __int32 sec;
+        __int32 min;
+        __int32 hour;
+        __int32 mday;
+        __int32 mon;
+        __int32 year;
+        __int32 wday;
+    };
+
     tlMakeTimeStructFromUTCSeconds(seconds, &timeInfo);
 
-    __lenResult = sizeof(unsigned int) * 7;
-    __result = CTXMALLOC(parentCtx, __lenResult);
+    TMParts* result = reinterpret_cast<TMParts*>(__self.getSelf());
 
-    // Actually write the output values one at a time
-    unsigned int*   out = reinterpret_cast<unsigned int*>(__result);
+    result->sec = timeInfo.tm_sec;
+    result->min = timeInfo.tm_min;
+    result->hour = timeInfo.tm_hour;
+    result->mday = timeInfo.tm_mday;
+    result->mon = timeInfo.tm_mon;
+    result->year = timeInfo.tm_year;
+    result->wday = timeInfo.tm_wday;
 
-    out[0] = timeInfo.tm_sec;
-    out[1] = timeInfo.tm_min;
-    out[2] = timeInfo.tm_hour;
-    out[3] = timeInfo.tm_mday;
-    out[4] = timeInfo.tm_mon;
-    out[5] = timeInfo.tm_year;
-    out[6] = timeInfo.tm_wday;
+    return static_cast<size32_t>(sizeof(TMParts));
 }
 
 //------------------------------------------------------------------------------
@@ -844,7 +863,7 @@ TIMELIB_API __int64 TIMELIB_CALL tlCurrentTimestamp(bool in_local_time)
 
         _ftime(&now);
 
-        result = (now.time * 1000000) + now.(millitm * 1000);
+        result = (now.time * 1000000) + (now.millitm * 1000);
     #else
         struct timeval  tv;
 
@@ -887,11 +906,17 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetLastDayOfMonth(unsigned int date)
 
 //------------------------------------------------------------------------------
 
-TIMELIB_API void TIMELIB_CALL tlDatesForWeek(size32_t &__lenResult, void* &__result, unsigned int date)
+TIMELIB_API size32_t TIMELIB_CALL tlDatesForWeek(ARowBuilder& __self, unsigned int date)
 {
     struct tm       timeInfo;
-    unsigned int    weekStartResult = 0;
-    unsigned int    weekEndResult = 0;
+
+    struct TMDateRange
+    {
+        unsigned int    startDate;
+        unsigned int    endDate;
+    };
+
+    TMDateRange* result = reinterpret_cast<TMDateRange*>(__self.getSelf());
 
     memset(&timeInfo, 0, sizeof(timeInfo));
     tlInsertDateIntoTimeStruct(&timeInfo, date);
@@ -903,19 +928,13 @@ TIMELIB_API void TIMELIB_CALL tlDatesForWeek(size32_t &__lenResult, void* &__res
     timeInfo.tm_mday -= timeInfo.tm_wday;
     tlMKTime(&timeInfo);
 
-    weekStartResult = tlExtractDateFromTimeStruct(&timeInfo);
+    result->startDate = tlExtractDateFromTimeStruct(&timeInfo);
 
     // Adjust to the beginning of the week
     timeInfo.tm_mday += 6;
     tlMKTime(&timeInfo);
 
-    weekEndResult = tlExtractDateFromTimeStruct(&timeInfo);
+    result->endDate = tlExtractDateFromTimeStruct(&timeInfo);
 
-    __lenResult = sizeof(unsigned int) * 2;
-    __result = CTXMALLOC(parentCtx, __lenResult);
-
-    unsigned int*   out = reinterpret_cast<unsigned int*>(__result);
-
-    out[0] = weekStartResult;
-    out[1] = weekEndResult;
+    return static_cast<size32_t>(sizeof(TMDateRange));
 }
