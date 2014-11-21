@@ -98,8 +98,8 @@ CodeColorDCT  := DICTIONARY(ColorCodes,{Code =&gt; Color});
 MapCode2Color(UNSIGNED1 code) := CodeColorDCT[code].color;
 MapColor2Code(STRING color)   := ColorCodeDCT[color].code;
 
-OUTPUT(MapColor2Code('Red'));     //true
-OUTPUT(MapCode2Color(4));         //true
+OUTPUT(MapColor2Code('Red'));     //2
+OUTPUT(MapCode2Color(4));         //'Yellow'
 
 //Search term examples
 OUTPUT('Green' IN ColorCodeDCT);  //true
