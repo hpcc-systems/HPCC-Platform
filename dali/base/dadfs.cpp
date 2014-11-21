@@ -254,6 +254,8 @@ public:
             return str.append(": Cluster already exists: ").append(errstr);
         case DFSERR_LookupConnectionTimout: 
             return str.append(": Lookup connection timeout: ").append(errstr);
+        case DFSERR_FailedToDeleteFile:
+            return str.append(": Failed to delete file: ").append(errstr);
         }
         return str.append("Unknown DFS Exception"); 
     }
@@ -7947,12 +7949,12 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
     catch (IException *e)
     {
         // TODO: Transform removeEntry into void
-        StringBuffer msg;
+        StringBuffer msg(logicalname.get());
+        msg.append(" - cause: ");
         e->errorMessage(msg);
-        ERRLOG("Error while deleting %s: %s", logicalname.get(), msg.str());
+        ERRLOG("%s", msg.str());
         if (throwException)
-            throw;
-
+            throw new CDFS_Exception(DFSERR_FailedToDeleteFile, msg.str());
         e->Release();
         return false;
     }

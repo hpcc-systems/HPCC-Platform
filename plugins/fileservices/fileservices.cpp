@@ -323,7 +323,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer uname;
     PrintLog("Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
-    if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction))
+    if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction, INFINITE, true))
     {
         StringBuffer s("DeleteLogicalFile ('");
         s.append(lfn);
