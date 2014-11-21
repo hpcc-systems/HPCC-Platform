@@ -497,6 +497,18 @@ void userBreakpoint()
 #endif
 }
 
+void throwUnexpectedException(const char * file, unsigned line)
+{
+    printStackReport();
+    throw makeStringExceptionV(9999, "Internal Error at %s(%d)", file, line);
+}
+
+void throwUnexpectedException(const char * where, const char * file, unsigned line)
+{
+    printStackReport();
+    throw makeStringExceptionV(9999, "Internal Error '%s' at %s(%d)", where, file, line);
+}
+
 void raiseAssertException(const char *assertion, const char *file, unsigned line)
 {
     printStackReport();
