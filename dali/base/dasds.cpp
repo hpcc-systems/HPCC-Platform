@@ -7559,7 +7559,28 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                                     if (timeout)
                                     {
                                         if (tm.timedout(&remaining))
-                                            throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
+                                        {
+                                            Linked<CLockInfo> lockInfo;
+                                            VStringBuffer timeoutMsg("Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
+                                            ForEachItemIn(f, freeExistingLocks.existingLockTrees)
+                                            {
+                                                CServerRemoteTree &e = freeExistingLocks.existingLockTrees.item(f);
+                                                {
+                                                    CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
+                                                    CLockInfo *_lockInfo = queryLockInfo(e.queryServerId());
+                                                    if (_lockInfo)
+                                                    {
+                                                        if (!lockInfo)
+                                                            timeoutMsg.append(", existing lock info: ");
+                                                        timeoutMsg.newline();
+                                                        lockInfo.set(_lockInfo);
+                                                    }
+                                                }
+                                                if (lockInfo)
+                                                    lockInfo->getLockInfo(timeoutMsg);
+                                            }
+                                            throw MakeSDSException(SDSExcpt_LockTimeout, "%s", timeoutMsg.str());
+                                        }
                                     }
                                     else
                                         remaining = 0; // a timeout of 0 means fail immediately if locked
