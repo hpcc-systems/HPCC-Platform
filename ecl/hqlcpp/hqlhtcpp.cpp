@@ -9206,6 +9206,8 @@ void HqlCppTranslator::beginGraph(const char * _graphName)
 
     if (insideLibrary())
         activeGraph->xgmml->setPropBool("@library", true);
+    if (curWfid)
+        activeGraph->xgmml->setPropInt("@wfid", curWfid);
 }
 
 
@@ -17661,6 +17663,7 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
                 OwnedHqlExpr expr = createActionList(action.queryExprs());
 
                 IHqlExpression * persistAttr = expr->queryAttribute(_workflowPersist_Atom);
+                curWfid = wfid;
                 if (persistAttr)
                 {
                     if (!options.freezePersists)
@@ -17673,6 +17676,7 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
                 }
                 else
                     buildWorkflowItem(switchctx, switchStmt, wfid, expr);
+                curWfid = 0;
             }
         }
     }
