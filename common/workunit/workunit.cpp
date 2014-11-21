@@ -133,8 +133,7 @@ static bool checkWuSecAccess(IConstWorkUnit &cw, ISecManager &secmgr, ISecUser *
     bool ret=(!secuser) ? true : (secmgr.authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw.getWuScope(wuscope).str())>=required);
     if (!ret && (log || excpt))
     {
-        SCMStringBuffer wuid;
-        wuAccessError(secuser ? secuser->getName() : NULL, action, wuscope.str(), cw.getWuid(wuid).str(), excpt, log);
+        wuAccessError(secuser ? secuser->getName() : NULL, action, wuscope.str(), cw.queryWuid(), excpt, log);
     }
     return ret;
 }
@@ -1084,7 +1083,7 @@ public:
     virtual IConstLocalFileUploadIterator * getLocalFileUploads() const;
     virtual bool requiresLocalFileUpload() const;
     virtual bool getIsQueryService() const;
-    virtual IStringVal & getClusterName(IStringVal & str) const;
+    virtual const char *queryClusterName() const;
     virtual bool hasDebugValue(const char * propname) const;
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const;
     virtual IStringIterator & getDebugValues() const;
@@ -1104,7 +1103,7 @@ public:
     virtual IConstWUGraphMetaIterator & getGraphsMeta(WUGraphType type) const;
     virtual IConstWUGraph * getGraph(const char *name) const;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const;
-    virtual IStringVal & getJobName(IStringVal & str) const;
+    virtual const char *queryJobName() const;
     virtual IConstWUPlugin * getPluginByName(const char * name) const;
     virtual IConstWUPluginIterator & getPlugins() const;
     virtual IConstWULibraryIterator & getLibraries() const;
@@ -1123,7 +1122,7 @@ public:
     virtual IStringVal & getStateEx(IStringVal & str) const;
     virtual __int64 getAgentSession() const;
     virtual unsigned getAgentPID() const;
-    virtual IStringVal & getStateDesc(IStringVal & str) const;
+    virtual const char *queryStateDesc() const;
     virtual IConstWUResult * getTemporaryByName(const char * name) const;
     virtual IConstWUResultIterator & getTemporaries() const;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const;
@@ -1140,11 +1139,11 @@ public:
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
 
-    virtual IStringVal & getUser(IStringVal & str) const;
+    virtual const char *queryUser() const;
     virtual IStringVal & getWuScope(IStringVal & str) const;
     virtual IConstWUResult * getVariableByName(const char * name) const;
     virtual IConstWUResultIterator & getVariables() const;
-    virtual IStringVal & getWuid(IStringVal & str) const;
+    virtual const char *queryWuid() const;
     virtual bool getRunningGraph(IStringVal &graphName, WUGraphIDType &subId) const;
     virtual bool isProtected() const;
     virtual bool isPausing() const;
@@ -1593,12 +1592,7 @@ public:
     ~CLockedWorkUnit()
     {
         if (workUnitTraceLevel > 1)
-        {
-            StringAttr x;
-            StringAttrAdaptor strval(x);
-            getWuid(strval);
-            PrintLog("Releasing locked workunit %s", x.get());
-        }
+            PrintLog("Releasing locked workunit %s", queryWuid());
         if (c)
             c->unlockRemote();
     }
@@ -1644,8 +1638,8 @@ public:
             { return c->getCloneable(); }
     virtual IUserDescriptor * queryUserDescriptor() const
             { return c->queryUserDescriptor(); }
-    virtual IStringVal & getClusterName(IStringVal & str) const
-            { return c->getClusterName(str); }
+    virtual const char *queryClusterName() const
+            { return c->queryClusterName(); }
     virtual unsigned getCodeVersion() const
             { return c->getCodeVersion(); }
     virtual unsigned getWuidVersion() const
@@ -1688,8 +1682,8 @@ public:
             { return c->getGraph(name); }
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const
             { return c->getGraphProgress(name); }
-    virtual IStringVal & getJobName(IStringVal & str) const
-            { return c->getJobName(str); }
+    virtual const char *queryJobName() const
+            { return c->queryJobName(); }
     virtual IConstWUPlugin * getPluginByName(const char * name) const
             { return c->getPluginByName(name); }
     virtual IConstWUPluginIterator & getPlugins() const
@@ -1732,8 +1726,8 @@ public:
             { return c->getAgentSession(); }
     virtual unsigned getAgentPID() const
             { return c->getAgentPID(); }
-    virtual IStringVal & getStateDesc(IStringVal & str) const
-            { return c->getStateDesc(str); }
+    virtual const char *queryStateDesc() const
+            { return c->queryStateDesc(); }
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const
             { return c->getRunningGraph(graphName, subId); }
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const
@@ -1745,12 +1739,12 @@ public:
 
     virtual IStringVal & getSnapshot(IStringVal & str) const
             { return c->getSnapshot(str); } 
-    virtual IStringVal & getUser(IStringVal & str) const
-            { return c->getUser(str); }
+    virtual const char *queryUser() const
+            { return c->queryUser(); }
     virtual IStringVal & getWuScope(IStringVal & str) const
             { return c->getWuScope(str); }
-    virtual IStringVal & getWuid(IStringVal & str) const
-            { return c->getWuid(str); }
+    virtual const char *queryWuid() const
+            { return c->queryWuid(); }
     virtual IConstWUResult * getGlobalByName(const char * name) const
             { return c->getGlobalByName(name); }
     virtual IConstWUResult * getTemporaryByName(const char * name) const
@@ -2207,7 +2201,6 @@ class CLocalWUGraph : public CInterface, implements IWUGraph
     Owned<IPropertyTree> p;
     mutable Owned<IPropertyTree> graph; // cached copy of graph xgmml
     mutable Linked<IConstWUGraphProgress> progress;
-    StringAttr wuid;
     unsigned wuidVersion;
 
     void mergeProgress(IPropertyTree &tree, IPropertyTree &progressTree, const unsigned &progressV) const;
@@ -2606,11 +2599,7 @@ public:
             PrintLog("createWorkUnit created %s", wuid.str());
         IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user);
         if (workUnitTraceLevel > 1)
-        {
-            SCMStringBuffer wuidName;
-            ret->getWuid(wuidName);
-            PrintLog("createWorkUnit created %s", wuidName.str());
-        }
+            PrintLog("createWorkUnit created %s", ret->queryWuid());
         addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
         return ret;
     }
@@ -4056,11 +4045,10 @@ IWorkUnit& CLocalWorkUnit::lock()
     return lockRemote(true);
 }
 
-IStringVal& CLocalWorkUnit::getWuid(IStringVal &str) const
+const char *CLocalWorkUnit::queryWuid() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryName());
-    return str;
+    return p->queryName();
 }
 
 unsigned CLocalWorkUnit::getDebugAgentListenerPort() const
@@ -4112,11 +4100,13 @@ void CLocalWorkUnit::setJobName(const char *value)
     p->setProp("@jobName", value);
 }
 
-IStringVal& CLocalWorkUnit::getJobName(IStringVal &str) const
+const char *CLocalWorkUnit::queryJobName() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("@jobName"));
-    return str;
+    const char *ret = p->queryProp("@jobName");
+    if (!ret)
+        ret = "";
+    return ret;
 }
 
 void CLocalWorkUnit::setClusterName(const char *value)
@@ -4125,11 +4115,13 @@ void CLocalWorkUnit::setClusterName(const char *value)
     p->setProp("@clusterName", value);
 }
 
-IStringVal& CLocalWorkUnit::getClusterName(IStringVal &str) const
+const char *CLocalWorkUnit::queryClusterName() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("@clusterName"));
-    return str;
+    const char *ret = p->queryProp("@clusterName");
+    if (!ret)
+        ret = "";
+    return ret;
 }
 
 void CLocalWorkUnit::setAllowedClusters(const char *value)
@@ -4188,16 +4180,10 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
                 perm = 0;
         }
     }
-    if (!HASREADPERMISSION(perm)) {
-        SCMStringBuffer wuid;
-        getWuid(wuid);
-        throw MakeStringException(WUERR_WorkunitAccessDenied, "Read access denied for workunit %s",wuid.s.str());
-    }
-    if (writeaccess&&!HASWRITEPERMISSION(perm)) {
-        SCMStringBuffer wuid;
-        getWuid(wuid);
-        throw MakeStringException(WUERR_WorkunitAccessDenied, "Write access denied for workunit %s",wuid.s.str());
-    }
+    if (!HASREADPERMISSION(perm))
+        throw MakeStringException(WUERR_WorkunitAccessDenied, "Read access denied for workunit %s", queryWuid());
+    if (writeaccess && !HASWRITEPERMISSION(perm))
+        throw MakeStringException(WUERR_WorkunitAccessDenied, "Write access denied for workunit %s", queryWuid());
 }
 
 
@@ -4207,11 +4193,13 @@ void CLocalWorkUnit::setUser(const char * value)
     p->setProp("@submitID", value); 
 }
 
-IStringVal& CLocalWorkUnit::getUser(IStringVal &str) const 
+const char *CLocalWorkUnit::queryUser() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("@submitID"));
-    return str;
+    const char *ret = p->queryProp("@submitID");
+    if (!ret)
+        ret = "";
+    return ret;
 }
 
 void CLocalWorkUnit::setWuScope(const char * value) 
@@ -4444,19 +4432,18 @@ unsigned CLocalWorkUnit::getAgentPID() const
     return p->getPropInt("@agentPID", -1);
 }
 
-IStringVal& CLocalWorkUnit::getStateDesc(IStringVal &str) const 
+const char * CLocalWorkUnit::queryStateDesc() const
 {
     // MORE - not sure about this - may prefer a separate interface
     CriticalBlock block(crit);
     try
     {
-        str.set(getEnumText(getState(), states));
+        return getEnumText(getState(), states);
     }
     catch (...)
     {
-        str.set("???");
+        return "???";
     }
-    return str;
 }
 
 mapEnums actions[] = {
@@ -5250,9 +5237,7 @@ IUserDescriptor *CLocalWorkUnit::queryUserDescriptor() const
     {
         SCMStringBuffer token, user, password;
         getSecurityToken(token);
-        SCMStringBuffer wuid;
-        getWuid(wuid);
-        extractToken(token.str(), wuid.str(), user, password);
+        extractToken(token.str(), queryWuid(), user, password);
         userDesc.setown(createUserDescriptor());
         userDesc->set(user.str(), password.str());
     }
@@ -5987,10 +5972,7 @@ IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * creator, const cha
 bool CLocalWorkUnit::getWuDate(unsigned & year, unsigned & month, unsigned& day)
 {
     CriticalBlock block(crit);
-    SCMStringBuffer wuidstr;
-    const char *wuid = getWuid(wuidstr).str();
-
-    if (sscanf(wuid, "W%4u%2u%2u", &year, &month, &day)==3)
+    if (sscanf(queryWuid(), "W%4u%2u%2u", &year, &month, &day)==3)
     {
     }
     
@@ -6758,9 +6740,6 @@ mapEnums graphTypes[] = {
 
 CLocalWUGraph::CLocalWUGraph(const CLocalWorkUnit &_owner, IPropertyTree *props) : p(props), owner(_owner)
 {
-    SCMStringBuffer str;
-    owner.getWuid(str);
-    wuid.set(str.s.str());
     wuidVersion = owner.getWuidVersion();
 }
 
@@ -7138,7 +7117,7 @@ void CLocalWUGraph::setName(const char *str)
 {
     p->setProp("@name", str);
     progress.clear();
-    progress.setown(new CConstGraphProgress(wuid, str));
+    progress.setown(new CConstGraphProgress(owner.queryWuid(), str));
 }
 
 void CLocalWUGraph::setLabel(const char *str)
@@ -7270,7 +7249,7 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
         Owned<IConstWUGraphProgress> _progress;
         if (progress) _progress.set(progress);
         else
-            _progress.setown(new CConstGraphProgress(wuid, p->queryProp("@name")));
+            _progress.setown(new CConstGraphProgress(owner.queryWuid(), p->queryProp("@name")));
 
         //MORE: Eventually this should directly access the new stats structure
         unsigned progressV = _progress->queryFormatVersion();
@@ -9047,8 +9026,7 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     SCMStringBuffer token;
     createToken(wuid, username, password, token);
     workunit->setSecurityToken(token.str());
-    SCMStringBuffer clusterName;
-    workunit->getClusterName(clusterName);
+    StringAttr clusterName(workunit->queryClusterName());
     if (!clusterName.length()) 
         throw MakeStringException(WUERR_InvalidCluster, "No target cluster specified");
     workunit->commit();
@@ -9226,15 +9204,13 @@ void CLocalWorkUnit::schedule()
     }
 
     StringBuffer rootPath;
-    SCMStringBuffer clusterName;
-    getClusterName(clusterName);
-    rootPath.append("/Schedule/").append(clusterName.str());
+    rootPath.append("/Schedule/").append(queryClusterName());
     Owned<IRemoteConnection> conn = querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     Owned<IPropertyTree> root = conn->getRoot();
     if(!root->hasChildren())
     {
         StringBuffer addPath;
-        addPath.append("/Schedulers/").append(clusterName.str());
+        addPath.append("/Schedulers/").append(queryClusterName());
         Owned<IRemoteConnection> addConn = querySDS().connect(addPath.str(), myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     }
 
@@ -10473,9 +10449,6 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
     if (!dllName.length())
         throw MakeStringException(WUERR_InvalidDll, "Cannot deploy query - no associated dll.");
 
-    SCMStringBuffer wuid;
-    workunit->getWuid(wuid);
-
     StringBuffer currentTargetClusterType;
     queryRegistry->getProp("@targetclustertype", currentTargetClusterType); 
 
@@ -10497,7 +10470,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
         }
     }
 
-    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
+    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, workunit->queryWuid(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
     Owned<IConstWULibraryIterator> libraries = &workunit->getLibraries();
     checkAddLibrariesToQueryEntry(newEntry, libraries);
     newQueryId.append(newEntry->queryProp("@id"));

@@ -10014,9 +10014,7 @@ void HqlCppTranslator::doBuildExprIsValid(BuildCtx & ctx, IHqlExpression * expr,
 
 IHqlExpression * HqlCppTranslator::getConstWuid(IHqlExpression * expr)
 {
-    SCMStringBuffer out;
-    wu()->getWuid(out);
-    OwnedHqlExpr wuid = createConstant(out.str());
+    OwnedHqlExpr wuid = createConstant(wu()->queryWuid());
     return ensureExprType(wuid, expr->queryType());
 }
 

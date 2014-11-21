@@ -2514,7 +2514,8 @@ static void wuidCompress(const char *match, const char *type, bool compress)
     Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsByXPath(match);
     ForEach(*iter)
     {
-        IConstWorkUnit &wuid = iter->query();
+        IConstWorkUnitInfo &wuidInfo = iter->query();
+        IConstWorkUnit &wuid = *factory->openWorkUnit(wuidInfo.queryWuid(), false);
 
         StringArray graphNames;
         Owned<IConstWUGraphIterator> graphIter = &wuid.getGraphs(GraphTypeAny);
@@ -2532,16 +2533,13 @@ static void wuidCompress(const char *match, const char *type, bool compress)
 
         if (graphNames.ordinality())
         {
-            SCMStringBuffer wuidName;
-            wuid.getWuid(wuidName);
-            StringAttr msg;
-            msg.set(compress?"Compressing":"Uncompressing");
-            PROGLOG("%s graphs for workunit: %s", msg.get(), wuidName.s.str());
+            const char *msg = compress ? "Compressing" : "Uncompressing";
+            PROGLOG("%s graphs for workunit: %s", msg, wuidInfo.queryWuid());
             Owned<IWorkUnit> wWuid = &wuid.lock();
             ForEachItemIn(n, graphNames)
             {
                 Owned<IWUGraph> wGraph = wWuid->updateGraph(graphNames.item(n));
-                PROGLOG("%s graph: %s", msg.get(), graphNames.item(n));
+                PROGLOG("%s graph: %s", msg, graphNames.item(n));
                 // get/set - will convert to/from new format (binary compress blob)
                 Owned<IPropertyTree> xgmml = wGraph->getXGMMLTree(false);
                 wGraph->setXGMMLTree(xgmml.getClear(), compress);

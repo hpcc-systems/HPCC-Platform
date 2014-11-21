@@ -125,12 +125,10 @@ public:
         q->getQueryDllName(dllName);
         if (dllName.length() == 0)
         {
-            SCMStringBuffer wuid;
-            wu->getWuid(wuid);
             if (wu->getCodeVersion() == 0)
-                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s that hasn't been compiled", wuid.str());
+                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s that hasn't been compiled", wu->queryWuid());
             else
-                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s with no associated dll", wuid.str());
+                throw makeStringExceptionV(ROXIE_MISSING_DLL, "Attempting to load workunit %s with no associated dll", wu->queryWuid());
         }
         return getQueryDll(dllName.str(), false);
     }
@@ -1668,8 +1666,7 @@ extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu)
     Owned<const IQueryDll> dll = createWuQueryDll(wu);
     if (!dll)
         return NULL;
-    SCMStringBuffer wuid;
-    return createServerQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), NULL, true, false); // MORE - if use a constant for id might cache better?
+    return createServerQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), NULL, true, false); // MORE - if use a constant for id might cache better?
 }
 
 //==============================================================================================================================================
@@ -1929,8 +1926,7 @@ extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     Owned<const IQueryDll> dll = createWuQueryDll(wu);
     if (!dll)
         return NULL;
-    SCMStringBuffer wuid;
-    return createSlaveQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
+    return createSlaveQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
 }
 
 IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta)

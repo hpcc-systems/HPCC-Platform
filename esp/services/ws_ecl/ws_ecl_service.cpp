@@ -1751,8 +1751,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     if (jobname && *jobname)
         workunit->setJobName(jobname);
 
-    SCMStringBuffer wuid;
-    workunit->getWuid(wuid);
+    StringAttr wuid(workunit->queryWuid());  // NB queryWuid() not valid after workunit,clear()
 
     SCMStringBuffer token;
     createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token);
@@ -1776,7 +1775,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
     bool async = context.queryRequestParameters()->hasProp("_async");
 
-    //don't wait indefinately, in case submitted to an inactive queue wait max + 5 mins
+    //don't wait indefinitely, in case submitted to an inactive queue wait max + 5 mins
     if (!async && waitForWorkUnitToComplete(wuid.str(), wsecl->workunitTimeout))
     {
         Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
