@@ -613,6 +613,8 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new Esdl2WSDLCmd();
     if (strieq(cmdname, "PUBLISH"))
         return new EsdlPublishCmd();
+    if (strieq(cmdname, "DELETE"))
+        return new EsdlDeleteESDLDefCmd();
     if (strieq(cmdname, "BIND-SERVICE"))
         return new EsdlBindServiceCmd();
     if (strieq(cmdname, "BIND-METHOD"))
@@ -621,6 +623,13 @@ IEsdlCommand *createCoreEsdlCommand(const char *cmdname)
         return new EsdlGetBindingCmd();
     if (strieq(cmdname, "GET-DEFINITION"))
         return new EsdlGetDefinitionCmd();
+    if (strieq(cmdname, "UNBIND-SERVICE"))
+        return new EsdlUnBindServiceCmd();
+    if (strieq(cmdname, "LIST-DEFINITIONS"))
+        return new EsdlListESDLDefCmd();
+    if (strieq(cmdname, "LIST-BINDINGS"))
+        return new EsdlListESDLBindingsCmd();
+
 
     return NULL;
 }
