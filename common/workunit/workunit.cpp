@@ -3971,6 +3971,7 @@ void CLocalWorkUnit::forceReload()
 
 bool CLocalWorkUnit::reload()
 {
+    synchronized sync(locked); // protect locked workunits (uncommited writes) from reload
     CriticalBlock block(crit);
     if (dirty)
     {
