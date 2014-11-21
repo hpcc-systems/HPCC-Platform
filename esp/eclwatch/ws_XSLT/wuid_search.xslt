@@ -219,11 +219,21 @@
           <xsl:otherwise>
             <h4>Open Workunit:</h4>
                 <form action="/WsWorkunits/WUInfo" method="get" onsubmit="return submit_wuid()">
+                    <input type="hidden" name="IncludeExceptions" value="0"/>
+                    <input type="hidden" name="IncludeGraphs" value="0"/>
+                    <input type="hidden" name="IncludeSourceFiles" value="0"/>
+                    <input type="hidden" name="IncludeResults" value="0"/>
+                    <input type="hidden" name="IncludeVariables" value="0"/>
+                    <input type="hidden" name="IncludeTimers" value="0"/>
+                    <input type="hidden" name="IncludeDebugValues" value="0"/>
+                    <input type="hidden" name="IncludeApplicationValues" value="0"/>
+                    <input type="hidden" name="IncludeWorkflows" value="0"/>
+                    <input type="hidden" name="SuppressResultSchemas" value="1"/>
                     <table>
                         <tr>
                             <td>Wuid:</td>
                             <td>
-                                <input name="Wuid" size="25" type="text"/>
+                                <input id="Wuid" name="Wuid" size="25" type="text"/>
                             </td>
                             <td>
                                 <input type="submit" value="Open" class="sbutton"/>
