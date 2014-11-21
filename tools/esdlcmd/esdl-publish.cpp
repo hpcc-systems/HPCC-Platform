@@ -27,7 +27,7 @@ class EsdlPublishCmdCommon : public EsdlCmdCommon
 {
 protected:
     StringAttr optSource;
-    StringAttr optService; //RODRIGO, which service??? ESP Service? ESDL service? they could be one and the same, not sure
+    StringAttr optService;
     StringAttr optWSProcAddress;
     StringAttr optWSProcPort;
     StringAttr optVersionStr;
@@ -171,7 +171,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\n %s. Service Name: %s, Version: %d", resp->getStatus().getDescription(),resp->getServiceName(),resp->getEsdlVersion());
+        fprintf(stdout, "\n %s. Service Name: %s, Version: %d\n", resp->getStatus().getDescription(),resp->getServiceName(),resp->getEsdlVersion());
 
         return 0;
     }
@@ -297,7 +297,6 @@ public:
         if (optVerbose)
             fprintf(stderr,"\nMethod config: %s\n", optInput.get());
 
-        //Owned<IClientConfigureESDLServiceResponse> resp = esdlConfigClient->ConfigureESDLService(request);
         Owned<IClientPublishESDLBindingResponse> resp = esdlConfigClient->PublishESDLBinding(request);
 
         if (resp->getExceptions().ordinality()>0)
@@ -306,7 +305,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\n %s.", resp->getStatus().getDescription());
+        fprintf(stdout, "\n %s.\n", resp->getStatus().getDescription());
 
         return 0;
     }
@@ -325,7 +324,7 @@ public:
                 "   --overwrite                                      Overwrite binding if it already exists\n");
 
                 EsdlPublishCmdCommon::usage();
-//RODRIGO update this usage
+
         printf( "\n Use this command to publish ESDL Service based bindings.\n"
                 "   To bind an ESDL Service, provide the target ESP process name\n"
                 "   (ESP Process which will host the ESP Service as defined in the ESDL Definition.) \n"
@@ -408,8 +407,6 @@ public:
     {
         if (iter.matchFlag(optInput, ESDL_OPTION_CONFIG) )
             return true;
-        //if (iter.matchFlag(optOverWrite, ESDL_OPTION_OVERWRITE) )
-        //    return true;
 
         if (EsdlPublishCmdCommon::parseCommandLineOption(iter))
             return true;
@@ -458,6 +455,388 @@ public:
     }
 };
 
+class EsdlUnBindServiceCmd : public EsdlPublishCmdCommon
+{
+protected:
+    StringAttr optEspBinding;
+
+public:
+    int processCMD()
+    {
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientDeleteESDLBindingRequest> request = esdlConfigClient->createDeleteESDLBindingRequest();
+
+        fprintf(stderr,"\nAttempting to un-bind ESDL Service: '%s.%s'\n", optTargetESPProcName.get(), optEspBinding.get());
+
+        StringBuffer id;
+        id.set(optTargetESPProcName).append('.').append(optEspBinding);
+        request->setId(id);
+
+        Owned<IClientDeleteESDLRegistryEntryResponse> resp = esdlConfigClient->DeleteESDLBinding(request);
+
+        if (resp->getExceptions().ordinality()>0)
+        {
+            EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
+            return 1;
+        }
+
+        fprintf(stdout, "\n %s.\n", resp->getStatus().getDescription());
+
+        return 0;
+    }
+
+    void usage()
+    {
+        printf( "\nUsage:\n\n"
+                "esdl unbind-service <TargetESPProcessName> <TargetESPBindingPort | TargetESPServiceName> [command options]\n\n"
+                "   TargetESPProcessName                             The target ESP Process name\n"
+                "   TargetESPBindingPort | TargetESPServiceName      Either target ESP binding port or target ESP service name\n");
+
+                EsdlPublishCmdCommon::usage();
+
+        printf( "\n   Use this command to unpublish ESDL Service based bindings.\n"
+                "   To unbind an ESDL Service, provide the target ESP process name\n"
+                "   (ESP Process which will host the ESP Service as defined in the ESDL Definition.) \n"
+                "   It is also necessary to provide the Port on which this service is configured to run (ESP Binding),\n"
+                "   and the name of the service you are unbinding.\n"
+                );
+
+        printf("\nExample:"
+                ">esdl unbind-service myesp 8088 \n"
+                );
+    }
+
+    bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        for (int cur = 0; cur < 2 && !iter.done(); cur++)
+        {
+           const char *arg = iter.query();
+           if (*arg != '-')
+           {
+               switch (cur)
+               {
+                case 0:
+                    optTargetESPProcName.set(arg);
+                    break;
+                case 1:
+                    optEspBinding.set(arg);
+                    break;
+                default:
+                    fprintf(stderr, "\nUnrecognized positional argument detected : %s\n", arg);
+                    usage();
+                    return false;
+               }
+           }
+           else
+           {
+               fprintf(stderr, "\nOption detected before required arguments: %s\n", arg);
+               usage();
+               return false;
+           }
+
+           iter.next();
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    bool parseCommandLineOption(ArgvIterator &iter)
+    {
+        if (EsdlPublishCmdCommon::parseCommandLineOption(iter))
+            return true;
+
+        return false;
+    }
+
+    bool finalizeOptions(IProperties *globals)
+    {
+
+        if (optTargetESPProcName.isEmpty())
+            throw MakeStringException( 0, "Name of Target ESP process must be provided!" );
+
+        if (optEspBinding.isEmpty())
+            throw MakeStringException( 0, "Target ESP Binding must be provided!" );
+
+        return true;
+    }
+};
+
+class EsdlDeleteESDLDefCmd : public EsdlPublishCmdCommon
+{
+public:
+    int processCMD()
+    {
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientDeleteESDLDefinitionRequest> request = esdlConfigClient->createDeleteESDLDefinitionRequest();
+
+        fprintf(stderr,"\nAttempting to delete ESDL definition: '%s.%d'\n", optESDLService.get, optVersion);
+
+        StringBuffer id;
+        id.set(optESDLService.get()).append('.').append(optVersion);
+
+        request->setId(id);
+
+        Owned<IClientDeleteESDLRegistryEntryResponse> resp = esdlConfigClient->DeleteESDLDefinition(request);
+
+        if (resp->getExceptions().ordinality()>0)
+        {
+            EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
+            return 1;
+        }
+
+        fprintf(stdout, "\n %s.\n", resp->getStatus().getDescription());
+
+        return 0;
+    }
+
+    void usage()
+    {
+        printf( "\nUsage:\n\n"
+                "esdl delete <ESDLServiceDefinitionName> <ESDLServiceDefinitionVersion> [command options]\n\n"
+                "   ESDLServiceDefinitionName         The name of the ESDL service definition to delete\n"
+                "   ESDLServiceDefinitionVersion      The version of the ESDL service definition to delete\n");
+
+                EsdlPublishCmdCommon::usage();
+
+        printf( "\n   Use this command to delete an ESDL Service definition.\n"
+                "   To delete an ESDL Service definition, provide the definition name and version\n"
+                );
+
+        printf("\nExample:"
+                ">esdl delete myesdldef 5\n"
+                );
+    }
+
+    bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        for (int cur = 0; cur < 2 && !iter.done(); cur++)
+        {
+           const char *arg = iter.query();
+           if (*arg != '-')
+           {
+               switch (cur)
+               {
+                case 0:
+                    optESDLService.set(arg);
+                    break;
+                case 1:
+                    optVersionStr.set(arg);
+                    break;
+                default:
+                    fprintf(stderr, "\nUnrecognized positional argument detected : %s\n", arg);
+                    usage();
+                    return false;
+               }
+           }
+           else
+           {
+               fprintf(stderr, "\nOption detected before required arguments: %s\n", arg);
+               usage();
+               return false;
+           }
+
+           iter.next();
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    bool parseCommandLineOption(ArgvIterator &iter)
+    {
+        if (EsdlPublishCmdCommon::parseCommandLineOption(iter))
+            return true;
+
+        return false;
+    }
+
+    bool finalizeOptions(IProperties *globals)
+    {
+
+        if (optESDLService.isEmpty())
+            throw MakeStringException( 0, "Name of ESDL service definition must be provided!" );
+
+        if (!optVersionStr.isEmpty())
+        {
+            optVersion = atof( optVersionStr.get() );
+            if( optVersion <= 0 )
+            {
+                throw MakeStringException( 0, "Version option must be followed by a real number > 0" );
+            }
+        }
+        else
+            throw MakeStringException( 0, "ESDL service definition version must be provided!" );
+
+        return true;
+    }
+};
+
+class EsdlListESDLDefCmd : public EsdlPublishCmdCommon
+{
+public:
+    int processCMD()
+    {
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientListESDLDefinitionsRequest> req = esdlConfigClient->createListESDLDefinitionsRequest();
+
+        fprintf(stderr,"\nAttempting to list ESDL definitions.\n");
+
+        Owned<IClientListESDLDefinitionsResponse> resp = esdlConfigClient->ListESDLDefinitions(req);
+
+
+        if (resp->getExceptions().ordinality()>0)
+        {
+            EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
+            return 1;
+        }
+
+        IArrayOf<IConstESDLDefinition> defs = resp->getDefinitions();
+        if (defs.length() > 0)
+            fprintf(stdout, "\nESDL Definitions found:\n");
+
+        ForEachItemIn(defindex, defs)
+        {
+            IConstESDLDefinition & def = defs.item(defindex);
+            fprintf(stdout, "\t%s \n", def.getId());
+        }
+        return 0;
+    }
+
+    void usage()
+    {
+        printf( "\nUsage:\n\n"
+                "esdl list-definitions [command options]\n\n"
+              );
+
+              EsdlPublishCmdCommon::usage();
+    }
+
+    bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    bool parseCommandLineOption(ArgvIterator &iter)
+    {
+        if (EsdlPublishCmdCommon::parseCommandLineOption(iter))
+            return true;
+
+        return false;
+    }
+
+    bool finalizeOptions(IProperties *globals)
+    {
+        return true;
+    }
+};
+
+class EsdlListESDLBindingsCmd : public EsdlPublishCmdCommon
+{
+public:
+    int processCMD()
+    {
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientListESDLBindingsRequest> req = esdlConfigClient->createListESDLBindingsRequest();
+
+        fprintf(stderr,"\nAttempting to list ESDL bindings.\n");
+
+        Owned<IClientListESDLBindingsResponse> resp = esdlConfigClient->ListESDLBindings(req);
+
+
+        if (resp->getExceptions().ordinality()>0)
+        {
+            EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
+            return 1;
+        }
+
+        IArrayOf<IConstESDLBinding> binds = resp->getBindings();
+        if (binds.length() > 0)
+            fprintf(stdout, "\nESDL Bindings found:\n");
+
+        ForEachItemIn(bindindex, binds)
+        {
+            IConstESDLBinding & bind = binds.item(bindindex);
+            fprintf(stdout, "\t%s \n", bind.getId());
+        }
+
+        return 0;
+    }
+
+    void usage()
+    {
+        printf( "\nUsage:\n\n"
+                "esdl list-bindings [command options]\n\n"
+              );
+
+        EsdlPublishCmdCommon::usage();
+    }
+
+    bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        for (; !iter.done(); iter.next())
+        {
+            if (parseCommandLineOption(iter))
+                continue;
+
+            if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
+                return false;
+        }
+
+        return true;
+    }
+
+    bool parseCommandLineOption(ArgvIterator &iter)
+    {
+        if (EsdlPublishCmdCommon::parseCommandLineOption(iter))
+            return true;
+
+        return false;
+    }
+
+    bool finalizeOptions(IProperties *globals)
+    {
+        return true;
+    }
+};
+
 class EsdlBindMethodCmd : public EsdlBindServiceCmd
 {
 protected:
@@ -490,7 +869,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\n %s.", resp->getStatus().getDescription());
+        fprintf(stdout, "\n %s.\n", resp->getStatus().getDescription());
 
         return 0;
     }
@@ -736,7 +1115,7 @@ class EsdlGetDefinitionCmd : public EsdlGetCmd
             }
 
             fprintf(stdout, "\n%s", resp->getXMLDefinition());
-            fprintf(stdout, "\n%s.", resp->getStatus().getDescription());
+            fprintf(stdout, "\n%s.\n", resp->getStatus().getDescription());
 
             return 0;
         }
@@ -782,7 +1161,7 @@ public:
         }
 
         fprintf(stdout, "\n%s", resp->getConfigXML());
-        fprintf(stdout, "\n%s.", resp->getStatus().getDescription());
+        fprintf(stdout, "\n%s.\n", resp->getStatus().getDescription());
 
         return 0;
     }
