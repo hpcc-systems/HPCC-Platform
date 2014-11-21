@@ -441,6 +441,14 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
             unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
             updateWorkunitTimeStat(wu, SSTcompilestage, "compile:generate c++", StTimeElapsed, NULL, elapsed);
         }
+        if (wu->getDebugValueBool("addMemoryToWorkunit", true))
+        {
+            memsize_t peakVm, peakResident;
+            getPeakMemUsage(peakVm, peakResident);
+            if (peakResident)
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StSizePeakMemory, NULL, peakResident, 1, 0, StatsMergeReplace);
+        }
+
 
         wu->commit();
         addWorkUnitAsResource();
