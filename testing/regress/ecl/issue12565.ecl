@@ -1,3 +1,4 @@
+//class=version
 //version passedName='rectangle',rectangle.width=40
 //version passedName='rectangle',rectangle.height=40
 //version passedName='rectangle',rectangle.width=20,rectangle.height=20

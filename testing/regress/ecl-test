@@ -73,25 +73,13 @@ class RegressMain:
         for cluster in self.targetClusters:
             try:
                 self.regress.config.ip = self.regress.config.IpAddress[cluster]
-                if len(eclfiles) > 1:
+                if len(eclfiles) :
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
                     self.regress.bootstrap(cluster, self.args,  eclfiles)
                     if  self.args.pq:
                         self.regress.runSuiteP(cluster, self.regress.suites[cluster])
                     else:
                         self.regress.runSuite(cluster, self.regress.suites[cluster])
-                elif len(eclfiles) == 1:
-                    # Execute one ECL file on the cluster
-                    for ecl in eclfiles:
-                        eclfile = ECLFile(ecl, self.regress.dir_a, self.regress.dir_ex, self.regress.dir_r, cluster,  self.args)
-                        # Check if this query is not skip on this cluster and not part of setup
-                        if (not eclfile.testSkip(cluster)['skip']) and (not eclfile.testSkip('setup')['skip'] ):
-                            if not eclfile.testExclusion(cluster):
-                                self.regress.runSuiteQ(cluster, eclfile)
-                            else:
-                                logging.warn("%s. %s excluded on %s cluster." % (1,  eclfile.getBaseEcl(), cluster))
-                        else:
-                            logging.warn("%s. %s skipped on %s cluster." % (1, eclfile.getBaseEcl(), cluster))
                 else:
                     logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  self.args.target))
                     raise Error("4001")
@@ -167,8 +155,6 @@ class RegressMain:
                             nargs=1, type=checkXParam,  default='None',  metavar="optionA=valueA[,optionB=valueB...]")
         commonParser.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )",
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
-        commonParser.add_argument('--dynamic', help="execute ECL query through a generated stub with source cluster(s).",
-                            nargs=1, type=checkXParam,  default='None',  metavar="source=cluster_list|all")
 
         executionParser=argparse.ArgumentParser(add_help=False)
         executionParser.add_argument('--runclass', '-r', help="run subclass(es) of the suite. Default value is 'all'",

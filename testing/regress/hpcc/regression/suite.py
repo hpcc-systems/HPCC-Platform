@@ -41,12 +41,6 @@ class Suite:
         self.logDir = logDir
         self.exclude = []
         self.publish = []
-        self.isDynamicSource=False
-        if args.dynamic != 'None':
-            self.isDynamicSource=True
-            self.dynamicSources=args.dynamic[0].replace('source=', '').replace('\'','').split(',')
-            self.dynamicSources=checkClusters(self.dynamicSources,  "Dynamic source")
-            pass
 
         self.cleanUp()
 
@@ -124,19 +118,35 @@ class Suite:
                     self.publish.append(eclfile.getBaseEcl())
 
     def addFileToSuite(self, eclfile):
-        if eclfile.testDynamicSource() and self.isDynamicSource:
-            # going through the source lists
+        haveVersions = eclfile.testVesion()
+        if haveVersions:
             basename = eclfile.getEcl()
-            for source in self.dynamicSources:
-                # generates ECLs based on sources
-                eclfile = ECLFile(basename, self.dir_a, self.dir_ex,
-                                  self.dir_r,  self.name, self.args)
-                eclfile.setDynamicSource(source)
-                # add newly generated ECL to suite
-                self.suite.append(eclfile)
+            files=[]
+            versions = eclfile.getVersions()
+            versionId = 1
+            for version in versions:
+                files.append({'basename':basename, 'version':version,  'id':versionId })
+                versionId += 1
+                pass
             pass
+
+            # We have a list of  different versions
+            # generate ECLs to suite
+            for file in files:
+                generatedEclFile = ECLFile(basename, self.dir_a, self.dir_ex,
+                                 self.dir_r,  self.name, self.args)
+
+                generatedEclFile.setDParameters(file['version'])
+                generatedEclFile.setVersionId(file['id'])
+
+                # add newly generated ECL to suite
+                self.suite.append(generatedEclFile)
+
+            # Clean-up, the original eclfile object not necessary anymore
+            eclfile.close()
         else:
             self.suite.append(eclfile)
+        pass
 
     def testPublish(self, ecl):
         if ecl in self.publish:
