@@ -135,7 +135,8 @@ public:
         // returns index of first = val >= from
         unsigned n=bits.ordinality();
         unsigned i;
-        for (i=from/BitsPerItem;i<n;i++) {
+        for (i=from/BitsPerItem;i<n;i++)
+        {
             bits_t m=bits.item(i);
             if (m!=noMatchMask)
             {
@@ -162,9 +163,11 @@ public:
                 //Guaranteed a match at this point
                 if (tst)
                 {
-                    //Returns one plus the index of the least significant 1-bit of testMask (testMask != 0)
+                    //Returns one plus the index of the least significant 1-bit of testMask
+                    //(testMask != 0) since that has been checked above (noMatchMask == 0)
                     unsigned pos = __builtin_ffs(testMask)-1;
-                    if (scninv) {
+                    if (scninv)
+                    {
                         bits_t t = ((bits_t)1)<<pos;
                         m &= ~t;
                         bits.replace(m,i);
@@ -175,7 +178,8 @@ public:
                 {
                     //Same as above but invert the bitmask
                     unsigned pos = __builtin_ffs(~testMask)-1;
-                    if (scninv) {
+                    if (scninv)
+                    {
                         bits_t t = ((bits_t)1)<<pos;
                         m |= t;
                         bits.replace(m,i);
@@ -184,19 +188,26 @@ public:
                 }
 #else
                 bits_t t = ((bits_t)1)<<j;
-                for (;j<BitsPerItem;j++) {
-                    if (t&m) {
-                        if (tst) {
-                            if (scninv) {
+                for (;j<BitsPerItem;j++)
+                {
+                    if (t&m)
+                    {
+                        if (tst)
+                        {
+                            if (scninv)
+                            {
                                 m &= ~t;
                                 bits.replace(m,i);
                             }
                             return i*BitsPerItem+j;
                         }
                     }
-                    else {
-                        if (!tst) {
-                            if (scninv) {
+                    else
+                    {
+                        if (!tst)
+                        {
+                            if (scninv)
+                            {
                                 m |= t;
                                 bits.replace(m,i);
                             }
