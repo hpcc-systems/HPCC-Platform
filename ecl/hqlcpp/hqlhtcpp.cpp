@@ -2153,7 +2153,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     {
         StringBuffer text;
         getRecordCountText(text, dataset);
-        addAttribute("recordCount", text);
+        addAttribute("predictedCount", text);
     }
 
     processAnnotations(dataset);
