@@ -1945,6 +1945,7 @@ protected:
     unsigned            nextUid;
     unsigned            nextTypeId;
     unsigned            nextFieldId;
+    unsigned            curWfid;
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;

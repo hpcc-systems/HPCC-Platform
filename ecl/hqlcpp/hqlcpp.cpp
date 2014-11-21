@@ -1412,6 +1412,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     nextUid = 0;
     nextTypeId = 0;
     nextFieldId = 0;
+    curWfid = 0;
     code = (HqlCppInstance*)_code;
     xmlUsesContents = false;
 }
