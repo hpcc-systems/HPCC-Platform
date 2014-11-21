@@ -2365,12 +2365,15 @@ bool HqlRowCountInfo::extractHint(IHqlExpression * hint)
 void HqlRowCountInfo::getText(StringBuffer & text) const
 {
     min->queryValue()->generateECL(text);
-    text.append("..");
-    if (max->queryValue())
-        max->queryValue()->generateECL(text);
-    else
-        text.append("?");
-    text.append("[").append(magnitudeText[magnitude]).append("]");
+    if (min != max)
+    {
+        text.append("..");
+        if (max->queryValue())
+            max->queryValue()->generateECL(text);
+        else
+            text.append("?");
+        text.append("[").append(magnitudeText[magnitude]).append("]");
+    }
 }
 
 void HqlRowCountInfo::limitMin(__int64 value)
