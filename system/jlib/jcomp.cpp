@@ -22,6 +22,7 @@
 #include "jcomp.hpp"
 #include "jsem.hpp"
 #include "jexcept.hpp"
+#include "jregexp.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -505,6 +506,100 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     pool->start(parm.get());
 
     return true;
+}
+
+void CppCompiler::extractErrors(IArrayOf<IError> & errors)
+{
+    const char* cclog = ccLogPath.get();
+    if(!cclog||!*cclog)
+        cclog = queryCcLogName();
+    Owned <IFile> logfile = createIFile(cclog);
+    if (!logfile->exists())
+        return;
+
+    try
+    {
+        StringBuffer file;
+        file.loadFile(logfile);
+
+        RegExpr vsErrorPattern("^{.+}({[0-9]+}) : error {.*$}");
+        RegExpr vsLinkErrorPattern("^{.+} : error {.*$}");
+
+        //cpperr.ecl:7:10: error: ‘syntaxError’ was not declared in this scope
+        RegExpr gccErrorPattern("^{.+}:{[0-9]+}:{[0-9]+}: {[a-z]+}: {.*$}");
+        RegExpr gccLinkErrorPattern("^{.+}:[^:]+: {.*$}"); // undefined reference
+        RegExpr gccLinkErrorPattern2("^.+ld: {.*$}"); // fail to find library etc.
+        RegExpr gccExitStatusPattern("^.*exit status$"); // collect2: error: ld returned 1 exit status
+        const char * cur = file.str();
+        do
+        {
+            const char * newline = strchr(cur, '\n');
+            StringAttr next;
+            if (newline)
+            {
+                next.set(cur, newline-cur);
+                cur = newline+1;
+                if (*cur == '\r')
+                    cur++;
+            }
+            else
+            {
+                next.set(cur);
+                cur = NULL;
+            }
+
+            if (gccExitStatusPattern.find(next))
+            {
+                //ignore
+            }
+            else if (gccErrorPattern.find(next))
+            {
+                StringBuffer filename, line, column, kind, msg;
+                gccErrorPattern.findstr(filename, 1);
+                gccErrorPattern.findstr(line, 2);
+                gccErrorPattern.findstr(column, 3);
+                gccErrorPattern.findstr(kind, 4);
+                gccErrorPattern.findstr(msg, 5);
+
+                if (streq(kind, "warning"))
+                    errors.append(*createError(CategoryCpp, SeverityWarning, 2999, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+                else
+                    errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+            }
+            else if (gccLinkErrorPattern.find(next))
+            {
+                StringBuffer filename, msg;
+                gccLinkErrorPattern.findstr(filename, 1);
+                gccLinkErrorPattern.findstr(msg, 2);
+                errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), 0, 0, 0));
+            }
+            else if (gccLinkErrorPattern2.find(next))
+            {
+                StringBuffer msg("C++ link error: ");
+                gccLinkErrorPattern2.findstr(msg, 1);
+                errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), NULL, 0, 0, 0));
+            }
+            else if (vsErrorPattern.find(next))
+            {
+                StringBuffer filename, line, msg("C++ compiler error: ");
+                vsErrorPattern.findstr(filename, 1);
+                vsErrorPattern.findstr(line, 2);
+                vsErrorPattern.findstr(msg, 3);
+                errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), atoi(line), 0, 0));
+            }
+            else if (vsLinkErrorPattern.find(next))
+            {
+                StringBuffer filename, msg("C++ link error: ");
+                vsLinkErrorPattern.findstr(filename, 1);
+                vsLinkErrorPattern.findstr(msg, 2);
+                errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), 0, 0, 0));
+            }
+        } while (cur);
+    }
+    catch (IException * e)
+    {
+        e->Release();
+    }
 }
 
 void CppCompiler::expandCompileOptions(StringBuffer & target)

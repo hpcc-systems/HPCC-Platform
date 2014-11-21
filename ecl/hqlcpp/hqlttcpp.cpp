@@ -9511,7 +9511,7 @@ void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg)
     int startColumn = location ? location->getStartColumn() : 0;
     ISourcePath * sourcePath = location ? location->querySourcePath() : NULL;
     ErrorSeverity severity = queryDefaultSeverity(category);
-    Owned<IECLError> err = createECLError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
+    Owned<IError> err = createError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
     errors.report(err);        // will throw immediately if it is an error.
 }
 
@@ -11529,12 +11529,12 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
         }
         catch (IException * e)
         {
-            if (dynamic_cast<IECLError *>(e))
+            if (dynamic_cast<IError *>(e))
                 throw;
             IHqlExpression * location = queryLocation(expr);
             if (location)
             {
-                IECLError * error = annotateExceptionWithLocation(e, location);
+                IError * error = annotateExceptionWithLocation(e, location);
                 e->Release();
                 throw error;
             }

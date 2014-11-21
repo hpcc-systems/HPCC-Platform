@@ -5756,7 +5756,7 @@ void TempTableTransformer::reportError(IHqlExpression * location, int code,const
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    Owned<IECLError> err = createECLError(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    Owned<IError> err = createError(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
     errorProcessor.report(err);
 }
 
@@ -6618,10 +6618,10 @@ void ErrorSeverityMapper::restoreState(const ErrorSeverityMapperState & saved)
     activeSymbol = saved.symbol;
 }
 
-IECLError * ErrorSeverityMapper::mapError(IECLError * error)
+IError * ErrorSeverityMapper::mapError(IError * error)
 {
     //An error that is fatal cannot be mapped.
-    Owned<IECLError> mappedError = IndirectErrorReceiver::mapError(error);
+    Owned<IError> mappedError = IndirectErrorReceiver::mapError(error);
     if (!isFatal(mappedError))
     {
         //This takes precedence over mappings in the parent
@@ -6697,8 +6697,8 @@ public:
             }
         case annotate_warning:
             {
-                IECLError * error = static_cast<CHqlWarningAnnotation *>(expr)->queryWarning();
-                Owned<IECLError> mappedError = mapper.mapError(error);
+                IError * error = static_cast<CHqlWarningAnnotation *>(expr)->queryWarning();
+                Owned<IError> mappedError = mapper.mapError(error);
                 mapper.report(mappedError);
                 break;
             }
@@ -6717,7 +6717,7 @@ protected:
 };
 
 
-void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLErrorArray & orphanedWarnings)
+void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IErrorArray & orphanedWarnings)
 {
     if (!errs || !expr)
         return;
@@ -6735,7 +6735,7 @@ void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLError
 
     ForEachItemIn(i, orphanedWarnings)
     {
-        Owned<IECLError> mappedError = globalOnWarning->mapError(&orphanedWarnings.item(i));
+        Owned<IError> mappedError = globalOnWarning->mapError(&orphanedWarnings.item(i));
         globalOnWarning->report(mappedError);
     }
 }
@@ -8257,12 +8257,12 @@ IHqlExpression * ensureOwned(IHqlExpression * expr)
 }
 
 
-IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * location)
+IError * annotateExceptionWithLocation(IException * e, IHqlExpression * location)
 {
     StringBuffer errorMsg;
     e->errorMessage(errorMsg);
     unsigned code = e->errorCode();
-    return createECLError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
+    return createError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
 }
 
 StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix)

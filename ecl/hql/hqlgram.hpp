@@ -574,7 +574,7 @@ public:
     void doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
     void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
-    void reportMacroExpansionPosition(IECLError * warning, HqlLex * lexer);
+    void reportMacroExpansionPosition(IError * warning, HqlLex * lexer);
     void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
 
     // Don't use overloading: va_list is the same as char*!!
@@ -588,8 +588,8 @@ public:
 
     // interface IErrorReceiver
     virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
-    virtual void report(IECLError * error);
-    virtual IECLError * mapError(IECLError * error);
+    virtual void report(IError * error);
+    virtual IError * mapError(IError * error);
     void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual size32_t errCount();
     virtual size32_t warnCount();
@@ -846,7 +846,7 @@ protected:
     bool expandingMacroPosition;
     unsigned m_maxErrorsAllowed;
 
-    IECLErrorArray pendingWarnings;
+    IErrorArray pendingWarnings;
     Linked<ISourcePath> sourcePath;
     IIdAtom * moduleName;
     IIdAtom * current_id;
