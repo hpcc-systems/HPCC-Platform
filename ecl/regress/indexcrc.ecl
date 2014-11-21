@@ -61,9 +61,9 @@ ds1 := DATASET('crcbug1.d00', {prec, UNSIGNED8 fp{virtual(fileposition)}}, FLAT)
 ds2 := DATASET('crcbug2.d00', {prec_combined, UNSIGNED8 fp{virtual(fileposition)}}, FLAT);
 ds3 := DATASET('crcbug3.d00', {prec_mod, UNSIGNED8 fp{virtual(fileposition)}}, FLAT);
 
-idx1 := INDEX(ds1, {i}, {DATASET chld := chld, fp}, 'crcbug1.idx');
-idx2 := INDEX(ds2, {i}, {DATASET chld := chld, fp}, 'crcbug2.idx');
-idx3 := INDEX(ds3, {i}, {DATASET chld := chld, fp}, 'crcbug3.idx');
+idx1 := INDEX(ds1, {i}, { DATASET(chld), fp}, 'crcbug1.idx');
+idx2 := INDEX(ds2, {i}, { DATASET(chld), fp}, 'crcbug2.idx');
+idx3 := INDEX(ds3, {i}, { DATASET chld := chld, fp}, 'crcbug3.idx');
 
 SEQUENTIAL(
     OUTPUT(baseds, , 'crcbug1.d00', OVERWRITE),
