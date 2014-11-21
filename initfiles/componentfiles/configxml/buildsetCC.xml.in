@@ -314,6 +314,19 @@
                           service="ecldirect"/>
     </Properties>
    </BuildSet>
+   <BuildSet deployable="no"
+             installSet="deploy_map.xml"
+             name="DynamicESDL"
+             path="componentfiles/esdlsvcengine"
+             processName="EspService"
+             schema="esdlsvcengine.xsd">
+     <Properties bindingType="EsdlBinding"
+                 defaultPort="8043"
+                 defaultResourcesBasedn="ou=EspServices,ou=ecl"
+                 defaultSecurePort="18043"
+                 plugin="esdl_svc_engine"
+                 type="DynamicESDL"/>
+    </BuildSet>
   </Build>
 </Programs>
 </Environment>

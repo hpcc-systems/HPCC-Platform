@@ -1,0 +1,185 @@
+/*##############################################################################
+HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+############################################################################## */
+
+ESPrequest EchoRequest
+{
+    string Request;
+};
+
+ESPresponse EchoResponse
+{
+    string Response;
+};
+
+ESPstruct BaseESDLStatus
+{
+    int Code;
+    string Description;
+};
+
+ESPrequest GetESDLDefinitionRequest
+{
+    string Id;
+};
+
+ESPresponse [exceptions_inline] GetESDLDefinitionResponse
+{
+    string Id;
+    string XMLDefinition;
+    ESPstruct BaseESDLStatus status;
+};
+
+ESPrequest PublishESDLDefinitionRequest
+{
+    string ServiceName;
+    string XMLDefinition;
+    boolean DeletePrevious;
+};
+
+ESPresponse [exceptions_inline] PublishESDLDefinitionResponse
+{
+    string ServiceName;
+    int EsdlVersion;
+    boolean DeletePrevious;
+    ESPstruct BaseESDLStatus status;
+};
+
+ESPrequest PublishESDLBindingRequest
+{
+    string EspProcName;        //Name of ESP Process
+    string EspBindingName;     //Name of ESP Binding - optional, but we must be able to look it up. We can look it up by EspProc + Esp Port or EspProc + Esp Service.
+    string EspPort;            //Esp Proc + Esp port = ESP Binding
+    string EspServiceName;     //Esp Proc + Esp service name = ESP Binding
+                               //Therefore, either pass in EspBindingName, or Esp Port or ESP ServiceName
+    string EsdlDefinitionID;   // The ESDL definition name.ver
+    string EsdlServiceName;    //Name of service as defined in ESDL Definition
+
+    boolean Overwrite;
+    string Config; // dynamic xml, can have <Binding EspProcess=xxx EspBinding=WsAccurint><Definition name=xx id=xx.yy><Methods><Method>...
+                   //              or  <Definition name=xx id=xx.yy><Methods><Method>...
+                   //              or  <Methods><Method>....
+                   //<methods><Method name="name"  url="http://10.173.128.100:9876" password="h7webmX+vmTgtAsFmC+ahQ==" username="rpastrana" queryname="UPS_Services.RightAddressService" status="available" testrepo="0" querytype="roxie"/><Methods>
+};
+
+ESPresponse [exceptions_inline] PublishESDLBindingResponse
+{
+    string EsdlDefinitionID; // The ESDL definition name.ver
+    boolean Overwrite;
+    string EspProcName;     //Name of ESP Process
+    string EspPort;         //Name + port = service
+    ESPstruct BaseESDLStatus status;
+};
+
+ESPrequest ConfigureESDLBindingMethodRequest
+{
+    string EspProcName;       //Name of ESP Process
+    string EspBindingName;    //Name + port = binding
+    string EspPort;            //Esp Proc + Esp port = ESP Binding
+    string EsdlDefinitionID;   // The ESDL definition name.ver
+    string EsdlServiceName;    //Name of service as defined in ESDL Definition
+    //string MethodName;         //If no port is provided
+    boolean Overwrite;
+    //string Attributes;        //xml <methods><Method name="name" url="http://vvvzzz.yyy.xxx:9876" password="h7fermX+gmYuuBwUsS-qeZ==" username="myname" queryname="UPS_Services.RightAddressService" status="available" testrepo="0" querytype="roxie"/><Methods>
+    string Config; // dynamic xml, can have <Binding EspProcess=xxx EspBinding=WsAccurint><Definition name=xx id=xx.yy><Methods><Method>...
+                   //              or  <Definition name=xx id=xx.yy><Methods><Method>...
+                   //              or  <Methods><Method>....
+                   //<methods><Method name="name"  url="http://10.173.128.100:9876" password="h7webmX+vmTgtAsFmC+ahQ==" username="rpastrana" queryname="UPS_Services.RightAddressService" status="available" testrepo="0" querytype="roxie"/><Methods>
+};
+
+ESPresponse [exceptions_inline] ConfigureESDLBindingMethodResponse
+{
+    string ServiceName;         //which ESDL definition are we configuring
+    int ServiceEsdlVersion;     //which version of the ESDL def are we configuring
+    string EspProcName;         //Name of ESP Process
+    ESPstruct BaseESDLStatus status;
+};
+
+ESPrequest GetESDLBindingRequest
+{
+    string EspProcName;   //Name of ESP Process
+    string EspBindingName;
+    string EspPort;       //Name + port = service
+    string EsdlBindingId; //espprocname.espbinding
+};
+
+ESPresponse [exceptions_inline] GetESDLBindingResponse
+{
+    string ServiceName;  //which ESDL definition are we configuring
+    string EspProcName;   //Name of ESP Process
+    string BindingName;
+    string EspPort;
+    string ConfigXML;
+    ESPstruct BaseESDLStatus status;
+};
+
+ESPrequest DeleteESDLDefinitionRequest
+{
+    string Id;
+    string Name;
+    string Version;
+};
+
+ESPrequest DeleteESDLBindingRequest
+{
+    string Id;
+    string EspProcess;
+    string EspBinding;
+};
+
+ESPresponse [exceptions_inline] DeleteESDLRegistryEntryResponse
+{
+    string DeletedTree;
+    ESPstruct BaseESDLStatus status;
+};
+
+ESPrequest ListESDLDefinitionsRequest
+{
+};
+
+ESPstruct ESDLBinding
+{
+    string EspProcess;
+    string EspBinding;
+    string Id;
+};
+
+ESPstruct ESDLDefinition
+{
+    string Name;
+    int Seq;
+    string Id;
+};
+
+ESPresponse [exceptions_inline] ListESDLDefinitionsResponse
+{
+    ESParray<ESPstruct ESDLDefinition, Definition> Definitions;
+};
+
+ESPrequest ListESDLBindingsRequest
+{
+};
+
+ESPresponse [exceptions_inline] ListESDLBindingsResponse
+{
+    string BindingsXML;
+    ESParray<ESPstruct ESDLBinding, Binding> Bindings;
+};
+
+ESPservice [version("1.0"), default_client_version("1.0"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+{
+    ESPmethod Echo(EchoRequest, EchoResponse);
+    ESPmethod PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);
+    ESPmethod PublishESDLBinding(PublishESDLBindingRequest, PublishESDLBindingResponse);
+    ESPmethod ConfigureESDLBindingMethod(ConfigureESDLBindingMethodRequest, ConfigureESDLBindingMethodResponse);
+    ESPmethod GetESDLBinding(GetESDLBindingRequest, GetESDLBindingResponse);
+    ESPmethod DeleteESDLBinding(DeleteESDLBindingRequest, DeleteESDLRegistryEntryResponse);
+    ESPmethod DeleteESDLDefinition(DeleteESDLDefinitionRequest, DeleteESDLRegistryEntryResponse);
+    ESPmethod GetESDLDefinition(GetESDLDefinitionRequest, GetESDLDefinitionResponse);
+    ESPmethod ListESDLDefinitions(ListESDLDefinitionsRequest, ListESDLDefinitionsResponse);
+    ESPmethod ListESDLBindings(ListESDLBindingsRequest, ListESDLBindingsResponse);
+};
+
+SCMexportdef(WsESDLConfig);
+
+SCMapi(WsESDLConfig) IClientWsESDLConfig *createWsESDLConfigClient();
