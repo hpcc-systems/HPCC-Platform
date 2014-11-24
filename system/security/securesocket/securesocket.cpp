@@ -593,7 +593,7 @@ int CSecureSocket::secure_accept()
 int CSecureSocket::secure_connect()
 {
     int err = SSL_connect (m_ssl);                     
-    if(err < 0)
+    if(err <= 0)
     {
         char errbuf[512];
         ERR_error_string_n(ERR_get_error(), errbuf, 512);
