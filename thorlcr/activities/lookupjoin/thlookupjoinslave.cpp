@@ -671,6 +671,7 @@ class CInMemJoinBase : public CSlaveActivity, public CThorDataLink, public CAllO
     Owned<IException> leftexception;
 
     bool eos, eog, someSinceEog;
+    SpinLock rHSRowSpinLock;
 
 protected:
     typedef CAllOrLookupHelper<HELPER> HELPERBASE;
@@ -1242,12 +1243,13 @@ public:
     virtual bool addRHSRow(CThorSpillableRowArray &rhsRows, const void *row)
     {
         LinkThorRow(row);
-        if (!rhsRows.append(row))
         {
-            ReleaseThorRow(row);
-            return false;
+            SpinBlock b(rHSRowSpinLock);
+            if (rhsRows.append(row))
+                return true;
         }
-        return true;
+        ReleaseThorRow(row);
+        return false;
     }
 // ISmartBufferNotify
     virtual void onInputStarted(IException *except)
@@ -1492,6 +1494,7 @@ protected:
         CMarker marker(*this);
         if (needGlobal)
         {
+            rhsAlreadySorted = false;
             doBroadcastRHS(stopping);
             rowidx_t rhsRows;
             {
