@@ -49,6 +49,8 @@
 #include "build-config.h"
 #include "rmtfile.hpp"
 
+#include "reservedwords.hpp"
+
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
@@ -244,6 +246,7 @@ public:
         optGenerateMeta = false;
         optGenerateDepend = false;
         optIncludeMeta = false;
+        optKeywords = false;
         optLegacyImport = false;
         optLegacyWhen = false;
         optShared = false;
@@ -269,6 +272,7 @@ public:
         defaultAllowed = true;
     }
 
+    bool printKeywordsToXml();
     bool parseCommandLineOptions(int argc, const char* argv[]);
     void loadOptions();
     void loadManifestOptions();
@@ -363,6 +367,7 @@ protected:
     bool optGenerateMeta;
     bool optGenerateDepend;
     bool optIncludeMeta;
+    bool optKeywords;
     bool optWorkUnit;
     bool optNoCompile;
     bool optNoLogFile;
@@ -426,6 +431,10 @@ static int doMain(int argc, const char *argv[])
     EclCC processor(argc, argv);
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;
+
+    if (processor.printKeywordsToXml())
+        return 0;
+
     try
     {
         if (!processor.processFiles())
@@ -1895,6 +1904,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchPathFlag(includeLibraryPath, "-I"))
         {
         }
+        else if (iter.matchFlag(optKeywords, "--keywords"))
+        {
+        }
         else if (iter.matchFlag(tempArg, "-L"))
         {
             libraryPaths.append(tempArg);
@@ -2072,7 +2084,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
     loadManifestOptions();
 
-    if (inputFileNames.ordinality() == 0)
+    if (inputFileNames.ordinality() == 0 && !optKeywords)
     {
         if (optGenerateHeader || optShowPaths || (!optBatchMode && optQueryRepositoryReference))
             return true;
@@ -2148,6 +2160,7 @@ const char * const helpText[] = {
     "    -help -v      Display verbose help message",
     "!   -internal     Run internal tests",
     "!   -legacy       Use legacy import and when semantics (deprecated)",
+    "!   --keywords    Outputs the list of ECL reserved words to ECLKeywords.xml",
     "!   -legacyimport Use legacy import semantics (deprecated)",
     "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
@@ -2403,4 +2416,11 @@ void EclCC::processBatchFiles()
     batchLog = NULL;
 }
 
+bool EclCC::printKeywordsToXml()
+{
+    if(!optKeywords)
+        return false;
 
+    ::printKeywordsToXml();
+    return true;
+}
