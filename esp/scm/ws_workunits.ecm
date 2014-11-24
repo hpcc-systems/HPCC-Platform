@@ -1571,6 +1571,43 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
     ESPStruct DeploymentFeatures Deployment;
 };
 
+ESPStruct [nil_remove] WUStatisticItem
+{
+    string Creator;
+    string CreatorType;
+    string Scope;
+    string ScopeType;
+    string Description;
+    string TimeStamp;
+    string Measure;
+    string Kind;
+    string Value;
+    unsigned RawValue;
+    unsigned Count;
+    unsigned Max;
+};
+
+ESPrequest [nil_remove] WUGetStatsRequest
+{
+    string WUID;
+    string CreatorType;
+    string Creator;
+    string ScopeType;
+    string Scope;
+    string Kind;
+    string Measure;
+    unsigned MinScopeDepth;
+    unsigned MaxScopeDepth;
+    boolean IncludeGraphs;
+    boolean CreateDescriptions;
+};
+
+ESPresponse [exceptions_inline] WUGetStatsResponse
+{
+    string WUID;
+    ESParray<ESPstruct WUStatisticItem> Statistics;
+};
+
 ESPservice [
     version("1.54"), default_client_version("1.54"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
@@ -1647,6 +1684,7 @@ ESPservice [
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
     ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
+    ESPmethod WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
 };
 
 
