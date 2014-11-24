@@ -23,8 +23,8 @@
 #include <assert.h>
 #include <eclrtl.hpp>
 
-#ifdef _WINDOWS
-    #include <sys/timeb.h>
+#ifdef _WIN32
+#include <sys/timeb.h>
 #endif
 
 #include "timelib.hpp"
@@ -53,9 +53,9 @@ static const char * EclDefinition =
 "  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds) : c,pure,entrypoint='tlSecondsToParts'; \n"
 "  UNSIGNED2 GetDayOfYear(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfYear'; \n"
 "  UNSIGNED1 GetDayOfWeek(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfWeek'; \n"
-"  STRING DateToString(UNSIGNED4 date, VARSTRING format) : c,pure,entrypoint='tlDateToString'; \n"
-"  STRING TimeToString(UNSIGNED3 time, VARSTRING format) : c,pure,entrypoint='tlTimeToString'; \n"
-"  STRING SecondsToString(INTEGER8 seconds, VARSTRING format) : c,pure,entrypoint='tlSecondsToString'; \n"
+"  STRING DateToString(UNSIGNED4 date, CONST VARSTRING format) : c,pure,entrypoint='tlDateToString'; \n"
+"  STRING TimeToString(UNSIGNED3 time, CONST VARSTRING format) : c,pure,entrypoint='tlTimeToString'; \n"
+"  STRING SecondsToString(INTEGER8 seconds, CONST VARSTRING format) : c,pure,entrypoint='tlSecondsToString'; \n"
 "  UNSIGNED4 AdjustDate(UNSIGNED4 date, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta) : c,pure,entrypoint='tlAdjustDate'; \n"
 "  UNSIGNED4 AdjustDateBySeconds(UNSIGNED4 date, INTEGER4 seconds_delta) : c,pure,entrypoint='tlAdjustDateBySeconds'; \n"
 "  UNSIGNED3 AdjustTime(UNSIGNED3 time, INTEGER2 hour_delta, INTEGER4 minute_delta, INTEGER4 second_delta) : c,pure,entrypoint='tlAdjustTime'; \n"
@@ -96,261 +96,273 @@ TIMELIB_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }
 
 //------------------------------------------------------------------------------
 
-#ifdef _WINDOWS
-    const __int64 _onesec_in100ns = (__int64)10000000;
+#ifdef _WIN32
+const __int64 _onesec_in100ns = (__int64)10000000;
 
-    __int64 tlFileTimeToInt64(FILETIME f)
+__int64 tlFileTimeToInt64(FILETIME f)
+{
+    __int64     seconds;
+
+    seconds = f.dwHighDateTime;
+    seconds <<= 32;
+    seconds |= f.dwLowDateTime;
+
+    return seconds;
+}
+
+FILETIME tlInt64ToFileTime(__int64 seconds)
+{
+    FILETIME    f;
+
+    f.dwHighDateTime = (DWORD)((seconds >> 32) & 0x00000000FFFFFFFF);
+    f.dwLowDateTime = (DWORD)(seconds & 0x00000000FFFFFFFF);
+
+    return f;
+}
+
+FILETIME tlFileTimeFromYear(WORD year)
+{
+    SYSTEMTIME  s;
+    FILETIME    f;
+
+    memset(&s, 0, sizeof(s));
+
+    s.wYear = year;
+    s.wMonth = 1;
+    s.wDayOfWeek = 1;
+    s.wDay = 1;
+
+    SystemTimeToFileTime(&s, &f);
+
+    return f;
+}
+
+unsigned int tlYearDayFromSystemTime(const SYSTEMTIME* s)
+{
+    __int64     seconds;
+    FILETIME    f1;
+    FILETIME    f2;
+
+    f1 = tlFileTimeFromYear(s->wYear);
+    SystemTimeToFileTime(s, &f2);
+
+    seconds = tlFileTimeToInt64(f2) - tlFileTimeToInt64(f1);
+
+    return static_cast<unsigned int>((seconds / _onesec_in100ns) / (60 * 60 * 24));
+}
+
+SYSTEMTIME tlTimeStructToSystemTime(struct tm* timeInfoPtr)
+{
+    SYSTEMTIME s;
+
+    s.wYear = timeInfoPtr->tm_year + 1900;
+    s.wMonth = timeInfoPtr->tm_mon + 1;
+    s.wDayOfWeek = timeInfoPtr->tm_wday;
+    s.wDay = timeInfoPtr->tm_mday;
+    s.wHour = timeInfoPtr->tm_hour;
+    s.wMinute = timeInfoPtr->tm_min;
+    s.wSecond = timeInfoPtr->tm_sec;
+    s.wMilliseconds = 0;
+
+    return s;
+}
+
+void tlSystemTimeToTimeStruct_r(SYSTEMTIME* s, struct tm* timeInfoPtr)
+{
+    memset(timeInfoPtr, 0, sizeof(struct tm));
+
+    timeInfoPtr->tm_year = s->wYear - 1900;
+    timeInfoPtr->tm_mon = s->wMonth - 1;
+    timeInfoPtr->tm_wday = s->wDayOfWeek;
+    timeInfoPtr->tm_mday = s->wDay;
+    timeInfoPtr->tm_yday = tlYearDayFromSystemTime(s);
+    timeInfoPtr->tm_hour = s->wHour;
+    timeInfoPtr->tm_min = s->wMinute;
+    timeInfoPtr->tm_sec = s->wSecond;
+    timeInfoPtr->tm_isdst = 0;
+}
+
+time_t tlFileTimeToSeconds(const FILETIME* f)
+{
+    const __int64   offset = 11644473600; // Number of seconds between 1601 and 1970 (Jan 1 of each)
+
+    return static_cast<time_t>((tlFileTimeToInt64(*f) / _onesec_in100ns) - offset);
+}
+
+FILETIME tlSecondsToFileTime(const time_t seconds)
+{
+    FILETIME    f1970 = tlFileTimeFromYear(1970);
+    FILETIME    f;
+    __int64     time;
+
+    time = (seconds * _onesec_in100ns) + tlFileTimeToInt64(f1970);
+
+    f = tlInt64ToFileTime(time);
+
+    return f;
+}
+
+__int64 tlLocalTimeZoneDiffIn100nsIntervals()
+{
+    SYSTEMTIME  systemUTC;
+    SYSTEMTIME  systemLocal;
+    FILETIME    fileUTC;
+    FILETIME    fileLocal;
+
+    GetSystemTime(&systemUTC);
+    GetLocalTime(&systemLocal);
+
+    SystemTimeToFileTime(&systemUTC, &fileUTC);
+    SystemTimeToFileTime(&systemLocal, &fileLocal);
+
+    return tlFileTimeToInt64(fileLocal) - tlFileTimeToInt64(fileUTC);
+}
+
+void tlBoundaryMod(int* tensPtr, int* unitsPtr, int base)
+{
+    if (*unitsPtr >= base)
     {
-        __int64     seconds;
-
-        seconds = f.dwHighDateTime;
-        seconds <<= 32;
-        seconds |= f.dwLowDateTime;
-
-        return seconds;
+        *tensPtr += *unitsPtr / base;
+        *unitsPtr %= base;
     }
-
-    FILETIME tlInt64ToFileTime(__int64 seconds)
+    else if (*unitsPtr < 0)
     {
-        FILETIME    f;
-
-        f.dwHighDateTime = (DWORD)((seconds >> 32) & 0x00000000FFFFFFFF);
-        f.dwLowDateTime = (DWORD)(seconds & 0x00000000FFFFFFFF);
-
-        return f;
-    }
-
-    FILETIME tlFileTimeFromYear(WORD year)
-    {
-        SYSTEMTIME  s;
-        FILETIME    f;
-
-        memset(&s, 0, sizeof(s));
-
-        s.wYear = year;
-        s.wMonth = 1;
-        s.wDayOfWeek = 1;
-        s.wDay = 1;
-
-        SystemTimeToFileTime(&s, &f);
-
-        return f;
-    }
-
-    unsigned int tlYearDayFromSystemTime(const SYSTEMTIME* s)
-    {
-        __int64     seconds;
-        FILETIME    f1;
-        FILETIME    f2;
-
-        f1 = tlFileTimeFromYear(s->wYear);
-        SystemTimeToFileTime(s, &f2);
-
-        seconds = tlFileTimeToInt64(f2) - tlFileTimeToInt64(f1);
-
-        return static_cast<unsigned int>((seconds / _onesec_in100ns) / (60 * 60 * 24));
-    }
-
-    SYSTEMTIME tlTimeStructToSystemTime(struct tm* timeInfoPtr)
-    {
-        SYSTEMTIME s;
-
-        s.wYear = timeInfoPtr->tm_year + 1900;
-        s.wMonth = timeInfoPtr->tm_mon + 1;
-        s.wDayOfWeek = timeInfoPtr->tm_wday;
-        s.wDay = timeInfoPtr->tm_mday;
-        s.wHour = timeInfoPtr->tm_hour;
-        s.wMinute = timeInfoPtr->tm_min;
-        s.wSecond = timeInfoPtr->tm_sec;
-        s.wMilliseconds = 0;
-
-        return s;
-    }
-
-    void tlSystemTimeToTimeStruct_r(SYSTEMTIME* s, struct tm* timeInfoPtr)
-    {
-        memset(timeInfoPtr, 0, sizeof(struct tm));
-
-        timeInfoPtr->tm_year = s->wYear - 1900;
-        timeInfoPtr->tm_mon = s->wMonth - 1;
-        timeInfoPtr->tm_wday = s->wDayOfWeek;
-        timeInfoPtr->tm_mday = s->wDay;
-        timeInfoPtr->tm_yday = tlYearDayFromSystemTime(s);
-        timeInfoPtr->tm_hour = s->wHour;
-        timeInfoPtr->tm_min = s->wMinute;
-        timeInfoPtr->tm_sec = s->wSecond;
-        timeInfoPtr->tm_isdst = 0;
-    }
-
-    time_t tlFileTimeToSeconds(const FILETIME* f)
-    {
-        __int64     offset = 11644473600; // Number of seconds between 1601 and 1970 (Jan 1 of each)
-        __int64     seconds;
-
-        seconds = tlFileTimeToInt64(*f) - offset;
-
-        return static_cast<time_t>(seconds / _onesec_in100ns);
-    }
-
-    FILETIME tlSecondsToFileTime(const time_t seconds)
-    {
-        FILETIME    f1970 = tlFileTimeFromYear(1970);
-        FILETIME    f;
-        __int64     time;
-
-        time = (seconds * _onesec_in100ns) + tlFileTimeToInt64(f1970);
-
-        f = tlInt64ToFileTime(time);
-
-        return f;
-    }
-
-    __int64 tlLocalTimeDiff()
-    {
-        SYSTEMTIME  systemUTC;
-        SYSTEMTIME  systemLocal;
-        FILETIME    fileUTC;
-        FILETIME    fileLocal;
-
-        GetSystemTime(&systemUTC);
-        GetLocalTime(&systemLocal);
-
-        SystemTimeToFileTime(&systemUTC, &fileUTC);
-        SystemTimeToFileTime(&systemLocal, &fileLocal);
-
-        return tlFileTimeToInt64(fileUTC) - tlFileTimeToInt64(fileLocal);
-    }
-
-    void tlBoundaryMod(int* tensPtr, int* unitsPtr, int base)
-    {
-        if (*unitsPtr >= base)
+        --*tensPtr;
+        *unitsPtr += base;
+        if (*unitsPtr < 0)
         {
-            *tensPtr += *unitsPtr / base;
-            *unitsPtr %= base;
-        }
-        else if (*unitsPtr < 0)
-        {
-            --*tensPtr;
-            *unitsPtr += base;
-            if (*unitsPtr < 0)
+            *tensPtr -= 1 + (-*unitsPtr) / base;
+            *unitsPtr = base - (-*unitsPtr) % base;
+
+            if (*unitsPtr == base)
             {
-                *tensPtr -= 1 + (-*unitsPtr) / base;
-                *unitsPtr = base - (-*unitsPtr) % base;
+                *tensPtr += 1;
+                *unitsPtr = 0;
             }
         }
     }
+}
 
-    void tlNormalizeTimeStruct(struct tm* timeInfoPtr)
+void tlNormalizeTimeStruct(struct tm* timeInfoPtr)
+{
+    // Normalize incoming struct tm
+    const int           secondsPerMinute = 60;
+    const int           minutesPerHour = 60;
+    const int           hoursPerDay = 24;
+    const int           daysPerWeek = 7;
+    const int           daysPerNYear = 365;
+    const int           daysPerLYear = 366;
+    const int           yearLengths[2] = { daysPerNYear, daysPerLYear };
+    const int           secondsPerHour = secondsPerMinute * minutesPerHour;
+    const long          secondsPerDay = secondsPerHour * hoursPerDay;
+    const int           monthsPerYear = 12;
+    const int           yearBase = 1900;
+    const int           monthLengths[2][monthsPerYear] = { { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }, { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 } };
+    int                 leapYearIndex = 0;
+
+    tlBoundaryMod(&timeInfoPtr->tm_min, &timeInfoPtr->tm_sec, secondsPerMinute);
+    tlBoundaryMod(&timeInfoPtr->tm_hour, &timeInfoPtr->tm_min, minutesPerHour);
+    tlBoundaryMod(&timeInfoPtr->tm_mday, &timeInfoPtr->tm_hour, hoursPerDay);
+    tlBoundaryMod(&timeInfoPtr->tm_year, &timeInfoPtr->tm_mon, monthsPerYear);
+
+    leapYearIndex = ((((timeInfoPtr->tm_year + yearBase) % 4) == 0 && ((timeInfoPtr->tm_year + yearBase) % 100) != 0) || ((timeInfoPtr->tm_year + yearBase) % 400) == 0);
+    while (timeInfoPtr->tm_mday <= 0)
     {
-        // Normalize incoming struct tm
-        const int           secondsPerMinute = 60;
-        const int           minutesPerHour = 60;
-        const int           hoursPerDay = 24;
-        const int           daysPerWeek = 7;
-        const int           daysPerNYear = 365;
-        const int           daysPerLYear = 366;
-        const int           yearLengths[2] = { daysPerNYear, daysPerLYear };
-        const int           secondsPerHour = secondsPerMinute * minutesPerHour;
-        const long          secondsPerDay = secondsPerHour * hoursPerDay;
-        const int           monthsPerYear = 12;
-        const int           yearBase = 1900;
-        const int           monthLengths[2][monthsPerYear] = { { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }, { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 } };
+        --timeInfoPtr->tm_mon;
 
-        tlBoundaryMod(&timeInfoPtr->tm_min, &timeInfoPtr->tm_sec, secondsPerMinute);
-        tlBoundaryMod(&timeInfoPtr->tm_hour, &timeInfoPtr->tm_min, minutesPerHour);
-        tlBoundaryMod(&timeInfoPtr->tm_mday, &timeInfoPtr->tm_hour, hoursPerDay);
-        tlBoundaryMod(&timeInfoPtr->tm_year, &timeInfoPtr->tm_mon, monthsPerYear);
-
-        while (timeInfoPtr->tm_mday <= 0)
+        if (timeInfoPtr->tm_mon < 0)
         {
+            timeInfoPtr->tm_mon = 11;
             --timeInfoPtr->tm_year;
-            int isLeapYear = ((((timeInfoPtr->tm_year + yearBase) % 4) == 0 && ((timeInfoPtr->tm_year + yearBase) % 100) != 0) || ((timeInfoPtr->tm_year + yearBase) % 400) == 0);
-            timeInfoPtr->tm_mday += yearLengths[isLeapYear];
+            leapYearIndex = ((((timeInfoPtr->tm_year + yearBase) % 4) == 0 && ((timeInfoPtr->tm_year + yearBase) % 100) != 0) || ((timeInfoPtr->tm_year + yearBase) % 400) == 0);
         }
 
-        for (;;)
-        {
-            int isLeapYear = ((((timeInfoPtr->tm_year + yearBase) % 4) == 0 && ((timeInfoPtr->tm_year + yearBase) % 100) != 0) || ((timeInfoPtr->tm_year + yearBase) % 400) == 0);
-            int i = monthLengths[isLeapYear][timeInfoPtr->tm_mon];
+        timeInfoPtr->tm_mday += monthLengths[leapYearIndex][timeInfoPtr->tm_mon];
+    }
 
-            if (timeInfoPtr->tm_mday <= i)
-                break;
-            timeInfoPtr->tm_mday -= i;
-            if (++timeInfoPtr->tm_mon >= monthsPerYear)
-            {
-                timeInfoPtr->tm_mon = 0;
-                ++timeInfoPtr->tm_year;
-            }
+    while (timeInfoPtr->tm_mday > monthLengths[leapYearIndex][timeInfoPtr->tm_mon])
+    {
+        timeInfoPtr->tm_mday -= monthLengths[leapYearIndex][timeInfoPtr->tm_mon];
+        ++timeInfoPtr->tm_mon;
+
+        if (timeInfoPtr->tm_mon >= 12)
+        {
+            timeInfoPtr->tm_mon = 0;
+            ++timeInfoPtr->tm_year;
+            leapYearIndex = ((((timeInfoPtr->tm_year + yearBase) % 4) == 0 && ((timeInfoPtr->tm_year + yearBase) % 100) != 0) || ((timeInfoPtr->tm_year + yearBase) % 400) == 0);
         }
     }
+}
 
 //---------------------------
 
-    void tlWinLocalTime_r(const time_t* clock, struct tm* timeInfoPtr)
-    {
-        SYSTEMTIME  s;
-        FILETIME    f;
-        __int64     time;
+void tlWinLocalTime_r(const time_t* clock, struct tm* timeInfoPtr)
+{
+    SYSTEMTIME  s;
+    FILETIME    f;
+    __int64     time;
 
-        f = tlSecondsToFileTime(*clock);
-        time = tlFileTimeToInt64(f) - tlLocalTimeDiff();
-        f = tlInt64ToFileTime(time);
+    f = tlSecondsToFileTime(*clock);
+    time = tlFileTimeToInt64(f) + tlLocalTimeZoneDiffIn100nsIntervals();
+    f = tlInt64ToFileTime(time);
 
-        FileTimeToSystemTime(&f, &s);
+    FileTimeToSystemTime(&f, &s);
 
-        tlSystemTimeToTimeStruct_r(&s, timeInfoPtr);
-    }
+    tlSystemTimeToTimeStruct_r(&s, timeInfoPtr);
+}
 
-    void tlWinGMTime_r(const time_t* clock, struct tm* timeInfo)
-    {
-        FILETIME    f;
-        SYSTEMTIME  s;
+void tlWinGMTime_r(const time_t* clock, struct tm* timeInfo)
+{
+    FILETIME    f;
+    SYSTEMTIME  s;
 
-        f = tlSecondsToFileTime(*clock);
-        FileTimeToSystemTime(&f, &s);
-        tlSystemTimeToTimeStruct_r(&s, timeInfo);
-    }
+    f = tlSecondsToFileTime(*clock);
+    FileTimeToSystemTime(&f, &s);
+    tlSystemTimeToTimeStruct_r(&s, timeInfo);
+}
 
-    time_t tlWinMKTime(struct tm* timeInfoPtr)
-    {
-        SYSTEMTIME  s;
-        FILETIME    f;
-        time_t      diff;
+time_t tlWinMKTime(struct tm* timeInfoPtr)
+{
+    SYSTEMTIME  s;
+    FILETIME    f;
+    time_t      diff;
 
-        // Windows apparently doesn't normalize/fix bogus date values before
-        // doing conversions, so we need to normalize them first
-        tlNormalizeTimeStruct(timeInfoPtr);
+    // Windows apparently doesn't normalize/fix bogus date values before
+    // doing conversions, so we need to normalize them first
+    tlNormalizeTimeStruct(timeInfoPtr);
 
-        s = tlTimeStructToSystemTime(timeInfoPtr);
-        SystemTimeToFileTime(&s, &f);
+    s = tlTimeStructToSystemTime(timeInfoPtr);
+    SystemTimeToFileTime(&s, &f);
 
-        // Reset day of week
-        FileTimeToSystemTime(&f, &s);
-        timeInfoPtr->wday = s.wDayOfWeek;
+    // Reset day of week
+    FileTimeToSystemTime(&f, &s);
+    timeInfoPtr->tm_wday = s.wDayOfWeek;
 
-        diff = tlLocalTimeDiff() / _onesec_in100ns;
+    // The above assumes UTC but Linux's mktime() assumes a local
+    // time zone, so we need to offset the result into the local time zone
+    diff = tlLocalTimeZoneDiffIn100nsIntervals() / _onesec_in100ns;
 
-        return tlFileTimeToSeconds(&f) - diff;
-    }
+    return tlFileTimeToSeconds(&f) - diff;
+}
 #endif
 
 //------------------------------------------------------------------------------
 
 void tlLocalTime_r(const time_t* clock, struct tm* timeInfoPtr)
 {
-    #ifdef _WINDOWS
-        tlWinLocalTime_r(clock, timeInfoPtr);
+    #ifdef _WIN32
+    tlWinLocalTime_r(clock, timeInfoPtr);
     #else
-        localtime_r(clock, timeInfoPtr);
+    localtime_r(clock, timeInfoPtr);
     #endif
 }
 
 void tlGMTime_r(const time_t* clock, struct tm* timeInfoPtr)
 {
-    #ifdef _WINDOWS
-        tlWinGMTime_r(clock, timeInfoPtr);
+    #ifdef _WIN32
+    tlWinGMTime_r(clock, timeInfoPtr);
     #else
-        gmtime_r(clock, timeInfoPtr);
+    gmtime_r(clock, timeInfoPtr);
     #endif
 }
 
@@ -358,23 +370,23 @@ time_t tlMKTime(struct tm* timeInfoPtr, bool inLocalTimeZone)
 {
     time_t      the_time = 0;
 
-    #ifdef _WINDOWS
-        the_time = tlWinMKTime(timeInfoPtr);
+    #ifdef _WIN32
+    the_time = tlWinMKTime(timeInfoPtr);
 
-        if (!inLocalTimeZone)
-        {
-            // Adjust for time zone offset
-            the_time += (tlLocalTimeZoneDiffIn100nsIntervals() / _onesec_in100ns);
-        }
+    if (!inLocalTimeZone)
+    {
+        // Adjust for time zone offset
+        the_time += (tlLocalTimeZoneDiffIn100nsIntervals() / _onesec_in100ns);
+    }
     #else
-        // Get the initial time components; note that mktime assumes local time
-        the_time = mktime(timeInfoPtr);
+    // Get the initial time components; note that mktime assumes local time
+    the_time = mktime(timeInfoPtr);
 
-        if (!inLocalTimeZone)
-        {
-            // Adjust for time zone offset
-            the_time += timeInfoPtr->tm_gmtoff;
-        }
+    if (!inLocalTimeZone)
+    {
+        // Adjust for time zone offset
+        the_time += timeInfoPtr->tm_gmtoff;
+    }
     #endif
 
     return the_time;
@@ -491,29 +503,29 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfYear(short year, unsigned short 
 {
     unsigned int    dayOfYear = 0;
 
-    #ifdef _WINDOWS
-        SYSTEMTIME  s;
+    #ifdef _WIN32
+    SYSTEMTIME  s;
 
-        memset(&s, 0, sizeof(s));
+    memset(&s, 0, sizeof(s));
 
-        s.wYear = year;
-        s.wMonth = month;
-        s.wDay = day;
+    s.wYear = year;
+    s.wMonth = month;
+    s.wDay = day;
 
-        dayOfYear = tlYearDayFromSystemTime(&s);
+    dayOfYear = tlYearDayFromSystemTime(&s);
     #else
-        struct tm       timeInfo;
+    struct tm       timeInfo;
 
-        memset(&timeInfo, 0, sizeof(timeInfo));
+    memset(&timeInfo, 0, sizeof(timeInfo));
 
-        // Push each time part value into the tm struct
-        timeInfo.tm_mday = day;
-        timeInfo.tm_mon = month - 1;
-        timeInfo.tm_year = year - 1900;
+    // Push each time part value into the tm struct
+    timeInfo.tm_mday = day;
+    timeInfo.tm_mon = month - 1;
+    timeInfo.tm_year = year - 1900;
 
-        tlMKTime(&timeInfo);
+    tlMKTime(&timeInfo);
 
-        dayOfYear = timeInfo.tm_yday;
+    dayOfYear = timeInfo.tm_yday;
     #endif
 
     return dayOfYear;
@@ -542,7 +554,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfWeek(short year, unsigned short 
 TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__result, unsigned int date, const char* format)
 {
     struct tm       timeInfo;
-    size_t          kBufferSize = 256;
+    const size_t    kBufferSize = 256;
     char            buffer[kBufferSize];
 
     memset(&timeInfo, 0, sizeof(timeInfo));
@@ -563,7 +575,7 @@ TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__res
 TIMELIB_API void TIMELIB_CALL tlTimeToString(size32_t &__lenResult, char* &__result, unsigned int time, const char* format)
 {
     struct tm       timeInfo;
-    size_t          kBufferSize = 256;
+    const size_t    kBufferSize = 256;
     char            buffer[kBufferSize];
 
     memset(&timeInfo, 0, sizeof(timeInfo));
@@ -583,10 +595,10 @@ TIMELIB_API void TIMELIB_CALL tlTimeToString(size32_t &__lenResult, char* &__res
 
 TIMELIB_API void TIMELIB_CALL tlSecondsToString(size32_t &__lenResult, char* &__result, __int64 seconds, const char* format)
 {
-    struct tm   timeInfo;
-    time_t      theTime = seconds;
-    size_t      kBufferSize = 256;
-    char        buffer[kBufferSize];
+    struct tm       timeInfo;
+    time_t          theTime = seconds;
+    const size_t    kBufferSize = 256;
+    char            buffer[kBufferSize];
 
     memset(buffer, kBufferSize, 0);
 
@@ -701,7 +713,7 @@ TIMELIB_API __int64 TIMELIB_CALL tlAdjustSeconds(__int64 seconds, short year_del
     timeInfo.tm_min += minute_delta;
     timeInfo.tm_sec += second_delta;
 
-    result = theTime = tlMKTime(&timeInfo);
+    result = tlMKTime(&timeInfo);
 
     return static_cast<__int64>(result);
 }
@@ -715,6 +727,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustCalendar(unsigned int date, short 
     unsigned int    month = (date - (year * 10000)) / 100;
     unsigned int    day = date - (year * 10000) - (month * 100);
     int             expectedMonthVal = month + month_delta - 1;
+    time_t          seconds;
     unsigned int    result = 0;
 
     // Normalize the expected month value
@@ -736,7 +749,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustCalendar(unsigned int date, short 
     timeInfo.tm_year += year_delta;
     timeInfo.tm_mon += month_delta;
 
-    tlMKTime(&timeInfo);
+    seconds = tlMKTime(&timeInfo);
 
     if (timeInfo.tm_mon != expectedMonthVal)
     {
@@ -776,15 +789,15 @@ TIMELIB_API int TIMELIB_CALL tlLocalTimeZoneOffset()
 {
     int     offset = 0;
 
-    #ifdef _WINDOWS
-        offset = tlLocalTimeZoneDiffIn100nsIntervals() / _onesec_in100ns;
+    #ifdef _WIN32
+    offset = static_cast<int>(tlLocalTimeZoneDiffIn100nsIntervals() / _onesec_in100ns);
     #else
-        struct tm       timeInfo;
-        time_t          theTime = time(NULL);
+    struct tm       timeInfo;
+    time_t          theTime = time(NULL);
 
-        tlLocalTime_r(&theTime, &timeInfo);
+    tlLocalTime_r(&theTime, &timeInfo);
 
-        offset = timeInfo.tm_gmtoff;
+    offset = timeInfo.tm_gmtoff;
     #endif
 
     return offset;
@@ -858,19 +871,19 @@ TIMELIB_API __int64 TIMELIB_CALL tlCurrentTimestamp(bool in_local_time)
 {
     __int64     result = 0;
 
-    #ifdef _WINDOWS
-        struct _timeb   now;
+    #ifdef _WIN32
+    struct _timeb   now;
 
-        _ftime(&now);
+    _ftime_s(&now);
 
-        result = (now.time * 1000000) + (now.millitm * 1000);
+    result = (now.time * 1000000) + (now.millitm * 1000);
     #else
-        struct timeval  tv;
+    struct timeval  tv;
 
-        if (gettimeofday(&tv, NULL) == 0)
-        {
-            result = (tv.tv_sec * 1000000) + tv.tv_usec;
-        }
+    if (gettimeofday(&tv, NULL) == 0)
+    {
+        result = (tv.tv_sec * 1000000) + tv.tv_usec;
+    }
     #endif
 
     if (in_local_time)
