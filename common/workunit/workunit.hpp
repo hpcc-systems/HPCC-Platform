@@ -983,13 +983,12 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual WUState getState() const = 0;
     virtual const char *queryStateDesc() const = 0;
     virtual bool isProtected() const = 0;
-// Not sure about these ones...
-    virtual bool aborting() const = 0;
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
 };
 
 interface IConstWorkUnit : extends IConstWorkUnitInfo
 {
+    virtual bool aborting() const = 0;
     virtual void forceReload() = 0;
     virtual WUAction getAction() const = 0;
     virtual IStringVal& getActionEx(IStringVal & str) const = 0;
@@ -1279,6 +1278,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual void descheduleAllWorkUnits() = 0;
     virtual bool deleteWorkUnitEx(const char * wuid) = 0;
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) = 0;
+    virtual bool isAborting(const char *wuid) const = 0;
 };
 
 

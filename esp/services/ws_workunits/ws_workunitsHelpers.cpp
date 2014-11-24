@@ -2753,18 +2753,17 @@ int WUSchedule::run()
                     try
                     {
                         IConstWorkUnitInfo & cw = itr->query();
-                        if (cw.aborting())
+                        if (factory->isAborting(cw.queryWuid()))
                         {
                             WorkunitUpdate wu(factory->updateWorkUnit(cw.queryWuid()));
                             wu->setState(WUStateAborted);
                             continue;
                         }
-
                         WsWuDateTime dt, now;
                         now.setNow();
                         cw.getTimeScheduled(dt);
                         if (now.compare(dt)>=0)
-                            runWorkUnit(cw.queryWuid());
+                            runWorkUnit(cw.queryWuid(), cw.queryClusterName());
                     }
                     catch(IException *e)
                     {
