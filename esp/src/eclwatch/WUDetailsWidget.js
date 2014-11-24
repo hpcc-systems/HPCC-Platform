@@ -437,7 +437,7 @@ define([
                 domClass.remove("scopeOptional", "hidden");
                 domClass.add("scopeOptional", "show");
             }
-            if (name === "changedCount" && newValue > 0) {
+            if (name === "__hpcc_changedCount" && newValue > 0) {
                 var getInt = function (item) {
                     if (item)
                         return item;

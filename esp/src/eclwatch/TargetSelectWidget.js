@@ -39,6 +39,13 @@ define([
         defaultValue: "",
 
         //  Implementation  ---
+        reset: function () {
+            this.initalized = false;
+            this.loading = false;
+            this.defaultValue = "";
+            this.options = [];
+        },
+
         init: function (params) {
             if (this.initalized)
                 return;
@@ -72,6 +79,8 @@ define([
                 this.loadDFUState();
             } else if (params.ECLSamples === true) {
                 this.loadECLSamples();
+            } else if (params.Logs === true) {
+                this.loadLogs(params);
             } else {
                 this.loadTargets();
             }
@@ -109,7 +118,7 @@ define([
         },
 
         _postLoad: function () {
-            if (this.defaultValue == "") {
+            if (this.defaultValue === "" && this.options.length) {
                 this.defaultValue = this.options[0].value;
             }
             this.set("value", this.defaultValue);
@@ -273,6 +282,43 @@ define([
                 });
             });
             context._postLoad();
+        },
+
+        loadLogs: function (params) {
+            var context = this;
+            this.set("options", []);
+            FileSpray.FileList({
+                request: {
+                    Mask: "*.log",
+                    Netaddr: params.params.Netaddress,
+                    OS: params.params.OS,
+                    Path: params.params.getLogDirectory()
+                }
+            }).then(function (response) {
+                if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
+                    var options = [];
+                    var targetData = response.FileListResponse.files.PhysicalFileStruct;
+                    var shortestLabelLen = 9999;
+                    var shortestLabel = "";
+                    for (var i = 0; i < targetData.length; ++i) {
+                        options.push({
+                            label: targetData[i].name,// + " " + targetData[i].filesize + " " + targetData[i].modifiedtime,
+                            value: targetData[i].name
+                        });
+                        if (shortestLabelLen > targetData[i].name.length) {
+                            shortestLabelLen = targetData[i].name.length;
+                            shortestLabel = targetData[i].name;
+                        }
+                    }
+                    options.sort(function (l, r) {
+                        return -l.label.localeCompare(r.label);
+                    });
+                    context.set("options", options);
+                    context.defaultValue = shortestLabel;
+                    context._value = shortestLabel;
+                }
+                context._postLoad();
+            });
         }
     });
 });

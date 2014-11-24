@@ -51,6 +51,31 @@ define([
         },
         MoveJobBack: function (params) {
             return ESPRequest.send("WsSMC", "MoveJobBack", params);
+        },
+        parseBuildString: function (build) {
+            var retVal = {
+                orig: build,
+                prefix: "",
+                postfix: "",
+                version: ""
+            };
+            if (!build) {
+                return retVal;
+            }
+            retVal.orig = build;
+            retVal.prefix = "";
+            retVal.postfix = "";
+            var verArray = build.split("[");
+            if (verArray.length > 1) {
+                retVal.postfix = verArray[1].split("]")[0];
+            }
+            verArray = verArray[0].split("_");
+            if (verArray.length > 1) {
+                retVal.prefix = verArray[0];
+                verArray.splice(0, 1);
+            }
+            retVal.version = verArray.join("_");
+            return retVal;
         }
     };
 });

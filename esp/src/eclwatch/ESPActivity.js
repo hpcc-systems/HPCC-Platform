@@ -98,12 +98,12 @@ define([
         },
 
         monitor: function (callback) {
-            if (callback && this.changedCount) {
+            if (callback && this.__hpcc_changedCount) {
                 callback(this);
             }
             if (!this.hasCompleted) {
                 var context = this;
-                this.watch("changedCount", function (name, oldValue, newValue) {
+                this.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue && newValue) {
                         if (callback) {
                             callback(context);
@@ -149,7 +149,7 @@ define([
                     targetClusters.push(queue);
                     targetClusterMap[queue.__hpcc_id] = queue;
                     if (!context._watched[queue.__hpcc_id]) {
-                        context._watched[queue.__hpcc_id] = queue.watch("changedCount", function (name, oldValue, newValue) {
+                        context._watched[queue.__hpcc_id] = queue.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                             if (oldValue !== newValue) {
                                 if (context.observableStore.get(queue.__hpcc_id)) {
                                     context.observableStore.notify(queue, queue.__hpcc_id);

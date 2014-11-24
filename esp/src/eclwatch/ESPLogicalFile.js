@@ -76,7 +76,7 @@ define([
             storeItem.updateData(item);
             if (!this._watched[id]) {
                 var context = this;
-                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
                         context.notify(storeItem, id);
                     }
@@ -106,7 +106,7 @@ define([
 
         _fetchFiles: function (scope) {
             var context = this;
-            results = WsDfu.DFUFileView({
+            var results = WsDfu.DFUFileView({
                 request: {
                     Scope: scope
                 }
@@ -143,7 +143,7 @@ define([
                         } else {
                             storeItem = create(item.__hpcc_id);
                             if (!context._watched[item.__hpcc_id]) {
-                                context._watched[item.__hpcc_id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                                context._watched[item.__hpcc_id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                                     if (oldValue !== newValue) {
                                         context.notify(storeItem, storeItem.__hpcc_id);
                                     }

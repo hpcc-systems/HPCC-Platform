@@ -59,8 +59,8 @@ define([
 
         //  Methods  ---
         constructor: function (args) {
-            this.changedCount = 0;
-            this._changedCache = {};
+            this.__hpcc_changedCount = 0;
+            this.__hpcc_changedCache = {};
         },
         getData: function () {
             if (this instanceof SingletonData) {
@@ -71,18 +71,20 @@ define([
         updateData: function (response) {
             var changed = false;
             for (var key in response) {
-                var jsonStr = json.stringify(response[key]);
-                if (this._changedCache[key] !== jsonStr) {
-                    this._changedCache[key] = jsonStr;
-                    this.set(key, response[key]);
-                    changed = true;
+                if (response[key] !== undefined || response[key] !== null) {
+                    var jsonStr = json.stringify(response[key]);
+                    if (this.__hpcc_changedCache[key] !== jsonStr) {
+                        this.__hpcc_changedCache[key] = jsonStr;
+                        this.set(key, response[key]);
+                        changed = true;
+                    }
                 }
             }
             if (changed) {
                 try {
-                    this.set("changedCount", this.get("changedCount") + 1);
+                    this.set("__hpcc_changedCount", this.get("__hpcc_changedCount") + 1);
                 } catch (e) {
-                    /*  changedCount can notify a dgrid instance that a row has changed.  
+                    /*  __hpcc_changedCount can notify a dgrid instance that a row has changed.  
                     *   There is an issue (TODO check issue number) with dgrid which can cause an exception to be thrown during the notify.
                     *   By catching these exceptions here normal execution can continue.
                     */
@@ -258,7 +260,7 @@ define([
             }
         }),
 
-        Grid: function (pagination, selection) {
+        Grid: function (pagination, selection, overrides) {
             var baseClass = [];
             var params = {};
             if (pagination) {
@@ -281,7 +283,7 @@ define([
                 });
             }
             baseClass.push(GridHelper);
-            return declare(baseClass, params);
+            return declare(baseClass, lang.mixin(params, overrides));
         },
 
         MonitorVisibility: function (widget, callback) {
