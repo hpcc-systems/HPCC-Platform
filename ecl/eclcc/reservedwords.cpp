@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -112,13 +112,11 @@ static const char * eclReserved3[] = { //Template language
 
 static const char * eclReserved4[] = { //String functions
     "asstring",
-    "ebcdic",
     "encoding",
     "fromunicode",
     "intformat",
     "keyunicode",
     "length",
-    "locale",
     "realformat",
     "regexfind",
     "regexreplace",
@@ -126,8 +124,6 @@ static const char * eclReserved4[] = { //String functions
     "toxml",
     "trim",
     "unicodeorder",
-
-    "notrim",
     NULL
 };
 
@@ -213,6 +209,7 @@ static const char * eclReserved9[] = {//ECL fundamental types and associates
     "qstring",
     "real",
     "recordof",
+    "recordset",
     "set",
     "set of",
     "size_t",
@@ -283,7 +280,6 @@ static const char * eclReserved11[] = {//Activities
     "range",
     "rank",
     "ranked",
-    "recordset",
     "regroup",
     "rejected",
     "rollup",
@@ -306,6 +302,7 @@ static const char * eclReserved11[] = {//Activities
 static const char * eclReserved12[] = {//Attributes
     "__alias__",
     "_array_",
+    "cardinality",
     "__compound__",
     "__compressed__",
     "__grouped__",
@@ -324,6 +321,7 @@ static const char * eclReserved12[] = {//Attributes
     "counter",
     "descend",
     "desc", //short hand for descend
+    "ebcdic",
     "embedded",
     "except",
     "exclusive",
@@ -342,6 +340,7 @@ static const char * eclReserved12[] = {//Attributes
     "linkcounted",
     "literal",
     "local",
+    "locale",
     "localfileposition",
     "logicalfilename",
     "lookup",
@@ -349,6 +348,7 @@ static const char * eclReserved12[] = {//Attributes
     "many",
     "noroot",
     "noscan",
+    "notrim",
     "only",
     "opt",
     "out",
@@ -373,7 +373,6 @@ static const char * eclReserved12[] = {//Attributes
 };
 
 static const char * eclReserved13[] = { //Scalar functions
-	"cardinality",
     "eclcrc",
     "hash",
     "hash32",
@@ -453,7 +452,7 @@ static const char * eclReserved14[] = { //Attribute functions (some might actual
     NULL
 };
 
-static const char * eclReserved15[] = { //Actions
+static const char * eclReserved15[] = { //Actions and statements
     "apply",
     "as",
     "build",
