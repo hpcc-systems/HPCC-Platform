@@ -62,7 +62,7 @@ define([
             storeItem.updateData(item);
             if (!this._watched[id]) {
                 var context = this;
-                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
                         context.notify(storeItem, id);
                     }

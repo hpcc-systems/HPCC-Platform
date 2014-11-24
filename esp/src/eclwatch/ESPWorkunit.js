@@ -59,7 +59,7 @@ define([
             storeItem.updateData(item);
             if (!this._watched[id]) {
                 var context = this;
-                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
                         context.notify(storeItem, id);
                     }
@@ -263,7 +263,7 @@ define([
             }
             if (!this.hasCompleted) {
                 var context = this;
-                this.watch("changedCount", function (name, oldValue, newValue) {
+                this.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue && newValue) {
                         if (callback) {
                             callback(context);
@@ -453,7 +453,7 @@ define([
             });
         },
         refresh: function (full) {
-            if (full || this.Archived || this.changedCount === 0) {
+            if (full || this.Archived || this.__hpcc_changedCount === 0) {
                 return this.getInfo({
                     onGetText: function () {
                     },
