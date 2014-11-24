@@ -45,74 +45,128 @@ IConstWorkUnit *WsEclWuInfo::ensureWorkUnit()
     return wu;
 }
 
+void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *resultSetFactory, IConstWUResult &var, unsigned hashWebserviceSeq=0)
+{
+    SCMStringBuffer varname;
+    var.getResultName(varname);
+    int seq = var.getResultSequence();
+
+    WUResultFormat fmt = var.getResultFormat();
+
+    SCMStringBuffer eclschema;
+    var.getResultEclSchema(eclschema);
+
+    SCMStringBuffer s;
+    Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
+    unsigned width=0, height=0, fieldSeq=0;
+    var.getResultFieldFormat(width, height, fieldSeq);
+    if (hashWebserviceSeq)
+        fieldSeq = hashWebserviceSeq;
+
+    Owned<IPropertyTree> part = createPTree("part");
+    if (!var.isResultScalar())
+    {
+        meta->getXmlSchema(s, false);
+        part->setProp("@name", varname.str());
+        part->setProp("@type", "tns:XmlDataset");
+        if (fieldSeq)
+            part->setPropInt("@sequence", fieldSeq);
+    }
+    else
+    {
+        meta->getColumnEclType(s, 0);
+        DisplayType dt = meta->getColumnDisplayType(0);
+        StringAttr ptype;
+        switch (dt)
+        {
+        case TypeBoolean:
+            ptype.set("xsd:boolean");
+            break;
+        case TypeInteger:
+            ptype.set("xsd:integer");
+            break;
+        case TypeUnsignedInteger:
+            ptype.set("xsd:integer");
+            break;
+        case TypeReal:
+            ptype.set("xsd:real");
+            break;
+        case TypeSet:
+            ptype.set("tns:EspStringArray");
+            break;
+        case TypeDataset:
+        case TypeData:
+            ptype.set("tns:XmlDataSet");
+            break;
+        case TypeUnicode:
+        case TypeString:
+            ptype.set("xsd:string");
+            break;
+        case TypeUnknown:
+        case TypeBeginIfBlock:
+        case TypeEndIfBlock:
+        case TypeBeginRecord:
+        default:
+            ptype.set("xsd:string");
+            break;
+        }
+        part->setProp("@name", varname.str());
+        part->setProp("@type", ptype.sget());
+        if (width)
+            part->setPropInt("@width", width);
+        if (height)
+            part->setPropInt("@height", height);
+        if (fieldSeq)
+            part->setPropInt("@sequence", fieldSeq);
+    }
+    parts.append(*part.getClear());
+}
+
+int orderParts(IInterface * const * pLeft, IInterface * const * pRight)
+{
+    IPropertyTree * right = (IPropertyTree *)*pRight;
+    IPropertyTree * left = (IPropertyTree *)*pLeft;
+    if (!right->hasProp("@sequence"))
+        return -1;
+    if (!left->hasProp("@sequence"))
+        return 1;
+    return left->getPropInt("@sequence") - right->getPropInt("@sequence");
+}
+
 bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
 {
     if (strieq(name, "SOAP"))
     {
         out.appendf("<message name=\"%s\">", queryname.sget());
-        IConstWUResultIterator &vars = ensureWorkUnit()->getVariables();
-        Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, password));
-        ForEach(vars)
+        Owned<IResultSetFactory> resultSetFactory = getResultSetFactory(username, password);
+        IConstWUWebServicesInfo *wsinfo = ensureWorkUnit()->getWebServicesInfo();
+        StringArray fields;
+        if (wsinfo)
         {
-            IConstWUResult &var = vars.query();
-            SCMStringBuffer varname;
-            var.getResultName(varname);
-            int seq = var.getResultSequence();
-
-            WUResultFormat fmt = var.getResultFormat();
-
-            SCMStringBuffer eclschema;
-            var.getResultEclSchema(eclschema);
-
-            SCMStringBuffer s;
-            Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
-
-            if (!var.isResultScalar())
+            SCMStringBuffer fieldList;
+            wsinfo->getText("fields", fieldList);
+            if (fieldList.length())
+                fields.appendListUniq(fieldList.str(), ",");
+        }
+        IArrayOf<IPropertyTree> parts;
+        if (fields.length())
+        {
+            ForEachItemIn(i, fields)
             {
-                meta->getXmlSchema(s, false);
-                out.appendf("<part name=\"%s\" type=\"tns:XmlDataSet\" />", varname.str());
-            }
-            else
-            {
-                meta->getColumnEclType(s, 0);
-                DisplayType dt = meta->getColumnDisplayType(0);
-                StringAttr ptype;
-                switch (dt)
-                {
-                case TypeBoolean:
-                    ptype.set("xsd:boolean");
-                    break;
-                case TypeInteger:
-                    ptype.set("xsd:integer");
-                    break;
-                case TypeUnsignedInteger:
-                    ptype.set("xsd:integer");
-                    break;
-                case TypeReal:
-                    ptype.set("xsd:real");
-                    break;
-                case TypeSet:
-                    ptype.set("tns:EspStringArray");
-                    break;
-                case TypeDataset:
-                case TypeData:
-                    ptype.set("tns:XmlDataSet");
-                    break;
-                case TypeUnicode:
-                case TypeString:
-                    ptype.set("xsd:string");
-                    break;
-                case TypeUnknown:
-                case TypeBeginIfBlock:
-                case TypeEndIfBlock:
-                case TypeBeginRecord:
-                default:
-                    ptype.set("xsd:string");
-                    break;
-                }
-                out.appendf("<part name=\"%s\" type=\"%s\" />", varname.str(), ptype.sget());
+                IConstWUResult *var = wu->getVariableByName(fields.item(i));
+                if (var)
+                    appendVariableParmInfo(parts, resultSetFactory, *var, i+1);
             }
         }
+        else
+        {
+            IConstWUResultIterator &vars = ensureWorkUnit()->getVariables();
+            ForEach(vars)
+                appendVariableParmInfo(parts, resultSetFactory, vars.query());
+        }
+        parts.sort(orderParts);
+        ForEachItemIn(i, parts)
+            toXML(&parts.item(i), out);
         out.append("</message>");
     }
 

@@ -166,6 +166,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   DENORMALIZE
   DEPRECATED
   DESC
+  DESCRIPTION
   DICTIONARY
   DISTRIBUTE
   DISTRIBUTED
@@ -207,12 +208,16 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   FEATURE
   FETCH
   FEW
+  FIELDS
+  FIELDHEIGHT
+  FIELDWIDTH
   FILEPOSITION
   FILTERED
   FIRST
   TOK_FIXED
   FLAT
   FROM
+  FORMAT
   FORMAT_ATTR
   FORWARD
   FROMJSON
@@ -234,6 +239,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   HASHMD5
   HAVING
   HEADING
+  HELP
   HINT
   HOLE
   HTTPCALL
@@ -391,6 +397,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   SELF
   SEPARATOR
   __SEQUENCE__
+  SEQUENCE
   SEQUENTIAL
   SERVICE
   SET
@@ -552,6 +559,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   HASH_STORED
   HASH_LINK
   HASH_ONWARNING
+  HASH_WEBSERVICE
 
   INTERNAL_READ_NEXT_TOKEN
 
@@ -1523,6 +1531,79 @@ setMetaCommand
                             }
                             $$.setExpr(createValue(no_setmeta, makeVoidType(), createAttribute(onWarningAtom), $3.getExpr(), $5.getExpr()), $1);
                         }
+    | HASH_WEBSERVICE '(' webserviceOptions ')'
+                        {
+                            $$.setExpr(createValue(no_setmeta, makeVoidType(), createAttribute(webserviceAtom), $3.getExpr()), $1);
+                        }
+    ;
+
+webserviceOptions
+    : webserviceOption
+    | webserviceOptions ',' webserviceOption
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    ;
+
+webserviceOption
+    : FIELDS '(' webserviceFieldList ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(webserviceFieldsAtom, args));
+                            $$.setPosition($1);
+                        }
+    | DESCRIPTION '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_stringorunicode, true);
+                            $$.setExpr(createExprAttribute(webserviceDescrAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | HELP '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_stringorunicode, true);
+                            $$.setExpr(createExprAttribute(webserviceHelpAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    ;
+
+clusterAttr
+    : CLUSTER '(' stringExpressionList ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(clusterAtom, args));
+                            $$.setPosition($1);
+                        }
+    ;
+
+stringExpressionList
+    : expression
+                        {
+                            parser->normalizeExpression($1, type_string, false);
+                            $$.inherit($1);
+                        }
+    | stringExpressionList ',' expression
+                        {
+                            parser->normalizeExpression($3, type_string, false);
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    ;
+
+
+
+webserviceFieldList
+    : constExpression   {
+                            parser->normalizeStoredNameExpression($1);
+                            $$.inherit($1);
+                        }
+    | webserviceFieldList ',' constExpression
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()));
+                            $$.setPosition($1);
+                        }
     ;
 
 hashStoredValue
@@ -1604,7 +1685,12 @@ failure
                             parser->normalizeExpression($5, type_string, true);
                             $$.setExpr(createValueF(no_persist, makeVoidType(), $3.getExpr(), $5.getExpr(), $6.getExpr(), NULL), $1);
                         }
-    | STORED '(' expression optFewMany ')'
+    | STORED '(' expression ',' fewMany optStoredFieldFormat ')'
+                        {
+                            parser->normalizeStoredNameExpression($3);
+                            $$.setExpr(createValue(no_stored, makeVoidType(), $3.getExpr(), $5.getExpr(), $6.getExpr()), $1);
+                        }
+    | STORED '(' expression optStoredFieldFormat ')'
                         {
                             parser->normalizeStoredNameExpression($3);
                             $$.setExpr(createValue(no_stored, makeVoidType(), $3.getExpr(), $4.getExpr()), $1);
@@ -1712,6 +1798,45 @@ persistOpt
                         {
                             parser->normalizeExpression($3, type_int, true);
                             $$.setExpr(createExprAttribute(multipleAtom, $3.getExpr()), $1);
+                        }
+    ;
+
+optStoredFieldFormat
+    :                   {
+                            $$.setNullExpr();
+                        }
+    | ',' FORMAT '(' storedFieldFormatOpts ')'
+                        {
+                            OwnedHqlExpr opts = $4.getExpr();
+                            HqlExprArray args;
+                            opts->unwindList(args, no_comma);
+                            $$.setExpr(createExprAttribute(storedFieldFormatAtom, args), $2);
+                        }
+    ;
+
+storedFieldFormatOpts
+    : storedFieldFormatOpt
+    | storedFieldFormatOpts ',' storedFieldFormatOpt
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()), $1);
+                        }
+    ;
+
+storedFieldFormatOpt
+    : FIELDWIDTH '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createExprAttribute(storedFieldWidthAtom, $3.getExpr()), $1);
+                        }
+    | FIELDHEIGHT '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createExprAttribute(storedFieldHeightAtom, $3.getExpr()), $1);
+                        }
+    | SEQUENCE '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createExprAttribute(storedFieldSequenceAtom, $3.getExpr()), $1);
                         }
     ;
 

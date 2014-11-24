@@ -1169,6 +1169,9 @@ function switchInputForm()
                 </xsl:variable>
                 <xsl:variable name="inputRows">
                     <xsl:choose>
+                        <xsl:when test="$annot/@formRows">
+                            <xsl:value-of select="$annot/@formRows"/>
+                        </xsl:when>
                         <xsl:when test="$maxoccurs='unbounded'">
                             <xsl:number value="4"/>
                         </xsl:when>
