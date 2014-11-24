@@ -401,6 +401,7 @@ public:
     void        readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timedelaysecs);
     void        read(void* buf, size32_t size);
     size32_t    write(void const* buf, size32_t size);
+    size32_t    writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER);
     size32_t    write_multiple(unsigned num,void const**buf, size32_t *size);
     size32_t    udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size);
     void        close();
@@ -1773,6 +1774,55 @@ EintrRetry:
     STATS.writesize += size_writ;
     STATS.writetime+=usTick()-startt;
     return res;
+}
+
+size32_t CSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
+{
+    if (size==0)
+        return 0;
+
+    if (state != ss_open)
+    {
+        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
+    }
+
+    if (timeoutms == WAIT_FOREVER)
+        return write(buf, size);
+
+    char *p = (char *)buf;
+    unsigned start, elapsed;
+    start = msTick();
+    elapsed = 0;
+    size32_t nwritten = 0;
+    size32_t nleft = size;
+    unsigned rollover = 0;
+
+    bool prevblock = set_nonblock(true);
+
+    while ( (nwritten < size) && (elapsed <= timeoutms) )
+    {
+        size32_t amnt = write(p,nleft);
+
+        if (amnt > 0)
+        {
+            nwritten += amnt;
+            nleft -= amnt;
+            p += amnt;
+        }
+        else if ((amnt <= 0) && (++rollover >= 20) )
+        {
+            rollover = 0;
+            Sleep(20);
+        }
+        elapsed = msTick() - start;
+    }
+
+    set_nonblock(prevblock);
+
+    if (nwritten < size)
+        THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
+
+    return nwritten;
 }
 
 bool CSocket::check_connection()
