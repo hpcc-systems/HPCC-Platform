@@ -67,7 +67,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
     bool eofHit;
     bool inputsConfigured;
     bool pendingWrite;
-    CriticalSection startLock, writeAheadCrit1, writeAheadCrit2;
+    CriticalSection startLock, writeAheadCrit;
     unsigned nstopped;
     rowcount_t recsReady;
     IThorDataLink *input;
@@ -75,38 +75,6 @@ class NSplitterSlaveActivity : public CSlaveActivity
     Owned<IException> startException, writeAheadException;
     Owned<ISharedSmartBuffer> smartBuf;
 
-    // NB: CWriter only used by 'balanced' splitter, which blocks write when too far ahead
-    class CWriter : public CSimpleInterface, IThreaded
-    {
-        NSplitterSlaveActivity &parent;
-        CThreadedPersistent threaded;
-        bool stopped;
-
-    public:
-        CWriter(NSplitterSlaveActivity &_parent) : parent(_parent), threaded("CWriter", this)
-        {
-            stopped = true;
-        }
-        ~CWriter() { stop(); }
-        virtual void main()
-        {
-            while (!stopped && !parent.eofHit)
-                parent.writeahead(0, stopped); // intentional to avoid 'current' check and write as much as possible, it will block in smartBuf..
-        }
-        void start()
-        {
-            stopped = false;
-            threaded.start();
-        }
-        virtual void stop()
-        {
-            if (!stopped)
-            {
-                stopped = true;
-                threaded.join();
-            }
-        }
-    } writer;
     class CNullInput : public CSplitterOutputBase
     {
     public:
@@ -204,8 +172,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    NSplitterSlaveActivity(CGraphElementBase *container) 
-        : CSlaveActivity(container), writer(*this)
+    NSplitterSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
     {
         spill = false;
         input = NULL;
@@ -289,7 +256,8 @@ public:
         if (!input)
         {
             input = inputs.item(0);
-            try {
+            try
+            {
                 startInput(input);
                 grouped = input->isGrouped();
                 nstopped = container.connectedOutputs.getCount();
@@ -317,10 +285,9 @@ public:
                             smartBuf->queryOutput(o)->stop();
                     }
                 }
-                if (spill)
-                    writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
             }
-            catch (IException *e) { 
+            catch (IException *e)
+            {
                 startException.setown(e); 
             }
         }
@@ -337,15 +304,15 @@ public:
         if (eofHit)
             return recsReady;
 
-        ActivityTimer t(totalCycles, queryTimeActivities());
         {
-            CriticalBlock b(writeAheadCrit1);
+            CriticalBlock b(writeAheadCrit);
             if (current < recsReady || pendingWrite)
                 return recsReady;
 
+            // NB: readers returning because pendingWrite is true, will block on smartBuf->nextRow until rows appear
             pendingWrite = true;
         }
-        CriticalBlock b(writeAheadCrit2);
+        ActivityTimer t(totalCycles, queryTimeActivities());
         class CSharedSmartCallback : implements ISharedSmartBufferCallback
         {
             bool pagedOut;
@@ -390,7 +357,6 @@ public:
     {
         if (nstopped && --nstopped==0) 
         {
-            writer.stop();
             stopInput(input);
             input = NULL;
         }

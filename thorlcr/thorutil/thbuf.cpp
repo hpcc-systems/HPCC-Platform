@@ -837,32 +837,6 @@ protected:
             eof = true;
             parent.stopOutput(output);
         }
-        inline const rowcount_t readerWait(const rowcount_t &rowsRead)
-        {
-            if (rowsRead == parent.rowsWritten)
-            {
-                if (parent.stopped || parent.writeAtEof)
-                    return 0;
-                readerWaiting = true;
-#ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&parent.activity->queryContainer(), thorlog_all, MCdebugProgress, "readerWait(%d)", output);
-#endif
-                const rowcount_t &rowsWritten = parent.readerWait(rowsRead);
-                {
-                    CriticalUnblock b(parent.crit);
-                    unsigned mins=0;
-                    loop
-                    {
-                        if (readWaitSem.wait(60000))
-                            break; // NB: will also be signal if aborting
-                        ActPrintLog(parent.activity, "output %d @ row # %"RCPF"d, has been blocked for %d minute(s)", output, rowsRead, ++mins);
-                    }
-                }
-                if (parent.isEof(rowsRead))
-                    return 0;
-            }
-            return parent.rowsWritten;
-        }
         inline void wakeRead()
         {
             if (readerWaiting)
@@ -886,6 +860,7 @@ protected:
             init();
             outputOwnedRows.clear();
         }
+        inline unsigned queryOutput() const { return output; }
         inline CRowSet *queryRowSet() { return rowSet; }
         const void *nextRow()
         {
@@ -896,13 +871,13 @@ protected:
                 CriticalBlock b(parent.crit);
                 if (!rowSet || (row == (rowsInRowSet = rowSet->getRowCount())))
                 {
-                    rowcount_t totalRows = readerWait(rowsRead);
+                    rowcount_t totalRows = parent.readerWait(*this, rowsRead);
                     if (0 == totalRows)
                     {
                         doStop();
                         return NULL;
                     }
-                    if (!rowSet || (row == (rowsInRowSet = rowSet->getRowCount()))) // maybe have caught up in same rowSet
+                    if (!rowSet || (row == (rowsInRowSet = rowSet->getRowCount()))) // may have caught up in same rowSet
                     {
                         Owned<CRowSet> newRows = parent.loadMore(output);
                         if (rowSet)
@@ -934,6 +909,32 @@ protected:
     CriticalSection crit;
     Linked<IOutputMetaData> meta;
 
+    inline const rowcount_t readerWait(COutput &output, const rowcount_t &rowsRead)
+    {
+        if (rowsRead == rowsWritten)
+        {
+            if (stopped || writeAtEof)
+                return 0;
+            output.readerWaiting = true;
+#ifdef TRACE_WRITEAHEAD
+            ActPrintLogEx(&parent.activity->queryContainer(), thorlog_all, MCdebugProgress, "readerWait(%d)", output);
+#endif
+            const rowcount_t &rowsWritten = readerWait(rowsRead);
+            {
+                CriticalUnblock b(crit);
+                unsigned mins=0;
+                loop
+                {
+                    if (output.readWaitSem.wait(60000))
+                        break; // NB: will also be signal if aborting
+                    ActPrintLog(activity, "output %d @ row # %"RCPF"d, has been blocked for %d minute(s)", output.queryOutput(), rowsRead, ++mins);
+                }
+            }
+            if (isEof(rowsRead))
+                return 0;
+        }
+        return rowsWritten;
+    }
     CRowSet *newRowSet(unsigned chunk)
     {
         {
@@ -1166,6 +1167,7 @@ CRowSet::CRowSet(CSharedWriteAheadBase &_sharedWriteAhead, unsigned _chunk, unsi
 bool CRowSet::Release() const
 {
     {
+        // NB: Occasionally, >1 thread may be releasing a CRowSet concurrently and miss a opportunity to reuse, but that's ok.
         SpinBlock b(lock);
         if (!IsShared())
             sharedWriteAhead.reuse((CRowSet *)this);
