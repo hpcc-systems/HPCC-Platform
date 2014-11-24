@@ -3257,7 +3257,8 @@ static void convertRecordToAssigns(HqlExprArray & assigns, IHqlExpression * reco
                 }
                 else
                 {
-                    assertex(value || canOmit);
+                    if (!value && !canOmit)
+                        throwError1(HQLERR_FieldHasNoDefaultValue, cur->queryId()->str());
                     if (value)
                         assigns.append(*createAssign(LINK(newTargetSelector), LINK(value)));
                 }
