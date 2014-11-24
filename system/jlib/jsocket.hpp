@@ -267,6 +267,7 @@ public:
                            unsigned timeout) = 0;
     virtual void   read(void* buf, size32_t size) = 0;
     virtual size32_t write(void const* buf, size32_t size) = 0; // returns amount written normally same as in size (see set_nonblock)
+    virtual size32_t writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER) = 0;
 
     virtual size32_t get_max_send_size() = 0;
 
