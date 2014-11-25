@@ -70,6 +70,10 @@ if (USE_CASSANDRA)
          ./../../common/deftype
          ./../../common/workunit
          ./../../system/jlib
+         ./../../system/security/shared 
+         ./../../system/mp
+    
+         ./../../dali/base 
 
          ./cpp-driver/include
        )

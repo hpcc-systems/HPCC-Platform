@@ -32,6 +32,8 @@
 #include "jptree.hpp"
 
 #include "workunit.hpp"
+#include "workunit.ipp"
+
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -149,6 +151,7 @@ private:
 class CassandraSession : public CInterface
 {
 public:
+    CassandraSession() : session(NULL) {}
     CassandraSession(CassSession *_session) : session(_session)
     {
     }
@@ -159,6 +162,15 @@ public:
             CassandraFuture close_future(cass_session_close(session));
             cass_future_wait(close_future);
         }
+    }
+    void set(CassSession *_session)
+    {
+        if (session)
+        {
+            CassandraFuture close_future(cass_session_close(session));
+            cass_future_wait(close_future);
+        }
+        session = _session;
     }
     inline operator CassSession *() const
     {
@@ -2922,12 +2934,13 @@ extern void workunitXMLtoCassandra(CassSession *session, IPTree *inXML)
     futureBatch.wait("execute");
 }
 
-extern void cassandraToWorkunitXML(CassSession *session, const char *wuid, IPTree *wuXML)
+extern IPTree *cassandraToWorkunitXML(CassSession *session, const char *wuid)
 {
     CassandraResult result(fetchDataForWu(wuid, session, workunitsMappings));
     CassandraIterator rows(cass_iterator_from_result(result));
     if (cass_iterator_next(rows)) // should just be one
     {
+        Owned<IPTree> wuXML = createPTree(wuid);
         CassandraIterator cols(cass_iterator_from_row(cass_iterator_get_row(rows)));
         wuXML->setPropTree("Query", createPTree("Query"));
         wuXML->setProp("Query/@fetchEntire", "1");
@@ -2940,7 +2953,10 @@ extern void cassandraToWorkunitXML(CassSession *session, const char *wuid, IPTre
                 workunitsMappings[colidx].mapper.toXML(wuXML, workunitsMappings[colidx].xpath, value);
             colidx++;
         }
+        return wuXML.getClear();
     }
+    else
+        return NULL;
 }
 
 extern void cassandraTestWorkunitXML()
@@ -2961,8 +2977,7 @@ extern void cassandraTestWorkunitXML()
     // Now the other way
 
     const char *wuid = inXML->queryName();
-    Owned<IPTree> wuXML = createPTree(wuid);
-    cassandraToWorkunitXML(session, wuid, wuXML);
+    Owned<IPTree> wuXML = cassandraToWorkunitXML(session, wuid);
     cassandraToWuResultsXML(session, wuid, wuXML);
     cassandraToChildXML(session, wuExceptionsMappings, wuid, wuXML, "Exceptions", "Exception");
     cassandraToChildXML(session, wuStatisticsMappings, wuid, wuXML, "Statistics", "Statistic");
@@ -2991,4 +3006,60 @@ extern void cassandraTest()
     cassandraTestWorkunitXML();
     //cassandraTestGraphProgressXML();
 }
+
+class CConstCassandraWorkUnit : public CLocalWorkUnit
+{
+public:
+    CConstCassandraWorkUnit(IPTree *wuXML, ISecManager *secmgr, ISecUser *secuser)
+        : CLocalWorkUnit(secmgr, secuser)
+    {
+        CLocalWorkUnit::loadPTree(wuXML);
+    }
+
+};
+
+class CCasssandraWorkUnitFactory : implements CInterfaceOf<IWorkUnitFactory>
+{
+public:
+    CCasssandraWorkUnitFactory() : cluster(cass_cluster_new())
+    {
+        cass_cluster_set_contact_points(cluster, "127.0.0.1");
+        CassandraFuture future(cass_cluster_connect_keyspace(cluster, "hpcc"));
+        future.wait("connect");
+        session.set(cass_future_get_session(future));
+    }
+    ~CCasssandraWorkUnitFactory()
+    {
+    }
+    virtual IWorkUnit * createWorkUnit(const char * app, const char * user) { UNIMPLEMENTED; }
+    virtual bool deleteWorkUnit(const char * wuid) { UNIMPLEMENTED; }
+    virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock)
+    {
+        // MORE - what to do about lock?
+        Owned<IPTree> wuXML = cassandraToWorkunitXML(session, wuid);
+        if (wuXML)
+            return new CConstCassandraWorkUnit(wuXML.getClear(), NULL, NULL);
+        else
+            return NULL;
+    }
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner) { UNIMPLEMENTED; }
+    virtual IWorkUnit * updateWorkUnit(const char * wuid) { UNIMPLEMENTED; }
+    virtual int setTracingLevel(int newlevel) { UNIMPLEMENTED; }
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user) { UNIMPLEMENTED; }
+    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state) { UNIMPLEMENTED; }
+    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl) { UNIMPLEMENTED; }
+    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster) { UNIMPLEMENTED; }
+    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath) { UNIMPLEMENTED; }
+    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf, unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total) { UNIMPLEMENTED; }
+    virtual unsigned numWorkUnits() { UNIMPLEMENTED; }
+    virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf) { UNIMPLEMENTED; }
+    virtual void descheduleAllWorkUnits() { UNIMPLEMENTED; }
+    virtual bool deleteWorkUnitEx(const char * wuid) { UNIMPLEMENTED; }
+    virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) { UNIMPLEMENTED; }
+private:
+    CassandraCluster cluster;
+    CassandraSession session;
+};
+
+
 } // namespace
