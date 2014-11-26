@@ -7003,13 +7003,15 @@ public:
         IHqlExpression *formals = funcdef->queryChild(1);
         ITypeInfo * retType = funcdef->queryType()->queryChildType();
 
-        enum { ServiceApi, RtlApi, BcdApi, CApi, LocalApi } api = ServiceApi;
+        enum { ServiceApi, RtlApi, BcdApi, CApi, CppApi, LocalApi } api = ServiceApi;
         if (body->hasAttribute(eclrtlAtom))
             api = RtlApi;
         else if (body->hasAttribute(bcdAtom))
             api = BcdApi;
         else if (body->hasAttribute(cAtom))
             api = CApi;
+        else if (body->hasAttribute(cppAtom))
+            api = CppApi;
         else if (body->hasAttribute(localAtom))
             api = LocalApi;
 
