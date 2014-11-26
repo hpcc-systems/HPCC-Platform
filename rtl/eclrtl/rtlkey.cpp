@@ -1996,7 +1996,7 @@ const char *CStringSet::describe(StringBuffer &ret)
         appendURL(&ret, (char *) t.getValue(), size, true);
     }
     ret.append(']');
-    return ret.toCharArray();
+    return ret.str();
 }
 
 bool CStringSet::inRange(const void *val) const

@@ -296,15 +296,15 @@ public:
                     if (reqName.endsWith(requestArrayString))
                     {
                         isRequestArray = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestArrayString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestArrayString.length());
                     }
                     else if (reqName.endsWith(requestString))
                     {
                         isRequest = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestString.length());
                     }
                     else
-                        queryName.set(reqName.toCharArray());
+                        queryName.set(reqName.str());
 
                     queryXML->renameProp("/", queryName.get());  // reset the name of the tree
                 }
@@ -3125,7 +3125,7 @@ void printStart(int argc, const char *argv[])
             cmd.append(' ');
         cmd.append('"').append(argv[argno]).append('"');
     }
-    PrintLog("Starting %s", cmd.toCharArray());
+    PrintLog("Starting %s", cmd.str());
 }
 
 //--------------------------------------------------------------

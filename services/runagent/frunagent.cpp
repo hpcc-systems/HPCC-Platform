@@ -215,7 +215,7 @@ void cmd_dispatch::action()
     
     
     if (result.length()) {
-        printf("%s\n", result.toCharArray());
+        printf("%s\n", result.str());
     }
     transport->Release();
 }

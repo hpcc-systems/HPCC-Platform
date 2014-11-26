@@ -270,7 +270,7 @@ void CXRefNode::deserializeMessages(IPropertyTree& inTree)
     }
     StringBuffer datastr;
     toXML(&inTree,datastr);
-    m_messages->setPropBin("data",datastr.length(),(void*)datastr.toCharArray());
+    m_messages->setPropBin("data",datastr.length(),(void*)datastr.str());
 }
 
 StringBuffer &CXRefNode::serializeDirectories(StringBuffer &buf)
@@ -311,7 +311,7 @@ void CXRefNode::deserializeDirectories(IPropertyTree& inTree)
     }
     StringBuffer datastr;
     toXML(&inTree,datastr);
-    m_directories->setPropBin("data",datastr.length(),(void*)datastr.toCharArray());
+    m_directories->setPropBin("data",datastr.length(),(void*)datastr.str());
 
 
 }
@@ -465,7 +465,7 @@ bool CXRefNode::removeEmptyDirectories(StringBuffer &errstr)
     ForEachItemInRev(i,todelete) 
         t->removeTree((IPropertyTree *)todelete.item(i)); // probably should check succeeded above but next run will correct
     toXML(t,dataStr.clear());
-    m_directories->setPropBin("data",dataStr.length(),(void*)dataStr.toCharArray());
+    m_directories->setPropBin("data",dataStr.length(),(void*)dataStr.str());
     emptyScopes();
     return true;
 }

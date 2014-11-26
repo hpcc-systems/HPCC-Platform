@@ -103,7 +103,7 @@ public:
         }
         if (excstr.length()) {
             str.append(" [");
-            str.append(excstr.toCharArray());
+            str.append(excstr.str());
             str.append(']');
         }
         return str;
@@ -364,12 +364,12 @@ void HRPCcommon::doproxy(HRPCcallframe &frame,int fn,IHRPCtransport *tr,HRPCbuff
             }
             catch (ISEH_Exception *e) {
                 StringBuffer msg;
-                _sendexception(rbuff,IRemoteException::EX_HARDWARE,e->errorCode(),e->errorMessage(msg).toCharArray());
+                _sendexception(rbuff,IRemoteException::EX_HARDWARE,e->errorCode(),e->errorMessage(msg).str());
                 e->Release();
             }
             catch (IException *e) {
                 StringBuffer msg;
-                _sendexception(rbuff,IRemoteException::EX_STANDARD,e->errorCode(),e->errorMessage(msg).toCharArray());
+                _sendexception(rbuff,IRemoteException::EX_STANDARD,e->errorCode(),e->errorMessage(msg).str());
                 e->Release();
             }
             catch (const char *s) {
@@ -666,13 +666,13 @@ void HRPCserver::DoRun(size32_t base)
                     catch (ISEH_Exception *e) {
                         if (async) throw e;
                         StringBuffer msg;
-                        sp->_sendexception(retbuff,IRemoteException::EX_HARDWARE,e->errorCode(),e->errorMessage(msg).toCharArray());
+                        sp->_sendexception(retbuff,IRemoteException::EX_HARDWARE,e->errorCode(),e->errorMessage(msg).str());
                         e->Release();
                     }
                     catch (IException *e) {
                         if (async) throw e;
                         StringBuffer msg;
-                        sp->_sendexception(retbuff,IRemoteException::EX_STANDARD,e->errorCode(),e->errorMessage(msg).toCharArray());
+                        sp->_sendexception(retbuff,IRemoteException::EX_STANDARD,e->errorCode(),e->errorMessage(msg).str());
                         e->Release();
                     }
                     catch (const char *s) {
@@ -710,7 +710,7 @@ void HRPCserver::DoRun(size32_t base)
         if (sp==NULL) {
             IHRPC_Exception *e=MakeHRPCexception(HRPCERR_module_not_found,head->module);
             StringBuffer msg;
-            dosendexception(retbuff,IRemoteException::EX_STANDARD,e->errorCode(),NULL,e->errorMessage(msg).toCharArray());
+            dosendexception(retbuff,IRemoteException::EX_STANDARD,e->errorCode(),NULL,e->errorMessage(msg).str());
             e->Release();
             transport->Transmit(retbuff);
         }

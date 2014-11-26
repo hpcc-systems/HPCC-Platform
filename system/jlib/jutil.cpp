@@ -2080,7 +2080,7 @@ extern jlib_decl void serializeAtom(MemoryBuffer & target, IAtom * name)
 {
     StringBuffer lower(name->str());
     lower.toLowerCase();
-    serialize(target, lower.toCharArray());
+    serialize(target, lower.str());
 }
 
 extern jlib_decl IAtom * deserializeAtom(MemoryBuffer & source)

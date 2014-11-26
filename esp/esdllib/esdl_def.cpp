@@ -964,7 +964,7 @@ public:
                 const char * finger = product;
                 while(*finger && *finger !=':'){val.append(*finger++);}
 
-                props->setProp("product_", val.toCharArray());
+                props->setProp("product_", val.str());
                 props->setProp("productdefault_", true);
             }
             else
@@ -987,8 +987,8 @@ public:
         if (prod.length() > 0)
         {
             if(prod.endsWith(":default"))
-                return prod.substring(0, prod.indexOf(":"))->toCharArray();
-            return prod.toCharArray();
+                return prod.substring(0, prod.indexOf(":"))->str();
+            return prod.str();
         }
         else
             return NULL;

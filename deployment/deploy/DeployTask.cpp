@@ -646,7 +646,7 @@ public:
              String err(errbuf.str());
              int index = err.indexOf('\n');
              String* perr = err.substring(0, index > 0? index : err.length());
-             m_errorString.clear().appendf("%s", perr->toCharArray());
+             m_errorString.clear().appendf("%s", perr->str());
              delete perr;
 
              bCopyRC = false;
@@ -1067,7 +1067,7 @@ public:
             String err(errbuf.str());
             int index = err.indexOf('\n');
             String* perr = err.substring(0, index > 0? index : err.length());
-            m_errorString.clear().appendf("%s", perr->toCharArray());
+            m_errorString.clear().appendf("%s", perr->str());
             delete perr;
             return false;
           }
@@ -1551,7 +1551,7 @@ public:
 
                         unsigned int len = outputStr.length();
                         outputStr.ensureCapacity(len+sz);
-                        if (sz == pFileIO->read(0, sz, (void*)(outputStr.toCharArray() + len)))
+                        if (sz == pFileIO->read(0, sz, (void*)(outputStr.str() + len)))
                             outputStr.setLength(sz+len);
                     }
                 }
@@ -1592,7 +1592,7 @@ public:
        String err(errmsg.str());
        int index = err.indexOf('\n');
        String* perr = err.substring(0, index > 0? index : err.length());
-       m_errorString.clear().appendf("%s", perr->toCharArray());
+       m_errorString.clear().appendf("%s", perr->str());
        delete perr;
        return false;
      }

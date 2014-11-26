@@ -617,8 +617,8 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         ensureFileExtension(lib, SharedObjectExtension);
     }
 
-    const char * entrypoint = entry.toCharArray();
-    const char * library = lib.toCharArray();
+    const char * entrypoint = entry.str();
+    const char * library = lib.str();
     if(!body->hasAttribute(pureAtom) && !body->hasAttribute(templateAtom) && !(foldOptions & (HFOfoldimpure|HFOforcefold)))
     {
         if (foldOptions & HFOthrowerror)

@@ -101,14 +101,13 @@ public:
     StringBuffer &  newline();
     StringBuffer &  pad(unsigned count);
     StringBuffer &  padTo(unsigned count);
-    inline const char * str() const { return toCharArray(); }
     char *          detach();
     StringBuffer &  clip();
     StringBuffer &  trim();
     StringBuffer &  trimLeft();
     inline StringBuffer &  trimRight() {  return clip(); }
     StringBuffer &  remove(unsigned start, unsigned len);
-    const char *    toCharArray() const;
+    const char *   str() const;
     StringBuffer &  toLowerCase();
     StringBuffer &  toUpperCase();
     StringBuffer &  replace(char oldChar, char newChar);
@@ -227,7 +226,7 @@ public:
     bool    startsWith(const char* value) const;
     String *  substring(int beginIndex) const;
     String *  substring(int beginIndex, int endIndex) const;
-    const char *toCharArray() const;
+    const char *str() const;
     String *  toLowerCase() const;
     String *  toString();               // Links this
     String *  toUpperCase() const;

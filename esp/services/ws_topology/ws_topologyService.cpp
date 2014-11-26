@@ -402,7 +402,7 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
         strBuff.append(xmlBuff);
         
         MemoryBuffer membuff;
-        membuff.setBuffer(strBuff.length(), (void*)strBuff.toCharArray());
+        membuff.setBuffer(strBuff.length(), (void*)strBuff.str());
 
         resp.setThefile_mimetype(HTTP_TYPE_APPLICATION_XML);
         resp.setThefile(membuff);

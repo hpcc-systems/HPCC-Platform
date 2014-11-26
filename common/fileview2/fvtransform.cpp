@@ -351,11 +351,11 @@ void * ViewTransformerRegistry::resolveExternal(IHqlExpression * funcdef)
 
     ensureFileExtension(lib, SharedObjectExtension);
 
-    Owned<ILoadedDllEntry> match = loadedPlugins->getPluginDll(lib.toCharArray(), NULL, false); // MORE - shouldn't it check the version????
+    Owned<ILoadedDllEntry> match = loadedPlugins->getPluginDll(lib.str(), NULL, false); // MORE - shouldn't it check the version????
     if (!match)
         return NULL;
 
-    return GetSharedProcedure(match->getInstance(), entry.toCharArray());
+    return GetSharedProcedure(match->getInstance(), entry.str());
 }
 
 

@@ -2590,7 +2590,7 @@ bool checkComponentReferences(const IPropertyTree* pEnv,
   {
     String str(xpath);
     String* pStr = str.substring(0, strcspn(xpath, "/"));
-    xpath1.append(pStr->toCharArray());
+    xpath1.append(pStr->str());
     delete pStr;
     xpath2 = pSlash+1;
   }
@@ -3758,7 +3758,7 @@ bool updateDirsWithConfSettings(IPropertyTree* pEnvRoot, IProperties* pParams, b
       if (str.indexOf('[') > 0)
         sb.append(pParams->queryProp("runtime")).append(PATHSEPCHAR).append(sbdir.str() + str.indexOf('['));
       else
-        sb.append(str.toCharArray());
+        sb.append(str.str());
 
       pEnvRoot->setProp("Software/Directories/Category[@name='run']/@dir", sb.str());
       ret = true;
@@ -3777,7 +3777,7 @@ bool updateDirsWithConfSettings(IPropertyTree* pEnvRoot, IProperties* pParams, b
       if (str.indexOf('[') > 0)
         sb.append(pParams->queryProp("log")).append(PATHSEPCHAR).append(sbdir.str() + str.indexOf('['));
       else
-        sb.append(str.toCharArray());
+        sb.append(str.str());
 
       pEnvRoot->setProp("Software/Directories/Category[@name='log']/@dir", sb.str());
       ret = true;

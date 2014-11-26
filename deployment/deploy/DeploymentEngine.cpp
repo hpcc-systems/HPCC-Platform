@@ -966,7 +966,7 @@ void CDeploymentEngine::writeFile(const char* filename, const char* str, EnvMach
             String errmsg(err.str());
             int index = errmsg.indexOf('\n');
             String* perr = errmsg.substring(0, index > 0? index : errmsg.length());
-            output.clear().appendf("%s", perr->toCharArray());
+            output.clear().appendf("%s", perr->str());
             delete perr;
             throw MakeStringException(-1, "%s", output.str());
         }

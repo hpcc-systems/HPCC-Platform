@@ -8118,7 +8118,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
             }
             else
                 s.append("Could not open local physical file ").append(filename).append(" (").append((unsigned)GetLastError()).append(")");
-            agent.fail(1, s.toCharArray());
+            agent.fail(1, s.str());
         }
     }
     else
@@ -8130,7 +8130,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
         {
             StringBuffer s;
             s.append("File ").append(filename).append(" size is ").append(filesize).append(" which is not a multiple of ").append(fixedDiskRecordSize);
-            agent.fail(1, s.toCharArray());
+            agent.fail(1, s.str());
         }
 
         unsigned readBufferSize = queryReadBufferSize();

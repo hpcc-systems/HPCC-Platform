@@ -1446,7 +1446,7 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 
         //set the file
         MemoryBuffer buff;
-        buff.setBuffer(returnStr.length(), (void*)returnStr.toCharArray());
+        buff.setBuffer(returnStr.length(), (void*)returnStr.str());
         resp.setDefFile(buff);
 
         //set the type
