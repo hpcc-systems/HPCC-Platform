@@ -1341,7 +1341,7 @@ public:
     void setCsvOptions(const char *separate,const char *terminate,const char *quote,const char *escape,bool quotedTerminator)
     {
         IPropertyTree *t = queryUpdateProperties();
-        if (separate && *separate)
+        if (separate) //Enable to pass zero string to override default separator
             t->setProp("@csvSeparate",separate);
         if (terminate && *terminate)
             t->setProp("@csvTerminate",terminate);

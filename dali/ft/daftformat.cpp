@@ -633,7 +633,10 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
 {
     maxElementLength = 1;
     format.set(_format);
-    addActionList(matcher, format.separate.get() ? format.separate.get() : "\\,", SEPARATOR, &maxElementLength);
+    const char * separator = format.separate.get();
+    if (separator && *separator)
+        addActionList(matcher, separator, SEPARATOR, &maxElementLength);
+
     addActionList(matcher, format.quote.get() ? format.quote.get() : "\"", QUOTE, &maxElementLength);
     addActionList(matcher, format.terminate.get() ? format.terminate.get() : "\\n,\\r\\n", TERMINATOR, &maxElementLength);
     const char * escape = format.escape.get();
