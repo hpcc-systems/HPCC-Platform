@@ -101,7 +101,6 @@ public :
     eclDataType getKeyType(const char * key, const char * partitionKey);
 
     bool isSameConnection(const char * _servers) const;
-    void refresh(ICodeContext * ctx) { connect(ctx); };
 
 private :
     void checkServersUp(ICodeContext * ctx);
@@ -123,12 +122,12 @@ private :
     memcached_pool_st * pool;
     StringAttr servers;
     bool alreadyInitialized;
+    unsigned typeMismatchCount;
 };
 
 #define OwnedMCached Owned<MemCachedPlugin::MCached>
 
 #define MAX_TYPEMISMATCHCOUNT 10
-static unsigned typeMismatchCount = 0;
 
 static CriticalSection crit;
 static OwnedMCached cachedConnection;
@@ -143,10 +142,7 @@ MCached * createConnection(ICodeContext * ctx, const char * servers)
     }
 
     if (cachedConnection->isSameConnection(servers))
-    {
-        cachedConnection->refresh(ctx);
         return LINK(cachedConnection);
-    }
 
     cachedConnection.set(new MemCachedPlugin::MCached(ctx, servers));
     return LINK(cachedConnection);
@@ -276,6 +272,7 @@ MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _servers)
     connection = NULL;
     pool = NULL;
     servers.set(_servers);
+    typeMismatchCount = 0;
 
     pool = memcached_pool(_servers, strlen(_servers));
     assertPool();
@@ -442,9 +439,7 @@ void MemCachedPlugin::MCached::reportKeyTypeMismatch(ICodeContext * ctx, const c
         msg.append(key).append("' is of type ").append(enumToStr((eclDataType)(flag))).append(", not ").append(enumToStr(eclType)).append(" as requested.\n");
 
         if (++typeMismatchCount <= MAX_TYPEMISMATCHCOUNT)
-            ctx->addWuException(msg.str(), WRN_FROM_PLUGIN, ExceptionSeverityInformation, "");
-        else
-            ctx->addWuException(msg.str(), ERR_FROM_PLUGIN, ExceptionSeverityError, "");
+            ctx->logString(msg.str());//NOTE: logging locally, rather than calling ctx->addWuException, to prevent flooding the WU if this is called multiple times by every node
     }
 }
 
@@ -504,7 +499,7 @@ void MemCachedPlugin::MCached::invokeConnectionSecurity(ICodeContext * ctx)
 {
     //NOTE: Whether to assert or just report? This depends on when this is called. If before checkServersUp() and
     //a server is down, it will cause the following to fail if asserted with only a 'poor' libmemcached error message.
-    //Reporting means that these 'sercurity' measures may not be carried out. Moving checkServersUp() to here is probably the best
+    //Reporting means that these 'security' measures may not be carried out. Moving checkServersUp() to here is probably the best
     //soln. however, this comes with extra overhead.
     reportErrorOnFail(ctx, memcached_verbosity(connection, (uint32_t)(0)));
     //reportErrorOnFail(ctx, memcached_callback_set(connection, MEMCACHED_CALLBACK_PREFIX_KEY, "ecl"));//NOTE: MEMCACHED_CALLBACK_PREFIX_KEY is an alias of MEMCACHED_CALLBACK_NAMESPACE
@@ -533,20 +528,20 @@ void MemCachedPlugin::MCached::connect(ICodeContext * ctx)
 //--------------------------------------------------------------------------------
 ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MClear(ICodeContext * ctx, const char * servers)
 {
-    OwnedMCached connection = MemCachedPlugin::createConnection(ctx, servers);
-    bool returnValue = connection->clear(ctx, 0);
+    OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, servers);
+    bool returnValue = serverPool->clear(ctx, 0);
     return returnValue;
 }
 ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MExist(ICodeContext * ctx, const char * servers, const char * key, const char * partitionKey)
 {
-    OwnedMCached connection = MemCachedPlugin::createConnection(ctx, servers);
-    bool returnValue = connection->exist(ctx, key, partitionKey);
+    OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, servers);
+    bool returnValue = serverPool->exist(ctx, key, partitionKey);
     return returnValue;
 }
 ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * ctx, const char * servers, const char * key, const char * partitionKey)
 {
-    OwnedMCached connection = MemCachedPlugin::createConnection(ctx, servers);
-    const char * keyType = enumToStr(connection->getKeyType(key, partitionKey));
+    OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, servers);
+    const char * keyType = enumToStr(serverPool->getKeyType(key, partitionKey));
     return keyType;
 }
 //-----------------------------------SET------------------------------------------
