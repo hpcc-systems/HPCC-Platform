@@ -64,10 +64,10 @@ static const char * EclDefinition =
 "  UNSIGNED4 AdjustCalendar(UNSIGNED4 date, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta) : c,pure,entrypoint='tlAdjustCalendar'; \n"
 "  BOOLEAN IsLocalDaylightSavingsInEffect() : c,pure,entrypoint='tlIsLocalDaylightSavingsInEffect'; \n"
 "  INTEGER4 LocalTimeZoneOffset() : c,pure,entrypoint='tlLocalTimeZoneOffset'; \n"
-"  UNSIGNED4 CurrentDate(BOOLEAN in_local_time) : c,pure,entrypoint='tlCurrentDate'; \n"
-"  UNSIGNED4 CurrentTime(BOOLEAN in_local_time) : c,pure,entrypoint='tlCurrentTime'; \n"
-"  INTEGER4 CurrentSeconds(BOOLEAN in_local_time) : c,pure,entrypoint='tlCurrentSeconds'; \n"
-"  INTEGER8 CurrentTimestamp(BOOLEAN in_local_time) : c,pure,entrypoint='tlCurrentTimestamp'; \n"
+"  UNSIGNED4 CurrentDate(BOOLEAN in_local_time) : c,entrypoint='tlCurrentDate'; \n"
+"  UNSIGNED4 CurrentTime(BOOLEAN in_local_time) : c,entrypoint='tlCurrentTime'; \n"
+"  INTEGER8 CurrentSeconds(BOOLEAN in_local_time) : c,entrypoint='tlCurrentSeconds'; \n"
+"  INTEGER8 CurrentTimestamp(BOOLEAN in_local_time) : c,entrypoint='tlCurrentTimestamp'; \n"
 "  UNSIGNED4 GetLastDayOfMonth(UNSIGNED4 date) : c,pure,entrypoint='tlGetLastDayOfMonth'; \n"
 "  TRANSFORM(TMDateRangeRec) DatesForWeek(UNSIGNED4 date) : c,pure,entrypoint='tlDatesForWeek'; \n"
 "END;";
@@ -184,7 +184,7 @@ void tlSystemTimeToTimeStruct_r(SYSTEMTIME* s, struct tm* timeInfoPtr)
 
 time_t tlFileTimeToSeconds(const FILETIME* f)
 {
-    const __int64   offset = 11644473600; // Number of seconds between 1601 and 1970 (Jan 1 of each)
+    const __int64   offset = I64C(11644473600); // Number of seconds between 1601 and 1970 (Jan 1 of each)
 
     return static_cast<time_t>((tlFileTimeToInt64(*f) / _onesec_in100ns) - offset);
 }

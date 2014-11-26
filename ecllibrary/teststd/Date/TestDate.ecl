@@ -17,6 +17,7 @@ EXPORT TestDate := MODULE
   SHARED vTimeLocal := Date.CurrentTime(TRUE); // Local
   SHARED vSeconds := Date.CurrentSeconds(); // UTC
   SHARED vSecondsLocal := Date.CurrentSeconds(TRUE); // Local
+  SHARED vIndTimestamp := Date.CurrentTimestamp() : INDEPENDENT; // UTC, evaluated before all others
   SHARED vTimestamp := Date.CurrentTimestamp(); // UTC
   SHARED vTimestampLocal := Date.CurrentTimestamp(TRUE); // Local
   SHARED vLocalTimeZoneOffset := Date.LocalTimeZoneOffset();
@@ -123,6 +124,8 @@ EXPORT TestDate := MODULE
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=4) = 20040229);
 
     ASSERT(vSeconds + vLocalTimeZoneOffset = vSecondsLocal);
+
+    ASSERT(vTimestamp != vIndTimestamp); // Test for non-pure calls to C++ code
 
     ASSERT(Date.TimestampToSeconds(vTimestamp) = vSeconds);
     ASSERT(Date.TimestampToSeconds(vTimestampLocal) = vSecondsLocal);
