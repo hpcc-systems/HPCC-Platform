@@ -722,6 +722,7 @@ struct HqlCppOptions
     bool                checkAmbiguousRollupCondition;
     bool                paranoidCheckSelects;
     bool                matchExistingDistributionForJoin;
+    bool                createImplicitKeyedDistributeForJoin;
     bool                expandHashJoin;
     bool                traceIR;
     bool                preserveCaseExternalParameter;

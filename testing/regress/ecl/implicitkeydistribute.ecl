@@ -15,24 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
-indexRecord :=
-        RECORD
-string14            surname;
-string20            forename
-=>
-string20            alias;
-unsigned8           filepos{virtual(fileposition)};
-        END;
+import $.setup;
 
-nameKey := INDEX(indexRecord, 'sequence.idx');
+EXPORT ImplicitKeyDistribute(string source = 'thorlcr') := function
 
+    files := setup.files(source, false);
 
-inRecord := RECORD
-    string            surname;
-    string            forename;
+    inlineDs := dataset([
+            {'AAAA','AAA'},
+            {'CLAIRE','BAYLISS'},
+            {'KIMBERLY','SMITH'},
+            {'ZZZ','ZZZ'}]
+            , { string first, STRING last} );
+            
+    myIndex := files.DG_VarIndex(dg_lastname != '');
+    
+    j := JOIN(inlineDs, myIndex, LEFT.last = RIGHT.dg_lastname AND LEFT.first = RIGHT.dg_firstName);
+    
+    gr := TABLE(j, { last, cnt := COUNT(GROUP) }, last); 
+    
+    RETURN gr;
 END;
-
-inDs := DATASET('in', inRecord, THOR);
-
-j := JOIN(inDs, nameKey, LEFT.surname = RIGHT.surname AND LEFT.forename = RIGHT.forename, STREAMED);
-output(j);

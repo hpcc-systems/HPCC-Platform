@@ -14627,8 +14627,8 @@ bool isSelfJoin(IHqlExpression * expr)
 
     //Check this isn't going to generate a between join - if it is that takes precedence.  A bit arbitrary
     //when one is more efficient.
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, true);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(true);
     if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftReq().ordinality() == joinInfo.slidingMatches.ordinality()))
         return false;
     return true;

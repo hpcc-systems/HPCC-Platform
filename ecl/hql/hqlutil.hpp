@@ -697,10 +697,11 @@ class HQL_API JoinSortInfo
 {
     friend class JoinOrderSpotter;
 public:
-    JoinSortInfo();
+    JoinSortInfo(IHqlExpression * expr);
+    JoinSortInfo(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, IHqlExpression * atmost);
 
-    void findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, bool allowSlidingMatch);
-    void findJoinSortOrders(IHqlExpression * expr, bool allowSlidingMatch);
+    void findJoinSortOrders(bool allowSlidingMatch);
+    IHqlExpression * getContiguousJoinCondition(unsigned numRhsFields);
 
     inline bool hasRequiredEqualities() const { return leftReq.ordinality() != 0; }
     inline bool hasOptionalEqualities() const { return leftOpt.ordinality() != 0; }
@@ -711,19 +712,30 @@ public:
     inline const HqlExprArray & queryRightOpt() { return rightOpt; }
     inline const HqlExprArray & queryLeftSort() { initSorts(); return leftSorts; }
     inline const HqlExprArray & queryRightSort() { initSorts(); return rightSorts; }
+    inline unsigned numRequiredEqualities() const { return leftReq.ordinality(); }
 
-    bool neverMatchSelf(IHqlExpression * left, IHqlExpression * right, IHqlExpression * selSeq);
+    bool neverMatchSelf() const;
 
 protected:
+    void init();
     void initSorts();
+    void doFindJoinSortOrders(IHqlExpression * condition, bool allowSlidingMatch);
 
 public:
     AtmostLimit atmost;
     OwnedHqlExpr extraMatch;
     HqlExprArray slidingMatches;
     bool conditionAllEqualities;
-    bool hasRightNonEquality;
 protected:
+    //The expression is assumed to outlast this class instance => doesn't used linked
+    IHqlExpression * cond;
+    IHqlExpression * lhs;
+    IHqlExpression * rhs;
+    IHqlExpression * seq;
+    IHqlExpression * atmostAttr;
+    LinkedHqlExpr left;
+    LinkedHqlExpr right;
+    bool hasRightNonEquality;
     HqlExprArray leftReq;
     HqlExprArray leftOpt;
     HqlExprArray leftSorts;
