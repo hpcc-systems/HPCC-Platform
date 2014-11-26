@@ -45,7 +45,7 @@ size32_t getMaxRequestEntityLength(EclCmdCommon &cmd)
     if (cmd.optPassword.length())
          httpclient->setPassword(cmd.optPassword);
      if (0 > httpclient->sendRequest("GET", NULL, request, response, status) || !response.length() || strncmp("200", status, 3))
-         throw MakeStringException(-1, "Error checking ESP configuration: %s:%s %s", cmd.optServer.sget(), cmd.optPort.sget(), status.str());
+         throw MakeStringException(-1, "Error checking ESP configuration: %s:%s %s", cmd.optServer.str(), cmd.optPort.str(), status.str());
 
     Owned<IPropertyTree> config = createPTreeFromXMLString(response);
     return config->getPropInt("Software[1]/EspProcess[1]/EspProtocol[@type='http_protocol'][1]/@maxRequestEntityLength");
@@ -127,7 +127,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     if (cluster && *cluster)
         req->setCluster(cluster);
     req->setObject(cmd.optObj.mb);
-    req->setFileName(cmd.optObj.value.sget());
+    req->setFileName(cmd.optObj.value.str());
     if ((int)cmd.optResultLimit > 0)
         req->setResultLimit(cmd.optResultLimit);
     if (cmd.optAttributePath.length())
@@ -711,7 +711,7 @@ public:
         else if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
-            outputQueryActionResults(results, "Activated", optQuerySet.sget());
+            outputQueryActionResults(results, "Activated", optQuerySet.str());
         return 0;
     }
     virtual void usage()
@@ -758,7 +758,7 @@ public:
         else if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
-            outputQueryActionResults(results, "Unpublished", optQuerySet.sget());
+            outputQueryActionResults(results, "Unpublished", optQuerySet.str());
         return 0;
     }
     virtual void usage()
@@ -807,7 +807,7 @@ public:
         {
             IConstQuerySetAliasActionResult &item = results.item(0);
             if (item.getSuccess())
-                fprintf(stdout, "Deactivated alias %s/%s\n", optQuerySet.sget(), optQuery.sget());
+                fprintf(stdout, "Deactivated alias %s/%s\n", optQuerySet.str(), optQuery.str());
             else if (item.getCode()|| item.getMessage())
                 fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
         }

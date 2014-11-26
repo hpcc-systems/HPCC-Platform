@@ -37,11 +37,11 @@ IConstWorkUnit *WsEclWuInfo::ensureWorkUnit()
     if (wu)
         return wu;
     Owned<IWorkUnitFactory> wf = getWorkUnitFactory();
-    wu.setown(wf->openWorkUnit(wuid.sget(), false));
+    wu.setown(wf->openWorkUnit(wuid.str(), false));
     if (!wu)
-        throw MakeStringException(-1, "Could not open workunit: %s", wuid.sget());
+        throw MakeStringException(-1, "Could not open workunit: %s", wuid.str());
     if (isLibrary(wu))
-        throw MakeStringException(-1, "%s/%s %s is a library", qsetname.sget(), queryname.sget(), wuid.sget());
+        throw MakeStringException(-1, "%s/%s %s is a library", qsetname.str(), queryname.str(), wuid.str());
     return wu;
 }
 
@@ -49,7 +49,7 @@ bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
 {
     if (strieq(name, "SOAP"))
     {
-        out.appendf("<message name=\"%s\">", queryname.sget());
+        out.appendf("<message name=\"%s\">", queryname.str());
         IConstWUResultIterator &vars = ensureWorkUnit()->getVariables();
         Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, password));
         ForEach(vars)
@@ -110,7 +110,7 @@ bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
                     ptype.set("xsd:string");
                     break;
                 }
-                out.appendf("<part name=\"%s\" type=\"%s\" />", varname.str(), ptype.sget());
+                out.appendf("<part name=\"%s\" type=\"%s\" />", varname.str(), ptype.str());
             }
         }
         out.append("</message>");

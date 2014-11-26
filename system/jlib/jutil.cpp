@@ -2604,7 +2604,7 @@ const char * queryCurrentProcessPath()
     }
     if (processPath.isEmpty())
         return NULL;
-    return processPath.sget();
+    return processPath.str();
 }
 
 inline bool isOctChar(char c) 

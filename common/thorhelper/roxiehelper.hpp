@@ -49,12 +49,12 @@ public:
     HttpHelper() { _isHttp = false; };
     bool isHttp() { return _isHttp; };
     void setIsHttp(bool __isHttp) { _isHttp = __isHttp; };
-    const char *queryAuthToken() { return authToken.sget(); };
+    const char *queryAuthToken() { return authToken.str(); };
     inline void setAuthToken(const char *v)
     {
         setHttpHeaderValue(authToken, v, false);
     };
-    const char *queryContentType() { return contentType.sget(); };
+    const char *queryContentType() { return contentType.str(); };
     inline void setContentType(const char *v)
     {
         setHttpHeaderValue(contentType, v, true);

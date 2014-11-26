@@ -612,7 +612,7 @@ const char *EclAgent::queryTempfilePath()
         recursiveCreateDirectory(dir.str());
         agentTempDir.set(dir.str());
     }
-    return agentTempDir.sget();
+    return agentTempDir.str();
 }
 
 StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)

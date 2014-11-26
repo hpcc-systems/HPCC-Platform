@@ -252,11 +252,10 @@ public:
     inline operator const char * () const       { return text; }
     inline void clear()                         { setown(NULL); }
     inline char * detach()                      { char * ret = text; text = NULL; return ret; }
-    inline const char * get(void) const         { return text; }
+    inline const char * get() const         { return text; }
     inline size32_t     length() const          { return text ? (size32_t)strlen(text) : 0; }
     inline bool isEmpty() const                 { return !text||!*text; } // faster than (length==0)
-    inline const char * str(void) const         { return text ? text : ""; } // safe form (doesn't return NULL)
-    inline const char * sget(void) const        { return text ? text : ""; } // safe form of get (doesn't return NULL)
+    inline const char * str() const         { return text ? text : ""; } // safe form (doesn't return NULL)
 
     void         set(const char * _text);
     void         setown(const char * _text);

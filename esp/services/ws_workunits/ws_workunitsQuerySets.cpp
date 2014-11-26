@@ -2063,7 +2063,7 @@ public:
 
         destQuerySet.setown(getQueryRegistry(target, false));
         if (!destQuerySet) // getQueryRegistry should have created if not found
-            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Destination Queryset %s could not be created, or found", target.sget());
+            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Destination Queryset %s could not be created, or found", target.str());
 
         factory.setown(getWorkUnitFactory(context->querySecManager(), context->queryUser()));
     }

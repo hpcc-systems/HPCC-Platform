@@ -1025,7 +1025,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
         else
             splitDirTail(part0.overridename,dir);
         if (dir.length()==0) {
-            WARNLOG("CFileDescriptor cannot determine directory for file %s in '%s'",tracename.sget(),part0.overridename.sget());
+            WARNLOG("CFileDescriptor cannot determine directory for file %s in '%s'",tracename.str(),part0.overridename.str());
         }
         else {
             const char *s = dir.str();

@@ -1046,7 +1046,7 @@ void FlushingStringBuffer::startDataset(const char *elementName, const char *res
                 s.append('<').append(elementName);
                 if (isSoap && (resultName || (sequence != (unsigned) -1)))
                 {
-                    s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append(":result:");
+                    s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append(":result:");
                     if (resultName && *resultName)
                         s.appendLower(strlen(resultName), resultName).append('\'');
                     else
@@ -1094,7 +1094,7 @@ void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence
             s.append("<Dataset");
             if (isSoap && (resultName || (sequence != (unsigned) -1)))
             {
-                s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append(":result:");
+                s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append(":result:");
                 if (resultName && *resultName)
                     s.appendLower(strlen(resultName), resultName).append('\'');
                 else
