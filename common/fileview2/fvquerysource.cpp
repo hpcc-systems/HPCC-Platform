@@ -71,12 +71,10 @@ bool QueryDataSource::createBrowseWU()
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> parent = factory->openWorkUnit(wuid, false);
 
-    cluster.set(parent->queryClusterName());
     const char *user = parent->queryUser();
-
     Owned<IWorkUnit> workunit = factory->createWorkUnit("fileViewer", user);
     workunit->setUser(user);
-    workunit->setClusterName(cluster);
+    workunit->setClusterName(parent->queryClusterName());
     browseWuid.set(workunit->queryWuid());
 
     workunit->setDebugValueInt("importImplicitModules", false, true);

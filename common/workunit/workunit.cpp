@@ -1042,7 +1042,8 @@ mapEnums states[] = {
 
 const char * getWorkunitStateStr(WUState state)
 {
-    return states[state].str; // MORE - should be using getEnumText
+    dbgassertex(state < WUStateSize);
+    return states[state].str; // MORE - should be using getEnumText, or need to take steps to ensure values remain contiguous and in order.
 }
 
 const char *getEnumText(int value, mapEnums *map)
@@ -1253,7 +1254,6 @@ public:
     virtual IStringIterator *getProcesses(const char *type) const;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const;
 
-    virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
 
     virtual const char *queryUser() const;
@@ -1515,7 +1515,7 @@ protected:
     void unsubscribe();
     void checkAgentRunning(WUState & state);
 
-    void ensureGraphsUnpacked ()
+    void ensureGraphsUnpacked()
     {
         IPropertyTree *t = p->queryPropTree("PackedGraphs");
         MemoryBuffer buf;
@@ -1540,7 +1540,7 @@ class CDaliWorkUnit : public CLocalWorkUnit
 public:
     IMPLEMENT_IINTERFACE;
     CDaliWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser)
-    : connection(_conn), CLocalWorkUnit(_conn->getRoot(), secmgr, secuser)
+        : connection(_conn), CLocalWorkUnit(_conn->getRoot(), secmgr, secuser)
     {
         abortDirty = true;
         abortState = false;
@@ -1851,9 +1851,6 @@ public:
             { return c->getStatistics(filter); }
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const
             { return c->getStatistic(creator, scope, kind); }
-    virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day)
-            { return c->getWuDate(year,month,day);}
-
     virtual IStringVal & getSnapshot(IStringVal & str) const
             { return c->getSnapshot(str); } 
     virtual const char *queryUser() const
@@ -6021,16 +6018,6 @@ IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * creator, const cha
     if (stats->first())
         return LINK(&stats->query());
     return NULL;
-}
-
-bool CLocalWorkUnit::getWuDate(unsigned & year, unsigned & month, unsigned& day)
-{
-    CriticalBlock block(crit);
-    if (sscanf(queryWuid(), "W%4u%2u%2u", &year, &month, &day)==3)
-    {
-    }
-    
-    return false;
 }
 
 IWUPlugin* CLocalWorkUnit::updatePluginByName(const char *qname)

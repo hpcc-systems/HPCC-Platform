@@ -1051,7 +1051,6 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual unsigned getCodeVersion() const = 0;
     virtual unsigned getWuidVersion() const  = 0;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const = 0;
-    virtual bool getWuDate(unsigned & year, unsigned & month, unsigned & day) = 0;
     virtual IPropertyTree * getDiskUsageStats() = 0;
     virtual IPropertyTreeIterator & getFileIterator() const = 0;
     virtual bool getCloneable() const = 0;
