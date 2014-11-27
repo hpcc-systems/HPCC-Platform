@@ -368,7 +368,7 @@ void Esdl2Base::countContent(Esdl2TransformerContext &ctx)
 
 void Esdl2Base::output_content(Esdl2TransformerContext &ctx, IPropertyTree *pt)
 {
-    output_content(ctx, pt, xml_tag.sget());
+    output_content(ctx, pt, xml_tag.str());
 }
 
 void Esdl2Base::output_content(Esdl2TransformerContext &ctx, const char * content, const char *tagname, unsigned leadinzeros)
@@ -466,7 +466,7 @@ void Esdl2Base::output_content(Esdl2TransformerContext &ctx, const char *tagname
 
 void Esdl2Base::output_content(Esdl2TransformerContext &ctx)
 {
-    output_content(ctx, xml_tag.sget());
+    output_content(ctx, xml_tag.str());
 }
 
 void Esdl2Base::output_ecl_date(Esdl2TransformerContext &ctx, const char *tagname)

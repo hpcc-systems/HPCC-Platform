@@ -2078,7 +2078,7 @@ struct CTreeItem : public CInterface
     {
         if (parent)
             parent->getXPath(xpath);
-        xpath.append('/').append(tail->toCharArray());
+        xpath.append('/').append(tail->str());
         if ((index!=0)||tail->IsShared())
             xpath.append('[').append(index+1).append(']');
     }
@@ -2131,7 +2131,7 @@ class CXMLSizesParser : public CInterface
         virtual void beginNode(const char *tag, offset_t startOffset)
         {
             String *tail = levtail;
-            if (levtail&&(0 == strcmp(tag, levtail->toCharArray())))
+            if (levtail&&(0 == strcmp(tag, levtail->str())))
                 tail->Link();
             else
                 tail = new String(tag);

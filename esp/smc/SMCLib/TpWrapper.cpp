@@ -1735,7 +1735,7 @@ void CTpWrapper::setAttPath(StringBuffer& Path,const char* PathToAppend,const ch
     Path.append(AttValue);
     Path.append("\"]");
     StringBuffer rawPath;
-    const void* buff = (void*)Path.toCharArray();
+    const void* buff = (void*)Path.str();
     JBASE64_Encode(buff,Path.length(),rawPath, false);
     returnStr.append(rawPath.str());
 }

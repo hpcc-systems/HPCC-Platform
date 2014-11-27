@@ -61,10 +61,10 @@ public:
         tmp.append("</XML>");
 
 #if THOR_TRACE_LEVEL >= 5
-        ActPrintLog("Distribution result: %s", tmp.toCharArray());
+        ActPrintLog("Distribution result: %s", tmp.str());
 #endif
 
-        helper->sendResult(tmp.length(), tmp.toCharArray());
+        helper->sendResult(tmp.length(), tmp.str());
 
         destroyThorRow(result);
     }

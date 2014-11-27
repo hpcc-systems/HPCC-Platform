@@ -64,7 +64,7 @@ esdlCmdOptionMatchIndicator EsdlCmdCommon::matchCommandLineOption(ArgvIterator &
     if (iter.matchOption(tempArg, "-brk"))
     {
 #if defined(_WIN32) && defined(_DEBUG)
-        unsigned id = atoi(tempArg.sget());
+        unsigned id = atoi(tempArg.str());
         if (id == 0)
             DebugBreak();
         else

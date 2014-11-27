@@ -731,7 +731,7 @@ public:
                     if (str.startsWith("SOAP Connection error"))
                         msg.appendf("\nIpAddress: %s\nResult:%s\n", key, "SOAP Connection error - Could not connect to the target");
                     else
-                        msg.appendf("\nIpAddress: %s\nResult:%s\n", key, str.toCharArray());
+                        msg.appendf("\nIpAddress: %s\nResult:%s\n", key, str.str());
                 }
 
                 //Perform the appropriate cancel action

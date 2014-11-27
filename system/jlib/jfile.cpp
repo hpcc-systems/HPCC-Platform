@@ -1631,7 +1631,7 @@ IFileIO * createIFileIO(unsigned len, void * buffer)
 
 IFileIO * createIFileIO(StringBuffer & buffer)
 {
-    return _createIFileIO((void *)buffer.toCharArray(), buffer.length(), true);
+    return _createIFileIO((void *)buffer.str(), buffer.length(), true);
 }
 
 IFileIO * createIFileIO(MemoryBuffer & buffer)

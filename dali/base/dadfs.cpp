@@ -4552,7 +4552,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 {
                     sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
                     if (!sub)
-                        throw MakeStringException(-1,"cAddSubFileAction: sub file %s not found", subfile.sget());
+                        throw MakeStringException(-1,"cAddSubFileAction: sub file %s not found", subfile.str());
                     // Must validate before locking for update below, to check sub is not already in parent (and therefore locked already)
                     transaction->validateAddSubFile(parent, sub, subfile);
                 }
@@ -9536,7 +9536,7 @@ public:
         bool includesuper = false;
         StringAttr attr;
         mb.read(wildname).read(recursive).read(attr);
-        trc.appendf("iterateFiles(%s,%s,%s)",wildname.sget(),recursive?"recursive":"",attr.sget());
+        trc.appendf("iterateFiles(%s,%s,%s)",wildname.str(),recursive?"recursive":"",attr.str());
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
         Owned<IUserDescriptor> udesc;
@@ -9592,7 +9592,7 @@ public:
         StringAttr filters;
         bool recursive;
         mb.read(filters).read(recursive);
-        trc.appendf("iterateFilteredFiles(%s,%s)",filters.sget(),recursive?"recursive":"");
+        trc.appendf("iterateFilteredFiles(%s,%s)",filters.str(),recursive?"recursive":"");
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
         if (mb.getPos()<mb.length())
@@ -9651,7 +9651,7 @@ public:
         mb.read(primary).read(secondary).read(primflds).read(secflds).read(kind).read(cardinality).read(payloadb);
         mb.clear();
         bool payload = (payloadb==1);
-        trc.appendf("iterateRelationships(%s,%s,%s,%s,%s,%s,%d)",primary.sget(),secondary.sget(),primflds.sget(),secflds.sget(),kind.sget(),cardinality.sget(),(int)payloadb);
+        trc.appendf("iterateRelationships(%s,%s,%s,%s,%s,%s,%d)",primary.str(),secondary.str(),primflds.str(),secflds.str(),kind.str(),cardinality.str(),(int)payloadb);
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
         unsigned start = msTick();
@@ -9682,7 +9682,7 @@ public:
         mb.read(lname);
         CDateTime dt;
         dt.deserialize(mb);
-        trc.appendf("setFileAccessed(%s)",lname.sget());
+        trc.appendf("setFileAccessed(%s)",lname.str());
         Owned<IUserDescriptor> udesc;
         if (mb.getPos()<mb.length()) {
             udesc.setown(createUserDescriptor());
@@ -9713,7 +9713,7 @@ public:
         StringAttr owner;
         bool set;
         mb.read(lname).read(owner).read(set);
-        trc.appendf("setFileProtect(%s,%s,%s)",lname.sget(),owner.sget(),set?"true":"false");
+        trc.appendf("setFileProtect(%s,%s,%s)",lname.str(),owner.str(),set?"true":"false");
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
         Owned<IUserDescriptor> udesc;
@@ -9756,7 +9756,7 @@ public:
                 ver = 0;
             }
         }
-        trc.appendf("getFileTree(%s,%d)",lname.sget(),ver);
+        trc.appendf("getFileTree(%s,%d)",lname.str(),ver);
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
         Owned<IUserDescriptor> udesc;
@@ -9830,7 +9830,7 @@ public:
         StringAttr gname;
         mb.read(gname);
         mb.clear();
-        trc.appendf("getGroupTree(%s)",gname.sget());
+        trc.appendf("getGroupTree(%s)",gname.str());
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
         byte ok;

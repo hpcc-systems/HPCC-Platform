@@ -98,7 +98,7 @@ public:
         catch(IException *e) 
         {
             StringBuffer s;
-            DBGLOG("UdpSender: sendRequest write failed - %s", e->errorMessage(s).toCharArray());
+            DBGLOG("UdpSender: sendRequest write failed - %s", e->errorMessage(s).str());
             e->Release();
         }
         catch (...) 
@@ -961,7 +961,7 @@ class CSendManager : public CInterface, implements ISendManager
                         if (running && e->errorCode() != JSOCKERR_timeout_expired)
                         {
                             StringBuffer s;
-                            DBGLOG("UdpSender: send_receive_flow::read failed port=%i %s", receive_port, e->errorMessage(s).toCharArray());
+                            DBGLOG("UdpSender: send_receive_flow::read failed port=%i %s", receive_port, e->errorMessage(s).str());
                         }
                         e->Release();
                     }
@@ -1008,7 +1008,7 @@ class CSendManager : public CInterface, implements ISendManager
             {
                 StringBuffer s;
                 StringBuffer url;
-                DBGLOG("UdpSender: multicast_connect or write failed ep=%s - %s", ep.getUrlStr(url).str(), e->errorMessage(s).toCharArray());
+                DBGLOG("UdpSender: multicast_connect or write failed ep=%s - %s", ep.getUrlStr(url).str(), e->errorMessage(s).str());
                 e->Release();
             }
             catch(...) 

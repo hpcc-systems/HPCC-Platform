@@ -114,11 +114,11 @@ void test4()
     printf("***Freeing Tag that does not exist****\n");
     try{
         freeMPtag((mptag_t)999);
-    }catch(IException *e){printf("%s\n", e->errorMessage(msg).toCharArray());e->Release();}
+    }catch(IException *e){printf("%s\n", e->errorMessage(msg).str());e->Release();}
     try{
         printf("***Getting Formater for Tag that does not exist***\n");
         queryFormatter((mptag_t)999);
-    }catch(IException *e){printf("%s\n", e->errorMessage(msg2).toCharArray());e->Release();}
+    }catch(IException *e){printf("%s\n", e->errorMessage(msg2).str());e->Release();}
 
 }
 

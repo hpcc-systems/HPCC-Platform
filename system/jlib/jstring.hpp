@@ -101,14 +101,13 @@ public:
     StringBuffer &  newline();
     StringBuffer &  pad(unsigned count);
     StringBuffer &  padTo(unsigned count);
-    inline const char * str() const { return toCharArray(); }
     char *          detach();
     StringBuffer &  clip();
     StringBuffer &  trim();
     StringBuffer &  trimLeft();
     inline StringBuffer &  trimRight() {  return clip(); }
     StringBuffer &  remove(unsigned start, unsigned len);
-    const char *    toCharArray() const;
+    const char *   str() const;
     StringBuffer &  toLowerCase();
     StringBuffer &  toUpperCase();
     StringBuffer &  replace(char oldChar, char newChar);
@@ -227,7 +226,7 @@ public:
     bool    startsWith(const char* value) const;
     String *  substring(int beginIndex) const;
     String *  substring(int beginIndex, int endIndex) const;
-    const char *toCharArray() const;
+    const char *str() const;
     String *  toLowerCase() const;
     String *  toString();               // Links this
     String *  toUpperCase() const;
@@ -253,11 +252,10 @@ public:
     inline operator const char * () const       { return text; }
     inline void clear()                         { setown(NULL); }
     inline char * detach()                      { char * ret = text; text = NULL; return ret; }
-    inline const char * get(void) const         { return text; }
+    inline const char * get() const             { return text; }
     inline size32_t     length() const          { return text ? (size32_t)strlen(text) : 0; }
     inline bool isEmpty() const                 { return !text||!*text; } // faster than (length==0)
-    inline const char * str(void) const         { return text ? text : ""; } // safe form (doesn't return NULL)
-    inline const char * sget(void) const        { return text ? text : ""; } // safe form of get (doesn't return NULL)
+    inline const char * str() const             { return text ? text : ""; } // safe form (doesn't return NULL)
 
     void         set(const char * _text);
     void         setown(const char * _text);

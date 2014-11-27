@@ -163,16 +163,16 @@ int c_dispatch::run()
   { ex1=strdup(s);
   } catch(IHRPC_Exception *e) 
   { StringBuffer s;
-    ex1=alloccat(e->errorMessage(s).toCharArray()," ",id," ",0);
+    ex1=alloccat(e->errorMessage(s).str()," ",id," ",0);
     e->Release();
   } catch(IJSOCK_Exception *e) 
   { StringBuffer s;
-    ex1=alloccat(e->errorMessage(s).toCharArray()," ",id," ",0);
+    ex1=alloccat(e->errorMessage(s).str()," ",id," ",0);
     e->Release();
   } 
   catch (IException *e)
   { StringBuffer s;
-    ex1=alloccat(e->errorMessage(s).toCharArray()," ",id," ",0);
+    ex1=alloccat(e->errorMessage(s).str()," ",id," ",0);
     e->Release();
   }
   catch (...)

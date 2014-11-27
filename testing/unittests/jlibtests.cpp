@@ -210,7 +210,7 @@ protected:
             if (ep != NULL)
             {
                 ifile = createRemoteFile(*ep, tmpfile);
-                fprintf(stdout, "Remote: (%s)\n", server.toCharArray());
+                fprintf(stdout, "Remote: (%s)\n", server.str());
             }
             else
             {

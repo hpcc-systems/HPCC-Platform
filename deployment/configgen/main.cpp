@@ -645,7 +645,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
           {
             IPropertyTree* pInst = &itInst->query();
             String instName(pInst->queryName());
-            if (!strcmp(instName.toCharArray(), "ThorMasterProcess") || instName.startsWith("RoxieServerProcess"))
+            if (!strcmp(instName.str(), "ThorMasterProcess") || instName.startsWith("RoxieServerProcess"))
             {
               out.appendf("%s=%s;%s%c%s;%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"),"master");
             }

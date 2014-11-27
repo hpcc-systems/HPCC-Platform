@@ -122,7 +122,7 @@ public:
                 GetTempName(temp,"lookahd",true);
             assertex(bufsize);
             if (allowspill)
-                smartbuf.setown(createSmartBuffer(&activity, temp.toCharArray(), bufsize, queryRowInterfaces(in)));
+                smartbuf.setown(createSmartBuffer(&activity, temp.str(), bufsize, queryRowInterfaces(in)));
             else
                 smartbuf.setown(createSmartInMemoryBuffer(&activity, queryRowInterfaces(in), bufsize));
             if (notify) 

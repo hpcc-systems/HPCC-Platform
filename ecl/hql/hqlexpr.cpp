@@ -7919,7 +7919,7 @@ void CHqlScope::throwRecursiveError(IIdAtom * searchName)
 
     StringBuffer msg("Definition of ");
     msg.append(*searchName).append(" contains a recursive dependency");
-    throw createECLError(ERR_RECURSIVE_DEPENDENCY, msg.toCharArray(), filename, 0, 0, 1);
+    throw createECLError(ERR_RECURSIVE_DEPENDENCY, msg.str(), filename, 0, 0, 1);
 }
 
 inline bool namesMatch(const char * lName, const char * rName)
@@ -8114,7 +8114,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     {
         StringBuffer msg("Definition for ");
         msg.append(*searchName).append(" contains no text");
-        throw createECLError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
+        throw createECLError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
 
     OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(processingMarker), ob_exported);
@@ -8140,7 +8140,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
             resolved->removeSymbol(searchName);
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
         msg.append(*searchName);
-        throw createECLError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
+        throw createECLError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
 
     //Preserve ob_sandbox etc. annotated on the original definition, but not on the parsed code.
@@ -9313,7 +9313,7 @@ IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lo
         const char * filename = parentCtx->sourcePath->str();
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
         msg.append(*searchName);
-        throw createECLError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, oldSymbol->getStartLine(), oldSymbol->getStartColumn(), 1);
+        throw createECLError(ERR_EXPORT_OR_SHARE, msg.str(), filename, oldSymbol->getStartLine(), oldSymbol->getStartColumn(), 1);
     }
 
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))

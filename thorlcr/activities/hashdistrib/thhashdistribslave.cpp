@@ -1075,7 +1075,7 @@ public:
         {
             StringBuffer temp;
             GetTempName(temp,"hddrecvbuff", true);
-            piperd.setown(createSmartBuffer(activity, temp.toCharArray(), pullBufferSize, rowIf));
+            piperd.setown(createSmartBuffer(activity, temp.str(), pullBufferSize, rowIf));
         }
         else
             piperd.setown(createSmartInMemoryBuffer(activity, rowIf, pullBufferSize));

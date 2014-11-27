@@ -719,7 +719,7 @@ bool saveTree(LPCSTR fname, IPropertyTree & pTree)
         IFileIO * io = f->open(IFOcreate);
         if(io)
         {
-            if(io->write(0, xml.length(), xml.toCharArray()) != xml.length())
+            if(io->write(0, xml.length(), xml.str()) != xml.length())
             {
                 showFIOErr(fname, false);
                 r = false;

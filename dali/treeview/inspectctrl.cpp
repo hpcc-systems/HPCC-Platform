@@ -145,7 +145,7 @@ public:
             buf.append("[");
             buf.append(parent->queryChildIndex(pTree) + 1);
             buf.append("]");
-            return buf.toCharArray();
+            return buf.str();
         }
         return type == TLT_attribute ? name + 1 : pTree->queryName(); 
     }
@@ -158,7 +158,7 @@ public:
         else        
             pTree->getProp(name, buf.clear());      
 
-        return buf.toCharArray();
+        return buf.str();
     }
 
     inline TreeList_t getType() const { return type; }

@@ -30,23 +30,23 @@ public:
 
   const char* getConfigXMLDir() const
   {
-    return m_strConfigXMLDir.toCharArray();
+    return m_strConfigXMLDir.str();
   }
   const char* getBuildSetFileName() const
   {
-    return m_strBuildSetFileName.toCharArray();
+    return m_strBuildSetFileName.str();
   }
   const char* getEnvConfFile() const
   {
-    return m_strEnvConfFile.toCharArray();
+    return m_strEnvConfFile.str();
   }
   const char* getConfFile() const
   {
-    return m_strConfFile.toCharArray();
+    return m_strConfFile.str();
   }
   const char* getBuildSetFilePath() const
   {
-    return m_strBuildSetFilePath.toCharArray();
+    return m_strBuildSetFilePath.str();
   }
 
   void getNewComponentListFromBuildSet(const IPropertyTree *pEnvTree, StringArray &sCompArray) const;

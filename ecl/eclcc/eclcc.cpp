@@ -681,7 +681,7 @@ void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * pr
         absCCLogName = "log file";
 
     failText.appendf("Compile/Link failed for %s (see '%s' for details)",processName,absCCLogName.str());
-    errorProcessor.reportError(ERR_INTERNALEXCEPTION, failText.toCharArray(), processName, 0, 0, 0);
+    errorProcessor.reportError(ERR_INTERNALEXCEPTION, failText.str(), processName, 0, 0, 0);
     try
     {
         StringBuffer s;
@@ -726,7 +726,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
             bool optSaveCpp = optSaveTemps || optNoCompile || wu->getDebugValueBool("saveCppTempFiles", false);
             //New scope - testing things are linked correctly
             {
-                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.toCharArray(), NULL, wu, templateDir, optTargetClusterType, this, false, false);
+                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, templateDir, optTargetClusterType, this, false, false);
 
                 setWorkunitHash(wu, instance.query);
                 if (!optShared)
@@ -745,7 +745,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
                 {
-                    Owned<ICppCompiler> compiler = createCompiler(processName.toCharArray());
+                    Owned<ICppCompiler> compiler = createCompiler(processName.str());
                     compiler->setSaveTemps(optSaveTemps);
 
                     bool compileOk = true;
@@ -799,7 +799,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
             {
                 StringBuffer exceptionText;
                 e->errorMessage(exceptionText);
-                errorProcessor.reportError(ERR_INTERNALEXCEPTION, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
+                errorProcessor.reportError(ERR_INTERNALEXCEPTION, exceptionText.str(), queryFullName, 1, 0, 0);
             }
             e->Release();
         }
@@ -1160,7 +1160,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         {
             StringBuffer s;
             e->errorMessage(s);
-            errorProcessor.reportError(3, s.toCharArray(), defaultErrorPathname, 1, 0, 0);
+            errorProcessor.reportError(3, s.str(), defaultErrorPathname, 1, 0, 0);
             e->Release();
         }
     }

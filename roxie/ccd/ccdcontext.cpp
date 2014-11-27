@@ -3575,7 +3575,7 @@ public:
         else
         {
             // predeployed queries with no workunit should return the querySet name
-            return strdup(querySetName.sget()); // sget will return "" rather than NULL
+            return strdup(querySetName.str()); // StringAttr::str()  will return "" rather than NULL
         }
     }
     virtual char *getGroupName() { throwUnexpected(); }
@@ -3750,7 +3750,7 @@ public:
         StringBuffer responseHead, responseTail;
         responseHead.append("<").append(queryName).append("Response");
         responseHead.append(" sequence=\"").append(seqNo).append("\"");
-        responseHead.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append("\">");
+        responseHead.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append("\">");
         responseHead.append("<Results><Result>");
         unsigned len = responseHead.length();
         client->write(responseHead.detach(), len, true);

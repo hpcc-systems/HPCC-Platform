@@ -226,7 +226,7 @@ public:
             if (flags & WWV_ADD_RESULTS_TAG)
                 buffer.append("</Results>");
             if (flags & WWV_ADD_RESPONSE_TAG)
-                buffer.appendf("</%sResponse>", name.sget());
+                buffer.appendf("</%sResponse>", name.str());
             if (flags & WWV_ADD_SOAP)
                 buffer.append("</soap:Body></soap:Envelope>");
             finalized=true;

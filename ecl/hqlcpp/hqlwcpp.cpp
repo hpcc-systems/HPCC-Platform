@@ -1551,7 +1551,7 @@ void HqlCppWriter::flush()
 {
     if (target)
     {
-        target->write(out.length(), out.toCharArray());
+        target->write(out.length(), out.str());
         out.clear();
         startOffset = 0;
     }

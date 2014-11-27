@@ -1095,7 +1095,7 @@ int CDfuPlusHelper::list()
                 StringBuffer output;
                 output.append(onefile->getName());
                 output.append("\n");
-                fputs(output.toCharArray(),f);
+                fputs(output.str(),f);
             }
         }
     }

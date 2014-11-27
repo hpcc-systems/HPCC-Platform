@@ -160,9 +160,9 @@ void CDaliDeploymentEngine::compareFiles(const char *newFile, const char *oldFil
     StringBuffer installPath;
     getInstallPath(oldFile, installPath);
 
-   Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Compare File", m_process.queryName(), m_name.get(), 
-     m_curInstance, newFile, installPath.str(), m_curSSHUser.sget(), m_curSSHKeyFile.sget(), 
-     m_curSSHKeyPassphrase.sget(), m_useSSHIfDefined);
+   Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Compare File", m_process.queryName(), m_name.get(),
+     m_curInstance, newFile, installPath.str(), m_curSSHUser.str(), m_curSSHKeyFile.str(),
+     m_curSSHKeyPassphrase.str(), m_useSSHIfDefined);
    m_pCallback->printStatus(task);
    task->compareFile(DTC_CRC | DTC_SIZE);
    m_pCallback->printStatus(task);
