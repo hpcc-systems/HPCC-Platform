@@ -211,8 +211,6 @@ public:
     ISecManager *querySecMgr() { return secMgr.get(); }
     ISecUser *querySecUser() { return secUser.get(); }
 
-    void setSecIfcs(ISecManager *mgr, ISecUser*usr){secMgr.set(mgr); secUser.set(usr);}
-    
     virtual bool aborting() const;
     virtual void forceReload() {};
     virtual WUAction getAction() const;

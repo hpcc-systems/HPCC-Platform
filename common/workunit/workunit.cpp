@@ -1176,8 +1176,6 @@ public:
             c->unlockRemote();
     }
 
-    void setSecIfcs(ISecManager *mgr, ISecUser*usr){c->setSecIfcs(mgr, usr);}
-
     virtual IConstWorkUnit * unlock()
     {
         c->unlockRemote();
@@ -1431,17 +1429,7 @@ public:
     virtual void setUser(const char * value)
             { c->setUser(value); }
     virtual void setWuScope(const char * value)
-    {
-        if (value && *value)
-        {
-            ISecManager *secmgr=c->querySecMgr();
-            ISecUser *secusr=c->querySecUser();
-            if (!secmgr || !secusr)
-                throw MakeStringException(WUERR_SecurityNotAvailable, "Trying to change workunit scope without security interfaces available");
-            if (checkWuScopeSecAccess(value, *secmgr, secusr, SecAccess_Write, "Change Scope", true, true))
-                c->setWuScope(value);
-        }
-    }
+            { c->setWuScope(value); }
     virtual IWorkflowItem* addWorkflowItem(unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor)
             { return c->addWorkflowItem(wfid, type, mode, success, failure, recovery, retriesAllowed, contingencyFor); }
     virtual void syncRuntimeWorkflow(IWorkflowItemArray * array)
@@ -2088,6 +2076,11 @@ public:
 
     virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
     {
+        return secCreateNamedWorkUnit(wuid, app, user, NULL, NULL);
+    }
+
+    IWorkUnit* secCreateNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+    {
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
         IRemoteConnection *conn;
@@ -2097,15 +2090,21 @@ public:
             conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
         conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
-        Owned<CLocalWorkUnit> cw = new CDaliWorkUnit(conn, (ISecManager*)NULL, NULL);
-        IWorkUnit* ret = &cw->lockRemote(false);
+        if (user)
+            conn->queryRoot()->setProp("@scope", user);  // Note - we do this here rather than calling setWuScope as we don't want the permission check. It will be checked by the lockRemote anyway.
+        Owned<CLocalWorkUnit> cw = new CDaliWorkUnit(conn, secmgr, secuser);
+        IWorkUnit* ret = &cw->lockRemote(false);   // Note - this may throw exception if user does not have rights.
         ret->setDebugValue("CREATED_BY", app, true);
         ret->setDebugValue("CREATED_FOR", user, true);
-        if (user)
-            cw->setWuScope(user);
         return ret;
     }
+
     virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
+    {
+        return secCreateWorkUnit(app, user, NULL, NULL);
+    }
+
+    IWorkUnit* secCreateWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuid("W");
         char result[32];
@@ -2118,12 +2117,13 @@ public:
             wuid.append('-').append(startSession());
         if (workUnitTraceLevel > 1)
             PrintLog("createWorkUnit created %s", wuid.str());
-        IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user);
+        IWorkUnit* ret = secCreateNamedWorkUnit(wuid.str(), app, user, secmgr, secuser);
         if (workUnitTraceLevel > 1)
             PrintLog("createWorkUnit created %s", ret->queryWuid());
         addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
         return ret;
     }
+
     bool secDeleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser, bool raiseexceptions)
     {
         if (workUnitTraceLevel > 1)
@@ -2798,6 +2798,7 @@ void clientShutdownWorkUnit()
 
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
 {
+    // MORE - This is not threadsafe - do we care?
     if (!factory)
         factory.setown(new CWorkUnitFactory());
     return factory.getLink();
@@ -2808,52 +2809,35 @@ class CSecureWorkUnitFactory : public CInterface, implements IWorkUnitFactory
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSecureWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser)
+    CSecureWorkUnitFactory(CWorkUnitFactory *_baseFactory, ISecManager &_secMgr, ISecUser &_secUser)
+        : baseFactory(_baseFactory), secMgr(&_secMgr), secUser(&_secUser)
     {
-        if (!factory)
-            factory.setown(new CWorkUnitFactory());
-        secMgr.set(&secmgr);
-        secUser.set(&secuser);
     }
     virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
     {
         checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        IWorkUnit *wu=factory->createNamedWorkUnit(wuid, app, user);
-        if (wu)
-        {
-            CLockedWorkUnit* lw = dynamic_cast<CLockedWorkUnit*>(wu);
-            if (lw)
-                lw->setSecIfcs(secMgr.get(), secUser.get());
-        }
-        return wu;
+        return baseFactory->secCreateNamedWorkUnit(wuid, app, user, secMgr.get(), secUser.get());
     }
     virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
     {
         checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        IWorkUnit *wu=factory->createWorkUnit(app, user);
-        if (wu)
-        {
-            CLockedWorkUnit* lw = dynamic_cast<CLockedWorkUnit*>(wu);
-            if (lw)
-                lw->setSecIfcs(secMgr.get(), secUser.get());
-        }
-        return wu;
+        return baseFactory->secCreateWorkUnit(app, user, secMgr.get(), secUser.get());
     }
     virtual bool deleteWorkUnitEx(const char * wuid)
     {
-        return factory->secDeleteWorkUnit(wuid, secMgr.get(), secUser.get(), true);
+        return baseFactory->secDeleteWorkUnit(wuid, secMgr.get(), secUser.get(), true);
     }
     virtual bool deleteWorkUnit(const char * wuid)
     {
-        return factory->secDeleteWorkUnit(wuid, secMgr.get(), secUser.get(), false);
+        return baseFactory->secDeleteWorkUnit(wuid, secMgr.get(), secUser.get(), false);
     }
     virtual IConstWorkUnit* openWorkUnit(const char *wuid, bool lock)
     {
-        return factory->secOpenWorkUnit(wuid, lock, secMgr.get(), secUser.get());
+        return baseFactory->secOpenWorkUnit(wuid, lock, secMgr.get(), secUser.get());
     }
     virtual IWorkUnit* updateWorkUnit(const char *wuid)
     {
-        return factory->secUpdateWorkUnit(wuid, secMgr.get(), secUser.get());
+        return baseFactory->secUpdateWorkUnit(wuid, secMgr.get(), secUser.get());
     }
 
     //make cached workunits a non secure pass through for now.
@@ -2862,38 +2846,41 @@ public:
         StringBuffer path("*");
         if (owner && *owner)
             path.append("[@submitID=\"").append(owner).append("\"]");
-        return factory->getWorkUnitsByXPath(path.str(), secMgr.get(), secUser.get());
+        return baseFactory->getWorkUnitsByXPath(path.str(), secMgr.get(), secUser.get());
     }
     virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state);
     virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char* ecl)
-    {   
-        return factory->getWorkUnitsByECL(ecl);
+    {
+        // MORE - why no security?
+        return baseFactory->getWorkUnitsByECL(ecl);
     }
 
     virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char* cluster)
     {   
-        return factory->getWorkUnitsByCluster(cluster);
+        // MORE - why no security?
+        return baseFactory->getWorkUnitsByCluster(cluster);
     }
 
     virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath)
     {
-        return factory->getWorkUnitsByXPath(xpath, secMgr.get(), secUser.get());
+        return baseFactory->getWorkUnitsByXPath(xpath, secMgr.get(), secUser.get());
     }
 
     virtual void descheduleAllWorkUnits()
     {
-        factory->descheduleAllWorkUnits();
+        // MORE - why no seecurity?
+        baseFactory->descheduleAllWorkUnits();
     }
 
     virtual IConstWorkUnitIterator * getChildWorkUnits(const char *parent)
     {
         StringBuffer path("*[@parent=\"");
         path.append(parent).append("\"]");
-        return factory->getWorkUnitsByXPath(path.str(), secMgr.get(), secUser.get());
+        return baseFactory->getWorkUnitsByXPath(path.str(), secMgr.get(), secUser.get());
     }
     virtual int setTracingLevel(int newLevel)
     {
-        return factory->setTracingLevel(newLevel);
+        return baseFactory->setTracingLevel(newLevel);
     }
 
     virtual IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
@@ -2905,7 +2892,7 @@ public:
                                                         __int64 *cachehint,
                                                         unsigned *total)
     {
-        return factory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, secMgr.get(), secUser.get(), total);
+        return baseFactory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, secMgr.get(), secUser.get(), total);
     }
 
     virtual IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder,
@@ -2917,33 +2904,33 @@ public:
                                                 unsigned *total,
                                                 const MapStringTo<bool> *subset)
     {
-        return factory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total, subset);
+        return baseFactory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total, subset);
     }
 
     virtual unsigned numWorkUnits()
     {
-        return factory->numWorkUnits();
+        return baseFactory->numWorkUnits();
     }
 
     virtual unsigned numWorkUnitsFiltered(WUSortField *filters,
                                         const void *filterbuf)
     {
-        return factory->numWorkUnitsFiltered(filters,filterbuf,secMgr.get(), secUser.get());
+        return baseFactory->numWorkUnitsFiltered(filters,filterbuf,secMgr.get(), secUser.get());
     }
 
     virtual bool isAborting(const char *wuid) const
     {
-        return factory->isAborting(wuid);
+        return baseFactory->isAborting(wuid);
     }
 private:
-    Owned<CWorkUnitFactory> base_factory;
+    Owned<CWorkUnitFactory> baseFactory;
     Owned<ISecManager> secMgr;
     Owned<ISecUser> secUser;
 };
 
 extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser)
 {
-    return new CSecureWorkUnitFactory(secmgr, secuser);
+    return new CSecureWorkUnitFactory(static_cast<CWorkUnitFactory*> (getWorkUnitFactory()), secmgr, secuser);
 }
 
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser)
@@ -3736,8 +3723,14 @@ const char *CLocalWorkUnit::queryUser() const
 
 void CLocalWorkUnit::setWuScope(const char * value) 
 { 
-    CriticalBlock block(crit);
-    p->setProp("@scope", value); 
+    if (value && *value)
+    {
+        if (checkWuScopeSecAccess(value, *secMgr.get(), secUser.get(), SecAccess_Write, "Change Scope", true, true))
+        {
+            CriticalBlock block(crit);
+            p->setProp("@scope", value);
+        }
+    }
 }
 
 IStringVal& CLocalWorkUnit::getWuScope(IStringVal &str) const 
