@@ -600,7 +600,7 @@ TIMELIB_API void TIMELIB_CALL tlSecondsToString(size32_t &__lenResult, char* &__
     const size_t    kBufferSize = 256;
     char            buffer[kBufferSize];
 
-    memset(buffer, kBufferSize, 0);
+    memset(buffer, 0, kBufferSize);
 
     tlGMTime_r(&theTime, &timeInfo);
 
