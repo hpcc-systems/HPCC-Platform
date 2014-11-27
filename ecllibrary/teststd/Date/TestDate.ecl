@@ -98,6 +98,10 @@ EXPORT TestDate := MODULE
     ASSERT(Date.SecondsToParts(0).minute = 0);      // Epoch test
     ASSERT(Date.SecondsToParts(0).second = 0);      // Epoch test
 
+    ASSERT(Date.DayOfYear(20000101) = 1);
+    ASSERT(Date.DayOfYear(20001231) = 366);
+    ASSERT(Date.DayOfYear(20011231) = 365);
+
     ASSERT(Date.DayOfWeek(20140130) = 5);   // 5=Thursday
     ASSERT(Date.DayOfWeek(19650217) = 4);   // 4=Wednesday
     ASSERT(Date.DayOfWeek(20530213) = 5);   // 5=Thursday

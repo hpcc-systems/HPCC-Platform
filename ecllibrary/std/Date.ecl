@@ -325,7 +325,7 @@ END;
  * The date must be in the Gregorian calendar after the year 1600.
  *
  * @param date          A Date_t value.
- * @return              A number (0-366) representing the number of days since
+ * @return              A number (1-366) representing the number of days since
  *                      the beginning of the year.
  */
 
@@ -334,7 +334,7 @@ EXPORT UNSIGNED2 DayOfYear(Date_t date) := FUNCTION
     theMonth := Month(date);
     theDay := Day(date);
 
-    dayNum := TimeLib.GetDayOfYear(theYear, theMonth, theDay);
+    dayNum := TimeLib.GetDayOfYear(theYear, theMonth, theDay) + 1;
 
     RETURN dayNum;
 END;
@@ -1124,7 +1124,7 @@ EXPORT BOOLEAN IsValidDate(Date_t date,
                            INTEGER2 yearUpperBound = 2100) := FUNCTION
     yearInBounds := (Year(date) BETWEEN yearLowerBound AND yearUpperBound);
     monthInBounds := (Month(date) BETWEEN 1 AND 12);
-    maxDayInMonth := CHOOSE(Month(date),1,IF(IsLeapYear(Year(date)),29,28),31,30,31,30,31,31,30,31,30,31);
+    maxDayInMonth := CHOOSE(Month(date),31,IF(IsLeapYear(Year(date)),29,28),31,30,31,30,31,31,30,31,30,31);
     dayInBounds := (Day(date) BETWEEN 1 AND maxDayInMonth);
 
     RETURN yearInBounds AND monthInBounds AND dayInBounds;

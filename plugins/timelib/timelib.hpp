@@ -46,9 +46,9 @@ TIMELIB_API void setPluginContext(IPluginContext * _ctx);
 
 void tlMakeTimeStructFromUTCSeconds(time_t seconds, struct tm* timeInfo);
 void tlInsertDateIntoTimeStruct(struct tm* timeInfo, unsigned int date);
-unsigned int tlExtractDateFromTimeStruct(struct tm* timeInfo);
+unsigned int tlExtractDateFromTimeStruct(const struct tm* timeInfo);
 void tlInsertTimeIntoTimeStruct(struct tm* timeInfo, unsigned int time);
-unsigned int tlExtractTimeFromTimeStruct(struct tm* timeInfo);
+unsigned int tlExtractTimeFromTimeStruct(const struct tm* timeInfo);
 
 void tlLocalTime_r(const time_t* clock, struct tm* timeInfoPtr);
 void tlGMTime_r(const time_t* clock, struct tm* timeInfoPtr);

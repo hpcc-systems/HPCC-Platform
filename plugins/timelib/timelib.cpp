@@ -49,7 +49,7 @@ static const char * EclDefinition =
 "  UNSIGNED4 endDate; \n"
 "END;"
 "EXPORT TimeLib := SERVICE\n"
-"  integer8 SecondsFromParts(integer2 year, unsigned1 month, unsigned1 day, unsigned1 hour, unsigned1 minute, unsigned1 second, boolean is_local_time) : c,pure,entrypoint='tlSecondsFromParts'; \n"
+"  INTEGER8 SecondsFromParts(integer2 year, unsigned1 month, unsigned1 day, unsigned1 hour, unsigned1 minute, unsigned1 second, boolean is_local_time) : c,pure,entrypoint='tlSecondsFromParts'; \n"
 "  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds) : c,pure,entrypoint='tlSecondsToParts'; \n"
 "  UNSIGNED2 GetDayOfYear(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfYear'; \n"
 "  UNSIGNED1 GetDayOfWeek(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfWeek'; \n"
@@ -58,13 +58,13 @@ static const char * EclDefinition =
 "  STRING SecondsToString(INTEGER8 seconds, CONST VARSTRING format) : c,pure,entrypoint='tlSecondsToString'; \n"
 "  UNSIGNED4 AdjustDate(UNSIGNED4 date, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta) : c,pure,entrypoint='tlAdjustDate'; \n"
 "  UNSIGNED4 AdjustDateBySeconds(UNSIGNED4 date, INTEGER4 seconds_delta) : c,pure,entrypoint='tlAdjustDateBySeconds'; \n"
-"  UNSIGNED3 AdjustTime(UNSIGNED3 time, INTEGER2 hour_delta, INTEGER4 minute_delta, INTEGER4 second_delta) : c,pure,entrypoint='tlAdjustTime'; \n"
-"  UNSIGNED3 AdjustTimeBySeconds(UNSIGNED3 time, INTEGER4 seconds_delta) : c,pure,entrypoint='tlAdjustTimeBySeconds'; \n"
+"  UNSIGNED4 AdjustTime(UNSIGNED3 time, INTEGER2 hour_delta, INTEGER4 minute_delta, INTEGER4 second_delta) : c,pure,entrypoint='tlAdjustTime'; \n"
+"  UNSIGNED4 AdjustTimeBySeconds(UNSIGNED3 time, INTEGER4 seconds_delta) : c,pure,entrypoint='tlAdjustTimeBySeconds'; \n"
 "  INTEGER4 AdjustSeconds(INTEGER8 seconds, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta, INTEGER2 hour_delta, INTEGER4 minute_delta, INTEGER4 second_delta) : c,pure,entrypoint='tlAdjustSeconds'; \n"
 "  UNSIGNED4 AdjustCalendar(UNSIGNED4 date, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta) : c,pure,entrypoint='tlAdjustCalendar'; \n"
 "  BOOLEAN IsLocalDaylightSavingsInEffect() : c,pure,entrypoint='tlIsLocalDaylightSavingsInEffect'; \n"
 "  INTEGER4 LocalTimeZoneOffset() : c,pure,entrypoint='tlLocalTimeZoneOffset'; \n"
-"  UNSIGNED4 CurrentDate(BOOLEAN in_local_time) : c,entrypoint='tlCurrentDate'; \n"
+"  UNSIGNED4 CurrentDate(BOOLEAN in_local_time) : c,once,entrypoint='tlCurrentDate'; \n"
 "  UNSIGNED4 CurrentTime(BOOLEAN in_local_time) : c,entrypoint='tlCurrentTime'; \n"
 "  INTEGER8 CurrentSeconds(BOOLEAN in_local_time) : c,entrypoint='tlCurrentSeconds'; \n"
 "  INTEGER8 CurrentTimestamp(BOOLEAN in_local_time) : c,entrypoint='tlCurrentTimestamp'; \n"
@@ -99,7 +99,7 @@ TIMELIB_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }
 #ifdef _WIN32
 const __int64 _onesec_in100ns = (__int64)10000000;
 
-__int64 tlFileTimeToInt64(FILETIME f)
+static __int64 tlFileTimeToInt64(FILETIME f)
 {
     __int64     seconds;
 
@@ -110,7 +110,7 @@ __int64 tlFileTimeToInt64(FILETIME f)
     return seconds;
 }
 
-FILETIME tlInt64ToFileTime(__int64 seconds)
+static FILETIME tlInt64ToFileTime(__int64 seconds)
 {
     FILETIME    f;
 
@@ -120,7 +120,7 @@ FILETIME tlInt64ToFileTime(__int64 seconds)
     return f;
 }
 
-FILETIME tlFileTimeFromYear(WORD year)
+static FILETIME tlFileTimeFromYear(WORD year)
 {
     SYSTEMTIME  s;
     FILETIME    f;
@@ -137,7 +137,7 @@ FILETIME tlFileTimeFromYear(WORD year)
     return f;
 }
 
-unsigned int tlYearDayFromSystemTime(const SYSTEMTIME* s)
+static unsigned int tlYearDayFromSystemTime(const SYSTEMTIME* s)
 {
     __int64     seconds;
     FILETIME    f1;
@@ -151,7 +151,7 @@ unsigned int tlYearDayFromSystemTime(const SYSTEMTIME* s)
     return static_cast<unsigned int>((seconds / _onesec_in100ns) / (60 * 60 * 24));
 }
 
-SYSTEMTIME tlTimeStructToSystemTime(struct tm* timeInfoPtr)
+static SYSTEMTIME tlTimeStructToSystemTime(const struct tm* timeInfoPtr)
 {
     SYSTEMTIME s;
 
@@ -167,7 +167,7 @@ SYSTEMTIME tlTimeStructToSystemTime(struct tm* timeInfoPtr)
     return s;
 }
 
-void tlSystemTimeToTimeStruct_r(SYSTEMTIME* s, struct tm* timeInfoPtr)
+static void tlSystemTimeToTimeStruct_r(const SYSTEMTIME* s, struct tm* timeInfoPtr)
 {
     memset(timeInfoPtr, 0, sizeof(struct tm));
 
@@ -182,14 +182,14 @@ void tlSystemTimeToTimeStruct_r(SYSTEMTIME* s, struct tm* timeInfoPtr)
     timeInfoPtr->tm_isdst = 0;
 }
 
-time_t tlFileTimeToSeconds(const FILETIME* f)
+static time_t tlFileTimeToSeconds(const FILETIME* f)
 {
     const __int64   offset = I64C(11644473600); // Number of seconds between 1601 and 1970 (Jan 1 of each)
 
     return static_cast<time_t>((tlFileTimeToInt64(*f) / _onesec_in100ns) - offset);
 }
 
-FILETIME tlSecondsToFileTime(const time_t seconds)
+static FILETIME tlSecondsToFileTime(const time_t seconds)
 {
     FILETIME    f1970 = tlFileTimeFromYear(1970);
     FILETIME    f;
@@ -202,7 +202,7 @@ FILETIME tlSecondsToFileTime(const time_t seconds)
     return f;
 }
 
-__int64 tlLocalTimeZoneDiffIn100nsIntervals()
+static __int64 tlLocalTimeZoneDiffIn100nsIntervals()
 {
     SYSTEMTIME  systemUTC;
     SYSTEMTIME  systemLocal;
@@ -218,7 +218,7 @@ __int64 tlLocalTimeZoneDiffIn100nsIntervals()
     return tlFileTimeToInt64(fileLocal) - tlFileTimeToInt64(fileUTC);
 }
 
-void tlBoundaryMod(int* tensPtr, int* unitsPtr, int base)
+static void tlBoundaryMod(int* tensPtr, int* unitsPtr, int base)
 {
     if (*unitsPtr >= base)
     {
@@ -243,7 +243,7 @@ void tlBoundaryMod(int* tensPtr, int* unitsPtr, int base)
     }
 }
 
-void tlNormalizeTimeStruct(struct tm* timeInfoPtr)
+static void tlNormalizeTimeStruct(struct tm* timeInfoPtr)
 {
     // Normalize incoming struct tm
     const int           secondsPerMinute = 60;
@@ -296,7 +296,7 @@ void tlNormalizeTimeStruct(struct tm* timeInfoPtr)
 
 //---------------------------
 
-void tlWinLocalTime_r(const time_t* clock, struct tm* timeInfoPtr)
+static void tlWinLocalTime_r(const time_t* clock, struct tm* timeInfoPtr)
 {
     SYSTEMTIME  s;
     FILETIME    f;
@@ -311,7 +311,7 @@ void tlWinLocalTime_r(const time_t* clock, struct tm* timeInfoPtr)
     tlSystemTimeToTimeStruct_r(&s, timeInfoPtr);
 }
 
-void tlWinGMTime_r(const time_t* clock, struct tm* timeInfo)
+static void tlWinGMTime_r(const time_t* clock, struct tm* timeInfo)
 {
     FILETIME    f;
     SYSTEMTIME  s;
@@ -321,7 +321,7 @@ void tlWinGMTime_r(const time_t* clock, struct tm* timeInfo)
     tlSystemTimeToTimeStruct_r(&s, timeInfo);
 }
 
-time_t tlWinMKTime(struct tm* timeInfoPtr)
+static time_t tlWinMKTime(struct tm* timeInfoPtr)
 {
     SYSTEMTIME  s;
     FILETIME    f;
@@ -410,7 +410,7 @@ void tlInsertDateIntoTimeStruct(struct tm* timeInfo, unsigned int date)
     timeInfo->tm_mday = day;
 }
 
-unsigned int tlExtractDateFromTimeStruct(struct tm* timeInfo)
+unsigned int tlExtractDateFromTimeStruct(const struct tm* timeInfo)
 {
     unsigned int    result = 0;
 
@@ -432,7 +432,7 @@ void tlInsertTimeIntoTimeStruct(struct tm* timeInfo, unsigned int time)
     timeInfo->tm_sec = second;
 }
 
-unsigned int tlExtractTimeFromTimeStruct(struct tm* timeInfo)
+unsigned int tlExtractTimeFromTimeStruct(const struct tm* timeInfo)
 {
     unsigned int    result = 0;
 
@@ -876,19 +876,19 @@ TIMELIB_API __int64 TIMELIB_CALL tlCurrentTimestamp(bool in_local_time)
 
     _ftime_s(&now);
 
-    result = (now.time * 1000000) + (now.millitm * 1000);
+    result = (now.time * I64C(1000000)) + (now.millitm * 1000);
     #else
     struct timeval  tv;
 
     if (gettimeofday(&tv, NULL) == 0)
     {
-        result = (tv.tv_sec * 1000000) + tv.tv_usec;
+        result = (tv.tv_sec * I64C(1000000)) + tv.tv_usec;
     }
     #endif
 
     if (in_local_time)
     {
-        result += (static_cast<long>(tlLocalTimeZoneOffset()) * 1000000);
+        result += (static_cast<__int64>(tlLocalTimeZoneOffset()) * I64C(1000000));
     }
 
     return result;
