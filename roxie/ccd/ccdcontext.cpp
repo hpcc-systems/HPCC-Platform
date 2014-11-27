@@ -3575,7 +3575,7 @@ public:
         else
         {
             // predeployed queries with no workunit should return the querySet name
-            return strdup(querySetName.str()); // sget will return "" rather than NULL
+            return strdup(querySetName.str()); // StringAttr::str()  will return "" rather than NULL
         }
     }
     virtual char *getGroupName() { throwUnexpected(); }
