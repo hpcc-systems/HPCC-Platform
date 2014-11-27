@@ -250,8 +250,7 @@ void CActivityInfo::createActivityInfo()
     }
     catch(IException* e)
     {
-        StringBuffer eMsg;
-        ERRLOG("CActivityInfo::createActivityInfo: %s", e->errorMessage(eMsg).str());
+        EXCLOG(e, "CActivityInfo::createActivityInfo");
         e->Release();
     }
 
