@@ -13,20 +13,36 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-add_subdirectory (auditlib)
-add_subdirectory (debugservices)
-add_subdirectory (fileservices)
-add_subdirectory (logging)
-add_subdirectory (parselib)
-add_subdirectory (stringlib)
-add_subdirectory (timelib)
-add_subdirectory (unicodelib)
-add_subdirectory (workunitservices)
-add_subdirectory (proxies)
-add_subdirectory (sqlite3)
-add_subdirectory (mysql)
-add_subdirectory (v8embed)
-add_subdirectory (pyembed)
-add_subdirectory (javaembed)
-add_subdirectory (Rembed)
-add_subdirectory (cassandra)
+
+
+# Component: timelib 
+
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for timelib
+#####################################################
+
+set ( toolsdir "${HPCC_SOURCE_DIR}/tools" )
+
+
+project( timelib ) 
+
+set (    SRCS 
+         timelib.cpp 
+    )
+
+include_directories ( 
+         ./../../system/include 
+         ./../../system/jlib
+         ./../../rtl/include
+         ./../../rtl/eclrtl
+    )
+
+ADD_DEFINITIONS( -D_USRDLL -DTIMELIB_EXPORTS )
+
+HPCC_ADD_LIBRARY( timelib SHARED ${SRCS} )
+install ( TARGETS timelib DESTINATION plugins )
+target_link_libraries ( timelib
+         eclrtl
+    )
