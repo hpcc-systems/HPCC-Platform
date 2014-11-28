@@ -95,56 +95,213 @@ public:
 
 protected:
 
+    void testSet1(bool initial, IBitSet *bs, unsigned start, unsigned numBits, bool setValue, bool clearValue)
+    {
+        unsigned end = start+numBits;
+        if (initial)
+            bs->incl(start, end);
+        for (unsigned i=start; i < end; i++)
+        {
+            ASSERT(bs->test(i) == clearValue);
+            bs->set(i, setValue);
+            ASSERT(bs->test(i) == setValue);
+
+            bs->set(i+5, setValue);
+            ASSERT(bs->scan(0, setValue) == i);
+            ASSERT(bs->scan(i+1, setValue) == i+5);
+            bs->set(i, clearValue);
+            bs->set(i+5, clearValue);
+            unsigned match1 = bs->scan(0, setValue);
+            ASSERT(match1 == initial ? -1 : end);
+
+            bs->invert(i);
+            ASSERT(bs->test(i) == setValue);
+            bs->invert(i);
+            ASSERT(bs->test(i) == clearValue);
+
+            bool wasSet = bs->testSet(i, setValue);
+            ASSERT(wasSet == clearValue);
+            bool wasSet2 = bs->testSet(i, clearValue);
+            ASSERT(wasSet2 == setValue);
+            ASSERT(bs->test(i) == clearValue);
+
+            bs->set(i, setValue);
+            unsigned match = bs->scanInvert(0, setValue);
+            ASSERT(match == i);
+            ASSERT(bs->test(i) == clearValue);
+        }
+    }
+
     void testSet(bool initial)
     {
         unsigned now = msTick();
         bool setValue = !initial;
         bool clearValue = initial;
         const unsigned numBits = 400;
-        for (unsigned pass=0; pass< 10000; pass++)
+        for (unsigned pass=0; pass < 10000; pass++)
         {
             Owned<IBitSet> bs = createBitSet();
-            if (initial)
-                bs->incl(0, numBits);
-            for (unsigned i=0; i < numBits; i++)
-            {
-                ASSERT(bs->test(i) == clearValue);
-                bs->set(i, setValue);
-                ASSERT(bs->test(i) == setValue);
-
-                bs->set(i+5, setValue);
-                ASSERT(bs->scan(0, setValue) == i);
-                ASSERT(bs->scan(i+1, setValue) == i+5);
-                bs->set(i, clearValue);
-                bs->set(i+5, clearValue);
-                unsigned match1 = bs->scan(0, setValue);
-                ASSERT(match1 == initial ? -1 : numBits);
-
-                bs->invert(i);
-                ASSERT(bs->test(i) == setValue);
-                bs->invert(i);
-                ASSERT(bs->test(i) == clearValue);
-
-                bool wasSet = bs->testSet(i, setValue);
-                ASSERT(wasSet == clearValue);
-                bool wasSet2 = bs->testSet(i, clearValue);
-                ASSERT(wasSet2 == setValue);
-                ASSERT(bs->test(i) == clearValue);
-
-                bs->set(i, setValue);
-                unsigned match = bs->scanInvert(0, setValue);
-                ASSERT(match == i);
-                ASSERT(bs->test(i) == clearValue);
-            }
+            testSet1(initial, bs, 0, numBits, setValue, clearValue);
         }
         unsigned elapsed = msTick()-now;
+        now = msTick();
         fprintf(stdout, "Bit test (%u) time taken = %dms\n", initial, elapsed);
+        for (unsigned pass=0; pass < 10000; pass++)
+        {
+            Owned<IBitSet> bs = createBitSetThreadUnsafe();
+            testSet1(initial, bs, 0, numBits, setValue, clearValue);
+        }
+        elapsed = msTick()-now;
+        now = msTick();
+        fprintf(stdout, "Bit test [thread-unsafe version] (%u) time taken = %dms\n", initial, elapsed);
+        size32_t bitSetMemSz = getBitSetMemoryRequirement(400);
+        MemoryBuffer mb;
+        void *mem = mb.reserveTruncate(bitSetMemSz);
+        for (unsigned pass=0; pass < 10000; pass++)
+        {
+            Owned<IBitSet> bs = createBitSetThreadUnsafe(bitSetMemSz, mem);
+            testSet1(initial, bs, 0, numBits, setValue, clearValue);
+        }
+        elapsed = msTick()-now;
+        fprintf(stdout, "Bit test [thread-unsafe version, fixed memory] (%u) time taken = %dms\n", initial, elapsed);
+    }
+
+    class CBitThread : public CSimpleInterfaceOf<IInterface>, implements IThreaded
+    {
+        IBitSet &bitSet;
+        unsigned startBit, numBits;
+        bool initial, setValue, clearValue;
+        CThreaded threaded;
+        Owned<IException> exception;
+        CppUnit::Exception *cppunitException;
+    public:
+        CBitThread(IBitSet &_bitSet, unsigned _startBit, unsigned _numBits, bool _initial)
+            : threaded("CBitThread", this), bitSet(_bitSet), startBit(_startBit), numBits(_numBits), initial(_initial)
+        {
+            cppunitException = NULL;
+            setValue = !initial;
+            clearValue = initial;
+        }
+        void start() { threaded.start(); }
+        void join()
+        {
+            threaded.join();
+            if (exception)
+                throw exception.getClear();
+            else if (cppunitException)
+                throw cppunitException;
+        }
+        virtual void main()
+        {
+            try
+            {
+                unsigned endBit = startBit+numBits-1;
+                if (initial)
+                    bitSet.incl(startBit, endBit);
+                for (unsigned i=startBit; i < endBit; i++)
+                {
+                    ASSERT(bitSet.test(i) == clearValue);
+                    bitSet.set(i, setValue);
+                    ASSERT(bitSet.test(i) == setValue);
+                    if (i < (endBit-1))
+                        ASSERT(bitSet.scan(i, clearValue) == i+1); // find next unset (should be i+1)
+                    bitSet.set(i, clearValue);
+                    bitSet.invert(i);
+                    ASSERT(bitSet.test(i) == setValue);
+                    bitSet.invert(i);
+                    ASSERT(bitSet.test(i) == clearValue);
+
+                    bool wasSet = bitSet.testSet(i, setValue);
+                    ASSERT(wasSet == clearValue);
+                    bool wasSet2 = bitSet.testSet(i, clearValue);
+                    ASSERT(wasSet2 == setValue);
+                    ASSERT(bitSet.test(i) == clearValue);
+
+                    bitSet.set(i, setValue);
+                    unsigned match = bitSet.scanInvert(startBit, setValue);
+                    ASSERT(match == i);
+                    ASSERT(bitSet.test(i) == clearValue);
+                }
+            }
+            catch (IException *e)
+            {
+                exception.setown(e);
+            }
+            catch (CppUnit::Exception &e)
+            {
+                cppunitException = e.clone();
+            }
+        }
+    };
+    unsigned testParallelRun(IBitSet &bitSet, unsigned nThreads, unsigned bitsPerThread, bool initial)
+    {
+        IArrayOf<CBitThread> bitThreads;
+        unsigned bitStart = 0;
+        unsigned bitEnd = 0;
+        for (unsigned t=0; t<nThreads; t++)
+        {
+            bitThreads.append(* new CBitThread(bitSet, bitStart, bitsPerThread, initial));
+            bitStart += bitsPerThread;
+        }
+        unsigned now = msTick();
+        for (unsigned t=0; t<nThreads; t++)
+            bitThreads.item(t).start();
+        Owned<IException> exception;
+        CppUnit::Exception *cppunitException = NULL;
+        for (unsigned t=0; t<nThreads; t++)
+        {
+            try
+            {
+                bitThreads.item(t).join();
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, NULL);
+                if (!exception)
+                    exception.setown(e);
+                else
+                    e->Release();
+            }
+            catch (CppUnit::Exception *e)
+            {
+                cppunitException = e;
+            }
+        }
+        if (exception)
+            throw exception.getClear();
+        else if (cppunitException)
+            throw *cppunitException;
+        return msTick()-now;
+    }
+
+    void testSetParallel(bool initial)
+    {
+        unsigned numBits = 1000000; // 10M
+        unsigned nThreads = getAffinityCpus();
+        unsigned bitsPerThread = numBits/nThreads;
+        bitsPerThread = (bitsPerThread + (BitsPerItem-1)) / BitsPerItem * BitsPerItem; // round up to multiple of BitsPerItem
+        numBits = bitsPerThread*nThreads; // round
+
+        fprintf(stdout, "testSetParallel, testing bit set of size : %d, nThreads=%d\n", numBits, nThreads);
+
+        Owned<IBitSet> bitSet = createBitSet();
+        unsigned took = testParallelRun(*bitSet, nThreads, bitsPerThread, initial);
+        fprintf(stdout, "Thread safe parallel bit set test (%u) time taken = %dms\n", initial, took);
+
+        size32_t bitSetMemSz = getBitSetMemoryRequirement(numBits);
+        MemoryBuffer mb;
+        void *mem = mb.reserveTruncate(bitSetMemSz);
+        bitSet.setown(createBitSetThreadUnsafe(bitSetMemSz, mem));
+        took = testParallelRun(*bitSet, nThreads, bitsPerThread, initial);
+        fprintf(stdout, "Thread unsafe parallel bit set test (%u) time taken = %dms\n", initial, took);
     }
 
     void testSimple()
     {
         testSet(false);
         testSet(true);
+        testSetParallel(false);
+        testSetParallel(true);
     }
 };
 
