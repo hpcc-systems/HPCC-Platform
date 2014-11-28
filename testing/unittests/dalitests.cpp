@@ -446,6 +446,7 @@ class CDaliTests : public CppUnit::TestFixture
 //        CPPUNIT_TEST(testReadAllSDS); // Ignoring this test; See comments below
         CPPUNIT_TEST(testSDSRW);
         CPPUNIT_TEST(testSDSSubs);
+        CPPUNIT_TEST(testSDSSubs2);
         CPPUNIT_TEST(testFiles);
         CPPUNIT_TEST(testGroups);
         CPPUNIT_TEST(testMultiCluster);
@@ -2247,6 +2248,117 @@ public:
         pool->joinAll();
         PROGLOG("Hammer test took: %d ms", tm.elapsed());
     }
+
+    void testSDSSubs2()
+    {
+        class CSubscriber : public CSimpleInterfaceOf<ISDSSubscription>
+        {
+            StringAttr xpath;
+            bool sub;
+            StringBuffer &result;
+            SubscriptionId id;
+        public:
+            CSubscriber(StringBuffer &_result, const char *_xpath, bool _sub) : result(_result), xpath(_xpath), sub(_sub)
+            {
+                id = querySDS().subscribe(xpath, *this, sub, !sub);
+                PROGLOG("Subscribed to %s", xpath.get());
+            }
+            ~CSubscriber()
+            {
+                querySDS().unsubscribe(id);
+            }
+            virtual void notify(SubscriptionId id, const char *_xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+            {
+                PROGLOG("CSubscriber notified path=%s for subscriber=%s, sub=%s", _xpath, xpath.get(), sub?"true":"false");
+                if (result.length())
+                    result.append("|");
+                result.append(xpath);
+                if (!sub && valueLen)
+                    result.append(",").append(valueLen, (const char *)valueData);
+            }
+        };
+        Owned<IRemoteConnection> conn = querySDS().connect("/DAREGRESS/TestSub2", myProcessSession(), RTM_CREATE, INFINITE);
+        Owned<IPropertyTree> tree = createPTreeFromXMLString("<a><b1><c/></b1><b2/><b3><d><e/></d></b3></a>");
+        IPropertyTree *root = conn->queryRoot();
+        root->setPropTree("a", tree.getClear());
+        conn->commit();
+
+        StringBuffer result;
+        Owned<ISDSSubscription> sub1 = new CSubscriber(result, "/DAREGRESS/TestSub2/a", true);
+        Owned<ISDSSubscription> sub2 = new CSubscriber(result, "/DAREGRESS/TestSub2/a/b1", false);
+        Owned<ISDSSubscription> sub3 = new CSubscriber(result, "/DAREGRESS/TestSub2/a/b2", false);
+        Owned<ISDSSubscription> sub4 = new CSubscriber(result, "/DAREGRESS/TestSub2/a/b1/c", false);
+        Owned<ISDSSubscription> sub5 = new CSubscriber(result, "/DAREGRESS/TestSub2/a/b3", true);
+
+        MilliSleep(1000);
+
+        StringArray expectedResults;
+        expectedResults.append("/DAREGRESS/TestSub2/a");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b2,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1/c,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b1,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b2,testv");
+        expectedResults.append("/DAREGRESS/TestSub2/a");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b3");
+        expectedResults.append("/DAREGRESS/TestSub2/a|/DAREGRESS/TestSub2/a/b3");
+
+        StringArray props;
+        props.appendList("S:a,S:a/b1,S:a/b2,S:a/b1/c,S:a/b1/d,S:a/b2/e,S:a/b2/e/f,D:a/b3/d/e,D:a/b3/d", ",");
+
+        assertex(expectedResults.ordinality() == props.ordinality());
+
+        ForEachItemIn(p, props)
+        {
+            result.clear(); // filled by subscriber notifications
+            const char *cmd = props.item(p);
+            const char *propPath=cmd+2;
+            switch (*cmd)
+            {
+                case 'S':
+                {
+                    PROGLOG("Changing %s", propPath);
+                    root->setProp(propPath, "testv");
+                    break;
+                }
+                case 'D':
+                {
+                    PROGLOG("Deleting %s", propPath);
+                    root->removeProp(propPath);
+                    break;
+                }
+                default:
+                    throwUnexpected();
+            }
+            conn->commit();
+
+            MilliSleep(100); // time for notifications to come through
+
+            PROGLOG("Checking results");
+            StringArray resultArray;
+            resultArray.appendList(result, "|");
+            result.clear();
+            resultArray.sortAscii();
+            ForEachItemIn(r, resultArray)
+            {
+                if (result.length())
+                    result.append("|");
+                result.append(resultArray.item(r));
+            }
+            const char *expectedResult = expectedResults.item(p);
+            if (0 == strcmp(expectedResult, result))
+                PROGLOG("testSDSSubs2 [ %s ]: MATCH", cmd);
+            else
+            {
+                VStringBuffer errMsg("testSDSSubs2 [ %s ]: MISMATCH", cmd);
+                errMsg.newline().append("Expected: ").append(expectedResult);
+                errMsg.newline().append("Got: ").append(result);
+                PROGLOG("%s", errMsg.str());
+                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+            }
+        }
+    }
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CDaliTests );

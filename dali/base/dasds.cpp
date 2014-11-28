@@ -8173,7 +8173,8 @@ public:
         INIT_NAMEDCOUNT;
         SDSManager->querySubscriberTable().getSubscribers(subs);
     }
-    bool match(const char *head, const char *path, bool &sub)
+    enum SubCommitType { subCommitNone, subCommitExact, subCommitBelow, subCommitAbove };
+    SubCommitType match(const char *head, const char *path)
     {
         bool wild = false;
         loop
@@ -8194,30 +8195,23 @@ public:
                 wild = true;
             }
             else if (*head != *path)
-                return false;
+                return subCommitNone;
             else
                 path++;
 
             head++;
             if ('\0' == *path)
             {
-                if ('\0' == *head) // absolute match
-                {
-                    sub = false;
-                    return true;
-                }
+                if ('\0' == *head)
+                    return subCommitExact; // absolute match
                 else if (!wild && '/' != *head) // e.g. change=/a/bc, subscriber=/a/b
-                    return false;
-                sub = true; // e.g. change=/a/b/c, subscriber=/a/b
-                return true;
+                    return subCommitNone;
+                return subCommitBelow; // e.g. change=/a/b/c, subscriber=/a/b
             }
             else 
             {
-                if ('\0' == *head) // e.g. change=/a/b, subscriber=/a/b/c - not matched yet, but returning true keeps it from being pruned
-                {
-                    sub = false;
-                    return true;
-                }
+                if ('\0' == *head)
+                    return subCommitAbove; // e.g. change=/a/b, subscriber=/a/b/c - not matched yet, but returning true keeps it from being pruned
             }
         }
     }
@@ -8231,22 +8225,45 @@ public:
         scan(*rootChanges, stack, pruned);
     }
 
-    bool prune(const char *xpath, bool &sub, CSubscriberCopyArray *matches, CSubscriberArray &pruned)
+    bool prune(const char *xpath, CSubscriberCopyArray &candidates, CSubscriberArray &pruned)
     {
-        sub = false;
         ForEachItemInRev(s, subs)
         {
             CSubscriberContainer &subscriber = subs.item(s);
-            bool _sub; // false = (xpath NOT below subscriber), (true = xpath equals or is below subscriber)
-            if (subscriber.isUnsubscribed() || !match(xpath, subscriber.queryXPath(), _sub))
+            SubCommitType subCommit;
+            if (subscriber.isUnsubscribed())
+                subCommit = subCommitNone;
+            else
+                subCommit = match(xpath, subscriber.queryXPath());
+            switch (subCommit)
             {
-                pruned.append(*LINK(&subscriber));
-                subs.remove(s);
+                case subCommitNone:
+                {
+                    pruned.append(*LINK(&subscriber));
+                    subs.remove(s);
+                    break;
+                }
+                case subCommitExact:
+                {
+                    candidates.append(subscriber);
+                    break;
+                }
+                case subCommitBelow: // e.g. change=/a/b/c, subscriber=/a/b
+                {
+                    if (!subscriber.querySub())
+                    {
+                        pruned.append(*LINK(&subscriber));
+                        subs.remove(s);
+                    }
+                    else
+                        candidates.append(subscriber);
+                    break;
+                }
+                case subCommitAbove: // e.g. change=/a/b, subscriber=/a/b/c
+                    break; // keep in subs, deeper changes may match
+                default:
+                    throwUnexpected();
             }
-            else if (_sub)
-                sub = true;
-            else if (matches)
-                matches->append(subscriber);
         }
         return (subs.ordinality() > 0);
     }
@@ -8254,15 +8271,15 @@ public:
     // recurse down all matching subscription stubs while qualified
     void scanAll(PDState state, CBranchChange &changes, CPTStack &stack, CSubscriberArray &pruned)
     {
-        bool sub;
-        if (prune(xpath.str(), sub, NULL, pruned))
+        CSubscriberCopyArray candidates;
+        if (prune(xpath.str(), candidates, pruned))
         {
             MemoryBuffer notifyData;
-            if (sub)
+            if (candidates.ordinality())
             {
-                ForEachItemInRev(s, subs)
+                ForEachItemInRev(s, candidates)
                 {
-                    CSubscriberContainer &subscriber = subs.item(s);
+                    CSubscriberContainer &subscriber = candidates.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
                         if (subscriber.qualify(stack, true))
@@ -8274,7 +8291,7 @@ public:
                         else
                             pruned.append(*LINK(&subscriber));
                     }
-                    subs.remove(s);
+                    subs.zap(subscriber);
                 }
             }
             else
@@ -8320,9 +8337,8 @@ public:
 
     void scan(CBranchChange &changes, CPTStack &stack, CSubscriberArray &pruned)
     {
-        CSubscriberCopyArray matches;
-        bool sub;
-        if (!prune(xpath.str(), sub, &matches, pruned))
+        CSubscriberCopyArray candidates;
+        if (!prune(xpath.str(), candidates, pruned))
             return;
 
         PushPop pp(stack, *changes.tree);
@@ -8331,7 +8347,7 @@ public:
             scanAll(changes.local, changes, stack, pruned);
             return;
         }
-        else if (matches.ordinality()) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
+        else if (candidates.ordinality()) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
         {
             bool ret = false;
             // avoid notifying on PDS_Structure only, which signifies changes deeper down only
@@ -8339,9 +8355,9 @@ public:
             if (changes.state && changes.local && (changes.local != PDS_Structure))
             {
                 int lastSendValue = -1;
-                ForEachItemInRev(s, matches)
+                ForEachItemInRev(s, candidates)
                 {
-                    CSubscriberContainer &subscriber = matches.item(s);
+                    CSubscriberContainer &subscriber = candidates.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
                         if (subscriber.qualify(stack, false))
@@ -8372,23 +8388,7 @@ public:
                     subs.zap(subscriber);
                 }
             }
-            else
-            {
-                // remove non-sub subcribers at this level
-                ForEachItemInRev(s, subs)
-                {
-                    CSubscriberContainer &subscriber = subs.item(s);
-                    unsigned subDepth = subscriber.queryDepth();
-                    unsigned stackDepth = stack.ordinality();
-                    if ((!subscriber.querySub() && subDepth==stackDepth) || 0 == changes.children.ordinality())
-                    {
-                        pruned.append(*LINK(&subscriber));
-                        subs.remove(s);
-                    }
-                }
-            }
         }
-
         ForEachItemIn(c, changes.children)
         {
             CBranchChange &childChanges = changes.children.item(c);
