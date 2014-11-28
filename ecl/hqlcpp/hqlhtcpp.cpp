@@ -5653,9 +5653,7 @@ bool HqlCppTranslator::prepareToGenerate(HqlQueryContext & query, WorkflowArray 
 
         if (!isEmbeddedLibrary)
         {
-            SCMStringBuffer libraryName;
-            wu()->getJobName(libraryName);
-            wu()->setLibraryInformation(libraryName.str(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
+            wu()->setLibraryInformation(wu()->queryJobName(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
         }
     }
     else

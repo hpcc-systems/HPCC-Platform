@@ -1985,10 +1985,9 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid)
     Owned<IConstWorkUnit> w = factory->openWorkUnit(wuid, false);
     if (w)
     {
-        SCMStringBuffer clusterName;
-        w->getClusterName(clusterName);
+        StringAttr clusterName = (w->queryClusterName());
         w.clear();
-        return runWorkUnit(wuid,clusterName.str());
+        return runWorkUnit(wuid, clusterName.str());
     }
     else
         return false;

@@ -614,10 +614,9 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
 static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
 {
-    StringBuffer user, password, wuid, token;
+    StringBuffer user, password, token;
     wu->getSecurityToken(StringBufferAdaptor(token));
-    wu->getWuid(StringBufferAdaptor(wuid));
-    extractToken(token.str(), wuid.str(), StringBufferAdaptor(user), StringBufferAdaptor(password));
+    extractToken(token.str(), wu->queryWuid(), StringBufferAdaptor(user), StringBufferAdaptor(password));
     server.setUsernameToken(user.str(), password.str(), "");
 }
 

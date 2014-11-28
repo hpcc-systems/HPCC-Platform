@@ -601,8 +601,7 @@ public:
             StringBuffer wuXML;
             if (getEmbeddedWorkUnitXML(source, wuXML))
             {
-                Owned<ILocalWorkUnit> localWU = createLocalWorkUnit();
-                localWU->loadXML(wuXML);
+                Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
                 queryExtendedWU(w)->copyWorkUnit(localWU, true);
             }
             else

@@ -56,9 +56,7 @@ class ExecuteExistingQueryInfo
 public:
     ExecuteExistingQueryInfo(IConstWorkUnit *cw)
     {
-        SCMStringBuffer isv;
-        cw->getJobName(isv);
-        const char *name = isv.str();
+        const char *name = cw->queryJobName();
         const char *div = strchr(name, '.');
         if (div)
         {
@@ -147,6 +145,7 @@ void setActionResult(const char* wuid, int action, const char* result, StringBuf
     default:
     {
         strAction = "Unknown";
+        break;
     }
     }
 
@@ -518,9 +517,8 @@ bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, 
             throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
 
         NewWsWorkunit wu(context);
-        SCMStringBuffer wuid;
-        resp.updateWorkunit().setWuid(wu->getWuid(wuid).str());
-        AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
+        resp.updateWorkunit().setWuid(wu->queryWuid());
+        AuditSystemAccess(context.queryUserId(), true, "Updated %s", wu->queryWuid());
     }
     catch(IException* e)
     {
@@ -699,9 +697,7 @@ bool CWsWorkunitsEx::onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateReque
             throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
 
         NewWsWorkunit wu(context);
-        SCMStringBuffer wuid;
-        wu->getWuid(wuid);
-        req.setWuid(wuid.str());
+        req.setWuid(wu->queryWuid());
     }
     catch(IException* e)
     {
@@ -844,7 +840,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
     try
     {
         Owned<IMultiException> me = MakeMultiException();
-        SCMStringBuffer wuid;
+        StringAttr wuid;
         StringArray wuids;
 
         double version = context.getClientVersion();
@@ -865,7 +861,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 {
                     Owned<IConstWorkUnit> src(factory->openWorkUnit(wuid.str(), false));
                     NewWsWorkunit wu(factory, context);
-                    wu->getWuid(wuid);
+                    wuid.set(wu->queryWuid());
                     queryExtendedWU(wu)->copyWorkUnit(src, false);
 
                     SCMStringBuffer token;
@@ -878,7 +874,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 if(!cw)
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
-                //Dont allow resubmit of someone else's workunit
+                //Don't allow resubmit of someone else's workunit
                 if (context.querySecManager())
                 {
                     IUserDescriptor * owner = cw->queryUserDescriptor();
@@ -987,10 +983,7 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
             case WUStateRunning:
             case WUStateAborting:
             case WUStateBlocked:
-            {
-                SCMStringBuffer descr;
-                throw MakeStringException(ECLWATCH_CANNOT_SCHEDULE_WORKUNIT, "Cannot schedule the workunit. Workunit state is '%s'.", wu->getStateDesc(descr).str());
-            }
+                throw MakeStringException(ECLWATCH_CANNOT_SCHEDULE_WORKUNIT, "Cannot schedule the workunit. Workunit state is '%s'.", wu->queryStateDesc());
         }
 
         wu->clearExceptions();
@@ -1125,8 +1118,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
         if (!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.", wuid.str());
 
-        SCMStringBuffer stateDesc;
-        resp.setState(cw->getStateDesc(stateDesc).str());
+        resp.setState(cw->queryStateDesc());
         resp.setWuid(wuid.str());
 
         switch (cw->getState())
@@ -1229,8 +1221,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
 
         wu.setQueryText(req.getECL());
 
-        SCMStringBuffer wuid;
-        wu->getWuid(wuid);
+        StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()
         wu->commit();
         wu.clear();
 
@@ -1280,9 +1271,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
 
         wu.setQueryText(req.getECL());
 
-        SCMStringBuffer wuid;
-        wu->getWuid(wuid);
-        wu.clear();
+        StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()        StringAttr wuid(wu->queryWuid());
 
         WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
         waitForWorkUnitToComplete(wuid.str(),req.getTimeToWait());
@@ -1376,8 +1365,7 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
             }
         }
 
-        SCMStringBuffer wuid;
-        wu->getWuid(wuid);
+        StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()
         wu->commit();
         wu.clear();
 
@@ -1867,7 +1855,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     unsigned actualCount = 0;
     ForEach(*it)
     {
-        IConstWorkUnit& cw = it->query();
+        IConstWorkUnitInfo& cw = it->query();
         if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
         {
             numWUs--;
@@ -1880,8 +1868,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             continue;
         }
 
-        SCMStringBuffer wuidStr;
-        const char* wuid = cw.getWuid(wuidStr).str();
+        const char* wuid = cw.queryWuid();
         if (!looksLikeAWuid(wuid))
         {
             numWUs--;
@@ -2374,8 +2361,7 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     Owned<INewResultSet> rs;
     if (logicalName.length())
     {
-        SCMStringBuffer cluster;  //MORE is this wrong cluster?
-        rs.setown(resultSetFactory->createNewFileResultSet(logicalName.str(), cw->getClusterName(cluster).str()));
+        rs.setown(resultSetFactory->createNewFileResultSet(logicalName.str(), cw->queryClusterName())); //MORE is this wrong cluster?
     }
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
@@ -2783,7 +2769,7 @@ void getWorkunitCluster(IEspContext &context, const char* wuid, SCMStringBuffer&
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
     if (cw)
-        cw->getClusterName(cluster);
+        cluster.set(cw->queryClusterName());
     else if (checkArchiveWUs)
     {
         Owned<IPropertyTree> wuProps;// = getArchivedWorkUnitProperties(wuid);
@@ -2949,7 +2935,8 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                     {
                         bool match = false;
                         unsigned stateID = WUStateUnknown;
-                        SCMStringBuffer jobName, owner, state;
+                        StringBuffer jobName, owner;
+                        SCMStringBuffer state;
                         try
                         {
                             Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
@@ -2965,14 +2952,14 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                                 else
                                 {
                                     stateID = cw->getState();
-                                    cw->getStateDesc(state);
+                                    state.set(cw->queryStateDesc());
                                 }
 
                                 if (!stateReq || !*stateReq || strieq(stateReq, state.str()))
                                 {
                                     match = true;
-                                    cw->getJobName(jobName);
-                                    cw->getUser(owner);
+                                    jobName.set(cw->queryJobName());
+                                    owner.set(cw->queryUser());
                                 }
                             }
                         }
@@ -3680,8 +3667,7 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
 {
     NewWsWorkunit wu(context);
 
-    SCMStringBuffer wuid;
-    wu->getWuid(wuid);
+    StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()
 
     wu->setAction(WUActionCompile);
 
@@ -3811,16 +3797,14 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
 
     NewWsWorkunit wu(context, wuid); //duplicate wuid made unique
 
-    StringBufferAdaptor isvWuid(wuid);
-    wu->getWuid(isvWuid);
+    wuid.set(wu->queryWuid());
     wu->setClusterName(cluster);
     wu->commit();
 
     StringBuffer dllXML;
     if (getWorkunitXMLFromFile(dllpath.str(), dllXML))
     {
-        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
-        embeddedWU->loadXML(dllXML.str());
+        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dllXML.str());
         queryExtendedWU(wu)->copyWorkUnit(embeddedWU, true);
     }
 
@@ -3970,12 +3954,11 @@ void CWsWorkunitsEx::addProcessLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& win
 
 void CWsWorkunitsEx::createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr)
 {
-    SCMStringBuffer temp;
     StringBuffer sb;
-    sb.append("Workunit:     ").append(cwu->getWuid(temp)).append("\r\n");
-    sb.append("User:         ").append(cwu->getUser(temp).str()).append("\r\n");
+    sb.append("Workunit:     ").append(cwu->queryWuid()).append("\r\n");
+    sb.append("User:         ").append(cwu->queryUser()).append("\r\n");
     sb.append("Build Version:").append(req.getBuildVersion()).append("\r\n");
-    sb.append("Cluster:      ").append(cwu->getClusterName(temp).str()).append("\r\n");
+    sb.append("Cluster:      ").append(cwu->queryClusterName()).append("\r\n");
     if (req.getESPIPAddress())
         sb.append("ESP:          ").append(req.getESPIPAddress()).append("\r\n");
     if (req.getThorIPAddress())
@@ -3985,6 +3968,7 @@ void CWsWorkunitsEx::createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<
     StringBuffer info, warn, err, alert;
     ForEach(*exceptions)
     {
+        SCMStringBuffer temp;
         switch (exceptions->query().getSeverity())
         {
         case ExceptionSeverityInformation:

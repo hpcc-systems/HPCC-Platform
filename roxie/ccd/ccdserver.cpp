@@ -11003,10 +11003,9 @@ public:
         IConstWorkUnit *workUnit = ctx->queryWorkUnit();
         if (workUnit)
         {
-            SCMStringBuffer owner, wuid, job;
-            fileProps.setProp("@owner", workUnit->getUser(owner).str());
-            fileProps.setProp("@workunit", workUnit->getWuid(wuid).str());
-            fileProps.setProp("@job", workUnit->getJobName(job).str());
+            fileProps.setProp("@owner", workUnit->queryUser());
+            fileProps.setProp("@workunit", workUnit->queryWuid());
+            fileProps.setProp("@job", workUnit->queryJobName());
         }
         if (flags & TDWexpires)
             setExpiryTime(fileProps, helper.getExpiryDays());
@@ -11556,15 +11555,12 @@ public:
         properties.setProp("@kind", "key");
         properties.setPropInt64("@size", indexFileSize);
         properties.setPropInt64("@recordCount", reccount);
-        SCMStringBuffer info;
         WorkunitUpdate workUnit = ctx->updateWorkUnit();
         if (workUnit)
         {
-            properties.setProp("@owner", workUnit->getUser(info).str());
-            info.clear();
-            properties.setProp("@workunit", workUnit->getWuid(info).str());
-            info.clear();
-            properties.setProp("@job", workUnit->getJobName(info).str());
+            properties.setProp("@owner", workUnit->queryUser());
+            properties.setProp("@workunit", workUnit->queryWuid());
+            properties.setProp("@job", workUnit->queryJobName());
         }
         char const * rececl = helper.queryRecordECL();
         if(rececl && *rececl)

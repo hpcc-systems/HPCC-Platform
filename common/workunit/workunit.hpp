@@ -721,12 +721,7 @@ interface IConstLocalFileUploadIterator : extends IScmIterator
 
 enum WUSubscribeOptions
 {
-    SubscribeOptionRunningState = 0,
-    SubscribeOptionAnyState = 1,
     SubscribeOptionAbort = 2,
-    SubscribeOptionProgress = 3,
-    SubscribeOptionAll = 4,
-    SubscribeOptionSize = 5
 };
 
 
@@ -979,7 +974,19 @@ interface IStringIterator : extends IScmIterator
     virtual IStringVal & str(IStringVal & str) = 0;
 };
 
-interface IConstWorkUnit : extends IInterface
+interface IConstWorkUnitInfo : extends IInterface
+{
+    virtual const char *queryWuid() const = 0;
+    virtual const char *queryUser() const = 0;
+    virtual const char *queryJobName() const = 0;
+    virtual const char *queryClusterName() const = 0;
+    virtual WUState getState() const = 0;
+    virtual const char *queryStateDesc() const = 0;
+    virtual bool isProtected() const = 0;
+    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
+};
+
+interface IConstWorkUnit : extends IConstWorkUnitInfo
 {
     virtual bool aborting() const = 0;
     virtual void forceReload() = 0;
@@ -996,7 +1003,6 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstLocalFileUploadIterator * getLocalFileUploads() const = 0;
     virtual bool requiresLocalFileUpload() const = 0;
     virtual bool getIsQueryService() const = 0;
-    virtual IStringVal & getClusterName(IStringVal & str) const = 0;
     virtual bool hasDebugValue(const char * propname) const = 0;
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const = 0;
     virtual int getDebugValueInt(const char * propname, int defVal) const = 0;
@@ -1011,7 +1017,6 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUGraphIterator & getGraphs(WUGraphType type) const = 0;
     virtual IConstWUGraph * getGraph(const char * name) const = 0;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const = 0;
-    virtual IStringVal & getJobName(IStringVal & str) const = 0;
     virtual IConstWUPlugin * getPluginByName(const char * name) const = 0;
     virtual IConstWUPluginIterator & getPlugins() const = 0;
     virtual IConstWULibraryIterator & getLibraries() const = 0;
@@ -1025,11 +1030,9 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUResultIterator & getResults() const = 0;
     virtual IStringVal & getScope(IStringVal & str) const = 0;
     virtual IStringVal & getSecurityToken(IStringVal & str) const = 0;
-    virtual WUState getState() const = 0;
     virtual IStringVal & getStateEx(IStringVal & str) const = 0;
     virtual __int64 getAgentSession() const = 0;
     virtual unsigned getAgentPID() const = 0;
-    virtual IStringVal & getStateDesc(IStringVal & str) const = 0;
     virtual IConstWUResult * getTemporaryByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getTemporaries() const = 0;
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const = 0;
@@ -1037,28 +1040,22 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const = 0;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const = 0;
-    virtual IStringVal & getUser(IStringVal & str) const = 0;
     virtual IStringVal & getWuScope(IStringVal & str) const = 0;
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getVariables() const = 0;
-    virtual IStringVal & getWuid(IStringVal & str) const = 0;
-    virtual bool isProtected() const = 0;
     virtual bool isPausing() const = 0;
     virtual IWorkUnit & lock() = 0;
-    virtual bool reload() = 0;
     virtual void requestAbort() = 0;
     virtual void subscribe(WUSubscribeOptions options) = 0;
     virtual unsigned queryFileUsage(const char * filename) const = 0;
     virtual unsigned getCodeVersion() const = 0;
     virtual unsigned getWuidVersion() const  = 0;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const = 0;
-    virtual bool getWuDate(unsigned & year, unsigned & month, unsigned & day) = 0;
     virtual IPropertyTree * getDiskUsageStats() = 0;
     virtual IPropertyTreeIterator & getFileIterator() const = 0;
     virtual bool getCloneable() const = 0;
     virtual IUserDescriptor * queryUserDescriptor() const = 0;
     virtual IStringVal & getSnapshot(IStringVal & str) const = 0;
-    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
     virtual IPropertyTreeIterator & getFilesReadIterator() const = 0;
     virtual void protect(bool protectMode) = 0;
     virtual IStringVal & getAllowedClusters(IStringVal & str) const = 0;
@@ -1173,7 +1170,7 @@ interface IWorkUnit : extends IConstWorkUnit
 
 interface IConstWorkUnitIterator : extends IScmIterator
 {
-    virtual IConstWorkUnit & query() = 0;
+    virtual IConstWorkUnitInfo & query() = 0;
 };
 
 //! IWUTimers
@@ -1199,7 +1196,6 @@ interface ILocalWorkUnit : extends IWorkUnit
 {
     virtual void serialize(MemoryBuffer & tgt) = 0;
     virtual void deserialize(MemoryBuffer & src) = 0;
-    virtual void loadXML(const char * xml) = 0;
     virtual IConstWorkUnit * unlock() = 0;
 };
 
@@ -1281,6 +1277,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual void descheduleAllWorkUnits() = 0;
     virtual bool deleteWorkUnitEx(const char * wuid) = 0;
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) = 0;
+    virtual bool isAborting(const char *wuid) const = 0;
 };
 
 
@@ -1365,7 +1362,7 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSever
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
-extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit();
+extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
 extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack, bool includeProgress);
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress);

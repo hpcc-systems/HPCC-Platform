@@ -1141,8 +1141,6 @@ public:
         daliHelper->noteWorkunitRunning(wuid.get(), true);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
-        SCMStringBuffer target;
-        wu->getClusterName(target);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         Owned<IQueryFactory> queryFactory;
         try

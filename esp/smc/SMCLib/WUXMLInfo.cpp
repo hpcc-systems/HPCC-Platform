@@ -82,22 +82,16 @@ bool CWUXMLInfo::buildXmlWuidInfo(IConstWorkUnit &wu, IEspECLWorkunit& wuStructu
 {
     try
     {
-        SCMStringBuffer buf;
         wuStructure.setProtected((wu.isProtected() ? 1 : 0));
-        buf.clear();
-        wuStructure.setWuid(wu.getWuid(buf).str()); 
-        buf.clear();
-        wuStructure.setOwner(wu.getUser(buf).str());
-        buf.clear();
-        wuStructure.setJobname(wu.getJobName(buf).str());
-        buf.clear();
-        wuStructure.setCluster(wu.getClusterName(buf).str());
+        wuStructure.setWuid(wu.queryWuid());
+        wuStructure.setOwner(wu.queryUser());
+        wuStructure.setJobname(wu.queryJobName());
+        wuStructure.setCluster(wu.queryClusterName());
         wuStructure.setStateID(wu.getState());
-        buf.clear();
-        wuStructure.setState(wu.getStateDesc(buf).str());
+        wuStructure.setState(wu.queryStateDesc());
         if (bDescription)
         {
-            buf.clear();
+            SCMStringBuffer buf;
             wuStructure.setDescription((wu.getDebugValue("description", buf)).str());
         }
     }
@@ -139,39 +133,34 @@ bool CWUXMLInfo::buildXmlWuidInfo(const char* wuid, IEspECLWorkunit& wuStructure
 
 bool CWUXMLInfo::buildXmlWuidInfo(IConstWorkUnit &wu, StringBuffer& wuStructure,bool bDescription)
 {
-    try{
-      SCMStringBuffer buf;
+    try
+    {
 
         wuStructure.append("<Workunit>");
         wuStructure.appendf("<Protected>%d</Protected>",(wu.isProtected() ? 1 : 0));
-        wuStructure.appendf("<Wuid>%s</Wuid>",wu.getWuid(buf).str());
-      buf.clear();
-        wuStructure.appendf("<Owner>%s</Owner>",wu.getUser(buf).str());
-      buf.clear();
-        wuStructure.appendf("<Jobname>%s</Jobname>",wu.getJobName(buf).str());
-      buf.clear();
-        wuStructure.appendf("<Cluster>%s</Cluster>",wu.getClusterName(buf).str());
-      buf.clear();
-        wuStructure.appendf("<State>%s</State>",wu.getStateDesc(buf).str());
-      buf.clear();
+        wuStructure.appendf("<Wuid>%s</Wuid>",wu.queryWuid());
+        wuStructure.appendf("<Owner>%s</Owner>",wu.queryUser());
+        wuStructure.appendf("<Jobname>%s</Jobname>",wu.queryJobName());
+        wuStructure.appendf("<Cluster>%s</Cluster>",wu.queryClusterName());
+        wuStructure.appendf("<State>%s</State>",wu.queryStateDesc());
         if (bDescription)
-      {
-            wuStructure.appendf("<Description>%s</Description>",
-            (wu.getDebugValue("description", buf)).str());
-         buf.clear();
-      }
+        {
+            SCMStringBuffer buf;
+            wuStructure.appendf("<Description>%s</Description>", (wu.getDebugValue("description", buf)).str());
+        }
         wuStructure.append("</Workunit>");
     }
-    catch(IException* e){   
-      StringBuffer msg;
-      e->errorMessage(msg);
+    catch(IException* e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
         WARNLOG("%s", msg.str());
         e->Release();
     }
-    catch(...){
+    catch(...)
+    {
         WARNLOG("Unknown Exception caught within CWUXMLInfo::buildXmlWuidInfo");
     }
-
     return true;
 }
 
@@ -186,8 +175,7 @@ bool CWUXMLInfo::buildXmlGraphList(IConstWorkUnit &wu,IPropertyTree& XMLStructur
         {
             IConstWUGraph &graph = graphs->query();
             IPropertyTree * p = resultTree->addPropTree("WUGraph", createPTree(ipt_caseInsensitive));
-            p->setProp("Wuid", wu.getWuid(buf).str());
-            buf.clear();
+            p->setProp("Wuid", wu.queryWuid());
             p->setProp("Name", graph.getName(buf).str());
             buf.clear();
             // MORE? (debugging)

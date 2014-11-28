@@ -71,15 +71,11 @@ bool QueryDataSource::createBrowseWU()
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> parent = factory->openWorkUnit(wuid, false);
 
-    SCMStringBuffer user;
-    StringAttrAdaptor acluster(cluster);
-    parent->getClusterName(acluster);
-    parent->getUser(user);
-
-    Owned<IWorkUnit> workunit = factory->createWorkUnit("fileViewer", user.str());
-    workunit->setUser(user.str());
-    workunit->setClusterName(cluster);
-    StringAttrAdaptor bwa(browseWuid); workunit->getWuid(bwa);
+    const char *user = parent->queryUser();
+    Owned<IWorkUnit> workunit = factory->createWorkUnit("fileViewer", user);
+    workunit->setUser(user);
+    workunit->setClusterName(parent->queryClusterName());
+    browseWuid.set(workunit->queryWuid());
 
     workunit->setDebugValueInt("importImplicitModules", false, true);
     workunit->setDebugValueInt("importAllModules", false, true);

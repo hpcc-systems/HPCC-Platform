@@ -1033,8 +1033,6 @@ public:
         {
             Owned <IRoxieDaliHelper> daliHelper = connectToDali();
             Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid(), NULL);
-            SCMStringBuffer target;
-            wu->getClusterName(target);
             queryFactory.setown(createSlaveQueryFactoryFromWu(wu, channel));
             if (queryFactory)
                 cacheOnDemandQuery(queryHash, channel, queryFactory);
