@@ -52,6 +52,7 @@ public:
     virtual void addLinkOption(const char * option) = 0;
     virtual void addSourceFile(const char * filename) = 0;
     virtual bool compile() = 0;
+    virtual void extractErrors(IArrayOf<IError> & errors) = 0;
     virtual void setDebug(bool _debug) = 0;
     virtual void setDebugLibrary(bool _debug) = 0;
     virtual void setOnlyCompile(bool _onlyCompile) = 0;

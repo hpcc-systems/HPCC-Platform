@@ -1356,3 +1356,68 @@ void printStackReport()
 #endif
     queryLogMsgManager()->flushQueue(10*1000);
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class jlib_decl CError : public CInterfaceOf<IError>
+{
+public:
+    CError(WarnErrorCategory _category,ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position);
+
+    virtual int             errorCode() const { return no; }
+    virtual StringBuffer &  errorMessage(StringBuffer & ret) const { return ret.append(msg); }
+    virtual MessageAudience errorAudience() const { return MSGAUD_user; }
+    virtual const char* getFilename() const { return filename; }
+    virtual WarnErrorCategory getCategory() const { return category; }
+    virtual int getLine() const { return lineno; }
+    virtual int getColumn() const { return column; }
+    virtual int getPosition() const { return position; }
+    virtual StringBuffer& toString(StringBuffer&) const;
+    virtual ErrorSeverity getSeverity() const { return severity; }
+    virtual IError * cloneSetSeverity(ErrorSeverity _severity) const;
+
+protected:
+    ErrorSeverity severity;
+    WarnErrorCategory category;
+    int no;
+    StringAttr msg;
+    StringAttr filename;
+    int lineno;
+    int column;
+    int position;
+};
+
+CError::CError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position):
+  category(_category),severity(_severity), msg(_msg), filename(_filename)
+{
+    no = _no;
+    lineno = _lineno;
+    column = _column;
+    position = _position;
+}
+
+
+StringBuffer& CError::toString(StringBuffer& buf) const
+{
+    buf.append(filename);
+
+    if(lineno && column)
+        buf.append('(').append(lineno).append(',').append(column).append(')');
+    buf.append(" : ");
+
+    buf.append(no).append(": ").append(msg);
+    return buf;
+}
+
+IError * CError::cloneSetSeverity(ErrorSeverity newSeverity) const
+{
+    return new CError(category, newSeverity,
+                         errorCode(), msg, filename,
+                         getLine(), getColumn(), getPosition());
+}
+
+IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos)
+{
+    return new CError(category,severity,errNo,msg,filename,lineno,column,pos);
+}
+

@@ -910,7 +910,7 @@ public:
     Owned<IPropertyTree> nestedDependTree;
     Owned<IPropertyTree> globalDependTree;
     Owned<IPropertyTree> metaTree;
-    IECLErrorArray orphanedWarnings;
+    IErrorArray orphanedWarnings;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;
@@ -1310,7 +1310,7 @@ extern HQL_API IHqlExpression * createLocationAnnotation(IHqlExpression * _owned
 extern HQL_API IHqlExpression * createLocationAnnotation(IHqlExpression * ownedBody, ISourcePath * sourcePath, int lineno, int column);
 extern HQL_API IHqlExpression * createMetaAnnotation(IHqlExpression * _ownedBody, HqlExprArray & _args);
 extern HQL_API IHqlExpression * createParseMetaAnnotation(IHqlExpression * _ownedBody, HqlExprArray & _args);
-extern HQL_API IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IECLError * _ownedWarning);
+extern HQL_API IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IError * _ownedWarning);
 extern HQL_API IHqlExpression * createJavadocAnnotation(IHqlExpression * _ownedBody, IPropertyTree * _doc);
 
 extern HQL_API IHqlExpression * createCompound(IHqlExpression * expr1, IHqlExpression * expr2);
@@ -1604,7 +1604,7 @@ extern HQL_API bool isShared(IHqlExpression * expr);
 extern HQL_API bool isImport(IHqlExpression * expr);
 extern HQL_API bool isVirtualSymbol(IHqlExpression * expr);
 
-extern HQL_API IECLError * queryAnnotatedWarning(const IHqlExpression * expr);
+extern HQL_API IError * queryAnnotatedWarning(const IHqlExpression * expr);
 
 extern HQL_API bool isPublicSymbol(IHqlExpression * expr);
 extern HQL_API ITypeInfo * getSumAggType(IHqlExpression * arg);

@@ -429,6 +429,8 @@
 #define ERR_INDEX_DEPEND_DATASET    2396
 #define ERR_DUBIOUS_NAME            2397
 
+#define ERR_CPP_COMPILE_ERROR       2999
+
 #define ERR_ASSERTION_FAILS         100000
 
 /* general error types */

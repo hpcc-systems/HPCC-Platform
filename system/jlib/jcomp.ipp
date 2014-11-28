@@ -36,6 +36,7 @@ public:
     virtual void addInclude(const char * includePath);
     virtual void addSourceFile(const char * filename);
     virtual bool compile();
+    virtual void extractErrors(IArrayOf<IError> & errors);
     virtual void setDebug(bool _debug);
     virtual void setDebugLibrary(bool _debug);
     virtual void setOnlyCompile(bool _onlyCompile) { onlyCompile = _onlyCompile; }

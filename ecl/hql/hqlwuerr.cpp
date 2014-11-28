@@ -43,12 +43,12 @@ void WorkUnitErrorReceiver::initializeError(IWUException * exception, int errNo,
     exception->setTimeStamp(NULL);
 }
 
-IECLError * WorkUnitErrorReceiver::mapError(IECLError * error)
+IError * WorkUnitErrorReceiver::mapError(IError * error)
 {
     return LINK(error);
 }
 
-void WorkUnitErrorReceiver::report(IECLError* eclError)
+void WorkUnitErrorReceiver::report(IError* eclError)
 {
     WUExceptionSeverity wuSeverity = ExceptionSeverityInformation;
     ErrorSeverity severity = eclError->getSeverity();
@@ -103,13 +103,13 @@ public:
     CompoundErrorReceiver(IErrorReceiver * _primary, IErrorReceiver * _secondary) { primary.set(_primary); secondary.set(_secondary); }
     IMPLEMENT_IINTERFACE;
 
-    virtual IECLError * mapError(IECLError * error)
+    virtual IError * mapError(IError * error)
     {
-        Owned<IECLError> mappedError = primary->mapError(error);
+        Owned<IError> mappedError = primary->mapError(error);
         assertex(mappedError == error); // should not expect any mapping below a compound.
         return mappedError.getClear();
     }
-    virtual void report(IECLError* err)
+    virtual void report(IError* err)
     {
         primary->report(err);
         secondary->report(err);

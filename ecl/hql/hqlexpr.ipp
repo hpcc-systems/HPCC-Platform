@@ -745,14 +745,14 @@ protected:
 class HQL_API CHqlWarningAnnotation: public CHqlAnnotationExtraBase
 {
 public:
-    static IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IECLError * _ownedWarning);
+    static IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IError * _ownedWarning);
     virtual annotate_kind getAnnotationKind() const { return annotate_warning; }
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body);
 
-    inline IECLError * queryWarning() const { return static_cast<IECLError *>(extra.get()); }
+    inline IError * queryWarning() const { return static_cast<IError *>(extra.get()); }
 
 protected:
-    CHqlWarningAnnotation(IHqlExpression * _expr, IECLError * _ownedWarning);
+    CHqlWarningAnnotation(IHqlExpression * _expr, IError * _ownedWarning);
 };
 
 class HQL_API CHqlJavadocAnnotation: public CHqlAnnotationExtraBase
