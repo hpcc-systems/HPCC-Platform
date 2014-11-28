@@ -1267,6 +1267,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual IWorkUnit * updateWorkUnit(const char * wuid) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user) = 0;
+    virtual IWorkUnit * getGlobalWorkUnit() = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster) = 0;
@@ -1278,6 +1279,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual bool deleteWorkUnitEx(const char * wuid) = 0;
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) = 0;
     virtual bool isAborting(const char *wuid) const = 0;
+    virtual void clearAborting(const char *wuid) = 0;
 };
 
 

@@ -557,4 +557,68 @@ protected:
     virtual void _unlockRemote() {};
     virtual void unsubscribe();
 };
+
+interface ISDSManager; // MORE - can remove once dali split out
+
+class CWorkUnitFactory : public CInterface, implements IWorkUnitFactory
+{
+    Owned<IWorkQueueThread> deletedllworkq;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CWorkUnitFactory();
+    ~CWorkUnitFactory();
+
+    // interface IWorkUnitFactory
+
+    virtual IWorkUnit * createWorkUnit(const char * app, const char * user);
+    virtual bool deleteWorkUnit(const char * wuid);
+    virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock);
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner);
+    virtual IWorkUnit * updateWorkUnit(const char * wuid);
+    virtual int setTracingLevel(int newlevel);
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user);
+    virtual IWorkUnit * getGlobalWorkUnit();
+    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state);
+    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl);
+    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster);
+    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath);
+    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf, unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total);
+    virtual unsigned numWorkUnits();
+    virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf);
+    virtual void descheduleAllWorkUnits();
+    virtual bool deleteWorkUnitEx(const char * wuid);
+    virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset);
+    virtual bool isAborting(const char *wuid) const;
+    virtual void clearAborting(const char *wuid);
+
+    // Secure variants, mostly used from the secure factory wrapper
+
+    IWorkUnit* secCreateWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser);
+    bool secDeleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser, bool raiseexceptions);
+    IConstWorkUnit* secOpenWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser);
+    IWorkUnit* secCreateNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser);
+    IWorkUnit* secUpdateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser);
+    IConstWorkUnitIterator* secGetWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser);
+    IConstWorkUnitIterator* secGetWorkUnitsSorted(WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
+                                                WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
+                                                const void *filterbuf,  // (appended) string values for filters
+                                                unsigned startoffset,
+                                                unsigned maxnum,
+                                                const char *queryowner,
+                                                __int64 *cachehint,
+                                                ISecManager *secmgr,
+                                                ISecUser *secuser,
+                                                unsigned *total);
+    unsigned secNumWorkUnitsFiltered(WUSortField *filters, const void *filterbuf, ISecManager *secmgr, ISecUser *secuser);
+
+    // Misc other stuff called from CLocalWorkUnit class
+
+    void asyncRemoveDll(const char * name);
+    void asyncRemoveFile(const char * ip, const char * name);
+
+protected:
+    ISDSManager *sdsManager;
+    SessionId session;
+};
 #endif
