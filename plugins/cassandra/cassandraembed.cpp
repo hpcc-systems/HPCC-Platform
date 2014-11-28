@@ -3054,7 +3054,6 @@ public:
     virtual unsigned numWorkUnits() { UNIMPLEMENTED; }
     virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf) { UNIMPLEMENTED; }
     virtual void descheduleAllWorkUnits() { UNIMPLEMENTED; }
-    virtual bool deleteWorkUnitEx(const char * wuid) { UNIMPLEMENTED; }
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) { UNIMPLEMENTED; }
 private:
     CassandraCluster cluster;

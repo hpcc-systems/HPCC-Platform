@@ -569,38 +569,42 @@ public:
     CWorkUnitFactory();
     ~CWorkUnitFactory();
 
-    // interface IWorkUnitFactory
+    // interface IWorkUnitFactory - some are left for derived classes
 
     virtual IWorkUnit * createWorkUnit(const char * app, const char * user);
     virtual bool deleteWorkUnit(const char * wuid);
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock);
-    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner);
     virtual IWorkUnit * updateWorkUnit(const char * wuid);
     virtual int setTracingLevel(int newlevel);
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user);
-    virtual IWorkUnit * getGlobalWorkUnit();
+    virtual IWorkUnit * getGlobalWorkUnit() = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner);
     virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state);
     virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl);
     virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster);
-    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath);
+    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath) = 0;  // deprecated
     virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf, unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total);
-    virtual unsigned numWorkUnits();
+    virtual unsigned numWorkUnits() = 0;
     virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf);
     virtual void descheduleAllWorkUnits();
-    virtual bool deleteWorkUnitEx(const char * wuid);
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset);
     virtual bool isAborting(const char *wuid) const;
     virtual void clearAborting(const char *wuid);
 
     // Secure variants, mostly used from the secure factory wrapper
 
-    IWorkUnit* secCreateWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser);
-    bool secDeleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser, bool raiseexceptions);
+    virtual IWorkUnit* secCreateWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser);
+    bool secDeleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     IConstWorkUnit* secOpenWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser);
     IWorkUnit* secCreateNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser);
     IWorkUnit* secUpdateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser);
-    IConstWorkUnitIterator* secGetWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser);
-    IConstWorkUnitIterator* secGetWorkUnitsSorted(WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
+
+    virtual IConstWorkUnitIterator* secGetWorkUnitsByXPath(const char * xpath, ISecManager *secmgr, ISecUser *secuser) = 0;  // deprecated
+    virtual IConstWorkUnitIterator* secGetWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser) = 0;
+    virtual IConstWorkUnitIterator* secGetWorkUnitsByState(WUState state, ISecManager *secmgr, ISecUser *secuser) = 0;
+    virtual IConstWorkUnitIterator* secGetWorkUnitsByECL(const char * ecl, ISecManager *secmgr, ISecUser *secuser) = 0;
+    virtual IConstWorkUnitIterator* secGetWorkUnitsByCluster(const char * cluster, ISecManager *secmgr, ISecUser *secuser) = 0;
+    virtual IConstWorkUnitIterator* secGetWorkUnitsSorted(WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
                                                 WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,
@@ -609,7 +613,7 @@ public:
                                                 __int64 *cachehint,
                                                 ISecManager *secmgr,
                                                 ISecUser *secuser,
-                                                unsigned *total);
+                                                unsigned *total) = 0;
     unsigned secNumWorkUnitsFiltered(WUSortField *filters, const void *filterbuf, ISecManager *secmgr, ISecUser *secuser);
 
     // Misc other stuff called from CLocalWorkUnit class
@@ -618,7 +622,10 @@ public:
     void asyncRemoveFile(const char * ip, const char * name);
 
 protected:
-    ISDSManager *sdsManager;
-    SessionId session;
+    // These need to be implemented by the derived classes
+    virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;
+    virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser) = 0;  // for read access
+    virtual CLocalWorkUnit* _updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for write access
+
 };
 #endif
