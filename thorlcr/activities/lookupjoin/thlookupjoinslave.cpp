@@ -1490,11 +1490,11 @@ protected:
  * 10) The LHS side is loaded and spilt and sorted if necessary
  * 11) A regular join helper is created to perform a local join against the two hash distributed sorted sides.
  */
-        bool rhsAlreadySorted = helper->isRightAlreadyLocallySorted();
+        bool rhsAlreadySorted = false;
         CMarker marker(*this);
         if (needGlobal)
         {
-            rhsAlreadySorted = false;
+            rhsAlreadySorted = helper->isRightAlreadySorted();
             doBroadcastRHS(stopping);
             rowidx_t rhsRows;
             {
@@ -1601,6 +1601,9 @@ protected:
             {
                 ActPrintLog("Spilt whilst broadcasting, will attempt distribute local lookup join");
 
+                // Either it has collated already and remaining rows are sorted, or if didn't get that far, can't rely on previous state of rhsAlreadySorted
+                rhsAlreadySorted = rhsCollated;
+
                 // NB: lhs ordering and grouping lost from here on..
                 if (grouped)
                     throw MakeActivityException(this, 0, "Degraded to distributed lookup join, LHS order cannot be preserved");
@@ -1621,6 +1624,7 @@ protected:
         }
         else
         {
+            rhsAlreadySorted = helper->isRightAlreadyLocallySorted();
             if (stopping) // if local can stop now
                 return;
             setLocalLookup(true);
@@ -1629,28 +1633,27 @@ protected:
         if (isLocalLookup())
         {
             Owned<IThorRowLoader> rowLoader;
-            ICompare *cmp = rhsAlreadySorted ? NULL : compareRight;
-            if (isSmart())
+            if (!needGlobal || !rhsCollated) // If global && rhsCollated, then no need for rowLoader
             {
-                dbgassertex(!stable);
-                if (getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)) // for testing only (force to disk, as if spilt)
-                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
-                else
-                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
-            }
-            else
-            {
-                // i.e. will fire OOM if runs out of memory loading local right
-                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stable ? stableSort_lateAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE));
-            }
-            if (needGlobal)
-            {
-                if (rhsCollated)
+                ICompare *cmp = rhsAlreadySorted ? NULL : compareRight;
+                if (isSmart())
                 {
-                    // NB: If spilt after rhsCollated, callback will have cleared and compacted
-                    rowLoader->transferRowsIn(rhs);
+                    dbgassertex(!stable);
+                    if (getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)) // for testing only (force to disk, as if spilt)
+                        rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
+                    else
+                        rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
                 }
                 else
+                {
+                    // i.e. will fire OOM if runs out of memory loading local right
+                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stable ? stableSort_lateAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE));
+                }
+            }
+            Owned<IRowStream> rightStream;
+            if (needGlobal)
+            {
+                if (!rhsCollated) // NB: If spilt after rhsCollated, callback will have cleared and compacted, rows will still be sorted
                 {
                     /* NB: If cleared before rhsCollated, then need to clear non-locals that were added after spill
                      * There should not be many, as broadcast starts to stop as soon as a slave notifies it is spilling
@@ -1717,10 +1720,12 @@ protected:
                         right.setown(createConcatRowStream(rightStreams.ordinality(), rightStreams.getArray()));
                     else
                         right.set(&rightStreams.item(0));
+                    rightStream.setown(rowLoader->load(right, abortSoon, false, &rhs, NULL, false));
                 }
             }
+            else
+                rightStream.setown(rowLoader->load(right, abortSoon, false, &rhs, NULL, false));
 
-            Owned<IRowStream> rightStream = rowLoader->load(right, abortSoon, false, &rhs, NULL, false);
             if (!rightStream)
             {
                 ActPrintLog("RHS local rows fitted in memory, count: %"RIPF"d", rhs.ordinality());
@@ -1734,27 +1739,20 @@ protected:
 
                 rowLoader.clear();
 
-                // If stable (and sort needed), already sorted by rowLoader
-                rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted && !stable);
+                // Either was already sorted, or rowLoader->load() sorted on transfer out to rhs
+                rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, false);
 
                 /* Although HT is allocated with a low spill priority, it can still cause callbacks
                  * so try to allocate before rhs is transferred to spillable collector
                  */
                 bool htAllocated = setupHT(uniqueKeys);
                 if (!htAllocated)
-                    ActPrintLog("Out of memory trying to allocate the [LOCAL] hash table for a SMART join (%"RIPF"d rows), will now failover to a std hash join", uniqueKeys);
-
-                Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
-                collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
-                collector->transferRowsIn(rhs); // can spill after this
-
-                if (!htAllocated)
-                    rightStream.setown(collector->getStream());
-                else
                 {
-                    rightStream.setown(collector->getStream(false, &rhs));
-                    if (rightStream)
-                        ActPrintLog("Unfortunately, spilt after all rows were in memory and HT was allocated");
+                    ActPrintLog("Out of memory trying to allocate the [LOCAL] hash table for a SMART join (%"RIPF"d rows), will now failover to a std hash join", uniqueKeys);
+                    Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), NULL, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
+                    collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
+                    collector->transferRowsIn(rhs); // can spill after this
+                    rightStream.setown(collector->getStream());
                 }
             }
             if (rightStream)
