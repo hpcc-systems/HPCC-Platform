@@ -6965,14 +6965,15 @@ void HqlGram::reportUnsupportedFieldType(ITypeInfo * type, const attribute & err
     reportError(ERR_INDEX_BADTYPE, errpos, "Fields of type %s are not currently supported", s.str());
 }
 
-void HqlGram::reportIndexFieldType(IHqlExpression * expr, bool isKeyed, const attribute & errpos)
+void HqlGram::reportInvalidIndexFieldType(IHqlExpression * expr, bool isKeyed, const attribute & errpos)
 {
+    const char * id = expr->queryId()->str();
     StringBuffer s;
     getFriendlyTypeStr(expr, s);
     if (isKeyed)
-        reportError(ERR_INDEX_BADTYPE, errpos, "INDEX does not currently support keyed fields of type '%s'", s.str());
+        reportError(ERR_INDEX_BADTYPE, errpos, "INDEX does not currently support keyed field (%s) of type '%s'", id, s.str());
     else
-        reportError(ERR_INDEX_BADTYPE, errpos, "INDEX does not currently support fields of type '%s'", s.str());
+        reportError(ERR_INDEX_BADTYPE, errpos, "INDEX does not currently support field (%s) of type '%s'", id, s.str());
 }
 
 void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool insideNestedRecord, const attribute & errpos)
@@ -6984,19 +6985,20 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
         {
             ITypeInfo * type = expr->queryType();
             IIdAtom * id = expr->queryId();
-            switch (type->getTypeCode())
+            type_t tc = type->getTypeCode();
+            switch (tc)
             {
             case type_real:
                 if (!isPayload)
-                    reportIndexFieldType(expr, true, errpos);
+                    reportInvalidIndexFieldType(expr, true, errpos);
                 break;
             case type_decimal:
                 if (!isPayload && type->isSigned())
-                    reportIndexFieldType(expr, true, errpos);
+                    reportInvalidIndexFieldType(expr, true, errpos);
                 break;
             case type_bitfield:
             case type_any:
-                reportIndexFieldType(expr, false, errpos);
+                reportInvalidIndexFieldType(expr, false, errpos);
                 break;
             case type_record:
                 throwUnexpected();
@@ -7008,34 +7010,27 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                     break;
                 }
             case type_dictionary:
-                if (!variableOk || !isPayload)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "Dictionaries (%s) are not supported inside indexes", id->str());
-                break;
             case type_table:
             case type_groupedtable:
-                if (!variableOk)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "Datasets (%s) are not supported inside indexes", id->str());
-                break;
             case type_packedint:
-                if (!isPayload)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "PACKED integers (%s) are not supported inside indexes", id->str());
-                break;
             case type_set:
-                if (!variableOk)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "SETS (%s) are not supported inside indexes", id->str());
+            case type_varstring:
+            case type_varunicode:
+                if (!isPayload)
+                    reportInvalidIndexFieldType(expr, true, errpos);
                 break;
             case type_int:
             case type_swapint:
                 if (!isPayload && insideNestedRecord)
                 {
                     if (type->isSigned() ||
-                        ((type->getTypeCode() == type_littleendianint) && (type->getSize() != 1)))
+                        ((tc == type_littleendianint) && (type->getSize() != 1)))
                         reportError(ERR_INDEX_BADTYPE, errpos.pos, "Signed or little-endian field %s is not supported inside a keyed record field ", id->str());
                 }
                 break;
             default:
                 if (!type->isScalar())
-                    reportIndexFieldType(expr, false, errpos);
+                    reportInvalidIndexFieldType(expr, false, errpos);
                 else if ((type->getSize() == UNKNOWN_LENGTH) && !variableOk)
                 {
                     reportError(ERR_INDEX_BADTYPE, errpos, "Variable size fields (%s) are not supported inside indexes", id->str());

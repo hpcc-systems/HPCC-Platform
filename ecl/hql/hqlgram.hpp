@@ -463,7 +463,7 @@ public:
     void checkIndexFieldType(IHqlExpression * cur, bool isPayload, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordType(IHqlExpression * record, unsigned numPayloadFields, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordTypes(IHqlExpression * index, const attribute & errpos);
-    void reportIndexFieldType(IHqlExpression * expr, bool isPayload, const attribute & errpos);
+    void reportInvalidIndexFieldType(IHqlExpression * expr, bool isPayload, const attribute & errpos);
     void reportUnsupportedFieldType(ITypeInfo * type, const attribute & errpos);
     void checkCaseForDuplicates(HqlExprArray & exprs, attribute &err);
     void checkOnFailRecord(IHqlExpression * expr, attribute & errpos);
