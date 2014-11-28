@@ -32,7 +32,7 @@ ECL_MEMCACHED_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = MEMCACHED_VERSION;
-    pb->moduleName = "memcached";
+    pb->moduleName = "lib_memcached";
     pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "ECL plugin library for the C/C++ API libmemcached (http://libmemcached.org/)\n";
@@ -137,14 +137,14 @@ MCached * createConnection(ICodeContext * ctx, const char * servers)
     CriticalBlock block(crit);
     if (!cachedConnection)
     {
-        cachedConnection.set(new MemCachedPlugin::MCached(ctx, servers));
+        cachedConnection.setown(new MemCachedPlugin::MCached(ctx, servers));
         return LINK(cachedConnection);
     }
 
     if (cachedConnection->isSameConnection(servers))
         return LINK(cachedConnection);
 
-    cachedConnection.set(new MemCachedPlugin::MCached(ctx, servers));
+    cachedConnection.setown(new MemCachedPlugin::MCached(ctx, servers));
     return LINK(cachedConnection);
 }
 
@@ -202,8 +202,8 @@ template<class type> bool MemCachedPlugin::MCached::set(ICodeContext * ctx, cons
 //----------------------------------GET----------------------------------------
 template<class type> void MemCachedPlugin::MCached::get(ICodeContext * ctx, const char * partitionKey, const char * key, type & returnValue, eclDataType eclType)
 {
-    uint32_t flag;
-    size_t returnLength;
+    uint32_t flag = 0;
+    size_t returnLength = 0;
     memcached_return_t error;
 
     OwnedMalloc<char> value;
@@ -219,15 +219,14 @@ template<class type> void MemCachedPlugin::MCached::get(ICodeContext * ctx, cons
 
     if (sizeof(type)!=returnLength)
     {
-        StringBuffer msg = "MemCachedPlugin: ERROR - Requested type (";
-        msg.appendulong(sizeof(type)).append("B) of different size from that stored (").append(returnValue).append("B). Check logs for more information.");
+        VStringBuffer msg("MemCachedPlugin: ERROR - Requested type of different size (%uB) from that stored (%uB). Check logs for more information.", (unsigned)sizeof(type), (unsigned)returnLength);
         rtlFail(0, msg.str());
     }
     memcpy(&returnValue, value, returnLength);
 }
 template<class type> void MemCachedPlugin::MCached::get(ICodeContext * ctx, const char * partitionKey, const char * key, size_t & returnLength, type * & returnValue, eclDataType eclType)
 {
-    uint32_t flag;
+    uint32_t flag = 0;
     memcached_return_t error;
 
     OwnedMalloc<char> value;
@@ -245,8 +244,8 @@ template<class type> void MemCachedPlugin::MCached::get(ICodeContext * ctx, cons
 }
 void MemCachedPlugin::MCached::getVoidPtrLenPair(ICodeContext * ctx, const char * partitionKey, const char * key, size_t & returnLength, void * & returnValue, eclDataType eclType)
 {
+    uint32_t flag = 0;
     size_t returnValueLength = 0;
-    uint32_t flag;
     memcached_return_t error;
 
     OwnedMalloc<char> value;
@@ -337,8 +336,7 @@ void MemCachedPlugin::MCached::checkServersUp(ICodeContext * ctx)
         if (stats[i].pid == -1)//perhaps not the best test?
         {
             numberOfServersDown++;
-            StringBuffer msg = "Memcached Plugin: Failed connecting to entry ";
-            msg.append(i+1).newline().append("within the server list: ").append(servers);
+            VStringBuffer msg("Memcached Plugin: Failed connecting to entry %u\nwithin the server list: %s", i+1, servers.str());
             ctx->addWuException(msg.str(), WRN_FROM_PLUGIN, ExceptionSeverityWarning, "");
         }
     }
@@ -358,8 +356,8 @@ bool MemCachedPlugin::MCached::reportErrorOnFail(ICodeContext * ctx, memcached_r
     if (error == MEMCACHED_SUCCESS)
         return false;
 
-    StringBuffer msg = "Memcached Plugin: ";
-    ctx->addWuException(msg.append(memcached_strerror(connection, error)).str(), ERR_FROM_PLUGIN, ExceptionSeverityInformation, "");
+    VStringBuffer msg("Memcached Plugin: %s", memcached_strerror(connection, error));
+    ctx->addWuException(msg.str(), ERR_FROM_PLUGIN, ExceptionSeverityInformation, "");
     return true;
 }
 
@@ -367,8 +365,7 @@ void MemCachedPlugin::MCached::assertOnError(memcached_return_t error, const cha
 {
     if (error != MEMCACHED_SUCCESS)
     {
-        StringBuffer msg = "Memcached Plugin: ";
-        msg.append(memcached_strerror(connection, error)).append(msgSuffix);
+        VStringBuffer msg("Memcached Plugin: %s%s", memcached_strerror(connection, error), msgSuffix);
         rtlFail(0, msg.str());
     }
 }
@@ -435,9 +432,7 @@ void MemCachedPlugin::MCached::reportKeyTypeMismatch(ICodeContext * ctx, const c
 {
     if (flag && eclType != ECL_DATA && flag != eclType)
     {
-        StringBuffer msg = "Memcached Plugin: The requested key '";
-        msg.append(key).append("' is of type ").append(enumToStr((eclDataType)(flag))).append(", not ").append(enumToStr(eclType)).append(" as requested.\n");
-
+        VStringBuffer msg("Memcached Plugin: The requested key '%s' is of type %s, not %s as requested.", key, enumToStr((eclDataType)(flag)), enumToStr(eclType));
         if (++typeMismatchCount <= MAX_TYPEMISMATCHCOUNT)
             ctx->logString(msg.str());//NOTE: logging locally, rather than calling ctx->addWuException, to prevent flooding the WU if this is called multiple times by every node
     }
