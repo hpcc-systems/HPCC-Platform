@@ -302,7 +302,7 @@ enum
 
 
 //Unless we start using tbb or something similar to parallelise transformations
-//[ which would be tricky because with queryTransformExtra() assuming a single thread]
+//[which would be tricky because queryTransformExtra() assumes single threaded access]
 //all Link() and Release() calls must be from the same thread => this can be lightweight
 class HQL_API ANewTransformInfo : implements CSingleThreadSimpleInterfaceOf<IInterface>
 {

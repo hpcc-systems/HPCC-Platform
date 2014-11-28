@@ -121,6 +121,8 @@ public:
 
 //---------------------------------------------------------------------------------------------------------------------
 
+// An implementation of IInterface for objects that are never shared.  Only likely to be used in a few situations.
+// It still allows use with IArrayOf and Owned classes etc.
 template <class INTERFACE>
 class CUnsharedInterfaceOf : public INTERFACE
 {
@@ -148,6 +150,7 @@ class CInterfaceOf;
 template <class INTERFACE>
 class CReusableInterfaceOf;
 
+// A thread safe basic implementation of IInterface that destroys the object when last Release() occurs.
 template <class INTERFACE>
 class CSimpleInterfaceOf : public INTERFACE
 {
@@ -177,7 +180,7 @@ private:
 };
 
 // A more general implementation of IInterface that includes a virtual function beforeDispose().
-// beforeDispose() allows an a fully constructed object to be cleaned up (which means that virtual
+// beforeDispose() allows a fully constructed object to be cleaned up (which means that virtual
 // function calls still work (unlike a virtual destructor).
 // It makes it possible to implement a cache which doesn't link count the object, but is cleared when
 // the object is disposed without a critical section in Release().  (See pattern details below).
@@ -214,6 +217,7 @@ class CReusableInterfaceOf : public CInterfaceOf<INTERFACE>
 {
 public:
     //If this function returns true the object is added to a free list - if so it must be linked in the process.
+    //It *must not* link and release the object if it returns false.
     virtual bool addToFreeList() const { return false; }
 
     inline bool Release(void) const
@@ -223,15 +227,15 @@ public:
             if (addToFreeList())
             {
                 //It could have been added, reused and disposed between the call and this return, so must return immediately
+                //and in particular cannot check/modify link count
                 return true;
             }
 
-            if (atomic_cas(&this->xxcount, DEAD_PSEUDO_COUNT, 0))
-            {
-                const_cast<CReusableInterfaceOf<INTERFACE> *>(this)->beforeDispose();
-                delete this;
-                return true;
-            }
+            //NOTE: This class cannot be used for caches which don't link the pointers => use atomic_set instead of cas
+            atomic_set(&this->xxcount, DEAD_PSEUDO_COUNT);
+            const_cast<CReusableInterfaceOf<INTERFACE> *>(this)->beforeDispose();
+            delete this;
+            return true;
         }
         return false;
     }
