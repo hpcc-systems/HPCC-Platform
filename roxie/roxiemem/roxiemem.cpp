@@ -303,6 +303,18 @@ extern StringBuffer &memstats(StringBuffer &stats)
     return stats.appendf("Heap size %u pages, %u free, largest block %u", heapTotalPages, freePages, maxBlock);
 }
 
+static void dumpHeapState()
+{
+    StringBuffer s;
+    for (unsigned i = 0; i < heapBitmapSize; i++)
+    {
+        unsigned t = heapBitmap[i];
+        s.appendf("%08x", t);
+    }
+
+    DBGLOG("Heap: %s", s.str());
+}
+
 IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain)
 {
     class memstatsPerfMonHook : public CInterface, implements IPerfMonHook
@@ -665,7 +677,7 @@ static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
     }
     if (pages > newPages)
     {
-        subfree_aligned((char *) ptr + pages*HEAP_ALIGNMENT_SIZE, pages - newPages);
+        subfree_aligned((char *) ptr + newPages*HEAP_ALIGNMENT_SIZE, pages - newPages);
         return ptr;
     }
     else if (pages==newPages)
@@ -700,11 +712,11 @@ static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
                     {
                         if (heapword != UNSIGNED_ALLBITS)
                             break;
+                        shortfall -= UNSIGNED_BITS;
                         wordOffset++;
                         if (wordOffset==heapBitmapSize)
                             goto doublebreak;
                         heapword = heapBitmap[wordOffset];
-                        shortfall -= UNSIGNED_BITS;
                     }
                 }
                 else
@@ -3027,9 +3039,13 @@ public:
         memsize_t curCapacity = HeapletBase::capacity(original);
         if (newsize <= curCapacity)
         {
-            //resizeRow never shrinks memory
-            capacity = curCapacity;
-            return;
+            //resizeRow never shrinks memory, except if we can free some extra huge memory blocks.
+            //If current allocation is >1 block then try resizing
+            if (curCapacity <= FixedSizeHeaplet::maxHeapSize())
+            {
+                capacity = curCapacity;
+                return;
+            }
         }
         if (curCapacity > FixedSizeHeaplet::maxHeapSize())
         {
@@ -3062,8 +3078,10 @@ public:
         memsize_t curCapacity = HeapletBase::capacity(original);
         if (newsize <= curCapacity)
         {
-            //resizeRow never shrinks memory
-            return;
+            //resizeRow never shrinks memory, except if we can free some extra huge memory blocks.
+            //If current allocation is >1 block then try resizing
+            if (curCapacity <= FixedSizeHeaplet::maxHeapSize())
+                return;
         }
         if (curCapacity > FixedSizeHeaplet::maxHeapSize())
         {
@@ -3596,9 +3614,25 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
 {
     unsigned newPages = PAGES(newsize + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
     unsigned oldPages = PAGES(oldcapacity + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
-    assert(newPages > oldPages);
-    unsigned numPages = newPages - oldPages;
     void *oldbase =  (void *) ((memsize_t) original & HEAP_ALIGNMENT_MASK);
+
+    //Check if we are shrinking the number of pages.
+    if (newPages <= oldPages)
+    {
+        //Can always do in place by releasing pages at the end of the block
+        void *realloced = subrealloc_aligned(oldbase, oldPages, newPages);
+        assertex(realloced == oldbase);
+        void * ret = (char *) realloced + HugeHeaplet::dataOffset();
+        HugeHeaplet *head = (HugeHeaplet *) realloced;
+        memsize_t newCapacity = head->setCapacity(newsize);
+
+        //Update the max capacity
+        callback.atomicUpdate(newCapacity, ret);
+        rowManager->restoreLimit(oldPages-newPages);
+        return;
+    }
+
+    unsigned numPages = newPages - oldPages;
     loop
     {
         // NOTE: we request permission only for the difference between the old
@@ -4062,6 +4096,11 @@ public:
         }
     }
 
+    void cleanUp()
+    {
+        freeUnused();
+    }
+
     void poolStats(StringBuffer &s)
     {
         if (memTraceLevel > 1) memmap(s); // MORE: may want to make a separate interface (poolMap) and control query for this
@@ -4387,12 +4426,14 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testHuge);
         CPPUNIT_TEST(testCas);
         CPPUNIT_TEST(testAll);
-        CPPUNIT_TEST(testDatamanager);
         CPPUNIT_TEST(testBitmap);
-        CPPUNIT_TEST(testDatamanagerThreading);
         CPPUNIT_TEST(testCallbacks);
         CPPUNIT_TEST(testRecursiveCallbacks);
         CPPUNIT_TEST(testCompacting);
+        CPPUNIT_TEST(testResize);
+        //MORE: The following currently leak pages, so should go last
+        CPPUNIT_TEST(testDatamanager);
+        CPPUNIT_TEST(testDatamanagerThreading);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
@@ -4482,6 +4523,8 @@ protected:
         pages[1999]->Release();
         dm.allocate()->Release();
         ASSERT(atomic_read(&dataBufferPages)==1);
+
+        dm.cleanUp();
     }
 
     void testDatamanagerThreading()
@@ -4514,6 +4557,7 @@ protected:
         } afor(dm);
         afor.For(5,5);
         DBGLOG("ok");
+        dm.cleanUp();
     }
 
     class HeapPreserver
@@ -5628,6 +5672,72 @@ protected:
     {
         testCostCallbacks1();
         testCostCallbacks2();
+    }
+    //Useful to add to the test list to see what is leaking pages.
+    void testDump()
+    {
+        dumpHeapState();
+    }
+    void testResize()
+    {
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        memsize_t maxMemory = heapTotalPages * HEAP_ALIGNMENT_SIZE;
+        memsize_t wasted = 0;
+
+        void * * pages = new void * [heapTotalPages];
+        //Allocate a whole set of 1 page allocations
+        unsigned scale = 1;
+        memsize_t curSize =  HEAP_ALIGNMENT_SIZE * scale - HugeHeaplet::dataOffset();
+        for (unsigned i = 0; i < heapTotalPages; i += scale)
+        {
+            pages[i] = rowManager->allocate(curSize, 0);
+        }
+
+        //Free half the pages, and resize the others to fill the space, Repeat until we only have a single page.
+        while (scale * 2 <= heapTotalPages)
+        {
+            unsigned newScale = scale * 2;
+            memsize_t newSize =  HEAP_ALIGNMENT_SIZE * newScale - HugeHeaplet::dataOffset();
+            for (unsigned i = 0; i + newScale <= heapTotalPages; i += newScale)
+            {
+                ReleaseRoxieRow(pages[i+scale]);
+                pages[i+scale] = 0;
+
+                memsize_t newCapacity;
+                rowManager->resizeRow(newCapacity, pages[i], 100, newSize, 0);
+            }
+            scale = newScale;
+        }
+
+        //Half the pages, double them, halve them and then allocate a block to fill the space, Repeat until we have allocated single pages.
+        while (scale != 1)
+        {
+            memsize_t curSize =  HEAP_ALIGNMENT_SIZE * scale - HugeHeaplet::dataOffset();
+            memsize_t nextSize =  HEAP_ALIGNMENT_SIZE * (scale / 2) - HugeHeaplet::dataOffset();
+            for (unsigned i2 = 0; i2 + scale <= heapTotalPages; i2 += scale)
+            {
+                memsize_t newCapacity;
+                //Shrink
+                rowManager->resizeRow(newCapacity, pages[i2], 100, nextSize, 0);
+
+                //Expand
+                rowManager->resizeRow(newCapacity, pages[i2], 100, curSize, 0);
+
+                //Shrink
+                rowManager->resizeRow(newCapacity, pages[i2], 100, nextSize, 0);
+
+                pages[i2+scale/2] = rowManager->allocate(nextSize, 0);
+            }
+
+            scale = scale / 2;
+        }
+
+        for (unsigned i = 0; i < heapTotalPages; i += 1)
+        {
+            ReleaseRoxieRow(pages[i]);
+        }
+
+        CPPUNIT_ASSERT_EQUAL(rowManager->numPagesAfterCleanup(true), 0U);
     }
 };
 
