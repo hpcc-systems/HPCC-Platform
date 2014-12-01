@@ -60,13 +60,10 @@ pkgCmd(){
     if [ "$1" == "deb" ]; then
         PKGCMD="dpkg -i $PKG &> $outputFile; apt-get install -f -y &> $outputFile;"
     elif [ "$1" == "rpm" ]; then
-        if [ "$2" == "install" ] || [ ! "$2" == "reinstall" ]; then
+        if [ "$2" == "install" ] || [[ "$2" != "reinstall" ]]; then
             PKGCMD="yum install --nogpgcheck -y $PKG &> $outputFile"
         elif [ "$2" == "reinstall" ]; then
             PKGCMD="yum reinstall --nogpgcheck -y $PKG &> $outputFile"
-        else
-            echo "Bad option type."
-            exit 1
         fi
     else
         echo "BAD Package type."
@@ -90,7 +87,7 @@ checkReinstall(){
   if [ "${OSPKG}" == "rpm" ]; then
     local current=$( yum info hpccsystems-platform | grep "^Release" | awk '{print $3}' )
     local new=$( rpm -qp --info ${PKG} | grep "^Release" | awk '{print $3}' )
-    if [[ $current == $new ]] || [[ $current > $new ]]; then
+    if [[ $current == $new ]]; then
       _REINSTALL=1
     else
       _REINSTALL=0
