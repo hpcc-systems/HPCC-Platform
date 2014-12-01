@@ -74,8 +74,7 @@ proc checkSSHConnection {} {
       }
    }
 
-   sleep 1
-   expect -re .*
+   expect -re $
    interact;
 }
 
@@ -139,8 +138,7 @@ proc runPayload {} {
    set basepkg  [file tail  ${pkg}]
    set timeout 60
 
-   sleep 1
-   expect -re .*
+   expect -re $
    spawn ssh ${user}@${ip}
    expect {
       *?assword:* {
@@ -159,8 +157,7 @@ proc runPayload {} {
       } -re "${prompt}" {}
    }
 
-   sleep 1
-   expect -re .*
+   expect -re $
    send "${cmd_prefix} ${remote_install}/remote-install-engine.sh ${remote_install}/${basepkg}\r"
    expect {
       *?assword:* {
@@ -176,8 +173,7 @@ proc runPayload {} {
       }  -re "${prompt}" {}
    }
 
-   sleep 1
-   expect  -re .*
+   expect  -re $
    send "echo \$?\r"
    expect   -re "(\r\n| )(\[0-9]*)\r\n" {
       if { [string compare $expect_out(2,string) "0" ] == 0 } {

@@ -180,20 +180,20 @@ elseif ( UNIX )
 "%define _use_internal_dependency_generator 0
 %define __getdeps() while read file; do /usr/lib/rpm/rpmdeps -%{1} ${file}; done | /bin/sort -u
 %define __find_provides /bin/sh -c '%{__getdeps P}'
-%define __find_requires /bin/sh -c '%{__grep} -v libRembed.so | %{__getdeps R}'")
+%define __find_requires /bin/sh -c '%{__grep} -v libRembed.so | %{__getdeps R}'" )
     endif()
     if ( "${packageManagement}" STREQUAL "DEB" )
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}")
+        set( CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}" )
     elseif ( "${packageManagement}" STREQUAL "RPM" )
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}")
+        set( CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}" )
     else()
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}${CPACK_SYSTEM_NAME}")
+        set( CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}${CPACK_SYSTEM_NAME}" )
     endif ()
 endif ()
-MESSAGE ("-- Current release version is ${CPACK_PACKAGE_FILE_NAME}")
-set ( CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
+MESSAGE ( "-- Current release version is ${CPACK_PACKAGE_FILE_NAME}" )
+set( CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
 set( CPACK_SOURCE_GENERATOR TGZ )
-set(CPACK_SOURCE_IGNORE_FILES
+set( CPACK_SOURCE_IGNORE_FILES
         "~$"
         "\\\\.cvsignore$"
         "^${PROJECT_SOURCE_DIR}.*/CVS/"

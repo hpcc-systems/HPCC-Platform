@@ -58,19 +58,12 @@ checkUser(){
 
 pkgCmd(){
     if [ "$1" == "deb" ]; then
-        if [ "$2" == "install" ]; then
-            PKGCMD="dpkg -E -i $PKG &> $outputFile; apt-get install -f -y &> $outputFile;"
-        elif [ "$2" == "upgrade" ]; then
-            PKGCMD="dpkg -E -i $PKG &> $outputFile; apt-get install -f -y &> $outputFile;"
-        else
-            echo "Bad option type."
-            exit 1
-        fi
+        PKGCMD="dpkg -i $PKG &> $outputFile; apt-get install -f -y &> $outputFile;"
     elif [ "$1" == "rpm" ]; then
-        if [ "$2" == "install" ]; then
+        if [ "$2" == "install" ] || [ ! "$2" == "reinstall" ]; then
             PKGCMD="yum install --nogpgcheck -y $PKG &> $outputFile"
-        elif [ "$2" == "upgrade" ]; then
-            PKGCMD="yum install --nogpgcheck -y $PKG &> $outputFile"
+        elif [ "$2" == "reinstall" ]; then
+            PKGCMD="yum reinstall --nogpgcheck -y $PKG &> $outputFile"
         else
             echo "Bad option type."
             exit 1
@@ -87,42 +80,31 @@ checkInstall(){
     _USER=$?
     if [ "${_FILE}" == 0 ] && [ ${_USER} -eq 1 ]; then
         _INSTALLED=1
-        checkUpgrade
+        checkReinstall
     else
         _INSTALLED=0
     fi
 }
 
-checkUpgrade(){
-    if [ "${_INSTALLED}" == "1" ]; then
-      if [ "${OSPKG}" == "deb" ]; then
-        dpkg --compare-versions "$(dpkg -I $PKG | grep "Version" | awk '{print $2}')" le "$(dpkg -s hpccsystems-platform | grep "Version" | awk '{print $2}')"
-        _UPGRADE=$?
-        if [ $_UPGRADE -eq 0 ]; then
-          echo "Package $PKG is not an upgrade"
-        fi
-      fi
-      if [ "${OSPKG}" == "rpm" ]; then
-        local current=$( yum info hpccsystems-platform | grep "^Release" | awk '{print $3}' )
-        local new=$( rpm -qp --info ${PKG} | grep "^Release" | awk '{print $3}' )
-        if [[ $current == $new ]] || [[ $current > $new ]]; then
-          echo "Package $PKG is not an upgrade"
-          _UPGRADE=0
-        else
-          _UPGRADE=1
-        fi
-      fi
+checkReinstall(){
+  if [ "${OSPKG}" == "rpm" ]; then
+    local current=$( yum info hpccsystems-platform | grep "^Release" | awk '{print $3}' )
+    local new=$( rpm -qp --info ${PKG} | grep "^Release" | awk '{print $3}' )
+    if [[ $current == $new ]] || [[ $current > $new ]]; then
+      _REINSTALL=1
+    else
+      _REINSTALL=0
     fi
+  fi
 }
 
 installPkg(){
     checkInstall
     if [ "${_INSTALLED}" == "0" ]; then
         pkgCmd $OSPKG "install"
-    elif [ "${_UPGRADE}" == "1" ]; then
-        pkgCmd $OSPKG "upgrade"
+    elif [ "${_REINSTALL}" == "1" ]; then
+        pkgCmd $OSPKG "reinstall"
     fi
-    # if installed but not upgrade, $PKGCMD will be null, and $? = 0 from eval.
     eval $PKGCMD
     if [ $? -ne 0 ]; then
       echo "FAILED on Package Command: ${PKGCMD}"
