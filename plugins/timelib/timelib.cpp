@@ -559,6 +559,7 @@ TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__res
 
     memset(&timeInfo, 0, sizeof(timeInfo));
     tlInsertDateIntoTimeStruct(&timeInfo, date);
+    tlMKTime(&timeInfo);
 
     __lenResult = strftime(buffer, kBufferSize, format, &timeInfo);
     __result = NULL;
@@ -580,6 +581,7 @@ TIMELIB_API void TIMELIB_CALL tlTimeToString(size32_t &__lenResult, char* &__res
 
     memset(&timeInfo, 0, sizeof(timeInfo));
     tlInsertTimeIntoTimeStruct(&timeInfo, time);
+    tlMKTime(&timeInfo);
 
     __lenResult = strftime(buffer, kBufferSize, format, &timeInfo);
     __result = NULL;

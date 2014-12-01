@@ -19,51 +19,51 @@ import std;
 
 // Test the abbreviated weekday and full weekday name format 
 // for every day a week
-ASSERT(std.date.tostring(20140825, '%a %A') = 'Mon Monday', CONST);
-ASSERT(std.date.tostring(20140826, '%a %A') = 'Tue Tuesday', CONST);
-ASSERT(std.date.tostring(20140827, '%a %A') = 'Wed Wednesday', CONST);
-ASSERT(std.date.tostring(20140828, '%a %A') = 'Thu Thursday', CONST);
-ASSERT(std.date.tostring(20140829, '%a %A') = 'Fri Friday', CONST);
-ASSERT(std.date.tostring(20140830, '%a %A') = 'Sat Saturday', CONST);
-ASSERT(std.date.tostring(20140824, '%a %A') = 'Sun Sunday', CONST);
+ASSERT(std.date.datetostring(20140825, '%a %A') = 'Mon Monday', CONST);
+ASSERT(std.date.datetostring(20140826, '%a %A') = 'Tue Tuesday', CONST);
+ASSERT(std.date.datetostring(20140827, '%a %A') = 'Wed Wednesday', CONST);
+ASSERT(std.date.datetostring(20140828, '%a %A') = 'Thu Thursday', CONST);
+ASSERT(std.date.datetostring(20140829, '%a %A') = 'Fri Friday', CONST);
+ASSERT(std.date.datetostring(20140830, '%a %A') = 'Sat Saturday', CONST);
+ASSERT(std.date.datetostring(20140824, '%a %A') = 'Sun Sunday', CONST);
 
 // Test the abbreviated and full Month name 
-ASSERT(std.date.tostring(20140824, '%b %B') = 'Aug August', CONST);
+ASSERT(std.date.datetostring(20140824, '%b %B') = 'Aug August', CONST);
 
 // Test the century number (year/100) as a 2-digit integer 
-ASSERT(std.date.tostring(20140824, '%C') = '20', CONST);
+ASSERT(std.date.datetostring(20140824, '%C') = '20', CONST);
 
 // Test the day of the month as a decimal number (range 01 to 31). 
-ASSERT(std.date.tostring(20140824, '%d') = '24', CONST);
+ASSERT(std.date.datetostring(20140824, '%d') = '24', CONST);
 
 // Test the MM/DD/YY format. 
-ASSERT(std.date.tostring(20140824, '%D') = '08/24/14', CONST);
+ASSERT(std.date.datetostring(20140824, '%D') = '08/24/14', CONST);
 
 // Test the ISO 8601 week-based year
-ASSERT(std.date.tostring(20140824, '%G') = '2014', CONST);
+ASSERT(std.date.datetostring(20140824, '%G') = '2014', CONST);
 
 // Test the ISO 8601 week-based year without century
-ASSERT(std.date.tostring(20140824, '%g') = '14', CONST);
+ASSERT(std.date.datetostring(20140824, '%g') = '14', CONST);
 
 // Test the %Y-%m-%d (the ISO 8601 date format)
-ASSERT(std.date.tostring(20140824, '%F') = '2014-08-24', CONST);
+ASSERT(std.date.datetostring(20140824, '%F') = '2014-08-24', CONST);
 
 // Test the day of the year as a decimal number (range 001 to 366)
-ASSERT(std.date.tostring(20140824, '%j') = '236', CONST);
+ASSERT(std.date.datetostring(20140824, '%j') = '236', CONST);
 
 // Test the day of the week as a decimal, range 1 to 7, Monday being  1.
-ASSERT(std.date.tostring(20140824, '%u') = '7', CONST);
+ASSERT(std.date.datetostring(20140824, '%u') = '7', CONST);
 
 // Test the day of the week as a decimal, range 0 to 6, Sunday being  0.
-ASSERT(std.date.tostring(20140824, '%w') = '0', CONST);
+ASSERT(std.date.datetostring(20140824, '%w') = '0', CONST);
 
 // Test the  week  number of the current year as a decimal number, range
 // 00 to 53, starting with the first Sunday as  the  first  day  of week 01.
-ASSERT(std.date.tostring(20140824, '%U') = '34', CONST);
+ASSERT(std.date.datetostring(20140824, '%U') = '34', CONST);
 
 // Test the  week  number of the current year as a decimal number, range
 // 00 to 53, starting with the first Monday as  the  first  day  of week 01
-ASSERT(std.date.tostring(20140824, '%W') = '33', CONST);
+ASSERT(std.date.datetostring(20140824, '%W') = '33', CONST);
 
 
 // The time formatting works well, but the result depends on 
