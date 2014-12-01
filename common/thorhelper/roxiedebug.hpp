@@ -173,7 +173,7 @@ public:
     unsigned channel;
     unsigned sequence;
     IArrayOf<IDebugGraphManager> childGraphs;
-    StringBuffer idText;
+    StringAttr idText;
     Owned<IProperties> properties;
 
     IMPLEMENT_IINTERFACE;

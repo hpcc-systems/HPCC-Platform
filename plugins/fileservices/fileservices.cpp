@@ -323,7 +323,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer uname;
     PrintLog("Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
-    if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction))
+    if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction, INFINITE, true))
     {
         StringBuffer s("DeleteLogicalFile ('");
         s.append(lfn);
@@ -614,10 +614,9 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
 static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
 {
-    StringBuffer user, password, wuid, token;
+    StringBuffer user, password, token;
     wu->getSecurityToken(StringBufferAdaptor(token));
-    wu->getWuid(StringBufferAdaptor(wuid));
-    extractToken(token.str(), wuid.str(), StringBufferAdaptor(user), StringBufferAdaptor(password));
+    extractToken(token.str(), wu->queryWuid(), StringBufferAdaptor(user), StringBufferAdaptor(password));
     server.setUsernameToken(user.str(), password.str(), "");
 }
 
@@ -695,6 +694,8 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
     req->setSourceMaxRecordSize(sourceMaxRecordSize);
     req->setSourceFormat(DFUff_csv);
     req->setSourceCsvSeparate(sourceCsvSeparate);
+    if (sourceCsvSeparate && *sourceCsvSeparate == '\0')
+        req->setNoSourceCsvSeparator(true);
     req->setSourceCsvTerminate(sourceCsvTerminate);
     req->setSourceCsvQuote(sourceCsvQuote);
     if (sourceCsvEscape && *sourceCsvEscape)

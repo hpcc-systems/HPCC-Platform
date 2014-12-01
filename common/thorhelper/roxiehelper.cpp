@@ -632,21 +632,22 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupF
     assertex(contentHead.length()==0 && contentTail.length()==0);
     if (mlFmt==MarkupFmt_JSON)
     {
-        contentHead.append("{");
-        contentTail.append("}");
+        contentHead.set("{");
+        contentTail.set("}");
     }
     else
     {
-        contentHead.append(
+        StringAttrBuilder headText(contentHead), tailText(contentTail);
+        headText.append(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
             "<soap:Body>");
         if (arrayMode)
         {
-            contentHead.append("<").append(queryName).append("ResponseArray>");
-            contentTail.append("</").append(queryName).append("ResponseArray>");
+            headText.append("<").append(queryName).append("ResponseArray>");
+            tailText.append("</").append(queryName).append("ResponseArray>");
         }
-        contentTail.append("</soap:Body></soap:Envelope>");
+        tailText.append("</soap:Body></soap:Envelope>");
     }
 }
 
@@ -1045,7 +1046,7 @@ void FlushingStringBuffer::startDataset(const char *elementName, const char *res
                 s.append('<').append(elementName);
                 if (isSoap && (resultName || (sequence != (unsigned) -1)))
                 {
-                    s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append(":result:");
+                    s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append(":result:");
                     if (resultName && *resultName)
                         s.appendLower(strlen(resultName), resultName).append('\'');
                     else
@@ -1093,7 +1094,7 @@ void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence
             s.append("<Dataset");
             if (isSoap && (resultName || (sequence != (unsigned) -1)))
             {
-                s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append(":result:");
+                s.append(" xmlns=\'urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append(":result:");
                 if (resultName && *resultName)
                     s.appendLower(strlen(resultName), resultName).append('\'');
                 else

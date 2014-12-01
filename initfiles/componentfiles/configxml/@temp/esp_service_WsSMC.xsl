@@ -121,6 +121,10 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:with-param name="bindingNode" select="$bindingNode"/>
             <xsl:with-param name="authNode" select="$authNode"/>
         </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="WsESDLConfig">
+            <xsl:with-param name="bindingNode" select="$bindingNode"/>
+            <xsl:with-param name="authNode" select="$authNode"/>
+        </xsl:apply-templates>
     </xsl:template>
 
     <!-- WS-SMC -->
@@ -535,6 +539,28 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         </EspBinding>
     </xsl:template>
 
+<!-- WS-ESDLCONFIG -->
+    <xsl:template match="EspService" mode="WsESDLConfig">
+     <xsl:param name="bindingNode"/>
+     <xsl:param name="authNode"/>
+     <xsl:variable name="serviceType" select="'ws_esdlconfig'"/>
+     <xsl:variable name="serviceName" select="concat($serviceType, '_', @name, '_', $process)"/>
+     <xsl:variable name="bindName" select="concat($serviceType, '_', $bindingNode/@name, '_', $process)"/>
+     <xsl:variable name="bindType" select="'ws_esdlconfigSoapBinding'"/>
+     <xsl:variable name="servicePlugin">
+     <xsl:call-template name="defineServicePlugin">
+      <xsl:with-param name="plugin" select="'ws_esdlconfig'"/>
+</xsl:call-template>
+</xsl:variable>
+<EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>
+<EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
+<xsl:call-template name="bindAuthentication">
+<xsl:with-param name="bindingNode" select="$bindingNode"/>
+<xsl:with-param name="authMethod" select="$authNode/@method"/>
+<xsl:with-param name="service" select="'ws_esdlconfig'"/>
+</xsl:call-template>
+</EspBinding>
+</xsl:template>
     <!-- ws_access-->
     <xsl:template match="EspService" mode="ws_access">
         <xsl:param name="bindingNode"/>

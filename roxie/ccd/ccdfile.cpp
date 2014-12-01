@@ -1491,7 +1491,7 @@ public:
     {
         FilePartMapElement *part = (FilePartMapElement *) bsearch(&pos, map, numParts, sizeof(map[0]), compareParts);
         if (!part)
-            throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file position %"I64F"d in file %s out of range (max offset permitted is %"I64F"d)", pos, fileName.sget(), totalSize);
+            throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file position %"I64F"d in file %s out of range (max offset permitted is %"I64F"d)", pos, fileName.str(), totalSize);
         return (part-map)+1;
     }
     virtual unsigned getNumParts() const
@@ -1849,7 +1849,7 @@ public:
     {
         return isSuper;
     }
-    inline bool isKey() const
+    virtual bool isKey() const
     {
         return fileType==ROXIE_KEY;
     }
@@ -2011,21 +2011,24 @@ public:
             }
 
             IDefRecordMeta *thisDiskMeta = diskMeta.item(subFile);
-            if (fdesc && thisDiskMeta && activityMeta && !thisDiskMeta->equals(activityMeta))
-                if (allowFieldTranslation)
-                    translators->append(createRecordLayoutTranslator(lfn, thisDiskMeta, activityMeta));
+            if (translators)
+            {
+                if (fdesc && thisDiskMeta && activityMeta && !thisDiskMeta->equals(activityMeta))
+                    if (allowFieldTranslation)
+                        translators->append(createRecordLayoutTranslator(lfn, thisDiskMeta, activityMeta));
+                    else
+                    {
+                        DBGLOG("Key layout mismatch: %s", lfn.get());
+                        StringBuffer q, d;
+                        getRecordMetaAsString(q, activityMeta);
+                        getRecordMetaAsString(d, thisDiskMeta);
+                        DBGLOG("Activity: %s", q.str());
+                        DBGLOG("Disk: %s", d.str());
+                        throw MakeStringException(ROXIE_MISMATCH, "Key layout mismatch detected for index %s", lfn.get());
+                    }
                 else
-                {
-                    DBGLOG("Key layout mismatch: %s", lfn.get());
-                    StringBuffer q, d;
-                    getRecordMetaAsString(q, activityMeta);
-                    getRecordMetaAsString(d, thisDiskMeta);
-                    DBGLOG("Activity: %s", q.str());
-                    DBGLOG("Disk: %s", d.str());
-                    throw MakeStringException(ROXIE_MISMATCH, "Key layout mismatch detected for index %s", lfn.get());
-                }
-            else
-                translators->append(NULL);
+                    translators->append(NULL);
+            }
         }
         CriticalBlock b(lock);
         IKeyArray *ret = keyArrayMap.get(channel);

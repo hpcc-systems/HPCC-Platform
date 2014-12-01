@@ -22,6 +22,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/plugins.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_WsSMC.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/roxiePlugins.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_DynamicESDL.xsl
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml/@temp COMPONENT Runtime )
 ENDFOREACH ( iFILES )

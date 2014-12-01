@@ -810,6 +810,7 @@ public:
 };
 
 typedef IArrayOf<CSubscriberContainer> CSubscriberArray;
+typedef ICopyArrayOf<CSubscriberContainer> CSubscriberCopyArray;
 class CSubscriberContainerList : public CInterface, public CSubscriberArray
 {
 public:
@@ -978,11 +979,11 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
                 lastGood = iFileIO->size();
             }
             stream->seek(0, IFSend);
-            stream->write(xml.length(), xml.toCharArray());
+            stream->write(xml.length(), xml.str());
             stream->flush();
             stream.clear();
             offset_t fLen = lastGood + xml.length();
-            unsigned crc = crc32(xml.toCharArray(), xml.length(), startCrc);
+            unsigned crc = crc32(xml.str(), xml.length(), startCrc);
             char *headerPtr = (char *)header.bufferBase();
             sprintf(strNum, "%010u", ~crc);
             memcpy(headerPtr + deltaHeaderCrcOff, strNum, 10);
@@ -1431,7 +1432,7 @@ public:
             LOG(MCoperatorWarning, unknownJob, e, s.str()); 
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.toCharArray(), false);
+            CPTValue v(str.length()+1, str.str(), false);
             v.serialize(mb);
         }
         else
@@ -1468,7 +1469,7 @@ public:
             {
                 StringBuffer str("EXTERNAL BINARY FILE: \"");
                 str.append(filename.str()).append("\" MISSING");
-                CPTValue v(str.length()+1, str.toCharArray(), false);
+                CPTValue v(str.length()+1, str.str(), false);
                 v.serialize(mb);
             }
             else
@@ -1536,7 +1537,7 @@ public:
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.toCharArray(), false);
+            CPTValue v(str.length()+1, str.str(), false);
             v.serialize(mb);
         }
         else
@@ -1569,7 +1570,7 @@ public:
             {
                 StringBuffer str("EXTERNAL BINARY FILE: \"");
                 str.append(filename.str()).append("\" MISSING");
-                CPTValue v(str.length()+1, str.toCharArray(), false);
+                CPTValue v(str.length()+1, str.str(), false);
                 v.serialize(mb);
             }
             else
@@ -1636,7 +1637,7 @@ public:
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL XML FILE: \"");
             str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.toCharArray(), false);
+            CPTValue v(str.length()+1, str.str(), false);
             v.serialize(mb);
         }
         else
@@ -1668,7 +1669,7 @@ public:
             str.append(filename.str()).append("\" MISSING");
             tree.setown(createPTree(owner.queryName()));
             if (withValue)
-                tree->setProp(NULL, str.toCharArray());
+                tree->setProp(NULL, str.str());
         }
         else
         {
@@ -3804,7 +3805,7 @@ int CSDSTransactionServer::run()
                                     SDSManager->getLocks(out);
                                     mb.clear().append(DAMP_SDSREPLY_OK);
                                     mb.append(out.length());
-                                    mb.append(out.length(), out.toCharArray());
+                                    mb.append(out.length(), out.str());
 
                                     break;
                                 }
@@ -5284,9 +5285,9 @@ public:
                 di->getName(fname);
                 if ('_' != fname.charAt(7)) // Unhelpful naming convention to differentiate store files from externals!
                 {
-                    if (0 == memicmp("inc", fname.toCharArray()+4, 3) || 0 == memicmp("sds", fname.toCharArray()+4, 3))
+                    if (0 == memicmp("inc", fname.str()+4, 3) || 0 == memicmp("sds", fname.str()+4, 3))
                     {
-                        const char *num = fname.toCharArray()+7;
+                        const char *num = fname.str()+7;
                         const char *dot = (const char *)strchr(num, '.');
                         unsigned fileEdition = atoi_l(num, dot-num);
                         int d = (int)fileEdition-(int)edition;
@@ -7114,7 +7115,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
         if (l && '/' == _xpath[l-1])
         {
             tXpath.append(l-1, _xpath);
-            _xpath = tXpath.toCharArray();
+            _xpath = tXpath.str();
         }
     }
     bool newNode = false;
@@ -7559,7 +7560,28 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                                     if (timeout)
                                     {
                                         if (tm.timedout(&remaining))
-                                            throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
+                                        {
+                                            Linked<CLockInfo> lockInfo;
+                                            VStringBuffer timeoutMsg("Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
+                                            ForEachItemIn(f, freeExistingLocks.existingLockTrees)
+                                            {
+                                                CServerRemoteTree &e = freeExistingLocks.existingLockTrees.item(f);
+                                                {
+                                                    CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
+                                                    CLockInfo *_lockInfo = queryLockInfo(e.queryServerId());
+                                                    if (_lockInfo)
+                                                    {
+                                                        if (!lockInfo)
+                                                            timeoutMsg.append(", existing lock info: ");
+                                                        timeoutMsg.newline();
+                                                        lockInfo.set(_lockInfo);
+                                                    }
+                                                }
+                                                if (lockInfo)
+                                                    lockInfo->getLockInfo(timeoutMsg);
+                                            }
+                                            throw MakeSDSException(SDSExcpt_LockTimeout, "%s", timeoutMsg.str());
+                                        }
                                     }
                                     else
                                         remaining = 0; // a timeout of 0 means fail immediately if locked
@@ -8179,13 +8201,19 @@ public:
             head++;
             if ('\0' == *path)
             {
-                if (!wild && '/' != *(path-1) && '/' != *head) return false;
-                sub = true;
+                if ('\0' == *head) // absolute match
+                {
+                    sub = false;
+                    return true;
+                }
+                else if (!wild && '/' != *head) // e.g. change=/a/bc, subscriber=/a/b
+                    return false;
+                sub = true; // e.g. change=/a/b/c, subscriber=/a/b
                 return true;
             }
             else 
             {
-                if ('\0' == *head)
+                if ('\0' == *head) // e.g. change=/a/b, subscriber=/a/b/c - not matched yet, but returning true keeps it from being pruned
                 {
                     sub = false;
                     return true;
@@ -8203,7 +8231,7 @@ public:
         scan(*rootChanges, stack, pruned);
     }
 
-    bool prune(const char *xpath, bool &sub, CSubscriberArray &pruned)
+    bool prune(const char *xpath, bool &sub, CSubscriberCopyArray *matches, CSubscriberArray &pruned)
     {
         sub = false;
         ForEachItemInRev(s, subs)
@@ -8215,8 +8243,10 @@ public:
                 pruned.append(*LINK(&subscriber));
                 subs.remove(s);
             }
-            else
-                sub |= _sub;
+            else if (_sub)
+                sub = true;
+            else if (matches)
+                matches->append(subscriber);
         }
         return (subs.ordinality() > 0);
     }
@@ -8225,7 +8255,7 @@ public:
     void scanAll(PDState state, CBranchChange &changes, CPTStack &stack, CSubscriberArray &pruned)
     {
         bool sub;
-        if (prune(xpath.str(), sub, pruned))
+        if (prune(xpath.str(), sub, NULL, pruned))
         {
             MemoryBuffer notifyData;
             if (sub)
@@ -8275,9 +8305,7 @@ public:
                         CBranchChange &childChange = changes.children.item(c);
                         PushPop pp(stack, *childChange.tree);
                         size32_t parentLength = xpath.length();
-                        xpath.append(childChange.tree->queryName());
-                        if ('/' != xpath.charAt(xpath.length()-1))
-                            xpath.append('/');
+                        xpath.append('/').append(childChange.tree->queryName());
                         CSubscriberArray _pruned;
                         scanAll(state, childChange, stack, _pruned);
                         ForEachItemIn(i, _pruned) subs.append(*LINK(&_pruned.item(i)));
@@ -8292,17 +8320,18 @@ public:
 
     void scan(CBranchChange &changes, CPTStack &stack, CSubscriberArray &pruned)
     {
+        CSubscriberCopyArray matches;
         bool sub;
-        if (!prune(xpath.str(), sub, pruned))
+        if (!prune(xpath.str(), sub, &matches, pruned))
             return;
-    
+
         PushPop pp(stack, *changes.tree);
         if (PDS_Deleted == (changes.local & PDS_Deleted))
         {
             scanAll(changes.local, changes, stack, pruned);
             return;
         }
-        else if (sub) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
+        else if (matches.ordinality()) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
         {
             bool ret = false;
             // avoid notifying on PDS_Structure only, which signifies changes deeper down only
@@ -8310,9 +8339,9 @@ public:
             if (changes.state && changes.local && (changes.local != PDS_Structure))
             {
                 int lastSendValue = -1;
-                ForEachItemInRev(s, subs)
+                ForEachItemInRev(s, matches)
                 {
-                    CSubscriberContainer &subscriber = subs.item(s);
+                    CSubscriberContainer &subscriber = matches.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
                         if (subscriber.qualify(stack, false))
@@ -8340,7 +8369,7 @@ public:
                         else
                             pruned.append(*LINK(&subscriber));
                     }
-                    subs.remove(s);
+                    subs.zap(subscriber);
                 }
             }
             else
@@ -8363,18 +8392,13 @@ public:
         ForEachItemIn(c, changes.children)
         {
             CBranchChange &childChanges = changes.children.item(c);
-
             size32_t parentLength = xpath.length();
-            xpath.append(childChanges.tree->queryName());
-            if ('/' != xpath.charAt(xpath.length()-1))
-                xpath.append('/');
-
+            xpath.append('/').append(childChanges.tree->queryName());
             CSubscriberArray pruned;
             scan(childChanges, stack, pruned);
             ForEachItemIn(i, pruned) subs.append(*LINK(&pruned.item(i)));
             if (0 == subs.ordinality())
                 break;
-
             xpath.setLength(parentLength);
         }
     }

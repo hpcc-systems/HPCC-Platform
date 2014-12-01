@@ -5686,6 +5686,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == unstableAtom) ok = true;
                     break;
                 case no_nwaymerge:
+                    if (attr == localAtom) ok = true;
                     if (attr == dedupAtom) ok = true;
                     break;
                 case no_mergejoin:
@@ -5693,6 +5694,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == assertAtom) ok = true;
                     //fall through
                 case no_nwayjoin:
+                    if (attr == localAtom) ok = true;
                     if (attr == mofnAtom) ok = true;
                     if (attr == leftonlyAtom) ok = true;
                     if (attr == leftouterAtom) ok = true;
@@ -10122,7 +10124,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
                 msg.appendf("Import names unknown module \"%s\"", id->getAtomNamePtr());
             else
                 msg.appendf("Import item  \"%s\" is not a module", id->getAtomNamePtr());
-            reportError(ERR_MODULE_UNKNOWN, msg.toCharArray(),  
+            reportError(ERR_MODULE_UNKNOWN, msg.str(),
                         lexObject->getActualLineNo(), 
                         lexObject->getActualColumn(), 
                         lexObject->get_yyPosition());
@@ -10901,7 +10903,7 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
         if (yytext && *yytext)
             msg.append(" \"").append(yytext).append('\"');
 
-        reportError(ERR_UNKNOWN_IDENTIFIER,msg.toCharArray(), lineno, column, pos);
+        reportError(ERR_UNKNOWN_IDENTIFIER,msg.str(), lineno, column, pos);
         return;
     }
     else if ((token == '.') && (expected[0] == ASSIGN) && !expected[1])
@@ -10952,7 +10954,7 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
                 if (yytext && *yytext)
                     msg.append(yytext);
                 msg.append("' is already defined");
-                reportError(ERR_ID_REDEFINE,msg.toCharArray(), lineno, column, pos);
+                reportError(ERR_ID_REDEFINE,msg.str(), lineno, column, pos);
                 return;
             }
         }
@@ -10984,7 +10986,7 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
         }
     }
 
-    reportError(ERR_EXPECTED, msg.toCharArray(), lineno, column, pos);
+    reportError(ERR_EXPECTED, msg.str(), lineno, column, pos);
 }
 
 
@@ -11582,13 +11584,13 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
             if (E->errorCode()==0)
             {
                 StringBuffer s;
-                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).toCharArray(), sourcePath->str(), 0, 0, 1);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).str(), sourcePath->str(), 0, 0, 1);
             }
             else
             {
                 StringBuffer s("Internal error: ");
                 E->errorMessage(s);
-                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.toCharArray(), sourcePath->str(), 0, 0, 1);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.str(), sourcePath->str(), 0, 0, 1);
             }
         }
         E->Release();
@@ -11618,13 +11620,13 @@ extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlL
             if (E->errorCode()==0)
             {
                 StringBuffer s;
-                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).toCharArray(), sourcePath->str(), 0, 0, 1);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, E->errorMessage(s).str(), sourcePath->str(), 0, 0, 1);
             }
             else
             {
                 StringBuffer s("Internal error: ");
                 E->errorMessage(s);
-                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.toCharArray(), sourcePath->str(), 0, 0, 1);
+                ctx.errs->reportError(ERR_INTERNALEXCEPTION, s.str(), sourcePath->str(), 0, 0, 1);
             }
         }
         E->Release();

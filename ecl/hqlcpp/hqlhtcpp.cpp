@@ -2153,7 +2153,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     {
         StringBuffer text;
         getRecordCountText(text, dataset);
-        addAttribute("recordCount", text);
+        addAttribute("predictedCount", text);
     }
 
     processAnnotations(dataset);
@@ -5653,9 +5653,7 @@ bool HqlCppTranslator::prepareToGenerate(HqlQueryContext & query, WorkflowArray 
 
         if (!isEmbeddedLibrary)
         {
-            SCMStringBuffer libraryName;
-            wu()->getJobName(libraryName);
-            wu()->setLibraryInformation(libraryName.str(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
+            wu()->setLibraryInformation(wu()->queryJobName(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
         }
     }
     else
@@ -9206,6 +9204,8 @@ void HqlCppTranslator::beginGraph(const char * _graphName)
 
     if (insideLibrary())
         activeGraph->xgmml->setPropBool("@library", true);
+    if (curWfid)
+        activeGraph->xgmml->setPropInt("@wfid", curWfid);
 }
 
 
@@ -10496,7 +10496,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             //virtual const char * getFileName() = 0;
             if (filename && filename->getOperator() != no_pipe)
             {
-                buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(expr));
+                bool isDynamic = expr->hasAttribute(resultAtom) || hasDynamicFilename(expr);
+                buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, isDynamic);
                 if (!filename->isConstant())
                     constFilename = false;
             }
@@ -11858,8 +11859,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
 
 
     bool slidingAllowed = options.slidingJoins && canBeSlidingJoin(expr);
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, slidingAllowed);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(slidingAllowed);
 
     if (atmostAttr && joinInfo.hasHardRightNonEquality())
     {
@@ -12106,7 +12107,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
     if (isSmartJoin || expr->hasAttribute(unstableAtom))
         flags.append("|JFunstable");
-    if (joinInfo.neverMatchSelf(dataset1, dataset2, selSeq))
+    if (joinInfo.neverMatchSelf())
         flags.append("|JFnevermatchself");
 
     if (flags.length())
@@ -14119,7 +14120,7 @@ void HqlCppTranslator::checkAmbiguousRollupCondition(IHqlExpression * expr)
         OwnedHqlExpr newSelect = replaceSelector(select, dataset->queryNormalizedSelector(), queryActiveTableSelector());
         StringBuffer selectText;
         getExprECL(newSelect, selectText);
-        reportWarning(CategoryUnexpected, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupCondition), selectText.str());
+        reportWarning(CategoryUnexpected, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupCondition), selectText.str());
     }
 }
 
@@ -17660,6 +17661,7 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
                 OwnedHqlExpr expr = createActionList(action.queryExprs());
 
                 IHqlExpression * persistAttr = expr->queryAttribute(_workflowPersist_Atom);
+                curWfid = wfid;
                 if (persistAttr)
                 {
                     if (!options.freezePersists)
@@ -17672,6 +17674,7 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
                 }
                 else
                     buildWorkflowItem(switchctx, switchStmt, wfid, expr);
+                curWfid = 0;
             }
         }
     }

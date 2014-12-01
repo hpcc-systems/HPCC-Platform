@@ -1141,8 +1141,6 @@ public:
         daliHelper->noteWorkunitRunning(wuid.get(), true);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
-        SCMStringBuffer target;
-        wu->getClusterName(target);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         Owned<IQueryFactory> queryFactory;
         try
@@ -1372,15 +1370,15 @@ private:
                     if (reqName.endsWith(requestArrayString))
                     {
                         isRequestArray = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestArrayString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestArrayString.length());
                     }
                     else if (reqName.endsWith(requestString))
                     {
                         isRequest = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestString.length());
                     }
                     else
-                        queryName.set(reqName.toCharArray());
+                        queryName.set(reqName.str());
 
                     queryXML->renameProp("/", queryName.get());  // reset the name of the tree
                 }

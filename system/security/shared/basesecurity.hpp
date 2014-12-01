@@ -290,9 +290,9 @@ public:
     virtual bool clearPermissionsCache(ISecUser& user) {return false;}
     virtual bool authenticateUser(ISecUser & user, bool &superUser) {return false;}
 protected:
-    const char* getServer(){return m_dbserver.toCharArray();}
-    const char* getUser(){return m_dbuser.toCharArray();}
-    const char* getPassword(){return m_dbpassword.toCharArray();}
+    const char* getServer(){return m_dbserver.str();}
+    const char* getUser(){return m_dbuser.str();}
+    const char* getPassword(){return m_dbpassword.str();}
     int getPoolsize() { return m_poolsize;}
     void setUserMap(const char* user,int uid){synchronized block(m_usermap_mutex); m_usermap.setValue(user, uid);}
     int getUserID(ISecUser& user);

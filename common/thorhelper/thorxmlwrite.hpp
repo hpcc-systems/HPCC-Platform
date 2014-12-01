@@ -42,6 +42,8 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual IXmlWriterExt & clear() = 0;
     virtual size32_t length() const = 0;
     virtual const char *str() const = 0;
+    virtual void rewindTo(unsigned int prevlen) = 0;
+    virtual void outputNumericString(const char *field, const char *fieldname) = 0;
 };
 
 class thorhelper_decl CommonXmlWriter : public CInterface, implements IXmlWriterExt
@@ -80,6 +82,18 @@ public:
     virtual IXmlWriterExt & clear();
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
+    virtual void rewindTo(unsigned int prevlen)
+    {
+        if (flusher)
+            throwUnexpected();
+
+        if (prevlen < out.length()) out.setLength(prevlen);
+    }
+
+    virtual void outputNumericString(const char *field, const char *fieldname)
+    {
+        outputCString(field, fieldname);
+    }
 
 protected:
     bool checkForAttribute(const char * fieldname);
@@ -134,11 +148,13 @@ public:
     virtual void outputEndArray(const char *fieldname);
     virtual void outputSetAll();
     virtual void outputXmlns(const char *name, const char *uri){}
+    virtual void outputNumericString(const char *field, const char *fieldname);
 
     //IXmlWriterExt
     virtual IXmlWriterExt & clear();
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
+    virtual void rewindTo(unsigned int prevlen)                     { if (prevlen < out.length()) out.setLength(prevlen); }
 
     void outputBeginRoot(){out.append('{');}
     void outputEndRoot(){out.append('}');}

@@ -22,7 +22,7 @@
             "thor",
             "roxie"
         ],
-        "timeout":"720",
+        "timeout":"72000000",
         "maxAttemptCount":"3",
         "defaultSetupClusters": [
             "all"

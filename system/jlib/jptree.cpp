@@ -1764,7 +1764,8 @@ IPropertyTree *PTree::setPropTree(const char *xpath, IPropertyTree *val)
         if (branch == this)
         {   
             IPropertyTree *_val = ownPTree(val);
-            PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+            dbgassertex(QUERYINTERFACE(_val, PTree));
+            PTree *__val = static_cast<PTree *>(_val);
             __val->setName(prop);
             addingNewElement(*_val, ANE_SET);
             if (!checkChildren()) createChildMap();
@@ -1789,7 +1790,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
             if (!*x++)
             {
                 IPropertyTree *_val = ownPTree(val);
-                PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+                dbgassertex(QUERYINTERFACE(_val, PTree));
+                PTree *__val = static_cast<PTree *>(_val);
                 __val->setName(xpath);
                 addingNewElement(*_val, -1);
                 if (checkChildren())
@@ -1798,7 +1800,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                     if (child)
                     {
                         __val->setParent(this);
-                        PTree *tree = QUERYINTERFACE(child, PTree); assertex(tree);
+                        dbgassertex(QUERYINTERFACE(child, PTree));
+                        PTree *tree = static_cast<PTree *>(child);
                         if (tree->value && tree->value->isArray())
                             tree->value->addElement(_val);
                         else
@@ -1807,7 +1810,7 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                             array->addElement(LINK(child));
                             array->addElement(_val);
                             IPropertyTree *container = create(xpath, array);
-                            PTree *_tree = QUERYINTERFACE(child, PTree); assertex(_tree); _tree->setParent(this);
+                            tree->setParent(this);
                             children->replace(xpath, container);
                         }
                         return _val;
@@ -1836,13 +1839,15 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                     throw MakeIPTException(-1, "addPropTree: qualifier unmatched %s", xpath);
             }
             IPropertyTree *_val = ownPTree(val);
-            PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+            dbgassertex(QUERYINTERFACE(_val, PTree));
+            PTree *__val = static_cast<PTree *>(_val);
             __val->setName(path);
             addingNewElement(*_val, pos);
             if (child)
             {
                 __val->setParent(this);
-                PTree *tree = QUERYINTERFACE(child, PTree); assertex(tree);
+                dbgassertex(QUERYINTERFACE(child, PTree));
+                PTree *tree = static_cast<PTree *>(child);
                 if (tree->value && tree->value->isArray())
                 {
                     if (-1 == pos)
@@ -2699,7 +2704,7 @@ void PTree::clone(IPropertyTree &srcTree, IPropertyTree &dstTree, bool sub)
     {
         StringBuffer s;
         verifyex(srcTree.getProp(NULL, s));
-        dstTree.setProp(NULL, s.toCharArray());
+        dstTree.setProp(NULL, s.str());
     }
     else
         dstTree.setProp(NULL, srcTree.queryProp(NULL));
@@ -3143,7 +3148,7 @@ bool PTree::checkPattern(const char *&xxpath) const
                 {
                     StringBuffer s;
                     matchElem->getProp(tProp, s);
-                    ret = match(wild, numeric, xxpath, tType, s.toCharArray(), s.length(), rhs, rhslength, nocase);
+                    ret = match(wild, numeric, xxpath, tType, s.str(), s.length(), rhs, rhslength, nocase);
                 }
                 else
                 {
@@ -4514,7 +4519,7 @@ restart:
             if ((colon = strchr(tagName.str(), ':')) != NULL)
                 tagName.remove(0, (size32_t)(colon - tagName.str() + 1));
         }
-        iEvent->beginNode(tagName.toCharArray(), startOffset);
+        iEvent->beginNode(tagName.str(), startOffset);
         skipWS();
         bool endTag = false;
         bool base64 = false;
@@ -4573,7 +4578,7 @@ restart:
             readNext();
             skipWS();
         }
-        iEvent->beginNodeContent(tagName.toCharArray());
+        iEvent->beginNodeContent(tagName.str());
         StringBuffer tagText;
         bool binary = base64;
         if (!endTag)
@@ -4601,7 +4606,7 @@ restart:
                                 mark.setLength(l+1);
                             }
                             tagText.ensureCapacity(mark.length());
-                            _decodeXML(r, mark.toCharArray(), tagText);
+                            _decodeXML(r, mark.str(), tagText);
                         }
                         readNext();
                         if ('!' == nextChar)
@@ -4650,7 +4655,7 @@ restart:
                     expecting(">");
             }
         }
-        iEvent->endNode(tagName.toCharArray(), tagText.length(), tagText.toCharArray(), binary, curOffset);
+        iEvent->endNode(tagName.str(), tagText.length(), tagText.str(), binary, curOffset);
     }
 };
 
@@ -4948,20 +4953,20 @@ public:
                         {
                             if (ignoreWhiteSpace)
                             {
-                                const char *tb = mark.toCharArray();
+                                const char *tb = mark.str();
                                 const char *t = tb+l-1;
                                 if (isspace(*t))
                                 {
                                     while (t != tb && isspace(*(--t)));
                                     mark.setLength((size32_t)(t-tb+1));
                                 }
-                            }   
+                            }
                             stateInfo->tagText.ensureCapacity(mark.length());
-                            _decodeXML(r, mark.toCharArray(), stateInfo->tagText);
+                            _decodeXML(r, mark.str(), stateInfo->tagText);
                         }
                         if (endOfRoot && mark.length())
                         {
-                            const char *m = mark.toCharArray();
+                            const char *m = mark.str();
                             const char *e = m+mark.length();
                             do { if (!isspace(*m++)) error("Trailing content after close of root tag"); }
                             while (m!=e);
@@ -4989,7 +4994,7 @@ public:
                 {
                     if (endOfRoot && PTreeRead_EOS == e->errorCode() && (state != tagContent2 && mark.length())) // only to provide more meaningful error
                     {
-                        const char *m = mark.toCharArray();
+                        const char *m = mark.str();
                         const char *es = m+mark.length();
                         do
                         { 
@@ -5034,7 +5039,7 @@ public:
             case tagClose:
             {
                 readNext();
-                const char *t = stateInfo->tag.toCharArray();
+                const char *t = stateInfo->tag.str();
                 const char *te = t+stateInfo->tag.length();
                 loop
                 {
@@ -5056,7 +5061,7 @@ public:
             }
             case tagEnd:
             {
-                iEvent->endNode(stateInfo->wnsTag, stateInfo->tagText.length(), stateInfo->tagText.toCharArray(), stateInfo->binary, curOffset);
+                iEvent->endNode(stateInfo->wnsTag, stateInfo->tagText.length(), stateInfo->tagText.str(), stateInfo->binary, curOffset);
                 freeStateInfo.append(*stateInfo);
                 stack.pop();
                 endOfRoot = 0==stack.ordinality();
@@ -5305,7 +5310,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
         {
             empty = false; // can't be empty if compressed;
             verifyex(tree->getProp(NULL, _thislevel));
-            thislevel = _thislevel.toCharArray();
+            thislevel = _thislevel.str();
         }
         else
             empty = (NULL == (thislevel = tree->queryProp(NULL)));
@@ -5584,7 +5589,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
         {
             isNull = false; // can't be empty if compressed;
             verifyex(tree->getProp(NULL, _thislevel));
-            thislevel = _thislevel.toCharArray();
+            thislevel = _thislevel.str();
         }
         else
             isNull = (NULL == (thislevel = tree->queryProp(NULL)));
@@ -5911,7 +5916,7 @@ bool validateXMLParseXPath(const char *xpath, StringBuffer *error)
                 }
                 return false;
             }
-            return validateXPathSyntax(head.toCharArray(), error);
+            return validateXPathSyntax(head.str(), error);
         }
         return true;
     }
@@ -6879,7 +6884,7 @@ public:
             if (stateInfo->type==elementTypeNull)
                 iEvent->endNode(stateInfo->wnsTag, 0, "", false, offset);
             else
-                iEvent->endNode(stateInfo->wnsTag, stateInfo->tagText.length(), stateInfo->tagText.toCharArray(), false, offset);
+                iEvent->endNode(stateInfo->wnsTag, stateInfo->tagText.length(), stateInfo->tagText.str(), false, offset);
         }
         freeStateInfo.append(*stateInfo);
         stack.pop();

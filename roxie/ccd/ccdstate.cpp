@@ -423,6 +423,9 @@ class CRoxiePackageNode : extends CPackageNode, implements IRoxiePackage
 protected:
     static CResolvedFileCache daliFiles;
     mutable CResolvedFileCache fileCache;
+    IArrayOf<IResolvedFile> files;  // Used when preload set
+    IArrayOf<IKeyArray> keyArrays;  // Used when preload set
+    IArrayOf<IFileIOArray> fileArrays;  // Used when preload set
 
     virtual aindex_t getBaseCount() const = 0;
     virtual const CRoxiePackageNode *getBaseNode(aindex_t pos) const = 0;
@@ -591,6 +594,44 @@ protected:
         return NULL;
     }
 
+    void doPreload(unsigned channel, const IResolvedFile *resolved)
+    {
+        if (resolved->isKey())
+            keyArrays.append(*resolved->getKeyArray(NULL, NULL, false, channel, false));
+        else
+            fileArrays.append(*resolved->getIFileIOArray(false, channel));
+    }
+
+    void checkPreload()
+    {
+        if (isPreload())
+        {
+            // Look through all files and resolve them now
+            Owned<IPropertyTreeIterator> supers = node->getElements("SuperFile");
+            ForEach(*supers)
+            {
+                IPropertyTree &super = supers->query();
+                const char *name = super.queryProp("@id");
+                if (name)
+                {
+                    const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL);
+                    if (resolved)
+                    {
+                        files.append(*const_cast<IResolvedFile *>(resolved));
+                        doPreload(0, resolved);
+                        Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
+                        ForEach(*it)
+                        {
+                            unsigned channelNo = it->query().getPropInt("@channel", 0);
+                            assertex(channelNo);
+                            doPreload(channelNo, resolved);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // default constructor for derived class use
     CRoxiePackageNode()
     {
@@ -605,6 +646,9 @@ public:
 
     ~CRoxiePackageNode()
     {
+        keyArrays.kill();
+        fileArrays.kill();
+        files.kill();
         assertex(fileCache.count()==0);
         // If it's possible for cached objects to outlive the cache I think there is a problem...
         // we could set the cache field to null here for any objects still in cache but there would be a race condition
@@ -691,6 +735,10 @@ public:
     virtual bool isCompulsory() const
     {
         return CPackageNode::isCompulsory();
+    }
+    virtual bool isPreload() const
+    {
+        return CPackageNode::isPreload();
     }
     virtual const IPropertyTree *queryTree() const
     {

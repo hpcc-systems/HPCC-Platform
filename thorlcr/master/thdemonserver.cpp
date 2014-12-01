@@ -98,11 +98,9 @@ private:
         {
             if (memcmp(graphname,"graph",5)==0)
                 graphname+=5;
-            SCMStringBuffer wuid;
-            wu->getWuid(wuid);
             LOG(daliAuditLogCat,",Timing,ThorGraph,%s,%s,%s,%u,1,%d,%s,%s,%s",
                 queryServerStatus().queryProperties()->queryProp("@thorname"),
-                wuid.str(),
+                wu->queryWuid(),
                 graphname,
                 (unsigned)graph.queryGraphId(),
                 duration,

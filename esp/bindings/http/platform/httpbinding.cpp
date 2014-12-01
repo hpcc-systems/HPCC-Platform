@@ -120,12 +120,12 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         if (!bnd_cfg->getProp("@baseFilesPath", m_filespath))
             m_filespath.append(getCFD()).append("./files/");
 
-        m_host.append(bnd_cfg->queryProp("@netAddress"));
+        m_host.set(bnd_cfg->queryProp("@netAddress"));
         m_port = bnd_cfg->getPropInt("@port");
 
         const char *realm = bnd_cfg->queryProp("@realm");
         if (realm)
-            m_realm.append(realm);
+            m_realm.set(realm);
         else
         {
             StringBuffer xpath;
@@ -136,7 +136,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 const char *type = bindings->query().queryProp("@type");
                 if (type && !stricmp(type, "ws_smcSoapBinding"))
                 {
-                    m_realm.append("EclWatch");
+                    m_realm.set("EclWatch");
                     break;
                 }
             }
@@ -156,7 +156,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     }
                 }
                 
-                m_realm.append((realm) ? realm : "EspServices");
+                m_realm.set((realm) ? realm : "EspServices");
             }
         }
 
@@ -177,8 +177,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         Owned<IPropertyTree> authcfg = bnd_cfg->getPropTree("Authenticate");
         if(authcfg != NULL)
         {
-            authcfg->getProp("@type", m_authtype);
-            authcfg->getProp("@method", m_authmethod);
+            m_authtype.set(authcfg->queryProp("@type"));
+            m_authmethod.set(authcfg->queryProp("@method"));
             PROGLOG("Authenticate method=%s", m_authmethod.str());
             if(stricmp(m_authmethod.str(), "LdapSecurity") == 0)
             {

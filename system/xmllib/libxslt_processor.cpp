@@ -529,7 +529,7 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
         IXslFunction *fn = functions.mapToValue(&h.query());
         CLibXslFunction *cfn = dynamic_cast<CLibXslFunction*>(fn);
         if (cfn && cfn->name.length())
-            xsltRegisterExtFunction(ctxt, (const xmlChar *) cfn->name.get(), (const xmlChar *) cfn->uri.sget(), globalLibXsltExtensionHandler);
+            xsltRegisterExtFunction(ctxt, (const xmlChar *) cfn->name.get(), (const xmlChar *) cfn->uri.str(), globalLibXsltExtensionHandler);
     }
     xsltSetCtxtParseOptions(ctxt, XSLT_PARSE_OPTIONS);
     MemoryBuffer mp;

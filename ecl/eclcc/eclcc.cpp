@@ -49,6 +49,8 @@
 #include "build-config.h"
 #include "rmtfile.hpp"
 
+#include "reservedwords.hpp"
+
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
@@ -244,6 +246,7 @@ public:
         optGenerateMeta = false;
         optGenerateDepend = false;
         optIncludeMeta = false;
+        optKeywords = false;
         optLegacyImport = false;
         optLegacyWhen = false;
         optShared = false;
@@ -269,6 +272,7 @@ public:
         defaultAllowed = true;
     }
 
+    bool printKeywordsToXml();
     bool parseCommandLineOptions(int argc, const char* argv[]);
     void loadOptions();
     void loadManifestOptions();
@@ -363,6 +367,7 @@ protected:
     bool optGenerateMeta;
     bool optGenerateDepend;
     bool optIncludeMeta;
+    bool optKeywords;
     bool optWorkUnit;
     bool optNoCompile;
     bool optNoLogFile;
@@ -426,6 +431,10 @@ static int doMain(int argc, const char *argv[])
     EclCC processor(argc, argv);
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;
+
+    if (processor.printKeywordsToXml())
+        return 0;
+
     try
     {
         if (!processor.processFiles())
@@ -672,7 +681,7 @@ void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * pr
         absCCLogName = "log file";
 
     failText.appendf("Compile/Link failed for %s (see '%s' for details)",processName,absCCLogName.str());
-    errorProcessor.reportError(ERR_INTERNALEXCEPTION, failText.toCharArray(), processName, 0, 0, 0);
+    errorProcessor.reportError(ERR_INTERNALEXCEPTION, failText.str(), processName, 0, 0, 0);
     try
     {
         StringBuffer s;
@@ -717,7 +726,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
             bool optSaveCpp = optSaveTemps || optNoCompile || wu->getDebugValueBool("saveCppTempFiles", false);
             //New scope - testing things are linked correctly
             {
-                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.toCharArray(), NULL, wu, templateDir, optTargetClusterType, this, false, false);
+                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, templateDir, optTargetClusterType, this, false, false);
 
                 setWorkunitHash(wu, instance.query);
                 if (!optShared)
@@ -736,7 +745,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
                 {
-                    Owned<ICppCompiler> compiler = createCompiler(processName.toCharArray());
+                    Owned<ICppCompiler> compiler = createCompiler(processName.str());
                     compiler->setSaveTemps(optSaveTemps);
 
                     bool compileOk = true;
@@ -790,7 +799,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
             {
                 StringBuffer exceptionText;
                 e->errorMessage(exceptionText);
-                errorProcessor.reportError(ERR_INTERNALEXCEPTION, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
+                errorProcessor.reportError(ERR_INTERNALEXCEPTION, exceptionText.str(), queryFullName, 1, 0, 0);
             }
             e->Release();
         }
@@ -1151,7 +1160,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         {
             StringBuffer s;
             e->errorMessage(s);
-            errorProcessor.reportError(3, s.toCharArray(), defaultErrorPathname, 1, 0, 0);
+            errorProcessor.reportError(3, s.str(), defaultErrorPathname, 1, 0, 0);
             e->Release();
         }
     }
@@ -1380,7 +1389,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 
-    instance.wu.setown(createLocalWorkUnit());
+    instance.wu.setown(createLocalWorkUnit(NULL));
     if (optSaveQueryText)
     {
         Owned<IWUQuery> q = instance.wu->updateQuery();
@@ -1599,7 +1608,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 {
     const char * outputFilename = instance.outputFilename;
 
-    instance.wu.setown(createLocalWorkUnit());
+    instance.wu.setown(createLocalWorkUnit(NULL));
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 
@@ -1895,6 +1904,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchPathFlag(includeLibraryPath, "-I"))
         {
         }
+        else if (iter.matchFlag(optKeywords, "--keywords"))
+        {
+        }
         else if (iter.matchFlag(tempArg, "-L"))
         {
             libraryPaths.append(tempArg);
@@ -2072,7 +2084,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
     loadManifestOptions();
 
-    if (inputFileNames.ordinality() == 0)
+    if (inputFileNames.ordinality() == 0 && !optKeywords)
     {
         if (optGenerateHeader || optShowPaths || (!optBatchMode && optQueryRepositoryReference))
             return true;
@@ -2137,7 +2149,7 @@ const char * const helpText[] = {
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",
     "!   -checkVersion Enable/disable ecl version checking from archives",
-    "!   --component   Set the name of the component this is executing on behalf of"
+    "!   --component   Set the name of the component this is executing on behalf of",
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
@@ -2148,6 +2160,7 @@ const char * const helpText[] = {
     "    -help -v      Display verbose help message",
     "!   -internal     Run internal tests",
     "!   -legacy       Use legacy import and when semantics (deprecated)",
+    "!   --keywords    Outputs the list of ECL reserved words to ECLKeywords.xml",
     "!   -legacyimport Use legacy import semantics (deprecated)",
     "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
@@ -2180,6 +2193,7 @@ const char * const helpText[] = {
     "! -fmaxCompileThreads     Number of compiler instances to compile the c++",
     "! -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
     "! -fpickBestEngine        Allow simple thor queries to be passed to thor",
+    "! -fsaveCppTempFiles      Retain the generated c++ files",
     "! -fshowActivitySizeInGraph Show estimates of generated c++ size in the graph",
     "! -fshowMetaInGraph       Add distribution/sort orders to the graph",
     "! -fshowRecordCountInGraph Show estimates of record counts in the graph",
@@ -2402,4 +2416,11 @@ void EclCC::processBatchFiles()
     batchLog = NULL;
 }
 
+bool EclCC::printKeywordsToXml()
+{
+    if(!optKeywords)
+        return false;
 
+    ::printKeywordsToXml();
+    return true;
+}

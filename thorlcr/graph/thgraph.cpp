@@ -2804,6 +2804,17 @@ mptag_t CJobBase::deserializeMPTag(MemoryBuffer &mb)
 }
 
 // these getX methods for property in workunit settings, then global setting, defaulting to provided 'dft' if not present
+StringBuffer &CJobBase::getOpt(const char *opt, StringBuffer &out)
+{
+    if (!opt || !*opt)
+        return out; // probably error
+    VStringBuffer gOpt("@%s", opt);
+    getWorkUnitValue(opt, out);
+    if (0 == out.length())
+        globals->getProp(gOpt, out);
+    return out;
+}
+
 bool CJobBase::getOptBool(const char *opt, bool dft)
 {
     if (!opt || !*opt)
@@ -3060,6 +3071,14 @@ void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
     cancelledReceive = true;
     if (receiving)
         container.queryJob().queryJobComm().cancel(rank, mpTag);
+}
+
+StringBuffer &CActivityBase::getOpt(const char *prop, StringBuffer &out) const
+{
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    if (!container.queryXGMML().getProp(path.toLowerCase().str(), out))
+        queryJob().getOpt(prop, out);
+    return out;
 }
 
 bool CActivityBase::getOptBool(const char *prop, bool defVal) const

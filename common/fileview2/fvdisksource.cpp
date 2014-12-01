@@ -227,7 +227,8 @@ bool DirectDiskDataSource::init()
     if (!transformedMeta)
         transformedMeta.set(returnedMeta);
 
-    addFileposition();
+    if (!isWorkunitResult())
+        addFileposition();
     physical.init(df);
     if (diskMeta->isFixedSize())
     {
@@ -658,7 +659,7 @@ bool TranslatedDiskDataSource::createHelperWU()
     query->setQueryText(eclText.str());
     query->setQueryName(jobName.str());
 
-    StringAttrAdaptor xxx(helperWuid); workunit->getWuid(xxx);
+    helperWuid.set(workunit->queryWuid());
     return true;
 }
 
@@ -728,7 +729,7 @@ bool IndirectDiskDataSource::createBrowseWU()
     query->setQueryText(eclText.str());
     query->setQueryName(jobName.str());
 
-    StringAttrAdaptor xxx(browseWuid); workunit->getWuid(xxx);
+    browseWuid.set(workunit->queryWuid());
     return true;
 }
 

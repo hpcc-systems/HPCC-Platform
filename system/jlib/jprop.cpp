@@ -117,7 +117,7 @@ public:
             prop.clip();
             val.clip();
             if (prop.length())
-                setProp(toPType(prop.toCharArray()), val.toCharArray());
+                setProp(toPType(prop.str()), val.str());
         }
     }
     void loadProp(const char *finger, int dft)
@@ -204,7 +204,7 @@ public:
                 prop.clip();
                 val.clip();
                 if (prop.length())
-                    setProp(toPType(prop.toCharArray()), val.toCharArray());
+                    setProp(toPType(prop.str()), val.str());
             }
             if (*finger)
                 finger++;

@@ -296,15 +296,15 @@ public:
                     if (reqName.endsWith(requestArrayString))
                     {
                         isRequestArray = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestArrayString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestArrayString.length());
                     }
                     else if (reqName.endsWith(requestString))
                     {
                         isRequest = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestString.length());
                     }
                     else
-                        queryName.set(reqName.toCharArray());
+                        queryName.set(reqName.str());
 
                     queryXML->renameProp("/", queryName.get());  // reset the name of the tree
                 }
@@ -511,11 +511,9 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     resolveFilesLocally = false;
     writeResultsToStdout = false;
 
-    wuRead->getUser(StringAttrAdaptor(userid));
+    userid.set(wuRead->queryUser());
     useProductionLibraries = wuRead->getDebugValueBool("useProductionLibraries", false);
-    SCMStringBuffer clusterName;
-    wuRead->getClusterName(clusterName);
-    clusterNames.append(clusterName.str());
+    clusterNames.append(wuRead->queryClusterName());
     clusterWidth = -1;
     abortmonitor = new cAbortMonitor(*this);
     abortmonitor->start();
@@ -549,8 +547,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             destTree->addPropTree("Graph", graphTree.getClear());
         }
         debugContext.setown(new CHThorDebugContext(queryDummyContextLogger(), destTree.getClear(), this ));
-        SCMStringBuffer jobName;
-        debugContext->debugInitialize(wuid, wu->getJobName(jobName).str(), true);
+        debugContext->debugInitialize(wuid, wu->queryJobName(), true);
     }
     Owned<IWorkUnit> w = updateWorkUnit();
     if (_queryXML)
@@ -612,7 +609,7 @@ const char *EclAgent::queryTempfilePath()
         recursiveCreateDirectory(dir.str());
         agentTempDir.set(dir.str());
     }
-    return agentTempDir.sget();
+    return agentTempDir.str();
 }
 
 StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
@@ -1559,15 +1556,14 @@ char *EclAgent::getEnv(const char *name, const char *defaultValue) const
 
 void EclAgent::selectCluster(const char *newCluster)
 {
-    SCMStringBuffer oldCluster;
-    queryWorkUnit()->getClusterName(oldCluster);
+    const char *oldCluster = queryWorkUnit()->queryClusterName();
     if (getClusterType(clusterType)==HThorCluster)
     {
         // If the current cluster is an hthor cluster, it's an error to change it...
-        if (!streq(oldCluster.str(), newCluster))
+        if (!streq(oldCluster, newCluster))
             throw MakeStringException(-1, "Error - cannot switch cluster in hthor jobs");
     }
-    clusterNames.append(oldCluster.str());
+    clusterNames.append(oldCluster);
     WorkunitUpdate wu = updateWorkUnit();
     wu->setClusterName(newCluster);
     clusterWidth = -1;
@@ -1685,8 +1681,7 @@ EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsign
 
 IConstWorkUnit * EclAgent::resolveLibrary(const char * libraryName, unsigned expectedInterfaceHash)
 {
-    StringAttr cluster;
-    queryWorkUnit()->getClusterName(StringAttrAdaptor(cluster));
+    StringAttr cluster = queryWorkUnit()->queryClusterName();
     Owned<IPropertyTree> queryRegistry = getQueryRegistry(cluster, false);
     Owned<IPropertyTree> resolved = queryRegistry ? resolveQueryAlias(queryRegistry, libraryName) : NULL;
     if (!resolved)
@@ -1824,6 +1819,8 @@ void EclAgent::doProcess()
                 w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), logname.str());
 
             eclccCodeVersion = w->getCodeVersion();
+            if (eclccCodeVersion == 0)
+                throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
             if (checkVersion && ((eclccCodeVersion > ACTIVITY_INTERFACE_VERSION) || (eclccCodeVersion < MIN_ACTIVITY_INTERFACE_VERSION)))
                 failv(0, "Workunit was compiled for eclagent interface version %d, this eclagent requires version %d..%d", eclccCodeVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
             if(noRetry && (w->getState() == WUStateFailed))
@@ -1943,10 +1940,7 @@ void EclAgent::doProcess()
                 catch(IException * e)
                 {
                     int code = e->errorCode();
-                    SCMStringBuffer wuid;
-                    queryWorkUnit()->getWuid(wuid);
-                    StringBuffer msg;
-                    msg.append("Failed to deschedule workunit ").append(wuid.str()).append(": ");
+                    VStringBuffer msg("Failed to deschedule workunit %s: ", w->queryWuid());
                     e->errorMessage(msg);
                     logException(ExceptionSeverityWarning, code, msg.str(), false);
                     e->Release();
@@ -2772,23 +2766,17 @@ const char *EclAgent::queryWuid()
 
 char * EclAgent::getJobName()
 {
-    SCMStringBuffer out;
-    queryWorkUnit()->getJobName(out);
-    return out.s.detach();
+    return strdup(queryWorkUnit()->queryJobName());
 }
 
 char * EclAgent::getJobOwner()
 {
-    SCMStringBuffer out;
-    queryWorkUnit()->getUser(out);
-    return out.s.detach();
+    return strdup(queryWorkUnit()->queryUser());
 }
 
 char * EclAgent::getClusterName()
 {
-    SCMStringBuffer out;
-    queryWorkUnit()->getClusterName(out);
-    return out.s.detach();
+    return strdup(queryWorkUnit()->queryClusterName());
 }
 
 char * EclAgent::getGroupName()
@@ -3123,7 +3111,7 @@ void printStart(int argc, const char *argv[])
             cmd.append(' ');
         cmd.append('"').append(argv[argno]).append('"');
     }
-    PrintLog("Starting %s", cmd.toCharArray());
+    PrintLog("Starting %s", cmd.str());
 }
 
 //--------------------------------------------------------------
@@ -3287,7 +3275,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         throw MakeStringException(0, "Invalid xml: %s", msg.str());
     }
 
-    SCMStringBuffer wuid;
+    StringBuffer wuid;
     StringBuffer daliServers;
     if (!globals->getProp("DALISERVERS", daliServers) && !globals->getProp("-DALISERVERS", daliServers))
         daliServers.append(agentTopology->queryProp("@daliServers"));
@@ -3308,8 +3296,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         if (wuXML)
         {
             //Create workunit from XML
-            standAloneWorkUnit.setown(createLocalWorkUnit());
-            standAloneWorkUnit->loadXML(wuXML->str());
+            standAloneWorkUnit.setown(createLocalWorkUnit(wuXML->str()));
             wuXML->kill();  // free up text as soon as possible.
         }
 
@@ -3351,7 +3338,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 Owned<IWorkUnit> daliWu = factory->createWorkUnit("eclagent", "eclagent");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
                 extendedWu->copyWorkUnit(standAloneWorkUnit, true);
-                daliWu->getWuid(wuid);
+                wuid.set(daliWu->queryWuid());
                 globals->setProp("WUID", wuid.str());
 
                 standAloneUDesc.setown(createUserDescriptor());

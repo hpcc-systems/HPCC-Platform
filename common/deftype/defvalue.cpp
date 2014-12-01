@@ -250,13 +250,13 @@ VarStringValue::VarStringValue(unsigned len, const char *v, ITypeInfo *_type) : 
 
 const char *VarStringValue::generateECL(StringBuffer &out)
 {
-    return appendStringAsQuotedECL(out, val.length(), val).toCharArray();
+    return appendStringAsQuotedECL(out, val.length(), val).str();
 }
 
 const char *VarStringValue::generateCPP(StringBuffer &out, CompilerType compiler)
 {
     unsigned len = val.length();
-    return appendStringAsQuotedCPP(out, len, val.get(), len>120).toCharArray();
+    return appendStringAsQuotedCPP(out, len, val.get(), len>120).str();
 }
 
 void VarStringValue::toMem(void *target)
@@ -324,7 +324,7 @@ __int64 VarStringValue::getIntValue()
 const char *VarStringValue::getStringValue(StringBuffer &out)
 {
     out.append(val);
-    return out.toCharArray();
+    return out.str();
 }
 
 void VarStringValue::pushDecimalValue(void)
@@ -469,7 +469,7 @@ StringValue::StringValue(const char *v, ITypeInfo *_type) : MemoryValue(_type)
 
 const char *StringValue::generateECL(StringBuffer &out)
 {
-    return appendStringAsQuotedECL(out, type->getSize(), (const char *)val.get()).toCharArray();
+    return appendStringAsQuotedECL(out, type->getSize(), (const char *)val.get()).str();
 }
 
 int StringValue::compare(IValue * to)
@@ -541,7 +541,7 @@ __int64 StringValue::getIntValue()
 const char *StringValue::getStringValue(StringBuffer &out)
 {
     out.append(type->getSize(), (const char *)val.get());
-    return out.toCharArray();
+    return out.str();
 }
 
 const char *StringValue::getUTF8Value(StringBuffer &out)
@@ -559,7 +559,7 @@ const char *StringValue::getUTF8Value(StringBuffer &out)
     unsigned bufflen;
     rtlStrToUtf8X(bufflen, temp.refstr(), type->getSize(), (const char *)val.get());
     out.append(rtlUtf8Size(bufflen, temp.getstr()), temp.getstr());
-    return out.toCharArray();
+    return out.str();
 }
 
 void StringValue::pushDecimalValue()
@@ -869,7 +869,7 @@ const char * VarUnicodeValue::generateCPP(StringBuffer & out, CompilerType compi
 {
     out.append("(UChar *)");
     unsigned len = val.length()*2+1; // not pretty, but adds one null, so that string is double-null-terminated as required
-    return appendStringAsQuotedCPP(out, len, (char const *)val.get(), len>120).toCharArray();
+    return appendStringAsQuotedCPP(out, len, (char const *)val.get(), len>120).str();
 }
 
 const char * VarUnicodeValue::generateECL(StringBuffer & out)
@@ -1232,7 +1232,7 @@ const char *DataValue::generateECL(StringBuffer &out)
     out.append("X'");
     appendDataAsHex(out, val.length(), val.get());
     out.append('\'');
-    return out.toCharArray();
+    return out.str();
 }
 
 
@@ -1321,7 +1321,7 @@ bool DataValue::getBoolValue()
 const char *DataValue::getStringValue(StringBuffer &out)
 {
     appendDataAsHex(out, val.length(), val.get());
-    return out.toCharArray();
+    return out.str();
 }
 
 IValue *createDataValue(const char *val, unsigned size)
@@ -1435,7 +1435,7 @@ const char *QStringValue::getStringValue(StringBuffer &out)
     rtlQStrToStr(strLen, strData, strLen, (const char *)val.get());
     out.append(strLen, strData);
     free(strData);
-    return out.toCharArray();
+    return out.str();
 }
 
 void QStringValue::pushDecimalValue()
@@ -1486,7 +1486,7 @@ const char *CharValue::generateCPP(StringBuffer &out, CompilerType compiler)
                 out.append((int)val); 
             break;
     }
-    return out.toCharArray();
+    return out.str();
 }
 
 void CharValue::toMem(void *target)
@@ -1538,7 +1538,7 @@ bool CharValue::getBoolValue()
 
 const char *CharValue::getStringValue(StringBuffer &out)
 {
-    return out.append(val).toCharArray();
+    return out.append(val).str();
 }
 
 void CharValue::pushDecimalValue()
@@ -1728,7 +1728,7 @@ const char *IntValue::getStringValue(StringBuffer &s)
         s.append((__int64)val);
     else
         s.append(val);
-    return s.toCharArray();
+    return s.str();
 }
 
 bool IntValue::getBoolValue()
@@ -2173,7 +2173,7 @@ const char *DecimalValue::generateCPP(StringBuffer &s, CompilerType compiler)
         s.appendhex(c, false);
     }
     s.append('"');
-    return s.toCharArray();
+    return s.str();
 }
 
 const char *DecimalValue::getStringValue(StringBuffer &s)
@@ -2183,7 +2183,7 @@ const char *DecimalValue::getStringValue(StringBuffer &s)
     pushDecimalValue();
     DecPopCString(sizeof(strval), strval);
     s.append(strval);
-    return s.toCharArray();
+    return s.str();
 }
 
 bool DecimalValue::getBoolValue()
@@ -2254,19 +2254,19 @@ IValue *createDecimalValueFromStack(ITypeInfo * type)
 const char *BoolValue::generateECL(StringBuffer &s)
 {
     s.append(val ? "true" : "false");
-    return s.toCharArray();
+    return s.str();
 }
 
 const char *BoolValue::generateCPP(StringBuffer &s, CompilerType compiler)
 {
     s.append(val ? "true" : "false");
-    return s.toCharArray();
+    return s.str();
 }
 
 const char *BoolValue::getStringValue(StringBuffer &s)
 {
     s.append(val ? "true" : "false");
-    return s.toCharArray();
+    return s.str();
 }
 
 bool BoolValue::getBoolValue()

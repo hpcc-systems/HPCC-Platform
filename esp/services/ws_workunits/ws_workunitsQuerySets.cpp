@@ -446,12 +446,12 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
 
     resp.setWuid(wuid.str());
 
-    SCMStringBuffer cluster;
+    StringAttr cluster;
     if (notEmpty(req.getCluster()))
         cluster.set(req.getCluster());
     else
-        cw->getClusterName(cluster);
-    if (!isValidCluster(req.getCluster()))
+        cluster.set(cw->queryClusterName());
+    if (!isValidCluster(cluster))
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster.str());
 
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
@@ -747,19 +747,19 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
 
     resp.setWuid(wuid.str());
 
-    SCMStringBuffer queryName;
+    StringAttr queryName;
     if (notEmpty(req.getJobName()))
         queryName.set(req.getJobName());
     else
-        cw->getJobName(queryName).str();
+        queryName.set(cw->queryJobName());
     if (!queryName.length())
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query/Job name not defined for publishing workunit %s", wuid.str());
 
-    SCMStringBuffer target;
+    StringAttr target;
     if (notEmpty(req.getCluster()))
         target.set(req.getCluster());
     else
-        cw->getClusterName(target);
+        target.set(cw->queryClusterName());
     if (!target.length())
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", wuid.str());
     if (!isValidCluster(target.str()))
@@ -1607,6 +1607,61 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         WsWuInfo winfo(context, wuid);
         resp.setResourceURLCount(winfo.getResourceURLCount());
     }
+    if (req.getIncludeWsEclAddresses())
+    {
+        StringArray wseclAddresses;
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (env)
+        {
+            Owned<IPropertyTree> root = &env->getPTree();
+            Owned<IPropertyTreeIterator> services = root->getElements("Software/EspService[Properties/@type='ws_ecl']");
+            StringArray serviceNames;
+            VStringBuffer xpath("Target[@name='%s']", querySet);
+            ForEach(*services)
+            {
+                IPropertyTree &service = services->query();
+                if (!service.hasProp("Target") || service.hasProp(xpath))
+                    serviceNames.append(service.queryProp("@name"));
+            }
+
+            Owned<IPropertyTreeIterator> processes = root->getElements("Software/EspProcess");
+            ForEach(*processes)
+            {
+                StringArray netAddrs;
+                IPropertyTree &process = processes->query();
+                Owned<IPropertyTreeIterator> instances = process.getElements("Instance");
+                ForEach(*instances)
+                {
+                    IPropertyTree &instance = instances->query();
+                    const char *netAddr = instance.queryProp("@netAddress");
+                    if (!netAddr || !*netAddr)
+                        continue;
+                    if (streq(netAddr, "."))
+                        netAddrs.appendUniq(envLocalAddress); //not necessarily local to this server
+                    else
+                        netAddrs.appendUniq(netAddr);
+                }
+                Owned<IPropertyTreeIterator> bindings = process.getElements("EspBinding");
+                ForEach(*bindings)
+                {
+                    IPropertyTree &binding = bindings->query();
+                    const char *srvName = binding.queryProp("@service");
+                    if (!serviceNames.contains(srvName))
+                        continue;
+                    const char *port = binding.queryProp("@port"); //should always be an integer, but we're just concatenating strings
+                    if (!port || !*port)
+                        continue;
+                    ForEachItemIn(i, netAddrs)
+                    {
+                        VStringBuffer wseclAddr("%s:%s", netAddrs.item(i), port);
+                        wseclAddresses.append(wseclAddr);
+                    }
+                }
+            }
+        }
+        resp.setWsEclAddresses(wseclAddresses);
+    }
 
     return true;
 }
@@ -2008,7 +2063,7 @@ public:
 
         destQuerySet.setown(getQueryRegistry(target, false));
         if (!destQuerySet) // getQueryRegistry should have created if not found
-            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Destination Queryset %s could not be created, or found", target.sget());
+            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Destination Queryset %s could not be created, or found", target.str());
 
         factory.setown(getWorkUnitFactory(context->querySecManager(), context->queryUser()));
     }

@@ -1060,15 +1060,31 @@ void JoinOrderSpotter::findImplicitBetween(IHqlExpression * condition, HqlExprAr
     }
 }
 
-JoinSortInfo::JoinSortInfo()
+JoinSortInfo::JoinSortInfo(IHqlExpression * expr)
+: lhs(expr->queryChild(0)), rhs(queryJoinRhs(expr)), cond(expr->queryChild(2)), seq(querySelSeq(expr)), atmostAttr(expr->queryAttribute(atmostAtom))
+{
+    init();
+}
+        
+JoinSortInfo::JoinSortInfo(IHqlExpression * _condition, IHqlExpression * _leftDs, IHqlExpression * _rightDs, IHqlExpression * _seq, IHqlExpression * _atmost)
+: lhs(_leftDs), rhs(_rightDs), cond(_condition), seq(_seq), atmostAttr(_atmost)
+{
+    init();
+}
+
+void JoinSortInfo::init()
 {
     conditionAllEqualities = false;
     hasRightNonEquality = false;
+    if (lhs)
+        left.setown(createSelector(no_left, lhs, seq));
+    if (rhs)
+        right.setown(createSelector(no_right, rhs, seq));
 }
 
-void JoinSortInfo::findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, bool allowSlidingMatch)
+void JoinSortInfo::doFindJoinSortOrders(IHqlExpression * condition, bool allowSlidingMatch)
 {
-    JoinOrderSpotter spotter(leftDs, rightDs, seq, *this);
+    JoinOrderSpotter spotter(lhs, rhs, seq, *this);
     HqlExprCopyArray matched;
     if (allowSlidingMatch)
     {
@@ -1082,7 +1098,6 @@ void JoinSortInfo::findJoinSortOrders(IHqlExpression * condition, IHqlExpression
     conditionAllEqualities = (extraMatch == NULL);
     if (extraMatch)
     {
-        OwnedHqlExpr right = createSelector(no_right, rightDs, seq);
         if (extraMatch->usesSelector(right))
             hasRightNonEquality = true;
     }
@@ -1126,16 +1141,12 @@ void JoinSortInfo::findJoinSortOrders(IHqlExpression * condition, IHqlExpression
 
 }
 
-void JoinSortInfo::findJoinSortOrders(IHqlExpression * expr, bool allowSlidingMatch)
+void JoinSortInfo::findJoinSortOrders(bool allowSlidingMatch)
 {
-    IHqlExpression * lhs = expr->queryChild(0);
-    IHqlExpression * rhs = queryJoinRhs(expr);
-    IHqlExpression * selSeq = querySelSeq(expr);
-
-    atmost.extractAtmostArgs(expr->queryAttribute(atmostAtom));
+    atmost.extractAtmostArgs(atmostAttr);
     if (atmost.optional.ordinality())
     {
-        JoinOrderSpotter spotter(lhs, rhs, selSeq, *this);
+        JoinOrderSpotter spotter(lhs, rhs, seq, *this);
         ForEachItemIn(i, atmost.optional)
         {
             if (!spotter.doProcessOptional(&atmost.optional.item(i)))
@@ -1144,11 +1155,41 @@ void JoinSortInfo::findJoinSortOrders(IHqlExpression * expr, bool allowSlidingMa
     }
 
     OwnedHqlExpr fuzzy, hard;
-    splitFuzzyCondition(expr->queryChild(2), atmost.required, fuzzy, hard);
+    splitFuzzyCondition(cond, atmost.required, fuzzy, hard);
     if (hard)
-        findJoinSortOrders(hard, lhs, rhs, selSeq, allowSlidingMatch);
+        doFindJoinSortOrders(hard, allowSlidingMatch);
 
     extraMatch.setown(extendConditionOwn(no_and, extraMatch.getClear(), fuzzy.getClear()));
+}
+
+IHqlExpression * JoinSortInfo::getContiguousJoinCondition(unsigned numRhsFields)
+{
+    //Ensure that numRhsFields from RIGHT are joined, and if so return the join condition
+    IHqlExpression * rightRecord = rhs->queryRecord();
+    HqlExprCopyArray leftMatches, rightMatches;
+    RecordSelectIterator iter(rightRecord, queryActiveTableSelector());
+    unsigned numMatched = 0;
+    ForEach(iter)
+    {
+        unsigned match = rightReq.find(*iter.query());
+        if (match == NotFound)
+            return NULL;
+        leftMatches.append(leftReq.item(match));
+        rightMatches.append(rightReq.item(match));
+        if (++numMatched == numRhsFields)
+        {
+            HqlExprAttr cond;
+            ForEachItemIn(i, leftMatches)
+            {
+                OwnedHqlExpr eq = createBoolExpr(no_eq,
+                                                replaceSelector(&leftMatches.item(i), queryActiveTableSelector(), left),
+                                                replaceSelector(&rightMatches.item(i), queryActiveTableSelector(), right));
+                extendConditionOwn(cond, no_and, eq.getClear());
+            }
+            return cond.getClear();
+        }
+    }
+    return NULL;
 }
 
 static void appendOptElements(HqlExprArray & target, const HqlExprArray & src)
@@ -1205,23 +1246,21 @@ static bool hasNeverMatchCompare(IHqlExpression * expr, IHqlExpression * left, I
     }
 }
 
-bool JoinSortInfo::neverMatchSelf(IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * selSeq)
+bool JoinSortInfo::neverMatchSelf() const
 {
     if (!extraMatch)
         return false;
-    if (!recordTypesMatch(leftDs, rightDs))
+    if (!recordTypesMatch(lhs, rhs))
         return false;
 
-    OwnedHqlExpr left = createSelector(no_left, leftDs, selSeq);
-    OwnedHqlExpr right = createSelector(no_right, rightDs, selSeq);
     return hasNeverMatchCompare(extraMatch, left, right);
 }
 
 
 extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch)
 {
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, false);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(false);
     return joinInfo.hasHardRightNonEquality();
 }
 
@@ -3257,7 +3296,8 @@ static void convertRecordToAssigns(HqlExprArray & assigns, IHqlExpression * reco
                 }
                 else
                 {
-                    assertex(value || canOmit);
+                    if (!value && !canOmit)
+                        throwError1(HQLERR_FieldHasNoDefaultValue, cur->queryId()->str());
                     if (value)
                         assigns.append(*createAssign(LINK(newTargetSelector), LINK(value)));
                 }

@@ -181,10 +181,9 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
 
     void setActiveWorkunit(CWUWrapper& wu, const char* wuid, const char* location, unsigned index, double version, bool notCheckVersion)
     {
-        StringBuffer stateStr;
-        SCMStringBuffer state, stateEx, owner, jobname;
+        SCMStringBuffer stateEx;
         setWuid(wuid);
-        wu->getStateDesc(state);
+        const char *state = wu->queryStateDesc();
         setStateID(wu->getState());
         if (wu->getState() == WUStateBlocked)
         {
@@ -192,12 +191,12 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
             if (notCheckVersion || (version > 1.00))
                 setExtra(stateEx.str());
         }
-        buildAndSetState(state.str(), stateEx.str(), location, index);
+        buildAndSetState(state, stateEx.str(), location, index);
         if ((notCheckVersion || (version > 1.09)) && (wu->getState() == WUStateFailed))
             setWarning("The job will ultimately not complete. Please check ECLAgent.");
 
-        setOwner(wu->getUser(owner).str());
-        setJobname(wu->getJobName(jobname).str());
+        setOwner(wu->queryUser());
+        setJobname(wu->queryJobName());
         setPriorityStr(wu->getPriority());
 
         if ((notCheckVersion || (version > 1.08)) && wu->isPausing())
@@ -206,8 +205,7 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
         }
         if (notCheckVersion || (version > 1.14))
         {
-            SCMStringBuffer clusterName;
-            setClusterName(wu->getClusterName(clusterName).str());
+            setClusterName(wu->queryClusterName());
         }
     }
 
@@ -967,14 +965,14 @@ CWsSMCTargetCluster* CWsSMCEx::findTargetCluster(const char* clusterName, CIArra
 CWsSMCTargetCluster* CWsSMCEx::findWUClusterInfo(IEspContext& context, const char* wuid, bool isOnECLAgent, CIArrayOf<CWsSMCTargetCluster>& targetClusters,
     CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2)
 {
-    SCMStringBuffer clusterName;
+    StringAttr clusterName;
     try
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
         if (!cw)
             return NULL;
-        cw->getClusterName(clusterName);
+        clusterName.set(cw->queryClusterName());
         if (!clusterName.length())
             return NULL;
     }

@@ -125,21 +125,21 @@ void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropert
         int pos2 = xpath2.lastIndexOf('/');
 
         if (pos1 != -1 && pos2 != -1)
-          sb.clear().append(xpath2.substring(0, pos2)->toCharArray());
+          sb.clear().append(xpath2.substring(0, pos2)->str());
         else if (pos1 != -1)
-          sb.clear().append(xpath2.substring(0, pos1)->toCharArray());
+          sb.clear().append(xpath2.substring(0, pos1)->str());
 
         Owned<IPropertyTreeIterator> elems = pNode->getElements(sb.str());
 
         if (pos2 != -1)
-          sb.clear().append(xpath2.substring(pos2+ 1, pos1)->toCharArray());
+          sb.clear().append(xpath2.substring(pos2+ 1, pos1)->str());
 
         ForEach(*elems)
         {
           IPropertyTree* elem = &elems->query();
           result.append('\"');
           result.append(elem->queryProp(sb.str()));
-          result.append("\"").append("][").append(pstr->toCharArray());
+          result.append("\"").append("][").append(pstr->str());
         }
 
         result.setLength(result.length() - pstr->length() - 2);
@@ -153,7 +153,7 @@ void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropert
         StringBuffer sb(xpath2);
         int pos = xpath2.indexOf(']');
         if (pos != -1)
-          sb.clear().append(xpath2.toCharArray(), 0, pos);
+          sb.clear().append(xpath2.str(), 0, pos);
 
         result.append('\"');
         result.append(pNode->queryProp(sb.str()));
@@ -4252,7 +4252,7 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
       String strTagName(xpath3);
       strTagName = *strTagName.substring(1,strTagName.indexOf(' '));
 
-      if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, strTagName.toCharArray()) == false)
+      if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, strTagName.str()) == false)
         return false;
 
       bWrite = true;

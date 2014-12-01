@@ -64,12 +64,22 @@ define([
                                 Source: topic.Source
                             }, _item);
 
+                            var clipped = false;
+                            if (item.Message) {
+                                var MAX_LINES = 10;
+                                if (item.Message.length > MAX_LINES * 80) { 
+                                    item.Message = item.Message.substr(0, length = MAX_LINES * 80);
+                                    item.Message += "...";
+                                    clipped = true;
+                                }
+                            }
+
                             if ((item.Source === "WsWorkunits.WUInfo" && item.Code === 20080) ||
                                 (item.Source === "WsWorkunits.WUQuery" && item.Code === 20081) ||
                                 (item.Source === "FileSpray.GetDFUWorkunit" && item.Code === 20080) ||
                                 (item.Source === "WsDfu.DFUInfo" && item.Code === 20038)) {
                             } else {
-                                var message = "<h4>" + entities.encode(item.Source) + "</h4><p>" + entities.encode(item.Message) + "</p>";
+                                var message = "<h4>" + entities.encode(item.Source) + "</h4><p>" + entities.encode(item.Message) + (clipped ? "<br>...  ...  ..." : "") + "</p>";
                                 myToaster.setContent(message, item.Severity, item.Severity === "Error" ? -1 : null);
                                 myToaster.show();
                             }

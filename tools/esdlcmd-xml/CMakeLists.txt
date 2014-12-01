@@ -40,16 +40,12 @@ ADD_DEFINITIONS( -D_CONSOLE -O0 )
 
 HPCC_ADD_EXECUTABLE ( esdl-xml ${SRCS} )
 
-# The tool esdl-xml is built in HPCCPlatform as a build-time
-# pre-req. But it is not distributed in CE packages.
-if ("${BUILD_LEVEL}" STREQUAL "ENTERPRISE" OR "${BUILD_LEVEL}" STREQUAL "INTERNAL")
-    MESSAGE("----INSTALLING ESDL-XML")
-    install ( TARGETS esdl-xml RUNTIME DESTINATION ${EXEC_DIR} )
-    if ( UNIX )
-        install ( PROGRAMS esdl-xml.install DESTINATION etc/init.d/install COMPONENT Runtime )
-        install ( PROGRAMS esdl-xml.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
-    endif ( UNIX )
-endif()
+MESSAGE("----INSTALLING ESDL-XML")
+install ( TARGETS esdl-xml RUNTIME DESTINATION ${EXEC_DIR} )
+if ( UNIX )
+    install ( PROGRAMS esdl-xml.install DESTINATION etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS esdl-xml.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
+endif ( UNIX )
 
 target_link_libraries ( esdl-xml
                         jlib

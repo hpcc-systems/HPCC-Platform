@@ -500,6 +500,8 @@ void CJobManager::run()
             workunit.setown(factory->openWorkUnit(wuid, false));
             if (!workunit) // check workunit is available and ready to run.
                 throw MakeStringException(0, "Could not locate workunit %s", wuid);
+            if (workunit->getCodeVersion() == 0)
+                throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
             if ((workunit->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (workunit->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION))
                 throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor requires version %d..%d", workunit->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
             allDone = doit(workunit, graphName, agentep);
@@ -525,17 +527,13 @@ void CJobManager::run()
 bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const SocketEndpoint &agentep)
 {
     StringBuffer s;
-    SCMStringBuffer _wuid;
-    workunit->getWuid(_wuid);
-    const char *wuid = _wuid.str();
-    LOG(MCdebugInfo, thorJob, "Processing wuid=%s, graph=%s from agent: %s", wuid, graphName, agentep.getUrlStr(s).str());
+    StringAttr wuid(workunit->queryWuid());
+    StringAttr user(workunit->queryUser());
 
-    SCMStringBuffer user;
-    workunit->getUser(user);
-
+    LOG(MCdebugInfo, thorJob, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getUrlStr(s).str());
     LOG(daliAuditLogCat,",Progress,Thor,Start,%s,%s,%s,%s,%s,%s",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
-            wuid,
+            wuid.str(),
             graphName,
             user.str(),
             queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
@@ -549,7 +547,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     catch (IException *_e) { e.setown(_e); }
     LOG(daliAuditLogCat,",Progress,Thor,Stop,%s,%s,%s,%s,%s,%s",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
-            wuid,
+            wuid.str(),
             graphName,
             user.str(),
             queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
@@ -589,9 +587,7 @@ void CJobManager::setWuid(const char *wuid, const char *cluster)
 
 void CJobManager::replyException(CJobMaster &job, IException *e)
 {
-    SCMStringBuffer wuid;
-    job.queryWorkUnit().getWuid(wuid);
-    reply(&job.queryWorkUnit(), wuid.str(), e, job.queryAgentEp(), false);
+    reply(&job.queryWorkUnit(), job.queryWorkUnit().queryWuid(), e, job.queryAgentEp(), false);
 }
 
 void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *e, const SocketEndpoint &agentep, bool allDone)
@@ -658,9 +654,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         updateWorkUnitLog(*wu);
     }
     Owned<IException> exception;
-    SCMStringBuffer wuid;
     workunit.forceReload();
-    workunit.getWuid(wuid);
+    StringAttr wuid(workunit.queryWuid());
     const char *totalTimeStr = "Total thor time";
     cycle_t startCycles = get_cycles_now();
     unsigned __int64 totalTimeNs = 0;
@@ -703,8 +698,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         sendSo = globals->getPropBool("Debug/@dllsToSlaves", true);
     }
 
-    SCMStringBuffer user, eclstr;
-    workunit.getUser(user);
+    SCMStringBuffer eclstr;
+    StringAttr user(workunit.queryUser());
 
     PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.str(), user.str(), graphName);
 
@@ -734,8 +729,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             wu->setDebugValue("ThorVersion", version.str(), true);
         }
 
-        SCMStringBuffer wuid, clusterName;
-        setWuid(workunit.getWuid(wuid).str(), workunit.getClusterName(clusterName).str());
+        setWuid(workunit.queryWuid(), workunit.queryClusterName());
 
         allDone = job->go();
 

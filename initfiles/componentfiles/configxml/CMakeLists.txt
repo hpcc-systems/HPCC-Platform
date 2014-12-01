@@ -82,6 +82,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/sasha.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/eclcc.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/validateAll.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/esdlsvcengine.xsd
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml COMPONENT Runtime)
 ENDFOREACH ( iFILES )

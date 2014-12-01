@@ -641,17 +641,14 @@ void CHThorDiskWriteActivity::publish()
     if (grouped)
         properties.setPropBool("@grouped", true);
     properties.setPropInt64("@recordCount", numRecords);
-    SCMStringBuffer info;
-    properties.setProp("@owner", agent.queryWorkUnit()->getUser(info).str());
-    info.clear();
+    properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
     if (helper.getFlags() & (TDWowned|TDXjobtemp|TDXtemporary))
         properties.setPropBool("@owned", true);
     if (helper.getFlags() & TDWresult)
         properties.setPropBool("@result", true);
 
-    properties.setProp("@workunit", agent.queryWorkUnit()->getWuid(info).str());
-    info.clear();
-    properties.setProp("@job", agent.queryWorkUnit()->getJobName(info).str());
+    properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
+    properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
     setFormat(desc);
 
     if (helper.getFlags() & TDWexpires)
@@ -692,11 +689,7 @@ void CHThorDiskWriteActivity::updateWorkUnitResult(unsigned __int64 reccount)
         if (clusterHandler)
             clusterHandler->getClusters(clusters);
         else
-        {
-            SCMStringBuffer tgtCluster;
-            wu->getClusterName(tgtCluster);
-            clusters.append(tgtCluster.str());
-        }
+            clusters.append(wu->queryClusterName());
         unsigned flags = helper.getFlags();
         if (!agent.queryResolveFilesLocally())
         {
@@ -1178,12 +1171,9 @@ void CHThorIndexWriteActivity::execute()
     properties.setProp("@kind", "key");
     properties.setPropInt64("@size", indexFileSize);
     properties.setPropInt64("@recordCount", reccount);
-    SCMStringBuffer info;
-    properties.setProp("@owner", agent.queryWorkUnit()->getUser(info).str());
-    info.clear();
-    properties.setProp("@workunit", agent.queryWorkUnit()->getWuid(info).str());
-    info.clear();
-    properties.setProp("@job", agent.queryWorkUnit()->getJobName(info).str());
+    properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
+    properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
+    properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
 #if 0
     IRecordSize * irecsize = helper.queryDiskRecordSize();
     if(irecsize && (irecsize->isFixedSize()))
@@ -8118,7 +8108,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
             }
             else
                 s.append("Could not open local physical file ").append(filename).append(" (").append((unsigned)GetLastError()).append(")");
-            agent.fail(1, s.toCharArray());
+            agent.fail(1, s.str());
         }
     }
     else
@@ -8130,7 +8120,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
         {
             StringBuffer s;
             s.append("File ").append(filename).append(" size is ").append(filesize).append(" which is not a multiple of ").append(fixedDiskRecordSize);
-            agent.fail(1, s.toCharArray());
+            agent.fail(1, s.str());
         }
 
         unsigned readBufferSize = queryReadBufferSize();

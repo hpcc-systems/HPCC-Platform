@@ -264,6 +264,7 @@ typedef enum sub_service_
     sub_serv_instant_query,
     sub_serv_soap_builder,
     sub_serv_roxie_builder,
+    sub_serv_json_builder,
     sub_serv_wsdl,
     sub_serv_xsd,
     sub_serv_config,
@@ -281,13 +282,13 @@ const char* getSubServiceDesc(sub_service stype);
 class CHttpRequest : public CHttpMessage
 {
 private:
-    StringBuffer    m_httpMethod;
-    StringBuffer    m_httpPath;
-    bool            m_pathIsParsed;
-    StringBuffer    m_espServiceName;
-    StringBuffer    m_espMethodName;
-    StringBuffer    m_espPathEx;
+    StringAttr    m_httpMethod;
+    StringAttr    m_httpPath;
+    StringAttr    m_espServiceName;
+    StringAttr    m_espMethodName;
+    StringAttr    m_espPathEx;
     sub_service     m_sstype;
+    bool            m_pathIsParsed;
     bool            m_authrequired;
     int             m_MaxRequestEntityLength;
     ESPSerializationFormat respSerializationFormat;

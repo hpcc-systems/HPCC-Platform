@@ -427,12 +427,11 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
         //If this is ldap server name, lookup and add its IP address
         if (0==strcmp(attrs->queryName(), "@name"))
         {
-          StringBuffer sb(attrs->queryValue());
-          StringBuffer * ldapIP = ldapServers.getValue(sb);
-          if (ldapIP->str())
+          StringBuffer * ldapIP = ldapServers.getValue(attrs->queryValue());
+          if (ldapIP)
           {
             out.appendf("@ldapAddress,%s\n",ldapIP->str());
-            ldapServers.setValue(attrs->queryValue(), NULL);
+            ldapServers.remove(attrs->queryValue());//ensure this server only listed once
           }
           else
           {
@@ -646,7 +645,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
           {
             IPropertyTree* pInst = &itInst->query();
             String instName(pInst->queryName());
-            if (!strcmp(instName.toCharArray(), "ThorMasterProcess") || instName.startsWith("RoxieServerProcess"))
+            if (!strcmp(instName.str(), "ThorMasterProcess") || instName.startsWith("RoxieServerProcess"))
             {
               out.appendf("%s=%s;%s%c%s;%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"),"master");
             }
@@ -719,7 +718,7 @@ int main(int argc, char** argv)
   const char* out_filename = NULL;
   const char* compName = NULL;
   const char* compType = NULL;
-  StringBuffer ipAddr = NULL;
+  StringBuffer ipAddr;
   bool generateOutput = true;
   bool listComps = false;
   bool verbose = false;

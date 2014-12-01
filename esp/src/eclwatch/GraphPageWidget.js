@@ -347,6 +347,14 @@ define([
             this.xgmmlDialog.show();
         },
 
+        isWorkunit: function () {
+            return lang.exists("params.Wuid", this);
+        },
+
+        isQuery: function () {
+            return lang.exists("params.QueryId", this);
+        },
+
         init: function (params) {
             if (this.inherited(arguments))
                 return;
@@ -367,7 +375,7 @@ define([
                 dotAttrs = dotAttrs.replace("\ngraph[splines=\"line\"];", "\n//graph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
             }
-            if (params.Wuid) {
+            if (this.isWorkunit()) {
                 this.graphName = params.GraphName;
                 this.wu = ESPWorkunit.Get(params.Wuid);
 
@@ -390,7 +398,7 @@ define([
                         }
                     });
                 });
-            } else if (params.QueryId) {
+            } else if (this.isQuery()) {
                 this.targetQuery = params.Target;
                 this.queryId = params.QueryId;
                 this.graphName = params.GraphName;
@@ -415,9 +423,9 @@ define([
         },
 
         refreshData: function () {
-            if (lang.exists("params.Wuid", this)) {
+            if (this.isWorkunit()) {
                 this.loadGraphFromWu(this.wu, this.graphName, true);
-            } else if (lang.exists("params.QueryId", this)) {
+            } else if (this.isQuery()) {
                 this.loadGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
             }
         },
@@ -570,7 +578,11 @@ define([
                 },
                 { label: this.i18n.Label, field: "label", width: 150 }
             ];
-            this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"]);
+            if (this.isWorkunit()) {
+                this.verticesStore.appendColumns(columns, ["name"], ["ecl", "definition"]);
+            } else if (this.isQuery()) {
+                this.verticesStore.appendColumns(columns, ["localTime", "totalTime", "label", "ecl"], ["definition"]);
+            }
             this.verticesGrid.set("columns", columns);
             this.verticesGrid.refresh();
         },

@@ -73,9 +73,12 @@ class ECLcmd(Shell):
 
             args.append("--name=" + name)
 
+            args = args + eclfile.getDParameters()
+
             args = args + eclfile.getStoredInputParameters()
 
             args.append(eclfile.getArchive())
+            
         data = ""
         wuid = "N/A"
         state = ""

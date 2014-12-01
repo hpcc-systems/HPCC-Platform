@@ -446,7 +446,7 @@ interface IRowManager : extends IInterface
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void reportMemoryUsage(bool peak) const = 0;
-    virtual bool compactRows(memsize_t count, const void * * rows) = 0;
+    virtual memsize_t compactRows(memsize_t count, const void * * rows) = 0;
     virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
     virtual memsize_t getExpectedFootprint(memsize_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
     virtual void reportPeakStatistics(IStatisticTarget & target, unsigned detail) = 0;

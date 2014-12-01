@@ -871,6 +871,7 @@ public:
     mptag_t allocateMPTag();
     void freeMPTag(mptag_t tag);
     mptag_t deserializeMPTag(MemoryBuffer &mb);
+    StringBuffer &getOpt(const char *opt, StringBuffer &out);
     bool getOptBool(const char *opt, bool dft=false);
     int getOptInt(const char *opt, int dft=0);
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
@@ -970,6 +971,7 @@ public:
     virtual unsigned queryActivityId() { return (unsigned)container.queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
 
+    StringBuffer &getOpt(const char *prop, StringBuffer &out) const;
     bool getOptBool(const char *prop, bool defVal=false) const;
     int getOptInt(const char *prop, int defVal=0) const;
     unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }

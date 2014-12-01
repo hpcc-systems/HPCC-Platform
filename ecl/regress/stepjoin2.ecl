@@ -29,21 +29,21 @@ f2 := DATASET([{2,'A',10},{1,'B',10},{2,'C',10},{1,'D',10},{2,'E',10},
                {2,'F',11},{2,'G',11},{2,'H',11},{2,'I',11},{2,'J',11}], Simple);
 
 
-f3in := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND count(rows(left)) < 3 AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter));
-f3oy := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter));
-f3ou := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter));
+f3in := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND count(rows(left)) < 3 AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter), LOCAL);
+f3oy := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter), LOCAL);
+f3ou := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter), LOCAL);
 
-f4in := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter));
-f4oy := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter));
-f4ou := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter));
+f4in := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter), LOCAL);
+f4oy := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter), LOCAL);
+f4ou := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter), LOCAL);
 
-f6in := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter, number));
-f6oy := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter, number));
-f6ou := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter, number));
+f6in := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter, number), LOCAL);
+f6oy := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter, number), LOCAL);
+f6ou := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg) AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter, number), LOCAL);
 
-f7in := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter, number));
-f7oy := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter, number));
-f7ou := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter, number));
+f7in := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter, number), LOCAL);
+f7oy := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter, number), LOCAL);
+f7ou := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter, number), LOCAL);
 
 OUTPUT(f3in);
 OUTPUT(f4in);
@@ -60,21 +60,21 @@ OUTPUT(f4ou);
 OUTPUT(f6ou);
 OUTPUT(f7ou);
 
-g3in := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter));
-g3oy := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter));
-g3ou := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter));
+g3in := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter), LOCAL);
+g3oy := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter), LOCAL);
+g3ou := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter), LOCAL);
 
-g4in := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter));
-g4oy := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter));
-g4ou := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter));
+g4in := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter), LOCAL);
+g4oy := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter), LOCAL);
+g4ou := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter), LOCAL);
 
-g6in := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter, number));
-g6oy := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter, number));
-g6ou := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter, number));
+g6in := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter, number), LOCAL);
+g6oy := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter, number), LOCAL);
+g6ou := MERGEJOIN([f1, f2], STEPPED(LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter) AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter, number), LOCAL);
 
-g7in := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter, number));
-g7oy := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter, number));
-g7ou := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter, number), internal(0x80000000),partition(seg));
+g7in := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), SORTED(seg, letter, number), LOCAL);
+g7oy := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), LEFT ONLY, SORTED(seg, letter, number), LOCAL);
+g7ou := MERGEJOIN([f1, f2], LEFT.seg = RIGHT.seg AND LEFT.letter = RIGHT.letter AND smallTest(LEFT.number, RIGHT.number), LEFT OUTER, SORTED(seg, letter, number), internal(0x80000000),partition(seg), LOCAL);
 
 OUTPUT(g3in);
 OUTPUT(g4in);

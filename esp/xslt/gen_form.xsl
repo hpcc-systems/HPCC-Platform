@@ -39,6 +39,7 @@
     <xsl:param name="noDefaultValue" select="0"/> 
     <xsl:param name="includeSoapTest" select="1"/>
     <xsl:param name="includeRoxieTest" select="0"/>
+    <xsl:param name="includeJsonTest" select="0"/>
     <!--xsl:param name="includeGatewayTest" select="0"/-->
     <xsl:param name="schemaRoot" select="xsd:schema"/>
     <xsl:param name="esdl_links" select="0"/>
@@ -255,6 +256,9 @@
                    </xsl:if>
                    <xsl:if test="$includeRoxieTest">
                     &nbsp;<input type='submit' value='Roxie Test' onclick='return onSubmit(3)'/>
+                   </xsl:if>
+                   <xsl:if test="$includeJsonTest">
+                    &nbsp;<input type='submit' value='Json Test' onclick='return onSubmit(4)'/>
                    </xsl:if>
                    &nbsp;<input type='reset' value='Reset'  title='Reset the form'/>
                    &nbsp;<input type='button' value='Clear All' onclick='onClearAll()'  title='Reset the form, and remove all arrays you added'/>

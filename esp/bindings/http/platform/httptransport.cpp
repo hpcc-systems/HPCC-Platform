@@ -1087,7 +1087,7 @@ StringBuffer& CHttpRequest::getMethod(StringBuffer & method)
 
 void CHttpRequest::setMethod(const char* method)
 {
-    m_httpMethod.clear().append(method);
+    m_httpMethod.set(method);
 }
 
 StringBuffer& CHttpRequest::getPath(StringBuffer & path)
@@ -1097,7 +1097,7 @@ StringBuffer& CHttpRequest::getPath(StringBuffer & path)
 
 void CHttpRequest::setPath(const char* path)
 {
-    m_httpPath.clear().append(path);
+    m_httpPath.set(path);
 }
 
 void CHttpRequest::parseQueryString(const char* querystr)
@@ -1363,6 +1363,7 @@ void CHttpRequest::parseEspPathInfo()
             m_sstype=(m_queryparams && m_queryparams->hasProp("main")) ? sub_serv_main : sub_serv_root;
         else
         {
+            //MORE: With a couple of changes there would be need to clone pathstr
             char *pathstr = strdup(m_httpPath.str());
             char *finger = pathstr;
             
@@ -1398,23 +1399,25 @@ void CHttpRequest::parseEspPathInfo()
                         if (pathex)
                         {
                             *pathex=0;
-                            m_espPathEx.append(pathex+1);
+                            m_espPathEx.set(pathex+1);
                         }
                             
                         *thumb=0;
-                        m_espMethodName.append(++thumb);
-                        const char *tail = strrchr(thumb, '.');
+                        const char * method = thumb+1;
+                        const char *tail = strrchr(method, '.');
                         ESPSerializationFormat fmt = lookupResponseFormatByExtension(tail);
                         if (fmt!=ESPSerializationANY)
                         {
                             m_context->setResponseFormat(fmt);
-                            m_espMethodName.setLength(tail-thumb);
+                            m_espMethodName.set(method, tail-method);
                         }
+                        else
+                            m_espMethodName.set(method);
                     }
                     else 
                         missingTrailSlash = true; 
 
-                    m_espServiceName.append(finger);
+                    m_espServiceName.set(finger);
                 }
             }
             
@@ -1451,6 +1454,8 @@ void CHttpRequest::parseEspPathInfo()
                     m_sstype=sub_serv_soap_builder;
                 else if (m_queryparams && (m_queryparams->hasProp("roxie_builder_")))
                     m_sstype=sub_serv_roxie_builder;
+                else if (m_queryparams && (m_queryparams->hasProp("json_builder_")))
+                    m_sstype=sub_serv_json_builder;
                 else if (m_queryparams && m_queryparams->hasProp("config_"))
                     m_sstype=sub_serv_config;
                 else if (m_espServiceName.length()==0)

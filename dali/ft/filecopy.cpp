@@ -944,7 +944,7 @@ void FileSprayer::calculateOne2OnePartition()
     if (!srcFormat.equals(tgtFormat))
        throwError(DFTERR_ReplicateSameFormat);
 
-    if (compressedInput && compressOutput && (strcmp(encryptKey.sget(),decryptKey.sget())==0))
+    if (compressedInput && compressOutput && (strcmp(encryptKey.str(),decryptKey.str())==0))
         setCopyCompressedRaw();                 
 
     ForEachItemIn(idx, sources)

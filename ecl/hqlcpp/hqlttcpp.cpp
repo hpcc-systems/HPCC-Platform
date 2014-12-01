@@ -2251,7 +2251,7 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 
             if (equalities.ordinality() == 0)
             {
-                translator.reportWarning(CategoryEfficiency, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
+                translator.reportWarning(CategoryEfficiency, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
             }
             else
             {
@@ -2662,8 +2662,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     bool alwaysLocal = !translator.targetThor();
     if (!hasLocal && !alwaysLocal)
     {
-        JoinSortInfo joinInfo;
-        joinInfo.findJoinSortOrders(expr, false);
+        JoinSortInfo joinInfo(expr);
+        joinInfo.findJoinSortOrders(false);
 
         OwnedHqlExpr leftList = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftReq());
         OwnedHqlExpr mappedLeftList = replaceSelector(leftList, queryActiveTableSelector(), newLeft->queryNormalizedSelector());
@@ -2721,6 +2721,26 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     //And finally group it.
     return createDatasetF(no_group, LINK(distributed), LINK(mappedOrder), LINK(newLocalAttr), NULL);
 }
+
+static IHqlExpression * queryDistributionKey(IHqlExpression * rhs)
+{
+    loop
+    {
+        switch (rhs->getOperator())
+        {
+        case no_filter:
+        case no_metaactivity:
+        case no_sorted:
+            rhs = rhs->queryChild(0);
+            break;
+        case no_newkeyindex:
+            return rhs;
+        default:
+            return NULL;
+        }
+    }
+}
+
 
 
 IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression * expr)
@@ -2813,14 +2833,14 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Tag a keyed join as ordered in the platforms that ensure it does remain ordered.  Extend if the others do.
     if (isKeyedJoin(expr))
     {
-        if (translator.targetRoxie() && !expr->hasAttribute(_ordered_Atom))
+        if ((translator.targetRoxie() || options.keyedJoinPreservesOrder) && !expr->hasAttribute(_ordered_Atom) && !expr->hasAttribute(unorderedAtom))
             return appendOwnedOperand(expr, createAttribute(_ordered_Atom));
         return NULL;
     }
 
 
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, canBeSlidingJoin(expr));
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(canBeSlidingJoin(expr));
 
     //If the data is already distributed so the data is on the correct machines then perform the join locally.
     //Should be equally applicable to lookup, hash, all and normal joins.
@@ -2828,6 +2848,33 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     {
         if (isDistributedCoLocally(leftDs, rightDs, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
             return appendOwnedOperand(expr, createLocalAttribute());
+
+        if (options.createImplicitKeyedDistributeForJoin && !expr->hasAttribute(lookupAtom))
+        {
+            IHqlExpression * rhsKey = queryDistributionKey(rightDs);
+            if (rhsKey)
+            {
+                IHqlExpression * indexRecord = rightDs->queryRecord();
+                unsigned numUnsortedFields = numPayloadFields(rightDs);
+                unsigned numKeyedFields = getFlatFieldCount(indexRecord)-numUnsortedFields;
+
+                //To create a keyed distribute, all the keyed fields in the rhs key must have equalities
+                //in the join condition.  Need to extract a join condition which just contains that subset.
+                if (joinInfo.numRequiredEqualities() >= numKeyedFields)
+                {
+                    OwnedHqlExpr keyedCondition = joinInfo.getContiguousJoinCondition(numKeyedFields);
+                    if (keyedCondition)
+                    {
+                        OwnedHqlExpr distribute = createDataset(no_keyeddistribute, LINK(leftDs), createComma(LINK(rhsKey), keyedCondition.getClear(), LINK(seq)));
+                        HqlExprArray args;
+                        args.append(*distribute.getClear());
+                        unwindChildren(args, expr, 1);
+                        args.append(*createLocalAttribute());
+                        return expr->clone(args);
+                    }
+                }
+            }
+        }
 
         if (options.matchExistingDistributionForJoin)
         {
@@ -5680,7 +5727,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                         throwError1(HQLERR_DuplicateDefinitionDiffType, s.str());
                 }
                 else if (translator.queryOptions().allowStoredDuplicate)            // only here as a temporary workaround
-                    translator.reportWarning(CategoryMistake, queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
+                    translator.reportWarning(CategoryMistake, SeverityUnknown, queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
                 else
                 {
                     if (queryLocationIndependent(prevValue) != queryLocationIndependent(value))
@@ -7414,9 +7461,9 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                             s.append(" in ").append(symbol->queryName());
                     }
                     if (op == no_nothor)
-                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
+                        translator.reportWarning(CategoryMistake, SeverityUnknown, queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
                     else
-                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
+                        translator.reportWarning(CategoryMistake, SeverityUnknown, queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
                 }
                 if (value->getOperator() == no_createset)
                 {

@@ -1503,8 +1503,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     IHqlExpression * indexRecord = right->queryRecord();
     IHqlExpression * seq = querySelSeq(expr);
 
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, false);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(false);
     if (joinInfo.hasOptionalEqualities())
         throwError(HQLERR_KeyedDistributeNoSubstringJoin);
 

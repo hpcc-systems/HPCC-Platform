@@ -470,12 +470,12 @@
          <td>
             <xsl:choose>
                 <xsl:when test="not(string-length($archived))">
-                    <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}&amp;&amp;IncludeExceptions=0&amp;IncludeGraphs=0&amp;IncludeSourceFiles=0&amp;IncludeResults=0&amp;IncludeVariables=0&amp;IncludeTimers=0&amp;IncludeDebugValues=0&amp;IncludeApplicationValues=0&amp;IncludeWorkflows&amp;SuppressResultSchemas=1')">
+                    <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}&amp;IncludeExceptions=0&amp;IncludeGraphs=0&amp;IncludeSourceFiles=0&amp;IncludeResults=0&amp;IncludeVariables=0&amp;IncludeTimers=0&amp;IncludeDebugValues=0&amp;IncludeApplicationValues=0&amp;IncludeWorkflows=0&amp;SuppressResultSchemas=1')">
                        <xsl:value-of select="Wuid"/>
                     </a>
                 </xsl:when>
                 <xsl:otherwise>
-                    <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}&amp;{$basicquery}&amp;IncludeExceptions=0&amp;IncludeGraphs=0&amp;IncludeSourceFiles=0&amp;IncludeResults=0&amp;IncludeVariables=0&amp;IncludeTimers=0&amp;IncludeDebugValues=0&amp;IncludeApplicationValues=0&amp;IncludeWorkflows&amp;SuppressResultSchemas=1')">
+                    <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}&amp;Type=archived workunits&amp;IncludeExceptions=0&amp;IncludeGraphs=0&amp;IncludeSourceFiles=0&amp;IncludeResults=0&amp;IncludeVariables=0&amp;IncludeTimers=0&amp;IncludeDebugValues=0&amp;IncludeApplicationValues=0&amp;IncludeWorkflows=0&amp;SuppressResultSchemas=1')">
                         <xsl:value-of select="Wuid"/>
                     </a>
                 </xsl:otherwise>

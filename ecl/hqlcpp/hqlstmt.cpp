@@ -637,18 +637,33 @@ HqlExprAssociation * BuildCtx::queryAssociation(IHqlExpression * search, AssocKi
             else
             {
                 const CIArrayOf<HqlExprAssociation> & defs = searchStmts->defs;
-                ForEachItemInRev(idx, defs)
+                if (!selectors)
                 {
-                    HqlExprAssociation & cur = defs.item(idx);
-                    IHqlExpression * represents = cur.represents.get();
-                    if (selectors && (cur.getKind() == AssocCursor))
+                    ForEachItemInRev(idx, defs)
                     {
-                        if (selectors->contains(*represents))
-                            return NULL;
+                        HqlExprAssociation & cur = defs.item(idx);
+                        IHqlExpression * represents = cur.represents.get();
+                        if (represents == search)
+                            if (cur.getKind() == kind)
+                                return &cur;
                     }
-                    if (represents == search)
-                        if (cur.getKind() == kind)
-                            return &cur;
+                }
+                else
+                {
+                    ForEachItemInRev(idx, defs)
+                    {
+                        HqlExprAssociation & cur = defs.item(idx);
+                        IHqlExpression * represents = cur.represents.get();
+                        AssocKind curKind = cur.getKind();
+                        if (curKind == AssocCursor)
+                        {
+                            if (selectors->contains(*represents))
+                                return NULL;
+                        }
+                        if (represents == search)
+                            if (curKind == kind)
+                                return &cur;
+                    }
                 }
             }
         }

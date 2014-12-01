@@ -722,6 +722,7 @@ struct HqlCppOptions
     bool                checkAmbiguousRollupCondition;
     bool                paranoidCheckSelects;
     bool                matchExistingDistributionForJoin;
+    bool                createImplicitKeyedDistributeForJoin;
     bool                expandHashJoin;
     bool                traceIR;
     bool                preserveCaseExternalParameter;
@@ -735,6 +736,7 @@ struct HqlCppOptions
     bool                alwaysUseGraphResults;
     bool                reportAssertFilenameTail;
     bool                newBalancedSpotter;
+    bool                keyedJoinPreservesOrder;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -918,7 +920,7 @@ public:
     IHqlExpression * queryActiveNamedActivity();
     IHqlExpression * queryActiveActivityLocation() const;
     void reportWarning(WarnErrorCategory category, unsigned id, const char * msg, ...) __attribute__((format(printf, 4, 5)));
-    void reportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg, ...) __attribute__((format(printf, 5, 6)));
+    void reportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg, ...) __attribute__((format(printf, 6, 7)));
     void reportError(IHqlExpression * location, int code, const char *format, ...) __attribute__((format(printf, 4, 5)));
     void reportErrorDirect(IHqlExpression * location, int code,const char *msg, bool alwaysAbort);
     void addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * msg, IHqlExpression * location);
@@ -1824,7 +1826,7 @@ protected:
 
 //ThorHole helper functions...
     IHqlExpression * doBuildDatabaseLoader(BuildCtx & ctx, IHqlExpression * expr);
-    void doReportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg);
+    void doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg);
 
     void optimizePersists(HqlExprArray & exprs);
     void allocateSequenceNumbers(HqlExprArray & exprs);
@@ -1944,6 +1946,7 @@ protected:
     unsigned            nextUid;
     unsigned            nextTypeId;
     unsigned            nextFieldId;
+    unsigned            curWfid;
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;

@@ -103,6 +103,7 @@ void CommonXmlWriter::outputQString(unsigned len, const char *field, const char 
     else
         temp = (char *)tempBuffer.allocate(len);
     rtlQStrToStr(len, temp, len, field);
+//    outputString(len, temp, fieldname, isnumeric);
     outputString(len, temp, fieldname);
 }
 
@@ -437,6 +438,18 @@ void CommonJsonWriter::outputQuoted(const char *text)
 {
     checkDelimit();
     appendJSONValue(out, NULL, text);
+}
+
+void CommonJsonWriter::outputNumericString(const char *field, const char *fieldname)
+{
+    unsigned len = (size32_t)strlen(field);
+
+    if (flags & XWFtrim)
+        len = rtlTrimStrLen(len, field);
+    if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
+        return;
+    checkDelimit();
+    appendJSONStringValue(out, checkItemName(fieldname), len, field, true, false);
 }
 
 void CommonJsonWriter::outputString(unsigned len, const char *field, const char *fieldname)

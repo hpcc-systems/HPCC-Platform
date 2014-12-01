@@ -1446,7 +1446,7 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 
         //set the file
         MemoryBuffer buff;
-        buff.setBuffer(returnStr.length(), (void*)returnStr.toCharArray());
+        buff.setBuffer(returnStr.length(), (void*)returnStr.str());
         resp.setDefFile(buff);
 
         //set the type
@@ -1522,7 +1522,7 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
 
     if (!cluster || !stricmp(cluster, ""))
     {
-        char *eclCluster = NULL;
+        StringAttr eclCluster;
         const char* wuid = df->queryAttributes().queryProp("@workunit");
         if (wuid && *wuid)
         {
@@ -1533,10 +1533,7 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
                 {
                     IConstWorkUnit* wu = factory->openWorkUnit(wuid, false);
                     if (wu)
-                    {   
-                        SCMStringBuffer cluster;
-                        eclCluster = (char *)wu->getClusterName(cluster).str();
-                    }
+                        eclCluster.set(wu->queryClusterName());
                 }
             }
             catch(...)
@@ -1545,7 +1542,7 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
             }
         }
 
-        if (!eclCluster || !stricmp(eclCluster, ""))
+        if (!eclCluster.length())
             return false;
     }
 
@@ -5401,10 +5398,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         {
             CWUWrapper wu(wuid, context);
             if (wu)
-            {
-                SCMStringBuffer cluster0;
-                cluster.append(wu->getClusterName(cluster0).str());
-            }
+                cluster.append(wu->queryClusterName());
         }
     }
     catch (IException *e)
@@ -5428,7 +5422,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         udesc->set(secUser->getName(), secUser->credentials().getPassword());
     }
 
-    if (cluster && *cluster)
+    if (cluster.length())
     {
         web.setown(createViewFileWeb(*resultSetFactory, cluster, udesc.getLink()));
     }

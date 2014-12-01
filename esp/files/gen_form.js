@@ -375,6 +375,14 @@ function onSubmit(reqType)  // reqType: 0: regular form, 1: soap, 2: form param 
                 form.action += c + "roxie_builder_";
          }
     }
+    if (reqType==4)
+    {
+         if (form.action.indexOf('json_builder_')<0) // add only if does not exist already
+         {
+                var c =  (form.action.indexOf('?')>0) ? '&' : '?';
+                form.action += c + "json_builder_";
+         }
+    }
     // alert("Form action = " + form.action);
 
     // firefox now save input values (version 1.5)  

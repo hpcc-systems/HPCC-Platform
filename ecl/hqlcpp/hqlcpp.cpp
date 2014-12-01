@@ -1412,6 +1412,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     nextUid = 0;
     nextTypeId = 0;
     nextFieldId = 0;
+    curWfid = 0;
     code = (HqlCppInstance*)_code;
     xmlUsesContents = false;
 }
@@ -1717,6 +1718,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.canLinkConstantRows,"canLinkConstantRows",true),
         DebugOption(options.checkAmbiguousRollupCondition,"checkAmbiguousRollupCondition",true),
         DebugOption(options.matchExistingDistributionForJoin,"matchExistingDistributionForJoin",true),
+        DebugOption(options.createImplicitKeyedDistributeForJoin,"createImplicitKeyedDistributeForJoin",true),
         DebugOption(options.expandHashJoin,"expandHashJoin",false),
         DebugOption(options.traceIR,"traceIR",false),
         DebugOption(options.preserveCaseExternalParameter,"preserveCaseExternalParameter",true),
@@ -1729,6 +1731,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
         DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
         DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
+        DebugOption(options.keyedJoinPreservesOrder,"keyedJoinPreservesOrder",true),
     };
 
     //get options values from workunit
@@ -2033,12 +2036,12 @@ bool HqlCppTranslator::getDebugFlag(const char * name, bool defValue)
     return wu()->getDebugValueBool(name, defValue);
 }
 
-void HqlCppTranslator::doReportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg)
+void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg)
 {
     Owned<IECLError> warnError;
     if (!location)
         location = queryActiveActivityLocation();
-    ErrorSeverity severity = queryDefaultSeverity(category);
+    ErrorSeverity severity = (explicitSeverity == SeverityUnknown) ? queryDefaultSeverity(category) : explicitSeverity;
     if (location)
         warnError.setown(createECLError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
     else
@@ -2047,14 +2050,14 @@ void HqlCppTranslator::doReportWarning(WarnErrorCategory category, IHqlExpressio
     errorProcessor->report(warnError);
 }
 
-void HqlCppTranslator::reportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg, ...)
+void HqlCppTranslator::reportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg, ...)
 {
     StringBuffer s;
     va_list args;
     va_start(args, msg);
     s.valist_appendf(msg, args);
     va_end(args);
-    doReportWarning(category, location, id, s.str());
+    doReportWarning(category, explicitSeverity, location, id, s.str());
 }
 
 void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, const char * msg, ...)
@@ -2064,7 +2067,7 @@ void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, co
     va_start(args, msg);
     s.valist_appendf(msg, args);
     va_end(args);
-    doReportWarning(category, NULL, id, s.str());
+    doReportWarning(category, SeverityUnknown, NULL, id, s.str());
 }
 
 void HqlCppTranslator::addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * text, IHqlExpression * location)
@@ -5868,7 +5871,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             if (curTarget->length)
                 args.append(*LINK(curTarget->length));
             args.append(*createValue(no_reference, curTarget->expr->getType(), LINK(curTarget->expr)));
-            if (hasLinkCountedModifier(retType) && hasNonNullRecord(retType) && getBoolAttribute(external, allocatorAtom, true))
+            if (hasLinkCountedModifier(retType) && getBoolAttribute(external, allocatorAtom, true))
                 args.append(*createRowAllocator(ctx, ::queryRecord(retType)));
 
             localBound.setFromTarget(*curTarget);
@@ -10012,9 +10015,7 @@ void HqlCppTranslator::doBuildExprIsValid(BuildCtx & ctx, IHqlExpression * expr,
 
 IHqlExpression * HqlCppTranslator::getConstWuid(IHqlExpression * expr)
 {
-    SCMStringBuffer out;
-    wu()->getWuid(out);
-    OwnedHqlExpr wuid = createConstant(out.str());
+    OwnedHqlExpr wuid = createConstant(wu()->queryWuid());
     return ensureExprType(wuid, expr->queryType());
 }
 

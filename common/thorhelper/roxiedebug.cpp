@@ -410,7 +410,7 @@ public:
     virtual void outputInlineXml(const char *xml){}
     virtual void outputQuoted(const char *text) { }
 
-    virtual void outputString(unsigned len, const char *field, const char *fieldname) 
+    virtual void outputString(unsigned len, const char *field, const char *fieldname)
     {
         if (!matchSeen && checkFieldName(fieldname) && (len >= searchStringLength))
         {
@@ -480,7 +480,7 @@ public:
     {
         // Searching/breaking on unicode not supported at the moment
     }
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname) 
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname)
     {
         if (!matchSeen && checkFieldName(fieldname))
         {
@@ -870,11 +870,12 @@ DebugActivityRecord::DebugActivityRecord (IActivityBase *_activity, unsigned _it
 {
     localCycles = 0;
     totalCycles = 0;
-    idText.append(activity->queryId());
+    StringAttrBuilder fullId(idText);
+    fullId.append(activity->queryId());
     if (iteration || channel) 
-        idText.appendf(".%d", iteration);
+        fullId.appendf(".%d", iteration);
     if (channel) 
-        idText.appendf("#%d", channel);
+        fullId.appendf("#%d", channel);
 }
 
 void DebugActivityRecord::outputId(IXmlWriter *output, const char *fieldName)

@@ -561,7 +561,7 @@ public:
         branch->setProp("Cluster",clustname);
         StringBuffer datastr;
         toXML(branch,datastr);
-        root->addPropTree(name,createPTree(name))->setPropBin("data",datastr.length(),datastr.toCharArray());
+        root->addPropTree(name,createPTree(name))->setPropBin("data",datastr.length(),datastr.str());
     }
 
     CNewXRefManagerBase()
