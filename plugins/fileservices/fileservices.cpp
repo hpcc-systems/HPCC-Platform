@@ -694,6 +694,8 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
     req->setSourceMaxRecordSize(sourceMaxRecordSize);
     req->setSourceFormat(DFUff_csv);
     req->setSourceCsvSeparate(sourceCsvSeparate);
+    if (sourceCsvSeparate && *sourceCsvSeparate == '\0')
+        req->setNoSourceCsvSeparator(true);
     req->setSourceCsvTerminate(sourceCsvTerminate);
     req->setSourceCsvQuote(sourceCsvQuote);
     if (sourceCsvEscape && *sourceCsvEscape)
