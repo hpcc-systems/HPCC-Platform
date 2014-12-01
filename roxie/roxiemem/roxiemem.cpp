@@ -5501,7 +5501,7 @@ protected:
         unsigned numPagesAfter = rowManager->numPagesAfterCleanup(false);
         if ((compacted>0) != (numPagesBefore != numPagesAfter))
             DBGLOG("Compacted not returned correctly");
-        ASSERT(compacted == (numPagesBefore != numPagesAfter));
+        CPPUNIT_ASSERT_EQUAL(compacted != 0, (numPagesBefore != numPagesAfter));
         DBGLOG("Compacting %d[%d] (%d->%d cf %d) Before: Time taken %d", numRows, milliFraction, numPagesBefore, numPagesAfter, expectedPages, endTime-startTime);
         ASSERT(numPagesAfter == expectedPages);
 
