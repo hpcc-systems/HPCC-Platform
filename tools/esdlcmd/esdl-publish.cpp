@@ -157,7 +157,7 @@ public:
         request->setServiceName(optESDLService.get());
 
         if (optVerbose)
-            fprintf(stderr,"\nESDL Definition: \n%s\n", esxml.str());
+            fprintf(stdout,"\nESDL Definition: \n%s\n", esxml.str());
 
         request->setXMLDefinition(esxml.str());
         request->setDeletePrevious(optOverWrite);
@@ -213,10 +213,6 @@ public:
                case 1:
                    optSource.set(arg);
                    break;
-               default:
-                   fprintf(stderr, "\nUnrecognized positional argument detected : %s\n", arg);
-                   usage();
-                   return false;
               }
           }
           else
@@ -284,7 +280,7 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientPublishESDLBindingRequest> request = esdlConfigClient->createPublishESDLBindingRequest();
 
-        fprintf(stderr,"\nAttempting to configure ESDL Service: '%s'\n", optESDLService.get());
+        fprintf(stdout,"\nAttempting to configure ESDL Service: '%s'\n", optESDLService.get());
 
         request->setEspProcName(optTargetESPProcName);
         request->setEspPort(optTargetPort);
@@ -295,7 +291,7 @@ public:
         request->setOverwrite(optOverWrite);
 
         if (optVerbose)
-            fprintf(stderr,"\nMethod config: %s\n", optInput.get());
+            fprintf(stdout,"\nMethod config: %s\n", optInput.get());
 
         Owned<IClientPublishESDLBindingResponse> resp = esdlConfigClient->PublishESDLBinding(request);
 
@@ -375,10 +371,6 @@ public:
                 case 3:
                     optESDLService.set(arg);
                     break;
-                default:
-                    fprintf(stderr, "\nUnrecognized positional argument detected : %s\n", arg);
-                    usage();
-                    return false;
                }
            }
            else
@@ -466,10 +458,10 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientDeleteESDLBindingRequest> request = esdlConfigClient->createDeleteESDLBindingRequest();
 
-        fprintf(stderr,"\nAttempting to un-bind ESDL Service: '%s.%s'\n", optTargetESPProcName.get(), optEspBinding.get());
+        fprintf(stdout,"\nAttempting to un-bind ESDL Service: '%s.%s'\n", optTargetESPProcName.get(), optEspBinding.get());
 
         StringBuffer id;
-        id.set(optTargetESPProcName).append('.').append(optEspBinding);
+        id.setf("%s.%s", optTargetESPProcName.get(), optEspBinding.get());
         request->setId(id);
 
         Owned<IClientDeleteESDLRegistryEntryResponse> resp = esdlConfigClient->DeleteESDLBinding(request);
@@ -492,7 +484,7 @@ public:
                 "   TargetESPProcessName                             The target ESP Process name\n"
                 "   TargetESPBindingPort | TargetESPServiceName      Either target ESP binding port or target ESP service name\n");
 
-                EsdlPublishCmdCommon::usage();
+        EsdlPublishCmdCommon::usage();
 
         printf( "\n   Use this command to unpublish ESDL Service based bindings.\n"
                 "   To unbind an ESDL Service, provide the target ESP process name\n"
@@ -527,10 +519,6 @@ public:
                 case 1:
                     optEspBinding.set(arg);
                     break;
-                default:
-                    fprintf(stderr, "\nUnrecognized positional argument detected : %s\n", arg);
-                    usage();
-                    return false;
                }
            }
            else
@@ -584,10 +572,10 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientDeleteESDLDefinitionRequest> request = esdlConfigClient->createDeleteESDLDefinitionRequest();
 
-        fprintf(stderr,"\nAttempting to delete ESDL definition: '%s.%d'\n", optESDLService.get, optVersion);
+        fprintf(stdout,"\nAttempting to delete ESDL definition: '%s.%d'\n", optESDLService.get(), (int)optVersion);
 
         StringBuffer id;
-        id.set(optESDLService.get()).append('.').append(optVersion);
+        id.setf("%s.%d", optESDLService.get(), (int)optVersion);
 
         request->setId(id);
 
@@ -611,7 +599,7 @@ public:
                 "   ESDLServiceDefinitionName         The name of the ESDL service definition to delete\n"
                 "   ESDLServiceDefinitionVersion      The version of the ESDL service definition to delete\n");
 
-                EsdlPublishCmdCommon::usage();
+        EsdlPublishCmdCommon::usage();
 
         printf( "\n   Use this command to delete an ESDL Service definition.\n"
                 "   To delete an ESDL Service definition, provide the definition name and version\n"
@@ -643,10 +631,6 @@ public:
                 case 1:
                     optVersionStr.set(arg);
                     break;
-                default:
-                    fprintf(stderr, "\nUnrecognized positional argument detected : %s\n", arg);
-                    usage();
-                    return false;
                }
            }
            else
@@ -708,7 +692,7 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientListESDLDefinitionsRequest> req = esdlConfigClient->createListESDLDefinitionsRequest();
 
-        fprintf(stderr,"\nAttempting to list ESDL definitions.\n");
+        fprintf(stdout,"\nAttempting to list ESDL definitions.\n");
 
         Owned<IClientListESDLDefinitionsResponse> resp = esdlConfigClient->ListESDLDefinitions(req);
 
@@ -776,7 +760,7 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientListESDLBindingsRequest> req = esdlConfigClient->createListESDLBindingsRequest();
 
-        fprintf(stderr,"\nAttempting to list ESDL bindings.\n");
+        fprintf(stdout,"\nAttempting to list ESDL bindings.\n");
 
         Owned<IClientListESDLBindingsResponse> resp = esdlConfigClient->ListESDLBindings(req);
 
@@ -849,7 +833,7 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientConfigureESDLBindingMethodRequest> request = esdlConfigClient->createConfigureESDLBindingMethodRequest();
 
-        fprintf(stderr,"\nAttempting to configure Method : '%s'.'%s'\n", optService.get(), optMethod.get());
+        fprintf(stdout,"\nAttempting to configure Method : '%s'.'%s'\n", optService.get(), optMethod.get());
         request->setEspProcName(optTargetESPProcName);
         request->setEspBindingName(optBindingName);
         request->setEsdlServiceName(optService.get());
@@ -859,7 +843,7 @@ public:
         request->setOverwrite(optOverWrite);
 
         if (optVerbose)
-            fprintf(stderr,"\nMethod config: %s\n", optInput.get());
+            fprintf(stdout,"\nMethod config: %s\n", optInput.get());
 
         Owned<IClientConfigureESDLBindingMethodResponse> resp = esdlConfigClient->ConfigureESDLBindingMethod(request);
 
@@ -939,10 +923,6 @@ public:
                 case 4:
                     optMethod.set(arg);
                     break;
-                default:
-                    fprintf(stderr, "\nUnrecognized positional argument detected : %s\n", arg);
-                    usage();
-                    return false;
                }
            }
            else
@@ -1033,16 +1013,7 @@ class EsdlGetCmd : public EsdlPublishCmdCommon
                   const char *arg = iter.query();
                   if (*arg != '-')
                   {
-                      switch (cur)
-                      {
-                       case 0:
-                           optId.set(arg);
-                           break;
-                       default:
-                           fprintf(stderr, "\nUnrecognized positional argument detected : %s\n", arg);
-                           usage();
-                           return false;
-                      }
+                      optId.set(arg);
                   }
                   else
                   {
