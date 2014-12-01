@@ -422,6 +422,7 @@ public:
     void kill();
     void compact();
     void flush();
+    inline bool isFlushed() const { return numRows == numCommitted(); }
     inline bool append(const void *row) __attribute__((warn_unused_result))
     {
         //GH->JCS Should this really be inline?
@@ -471,8 +472,9 @@ public:
         swap(from);
     }
     void transferFrom(CThorExpandingRowArray &src);
+    void transferFrom(CThorSpillableRowArray &src);
 
-    IRowStream *createRowStream();
+    IRowStream *createRowStream(unsigned spillPriority=SPILL_PRIORITY_SPILLABLE_STREAM);
 
     offset_t serializedSize()
     {
@@ -513,6 +515,7 @@ interface IThorRowCollectorCommon : extends IInterface
     virtual unsigned overflowScale() const = 0;
     virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort=true) = 0;
     virtual void transferRowsIn(CThorExpandingRowArray &src) = 0;
+    virtual void transferRowsIn(CThorSpillableRowArray &src) = 0;
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50) = 0;
     virtual void ensure(rowidx_t max) = 0;
     virtual void setOptions(unsigned options) = 0;
@@ -520,8 +523,8 @@ interface IThorRowCollectorCommon : extends IInterface
 
 interface IThorRowLoader : extends IThorRowCollectorCommon
 {
-    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping=false, CThorExpandingRowArray *allMemRows=NULL, memsize_t *memUsage=NULL) = 0;
-    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows=NULL, memsize_t *memUsage=NULL) = 0;
+    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping=false, CThorExpandingRowArray *allMemRows=NULL, memsize_t *memUsage=NULL, bool doReset=true) = 0;
+    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows=NULL, memsize_t *memUsage=NULL, bool doReset=true) = 0;
 };
 
 interface IThorRowCollector : extends IThorRowCollectorCommon
