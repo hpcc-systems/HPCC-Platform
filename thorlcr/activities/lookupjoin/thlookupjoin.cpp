@@ -22,7 +22,7 @@
 
 class CLookupJoinActivityMaster : public CMasterActivity
 {
-    mptag_t broadcast2MpTag, lhsDistributeTag, rhsDistributeTag;
+    mptag_t broadcast2MpTag, broadcast3MpTag, lhsDistributeTag, rhsDistributeTag;
 
     bool isAll() const
     {
@@ -39,13 +39,14 @@ public:
     CLookupJoinActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
     {
         if (container.queryLocal())
-            broadcast2MpTag = lhsDistributeTag = rhsDistributeTag = TAG_NULL;
+            broadcast2MpTag = broadcast3MpTag, lhsDistributeTag = rhsDistributeTag = TAG_NULL;
         else
         {
             mpTag = container.queryJob().allocateMPTag(); // NB: base takes ownership and free's
             if (!isAll())
             {
                 broadcast2MpTag = container.queryJob().allocateMPTag();
+                broadcast3MpTag = container.queryJob().allocateMPTag();
                 lhsDistributeTag = container.queryJob().allocateMPTag();
                 rhsDistributeTag = container.queryJob().allocateMPTag();
             }
@@ -56,6 +57,7 @@ public:
         if (!container.queryLocal() && !isAll())
         {
             container.queryJob().freeMPTag(broadcast2MpTag);
+            container.queryJob().freeMPTag(broadcast3MpTag);
             container.queryJob().freeMPTag(lhsDistributeTag);
             container.queryJob().freeMPTag(rhsDistributeTag);
             // NB: if mpTag is allocated, the activity base class frees
@@ -69,6 +71,7 @@ public:
             if (!isAll())
             {
                 serializeMPtag(dst, broadcast2MpTag);
+                serializeMPtag(dst, broadcast3MpTag);
                 serializeMPtag(dst, lhsDistributeTag);
                 serializeMPtag(dst, rhsDistributeTag);
             }
