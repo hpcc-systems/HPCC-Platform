@@ -842,7 +842,7 @@ public:
 public:
     exprid_t expr;
     const char * name;
-    IECLError * warning;
+    IError * warning;
     IPropertyTree * tree;
     unsigned value;
     unsigned line;
@@ -1327,7 +1327,7 @@ public:
             }
         case annotate_warning:
             {
-                IECLError * warning = info.warning;
+                IError * warning = info.warning;
                 StringBuffer msg;
                 warning->errorMessage(msg);
                 const char * filename = warning->getFilename();

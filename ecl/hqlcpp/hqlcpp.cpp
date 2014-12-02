@@ -1371,7 +1371,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
             if (errs.errCount())
             {
                 StringBuffer errtext;
-                IECLError *first = errs.firstError();
+                IError *first = errs.firstError();
                 first->toString(errtext);
                 throw MakeStringException(HQLERR_FailedToLoadSystemModule, "%s @ %d:%d", errtext.str(), first->getColumn(), first->getLine());
             } 
@@ -2038,14 +2038,14 @@ bool HqlCppTranslator::getDebugFlag(const char * name, bool defValue)
 
 void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg)
 {
-    Owned<IECLError> warnError;
+    Owned<IError> warnError;
     if (!location)
         location = queryActiveActivityLocation();
     ErrorSeverity severity = (explicitSeverity == SeverityUnknown) ? queryDefaultSeverity(category) : explicitSeverity;
     if (location)
-        warnError.setown(createECLError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
+        warnError.setown(createError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
     else
-        warnError.setown(createECLError(category, severity, id, msg, NULL, 0, 0, 0));
+        warnError.setown(createError(category, severity, id, msg, NULL, 0, 0, 0));
 
     errorProcessor->report(warnError);
 }
@@ -2137,7 +2137,7 @@ void HqlCppTranslator::ThrowStringException(int code,const char *format, ...)
         va_start(args, format);
         errorMsg.valist_appendf(format, args);
         va_end(args);
-        throw createECLError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
+        throw createError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
     }
 
     va_list args;
@@ -2154,7 +2154,7 @@ void HqlCppTranslator::reportErrorDirect(IHqlExpression * location, int code,con
         ECLlocation loc;
         loc.extractLocationAttr(location);
         if (alwaysAbort)
-            throw createECLError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
+            throw createError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
         errorProcessor->reportError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
     }
     else

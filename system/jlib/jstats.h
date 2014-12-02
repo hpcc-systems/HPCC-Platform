@@ -121,7 +121,7 @@ enum StatisticKind
 
     StSizeGeneratedCpp,
     StSizePeakMemory,
-    StSizeMaxRowSize,                   // Is measurement in K appropriate?
+    StSizeMaxRowSize,
 
     StNumRowsProcessed,                 // on edge
     StNumSlaves,                        // on edge

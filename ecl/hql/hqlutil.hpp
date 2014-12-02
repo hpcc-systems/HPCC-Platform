@@ -554,7 +554,7 @@ public:
 public:
     ErrorSeverityMapper(IErrorReceiver & errorProcessor);
 
-    virtual IECLError * mapError(IECLError * error);
+    virtual IError * mapError(IError * error);
 
     bool addCommandLineMapping(const char * mapping);
     bool addMapping(const char * category, const char * value);
@@ -668,7 +668,7 @@ extern HQL_API IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive,
 extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, const char * name);
 extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, const char * name);
 
-extern HQL_API IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
+extern HQL_API IError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
 extern HQL_API IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext & ctx, bool reportError);
 extern HQL_API IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx);
 extern HQL_API StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix = NULL);
@@ -745,6 +745,6 @@ protected:
 };
 
 extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch);
-extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLErrorArray & warnings);
+extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IErrorArray & warnings);
 
 #endif

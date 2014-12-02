@@ -57,7 +57,7 @@ define([
             this.deferred = new Deferred();
             this.startLoading();
             var context = this;
-            require(["hpcc/" + this.delayWidget], function (widget) {
+            require([(this.delayFolder ? "plugins/" + this.delayFolder + "/" : "hpcc/") + this.delayWidget], function (widget) {
                 if (widget.fixCircularDependency) {
                     widget = widget.fixCircularDependency;
                 }

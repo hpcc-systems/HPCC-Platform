@@ -393,7 +393,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
             translator.finalizeResources();
             translator.expandFunctions(true);
         }
-        catch (IECLError * e)
+        catch (IError * e)
         {
             if (e->errorCode() != HQLERR_ErrorAlreadyReported)
             {
@@ -553,6 +553,16 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
         PrintLog("Compiled %s", wuname);
     else
         PrintLog("Failed to compile %s", wuname);
+
+    bool reportCppWarnings = wu->getDebugValueBool("reportCppWarnings", false);
+    IArrayOf<IError> errors;
+    compiler->extractErrors(errors);
+    ForEachItemIn(iErr, errors)
+    {
+        IError & cur = errors.item(iErr);
+        if (isError(&cur) || reportCppWarnings)
+            errs->report(&cur);
+    }
 
     cycle_t elapsedCycles = get_cycles_now() - startCycles;
     //For eclcc the workunit has been written to the resource - so any further timings will not be preserved -> need to report differently

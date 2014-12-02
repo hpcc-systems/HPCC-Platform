@@ -262,11 +262,11 @@ bool HqlGramCtx::hasAnyActiveParameters()
 }
 
 
-static IECLError * createErrorVA(WarnErrorCategory category, ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args)
+static IError * createErrorVA(WarnErrorCategory category, ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args)
 {
     StringBuffer msg;
     msg.valist_appendf(format, args);
-    return createECLError(category, severity, errNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
+    return createError(category, severity, errNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
 }
 
 IHqlExpression * HqlGram::createSetRange(attribute & array, attribute & range)
@@ -3484,7 +3484,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
         }
         return NULL;
     }
-    catch(IECLError* error)
+    catch(IError* error)
     {
         if(errorHandler && !errorDisabled)
             errorHandler->report(error);
@@ -5846,11 +5846,11 @@ void HqlGram::reportErrorUnexpectedX(const attribute& errpos, IAtom * unexpected
 
 void HqlGram::doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
 {
-    Owned<IECLError> error = createECLError(category, queryDefaultSeverity(category), warnNo, msg, filename, lineno, column, pos);
+    Owned<IError> error = createError(category, queryDefaultSeverity(category), warnNo, msg, filename, lineno, column, pos);
     report(error);
 }
 
-void HqlGram::reportMacroExpansionPosition(IECLError * warning, HqlLex * lexer)
+void HqlGram::reportMacroExpansionPosition(IError * warning, HqlLex * lexer)
 {
     if (expandingMacroPosition)
         return;
@@ -5873,7 +5873,7 @@ void HqlGram::reportMacroExpansionPosition(IECLError * warning, HqlLex * lexer)
 
 void HqlGram::reportErrorVa(int errNo, const ECLlocation & pos, const char* format, va_list args)
 {
-    Owned<IECLError> error = createErrorVA(CategoryError, SeverityFatal, errNo, pos, format, args);
+    Owned<IError> error = createErrorVA(CategoryError, SeverityFatal, errNo, pos, format, args);
     report(error);
 }
 
@@ -5881,7 +5881,7 @@ void HqlGram::reportError(int errNo, const char *msg, int lineno, int column, in
 {
     if (errorHandler && !errorDisabled)
     {
-        Owned<IECLError> error = createECLError(errNo, msg, lexObject->queryActualSourcePath()->str(), lineno, column, position);
+        Owned<IError> error = createError(errNo, msg, lexObject->queryActualSourcePath()->str(), lineno, column, position);
         report(error);
     }
 }
@@ -5892,7 +5892,7 @@ void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const ECLloc
     {
         va_list args;
         va_start(args, format);
-        Owned<IECLError> error = createErrorVA(category, queryDefaultSeverity(category), warnNo, pos, format, args);
+        Owned<IError> error = createErrorVA(category, queryDefaultSeverity(category), warnNo, pos, format, args);
         va_end(args);
 
         report(error);
@@ -5906,7 +5906,7 @@ void HqlGram::reportWarning(WarnErrorCategory category, ErrorSeverity severity, 
         StringBuffer msg;
         va_list args;
         va_start(args, format);
-        Owned<IECLError> error = createErrorVA(category, severity, warnNo, pos, format, args);
+        Owned<IError> error = createErrorVA(category, severity, warnNo, pos, format, args);
         va_end(args);
 
         report(error);
@@ -5918,7 +5918,7 @@ void HqlGram::reportWarningVa(WarnErrorCategory category, int warnNo, const attr
     const ECLlocation & pos = a.pos;
     if (errorHandler && !errorDisabled)
     {
-        Owned<IECLError> error = createErrorVA(category, queryDefaultSeverity(category), warnNo, pos, format, args);
+        Owned<IError> error = createErrorVA(category, queryDefaultSeverity(category), warnNo, pos, format, args);
         report(error);
     }
 }
@@ -5933,16 +5933,16 @@ void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const char *
 //interface IErrorReceiver
 void HqlGram::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
 {
-    Owned<IECLError> err = createECLError(errNo,msg,filename,lineno,column,position);
+    Owned<IError> err = createError(errNo,msg,filename,lineno,column,position);
     report(err);
 }
 
-IECLError * HqlGram::mapError(IECLError * error)
+IError * HqlGram::mapError(IError * error)
 {
     return errorHandler->mapError(error);
 }
 
-void HqlGram::report(IECLError* error)
+void HqlGram::report(IError* error)
 {
     if (errorHandler && !errorDisabled)
     {
@@ -9020,7 +9020,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
             {
                 if (expr->isScope())
                 {
-                    Owned<IECLError> error = createECLError(CategorySyntax, SeverityError, ERR_RESULT_IGNORED_SCOPE, "Cannot associate a side effect with a module - action will be lost", errpos.sourcePath->str(), errpos.lineno, errpos.column, errpos.position);
+                    Owned<IError> error = createError(CategorySyntax, SeverityError, ERR_RESULT_IGNORED_SCOPE, "Cannot associate a side effect with a module - action will be lost", errpos.sourcePath->str(), errpos.lineno, errpos.column, errpos.position);
                     //Unusual processing.  Create a warning and save it in the parse context
                     //The reason is that this error is reporting "the associated side-effects will be lost" - but
                     //the same will apply to the warning, and if it's lost there will be no way to report it later...

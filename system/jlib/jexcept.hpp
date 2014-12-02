@@ -160,5 +160,64 @@ void  jlib_decl printStackReport();
 #define throwError3(x,a,b,c)                    throwStringExceptionV(x, (x ## _Text), a, b, c)
 #define throwError4(x,a,b,c,d)                  throwStringExceptionV(x, (x ## _Text), a, b, c, d)
 
+//---------------------------------------------------------------------------------------------------------------------
+
+enum ErrorSeverity
+{
+    SeverityIgnore,
+    SeverityInfo,
+    SeverityWarning,
+    SeverityError,    // a warning treated as an error
+    SeverityFatal,      // a fatal error - can't be mapped to anything else
+    SeverityUnknown,
+};
+
+inline bool isError(ErrorSeverity severity) { return severity >= SeverityError; }
+inline bool isFatal(ErrorSeverity severity) { return severity == SeverityFatal; }
+
+//TBD in a separate commit - add support for warnings to be associated with different categories
+enum WarnErrorCategory
+{
+    CategoryInformation,// Some kind of information [default severity information]
+
+    CategoryCast,       // Suspicious casts between types or out of range values
+    CategoryConfuse,    // Likely to cause confusion
+    CategoryDeprecated, // deprecated features or syntax
+    CategoryEfficiency, // Something that is likely to be inefficient
+    CategoryFolding,    // Unusual results from constant folding
+    CategoryFuture,     // Likely to cause problems in future versions
+    CategoryIgnored,    // Something that has no effect, or is ignored
+    CategoryIndex,      // Unusual indexing of datasets or strings
+    CategoryMistake,    // Almost certainly a mistake
+    CategoryLimit,      // An operation that should really have some limits to protect data runaway
+    CategorySyntax,     // Invalid syntax which is painless to recover from
+    CategoryUnusual,    // Not strictly speaking an error, but highly unusual and likely to be a mistake
+    CategoryUnexpected, // Code that could be correct, but has the potential for unexpected behaviour
+    CategoryCpp,        // Warning passed through from C++ compiler
+
+    CategoryError,      // Typically severity fatal
+    CategoryAll,
+    CategoryUnknown,
+    CategoryMax,
+};
+
+interface jlib_thrown_decl IError : public IException
+{
+public:
+    virtual const char* getFilename() const = 0;
+    virtual WarnErrorCategory getCategory() const = 0;
+    virtual int getLine() const = 0;
+    virtual int getColumn() const = 0;
+    virtual int getPosition() const = 0;
+    virtual StringBuffer& toString(StringBuffer&) const = 0;
+    virtual ErrorSeverity getSeverity() const = 0;
+    virtual IError * cloneSetSeverity(ErrorSeverity _severity) const = 0;
+};
+
+inline bool isError(IError * error) { return isError(error->getSeverity()); }
+inline bool isFatal(IError * error) { return isFatal(error->getSeverity()); }
+
+extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0);
+
 #endif
 

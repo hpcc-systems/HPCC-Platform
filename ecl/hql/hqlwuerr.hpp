@@ -26,8 +26,8 @@ public:
     WorkUnitErrorReceiver(IWorkUnit * _wu, const char * _component) { wu.set(_wu); component.set(_component); }
     IMPLEMENT_IINTERFACE;
 
-    virtual IECLError * mapError(IECLError * error);
-    virtual void report(IECLError*);
+    virtual IError * mapError(IError * error);
+    virtual void report(IError*);
     virtual size32_t errCount();
     virtual size32_t warnCount();
 

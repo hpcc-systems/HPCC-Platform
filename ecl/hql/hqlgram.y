@@ -8014,7 +8014,7 @@ simpleDataSet
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
-                            IHqlExpression * transform = parser->createDefJoinTransform(parser->queryLeftScope(),parser->queryRightScope(),$1, $7.queryExpr(),NULL);
+                            IHqlExpression * transform = parser->createDefJoinTransform(left,right,$1, $7.queryExpr(),NULL);
                             IHqlExpression * combine = createDataset(no_combine, left, createComma(right, transform, $7.getExpr()));
                             $$.setExpr(combine);
                             $$.setPosition($1);

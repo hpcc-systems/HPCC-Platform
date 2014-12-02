@@ -1496,7 +1496,7 @@ void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuf
     if (errs.errCount())
     {
         StringBuffer errtext;
-        IECLError *first = errs.firstError();
+        IError *first = errs.firstError();
         first->toString(errtext);
         throw MakeStringException(ECLWATCH_CANNOT_PARSE_ECL_QUERY, "Failed in parsing ECL query: %s @ %d:%d.", errtext.str(), first->getColumn(), first->getLine());
     } 

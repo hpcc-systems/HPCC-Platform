@@ -6793,12 +6793,12 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
     }
     catch (IException * e)
     {
-        if (dynamic_cast<IECLError *>(e))
+        if (dynamic_cast<IError *>(e))
             throw;
         IHqlExpression * location = queryActiveActivityLocation();
         if (location)
         {
-            IECLError * error = annotateExceptionWithLocation(e, location);
+            IError * error = annotateExceptionWithLocation(e, location);
             e->Release();
             throw error;
         }
