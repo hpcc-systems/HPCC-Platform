@@ -26,6 +26,7 @@
   <xsl:variable name="isArchived" select="WUInfoResponse/Workunit/Archived"/>
   <xsl:variable name="havesubgraphtimings" select="WUInfoResponse/Workunit/HaveSubGraphTimings"/>
   <xsl:variable name="thorSlaveIP" select="WUInfoResponse/ThorSlaveIP"/>
+  <xsl:variable name="SecMethod" select="WUInfoResponse/SecMethod"/>
   <xsl:include href="/esp/xslt/lib.xslt"/>
   <xsl:include href="/esp/xslt/wuidcommon.xslt"/>
 

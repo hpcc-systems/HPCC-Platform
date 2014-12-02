@@ -193,21 +193,23 @@
               <xsl:value-of select="Owner"/>
             </td>
           </tr>
-          <tr>
-            <td class="eclwatch entryprompt">
-              Scope:
-            </td>
-            <td>
-              <xsl:choose>
-                <xsl:when test="State='running'">
-                  <input type="text" name="Scope" value="{Scope}" size="40" disabled="disabled"/>
-                </xsl:when>
-                <xsl:otherwise>
-                  <input type="text" name="Scope" value="{Scope}" size="40"/>
-                </xsl:otherwise>
-              </xsl:choose>
-            </td>
-          </tr>
+          <xsl:if test="$SecMethod='LdapSecurity'">
+            <tr>
+              <td class="eclwatch entryprompt">
+                Scope:
+              </td>
+              <td>
+                <xsl:choose>
+                  <xsl:when test="State='running'">
+                    <input type="text" name="Scope" value="{Scope}" size="40" disabled="disabled"/>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <input type="text" name="Scope" value="{Scope}" size="40"/>
+                  </xsl:otherwise>
+                </xsl:choose>
+              </td>
+            </tr>
+          </xsl:if>
           <tr>
               <td colspan="2">
                 <div style="border:1px solid grey;">
