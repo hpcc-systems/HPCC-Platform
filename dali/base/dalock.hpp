@@ -22,7 +22,7 @@
 #define da_decl __declspec(dllimport)
 #endif
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jiface.hpp"
 
 #include "dasess.hpp"

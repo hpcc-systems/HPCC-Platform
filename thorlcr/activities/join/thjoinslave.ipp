@@ -18,7 +18,7 @@
 #ifndef _thjoinslave_ipp
 #define _thjoinslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jiface.hpp"       // IInterface defined in jlib
 #include "eclhelper.hpp"        // for IHThorJoinArg
 #include "slave.ipp"

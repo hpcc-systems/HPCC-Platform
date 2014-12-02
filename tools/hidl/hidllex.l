@@ -1,7 +1,7 @@
 %option nounistd
 %option case-insensitive
 %{
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include <stdlib.h>
 #include <string.h>

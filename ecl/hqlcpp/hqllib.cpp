@@ -17,7 +17,7 @@
 #include "jliball.hpp"
 #include "hql.hpp"
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jhash.hpp"
 #include "jmisc.hpp"

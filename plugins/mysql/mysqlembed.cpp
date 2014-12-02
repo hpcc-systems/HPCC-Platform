@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "mysql.h"
 #include "jexcept.hpp"
 #include "jthread.hpp"

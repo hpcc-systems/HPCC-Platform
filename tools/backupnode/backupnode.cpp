@@ -19,7 +19,7 @@
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
 #endif
-#include "platform.h"
+#include "hpccplatform.h"
 #include "thirdparty.h"
 
 #include "jlib.hpp"

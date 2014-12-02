@@ -18,7 +18,7 @@
 #ifndef _thprojectslave_ipp
 #define _thprojectslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jiface.hpp"       // IInterface defined in jlib
 #include "eclhelper.hpp"        // for IHThorProjectArg
 #include "slave.ipp"

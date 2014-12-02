@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #ifdef _WIN32
 #define S_ISDIR(m) (((m)&_S_IFDIR)!=0)

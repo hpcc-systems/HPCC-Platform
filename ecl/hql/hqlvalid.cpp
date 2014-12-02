@@ -18,7 +18,7 @@
 #include "hql.hpp"
 #include "eclrtl.hpp"
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jstream.ipp"

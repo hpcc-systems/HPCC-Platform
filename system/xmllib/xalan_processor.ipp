@@ -19,7 +19,7 @@
 #define XSLPROCESSOR_IPP_INCL
 
 #ifndef _WIN32
-//undefine the stricmp and strnicmp macros defined by platform.h
+//undefine the stricmp and strnicmp macros defined by hpccplatform.h
 //since xerces implements these functions
 #undef stricmp
 #undef strnicmp

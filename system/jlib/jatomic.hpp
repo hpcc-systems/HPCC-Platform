@@ -18,7 +18,7 @@
 
 #ifndef JATOMIC_HPP
 #define JATOMIC_HPP
-#include "platform.h"
+#include "hpccplatform.h"
 
 #ifdef _WIN32
 

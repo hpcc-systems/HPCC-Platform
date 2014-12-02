@@ -18,7 +18,7 @@
 // todo look at IRemoteFileServer stop
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "limits.h"
 
 #include "jlib.hpp"

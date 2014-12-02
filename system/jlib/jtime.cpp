@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jmisc.hpp"
 #include "jtime.ipp"

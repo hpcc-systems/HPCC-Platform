@@ -18,7 +18,7 @@
 #ifndef _thresultslave_ipp
 #define _thresultslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "slave.ipp"
 #include "mptag.hpp"
 

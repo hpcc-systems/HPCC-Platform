@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jmisc.hpp"

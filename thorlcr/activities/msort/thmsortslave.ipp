@@ -18,7 +18,7 @@
 #ifndef _THMSORTSLAVE_IPP
 #define _THMSORTSLAVE_IPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "slave.ipp"
 
 activityslaves_decl CActivityBase *createMSortSlave(CGraphElementBase *container);

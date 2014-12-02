@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"        // for IHThorFirstNArg
 
 #include "thfirstn.ipp"

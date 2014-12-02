@@ -16,7 +16,7 @@
 ############################################################################## */
 
 // TCP/IP transport for HRPC
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "hrpc.hpp"
 #include "hrpc.ipp"

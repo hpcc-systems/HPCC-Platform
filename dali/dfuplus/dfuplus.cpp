@@ -17,7 +17,7 @@
 
 #pragma warning( disable : 4786)
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "portlist.h"
 
 #include "dfuplus.hpp"

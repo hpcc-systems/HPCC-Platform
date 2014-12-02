@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #include "jliball.hpp"
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jio.hpp"
 #include "jmutex.hpp"

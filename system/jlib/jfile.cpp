@@ -22,7 +22,7 @@
 //#include <winsock.h>  // for TransmitFile
 #endif
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <algorithm>

@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jbuff.hpp"
 #include "tsorts.hpp"
 

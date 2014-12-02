@@ -19,7 +19,7 @@
 #ifndef DACAP_LINKED_IN
 #define dacaplib_decl __declspec(dllexport)
 #endif
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jlib.hpp"
 #include "jmisc.hpp"

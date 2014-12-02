@@ -23,7 +23,7 @@
 #endif
 #endif
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "espprotocol.hpp"
 #include "espbinding.hpp"
 #ifdef _USE_OPENLDAP

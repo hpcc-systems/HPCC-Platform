@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #include "build-config.h"
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jarray.hpp"
 #include "jfile.hpp"
 #include "jmutex.hpp"

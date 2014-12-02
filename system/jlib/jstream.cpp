@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jstream.ipp"
 #include "jstring.hpp"
 #include "jexcept.hpp"

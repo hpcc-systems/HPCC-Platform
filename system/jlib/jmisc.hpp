@@ -20,7 +20,7 @@
 #ifndef __JMISC__
 #define __JMISC__
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdio.h>
 #include "jiface.hpp"
 #include "jcrc.hpp"

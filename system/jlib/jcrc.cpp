@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jcrc.hpp"
 #include "jlib.hpp"
 #include "jfile.hpp"

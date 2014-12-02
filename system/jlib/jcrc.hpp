@@ -22,7 +22,7 @@
 #ifndef __JCRC__
 #define __JCRC__
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdio.h>
 #include "jiface.hpp"
 #include "jio.hpp"

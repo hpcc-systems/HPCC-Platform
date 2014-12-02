@@ -17,7 +17,7 @@
 
 //Master Watchdog Server/Monitor
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdio.h>
 #include "jlib.hpp"
 #include "jmisc.hpp"

@@ -19,7 +19,7 @@
 #ifndef JLIBALL_HPP
 #define JLIBALL_HPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jiface.hpp"
 
 #include "jarray.hpp"

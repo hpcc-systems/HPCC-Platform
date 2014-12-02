@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "cassandra.h"
 #include "jexcept.hpp"
 #include "jthread.hpp"

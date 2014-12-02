@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #pragma warning(disable:4786)
-#include "platform.h"
+#include "hpccplatform.h"
 #include "aci.ipp"
 #include "ldapsecurity.ipp"
 

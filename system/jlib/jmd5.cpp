@@ -69,7 +69,7 @@
   1999-05-03 lpd Original version.
  */
 // Following added by Gavin 
-#include "platform.h"               // GH modified
+#include "hpccplatform.h"               // GH modified
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define ARCH_IS_BIG_ENDIAN 0
 #else

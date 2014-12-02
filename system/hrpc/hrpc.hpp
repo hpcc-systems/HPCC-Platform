@@ -18,7 +18,7 @@
 #ifndef HRPC_HPP
 #define HRPC_HPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jexcept.hpp"
 #include "jiface.hpp"

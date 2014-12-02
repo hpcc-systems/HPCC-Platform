@@ -20,7 +20,7 @@
 #include "winprocess.hpp"
 #include <conio.h>
 #endif
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jmisc.hpp"
 #include "jutil.hpp"
 #include "jexcept.hpp"

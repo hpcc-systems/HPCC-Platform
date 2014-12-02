@@ -18,7 +18,7 @@
 #ifndef _THFETCHSLAVE_IPP
 #define _THFETCHSLAVE_IPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "slave.ipp"
 

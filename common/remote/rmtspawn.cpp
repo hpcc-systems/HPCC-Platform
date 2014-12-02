@@ -17,7 +17,7 @@
 
 #include "jliball.hpp"
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "portlist.h"
 
 

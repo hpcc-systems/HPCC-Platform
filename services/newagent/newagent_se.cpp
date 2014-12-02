@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #ifdef _WIN32
 #include <tchar.h> 
 #include <process.h> 

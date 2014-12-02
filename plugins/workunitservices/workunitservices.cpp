@@ -31,7 +31,7 @@ Persists changed?
 #pragma warning (disable : 4786)
 #pragma warning (disable : 4297)  // function assumed not to throw an exception but does
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 
 

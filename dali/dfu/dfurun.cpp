@@ -21,7 +21,7 @@ test multiclusteradd with replicate
 */
 
 
-#include <platform.h>
+#include <hpccplatform.h>
 #include <stdio.h>
 #include <limits.h>
 #include "jexcept.hpp"

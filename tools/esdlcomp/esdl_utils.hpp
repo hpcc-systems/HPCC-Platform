@@ -19,7 +19,7 @@
 #define __ESDL_UTILS_HPP__
 
 #include "esdldecl.hpp"
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include <stdlib.h>
 #include <stdio.h>

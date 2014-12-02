@@ -46,7 +46,7 @@
 #if !defined(FASTLZ__COMPRESSOR) && !defined(FASTLZ_DECOMPRESSOR)
 
 // adapted for jlib
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jflz.hpp"
 

@@ -17,7 +17,7 @@
 
 // MSort Master           
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>

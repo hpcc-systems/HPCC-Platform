@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 /* Overloaded and redefined operators */
 #include "jlib.hpp"
 #include "jiface.hpp"

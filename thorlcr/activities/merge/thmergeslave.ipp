@@ -18,7 +18,7 @@
 #ifndef _THMERGESLAVE_IPP
 #define _THMERGESLAVE_IPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jmutex.hpp"
 #include "jthread.hpp"

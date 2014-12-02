@@ -30,7 +30,7 @@
 #define STRINGLIB_API
 #endif
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "hqlplugins.hpp"
 
 extern "C" {

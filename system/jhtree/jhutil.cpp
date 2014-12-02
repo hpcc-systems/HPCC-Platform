@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

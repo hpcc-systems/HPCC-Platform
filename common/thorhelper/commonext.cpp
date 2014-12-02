@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
 typedef wchar_t UChar;

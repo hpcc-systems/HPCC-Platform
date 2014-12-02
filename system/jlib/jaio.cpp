@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <assert.h>
 #include <stdio.h>
 #include "jaio.hpp"

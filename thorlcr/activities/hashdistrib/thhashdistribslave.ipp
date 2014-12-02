@@ -18,7 +18,7 @@
 #ifndef _THHASHDISTRIBSLAVE_IPP
 #define _THHASHDISTRIBSLAVE_IPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jsocket.hpp"
 #include "slave.ipp"
 #include "thactivityutil.ipp"

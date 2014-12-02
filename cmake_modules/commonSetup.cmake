@@ -239,7 +239,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror=bitwise-op-parentheses -Werror=tautological-compare")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-switch-enum -Wno-format-zero-length -Wno-switch")
     endif()
-    # All of these are defined in platform.h too, but need to be defned before any system header is included
+    # All of these are defined in hpccplatform.h too, but need to be defned before any system header is included
     ADD_DEFINITIONS (-D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE=1 -D_FILE_OFFSET_BITS=64 -D__USE_LARGEFILE64=1 -D__USE_FILE_OFFSET64=1)
     if ("${GIT_COMMAND}" STREQUAL "")
         set ( GIT_COMMAND "git" )

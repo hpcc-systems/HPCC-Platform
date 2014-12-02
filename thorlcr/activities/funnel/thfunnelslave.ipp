@@ -18,7 +18,7 @@
 #ifndef _THFUNNELSLAVE_IPP
 #define _THFUNNELSLAVE_IPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jmutex.hpp"
 #include "jthread.hpp"

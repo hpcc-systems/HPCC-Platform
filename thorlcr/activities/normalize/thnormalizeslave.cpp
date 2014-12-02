@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jiface.hpp"       // IInterface defined in jlib
 
 #include "eclhelper.hpp"        // for IHThorNormalizeArg

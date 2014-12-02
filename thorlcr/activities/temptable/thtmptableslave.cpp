@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jprop.hpp"
 #include "thormisc.hpp"
 #include "thtmptableslave.ipp"

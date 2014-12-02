@@ -18,7 +18,7 @@
 #ifndef _thselfjoinslave_ipp
 #define _thselfjoinslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"
 #include "slave.ipp"
 #include "thactivityutil.ipp"

@@ -15,7 +15,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jdebug.hpp"
 #include "jstring.hpp"

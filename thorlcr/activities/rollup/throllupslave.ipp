@@ -21,7 +21,7 @@
 #ifndef _throllupslave_ipp
 #define _throllupslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"
 #include "slave.ipp"
 

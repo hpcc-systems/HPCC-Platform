@@ -1,7 +1,7 @@
 %{
 #pragma warning(disable:4786)
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include <stdlib.h>
 #include <stdio.h>

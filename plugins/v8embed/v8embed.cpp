@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "v8.h"
 #include "jexcept.hpp"
 #include "jthread.hpp"

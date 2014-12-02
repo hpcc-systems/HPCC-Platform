@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <string.h>
 #include <limits.h>
 #include "jsort.hpp"

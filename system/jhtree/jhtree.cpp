@@ -38,7 +38,7 @@
 //                12-Apr-00    jcs moved over to jhtree.dll etc.
 //****************************************************************************
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>

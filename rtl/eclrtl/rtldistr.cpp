@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <math.h>
 #include <stdio.h>
 #include "jexcept.hpp"

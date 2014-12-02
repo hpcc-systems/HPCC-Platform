@@ -54,10 +54,10 @@ typedef unsigned short UChar;
 #endif //__WIN32
 
 #ifdef _WIN32
-typedef unsigned int size32_t; // avoid pulling in platform.h (which pulls in windows.h etc) just for this...
+typedef unsigned int size32_t; // avoid pulling in hpccplatform.h (which pulls in windows.h etc) just for this...
 typedef unsigned __int64 hash64_t;
 #else
-#include "platform.h"
+#include "hpccplatform.h"
 #endif
 
 #include "eclrtl.hpp"

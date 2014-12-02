@@ -21,7 +21,7 @@
 #define JIFACE_HPP
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <string.h>
 #include "jscm.hpp"
 #include "jatomic.hpp"
