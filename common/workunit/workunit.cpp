@@ -1359,7 +1359,6 @@ public:
     IWorkUnit &lockRemote(bool commit);
     void unlockRemote();
     void abort();
-    void cleanupAndDelete(bool deldll,bool deleteOwned, const StringArray *deleteExclusions=NULL);
     bool switchThorQueue(const char *cluster, IQueueSwitcher *qs);
     void setAllowedClusters(const char *value);
     IStringVal & getAllowedClusters(IStringVal & str) const;
@@ -1368,6 +1367,7 @@ public:
     bool getAllowAutoQueueSwitch() const;
     void setLibraryInformation(const char * name, unsigned interfaceHash, unsigned definitionHash);
 
+    virtual void cleanupAndDelete(bool deldll,bool deleteOwned, const StringArray *deleteExclusions=NULL);
     virtual void setResultInt(const char * name, unsigned sequence, __int64 val)
     {
         Owned<IWUResult> r = updateResult(name, sequence);
@@ -1501,7 +1501,7 @@ protected:
     }
 
 protected:
-    void init();
+    void clearCached(bool clearTree);
     IWUGraph *createGraph();
     IWUResult *createResult();
     void loadGraphs() const;
@@ -1512,7 +1512,6 @@ protected:
     void loadPlugins() const;
     void loadLibraries() const;
     void loadClusters() const;
-    void unsubscribe();
     void checkAgentRunning(WUState & state);
 
     void ensureGraphsUnpacked()
@@ -1532,7 +1531,7 @@ protected:
     // Implemented by derived classes
     virtual void _lockRemote() {};
     virtual void _unlockRemote() {};
-
+    virtual void unsubscribe();
 };
 
 class CDaliWorkUnit : public CLocalWorkUnit
@@ -1561,8 +1560,8 @@ public:
         if (!newconn)
             throw MakeStringException(WUERR_ConnectFailed, "Could not connect to workunit %s (deleted?)",p->queryName());
         CriticalBlock block(crit);
+        clearCached(true);
         connection.setown(newconn);
-        init();
         abortDirty = true;
         p.setown(connection->getRoot());
     }
@@ -1592,7 +1591,7 @@ public:
             connection.setown(querySDS().connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
         if (!connection)
             throw MakeStringException(WUERR_LockFailed, "Failed to get connection for xpath %s", wuRoot.str());
-        init();
+        clearCached(true);
         abortDirty = true;
         p.setown(connection->getRoot());
     }
@@ -3534,17 +3533,20 @@ public:
 
 CLocalWorkUnit::CLocalWorkUnit(IPropertyTree* root, ISecManager *secmgr, ISecUser *secuser)
 {
+    clearCached(false);
     p.setown(root);
     secMgr.set(secmgr);
     secUser.set(secuser);
 }
 
-void CLocalWorkUnit::init()
+void CLocalWorkUnit::clearCached(bool clearTree)
 {
-    p.clear();
-    cachedGraphs.clear();
-    workflowIterator.clear();
     query.clear();
+    webServicesInfo.clear();
+    roxieQueryInfo.clear();
+    workflowIterator.clear();
+    cachedGraphs.clear();
+
     graphs.kill();
     results.kill();
     variables.kill();
@@ -3552,8 +3554,12 @@ void CLocalWorkUnit::init()
     libraries.kill();
     exceptions.kill();
     temporaries.kill();
-    roxieQueryInfo.clear();
-    webServicesInfo.clear();
+    statistics.kill();
+    appvalues.kill();
+
+    if (clearTree)
+        p.clear();
+
     workflowIteratorCached = false;
     resultsCached = false;
     temporariesCached = false;
@@ -3569,7 +3575,7 @@ void CLocalWorkUnit::init()
 // Dummy workunit support
 CLocalWorkUnit::CLocalWorkUnit(const char *_wuid, const char *xml, ISecManager *secmgr, ISecUser *secuser)
 {
-    init();
+    clearCached(false);
     if (xml)
         p.setown(createPTreeFromXMLString(xml));
     else
@@ -3586,26 +3592,12 @@ void CLocalWorkUnit::beforeDispose()
     try
     {
         unsubscribe();
-        query.clear();
-        webServicesInfo.clear();
-        roxieQueryInfo.clear();
-        workflowIterator.clear();
 
-        plugins.kill();
-        libraries.kill();
-        exceptions.kill();
-        graphs.kill();
-        results.kill();
-        temporaries.kill();
-        variables.kill();
-        appvalues.kill();
-        statistics.kill();
+        clearCached(true);
 
         userDesc.clear();
         secMgr.clear();
         secUser.clear();
-        cachedGraphs.clear();
-        p.clear();
     }
     catch (IException *E) { LOG(MCexception(E, MSGCLS_warning), E, "Exception during ~CLocalWorkUnit"); E->Release(); }
 }
@@ -4045,7 +4037,7 @@ bool restoreWorkUnit(const char *base,const char *wuid)
 void CLocalWorkUnit::loadXML(const char *xml)
 {
     CriticalBlock block(crit);
-    init();
+    clearCached(true);
     assertex(xml);
     p.setown(createPTreeFromXMLString(xml));
 }
@@ -5423,6 +5415,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     IPropertyTree *pt;
 
     CriticalBlock block(crit);
+    clearCached(false);
     query.clear();
     updateProp(p, fromP, "@jobName");
     copyTree(p, fromP, "Query");
