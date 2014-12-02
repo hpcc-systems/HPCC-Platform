@@ -175,20 +175,25 @@ elseif ( UNIX )
     message ( "-- Auto Detecting Packaging type")
     message ( "-- distro uses ${packageManagement}, revision is ${packageRevisionArch}" )
     if ( "${packageManagement}" STREQUAL "RPM" AND WITH_PLUGINS )
-        set ( CPACK_RPM_PACKAGE_VERSION "${projname}-with-plugins")
+        set ( CPACK_RPM_PACKAGE_VERSION "${projname}-with-plugins" )
+        set ( CPACK_RPM_SPEC_MORE_DEFINE
+"%define _use_internal_dependency_generator 0
+%define __getdeps() while read file; do /usr/lib/rpm/rpmdeps -%{1} ${file}; done | /bin/sort -u
+%define __find_provides /bin/sh -c '%{__getdeps P}'
+%define __find_requires /bin/sh -c '%{__grep} -v libRembed.so | %{__getdeps R}'" )
     endif()
     if ( "${packageManagement}" STREQUAL "DEB" )
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}")
+        set( CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}" )
     elseif ( "${packageManagement}" STREQUAL "RPM" )
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}")
+        set( CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}" )
     else()
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}${CPACK_SYSTEM_NAME}")
+        set( CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}${CPACK_SYSTEM_NAME}" )
     endif ()
 endif ()
-MESSAGE ("-- Current release version is ${CPACK_PACKAGE_FILE_NAME}")
-set ( CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
+MESSAGE ( "-- Current release version is ${CPACK_PACKAGE_FILE_NAME}" )
+set( CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
 set( CPACK_SOURCE_GENERATOR TGZ )
-set(CPACK_SOURCE_IGNORE_FILES
+set( CPACK_SOURCE_IGNORE_FILES
         "~$"
         "\\\\.cvsignore$"
         "^${PROJECT_SOURCE_DIR}.*/CVS/"
@@ -255,7 +260,7 @@ if ( UNIX )
         else ( CLIENTTOOLS_ONLY )
             set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
         endif ( CLIENTTOOLS_ONLY )
-    
+
     elseif ( "${packageManagement}" STREQUAL "RPM" )
         set ( CPACK_GENERATOR "${packageManagement}" )
         ###
@@ -319,7 +324,7 @@ else ( PLATFORM )
 
       file(STRINGS "${SIGN_DIRECTORY}/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
 
-      add_custom_target(SIGN 
+      add_custom_target(SIGN
           COMMAND signtool sign /f "${SIGN_DIRECTORY}/hpcc_code_signing.pfx"
 /p "${PFX_PASSWORD}" /t "http://timestamp.verisign.com/scripts/timstamp.dll"
 "${CMAKE_BINARY_DIR}/${PACKAGE_FILE_NAME_PREFIX}*.exe"

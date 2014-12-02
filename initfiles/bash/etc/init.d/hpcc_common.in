@@ -975,8 +975,8 @@ cluster_tools_init() {
    # workaround inconsistency of stat command
    cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
    [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
-
 }
+
 ##
 ## Cleanup component
 ##
