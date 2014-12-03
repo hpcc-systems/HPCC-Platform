@@ -28,7 +28,7 @@ source  ${INSTALL_DIR}/etc/init.d/export-path
 
 print_usage(){
         echo
-        echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] [-n concurrent] [-s] [-S] {start|stop|restart|status|setup}"
+        echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] [-n concurrent] [-s] [-S] {start|stop|stopall|restart|status|setup}"
         echo "  -a|--action: HPCC service name. Either hpcc-init (default) or dafilesrv."
         echo "  -c|--comp: HPCC component. For example, mydali, myroxie, mythor, etc."
         echo "  -n|--concurrent: How many concurrent instances to run. The default is equal to the number of nodes present."
@@ -199,6 +199,31 @@ doStop() {
     fi
 }
 
+doStopall() {
+    echo "$action stop in the cluster ..."
+    init stop
+    scriptFile=/tmp/${action}_stop_$$
+    createScript $scriptFile $action "stop" $comp
+    if [ -n "${comp}" ]; then
+        OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsFile"
+        runScript $IPsFile
+        report "${action} stop"
+    else
+        OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsExcludeDIP"
+        runScript $IPsExcludeDIP
+        report "${action} stop" $DIP
+        doOneIP $DIP $action "stop" $comp
+    fi
+
+    echo "dafilesrv stop in the cluster ..."
+    init stop
+    scriptFile=/tmp/dafilesrv__stop_$$
+    createScript $scriptFile "dafilesrv" "stop" $comp
+    OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsFile"
+    runScript $IPsFile
+    report "dafilesrv stop"
+}
+
 
 doStart() {
     init start
@@ -343,6 +368,9 @@ for arg; do
             ;;
         stop)
             doStop
+            ;;
+        stopall)
+            doStopall
             ;;
         restart)
             doStop
