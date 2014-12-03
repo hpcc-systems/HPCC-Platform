@@ -78,8 +78,8 @@ cfg.parser () {
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg 0
 }
 
-## dir.parser parses the return of configgen -listcommondirs and builds local scope 
-## arrays for each return from the generator. It also builds an array of which 
+## dir.parser parses the return of configgen -listcommondirs and builds local scope
+## arrays for each return from the generator. It also builds an array of which
 ## elements can be used in the local scope ($dirArray).
 ##
 ## $@="line1 . . lineN"
@@ -102,7 +102,7 @@ dir.parser() {
 }
 
 ## dir.getByName allows the user to pass the name of a directory from the <Directories/>
-## tag they would like to recive and in return sets $dir_return in the local scope 
+## tag they would like to recive and in return sets $dir_return in the local scope
 ## to the array that has been requested.
 ##
 ## $1="<directory name>"
@@ -230,7 +230,7 @@ createDir() {
 removeDir() {
     dir=$1
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_begin_msg "Removing ${dir} directory..."
-    if [ -d $dir ]; then 
+    if [ -d $dir ]; then
     rm -rf $dir
     [[ "${VERBOSE:-0}" -eq 1 ]] && log_end_msg $? && return $? || return $?
     fi
@@ -246,7 +246,7 @@ strstr() {
 
 set_environmentvars() {
     HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
-    
+
     ## Retrieve the Section to use from environment variable and if not set
     ## use default of "DEFAULT"
     ##
@@ -291,15 +291,15 @@ get_commondirs() {
 
 configGenCmd() {
     componentFile="${path}/componentfiles/configxml"
-    
+
     # Creating logfiles for component
     logDir=$log/${compName}
-    logFile=$log/${compName}/${compName}_init.log    
+    logFile=$log/${compName}/${compName}_init.log
 
     configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
     if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo $configcmd
-    else 
+    else
         echo $configcmd >> $logFile
     fi
     su ${user} -c "$configcmd" >> $logFile 2>&1
@@ -307,19 +307,19 @@ configGenCmd() {
 
 createRuntime() {
     # Creating Directories for runtime environment
-    if [ ! -d ${runtime} ]; then 
+    if [ ! -d ${runtime} ]; then
         createDir ${runtime}
-    fi 
+    fi
 
-    if [ ! -d ${pid} ]; then 
+    if [ ! -d ${pid} ]; then
         createDir ${pid}
     fi
 
-    if [ ! -d ${lock} ]; then 
+    if [ ! -d ${lock} ]; then
         createDir ${lock}
     fi
 
-    if [ ! -d ${log} ]; then 
+    if [ ! -d ${log} ]; then
         createDir ${log}
     fi
 
@@ -331,7 +331,7 @@ createRuntime() {
 
 
     # Creating Component Specific directories
-    # Creating pidfile specific directory and changing its owner permissions 
+    # Creating pidfile specific directory and changing its owner permissions
     if [ ! -d "$pid/$compName" ]; then
         if [ ${DEBUG} != "NO_DEBUG" ]; then
             echo "Creating Pidfile directory"
@@ -345,15 +345,15 @@ createRuntime() {
         fi
         createDir "$lock/$compName"
     fi
-    
+
     if [ ! -d "$log/$compName" ]; then
         if [ ${DEBUG} != "NO_DEBUG" ]; then
             echo "Creating log directory"
         fi
         createDir "$log/$compName"
     fi
-    
-    # Creating runtime specific directory and changing its owner permissions 
+
+    # Creating runtime specific directory and changing its owner permissions
     if [ ! -d $compPath ]; then
         if [ ${DEBUG} != "NO_DEBUG" ]; then
             echo "Creating Runtime Directory for $compName"
@@ -390,14 +390,11 @@ start_dafilesrv() {
    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
    if [ $? -ne 0 ];then
       #Dafilesrv is not running so start it , before starting cleanup the lock and pid file.
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "Pid or lock file exists, but process is not running"
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
-      else
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
+      if [ ${DEBUG} != "NO_DEBUG" ]; then
+        log_failure_msg "Pid or lock file exists, but process is not running"
       fi
+      removePid ${PIDPATH}
+      unlock ${LOCKPATH}
 
       noStatusCheck=1
       /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
@@ -405,11 +402,11 @@ start_dafilesrv() {
       ulimit -c unlimited
       startCmd ${compName} ${noStatusCheck}
       return $?
-   else 
+   else
       printf "Starting %-21s" "$compName.... "
-      log_failure_msg "Already started"
+      log_success_msg
       return 0
-   fi 
+   fi
 }
 
 startCmd() {
@@ -422,30 +419,27 @@ startCmd() {
     # Creating logfiles for component
     logDir=$log/${compName}
     logFile=$log/${compName}/${compName}_init.log
-    
+
     if [ ${noStatusCheck} -ne 1 ]; then
        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
        RCSTART=$?
        if [ ${RCSTART} -ne 0 ];then
           if [ ${DEBUG} != "NO_DEBUG" ]; then
-              log_failure_msg "Pid or lock file exists, but process is not running"
-              removePid ${PIDPATH}
-              unlock ${LOCKPATH}
-          else
-              removePid ${PIDPATH}
-              unlock ${LOCKPATH}
+              log_failure_msg "fixing orphan :: check_status code is ${RCSTART}"
           fi
+          removePid ${PIDPATH}
+          unlock ${LOCKPATH}
        else
           if [ ${DEBUG} != "NO_DEBUG" ]; then
-              log_failure_msg "Lock or Pid file already exists"
+              log_success_msg "Lock or Pid file already exists"
           else
               #Since component is already started but current script is failed till returning 0
-              log_failure_msg "Already Started"
+              log_success_msg
           fi
           return ${RCSTART}
        fi
     fi
-    
+
     EXEC_COMMAND="${bin_path}/init_${compType} "
     startcmd="${START_STOP_DAEMON} -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1"
 
@@ -465,7 +459,7 @@ startCmd() {
     if [ $__lockCreated -eq 0 ]; then
         log_failure_msg "Cannot create the lock file, File locked by subsystem"
         return 3
-    fi 
+    fi
 
     if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo $startcmd
@@ -485,10 +479,10 @@ startCmd() {
     while [[ ${WAITEDLONGENOUGH} -lt ${WAITTIME} ]]
     do
         WAITEDLONGENOUGH=`expr ${WAITEDLONGENOUGH}+1`
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0 
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
         RCSTART=$?
         if [ ${RCSTART} -eq 0 ]; then
-          log_success_msg 
+          log_success_msg
           return 0;
         fi
         sleep 1
@@ -498,7 +492,7 @@ startCmd() {
        if [ ${DEBUG} != "NO_DEBUG" ]; then
           log_failure_msg "${compName} is not running, Pidfile exists"
        else
-          log_failure_msg 
+          log_failure_msg
        fi
     elif [ $RCSTART -eq 2 ];then
        if [ ${DEBUG} != "NO_DEBUG" ]; then
@@ -513,7 +507,7 @@ startCmd() {
           log_failure_msg
        fi
     fi
-   
+
     chmod 644 ${envfile}
 
     return ${RCSTART}
@@ -523,51 +517,49 @@ stop_component() {
     printf "Stopping %-21s" "${compName}... "
 
     ####
-    ## This is handling for when daemon is running as an orphan daemon. That is process is 
+    ## This is handling for when daemon is running as an orphan daemon. That is process is
     ## not running but associated pidfile and/or lockfiles do exist.
     ###
     FAILED=0
-    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0 
+    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
     RCSTOP=$?
     if [ $RCSTOP -ne 0 ];then
        if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "Failed: Process is not running"
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
+          log_success_msg "Process already stopped :: check_status code is ${RCSTOP}"
        else
-          log_failure_msg "Already Stopped"
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
+          log_success_msg
        fi
+       removePid ${PIDPATH}
+       unlock ${LOCKPATH}
        return 0
     fi
-    
+
     stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
 
     if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo "$stopcmd"
     fi
 
-    eval $stopcmd 
+    eval $stopcmd
     check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
     RESULT="$?"
-    
-    if [ "${RESULT}" -eq 0 ] ; then 
+
+    if [ "${RESULT}" -eq 0 ] ; then
         while [ 1 ]
         do
-            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0 
+            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
             RCSTOP=$?
-            if [ ${RCSTOP} -ne 0 ] ; then 
+            if [ ${RCSTOP} -ne 0 ] ; then
                #Before exiting check whether init_<component> is still running or not
                 while [ 1 ]
-                do 
+                do
                    checkPid ${PIDPATH}
                    if [ $__flagPid -eq 1 ];then
                         checkPidExist ${PIDPATH}
                         if [ $__pidExists -ne 1 ];then
                             removePid ${PIDPATH}
                             unlock ${LOCKPATH}
-                            log_success_msg  
+                            log_success_msg
                             return 0
                         fi
                     fi
@@ -575,11 +567,11 @@ stop_component() {
                 done
             fi
             sleep 1
-       done 
-    else 
+       done
+    else
         removePid ${PIDPATH}
         unlock ${LOCKPATH}
-        log_success_msg  
+        log_success_msg
         RCSTOP=0
     fi
     return ${RCSTOP}
@@ -587,21 +579,21 @@ stop_component() {
 
 
 #--------------------------------------------------------------------------------
-#                        Component Specific Functions                            
+#                        Component Specific Functions
 #--------------------------------------------------------------------------------
 
 
 start_component() {
     if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo "comp_return = $comp_return"
-        echo "compName = $compName compPath = $compPath " 
+        echo "compName = $compName compPath = $compPath "
         echo "path = $PATH"
     fi
 
 
     # Creating logfiles for component
     logDir=$log/${compName}
-    logFile=$log/${compName}/${compName}_init.log    
+    logFile=$log/${compName}/${compName}_init.log
 
     if [ ! -d $logDir ]; then
         mkdir -p $logDir >> tmp.txt 2>&1
@@ -611,10 +603,10 @@ start_component() {
     if [ ! -f $logFile ]; then
         touch $logFile >> tmp.txt 2>&1
         chown -c $user:$group $logFile >> /dev/null 2>&1
-    fi 
+    fi
 
-    # Creating Runtime 
-    createRuntime $compName $compPath   
+    # Creating Runtime
+    createRuntime $compName $compPath
 
     # starting Component
     configGenCmd $compName
@@ -647,7 +639,7 @@ restart_component() {
            echo "Component $compName was not running. Will start it now for you ...."
            removePid ${PIDPATH}
            unlock ${LOCKPATH}
-       else   
+       else
            stop_component ${compName}
        fi
        start_component $compName
@@ -665,14 +657,14 @@ status_component() {
     for i in `ls -lrt ${pid}/${compName}_slave*.pid | awk -F" " '{print $NF}'`;
     do
       checkPid ${i}
-      comp_name=`echo $i | awk -F"${pid}/" '{print $2}' | awk -F"." '{print $1}'`  
+      comp_name=`echo $i | awk -F"${pid}/" '{print $2}' | awk -F"." '{print $1}'`
       if [ $__flagPid -eq 1 ]; then
          checkPidExist ${i}
          getPid ${i}
-         if [ $__pidExists -eq 1 ];then 
+         if [ $__pidExists -eq 1 ];then
              printf "%-15s ( pid %8s ) is running..." "${comp_name}" "${__pidValue}"
              statForEach=0
-         else 
+         else
              printf "%-15s is stopped" "${comp_name}"
              statForEach=3
          fi
@@ -697,10 +689,10 @@ status_component() {
     return ${RCSTATUS}
   fi
 }
-  
+
 
 setup_component() {
-    printf "Setting %-22s" "$compName.... " 
+    printf "Setting %-22s" "$compName.... "
     runSetupOnly=1
     start_component ${compName}
     runSetupOnly=0
@@ -709,7 +701,7 @@ setup_component() {
        log_success_msg ""
        return 0
     else
-       log_failure_msg "" 
+       log_failure_msg ""
        return 3
     fi
 }
@@ -961,7 +953,7 @@ run_cluster() {
 }
 
 ##
-## Usage: cluster_tools_init 
+## Usage: cluster_tools_init
 ##    Initialization for cluster tools
 ##
 cluster_tools_init() {
@@ -979,5 +971,5 @@ cluster_tools_init() {
    # workaround inconsistency of stat command
    cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
    [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
-   
+
 }
