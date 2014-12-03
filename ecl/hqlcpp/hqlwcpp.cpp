@@ -1165,7 +1165,10 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                     getAttribute(props, namespaceAtom, out);
                     out.append("::");
                 }
-                getAttribute(props, entrypointAtom, out);
+                if (props->hasAttribute(entrypointAtom))
+                    getAttribute(props, entrypointAtom, out);
+                else
+                    out.append(funcdef->queryBody()->queryId()->str());
                 out.append('(');
                 if (props->hasAttribute(contextAtom))
                 {

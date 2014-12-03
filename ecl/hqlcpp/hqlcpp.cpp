@@ -5637,6 +5637,9 @@ void HqlCppTranslator::normalizeBoundExpr(BuildCtx & ctx, CHqlBoundExpr & bound)
 
 IHqlExpression * HqlCppTranslator::doBuildInternalFunction(IHqlExpression * funcdef)
 {
+    if (funcdef->queryChild(0)->getOperator() == no_external)
+        return LINK(funcdef);
+
     unsigned match = internalFunctions.find(*funcdef);
     if (match != NotFound)
         return LINK(&internalFunctionExternals.item(match));
@@ -5665,8 +5668,27 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     else
     {
         IHqlExpression * def = expr->queryBody()->queryFunctionDefinition();
-        assertex(def && def->getOperator() == no_funcdef);
-        funcdef.setown(doBuildInternalFunction(def));
+        assertex(def);
+        if (def->getOperator() == no_param)
+        {
+            ITypeInfo * type = def->queryType();
+            IFunctionTypeExtra * extra = queryFunctionTypeExtra(type);
+            IHqlExpression * params = (IHqlExpression *)extra->queryParameters();
+            IHqlExpression * defaults = (IHqlExpression *)extra->queryDefaults();
+            HqlExprArray attrs;
+            attrs.append(*LINK(params));
+            if (defaults)
+                attrs.append(*LINK(defaults));
+
+            ITypeInfo * returnType = type->queryChildType();
+            OwnedHqlExpr externalExpr = createExternalReference(def->queryId(), LINK(returnType), attrs);
+            funcdef.setown(createFunctionDefinition(def->queryId(), LINK(externalExpr), LINK(params), LINK(defaults), NULL));
+        }
+        else
+        {
+            assertex(def && def->getOperator() == no_funcdef);
+            funcdef.setown(doBuildInternalFunction(def));
+        }
     }
 
     IHqlExpression * external = funcdef->queryChild(0);
