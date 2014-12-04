@@ -1687,7 +1687,8 @@ void StatisticsFilter::setKind(const char * _kind)
 {
     if (!_kind || !*_kind || streq(_kind, "*"))
     {
-        measure = SMeasureAll;
+        if (measure == SMeasureNone)
+            measure = SMeasureAll;
         kind = StKindAll;
         return;
     }
