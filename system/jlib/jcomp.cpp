@@ -259,6 +259,7 @@ CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const 
     saveTemps = false;
     abortChecker = NULL;
     precompileHeader = false;
+    linkFailed = false;
 }
 
 void CppCompiler::addCompileOption(const char * option)
@@ -527,7 +528,8 @@ void CppCompiler::extractErrors(IArrayOf<IError> & errors)
 
         //cpperr.ecl:7:10: error: ‘syntaxError’ was not declared in this scope
         RegExpr gccErrorPattern("^{.+}:{[0-9]+}:{[0-9]+}: {[a-z]+}: {.*$}");
-        RegExpr gccLinkErrorPattern("^{.+}:[^:]+: {.*$}"); // undefined reference
+        RegExpr gccErrorPattern2("^{.+}:{[0-9]+}: {[a-z]+}: {.*$}");
+        RegExpr gccLinkErrorPattern("^{.+}:{[0-9]+}: {.*$}"); // undefined reference
         RegExpr gccLinkErrorPattern2("^.+ld: {.*$}"); // fail to find library etc.
         RegExpr gccExitStatusPattern("^.*exit status$"); // collect2: error: ld returned 1 exit status
         const char * cur = file.str();
@@ -561,23 +563,40 @@ void CppCompiler::extractErrors(IArrayOf<IError> & errors)
                 gccErrorPattern.findstr(kind, 4);
                 gccErrorPattern.findstr(msg, 5);
 
-                if (streq(kind, "warning"))
-                    errors.append(*createError(CategoryCpp, SeverityWarning, 2999, msg.str(), filename.str(), atoi(line), atoi(column), 0));
-                else
+                if (strieq(kind, "error"))
                     errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+                else
+                    errors.append(*createError(CategoryCpp, SeverityWarning, 2999, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+            }
+            else if (gccErrorPattern2.find(next))
+            {
+                StringBuffer filename, line, kind, msg;
+                gccErrorPattern2.findstr(filename, 1);
+                gccErrorPattern2.findstr(line, 2);
+                gccErrorPattern2.findstr(kind, 3);
+                gccErrorPattern2.findstr(msg, 4);
+
+                if (strieq(kind, "error"))
+                    errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), atoi(line), 0, 0));
+                else
+                    errors.append(*createError(CategoryCpp, SeverityWarning, 2999, msg.str(), filename.str(), atoi(line), 0, 0));
             }
             else if (gccLinkErrorPattern.find(next))
             {
-                StringBuffer filename, msg;
+                StringBuffer filename, line, msg;
                 gccLinkErrorPattern.findstr(filename, 1);
-                gccLinkErrorPattern.findstr(msg, 2);
-                errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), 0, 0, 0));
+                gccLinkErrorPattern.findstr(line, 2);
+                gccLinkErrorPattern.findstr(msg, 3);
+
+                ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
+                errors.append(*createError(CategoryError, severity, 2999, msg.str(), filename.str(), atoi(line), 0, 0));
             }
             else if (gccLinkErrorPattern2.find(next))
             {
                 StringBuffer msg("C++ link error: ");
                 gccLinkErrorPattern2.findstr(msg, 1);
-                errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), NULL, 0, 0, 0));
+                ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
+                errors.append(*createError(CategoryError, severity, 2999, msg.str(), NULL, 0, 0, 0));
             }
             else if (vsErrorPattern.find(next))
             {
@@ -650,6 +669,7 @@ bool CppCompiler::doLink()
     StringBuffer logFile = StringBuffer(CORE_NAME).append("_link.log.tmp");
     logFiles.append(logFile);
     bool ret = invoke_program(expanded.toCharArray(), runcode, true, logFile) && (runcode == 0);
+    linkFailed = !ret;
     return ret;
 }
 
