@@ -628,7 +628,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                 try
                 {
                     unsigned endRequestsCount = owner.container.queryJob().querySlaves();
-                    Owned<IBitSet> endRequests = createBitSet(); // NB: verification only
+                    Owned<IBitSet> endRequests = createThreadSafeBitSet(); // NB: verification only
                     while (!aborted)
                     {
                         rank_t sender;
@@ -735,7 +735,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                     rank_t sender;
                     CMessageBuffer msg;
                     unsigned endRequestsCount = owner.container.queryJob().querySlaves();
-                    Owned<IBitSet> endRequests = createBitSet(); // NB: verification only
+                    Owned<IBitSet> endRequests = createThreadSafeBitSet(); // NB: verification only
 
                     Owned<IRowInterfaces> fetchDiskRowIf = createRowInterfaces(owner.helper->queryDiskRecordSize(),owner.queryActivityId(),owner.queryCodeContext());
                     while (!aborted)

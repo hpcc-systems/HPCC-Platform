@@ -43,7 +43,7 @@ static IBitSet *portmap;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     portallocsection = new CriticalSection;
-    portmap = createBitSet();
+    portmap = createThreadSafeBitSet();
     portmap->set(MPPORT, true);
     portmap->set(WATCHDOGPORT, true);
     return true;

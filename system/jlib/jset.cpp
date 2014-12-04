@@ -23,15 +23,14 @@
 
 //-----------------------------------------------------------------------
 
-// NB: The CBitSet* helpers are primarily avoid the need for virtuals in the implementations
+// NB: The CBitSet*Helper's are primarily avoid the need for virtuals in the implementations
 class CBitSetArrayHelper
 {
 protected:
     ArrayOf<bits_t> bits;
-    mutable CriticalSection crit;
 
-    inline bits_t &getBitSet(unsigned i, bits_t &tmp) { tmp = bits.item(i); return tmp;}
-    inline void setBitSet(unsigned i, bits_t m)
+    inline bits_t getBits(unsigned i) const { return bits.item(i); }
+    inline void setBits(unsigned i, bits_t m)
     {
         bits.replace(m, i);
     }
@@ -56,12 +55,12 @@ protected:
         bitSetUnits = 0;
         mem = NULL;
     }
-    inline bits_t &getBitSet(unsigned i, bits_t &tmp) { return mem[i]; }
-    inline void setBitSet(unsigned i, bits_t m) { } // NOP, getBitset returns ref. in this impl. and the bits_t is set directly
+    inline bits_t getBits(unsigned i) const { return mem[i]; }
+    inline void setBits(unsigned i, bits_t m) { mem[i] = m; }
     inline void addBitSet(bits_t m)
     {
         if (fixedMemory)
-            throw MakeStringException(-1, "CBitSetThreadUnsafe with fixed mem cannot expand");
+            throw MakeStringException(-1, "CBitSet with fixed mem cannot expand");
         mb.append(m);
         mem = (bits_t *)mb.bufferBase();
         ++bitSetUnits;
@@ -75,8 +74,8 @@ class CBitSetBase : public BITSETHELPER, public CSimpleInterfaceOf<IBitSet>
 protected:
     typedef BITSETHELPER PARENT;
     using PARENT::getWidth;
-    using PARENT::getBitSet;
-    using PARENT::setBitSet;
+    using PARENT::getBits;
+    using PARENT::setBits;
     using PARENT::addBitSet;
 
     unsigned _scan(unsigned from, bool tst, bool scninv)
@@ -86,10 +85,9 @@ protected:
         // returns index of first = val >= from
         unsigned n=getWidth();
         unsigned i;
-        bits_t tmpBitSet; // NB: for getBitSet, not all impls. will use it
         for (i=from/BitsPerItem;i<n;i++)
         {
-            bits_t &m = getBitSet(i, tmpBitSet);
+            bits_t m = getBits(i);
             if (m!=noMatchMask)
             {
 #if defined(__GNUC__)
@@ -122,7 +120,7 @@ protected:
                     {
                         bits_t t = ((bits_t)1)<<pos;
                         m &= ~t;
-                        setBitSet(i, m);
+                        setBits(i, m);
                     }
                     return i*BitsPerItem+pos;
                 }
@@ -134,7 +132,7 @@ protected:
                     {
                         bits_t t = ((bits_t)1)<<pos;
                         m |= t;
-                        setBitSet(i, m);
+                        setBits(i, m);
                     }
                     return i*BitsPerItem+pos;
                 }
@@ -149,7 +147,7 @@ protected:
                             if (scninv)
                             {
                                 m &= ~t;
-                                setBitSet(i, m);
+                                setBits(i, m);
                             }
                             return i*BitsPerItem+j;
                         }
@@ -161,7 +159,7 @@ protected:
                             if (scninv)
                             {
                                 m |= t;
-                                setbitSet(i, m);
+                                setBitSet(i, m);
                             }
                             return i*BitsPerItem+j;
                         }
@@ -191,21 +189,19 @@ protected:
         unsigned i=lo/BitsPerItem;
         if (n<=i)
         {
-            if (val)
+            if (!val)
+                return;
+            while (n < i)
             {
-                while (n < i)
-                {
-                    addBitSet(0);
-                    ++n;
-                }
+                addBitSet(0);
+                ++n;
             }
         }
         else
         {
-            bits_t tmpBitSet; // NB: for getBitSet, not all impls. will use it
             for (;i<n;i++)
             {
-                bits_t &m = getBitSet(i, tmpBitSet);
+                bits_t m;
                 if ((nb>=BitsPerItem)&&(j==0))
                 {
                     if (val)
@@ -216,6 +212,7 @@ protected:
                 }
                 else
                 {
+                    m = getBits(i);
                     bits_t t = ((bits_t)1)<<j;
                     for (;j<BitsPerItem;j++)
                     {
@@ -228,7 +225,7 @@ protected:
                         t <<= 1;
                     }
                 }
-                setBitSet(i, m);
+                setBits(i, m);
                 if (nb==0)
                     return;
                 j = 0;
@@ -272,13 +269,12 @@ public:
         }
         else
         {
-            bits_t tmpBitSet; // NB: for getBitSet, not all impls. will use it
-            bits_t &m = getBitSet(i, tmpBitSet);
+            bits_t m = getBits(i);
             if (val)
                 m |= t;
             else
                 m &= ~t;
-            setBitSet(i, m);
+            setBits(i, m);
         }
     }
     virtual bool invert(unsigned n)
@@ -295,14 +291,13 @@ public:
         }
         else
         {
-            bits_t tmpBitSet; // NB: for getBitSet, not all impls. will use it
-            bits_t &m = getBitSet(i, tmpBitSet);
+            bits_t m = getBits(i);
             ret = 0 == (m&t);
             if (ret)
                 m |= t;
             else
                 m &= ~t;
-            setBitSet(i, m);
+            setBits(i, m);
         }
         return ret;
     }
@@ -312,8 +307,7 @@ public:
         unsigned i=n/BitsPerItem;
         if (i<getWidth())
         {
-            bits_t tmpBitSet; // NB: for getBitSet, not all impls. will use it
-            bits_t &m = getBitSet(i, tmpBitSet);
+            bits_t m = getBits(i);
             if (m&t)
                 return true;
         }
@@ -323,28 +317,32 @@ public:
     {
         bits_t t=((bits_t)1)<<(n%BitsPerItem);
         unsigned i=n/BitsPerItem;
-        bool ret;
         if (i>=getWidth())
         {
-            ret = false;
-            if (!val)
-                return false; // don't bother
-            while (i>getWidth())
-                addBitSet(0);
-            addBitSet(t);
+            if (val)
+            {
+                while (i>getWidth())
+                    addBitSet(0);
+                addBitSet(t);
+            }
+            return false;
         }
         else
         {
-            bits_t tmpBitSet; // NB: for getBitSet, not all impls. will use it
-            bits_t &m = getBitSet(i, tmpBitSet);
-            ret = 0 != (m&t);
-            if (val)
-                m |= t;
+            bits_t m = getBits(i);
+            if (m&t)
+            {
+                if (!val)
+                    setBits(i, m & ~t);
+                return true;
+            }
             else
-                m &= ~t;
-            setBitSet(i, m);
+            {
+                if (val)
+                    setBits(i, m | t);
+                return false;
+            }
         }
-        return ret;
     }
     virtual unsigned scan(unsigned from,bool tst)
     {
@@ -371,8 +369,9 @@ size32_t getBitSetMemoryRequirement(unsigned numBits)
 }
 
 // Simple BitSet // 0 based all, intermediate items exist, operations threadsafe and atomic
-class CBitSet : public CBitSetBase<CBitSetArrayHelper>
+class CBitSetThreadSafe : public CBitSetBase<CBitSetArrayHelper>
 {
+    mutable CriticalSection crit;
     void deserialize(MemoryBuffer &buffer)
     {
         CriticalBlock block(crit);
@@ -391,10 +390,10 @@ class CBitSet : public CBitSetBase<CBitSetArrayHelper>
         }
     }
 public:
-    CBitSet()
+    CBitSetThreadSafe()
     {
     }
-    CBitSet(MemoryBuffer &buffer)
+    CBitSetThreadSafe(MemoryBuffer &buffer)
     {
         deserialize(buffer);
     }
@@ -453,13 +452,13 @@ public:
     }
 };
 
-extern jlib_decl IBitSet *createBitSet()
+extern jlib_decl IBitSet *createThreadSafeBitSet()
 {
-    return new CBitSet();
+    return new CBitSetThreadSafe();
 }
 
 
-class CBitSetThreadUnsafe : public CBitSetBase<CBitSetMemoryHelper>
+class CBitSet : public CBitSetBase<CBitSetMemoryHelper>
 {
     void deserialize(MemoryBuffer &buffer)
     {
@@ -479,11 +478,11 @@ class CBitSetThreadUnsafe : public CBitSetBase<CBitSetMemoryHelper>
         fixedMemory = false;
     }
 public:
-    CBitSetThreadUnsafe()
+    CBitSet()
     {
        // In this form, bitSetUnits and mem will be updated when addBitSet expands mb
     }
-    CBitSetThreadUnsafe(size32_t memSz, const void *_mem, bool reset)
+    CBitSet(size32_t memSz, const void *_mem, bool reset)
     {
         bitSetUnits = memSz*sizeof(byte) / sizeof(bits_t);
         mem = (bits_t *)_mem;
@@ -491,7 +490,7 @@ public:
             memset(mem, 0, bitSetUnits*sizeof(bits_t));
         fixedMemory = true;
     }
-    CBitSetThreadUnsafe(MemoryBuffer &buffer)
+    CBitSet(MemoryBuffer &buffer)
     {
         deserialize(buffer);
     }
@@ -506,26 +505,26 @@ public:
     }
 };
 
-extern jlib_decl IBitSet *createBitSetThreadUnsafe(unsigned maxBits, const void *mem, bool reset)
+extern jlib_decl IBitSet *createBitSet(unsigned maxBits, const void *mem, bool reset)
 {
-    return new CBitSetThreadUnsafe(maxBits, mem, reset);
+    return new CBitSet(maxBits, mem, reset);
 }
 
-extern jlib_decl IBitSet *createBitSetThreadUnsafe()
+extern jlib_decl IBitSet *createBitSet()
 {
-    return new CBitSetThreadUnsafe();
+    return new CBitSet();
 }
 
 
 // NB: Doubt you'd want to interchange, but serialization formats are compatible
-extern jlib_decl IBitSet *deserializeIBitSet(MemoryBuffer &mb)
+extern jlib_decl IBitSet *deserializeThreadSafeBitSet(MemoryBuffer &mb)
 {
-    return new CBitSet(mb);
+    return new CBitSetThreadSafe(mb);
 }
 
-extern jlib_decl IBitSet *deserializeIBitSetThreadUnsafe(MemoryBuffer &mb)
+extern jlib_decl IBitSet *deserializeBitSet(MemoryBuffer &mb)
 {
-    return new CBitSetThreadUnsafe(mb);
+    return new CBitSet(mb);
 }
 
 

@@ -334,7 +334,7 @@ void CSlaveMessageHandler::main()
 
 CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this)
 {
-    notedWarnings = createBitSet();
+    notedWarnings = createThreadSafeBitSet();
     mpTag = TAG_NULL;
     data = new MemoryBuffer[container.queryJob().querySlaves()];
     asyncStart = false;
@@ -652,7 +652,7 @@ public:
         unsigned s=comm->queryGroup().ordinality()-1;
         bool aborted = false;
         CMessageBuffer msg;
-        Owned<IBitSet> raisedSet = createBitSet();
+        Owned<IBitSet> raisedSet = createThreadSafeBitSet();
         unsigned remaining = timeout;
         while (s--)
         {
@@ -1345,7 +1345,7 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
     }
     if (sendOnly) return;
     unsigned respondents = 0;
-    Owned<IBitSet> bitSet = createBitSet();
+    Owned<IBitSet> bitSet = createThreadSafeBitSet();
     loop
     {
         rank_t sender;

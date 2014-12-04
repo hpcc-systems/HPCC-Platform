@@ -164,7 +164,7 @@ class CLoopActivityMaster : public CLoopActivityMasterBase
         // similar to sync, but continiously listens for messages from slaves
         // slave only sends if above threashold, or if was at threshold and non empty
         // this routine is here to spot when all are whirling around processing nothing for > threshold
-        Owned<IBitSet> emptyIterations = createBitSet();
+        Owned<IBitSet> emptyIterations = createThreadSafeBitSet();
         unsigned loopEnds = 0;
         unsigned nodes = container.queryJob().querySlaves();
         unsigned n = nodes;

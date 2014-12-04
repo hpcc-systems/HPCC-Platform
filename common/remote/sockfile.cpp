@@ -773,7 +773,7 @@ struct CTreeCopyItem: public CInterface
         loc.append(orig);
         dt.set(_dt);
         sz = _sz;
-        busy.setown(createBitSet());
+        busy.setown(createThreadSafeBitSet());
         lastused = msTick();
     }
     bool equals(const RemoteFilename &orig, const char *_net, const char *_mask, offset_t _sz, CDateTime &_dt) 

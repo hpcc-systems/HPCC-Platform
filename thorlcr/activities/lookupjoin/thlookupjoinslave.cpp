@@ -363,8 +363,8 @@ public:
         allDone = allDoneWaiting = allRequestStop = stopping = stopRecv = false;
         myNode = activity.queryJob().queryMyRank();
         slaves = activity.queryJob().querySlaves();
-        slavesDone.setown(createBitSet());
-        slavesStopping.setown(createBitSet());
+        slavesDone.setown(createThreadSafeBitSet());
+        slavesStopping.setown(createThreadSafeBitSet());
         mpTag = TAG_NULL;
         recvInterface = NULL;
     }
@@ -562,7 +562,7 @@ public:
         if (threadSafeBitSet)
         {
             DBGLOG("Using Thread safe variety of IBitSet");
-            bitSet.setown(createBitSet());
+            bitSet.setown(createThreadSafeBitSet());
         }
         else
         {
@@ -572,7 +572,7 @@ public:
                 return false;
 
             bitSetMem.setown(pBitSetMem);
-            bitSet.setown(createBitSetThreadUnsafe(bitSetMemSz, pBitSetMem));
+            bitSet.setown(createBitSet(bitSetMemSz, pBitSetMem));
         }
         return true;
     }
@@ -607,7 +607,7 @@ public:
                 threadCount = rowCount / chunkSize;
             }
             // Must be multiple of sizeof BitsPerItem
-            chunkSize = (chunkSize + (BitsPerItem-1)) / BitsPerItem * BitsPerItem; // round up to nearest multiple of BitsPerItem
+            chunkSize = ((chunkSize + (BitsPerItem-1)) / BitsPerItem) * BitsPerItem; // round up to nearest multiple of BitsPerItem
 
             /* This is yet another case of requiring a set of small worker threads
              * Thor should really use a common pool of lightweight threadlets made available to all
