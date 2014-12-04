@@ -65,9 +65,12 @@ extern graph_decl ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *act
 interface ISharedSmartBufferCallback
 {
     virtual void paged() = 0;
+    virtual void blocked() = 0;
+    virtual void unblocked() = 0;
 };
 interface ISharedSmartBuffer : extends IRowWriter
 {
+    using IRowWriter::putRow;
     virtual void putRow(const void *row, ISharedSmartBufferCallback *callback) = 0; // extended form of putRow, which signals when pages out via callback
     virtual IRowStream *queryOutput(unsigned output) = 0;
     virtual void cancel()=0;

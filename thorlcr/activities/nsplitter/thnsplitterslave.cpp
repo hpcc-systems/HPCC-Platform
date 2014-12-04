@@ -61,13 +61,13 @@ public:
 // NSplitterSlaveActivity
 //
 
-class NSplitterSlaveActivity : public CSlaveActivity
+class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBufferCallback
 {
     bool spill;
     bool eofHit;
     bool inputsConfigured;
-    bool pendingWrite;
-    CriticalSection startLock, writeAheadCrit;
+    bool writeBlocked, pagedOut;
+    CriticalSection startLock, writeAheadCrit, writeBlockedCrit;
     unsigned nstopped;
     rowcount_t recsReady;
     IThorDataLink *input;
@@ -75,6 +75,40 @@ class NSplitterSlaveActivity : public CSlaveActivity
     Owned<IException> startException, writeAheadException;
     Owned<ISharedSmartBuffer> smartBuf;
 
+    // NB: CWriter only used by 'balanced' splitter, which blocks write when too far ahead
+    class CWriter : public CSimpleInterface, IThreaded
+    {
+        NSplitterSlaveActivity &parent;
+        CThreadedPersistent threaded;
+        bool stopped;
+        rowcount_t current;
+
+    public:
+        CWriter(NSplitterSlaveActivity &_parent) : parent(_parent), threaded("CWriter", this)
+        {
+            current = 0;
+            stopped = true;
+        }
+        ~CWriter() { stop(); }
+        virtual void main()
+        {
+            while (!stopped && !parent.eofHit)
+                current = parent.writeahead(current, stopped);
+        }
+        void start()
+        {
+            stopped = false;
+            threaded.start();
+        }
+        virtual void stop()
+        {
+            if (!stopped)
+            {
+                stopped = true;
+                threaded.join();
+            }
+        }
+    } writer;
     class CNullInput : public CSplitterOutputBase
     {
     public:
@@ -172,14 +206,13 @@ class NSplitterSlaveActivity : public CSlaveActivity
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    NSplitterSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container)
+    NSplitterSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), writer(*this)
     {
         spill = false;
         input = NULL;
         nstopped = 0;
-        eofHit = inputsConfigured = false;
+        eofHit = inputsConfigured = writeBlocked = pagedOut = false;
         recsReady = 0;
-        pendingWrite = false;
     }
     void ensureInputsConfigured()
     {
@@ -187,7 +220,6 @@ public:
         if (inputsConfigured)
             return;
         inputsConfigured = true;
-        pendingWrite = false;
         unsigned noutputs = container.connectedOutputs.getCount();
         ActPrintLog("Number of connected outputs: %d", noutputs);
         if (1 == noutputs)
@@ -228,6 +260,7 @@ public:
         grouped = false;
         eofHit = false;
         recsReady = 0;
+        writeBlocked = false;
         if (inputsConfigured)
         {
             // ensure old inputs cleared, to avoid being reused before re-setup on subsequent executions
@@ -285,6 +318,8 @@ public:
                             smartBuf->queryOutput(o)->stop();
                     }
                 }
+                if (!spill)
+                    writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
             }
             catch (IException *e)
             {
@@ -301,30 +336,35 @@ public:
     }
     rowcount_t writeahead(rowcount_t current, const bool &stopped)
     {
-        if (eofHit)
-            return recsReady;
-
+        // NB: readers call writeahead, which will block others
+        CriticalBlock b(writeAheadCrit);
+        loop
         {
-            CriticalBlock b(writeAheadCrit);
-            if (current < recsReady || pendingWrite)
+            if (eofHit)
                 return recsReady;
-
-            // NB: readers returning because pendingWrite is true, will block on smartBuf->nextRow until rows appear
-            pendingWrite = true;
+            if (current < recsReady)
+                return recsReady;
+            else if (writeBlocked)
+            {
+                // NB: When here, writeAheadCrit has been released _and_ writeBlockedCrit will be held until the writer is unblocked
+                {
+                    CriticalUnblock ub(writeAheadCrit);
+                    {
+                        CriticalBlock b(writeBlockedCrit); // This will block until the thread that is writing ahead has done
+                        // Once writeBlockCrit gained, writeBlocked is always 'false'
+                    }
+                }
+                // recsReady or eofHit will have been updated by the blocking thread by now, loop and re-check
+            }
+            else
+                break;
         }
         ActivityTimer t(totalCycles, queryTimeActivities());
-        class CSharedSmartCallback : implements ISharedSmartBufferCallback
-        {
-            bool pagedOut;
-        public:
-            CSharedSmartCallback() { pagedOut = false; }
-            virtual void paged() { pagedOut = true; }
-            bool done() const { return pagedOut; }
-        } cb;
+        pagedOut = false;
         OwnedConstThorRow row;
         loop
         {
-            if (abortSoon || stopped || cb.done())
+            if (abortSoon || stopped || pagedOut)
                 break;
             try
             {
@@ -334,8 +374,8 @@ public:
                     row.setown(input->nextRow());
                     if (row)
                     {
+                        smartBuf->putRow(NULL, this);
                         ++recsReady;
-                        smartBuf->putRow(NULL, &cb);
                     }
                 }
             }
@@ -347,16 +387,16 @@ public:
                 smartBuf->flush(); // signals no more rows will be written.
                 break;
             }
+            smartBuf->putRow(row.getClear(), this); // can block if mem limited, but other readers can progress which is the point
             ++recsReady;
-            smartBuf->putRow(row.getClear(), &cb); // can block if mem limited, but other readers can progress which is the point
         }
-        pendingWrite = false;
         return recsReady;
     }
     void inputStopped()
     {
         if (nstopped && --nstopped==0) 
         {
+            writer.stop();
             stopInput(input);
             input = NULL;
         }
@@ -377,7 +417,20 @@ public:
         }
         return _totalCycles;
     }
-
+// ISharedSmartBufferCallback impl.
+    virtual void paged() { pagedOut = true; }
+    virtual void blocked()
+    {
+        writeBlockedCrit.enter(); // enter before unblocking writeahead
+        writeBlocked = true; // Prevent other users getting beyond checking recsReady in writeahead()
+        writeAheadCrit.leave();
+    }
+    virtual void unblocked()
+    {
+        writeAheadCrit.enter();
+        writeBlocked = false;
+        writeBlockedCrit.leave(); // leave after re-blocking writer
+    }
 friend class CInputWrapper;
 friend class CSplitterOutput;
 friend class CWriter;

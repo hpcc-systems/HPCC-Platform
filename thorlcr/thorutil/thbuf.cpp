@@ -706,6 +706,8 @@ class Chunk : public CInterface
 public:
     offset_t offset;
     size32_t size;
+    Linked<CRowSet> rowSet;
+    Chunk(CRowSet *_rowSet) : rowSet(_rowSet), offset(0), size(0) { }
     Chunk(offset_t _offset, size_t _size) : offset(_offset), size(_size) { }
     Chunk(const Chunk &other) : offset(other.offset), size(other.size) { }
     bool operator==(Chunk const &other) const { return size==other.size && offset==other.offset; }
@@ -733,6 +735,7 @@ int chunkSizeCompare2(Chunk *lhs, Chunk *rhs)
     return (int)lhs->size - (int)rhs->size;
 }
 
+#define MIN_POOL_CHUNKS 10
 class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBuffer
 {
     size32_t totalOutChunkSize;
@@ -780,11 +783,6 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
             ForEachItemIn(o, outputs)
                 queryCOutput(o).wakeRead(); // if necessary
         }
-    }
-    inline const rowcount_t &readerWait(const rowcount_t &rowsRead)
-    {
-        ++readersWaiting;
-        return rowsWritten;
     }
     CRowSet *loadMore(unsigned output)
     {
@@ -908,8 +906,10 @@ protected:
     Owned<CRowSet> inMemRows;
     CriticalSection crit;
     Linked<IOutputMetaData> meta;
+    QueueOf<CRowSet, false> chunkPool;
+    unsigned maxPoolChunks;
 
-    inline const rowcount_t readerWait(COutput &output, const rowcount_t &rowsRead)
+    inline const rowcount_t readerWait(COutput &output, const rowcount_t rowsRead)
     {
         if (rowsRead == rowsWritten)
         {
@@ -917,9 +917,9 @@ protected:
                 return 0;
             output.readerWaiting = true;
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&parent.activity->queryContainer(), thorlog_all, MCdebugProgress, "readerWait(%d)", output);
+            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "readerWait(%d)", output.queryOutput());
 #endif
-            const rowcount_t &rowsWritten = readerWait(rowsRead);
+            ++readersWaiting;
             {
                 CriticalUnblock b(crit);
                 unsigned mins=0;
@@ -1032,7 +1032,7 @@ protected:
     }
     virtual void freeOffsetChunk(unsigned chunk) = 0;
     virtual CRowSet *readRows(unsigned output, unsigned chunk) = 0;
-    virtual void flushRows() = 0;
+    virtual void flushRows(ISharedSmartBufferCallback *callback) = 0;
     virtual size32_t rowSize(const void *row) = 0;
 public:
 
@@ -1057,6 +1057,7 @@ public:
             outputs.append(* new COutput(*this, c));
         }
         inMemRows.setown(newRowSet(0));
+        maxPoolChunks = MIN_POOL_CHUNKS;
     }
     ~CSharedWriteAheadBase()
     {
@@ -1098,7 +1099,7 @@ public:
         {
             unsigned reader=anyReaderBehind();
             if (NotFound != reader)
-                flushRows();
+                flushRows(callback);
             inMemRows.setown(newRowSet(++totalChunksOut));
 #ifdef TRACE_WRITEAHEAD
             totalOutChunkSize = sizeof(unsigned);
@@ -1286,7 +1287,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
                     return chunk.getClear();
                 }
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %"I64F"d, size=%d", diskChunk.offset, diskChunk.size);
+                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %"I64F"d, size=%d", nextChunk->offset, nextChunk->size);
 #endif
                 freeChunksSized.remove(nextPos);
                 freeChunks.zap(*nextChunk);
@@ -1340,6 +1341,15 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         // chunk(unused here) is nominal sequential page #, savedChunks is page # in diskfile
         assertex(savedChunks.ordinality());
         Owned<Chunk> freeChunk = savedChunks.dequeue();
+        if (freeChunk->rowSet)
+        {
+            Owned<CRowSet> rowSet = chunkPool.dequeue(freeChunk->rowSet);
+#ifdef TRACE_WRITEAHEAD
+            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "freeOffsetChunk (chunk=%d) chunkPool, savedChunks size=%d, chunkPool size=%d", rowSet->queryChunk(), savedChunks.ordinality(), chunkPool.ordinality());
+#endif
+            VALIDATEEQ(chunk, rowSet->queryChunk());
+            return;
+        }
         unsigned nmemb = freeChunks.ordinality();
         if (0 == nmemb)
             addFreeChunk(freeChunk);
@@ -1389,63 +1399,88 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
             }
         }
         Chunk &chunk = *savedChunks.item(whichChunk);
-        Owned<ISerialStream> stream = createFileSerialStream(spillFileIO, chunk.offset);
+        Owned<CRowSet> rowSet;
+        if (chunk.rowSet)
+        {
+            rowSet.set(chunk.rowSet);
 #ifdef TRACE_WRITEAHEAD
-        unsigned diskChunkNum;
-        stream->get(sizeof(diskChunkNum), &diskChunkNum);
-        VALIDATEEQ(diskChunkNum, currentChunkNum);
+            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "readRows (chunk=%d) output: %d, savedChunks size=%d, chunkPool size=%d, currentChunkNum=%d, whichChunk=%d", rowSet->queryChunk(), output, savedChunks.ordinality(), chunkPool.ordinality(), currentChunkNum, whichChunk);
 #endif
-        CThorStreamDeserializerSource ds(stream);
-        Owned<CRowSet> rowSet = newRowSet(currentChunkNum);
-        loop
-        {   
-            byte b;
-            ds.read(sizeof(b),&b);
-            if (!b)
-                break;
-            if (1==b)
+            VALIDATEEQ(rowSet->queryChunk(), currentChunkNum);
+        }
+        else
+        {
+            Owned<ISerialStream> stream = createFileSerialStream(spillFileIO, chunk.offset);
+#ifdef TRACE_WRITEAHEAD
+            unsigned diskChunkNum;
+            stream->get(sizeof(diskChunkNum), &diskChunkNum);
+            VALIDATEEQ(diskChunkNum, currentChunkNum);
+#endif
+            CThorStreamDeserializerSource ds(stream);
+            rowSet.setown(newRowSet(currentChunkNum));
+            loop
             {
-                RtlDynamicRowBuilder rowBuilder(allocator);
-                size32_t sz = deserializer->deserialize(rowBuilder, ds);
-                rowSet->addRow(rowBuilder.finalizeRowClear(sz));
+                byte b;
+                ds.read(sizeof(b),&b);
+                if (!b)
+                    break;
+                if (1==b)
+                {
+                    RtlDynamicRowBuilder rowBuilder(allocator);
+                    size32_t sz = deserializer->deserialize(rowBuilder, ds);
+                    rowSet->addRow(rowBuilder.finalizeRowClear(sz));
+                }
+                else if (2==b)
+                    rowSet->addRow(NULL);
             }
-            else if (2==b)
-                rowSet->addRow(NULL);
         }
         return rowSet.getClear();
     }
-    virtual void flushRows()
+    virtual void flushRows(ISharedSmartBufferCallback *callback)
     {
         // NB: called in crit
-        MemoryBuffer mb;
-        mb.ensureCapacity(minChunkSize); // starting size/could be more if variable and bigger
-#ifdef TRACE_WRITEAHEAD
-        mb.append(inMemRows->queryChunk()); // for debug purposes only
-#endif
-        CMemoryRowSerializer mbs(mb);
-        unsigned r=0;
-        for (;r<inMemRows->getRowCount();r++)
+        Owned<Chunk> chunk;
+        if (chunkPool.ordinality() < maxPoolChunks)
         {
-            OwnedConstThorRow row = inMemRows->getRow(r);
-            if (row)
-            {
-                mb.append((byte)1);
-                serializer->serialize(mbs,(const byte *)row.get());
-            }
-            else
-                mb.append((byte)2); // eog
-        }
-        mb.append((byte)0);
-
-        size32_t len = mb.length();
-        Owned<Chunk> freeChunk = getOutOffset(len); // will find space for 'len', might be bigger if from free list
-
-        spillFileIO->write(freeChunk->offset, len, mb.toByteArray());
-
-        savedChunks.enqueue(freeChunk.getClear());
+            chunk.setown(new Chunk(inMemRows));
+            chunkPool.enqueue(inMemRows.getLink());
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Flushed chunk = %d (savedChunks pos=%d), writeOffset = %"I64F"d, writeSize = %d", inMemRows->queryChunk(), savedChunks.ordinality()-1, freeChunk->offset, len);
+            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "flushRows (chunk=%d) savedChunks size=%d, chunkPool size=%d", inMemRows->queryChunk(), savedChunks.ordinality()+1, chunkPool.ordinality());
 #endif
+        }
+        else
+        {
+            /* It might be worth adding a heuristic here, to estimate time for readers to catch up, vs time spend writing and reading.
+             * Could block for readers to catch up if cost of writing/reads outweighs avg cost of catch up...
+             */
+            MemoryBuffer mb;
+            mb.ensureCapacity(minChunkSize); // starting size/could be more if variable and bigger
+#ifdef TRACE_WRITEAHEAD
+            mb.append(inMemRows->queryChunk()); // for debug purposes only
+#endif
+            CMemoryRowSerializer mbs(mb);
+            unsigned r=0;
+            for (;r<inMemRows->getRowCount();r++)
+            {
+                OwnedConstThorRow row = inMemRows->getRow(r);
+                if (row)
+                {
+                    mb.append((byte)1);
+                    serializer->serialize(mbs,(const byte *)row.get());
+                }
+                else
+                    mb.append((byte)2); // eog
+            }
+            mb.append((byte)0);
+            size32_t len = mb.length();
+            chunk.setown(getOutOffset(len)); // will find space for 'len', might be bigger if from free list
+            spillFileIO->write(chunk->offset, len, mb.toByteArray());
+#ifdef TRACE_WRITEAHEAD
+            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Flushed chunk = %d (savedChunks pos=%d), writeOffset = %"I64F"d, writeSize = %d", inMemRows->queryChunk(), savedChunks.ordinality(), chunk->offset, len);
+#endif
+        }
+
+        savedChunks.enqueue(chunk.getClear());
     }
     virtual size32_t rowSize(const void *row)
     {
@@ -1500,13 +1535,10 @@ ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase *activity, const c
     return new CSharedWriteAheadDisk(activity, spillname, outputs, rowIf, iDiskUsage);
 }
 
-#define MIN_POOL_CHUNKS 10
 class CSharedWriteAheadMem : public CSharedWriteAheadBase
 {
-    QueueOf<CRowSet, false> chunkPool;
     Semaphore poolSem;
     bool writerBlocked;
-    unsigned maxPoolChunks;
 
     virtual void markStop()
     {
@@ -1537,14 +1569,19 @@ class CSharedWriteAheadMem : public CSharedWriteAheadBase
         VALIDATEEQ(queryCOutput(output).currentChunkNum, rowSet->queryChunk());
         return rowSet.getClear();
     }
-    virtual void flushRows()
+    virtual void flushRows(ISharedSmartBufferCallback *callback)
     {
         // NB: called in crit
         if (chunkPool.ordinality() >= maxPoolChunks)
         {
             writerBlocked = true;
-            { CriticalUnblock b(crit);
+            {
+                CriticalUnblock b(crit);
+                if (callback)
+                    callback->blocked();
                 poolSem.wait();
+                if (callback)
+                    callback->unblocked();
                 if (stopped) return;
             }
             unsigned reader=anyReaderBehind();
