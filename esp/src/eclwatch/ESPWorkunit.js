@@ -127,21 +127,47 @@ define([
             this.set("sourceFiles", sourceFiles);
         },
         ExtractTime: function (Timer) {
+            //  GH:  <n>ns or <m>ms or <s>s or [<d> days ][<h>:][<m>:]<s>[.<ms>]
             var nsIndex = Timer.indexOf("ns");
             if (nsIndex !== -1) {
-                return Timer.substr(0, nsIndex) / 1000000000;
+                return parseFloat(Timer.substr(0, nsIndex)) / 1000000000;
             }
             var msIndex = Timer.indexOf("ms");
             if (msIndex !== -1) {
-                return Timer.substr(0, msIndex) / 1000;
+                return parseFloat(Timer.substr(0, msIndex)) / 1000;
             }
-            //MORE: This code doesn't cope with separate days
-            var secs = 0;
-            var timeParts = Timer.split(":");
+            var sIndex = Timer.indexOf("s");
+            if (sIndex !== -1 && Timer.indexOf("days") === -1) {
+                return parseFloat(Timer.substr(0, sIndex));
+            }
+
+            var dayTimeParts = Timer.split(" days ");
+            var days = parseFloat(dayTimeParts.length > 1 ? dayTimeParts[0] : 0.0);
+            var time = dayTimeParts.length > 1 ? dayTimeParts[1] : dayTimeParts[0];
+            var secs = 0.0;
+            var timeParts = time.split(":").reverse();
             for (var j = 0; j < timeParts.length; ++j) {
-                secs = secs * 60 + timeParts[j];
+                secs += parseFloat(timeParts[j]) * Math.pow(60, j);
             }
-            return secs;
+            return (days * 24 * 60 * 60) + secs;
+        },
+        ExtractTimeTests: function () {
+            var tests = [
+                { str: "1.1s", expected: 1.1 },
+                { str: "2.2ms", expected: 0.0022 },
+                { str: "3.3ns", expected: 0.0000000033 },
+                { str: "4.4", expected: 4.4 },
+                { str: "5:55.5", expected: 355.5 },
+                { str: "6:06:06.6", expected: 21966.6 },
+                { str: "6:06:6.6", expected: 21966.6 },
+                { str: "6:6:6.6", expected: 21966.6 },
+                { str: "7 days 7:07:7.7", expected: 630427.7 }
+            ];
+            tests.forEach(function (test, idx) {
+                if (this.ExtractTime(test.str) !== test.expected) {
+                    console.log("ExtractTimeTests failed with " + this.ExtractTime(test.str) + " !== " +  test.expected);
+                }
+            }, this);
         },
         _TimersSetter: function (Timers) {
             var timers = [];
