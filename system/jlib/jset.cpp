@@ -417,22 +417,22 @@ public:
     virtual void set(unsigned n, bool val)
     {
         CriticalBlock block(crit);
-        CBitSetBase::set(n, val);
+        CBitSetBase<CBitSetArrayHelper>::set(n, val);
     }
     virtual bool invert(unsigned n)
     {
         CriticalBlock block(crit);
-        return CBitSetBase::invert(n);
+        return CBitSetBase<CBitSetArrayHelper>::invert(n);
     }
     virtual bool test(unsigned n)
     {
         CriticalBlock block(crit);
-        return CBitSetBase::test(n);
+        return CBitSetBase<CBitSetArrayHelper>::test(n);
     }
     virtual bool testSet(unsigned n, bool val)
     {
         CriticalBlock block(crit);
-        return CBitSetBase::testSet(n, val);
+        return CBitSetBase<CBitSetArrayHelper>::testSet(n, val);
     }
     virtual unsigned scan(unsigned from, bool tst)
     {
