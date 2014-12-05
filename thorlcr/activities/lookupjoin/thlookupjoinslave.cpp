@@ -363,8 +363,8 @@ public:
         allDone = allDoneWaiting = allRequestStop = stopping = stopRecv = false;
         myNode = activity.queryJob().queryMyRank();
         slaves = activity.queryJob().querySlaves();
-        slavesDone.setown(createBitSet());
-        slavesStopping.setown(createBitSet());
+        slavesDone.setown(createThreadSafeBitSet());
+        slavesStopping.setown(createThreadSafeBitSet());
         mpTag = TAG_NULL;
         recvInterface = NULL;
     }
@@ -453,15 +453,13 @@ class CMarker
     CActivityBase &activity;
     NonReentrantSpinLock lock;
     ICompare *cmp;
-    /* Access to bitSet is currently protected by the implementation
-     * Should move over to an implementation that's based on a lump of
-     * roxiemem and ensure that the threads avoid accessing the same bytes/words etc.
-     */
-    Owned<IBitSet> bitSet; // should be roxiemem, so can cause spilling
+    OwnedConstThorRow bitSetMem; // for thread unsafe version
+    Owned<IBitSet> bitSet;
     const void **base;
     rowidx_t nextChunkStartRow; // Updated as threads request next chunk
     rowidx_t rowCount, chunkSize; // There are configured at start of calculate()
     rowidx_t parallelMinChunkSize, parallelChunkSize; // Constant, possibly configurable in future
+    unsigned threadCount;
 
     class CCompareThread : public CInterface, implements IThreaded
     {
@@ -498,10 +496,14 @@ class CMarker
     }
     inline void mark(rowidx_t i)
     {
+        // NB: Thread safe, because markers are dealing with discrete parts of bitSetMem (alighted to bits_t boundaries)
         bitSet->set(i); // mark boundary
     }
     rowidx_t doMarking(rowidx_t myStart, rowidx_t myEnd)
     {
+        // myStart must be on bits_t boundary
+        dbgassertex(0 == (myStart % BitsPerItem));
+
         rowidx_t chunkUnique = 0;
         const void **rows = base+myStart;
         rowidx_t i=myStart;
@@ -550,20 +552,46 @@ public:
         // perhaps should make these configurable..
         parallelMinChunkSize = 1024;
         parallelChunkSize = 10*parallelMinChunkSize;
+        threadCount = activity.getOptInt(THOROPT_JOINHELPER_THREADS, activity.queryMaxCores());
+        if (0 == threadCount)
+            threadCount = getAffinityCpus();
+    }
+    bool init(rowidx_t rowCount)
+    {
+        bool threadSafeBitSet = activity.getOptBool("threadSafeBitSet", false); // for testing only
+        if (threadSafeBitSet)
+        {
+            DBGLOG("Using Thread safe variety of IBitSet");
+            bitSet.setown(createThreadSafeBitSet());
+        }
+        else
+        {
+            size32_t bitSetMemSz = getBitSetMemoryRequirement(rowCount);
+            void *pBitSetMem = activity.queryJob().queryRowManager()->allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
+            if (!pBitSetMem)
+                return false;
+
+            bitSetMem.setown(pBitSetMem);
+            bitSet.setown(createBitSet(bitSetMemSz, pBitSetMem));
+        }
+        return true;
+    }
+    void reset()
+    {
+        bitSet.clear();
     }
     rowidx_t calculate(CThorExpandingRowArray &rows, ICompare *_cmp, bool doSort)
     {
+        CCycleTimer timer;
+        assertex(bitSet);
         cmp = _cmp;
-        unsigned threadCount = activity.getOptInt(THOROPT_JOINHELPER_THREADS, activity.queryMaxCores());
-        if (0 == threadCount)
-            threadCount = getAffinityCpus();
         if (doSort)
             rows.sort(*cmp, threadCount);
         rowCount = rows.ordinality();
         if (0 == rowCount)
             return 0;
         base = rows.getRowArray();
-        bitSet.setown(createBitSet());
+
         rowidx_t uniqueTotal = 0;
         if ((1 == threadCount) || (rowCount < parallelMinChunkSize))
             uniqueTotal = doMarking(0, rowCount);
@@ -578,6 +606,9 @@ public:
                 chunkSize = parallelMinChunkSize;
                 threadCount = rowCount / chunkSize;
             }
+            // Must be multiple of sizeof BitsPerItem
+            chunkSize = ((chunkSize + (BitsPerItem-1)) / BitsPerItem) * BitsPerItem; // round up to nearest multiple of BitsPerItem
+
             /* This is yet another case of requiring a set of small worker threads
              * Thor should really use a common pool of lightweight threadlets made available to all
              * where any particular instances (e.g. lookup) can stipulate min/max it requires etc.
@@ -610,6 +641,7 @@ public:
         ++uniqueTotal;
         mark(rowCount-1); // last row is implicitly end of group
         cmp = NULL;
+        DBGLOG("CMarker::calculate - uniqueTotal=%"RIPF"d, took=%d ms", uniqueTotal, timer.elapsedMs());
         return uniqueTotal;
     }
     rowidx_t findNextBoundary(rowidx_t start)
@@ -1509,8 +1541,11 @@ protected:
                 bool success=false;
                 try
                 {
-                    // NB: If this ensure returns false, it will have called the MM callbacks and have setup isLocalLookup() already
-                    success = rhs.ensure(rhsRows, SPILL_PRIORITY_LOW); // NB: Could OOM, handled by exception handler
+                    if (marker.init(rhsRows))
+                    {
+                        // NB: If this ensure returns false, it will have called the MM callbacks and have setup isLocalLookup() already
+                        success = rhs.ensure(rhsRows, SPILL_PRIORITY_LOW); // NB: Could OOM, handled by exception handler
+                    }
                 }
                 catch (IException *e)
                 {
@@ -1610,6 +1645,7 @@ protected:
 
                 // If HT sized already and now spilt, too big clear and size when local size known
                 clearHT();
+                marker.reset();
 
                 if (stopping)
                 {
@@ -1724,7 +1760,7 @@ protected:
                 }
             }
             else
-                rightStream.setown(rowLoader->load(right, abortSoon, false, &rhs, NULL, false));
+                rightStream.setown(rowLoader->load(right, abortSoon, false, &rhs));
 
             if (!rightStream)
             {
@@ -1739,16 +1775,40 @@ protected:
 
                 rowLoader.clear();
 
-                // Either was already sorted, or rowLoader->load() sorted on transfer out to rhs
-                rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, false);
-
-                /* Although HT is allocated with a low spill priority, it can still cause callbacks
-                 * so try to allocate before rhs is transferred to spillable collector
-                 */
-                bool htAllocated = setupHT(uniqueKeys);
-                if (!htAllocated)
+                bool success;
+                try
                 {
-                    ActPrintLog("Out of memory trying to allocate the [LOCAL] hash table for a SMART join (%"RIPF"d rows), will now failover to a std hash join", uniqueKeys);
+                    success = marker.init(rhs.ordinality());
+                }
+                catch (IException *e)
+                {
+                    if (!isSmart())
+                        throw;
+                    switch (e->errorCode())
+                    {
+                    case ROXIEMM_MEMORY_POOL_EXHAUSTED:
+                    case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
+                        e->Release();
+                        break;
+                    default:
+                        throw;
+                    }
+                    success = false;
+                }
+                if (success)
+                {
+                    // Either was already sorted, or rowLoader->load() sorted on transfer out to rhs
+                    rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, false);
+                    success = setupHT(uniqueKeys);
+                    if (!success)
+                    {
+                        if (!isSmart())
+                            throw MakeActivityException(this, 0, "Failed to allocate [LOCAL] hash table");
+                    }
+                }
+                if (!success)
+                {
+                    ActPrintLog("Out of memory trying to allocate [LOCAL] tables for a SMART join (%"RIPF"d rows), will now failover to a std hash join", rhs.ordinality());
                     Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), NULL, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
                     collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
                     collector->transferRowsIn(rhs); // can spill after this
@@ -1784,6 +1844,7 @@ protected:
             {
                 ActPrintLog("Performing standard join");
 
+                marker.reset();
                 // NB: lhs ordering and grouping lost from here on.. (will have been caught earlier if global)
                 if (grouped)
                     throw MakeActivityException(this, 0, "Degraded to standard join, LHS order cannot be preserved");
@@ -2225,6 +2286,7 @@ public:
         }
         // Rows now in hash table, rhs arrays no longer needed
         _rows.kill();
+        marker.reset();
     }
 };
 

@@ -137,7 +137,7 @@ public:
 
     CRegistryServer()  : deregistrationWatch(*this), stopped(false)
     {
-        status = createBitSet();
+        status = createThreadSafeBitSet();
         msgDelay = SLAVEREG_VERIFY_DELAY;
         slavesRegistered = 0;
         if (globals->getPropBool("@watchdogEnabled"))
@@ -201,7 +201,7 @@ public:
         unsigned timeWaited = 0;
         unsigned connected = 0;
         unsigned slaves = queryClusterWidth();
-        Owned<IBitSet> connectedSet = createBitSet();
+        Owned<IBitSet> connectedSet = createThreadSafeBitSet();
         loop
         {
             CTimeMon tm(msgDelay);

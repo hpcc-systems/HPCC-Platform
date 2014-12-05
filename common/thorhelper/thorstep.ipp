@@ -824,7 +824,7 @@ public:
     const void * nextUnqueued();
     bool ensureNonEmpty();
     bool flushUnmatched();
-    void trackUnmatched() { matchedLeft.setown(createBitSet()); }
+    void trackUnmatched() { matchedLeft.setown(createThreadSafeBitSet()); }
 
     inline void consumeNextInput() { rows.enqueue(input->consume()); }
 

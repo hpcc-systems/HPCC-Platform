@@ -494,7 +494,7 @@ CFilteredInputBuffer::CFilteredInputBuffer(IEngineRowAllocator * _allocator, IRa
     stepCompare = _stepCompare;
     equalCompare = _equalCompare;
     input = _input;
-    matched.setown(createBitSet());
+    matched.setown(createThreadSafeBitSet());
     numMatched = 0;
     readIndex = 0;
     numEqualFields = _numEqualFields;
