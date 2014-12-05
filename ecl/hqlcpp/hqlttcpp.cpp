@@ -8950,7 +8950,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
                     OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
                     return removeAttribute(transformed, embeddedAtom);
                 }
-                if (implicitLinkedChildRows && !expr->hasAttribute(_linkCounted_Atom))
+                if (implicitLinkedChildRows && !expr->hasAttribute(_linkCounted_Atom) && !queryAttribute(type, embeddedAtom))
                 {
                     //Don't use link counted rows for weird HOLe style dataset attributes
                     if (expr->hasAttribute(countAtom) || expr->hasAttribute(sizeofAtom))
