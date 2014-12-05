@@ -81,6 +81,7 @@ protected:
     void _addInclude(StringBuffer &s, const char *paths);
     bool            saveTemps;
     bool            precompileHeader;
+    bool            linkFailed;
     IAbortRequestCallback * abortChecker;
 };
 
