@@ -560,6 +560,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
 
 EclAgent::~EclAgent()
 {
+    rowManager.clear();
     ::Release(pluginMap);
     abortmonitor->stop();
     ::Release(abortmonitor); // no nead to join
