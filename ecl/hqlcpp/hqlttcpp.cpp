@@ -8945,6 +8945,12 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             case type_dictionary:
             case type_table:
             case type_groupedtable:
+                OwnedHqlExpr transformedRecord = transform(expr->queryRecord());
+                if (recordRequiresLinkCount(transformedRecord))
+                {
+                    if (expr->hasAttribute(embeddedAtom) || queryAttribute(type, embeddedAtom) || expr->hasAttribute(countAtom) || expr->hasAttribute(sizeofAtom))
+                        throwError1(HQLERR_InconsistentEmbedded, expr->queryId()->str());
+                }
                 if (expr->hasAttribute(embeddedAtom))
                 {
                     OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
