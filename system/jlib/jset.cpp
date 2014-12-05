@@ -159,7 +159,7 @@ protected:
                             if (scninv)
                             {
                                 m |= t;
-                                setBitSet(i, m);
+                                setBits(i, m);
                             }
                             return i*BitsPerItem+j;
                         }
