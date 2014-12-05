@@ -1762,7 +1762,7 @@ public:
                 unsigned numsub = file.getPropInt("@numsubfiles");
                 unsigned n = 0;
                 Owned<IPropertyTreeIterator> iter = file.getElements("SubFile");
-                Owned<IBitSet> parts = createBitSet();
+                Owned<IBitSet> parts = createThreadSafeBitSet();
                 StringArray subname;
                 ForEach(*iter) {
                     IPropertyTree &sfile = iter->query();

@@ -38,10 +38,26 @@ interface jlib_decl IBitSet : public IInterface
     virtual void serialize(MemoryBuffer &buffer) const = 0;
 };
 
-extern jlib_decl IBitSet *deserializeIBitSet(MemoryBuffer &mb);
+// type of underlying bit storage, exposed so thread-unsafe version can know boundaries
+typedef unsigned bits_t;
+enum { BitsPerItem = sizeof(bits_t) * 8 };
+
 
 // Simple BitSet // 0 based, all intermediate items exist, operations threadsafe and atomic
-extern jlib_decl IBitSet *createBitSet(); 
+extern jlib_decl IBitSet *createThreadSafeBitSet();
+extern jlib_decl IBitSet *deserializeThreadSafeBitSet(MemoryBuffer &mb);
+
+/* Not thread safe, but can be significantly faster than createThreadSafeBitSet
+ * Client provides a fixed block of memory used for the bit set, threads must ensure they do not set bits
+ * in parallel within the same bits_t space.
+ * IOW, e.g. bits 0-sizeof(bits_t) must be set from only 1 thread at a time.
+ */
+extern jlib_decl IBitSet *createBitSet(size32_t memSize, const void *mem, bool reset=true);
+// This form allows the size of the bit set to be dynamic. No guarantees about threading.
+extern jlib_decl IBitSet *createBitSet();
+extern jlib_decl IBitSet *deserializeBitSet(MemoryBuffer &mb);
+// returns number of bytes required to represent numBits in memory
+extern jlib_decl size32_t getBitSetMemoryRequirement(unsigned numBits);
 
 
 

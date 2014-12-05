@@ -371,11 +371,11 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
         throw makeOsExceptionV(GetLastError(), "Failed to load helper factory method: %s (dll handle = %p)", helperName.str(), queryJob().queryDllEntry().getInstance());
     alreadyUpdated = false;
     whichBranch = (unsigned)-1;
-    whichBranchBitSet.setown(createBitSet());
+    whichBranchBitSet.setown(createThreadSafeBitSet());
     newWhichBranch = false;
     isEof = false;
     log = true;
-    sentActInitData.setown(createBitSet());
+    sentActInitData.setown(createThreadSafeBitSet());
 }
 
 CGraphElementBase::~CGraphElementBase()

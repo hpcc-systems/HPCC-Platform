@@ -1936,7 +1936,7 @@ public:
     CPECacheElem(const char *owner, ISortedElementsTreeFilter *_postFilter)
         : CTimedCacheItem(owner), postFilter(_postFilter), postFiltered(0)
     {
-        passesFilter.setown(createBitSet());
+        passesFilter.setown(createThreadSafeBitSet());
     }
     ~CPECacheElem()
     {

@@ -247,7 +247,7 @@ FieldAccessAnalyser::FieldAccessAnalyser(IHqlExpression * _selector) : NewHqlTra
 {
     unwindFields(fields, selector->queryRecord());
     numAccessed = 0;
-    accessed.setown(createBitSet());
+    accessed.setown(createThreadSafeBitSet());
 }
 
 IHqlExpression * FieldAccessAnalyser::queryLastFieldAccessed() const

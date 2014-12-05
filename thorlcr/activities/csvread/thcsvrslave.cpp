@@ -341,8 +341,8 @@ public:
                     localLastPart[subFile] = pnum;
             }
             headerLinesRemaining.allocateN(subFiles);
-            gotHeaderLines.setown(createBitSet());
-            sentHeaderLines.setown(createBitSet());
+            gotHeaderLines.setown(createThreadSafeBitSet());
+            sentHeaderLines.setown(createThreadSafeBitSet());
         }
         partHandler.setown(new CCsvPartHandler(*this));
         appendOutputLinked(this);
