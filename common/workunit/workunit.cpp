@@ -3384,8 +3384,11 @@ void CLocalWorkUnit::init()
     libraries.kill();
     exceptions.kill();
     temporaries.kill();
+    appvalues.kill();
+    statistics.kill();
     roxieQueryInfo.clear();
     webServicesInfo.clear();
+
     workflowIteratorCached = false;
     resultsCached = false;
     temporariesCached = false;
