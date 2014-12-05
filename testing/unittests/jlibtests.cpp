@@ -130,6 +130,18 @@ protected:
             ASSERT(match == i);
             ASSERT(bs->test(i) == clearValue);
         }
+        bs->reset();
+        if (initial)
+        {
+            bs->incl(start, end);
+            bs->excl(start+5, end-5);
+        }
+        else
+            bs->incl(start+5, end-5);
+        unsigned inclStart = bs->scan(start, setValue);
+        ASSERT((start+5) == inclStart);
+        unsigned inclEnd = bs->scan(start+5, clearValue);
+        ASSERT((end-5) == (inclEnd-1));
     }
 
     void testSet(bool initial)

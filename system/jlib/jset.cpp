@@ -196,6 +196,22 @@ protected:
                 addBitSet(0);
                 ++n;
             }
+            if (j>0)
+            {
+                bits_t m = 0;
+                bits_t t = ((bits_t)1)<<j;
+                for (;j<BitsPerItem;j++)
+                {
+                    m |= t;
+                    if (--nb==0)
+                        break;
+                    t <<= 1;
+                }
+                addBitSet(m);
+            }
+            if (nb==0)
+                return;
+            j = 0;
         }
         else
         {
