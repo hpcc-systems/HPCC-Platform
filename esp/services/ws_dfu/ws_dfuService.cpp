@@ -4254,9 +4254,9 @@ static const char * const columnTypes[] = { "Boolean", "Integer", "Unsigned Inte
 
 bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaDataRequest & req, IEspDFUGetFileMetaDataResponse & resp)
 {
-    class CDFUFileMetaDataReader: public CInterface, implements IDFUFileMetaDataReader
+    class CDFUFileMetaDataReader
     {
-        int totalCcolumnCount;
+        int totalColumnCount;
         int keyedColumnCount;
         StringBuffer XmlSchema, XmlXPathSchema;
         IArrayOf<IEspDFUDataColumn> dataColumns;
@@ -4304,18 +4304,17 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         }
 
     public:
-        IMPLEMENT_IINTERFACE;
         CDFUFileMetaDataReader(const IResultSetMetaData& _meta) : meta(_meta)
         {
-            totalCcolumnCount = meta.getColumnCount();
+            totalColumnCount = meta.getColumnCount();
             keyedColumnCount = meta.getNumKeyedColumns();
             unsigned i = 0;
             for (; i < keyedColumnCount; i++)
                 readColumn(i, true, dataColumns);
-            for (i = keyedColumnCount; i < totalCcolumnCount; i++)
+            for (i = keyedColumnCount; i < totalColumnCount; i++)
                 readColumn(i, false, dataColumns);
         };
-        inline unsigned getTotalColumnCount() { return totalCcolumnCount; }
+        inline unsigned getTotalColumnCount() { return totalColumnCount; }
         inline unsigned getKeyedColumnCount() { return keyedColumnCount; }
         inline IArrayOf<IEspDFUDataColumn>& getDataColumns() { return dataColumns; }
         inline StringBuffer& getXmlSchema(StringBuffer& s, const bool addHeader)
@@ -4334,12 +4333,13 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
 
     try
     {
-        StringBuffer nameStr, fileNameStr = req.getLogicalFileName();
+        StringBuffer fileNameStr = req.getLogicalFileName();
         const char* fileName = fileNameStr.trim().str();
         if (!fileName || !*fileName)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: LogicalFileName not set");
 
-        {
+        {//Check whether the meta data is available for the file. If not, throw an exception.
+            StringBuffer nameStr;
             Owned<IUserDescriptor> userdesc = createUserDescriptor();
             userdesc->set(context.getUserID(nameStr).str(), context.queryPassword());
             Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc);
@@ -4362,16 +4362,16 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: Failed to access FileResultSet for %s.", fileName);
 
         Owned<IResultSetCursor> cursor = result->createCursor();
-        Owned<IDFUFileMetaDataReader> dataReader = new CDFUFileMetaDataReader(cursor->queryResultSet()->getMetaData());
-        resp.setTotalColumnCount(dataReader->getTotalColumnCount());
-        resp.setKeyedColumnCount(dataReader->getKeyedColumnCount());
-        resp.setDataColumns(dataReader->getDataColumns());
+        CDFUFileMetaDataReader dataReader(cursor->queryResultSet()->getMetaData());
+        resp.setTotalColumnCount(dataReader.getTotalColumnCount());
+        resp.setKeyedColumnCount(dataReader.getKeyedColumnCount());
+        resp.setDataColumns(dataReader.getDataColumns());
 
         StringBuffer s, s1;
         if (req.getIncludeXmlSchema())
-            resp.setXmlSchema(dataReader->getXmlSchema(s, req.getAddHeaderInXmlSchema()).str());
+            resp.setXmlSchema(dataReader.getXmlSchema(s, req.getAddHeaderInXmlSchema()).str());
         if (req.getIncludeXmlXPathSchema())
-            resp.setXmlXPathSchema(dataReader->getXmlXPathSchema(s1, req.getAddHeaderInXmlXPathSchema()).str());
+            resp.setXmlXPathSchema(dataReader.getXmlXPathSchema(s1, req.getAddHeaderInXmlXPathSchema()).str());
 
         resp.setTotalResultRows(result->getNumRows());
     }

@@ -30,15 +30,6 @@
 #include "fvrelate.hpp"
 #include "dadfs.hpp"
 
-interface IDFUFileMetaDataReader : extends IInterface
-{
-    virtual unsigned getTotalColumnCount() = 0;
-    virtual unsigned getKeyedColumnCount() = 0;
-    virtual IArrayOf<IEspDFUDataColumn>& getDataColumns() = 0;
-    virtual StringBuffer& getXmlSchema(StringBuffer& s, const bool addHeader) = 0;
-    virtual StringBuffer& getXmlXPathSchema(StringBuffer& s, const bool addHeader) = 0;
-};
-
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
 public:
