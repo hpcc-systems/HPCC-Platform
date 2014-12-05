@@ -689,9 +689,9 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
         if (queryname && *queryname)
             queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
         wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryname);
-        wufiles->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !overwrite, true);
+        wufiles->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !overwrite, true, true);
         Owned<IDFUhelper> helper = createIDFUhelper();
-        wufiles->cloneAllInfo(helper, overwrite, true);
+        wufiles->cloneAllInfo(helper, overwrite, true, true);
     }
 }
 
@@ -2242,9 +2242,9 @@ public:
     {
         if (cloneFilesEnabled)
         {
-            wufiles->resolveFiles(process, dfsIP, srcPrefix, srcCluster, !overwriteDfs, true);
+            wufiles->resolveFiles(process, dfsIP, srcPrefix, srcCluster, !overwriteDfs, true, true);
             Owned<IDFUhelper> helper = createIDFUhelper();
-            wufiles->cloneAllInfo(helper, overwriteDfs, true);
+            wufiles->cloneAllInfo(helper, overwriteDfs, true, true);
         }
     }
 private:
