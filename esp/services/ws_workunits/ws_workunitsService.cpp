@@ -1603,8 +1603,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             resp.setCanCompile(notEmpty(context.queryUserId()));
             if (version > 1.24 && notEmpty(req.getThorSlaveIP()))
                 resp.setThorSlaveIP(req.getThorSlaveIP());
-            if (version > 1.53)
-                resp.setSecMethod(authMethod.get());
+            resp.setSecMethod(authMethod.get());
         }
     }
     catch(IException* e)
