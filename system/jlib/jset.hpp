@@ -22,7 +22,55 @@
 
 #include "jiface.hpp"
 
+#if defined (_WIN32)
+#include <intrin.h>
+#endif
 
+//Return the nunber of trailing zeros. Deliberately undefined if value == 0
+inline unsigned countTrailingZeros(unsigned value)
+{
+    dbgassertex(value != 0);
+#if defined(__GNUC__)
+    return __builtin_ctz(value);
+#elif defined (_WIN32)
+    unsigned long index;
+    _BitScanForward(&index, value);
+    return (unsigned)index;
+#else
+    unsigned mask = 1U;
+    unsigned i;
+    for (i=0; i < sizeof(unsigned)*8; i++)
+    {
+        if (value & mask)
+            return i;
+        mask = mask << 1;
+    }
+    return i;
+#endif
+}
+
+//Return the nunber of leading zeros. Deliberately undefined if value == 0
+inline unsigned countLeadingZeros(unsigned value)
+{
+    dbgassertex(value != 0);
+#if defined(__GNUC__)
+    return __builtin_clz(value);
+#elif defined (_WIN32)
+    unsigned long index;
+    _BitScanReverse(&index, value);
+    return (unsigned)index;
+#else
+    unsigned mask = 1U << 31;
+    unsigned i;
+    for (i=0; i < sizeof(unsigned)*8; i++)
+    {
+        if (value & mask)
+            return i;
+        mask = mask >> 1;
+    }
+    return i;
+#endif
+}
 
 interface jlib_decl IBitSet : public IInterface 
 {
