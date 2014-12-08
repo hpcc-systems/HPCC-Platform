@@ -137,7 +137,7 @@ typedef MapBetween<unsigned, unsigned, memsize_t, memsize_t> MapActivityToMemsiz
 
 static CriticalSection heapBitCrit;
 
-static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
+static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, unsigned pages, unsigned largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
 {
     if (heapBase) return;
 
@@ -172,8 +172,9 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
         if (heapBase != MAP_FAILED)
         {
             heapUseHugePages = true;
-            //MORE: At the moment I'm not sure calling madvise() has any benefit, but needs testing before releasing
-            //heapNotifyUnusedPagesOnFree = false;
+            heapNotifyUnusedEachFree = false;
+            //MORE: At the moment I'm not sure calling madvise() has any benefit, it may be better for the following to stay false;
+            heapNotifyUnusedEachBlock = true;
             DBGLOG("Using Huge Pages for roxiemem");
         }
         else
@@ -190,7 +191,8 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
     if (!heapBase)
     {
         const memsize_t hugePageSize = getHugePageSize();
-        memsize_t heapAlignment = allowHugePages ? hugePageSize : HEAP_ALIGNMENT_SIZE;
+        bool useTransparentHugePages = allowTransparentHugePages && areTransparentHugePagesEnabled();
+        memsize_t heapAlignment = useTransparentHugePages ? hugePageSize : HEAP_ALIGNMENT_SIZE;
         if (heapAlignment < HEAP_ALIGNMENT_SIZE)
             heapAlignment = HEAP_ALIGNMENT_SIZE;
 
@@ -220,27 +222,35 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
             HEAPERROR("RoxieMemMgr: Unable to create heap");
         }
 
-        //If we are allowed to use huge pages, then mark huge pages as beneficial
-        if (allowHugePages)
+        //If system supports transparent huge pages, use madvise to mark the memory as request huge pages
+        if (useTransparentHugePages)
         {
-            if (areTransparentHugePagesEnabled())
+            if (madvise(heapBase,memsize,MADV_HUGEPAGE) == 0)
             {
-                if (madvise(heapBase,memsize,MADV_HUGEPAGE) == 0)
+                //Prevent the transparent huge page code from working hard trying to defragment memory when single heaplets are released
+                heapNotifyUnusedEachFree = false;
+                if ((heapBlockSize % hugePageSize) == 0)
                 {
-                    //Prevent the transparent huge page code from working hard trying to defragment memory when single heaplets are released
-                    heapNotifyUnusedEachFree = false;
-                    if ((heapBlockSize % hugePageSize) == 0)
-                    {
-                        //If we notify heapBlockSize items at a time it will always be a multiple of hugePageSize so shouldn't trigger defragmentation
-                        heapNotifyUnusedEachBlock = true;
-                        DBGLOG("Heap advised as worth using huge pages - memory released in blocks");
-                    }
-                    else
-                        DBGLOG("Heap advised as worth using huge pages - MEMORY WILL NOT BE RELEASED");
+                    //If we notify heapBlockSize items at a time it will always be a multiple of hugePageSize so shouldn't trigger defragmentation
+                    heapNotifyUnusedEachBlock = true;
+                    DBGLOG("Transparent huge pages used for roxiemem heap - memory released in blocks");
+                }
+                else
+                {
+                    DBGLOG("Transparent huge pages used for roxiemem heap- MEMORY WILL NOT BE RELEASED.");
+                    DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*32 is a multiple of huge page size"");");
                 }
             }
+        }
+        else
+        {
+            if (!allowTransparentHugePages)
+            {
+                madvise(heapBase,memsize,MADV_NOHUGEPAGE);
+                DBGLOG("Transparent huge pages disabled in configuration by user.");
+            }
             else
-                DBGLOG("Huge pages requested, but transparent huge pages currently disabled");
+                DBGLOG("Transparent huge pages unsupported or disabled by system.");
         }
     }
 #endif
@@ -4215,7 +4225,7 @@ extern void setMemoryStatsInterval(unsigned secs)
     lastStatsCycles = get_cycles_now();
 }
 
-extern void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
+extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
 {
     assertex(largeBlockSize == align_pow2(largeBlockSize, HEAP_ALIGNMENT_SIZE));
     unsigned totalMemoryLimit = (unsigned) (max / HEAP_ALIGNMENT_SIZE);
@@ -4224,7 +4234,7 @@ extern void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t la
         totalMemoryLimit = 1;
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: Setting memory limit to %"I64F"d bytes (%u pages)", (unsigned __int64) max, totalMemoryLimit);
-    initializeHeap(allowHugePages, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
+    initializeHeap(allowHugePages, allowTransparentHugePages, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
     initAllocSizeMappings(allocSizes ? allocSizes : defaultAllocSizes);
 }
 
@@ -4477,7 +4487,7 @@ protected:
         ASSERT(HugeHeaplet::dataOffset() >= sizeof(HugeHeaplet));
 
         memsize_t memory = (useLargeMemory ? largeMemory : smallMemory) * (unsigned __int64)0x100000U;
-        initializeHeap(false, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
+        initializeHeap(false, true, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
         initAllocSizeMappings(defaultAllocSizes);
     }
 
@@ -5731,7 +5741,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(true, memorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, memorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
@@ -5927,7 +5937,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(true, hugeMemorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, hugeMemorySize, 0, NULL, NULL);
     }
 
     void testCleanup()

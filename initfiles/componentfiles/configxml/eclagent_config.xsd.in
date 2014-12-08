@@ -190,6 +190,14 @@
         </xs:annotation>
     </xs:attribute>
 
+    <xs:attribute name="heapUseTransparentHugePages" type="xs:boolean" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Use memory from transparent huge pages.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+
     <xs:attribute name="pluginDirectory" type="absolutePath" use="optional" default="${PLUGINS_PATH}/">
       <xs:annotation>
         <xs:appinfo>

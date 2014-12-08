@@ -683,12 +683,13 @@ int main( int argc, char *argv[]  )
                 mmemSize = gmemSize;
         }
         bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
+        bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
 
         // if @masterMemorySize and @globalMemorySize unspecified gmemSize will be default based on h/w
         globals->setPropInt("@masterMemorySize", mmemSize);
 
         PROGLOG("Global memory size = %d MB", mmemSize);
-        roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)mmemSize) * 0x100000, 0, thorAllocSizes, NULL);
+        roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, ((memsize_t)mmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
