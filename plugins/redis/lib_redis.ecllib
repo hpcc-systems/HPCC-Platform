@@ -1,0 +1,71 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the License);
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an AS IS BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+
+EXPORT sync := SERVICE : plugin('redis'), namespace('RedisPlugin')
+  SetUnicode( CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='SyncRSetUChar';
+  SetString(  CONST VARSTRING key, CONST STRING value,  CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='SyncRSetStr';
+  SetUtf8(    CONST VARSTRING key, CONST UTF8 value,    CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='SyncRSetUtf8';
+  SetBoolean( CONST VARSTRING key, BOOLEAN value,       CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='SyncRSetBool';
+  SetReal(    CONST VARSTRING key, REAL value,          CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='SyncRSetReal';
+  SetInteger( CONST VARSTRING key, INTEGER value,       CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='SyncRSetInt';
+  SetUnsigned(CONST VARSTRING key, UNSIGNED value,      CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='SyncRSetUInt';
+  SetData(    CONST VARSTRING key, CONST DATA value,    CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='SyncRSetData';
+
+  INTEGER8   GetInteger(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='SyncRGetInt8';
+  UNSIGNED8 GetUnsigned(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='SyncRGetUint8';
+  STRING      GetString(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='SyncRGetStr';
+  UNICODE    GetUnicode(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='SyncRGetUChar';
+  UTF8          GetUtf8(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='SyncRGetUtf8';
+  BOOLEAN    GetBoolean(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='SyncRGetBool';
+  REAL          GetReal(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='SyncRGetDouble';
+  DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='SyncRGetData';
+
+  BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='RExist';
+  FlushDB(CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RClear';
+  Del(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RDel';
+  Persist(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RPersist';
+  Expire(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED4 expire, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RExpire';
+  INTEGER DBSize(CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='RDBSize';
+END;
+
+EXPORT RedisSync    (CONST VARSTRING options, CONST VARSTRING password = '', unsigned timeout = 1000000) := MODULE
+  EXPORT  SetUnicode(CONST VARSTRING key, CONST UNICODE value,  UNSIGNED database = 0, UNSIGNED4 expire = 0) := sync.SetUnicode (key, value, options, database, expire, password, timeout);
+  EXPORT   SetString(CONST VARSTRING key, CONST STRING value,   UNSIGNED database = 0, UNSIGNED4 expire = 0) := sync.SetString  (key, value, options, database, expire, password, timeout);
+  EXPORT     SetUtf8(CONST VARSTRING key, CONST UTF8 value,     UNSIGNED database = 0, UNSIGNED4 expire = 0) := sync.SetUtf8    (key, value, options, database, expire, password, timeout);
+  EXPORT  SetBoolean(CONST VARSTRING key, CONST BOOLEAN value,  UNSIGNED database = 0, UNSIGNED4 expire = 0) := sync.SetBoolean (key, value, options, database, expire, password, timeout);
+  EXPORT     SetReal(CONST VARSTRING key, CONST REAL value,     UNSIGNED database = 0, UNSIGNED4 expire = 0) := sync.SetReal    (key, value, options, database, expire, password, timeout);
+  EXPORT  SetInteger(CONST VARSTRING key, CONST INTEGER value,  UNSIGNED database = 0, UNSIGNED4 expire = 0) := sync.SetInteger (key, value, options, database, expire, password, timeout);
+  EXPORT SetUnsigned(CONST VARSTRING key, CONST UNSIGNED value, UNSIGNED database = 0, UNSIGNED4 expire = 0) := sync.SetUnsigned(key, value, options, database, expire, password, timeout);
+  EXPORT     SetData(CONST VARSTRING key, CONST DATA value,     UNSIGNED database = 0, UNSIGNED4 expire = 0) := sync.SetData    (key, value, options, database, expire, password, timeout);
+
+  EXPORT  GetUnicode(CONST VARSTRING key, UNSIGNED database = 0) :=  sync.GetUnicode(key, options, database, password, timeout);
+  EXPORT   GetString(CONST VARSTRING key, UNSIGNED database = 0) :=   sync.GetString(key, options, database, password, timeout);
+  EXPORT     GetUtf8(CONST VARSTRING key, UNSIGNED database = 0) :=     sync.GetUtf8(key, options, database, password, timeout);
+  EXPORT  GetBoolean(CONST VARSTRING key, UNSIGNED database = 0) :=  sync.GetBoolean(key, options, database, password, timeout);
+  EXPORT     GetReal(CONST VARSTRING key, UNSIGNED database = 0) :=     sync.GetReal(key, options, database, password, timeout);
+  EXPORT  GetInteger(CONST VARSTRING key, UNSIGNED database = 0) :=  sync.GetInteger(key, options, database, password, timeout);
+  EXPORT GetUnsigned(CONST VARSTRING key, UNSIGNED database = 0) := sync.GetUnsigned(key, options, database, password, timeout);
+  EXPORT     GetData(CONST VARSTRING key, UNSIGNED database = 0) :=     sync.GetData(key, options, database, password, timeout);
+
+  EXPORT Exists(CONST VARSTRING key, UNSIGNED database = 0) := sync.Exists(key, options, database, password, timeout);
+  EXPORT FlushDB(UNSIGNED database = 0) := sync.FlushDB(options, database, password, timeout);
+  EXPORT Del(CONST VARSTRING key, UNSIGNED database = 0) := sync.Del(key, options, database, password, timeout);
+  EXPORT Persist(CONST VARSTRING key, UNSIGNED database = 0) := sync.Persist(key, options, database, password, timeout);
+  EXPORT Expire(CONST VARSTRING key, UNSIGNED4 expire, UNSIGNED database = 0)  := sync.Expire(key, options, expire, database, password, timeout);
+  EXPORT DBSize(UNSIGNED database = 0) := sync.DBSize(options, database, password, timeout);
+END;
