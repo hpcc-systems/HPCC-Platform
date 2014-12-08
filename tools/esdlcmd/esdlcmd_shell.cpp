@@ -180,10 +180,14 @@ void EsdlCMDShell::usage()
            "   xsd               Generate XSD from ESDL definition.\n"
            "   wsdl              Generate WSDL from ESDL definition.\n"
            "   publish           Publish ESDL Definition for ESP use.\n"
+           "   list-definitions  List all ESDL definitions.\n"
+           "   delete            Delete ESDL Definition.\n"
            "   bind-service      Configure ESDL based service on target ESP (with existing ESP Binding).\n"
-           "   new-bind-service  Configure ESDL based service on target ESP (binds with future ESP Binding).\n"
+           "   list-bindings     List all ESDL bindings.\n"
+           "   unbind-service    Remove ESDL based service binding on target ESP.\n"
            "   bind-method       Configure method associated with existing ESDL binding.\n"
            "   get-binding       Get ESDL binding.\n"
+           ""
            "\nRun 'esdl help <command>' for more information on a specific command\n\n"
     );
 }
