@@ -58,24 +58,13 @@ checkUser(){
 
 pkgCmd(){
     if [ "$1" == "deb" ]; then
-        if [ "$2" == "install" ]; then
-            PKGCMD="dpkg -i"
-        elif [ "$2" == "upgrade" ]; then
-            PKGCMD="dpkg -i"
-        else
-            echo "Bad option type."
-            exit 1
-        fi
+        PKGCMD="dpkg -i $PKG &> $outputFile; apt-get install -f -y &> $outputFile;"
     elif [ "$1" == "rpm" ]; then
-        if [ "$2" == "install" ]; then
-            PKGCMD="rpm  -ivh"
-        elif [ "$2" == "upgrade" ]; then
-            PKGCMD="rpm -Uvh"
-        else
-            echo "Bad option type."
-            exit 1
+        if [ "$2" == "install" ] || [[ "$2" != "reinstall" ]]; then
+            PKGCMD="yum install --nogpgcheck -y $PKG &> $outputFile"
+        elif [ "$2" == "reinstall" ]; then
+            PKGCMD="yum reinstall --nogpgcheck -y $PKG &> $outputFile"
         fi
-        [ $WITH_PLUGINS -eq 1 ] && PKGCMD="$PKGCMD --nodeps"
     else
         echo "BAD Package type."
         exit 1
@@ -88,37 +77,35 @@ checkInstall(){
     _USER=$?
     if [ "${_FILE}" == 0 ] && [ ${_USER} -eq 1 ]; then
         _INSTALLED=1
-        checkUpgrade
+        checkReinstall
     else
         _INSTALLED=0
     fi
 }
 
-checkUpgrade(){
-    if [ "${_INSTALLED}" == "1" ]; then
-        _VERSION=`cat ${INSTALL_DIR}${CONFIG_DIR}/version`
-        _PKG=`echo $PKG | grep -c "${_VERSION}"`
-        if [ "${_PKG}" == "1" ]; then
-            _UPGRADE=0
-        else
-            _UPGRADE=1
-        fi
+checkReinstall(){
+  if [ "${OSPKG}" == "rpm" ]; then
+    local current=$( yum info hpccsystems-platform | grep "^Release" | awk '{print $3}' )
+    local new=$( rpm -qp --info ${PKG} | grep "^Release" | awk '{print $3}' )
+    if [[ $current == $new ]]; then
+      _REINSTALL=1
+    else
+      _REINSTALL=0
     fi
+  fi
 }
 
 installPkg(){
     checkInstall
     if [ "${_INSTALLED}" == "0" ]; then
         pkgCmd $OSPKG "install"
-        $PKGCMD $PKG 1>/dev/null 2>&1;
-    elif [ "${_UPGRADE}" == "1" ]; then
-        pkgCmd $OSPKG "upgrade"
-        $PKGCMD $PKG 1>/dev/null 2>&1;
+    elif [ "${_REINSTALL}" == "1" ]; then
+        pkgCmd $OSPKG "reinstall"
     fi
-    checkInstall
-    if [ "${_INSTALLED}" == "0" ]; then
-        echo "Failed to install ${PKG} (missing dependencies?)"
-        exit 1
+    eval $PKGCMD
+    if [ $? -ne 0 ]; then
+      echo "FAILED on Package Command: ${PKGCMD}"
+      exit 1
     fi
 }
 
@@ -189,6 +176,10 @@ if [ $# -eq 0 ]; then
 fi
 
 PKG=$1
+outputFile="${REMOTE_INSTALL}/remote-install.log"
+if [ -e ${outputFile} ]; then
+    rm -rf ${outputFile}
+fi
 
 pkgtype=`echo "$PKG" | grep -i rpm`
 if [ -z $pkgtype ]; then

@@ -1273,36 +1273,16 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     else { // By default, we take the return type as INTEGER
         LINK(retType);
 
-        //MORE: This does not cope with -ve numbers correctly.....
-        switch(resultsize) {
-        case 1:
-        case 2:
-        case 3:
-            intresult = intresult & ((1<<resultsize*8)-1);
-            //fallthrough
-        case 4:
-            result = createIntValue(intresult, retType);
-            break;
-        case 5:
-        case 6:
-        case 7:
-#ifdef __64BIT__
-            int64result = int64result & ((1<<resultsize*8)-1);
-#else
-            intresulthigh = intresulthigh & ((1<<(resultsize-4)*8)-1);
-#endif
-            //fallthrough
-        case 8:
-            {
 #ifndef __64BIT__
-                __int64 int64result = (((__int64) intresulthigh) << 32) + intresult;
+        __int64 int64result = (__int64)(((unsigned __int64) intresulthigh) << 32) + (unsigned)intresult;
 #endif
-                result = createIntValue(int64result, retType);
-            }
-            break;
-        default:
-            assertex(false);
-        }
+        unsigned shift = (sizeof(int64result)-resultsize) * 8;
+        if (retType->isSigned())
+            int64result = (int64result << shift) >> shift;
+        else
+            int64result = (((__uint64)int64result) << shift) >> shift;
+
+        result = createIntValue(int64result, retType);
     }
 
     return result;
