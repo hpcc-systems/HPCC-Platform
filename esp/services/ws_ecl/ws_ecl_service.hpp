@@ -161,7 +161,7 @@ public:
     void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, WsEclWuInfo &wsinfo);
     void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method);
 
-    void SOAPSectionToXsd(WsEclWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest=true, IPropertyTree *xsdtree=NULL);
+    void SOAPSectionToXsd(WsEclWuInfo &wsinfo, IPropertyTree *parmTree, StringBuffer &schema, bool isRequest=true, IPropertyTree *xsdtree=NULL);
     int getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *formtype, WsEclWuInfo &wsinfo);
     int getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *formtype);
 
