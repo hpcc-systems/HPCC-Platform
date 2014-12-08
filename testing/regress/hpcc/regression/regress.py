@@ -234,6 +234,7 @@ class Regression:
 
                         self.taskParam[threadId]['timeoutValue'] = self.timeouts[threadId]
                         query = suiteItems[self.taskParam[threadId]['taskId']]
+                        query.setTimeout(self.timeouts[threadId])
                         #logging.debug("self.timeout[%d]:%d", threadId, self.timeouts[threadId])
                         sysThreadId = thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  threadId))
                         time.sleep(0.4)
@@ -337,6 +338,7 @@ class Regression:
             if self.timeouts[thread] == 0:
                 # time out, abort tast
                 wuid =  queryWuid(query.getJobname(),  query.getTaskId())
+                logging.debug("%3d. Abort WUID:'%s'" % (cnt,  str(wuid)),  extra={'taskId':cnt})
                 abortWorkunit(wuid['wuid'])
                 query.setAborReason('Timeout')
                 self.loggermutex.acquire()

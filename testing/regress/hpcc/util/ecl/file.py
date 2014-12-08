@@ -74,6 +74,7 @@ class ECLFile:
         self.isVersions=False
         self.version=''
         self.versionId=0
+        self.timeout = 0
 
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
@@ -345,20 +346,27 @@ class ECLFile:
 
     def getTimeout(self):
         timeout = 0
-        # Standard string has a problem with unicode characters
-        # use byte arrays and binary file open instead
-        tag = b'//timeout'
-        logging.debug("%3d. getTimeout (ecl:'%s', tag:'%s')", self.taskId,  self.ecl, tag)
-        eclText = open(self.getEcl(), 'rb')
-        for line in eclText:
-            if tag in line:
-                timeoutParts = line.split()
-                if len(timeoutParts) == 2:
-                    if (timeoutParts[1] == '-1') or isPositiveIntNum(timeoutParts[1]) :
-                        timeout = int(timeoutParts[1])
-                break
+        if  self.timeout == 0:
+            # Standard string has a problem with unicode characters
+            # use byte arrays and binary file open instead
+            tag = b'//timeout'
+            logging.debug("%3d. getTimeout (ecl:'%s', tag:'%s')", self.taskId,  self.ecl, tag)
+            eclText = open(self.getEcl(), 'rb')
+            for line in eclText:
+                if tag in line:
+                    timeoutParts = line.split()
+                    if len(timeoutParts) == 2:
+                        if (timeoutParts[1] == '-1') or isPositiveIntNum(timeoutParts[1]) :
+                            timeout = int(timeoutParts[1])
+                            self.timeout = timeout
+                    break
+        else:
+            timeout = self.timeout
         logging.debug("%3d. Timeout is :%d sec",  self.taskId,  timeout)
         return timeout
+
+    def setTimeout(self,  timeout):
+        self.timeout = timeout
 
     def testResults(self):
         d = difflib.Differ()

@@ -39,6 +39,7 @@ class ECLcmd(Shell):
         args.append('-fpickBestEngine=false')
         args.append('--target=' + cluster)
         args.append('--cluster=' + cluster)
+        args.append('--wait='+str(eclfile.getTimeout()*1000))
 
         server = kwargs.pop('server', False)
         if server:
@@ -78,7 +79,7 @@ class ECLcmd(Shell):
             args = args + eclfile.getStoredInputParameters()
 
             args.append(eclfile.getArchive())
-            
+
         data = ""
         wuid = "N/A"
         state = ""
