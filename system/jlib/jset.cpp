@@ -387,6 +387,7 @@ size32_t getBitSetMemoryRequirement(unsigned numBits)
 // Simple BitSet // 0 based all, intermediate items exist, operations threadsafe and atomic
 class CBitSetThreadSafe : public CBitSetBase<CBitSetArrayHelper>
 {
+    typedef CBitSetBase<CBitSetArrayHelper> PARENT;
     mutable CriticalSection crit;
     void deserialize(MemoryBuffer &buffer)
     {
@@ -417,22 +418,22 @@ public:
     virtual void set(unsigned n, bool val)
     {
         CriticalBlock block(crit);
-        CBitSetBase::set(n, val);
+        PARENT::set(n, val);
     }
     virtual bool invert(unsigned n)
     {
         CriticalBlock block(crit);
-        return CBitSetBase::invert(n);
+        return PARENT::invert(n);
     }
     virtual bool test(unsigned n)
     {
         CriticalBlock block(crit);
-        return CBitSetBase::test(n);
+        return PARENT::test(n);
     }
     virtual bool testSet(unsigned n, bool val)
     {
         CriticalBlock block(crit);
-        return CBitSetBase::testSet(n, val);
+        return PARENT::testSet(n, val);
     }
     virtual unsigned scan(unsigned from, bool tst)
     {
