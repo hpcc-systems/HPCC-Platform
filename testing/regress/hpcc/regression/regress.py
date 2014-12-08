@@ -384,6 +384,7 @@ class Regression:
                 else:
                     self.timeouts[th] = self.timeout
 
+                query.setTimeout(self.timeouts[th])
                 thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
                 time.sleep(0.1)
                 self.CheckTimeout(cnt, th,  query)
