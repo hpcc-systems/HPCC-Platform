@@ -213,6 +213,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TOK_FIXED
   FLAT
   FROM
+  FORMAT
   FORMAT_ATTR
   FORWARD
   FROMJSON
@@ -552,6 +553,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   HASH_STORED
   HASH_LINK
   HASH_ONWARNING
+  HASH_WEBSERVICE
 
   INTERNAL_READ_NEXT_TOKEN
 
@@ -1523,6 +1525,12 @@ setMetaCommand
                             }
                             $$.setExpr(createValue(no_setmeta, makeVoidType(), createAttribute(onWarningAtom), $3.getExpr(), $5.getExpr()), $1);
                         }
+    | HASH_WEBSERVICE '(' hintList ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createValue(no_setmeta, makeVoidType(), createExprAttribute(webserviceAtom, args)), $1);
+                        }
     ;
 
 hashStoredValue
@@ -1604,7 +1612,12 @@ failure
                             parser->normalizeExpression($5, type_string, true);
                             $$.setExpr(createValueF(no_persist, makeVoidType(), $3.getExpr(), $5.getExpr(), $6.getExpr(), NULL), $1);
                         }
-    | STORED '(' expression optFewMany ')'
+    | STORED '(' expression ',' fewMany optStoredFieldFormat ')'
+                        {
+                            parser->normalizeStoredNameExpression($3);
+                            $$.setExpr(createValue(no_stored, makeVoidType(), $3.getExpr(), $5.getExpr(), $6.getExpr()), $1);
+                        }
+    | STORED '(' expression optStoredFieldFormat ')'
                         {
                             parser->normalizeStoredNameExpression($3);
                             $$.setExpr(createValue(no_stored, makeVoidType(), $3.getExpr(), $4.getExpr()), $1);
@@ -1712,6 +1725,18 @@ persistOpt
                         {
                             parser->normalizeExpression($3, type_int, true);
                             $$.setExpr(createExprAttribute(multipleAtom, $3.getExpr()), $1);
+                        }
+    ;
+
+optStoredFieldFormat
+    :                   {
+                            $$.setNullExpr();
+                        }
+    | ',' FORMAT '(' hintList ')'
+                        {
+                            HqlExprArray args;
+                            $4.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(storedFieldFormatAtom, args), $2);
                         }
     ;
 

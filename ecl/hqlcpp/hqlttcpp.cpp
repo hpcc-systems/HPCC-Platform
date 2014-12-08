@@ -164,6 +164,7 @@ public:
     OwnedHqlExpr storedName;
     OwnedHqlExpr originalLabel;
     OwnedHqlExpr sequence;
+    OwnedHqlExpr fieldFormat;
     node_operator setOp;
     node_operator persistOp;
 protected:
@@ -281,7 +282,19 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
         StringBuffer errorTemp;
         seenMeta = true;
         IAtom * kind = expr->queryChild(0)->queryName();
-        if (kind == debugAtom)
+        if (kind == webserviceAtom)
+        {
+            Owned<IWUWebServicesInfo> wsi = wu->updateWebServicesInfo(true);
+            IHqlExpression *wsExpr = expr->queryChild(0);
+            ForEachChild(i, wsExpr)
+            {
+                StringBuffer name, value;
+                OwnedHqlExpr folded = foldHqlExpression(wsExpr->queryChild(i));
+                getHintNameValue(folded, name, value);
+                wsi->setText(name, value);
+            }
+        }
+        else if (kind == debugAtom)
         {
             OwnedHqlExpr foldedName = foldHqlExpression(expr->queryChild(1));
             OwnedHqlExpr foldedValue = foldHqlExpression(expr->queryChild(2));
@@ -4969,6 +4982,8 @@ IHqlExpression * GlobalAttributeInfo::createSetValue(IHqlExpression * value, IHq
         extraSetAttr->unwindList(args, no_comma);
     if (cluster)
         args.append(*createAttribute(clusterAtom, LINK(cluster)));
+    if (fieldFormat)
+        args.append(*LINK(fieldFormat));
     if (setOp == no_setresult)
         return createSetResult(args);
     return createValue(setOp, makeVoidType(), args);
@@ -5011,6 +5026,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         storedName.set(expr->queryChild(0));
         originalLabel.set(storedName);
         sequence.setown(getStoredSequenceNumber());
+        fieldFormat.set(expr->queryAttribute(storedFieldFormatAtom));
         few = true;
         break;
     case no_checkpoint:
