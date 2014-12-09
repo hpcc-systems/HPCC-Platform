@@ -22,7 +22,7 @@
 # Flow:
 #
 # 1. SSH Keys Generated.
-# 2. Run install-hpcc.sh through cluster-script.py to perform HPCC install and 
+# 2. Run install-hpcc.sh through cluster-script.py to perform HPCC install and
 #        configuration on remote hosts
 # 3. Return.
 #
@@ -114,7 +114,7 @@ createPayload(){
 
     echo "tar -zcvf /tmp/remote_install.tgz ${REMOTE_INSTALL}/*"
     tar -zcvf /tmp/remote_install.tgz ${REMOTE_INSTALL}/*
-    ls -l /tmp/remote_install.tgz 
+    ls -l /tmp/remote_install.tgz
     rm -rf ${REMOTE_INSTALL}
 }
 
@@ -148,7 +148,7 @@ while true ; do
     case "$1" in
         -k|--newkey) NEW_KEY=1
             shift ;;
-        -n|--concurrent) 
+        -n|--concurrent)
             if [ -n "$2" ] && [[ $2 =~ ^[0-9]+$ ]]
             then
                [ $2 -gt 0 ] && OPTOINS="${OPTIONS:+"$OPTIONS "}-n $2"
@@ -196,5 +196,4 @@ else
    echo ""
    run_cluster ${INSTALL_DIR}/sbin/install-hpcc.exp 0
 fi
-
 removePayload;

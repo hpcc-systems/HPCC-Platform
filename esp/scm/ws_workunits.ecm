@@ -622,6 +622,7 @@ ESPresponse [exceptions_inline] WUInfoResponse
    bool CanCompile;
    [min_ver("1.25")] string ThorSlaveIP;
    [min_ver("1.34")] ESParray<string, View> ResultViews;
+   [min_ver("1.54")] string SecMethod;
 }; 
 
 ESPrequest WUResultSummaryRequest
@@ -1571,7 +1572,7 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
 };
 
 ESPservice [
-    version("1.53"), default_client_version("1.53"),
+    version("1.54"), default_client_version("1.54"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

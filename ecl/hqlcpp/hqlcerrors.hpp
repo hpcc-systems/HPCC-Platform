@@ -214,6 +214,7 @@
 #define HQLERR_CouldNotGenerateDefault          4194
 #define HQLERR_DistributionVariableLengthX      4195
 #define HQLERR_DistributionUnsupportedTypeXX    4196
+#define HQLERR_InconsistentEmbedded             4197
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -539,6 +540,7 @@
 
 #define HQLERR_DistributionVariableLengthX_Text "DISTRIBUTION does not support variable length field '%s'"
 #define HQLERR_DistributionUnsupportedTypeXX_Text "DISTRIBUTION does not support field '%s' with type %s"
+#define HQLERR_InconsistentEmbedded_Text        "Field '%s' is specified as embedded but child record requires link counting"
 
 #define HQLERR_OrderOnVarlengthStrings_Text     "Rank/Ranked not supported on variable length strings"
 #define HQLERR_DistributionNoSequence_Text      "DISTRIBUTION() only supported at the outer level"

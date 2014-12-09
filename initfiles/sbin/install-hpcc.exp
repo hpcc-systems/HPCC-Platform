@@ -1,4 +1,4 @@
-#!/usr/bin/env expect 
+#!/usr/bin/env expect
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
@@ -53,7 +53,7 @@ proc checkSSHConnection {} {
    global ip user password prompt
 
    set timeout 60
-   spawn ssh ${user}@${ip} 
+   spawn ssh ${user}@${ip}
    expect {
       *?assword:* {
          send "${password}\r";
@@ -68,18 +68,19 @@ proc checkSSHConnection {} {
          exit 1;
       } eof {
          exit 1;
-      }  -re "${prompt}" { 
+      }  -re "${prompt}" {
          puts "Connection is OK"
          send "exit\r"
       }
    }
-   expect -re .*
+
+   expect -re $
    interact;
 }
 
 proc copyPayload {} {
    global ip user password prompt
-   
+
    set timeout 300
    spawn scp /tmp/remote_install.tgz ${user}@${ip}:~;
    expect {
@@ -126,7 +127,7 @@ proc expandPayload {} {
          if { [lindex $result 3] != 0 } {
             exit [lindex $result 3]
          }
-      } 
+      }
    }
    sleep 1
 }
@@ -136,6 +137,8 @@ proc runPayload {} {
 
    set basepkg  [file tail  ${pkg}]
    set timeout 60
+
+   expect -re $
    spawn ssh ${user}@${ip}
    expect {
       *?assword:* {
@@ -153,6 +156,8 @@ proc runPayload {} {
          exit 1;
       } -re "${prompt}" {}
    }
+
+   expect -re $
    send "${cmd_prefix} ${remote_install}/remote-install-engine.sh ${remote_install}/${basepkg}\r"
    expect {
       *?assword:* {
@@ -168,16 +173,24 @@ proc runPayload {} {
       }  -re "${prompt}" {}
    }
 
-   expect  -re .*
+   expect  -re $
    send "echo \$?\r"
    expect   -re "(\r\n| )(\[0-9]*)\r\n" {
       if { [string compare $expect_out(2,string) "0" ] == 0 } {
          puts "${ip}: Done."
+         set remotelog 0
       } else {
-         puts "${ip}: Cannot Ping host? (Host Alive?)"
-         exit 1
+         set remotelog 1
       }
    }
+
+   if { $remotelog == 1 } {
+      expect -re $
+      send "cat ${remote_install}/remote-install.log\r"
+      expect -re "${prompt}" {}
+      exit 1
+   }
+
    send "exit\r"
    interact
 }

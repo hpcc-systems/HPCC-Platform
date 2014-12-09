@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,37 +16,20 @@
 ############################################################################## */
 
 
-inRecord :=
-            RECORD
-unsigned        box;
-string          text{maxlength(10)};
-            END;
-
-inTable := dataset([
-        {1, 'Shoe'},
-        {1, 'Feather'},
-        {1, 'Cymbal'},
-        {1, 'Train'},
-        {2, 'Envelope'},
-        {2, 'Pen'},
-        {2, 'Jumper'},
-        {3, 'Dinosoaur'},
-        {3, 'Dish'}
-        ], inRecord);
-
 itemRecord := RECORD
 string          text{maxlength(10)};
             END;
 
-outRecord := RECORD
-unsigned        box;
-embedded dataset(itemRecord) items;
-             END;
-
-outRecord t1(inRecord l, outRecord r) := TRANSFORM
-    SELF.box := l.box;
-    SELF.items := r.items + row(TRANSFORM(itemRecord, SELF.text := l.text));
+boxRecord := RECORD
+    unsigned        box;
+    dataset(itemRecord) items;
 END;
 
-groupedByBox := group(inTable, box);
-output(AGGREGATE(groupedByBox, outRecord, t1(LEFT, RIGHT)));
+storeRecord := RECORD
+    unsigned        id;
+    embedded dataset(boxRecord) boxes;
+END;
+
+
+dataset(storeRecord) stores := DATASET([], storeRecord) : STORED('stores');
+output(stores);

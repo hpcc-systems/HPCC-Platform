@@ -21,6 +21,7 @@
 #include "jexcept.hpp"
 #include "jstring.hpp"
 #include "workunit.hpp"
+#include <libmemcached/memcached.hpp>
 #include <libmemcached/util.h>
 
 #define MEMCACHED_VERSION "memcached plugin 1.0.0"
@@ -120,7 +121,7 @@ private :
 private :
     memcached_st * connection;
     memcached_pool_st * pool;
-    StringAttr servers;
+    StringAttr options;
     bool alreadyInitialized;
     unsigned typeMismatchCount;
 };
@@ -265,15 +266,68 @@ void MemCachedPlugin::MCached::getVoidPtrLenPair(ICodeContext * ctx, const char 
 
 ECL_MEMCACHED_API void setPluginContext(IPluginContext * ctx) { MemCachedPlugin::parentCtx = ctx; }
 
-MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _servers)
+MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _options)
 {
     alreadyInitialized = false;
     connection = NULL;
     pool = NULL;
-    servers.set(_servers);
+    options.set(_options);
     typeMismatchCount = 0;
 
+#if (LIBMEMCACHED_VERSION_HEX<0x53000)
+    memcached_st *memc = memcached_create(NULL);
+    memcached_return_t error;
+    memcached_server_st *servers = NULL;
+    try
+    {
+        unsigned pool_min = 1;
+        unsigned pool_max = 1;
+        StringArray optionStrings;
+        optionStrings.appendList(_options, " ");
+        ForEachItemIn(idx, optionStrings)
+        {
+            const char *opt = optionStrings.item(idx);
+            if (strncmp(opt, "--SERVER=", 9) ==0)
+            {
+                opt += 9;
+                StringArray splitPort;
+                splitPort.appendList(opt, ":");
+                unsigned port;
+                if (splitPort.ordinality()==2)
+                    port = atoi(splitPort.item(1));
+                else
+                    port = 11211;
+                servers = memcached_server_list_append(NULL, splitPort.item(0), port, &error);
+                assertOnError(error, "memcached_server_list_append failed");
+            }
+            else if (strncmp(opt, "--POOL-MIN=", 11) ==0)
+                pool_min = atoi(opt+11);
+            else if (strncmp(opt, "--POOL-MAX=", 11) ==0)
+                pool_max = atoi(opt+11);
+            else
+            {
+                VStringBuffer err("MemCachedPlugin: unsupported option string %s", opt);
+                rtlFail(0, err.str());
+            }
+        }
+        if (!servers)
+            rtlFail(0, "No servers specified");
+        error = memcached_server_push(memc, servers);
+        memcached_server_list_free(servers);
+        assertOnError(error, "memcached_server_push failed");
+        pool = memcached_pool_create(memc, pool_min, pool_max);  // takes ownership of memc
+    }
+    catch (...)
+    {
+        if (servers)
+            memcached_server_list_free(servers);
+        if (memc)
+            memcached_free(memc);
+        throw;
+    }
+#else
     pool = memcached_pool(_servers, strlen(_servers));
+#endif
     assertPool();
 
     setPoolSettings();
@@ -286,9 +340,15 @@ MemCachedPlugin::MCached::~MCached()
 {
     if (pool)
     {
+#if (LIBMEMCACHED_VERSION_HEX<0x53000)
+        memcached_pool_push(pool, connection);
+#else
         memcached_pool_release(pool, connection);
+#endif
         connection = NULL;//For safety (from changing this destructor) as not implicit in either the above or below.
-        memcached_pool_destroy(pool);
+        memcached_st *memc = memcached_pool_destroy(pool);
+        if (memc)
+            memcached_free(memc);
     }
     else if (connection)//This should never be needed but just in case.
     {
@@ -301,7 +361,7 @@ bool MemCachedPlugin::MCached::isSameConnection(const char * _servers) const
     if (!_servers)
         return false;
 
-    return stricmp(servers.get(), _servers) == 0;
+    return stricmp(options.get(), _servers) == 0;
 }
 
 void MemCachedPlugin::MCached::assertPool()
@@ -309,7 +369,7 @@ void MemCachedPlugin::MCached::assertPool()
     if (!pool)
     {
         StringBuffer msg = "Memcached Plugin: Failed to instantiate server pool with:";
-        msg.newline().append(servers);
+        msg.newline().append(options);
         rtlFail(0, msg.str());
     }
 }
@@ -336,7 +396,7 @@ void MemCachedPlugin::MCached::checkServersUp(ICodeContext * ctx)
         if (stats[i].pid == -1)//perhaps not the best test?
         {
             numberOfServersDown++;
-            VStringBuffer msg("Memcached Plugin: Failed connecting to entry %u\nwithin the server list: %s", i+1, servers.str());
+            VStringBuffer msg("Memcached Plugin: Failed connecting to entry %u\nwithin the server list: %s", i+1, options.str());
             ctx->addWuException(msg.str(), WRN_FROM_PLUGIN, ExceptionSeverityWarning, "");
         }
     }
@@ -389,6 +449,9 @@ bool MemCachedPlugin::MCached::clear(ICodeContext * ctx, unsigned when)
 
 bool MemCachedPlugin::MCached::exist(ICodeContext * ctx, const char * key, const char * partitionKey)
 {
+#if (LIBMEMCACHED_VERSION_HEX<0x53000)
+    throw makeStringException(0, "memcached_exist not supported in this version of libmemcached");
+#else
     memcached_return_t error;
     size_t partitionKeyLength = strlen(partitionKey);
     if (partitionKeyLength)
@@ -403,6 +466,7 @@ bool MemCachedPlugin::MCached::exist(ICodeContext * ctx, const char * key, const
 
     reportErrorOnFail(ctx, error);
     return false;
+#endif
 }
 
 MemCachedPlugin::eclDataType MemCachedPlugin::MCached::getKeyType(const char * key, const char * partitionKey)
@@ -476,9 +540,11 @@ void MemCachedPlugin::MCached::setPoolSettings()
     assertPool();
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_HASH_WITH_PREFIX_KEY, 1));//key set in invokeConnectionSecurity. Only hashed with keys and not partitionKeys
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_KETAMA, 1));//NOTE: alias of MEMCACHED_DISTRIBUTION_CONSISTENT_KETAMA amongst others.
-    assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_USE_UDP, 0));
+    memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_USE_UDP, 0);  // Note that this fails on early versions of libmemcached, so ignore result
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_SERVER_FAILURE_LIMIT, 1));
+#if (LIBMEMCACHED_VERSION_HEX>=0x50000)
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS, 1));
+#endif
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_NO_BLOCK, 0));
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, 100));//units of ms MORE: What should I set this to or get from?
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_BUFFER_REQUESTS, 0));// Buffering does not work with the ecl runtime paradigm
@@ -504,10 +570,17 @@ void MemCachedPlugin::MCached::connect(ICodeContext * ctx)
 {
     assertPool();
     if (connection)
+#if (LIBMEMCACHED_VERSION_HEX<0x53000)
+        memcached_pool_push(pool, connection);
+#else
         memcached_pool_release(pool, connection);
-
+#endif
     memcached_return_t error;
+#if (LIBMEMCACHED_VERSION_HEX<0x53000)
+    connection = memcached_pool_pop(pool, (struct timespec *)0 , &error);
+#else
     connection = memcached_pool_fetch(pool, (struct timespec *)0 , &error);
+#endif
     invokeConnectionSecurity(ctx);
 
     if (!alreadyInitialized)//Do this now rather than after assert. Better to have something even if it could be jiberish.
