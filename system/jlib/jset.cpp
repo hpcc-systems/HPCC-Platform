@@ -104,7 +104,7 @@ protected:
                     //Guaranteed a match at this point
                     //Returns one the index of the least significant 1-bit of testMask
                     //(testMask != 0) since that has been checked above (noMatchMask == 0)
-                    unsigned pos = countTrailingZeros(testMask);
+                    unsigned pos = countTrailingUnsetBits(testMask);
                     if (scninv)
                     {
                         bits_t t = ((bits_t)1)<<pos;
@@ -129,7 +129,7 @@ protected:
                 //Guaranteed a match at this point
                 //Returns one the index of the least significant 1-bit of testMask
                 //(testMask != 0) since that has been checked above (noMatchMask == 0)
-                unsigned pos = countTrailingZeros(testMask);
+                unsigned pos = countTrailingUnsetBits(testMask);
                 if (scninv)
                 {
                     bits_t t = ((bits_t)1)<<pos;
