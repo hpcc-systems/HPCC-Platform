@@ -28,6 +28,7 @@
   <xsl:variable name="isArchived" select="WUInfoResponse/Workunit/Archived"/>
   <xsl:variable name="debugTargetClusterType" select="WUInfoResponse/Workunit/targetclustertype" />
   <xsl:variable name="jobName" select="WUInfoResponse/Workunit/Jobname" />
+  <xsl:variable name="SecMethod" select="WUInfoResponse/SecMethod"/>
   <xsl:include href="/esp/xslt/lib.xslt"/>
   <xsl:include href="/esp/xslt/wuidcommon.xslt"/>
 

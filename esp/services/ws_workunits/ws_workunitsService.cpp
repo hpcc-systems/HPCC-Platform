@@ -460,6 +460,11 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     getConfigurationDirectory(directories, "query", "esp", name ? name : "esp", queryDirectory);
     recursiveCreateDirectory(queryDirectory.str());
 
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspBinding[@service=\"%s\"]/Authenticate", process, service);
+    Owned<IPropertyTree> authCFG = cfg->getPropTree(xpath.str());
+    if(authCFG)
+        authMethod.set(authCFG->queryProp("@method"));
+
     dataCache.setown(new DataCache(DATA_SIZE));
     archivedWuCache.setown(new ArchivedWuCache(AWUS_CACHE_SIZE));
 
@@ -1459,9 +1464,12 @@ bool getWsWuInfoFromSasha(IEspContext &context, SocketEndpoint &ep, const char* 
     const char * cluster = wpt->queryProp("@clusterName");
     if (notEmpty(cluster))
         info->setCluster(cluster);
-    const char * scope = wpt->queryProp("@scope");
-    if (notEmpty(scope))
-        info->setScope(scope);
+    if (context.querySecManager())
+    {
+        const char * scope = wpt->queryProp("@scope");
+        if (notEmpty(scope))
+            info->setScope(scope);
+    }
     const char * jobName = wpt->queryProp("@jobName");
     if (notEmpty(jobName))
         info->setJobname(jobName);
@@ -1593,8 +1601,9 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             }
 
             resp.setCanCompile(notEmpty(context.queryUserId()));
-            if (context.getClientVersion() > 1.24 && notEmpty(req.getThorSlaveIP()))
+            if (version > 1.24 && notEmpty(req.getThorSlaveIP()))
                 resp.setThorSlaveIP(req.getThorSlaveIP());
+            resp.setSecMethod(authMethod.get());
         }
     }
     catch(IException* e)
