@@ -49,10 +49,15 @@ IF (NOT OPENSSL_FOUND)
     IF (NOT ("${osdir}" STREQUAL "unknown"))
       FIND_PATH (OPENSSL_INCLUDE_DIR NAMES openssl/ssl.h PATHS "${EXTERNALS_DIRECTORY}/openssl/${osdir}/include" NO_DEFAULT_PATH)
       FIND_LIBRARY (OPENSSL_LIBRARIES NAMES ${ssl_lib} PATHS "${EXTERNALS_DIRECTORY}/openssl/${osdir}/lib" NO_DEFAULT_PATH)
+
+      IF ((NOT ${OPENSSL_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+          (NOT ${OPENSSL_LIBRARIES} MATCHES ".*-NOTFOUND"))
+        SET(OPENSSL_FOUND TRUE)
+      ENDIF()
     ENDIF()
   ENDIF()
 
-  if (USE_NATIVE_LIBRARIES)
+  if (USE_NATIVE_LIBRARIES AND (NOT OPENSSL_FOUND))
     # if we didn't find in externals, look in system include path
     FIND_PATH (OPENSSL_INCLUDE_DIR NAMES openssl/ssl.h)
     FIND_LIBRARY (OPENSSL_LIBRARIES NAMES ${ssl_lib})

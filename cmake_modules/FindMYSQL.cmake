@@ -43,10 +43,14 @@ IF (NOT MYSQL_FOUND)
     IF (NOT ("${osdir}" STREQUAL "unknown"))
       FIND_PATH (MYSQL_INCLUDE_DIR NAMES mysql.h PATHS "${EXTERNALS_DIRECTORY}/mysql/include" NO_DEFAULT_PATH)
       FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}" NO_DEFAULT_PATH)
+      IF ((NOT ${MYSQL_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+          (NOT ${MYSQL_LIBRARIES} MATCHES ".*-NOTFOUND"))
+        SET(MYSQL_FOUND TRUE)
+      ENDIF()
     ENDIF()
   ENDIF()
 
-  if (USE_NATIVE_LIBRARIES)
+  if (USE_NATIVE_LIBRARIES AND (NOT MYSQL_FOUND))
     # if we didn't find in externals, look in system include path
     FIND_PATH (MYSQL_INCLUDE_DIR NAMES mysql.h PATH_SUFFIXES mysql)
     FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib} PATH_SUFFIXES mysql)

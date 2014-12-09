@@ -59,12 +59,16 @@ IF (NOT BOOST_REGEX_FOUND)
       ENDIF()
       IF (NOT ("${osdir}" STREQUAL "unknown"))
         FIND_PATH (BOOST_REGEX_INCLUDE_DIR NAMES boost/regex.h PATHS "${EXTERNALS_DIRECTORY}/boost/include" NO_DEFAULT_PATH)
-        FIND_LIBRARY (BOOST_REGEX_LIBRARIES NAMES ${boost_regex_lib} PATHS "${EXTERNALS_DIRECTORY}/boost/${osdir}/lib" NO_DEFAULT_PATH)
+        FIND_LIBRARY (BOOST_REGEX_LIBRARIES NAMES ${boost_regex_lib} PATHS "${EXTERNALS_DIRECTORY}/boost/${osdir}/lib" "${EXTERNALS_DIRECTORY}/boost/lib" NO_DEFAULT_PATH)
+        IF ((NOT ${BOOST_REGEX_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+            (NOT ${BOOST_REGEX_LIBRARIES} MATCHES ".*-NOTFOUND"))
+           SET(BOOST_REGEX_FOUND TRUE)
+        ENDIF()
       ENDIF() 
     ENDIF()
 
     # if we didn't find in externals, look in system include path
-    if (USE_NATIVE_LIBRARIES)
+    if ((USE_NATIVE_LIBRARIES) AND (NOT BOOST_REGEX_FOUND))
        set(Boost_ADDITIONAL_VERSIONS "1.41" "1.41.0" "1.44.0")
        set(Boost_USE_MULTITHREADED ON)
        set (Boost_DETAILED_FAILURE_MSG ON)

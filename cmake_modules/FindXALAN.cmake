@@ -44,10 +44,14 @@ IF (NOT XALAN_FOUND)
     IF (NOT ("${osdir}" STREQUAL "unknown"))
       FIND_PATH (XALAN_INCLUDE_DIR NAMES xalanc/XPath/XObjectFactory.hpp PATHS "${EXTERNALS_DIRECTORY}/xalan/xalan-c/include" NO_DEFAULT_PATH)
       FIND_LIBRARY (XALAN_LIBRARIES NAMES ${xalan_libs} PATHS "${EXTERNALS_DIRECTORY}/xalan/${osdir}" NO_DEFAULT_PATH)
+      IF ((NOT ${XALAN_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+          (NOT ${XALAN_LIBRARIES} MATCHES ".*-NOTFOUND"))
+        SET(XALAN_FOUND TRUE)
+      ENDIF()
     ENDIF() 
   ENDIF()
 
-  if (USE_NATIVE_LIBRARIES)
+  if (USE_NATIVE_LIBRARIES AND (NOT XALAN_FOUND))
     # if we didn't find in externals, look in system include path
     FIND_PATH (XALAN_INCLUDE_DIR NAMES xalanc/XPath/XObjectFactory.hpp )
     FIND_LIBRARY (XALAN_LIBRARIES NAMES ${xalan_libs})
