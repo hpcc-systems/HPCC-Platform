@@ -2760,6 +2760,22 @@ void HqltHql::sortlistToEcl(IHqlExpression *expr, StringBuffer &s, bool addCurle
 StringBuffer &HqltHql::getFieldTypeString(IHqlExpression * e, StringBuffer &s)
 {
     ITypeInfo * type = e->queryType();
+    ITypeInfo * cur = type;
+    for(;;)
+    {
+        typemod_t mod = cur->queryModifier();
+        if (mod == typemod_none)
+            break;
+        if (mod == typemod_attr)
+        {
+            IHqlExpression * attr = (IHqlExpression *)cur->queryModifierExtra();
+            if (!isInternalAttribute(attr))
+                s.append(attr->queryName()).append(" ");
+        }
+
+        cur = cur->queryTypeBase();
+    }
+
     switch (type->getTypeCode())
     {
     case type_groupedtable:

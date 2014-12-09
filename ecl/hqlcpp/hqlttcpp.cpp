@@ -8946,12 +8946,18 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             case type_dictionary:
             case type_table:
             case type_groupedtable:
+                OwnedHqlExpr transformedRecord = transform(expr->queryRecord());
+                if (recordRequiresLinkCount(transformedRecord))
+                {
+                    if (expr->hasAttribute(embeddedAtom) || queryAttribute(type, embeddedAtom) || expr->hasAttribute(countAtom) || expr->hasAttribute(sizeofAtom))
+                        throwError1(HQLERR_InconsistentEmbedded, expr->queryId()->str());
+                }
                 if (expr->hasAttribute(embeddedAtom))
                 {
                     OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
                     return removeAttribute(transformed, embeddedAtom);
                 }
-                if (implicitLinkedChildRows && !expr->hasAttribute(_linkCounted_Atom))
+                if (implicitLinkedChildRows && !expr->hasAttribute(_linkCounted_Atom) && !queryAttribute(type, embeddedAtom))
                 {
                     //Don't use link counted rows for weird HOLe style dataset attributes
                     if (expr->hasAttribute(countAtom) || expr->hasAttribute(sizeofAtom))
