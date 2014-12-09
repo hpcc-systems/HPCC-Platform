@@ -473,8 +473,8 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
             unsigned hbi = heapBitmap[i];
             if (hbi)
             {
-                unsigned mask = 1;
                 char *ret = heapBase + i*UNSIGNED_BITS*HEAP_ALIGNMENT_SIZE;
+                unsigned mask = 1;
                 while (!(hbi & mask))
                 {
                     ret += HEAP_ALIGNMENT_SIZE;
@@ -775,6 +775,68 @@ static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
             throwUnexpected();  // equivalently, assertex(wordOffset < heapBitmapSize)
         return NULL; // can't realloc
     }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static size32_t getCompressedSize(memsize_t heapSize)
+{
+    heapSize /= PACKED_ALIGNMENT;
+    unsigned size;
+    for (size = 0; heapSize; size++)
+        heapSize >>= 8;
+    return size;
+}
+
+HeapPointerCompressor::HeapPointerCompressor()
+{
+    compressedSize = getCompressedSize(heapEnd - heapBase);
+}
+
+void HeapPointerCompressor::compress(void * target, const void * ptr) const
+{
+    memsize_t value;
+    if (ptr)
+    {
+        value = ((char *)ptr - heapBase);
+        dbgassertex((value % PACKED_ALIGNMENT) == 0);
+        value = value / PACKED_ALIGNMENT;
+    }
+    else
+        value = 0;
+
+    if (compressedSize == sizeof(unsigned))
+    {
+        *(unsigned *)target = (unsigned)value;
+    }
+    else
+    {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+        memcpy(target, &value, compressedSize);
+#else
+        #error HeapPointerCompressor::compress unimplemented
+#endif
+    }
+}
+
+void * HeapPointerCompressor::decompress(const void * source) const
+{
+    memsize_t temp = 0;
+    if (compressedSize == sizeof(unsigned))
+    {
+        temp = *(const unsigned *)source;
+    }
+    else
+    {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+        memcpy(&temp, source, compressedSize);
+#else
+        #error HeapPointerCompressor::decompress unimplemented
+#endif
+    }
+    if (temp)
+        return (temp * PACKED_ALIGNMENT) + heapBase;
+    return NULL;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -4421,12 +4483,13 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testCostCallbacks);
         CPPUNIT_TEST(testRoundup);
+        CPPUNIT_TEST(testCompressSize);
+        CPPUNIT_TEST(testBitmap);
         CPPUNIT_TEST(testBitmapThreading);
         CPPUNIT_TEST(testAllocSize);
         CPPUNIT_TEST(testHuge);
         CPPUNIT_TEST(testCas);
         CPPUNIT_TEST(testAll);
-        CPPUNIT_TEST(testBitmap);
         CPPUNIT_TEST(testCallbacks);
         CPPUNIT_TEST(testRecursiveCallbacks);
         CPPUNIT_TEST(testCompacting);
@@ -4822,9 +4885,50 @@ protected:
         testBitmapThreading(1);
         testBitmapThreading(3);
         testBitmapThreading(11);
+#else
+        DBGLOG("testBitmapThreading not executed since NOTIFY_UNUSED_PAGES_ON_FREE is enabled");
 #endif
     }
 
+    void testCompressSize()
+    {
+#ifdef __64BIT__
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(0), 0U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT), 1U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0xFF), 1U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0x100), 2U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0xFFFF), 2U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0x10000), 3U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0xFFFFFF), 3U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0x1000000), 4U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0xFFFFFFFF), 4U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0x100000000), 5U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0xFFFFFFFFFF), 5U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0x10000000000), 6U);
+        CPPUNIT_ASSERT_EQUAL(getCompressedSize(PACKED_ALIGNMENT*0x1FFFFFFFFFFF), 6U);
+#endif
+        HeapPointerCompressor compressor;
+        const unsigned numAllocs = 100;
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        memsize_t max = numAllocs * compressor.getSize();
+        byte * memory = (byte *)malloc(max + 1);
+        void * * ptrs = new void * [numAllocs];
+        memory[max] = 0xcb;
+        for (unsigned i = 0; i < numAllocs; i++)
+        {
+            void * next = rm1->allocate(i*7, 0);
+            ptrs[i] = next;
+            compressor.compress(memory + i * compressor.getSize(), next);
+            ASSERT(compressor.decompress(memory + i * compressor.getSize()) == next);
+        }
+        for (unsigned i1 = 0; i1 < numAllocs; i1++)
+        {
+            ASSERT(compressor.decompress(memory + i1 * compressor.getSize()) == ptrs[i1]);
+            ReleaseRoxieRow(ptrs[i1]);
+        }
+        delete [] ptrs;
+        free(memory);
+    }
     void testHuge()
     {
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
@@ -5546,7 +5650,7 @@ protected:
         if ((compacted>0) != (numPagesBefore != numPagesAfter))
             DBGLOG("Compacted not returned correctly");
         ASSERT(compacted == (numPagesBefore != numPagesAfter));
-        DBGLOG("Compacting %d[%d] (%d->%d cf %d) Before: Time taken %d", numRows, milliFraction, numPagesBefore, numPagesAfter, expectedPages, endTime-startTime);
+        DBGLOG("Compacting %d[%d] (%d->%d [%d] cf %d) Before: Time taken %d", numRows, milliFraction, numPagesBefore, numPagesAfter, (unsigned)compacted, expectedPages, endTime-startTime);
         ASSERT(numPagesAfter == expectedPages);
 
         for (unsigned i3 = 0; i3 < numRows; i3++)
