@@ -7194,6 +7194,7 @@ void ScalarGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
     case no_attr_link:
     case no_null:
     case no_all:
+    case no_funcdef:
         return;
     case no_persist_check:
         //No point spotting global within this since it will not create a subquery..
@@ -12328,6 +12329,8 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 reportAbstractModule(translator.queryErrorProcessor(), module, errpos);
                 throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
             }
+            if (oldFuncdef->getOperator() == no_param)
+                return LINK(expr);
             assertex(oldFuncdef->getOperator() == no_funcdef);
             return transformCall(expr);
         }
