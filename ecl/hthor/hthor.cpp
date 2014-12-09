@@ -52,6 +52,7 @@ static unsigned const hthorReadBufferSize = 0x10000;
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
 static size32_t const spillStreamBufferSize = 0x10000;
 static unsigned const hthorPipeWaitTimeout = 100; //100ms - fairly arbitrary choice
+static unsigned const defaultMaxCsvRowSize = 10; // MB
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
@@ -8727,6 +8728,7 @@ const void *CHThorDiskGroupAggregateActivity::nextInGroup()
 
 CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
+    maxRowSize = agent.queryWorkUnit()->getDebugValueInt("maxCsvRowSize", defaultMaxCsvRowSize);
 }
 
 CHThorCsvReadActivity::~CHThorCsvReadActivity()
@@ -8788,7 +8790,6 @@ const void *CHThorCsvReadActivity::nextInGroup()
         if (!inputstream->eos())
         {
             size32_t rowSize = 4096; // MORE - make configurable
-            size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
             size32_t thisLineLength;
             loop
             {

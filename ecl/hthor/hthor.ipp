@@ -2299,6 +2299,7 @@ protected:
     CSVSplitter         csvSplitter;    
     unsigned __int64 limit;
     unsigned __int64 stopAfter;
+    size32_t maxRowSize;
 };
 
 class CHThorXmlReadActivity : public CHThorDiskReadBaseActivity, implements IXMLSelect
