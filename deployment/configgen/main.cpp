@@ -19,6 +19,7 @@
 #include "configengcallback.hpp"
 #include "deploy.hpp"
 #include "build-config.h"
+#include "jutil.hpp"
 
 #define STANDARD_INDIR COMPONENTFILES_DIR"/configxml"
 #define STANDARD_OUTDIR RUNTIME_DIR
@@ -581,12 +582,19 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   }
   else if (listMachines)
   {
+    StringArray strArrayOfMachinesIPs;
     StringBuffer out;
     Owned<IPropertyTreeIterator> computers = pEnv->getElements("Hardware/Computer");
     ForEach(*computers)
     {
       IPropertyTree* pComputer = &computers->query();
       const char *netAddress = pComputer->queryProp("@netAddress");
+
+      if (strArrayOfMachinesIPs.appendUniq(netAddress) == false)
+      {
+          continue;
+      }
+
       StringBuffer xpath;
       const char* name = pComputer->queryProp(XML_ATTR_NAME);
       bool isNonHPCCNode = true;

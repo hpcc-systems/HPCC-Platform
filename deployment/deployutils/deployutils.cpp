@@ -2998,8 +2998,19 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    while (count--)
    {
      range.getIpText(sIP.clear());
+
      unsigned x;
-       range.getNetAddress(sizeof(x),&x);
+     range.getNetAddress(sizeof(x),&x);
+
+     StringBuffer strCheckXPath;
+     strCheckXPath.setf("%s/%s[%s=\"%s\"][1]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, sIP.str());
+
+     if (pEnv->hasProp(strCheckXPath.str()) == true)
+     {
+         range.ipincrement(1);
+         continue;
+     }
+
      sName.clear().appendf("%s%03d%03d", prefix, (x >> 16) & 0xFF, (x >> 24) & 0xFF);
      sNode.appendf("<"XML_TAG_COMPUTER" %s=\"%s\" %s=\"%s\" %s/>",
                       &XML_ATTR_NAME[1], getUniqueName(pEnv, sName, XML_TAG_COMPUTER, XML_TAG_HARDWARE),
