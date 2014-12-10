@@ -27,7 +27,7 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. </para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
@@ -1562,7 +1562,7 @@
             environment.xml</para>
 
             <programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -1581,9 +1581,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                       write file(s) to the destination directory before
                       attempting to copy. If prompted to overwrite the
                       destination file, you should answer <emphasis
-                      role="bold">yes</emphasis>. The environment.xml file
-                      MUST be owned by the <emphasis
-                      role="bold">hpcc</emphasis> user.</entry>
+                      role="bold">yes</emphasis>. </entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -1617,7 +1615,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             all nodes. A sample script is provided with HPCC. The following
             command copies the XML files out to all nodes as required:</para>
 
-            <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+            <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
 </programlisting>See the appendix for more information on using this
             script.</para>
           </listitem>
@@ -1660,7 +1658,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry><para>You may want to create a script to push this
                     command out to every node. A sample script is provided
                     with HPCC. Use the following command to start HPCC on all
-                    nodes:</para><para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
+                    nodes:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -2883,11 +2881,11 @@ OUTPUT(ValidWords)
         <para>The IP addresses were defined when editing the environment in
         ConfigMgr.</para>
 
-        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
 </programlisting>For example:</para>
 
-        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh \
-             /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.xml
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
+     /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.xml
 </programlisting></para>
       </sect2>
 
@@ -2958,24 +2956,24 @@ OUTPUT(ValidWords)
 
         <para>This example starts all components on the nodes</para>
 
-        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
 </programlisting></para>
 
         <para>This example starts all components on all the nodes, using 8
         concurrent executions</para>
 
-        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start -n 8
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start -n 8
 </programlisting>This example starts all components of the esp type on the
         nodes</para>
 
-        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -c esp -a hpcc-init start 
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c esp -a hpcc-init start 
 </programlisting>This example starts all components with a component name
         myesp on the nodes</para>
 
-        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -c myesp -a hpcc-init start 
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c myesp -a hpcc-init start 
 </programlisting>This example starts the dafilesrv helper application</para>
 
-        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv start
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv start
 </programlisting></para>
       </sect2>
     </sect1>
