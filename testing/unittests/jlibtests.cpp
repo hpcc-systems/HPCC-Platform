@@ -90,16 +90,30 @@ class JlibSetTest : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(JlibSetTest);
+        CPPUNIT_TEST(testBitsetHelpers);
         CPPUNIT_TEST(testSimple);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
 
+    void testBitsetHelpers()
+    {
+        CPPUNIT_ASSERT_EQUAL(0U, countTrailingUnsetBits(1));
+        CPPUNIT_ASSERT_EQUAL(31U, countLeadingUnsetBits(1));
+        CPPUNIT_ASSERT_EQUAL(1U, getMostSignificantBit(1));
+        CPPUNIT_ASSERT_EQUAL(4U, countTrailingUnsetBits(0x110));
+        CPPUNIT_ASSERT_EQUAL(23U, countLeadingUnsetBits(0x110));
+        CPPUNIT_ASSERT_EQUAL(9U, getMostSignificantBit(0x110));
+        CPPUNIT_ASSERT_EQUAL(0U, countTrailingUnsetBits(0xFFFFFFFFU));
+        CPPUNIT_ASSERT_EQUAL(0U, countLeadingUnsetBits(0xFFFFFFFFU));
+        CPPUNIT_ASSERT_EQUAL(32U, getMostSignificantBit(0xFFFFFFFFU));
+    }
+
     void testSet1(bool initial, IBitSet *bs, unsigned start, unsigned numBits, bool setValue, bool clearValue)
     {
         unsigned end = start+numBits;
         if (initial)
-            bs->incl(start, end);
+            bs->incl(start, end-1);
         for (unsigned i=start; i < end; i++)
         {
             ASSERT(bs->test(i) == clearValue);
@@ -111,8 +125,10 @@ protected:
             ASSERT(bs->scan(i+1, setValue) == i+5);
             bs->set(i, clearValue);
             bs->set(i+5, clearValue);
+            //Clearing i+5 above may extend the set - so need to calculate the end carefully
+            unsigned last = i+5 < end ? end : i + 6;
             unsigned match1 = bs->scan(0, setValue);
-            ASSERT(match1 == initial ? -1 : end);
+            CPPUNIT_ASSERT_EQUAL((unsigned)(initial ? last : -1), match1);
 
             bs->invert(i);
             ASSERT(bs->test(i) == setValue);

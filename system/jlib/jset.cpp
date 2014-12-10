@@ -84,91 +84,60 @@ protected:
         unsigned j=from%BitsPerItem;
         // returns index of first = val >= from
         unsigned n=getWidth();
-        unsigned i;
-        for (i=from/BitsPerItem;i<n;i++)
+        unsigned i = from/BitsPerItem;
+        if (j != 0 && i < n)
         {
             bits_t m = getBits(i);
             if (m!=noMatchMask)
             {
-#if defined(__GNUC__)
-                //Use the __builtin_ffs instead of a loop to find the first bit set/cleared
-                bits_t testMask = m;
-                if (j != 0)
-                {
-                    //Set all the bottom bits to the value we're not searching for
-                    bits_t mask = (((bits_t)1)<<j)-1;
-                    if (tst)
-                        testMask &= ~mask;
-                    else
-                        testMask |= mask;
+                //Evaluate (testMask = tst ? m : ~m); without using a conditional.
+                //After this bits will be set wherever we want a match
+                bits_t testMask = m ^ noMatchMask;
 
-                    //May possibly match exactly - if so continue main loop
-                    if (testMask==noMatchMask)
-                    {
-                        j = 0;
-                        continue;
-                    }
-                }
+                //Clear all the bottom bits
+                bits_t mask = (((bits_t)1)<<j)-1;
+                testMask &= ~mask;
 
-                //Guaranteed a match at this point
-                if (tst)
+                //May possibly be empty now ignored bits are removed - if so continue main loop
+                if (testMask != 0)
                 {
-                    //Returns one plus the index of the least significant 1-bit of testMask
+                    //Guaranteed a match at this point
+                    //Returns one the index of the least significant 1-bit of testMask
                     //(testMask != 0) since that has been checked above (noMatchMask == 0)
-                    unsigned pos = __builtin_ffs(testMask)-1;
+                    unsigned pos = countTrailingUnsetBits(testMask);
                     if (scninv)
                     {
                         bits_t t = ((bits_t)1)<<pos;
-                        m &= ~t;
+                        m ^= t;
                         setBits(i, m);
                     }
                     return i*BitsPerItem+pos;
                 }
-                else
-                {
-                    //Same as above but invert the bitmask
-                    unsigned pos = __builtin_ffs(~testMask)-1;
-                    if (scninv)
-                    {
-                        bits_t t = ((bits_t)1)<<pos;
-                        m |= t;
-                        setBits(i, m);
-                    }
-                    return i*BitsPerItem+pos;
-                }
-#else
-                bits_t t = ((bits_t)1)<<j;
-                for (;j<BitsPerItem;j++)
-                {
-                    if (t&m)
-                    {
-                        if (tst)
-                        {
-                            if (scninv)
-                            {
-                                m &= ~t;
-                                setBits(i, m);
-                            }
-                            return i*BitsPerItem+j;
-                        }
-                    }
-                    else
-                    {
-                        if (!tst)
-                        {
-                            if (scninv)
-                            {
-                                m |= t;
-                                setBits(i, m);
-                            }
-                            return i*BitsPerItem+j;
-                        }
-                    }
-                    t <<= 1;
-                }
-#endif
             }
             j = 0;
+            i++;
+        }
+        for (;i<n;i++)
+        {
+            bits_t m = getBits(i);
+            if (m!=noMatchMask)
+            {
+                //Evaluate (testMask = tst ? m : ~m); without using a conditional.
+                //After this bits will be set wherever we want a match
+                bits_t testMask = m ^ noMatchMask;
+
+                //Guaranteed a match at this point
+                //Returns one the index of the least significant 1-bit of testMask
+                //(testMask != 0) since that has been checked above (noMatchMask == 0)
+                unsigned pos = countTrailingUnsetBits(testMask);
+                if (scninv)
+                {
+                    bits_t t = ((bits_t)1)<<pos;
+                    m ^= t;
+                    setBits(i, m);
+                }
+                return i*BitsPerItem+pos;
+            }
         }
         if (tst)
             return (unsigned)-1;
