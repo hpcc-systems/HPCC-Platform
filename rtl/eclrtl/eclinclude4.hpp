@@ -41,7 +41,6 @@
 #endif
 
 #include <string.h>
-#include <malloc.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
