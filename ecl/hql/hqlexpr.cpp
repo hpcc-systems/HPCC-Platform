@@ -4421,7 +4421,9 @@ void CHqlExpression::beforeDispose()
 #endif
     if (infoFlags & HEFobserved)
     {
+#ifdef HQLEXPR_MULTI_THREADED
         CriticalBlock block(*exprCacheCS);
+#endif
         if (infoFlags & HEFobserved)
             exprCache->removeExact(this);
     }
@@ -4472,7 +4474,9 @@ IHqlExpression * CHqlExpression::commonUpExpression()
 
     IHqlExpression * match;
     {
+#ifdef HQLEXPR_MULTI_THREADED
         CriticalBlock block(*exprCacheCS);
+#endif
         match = exprCache->addOrFind(*this);
 #ifndef GATHER_COMMON_STATS
         if (match == this)
