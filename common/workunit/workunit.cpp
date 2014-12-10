@@ -2053,8 +2053,7 @@ class CConstWUIterator : public CInterface, implements IConstWorkUnitIterator
                 setCurrent();
                 return true;
             }
-        }
-        while (ptreeIter->next());
+        } while (ptreeIter->next());
         cur.clear();
         return false;
     }
@@ -2116,7 +2115,6 @@ CWorkUnitFactory::CWorkUnitFactory()
 
 CWorkUnitFactory::~CWorkUnitFactory()
 {
-    // deletepool->joinAll();
 }
 
 IWorkUnit* CWorkUnitFactory::secCreateNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
@@ -2933,8 +2931,8 @@ public:
     }
 private:
     Owned<CWorkUnitFactory> baseFactory;
-    Owned<ISecManager> secMgr;
-    Owned<ISecUser> secUser;
+    Linked<ISecManager> secMgr;
+    Linked<ISecUser> secUser;
 };
 
 extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser)

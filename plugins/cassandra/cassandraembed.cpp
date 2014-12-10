@@ -157,11 +157,7 @@ public:
     }
     ~CassandraSession()
     {
-        if (session)
-        {
-            CassandraFuture close_future(cass_session_close(session));
-            cass_future_wait(close_future);
-        }
+        set(NULL);
     }
     void set(CassSession *_session)
     {
@@ -2060,6 +2056,7 @@ void bindElement(CassStatement *statement, IPTree *parent, unsigned idx, const c
             {
                 Owned<IPTree> child = parent->getPropTree(name);
                 unsigned numItems = child->numChildren();
+                // MORE - if the cassandra driver objects to there being fewer than numItems supplied, we may need to recode using a second pass.
                 if (numItems)
                 {
                     CassandraCollection collection(cass_collection_new(CASS_COLLECTION_TYPE_MAP, numItems));
@@ -2240,7 +2237,7 @@ public:
     }
 } rootNameColumnMapper;
 
-class ChildNameColumnMapper : implements CassandraColumnMapper
+class GraphIdColumnMapper : implements CassandraColumnMapper
 {
 public:
     virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
@@ -2249,7 +2246,7 @@ public:
         unsigned chars;
         getUTF8Result(NULL, value, chars, str.refstr());
         StringAttr s(str.getstr(), rtlUtf8Size(chars, str.getstr()));
-        if (strcmp(s, "Running")==0)
+        if (strcmp(s, "Running")==0)  // The input XML structure is a little odd
             return row;
         else
         {
@@ -2264,7 +2261,7 @@ public:
         if (value)
             check(cass_statement_bind_string(statement, idx, cass_string_init(value)));
     }
-} childNameColumnMapper;
+} graphIdColumnMapper;
 
 class ProgressColumnMapper : implements CassandraColumnMapper
 {
@@ -2432,6 +2429,7 @@ public:
     }
     virtual void fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, int userVal)
     {
+        // NOTE - name here provides a list of attributes that we should NOT be mapping
         Owned<IAttributeIterator> attrs = row->getAttributes();
         unsigned numItems = attrs->count();
         ForEach(*attrs)
@@ -2621,7 +2619,7 @@ const CassandraXmlMapping workunitsMappings [] =
 const CassandraXmlMapping graphProgressMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
-    {"graphID", "text", NULL, childNameColumnMapper},
+    {"graphID", "text", NULL, graphIdColumnMapper},
     {"progress", "blob", NULL, progressColumnMapper},  // NOTE - order of these is significant - this creates the subtree that ones below will modify
     {"subgraphID", "text", "@id", subgraphIdColumnMapper},
     {"state", "int", "@_state", intColumnMapper},
