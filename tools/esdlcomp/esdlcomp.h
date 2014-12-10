@@ -1283,7 +1283,7 @@ public:
 };
 
 
-class esdl_decl ESDLcompiler
+class esdlcomp_decl ESDLcompiler
 {
 public:
     ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes);
