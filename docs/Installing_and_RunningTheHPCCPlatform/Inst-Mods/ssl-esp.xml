@@ -343,7 +343,7 @@ sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer
         <para>Back up the original environment.xml file</para>
 
         <programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak
+sudo cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak
 </programlisting>
 
         <para>Note: the "live" environment.xml file is located in your
@@ -359,7 +359,7 @@ sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.ba
         the /etc/HPCCSystems and rename the file to environment.xml</para>
 
         <programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml
 </programlisting>
       </listitem>
 

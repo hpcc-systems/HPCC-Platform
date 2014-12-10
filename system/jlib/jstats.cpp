@@ -338,7 +338,11 @@ const char * queryMeasureName(StatisticMeasure measure)
 StatisticMeasure queryMeasure(const char *  measure)
 {
     //MORE: Use a hash table??
-    return (StatisticMeasure)matchString(measureNames, measure);
+    StatisticMeasure ret = (StatisticMeasure)matchString(measureNames, measure);
+    //Legacy support for an unusual statistic - pretend the sizes are in bytes instead of kb.
+    if ((ret == SMeasureNone) && measure && streq(measure, "kb"))
+        ret = SMeasureSize;
+    return ret;
 }
 
 StatsMergeAction queryMergeMode(StatisticMeasure measure)

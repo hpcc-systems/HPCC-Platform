@@ -2586,6 +2586,20 @@ void HqlGram::addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeI
     addToActiveRecord(newField);
 }
 
+void HqlGram::addFieldFromValue(const attribute &errpos, attribute & valueAttr)
+{
+    normalizeExpression(valueAttr);
+    IHqlExpression *value = valueAttr.getExpr();
+
+    IIdAtom * name = createFieldNameFromExpr(value);
+    IHqlExpression * attrs = extractAttrsFromExpr(value);
+
+    if (value->isDataset())
+        addDatasetField(errpos, name, NULL, value, attrs);
+    else
+        addField(errpos, name, value->getType(), value, attrs);
+}
+
 void HqlGram::addIfBlockToActive(const attribute &errpos, IHqlExpression * ifblock)
 {
     activeRecords.tos().addOperand(LINK(ifblock));

@@ -758,6 +758,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="heapUseTransparentHugePages" type="xs:boolean" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Allow roxie to use memory from transparent huge pages.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="trapTooManyActiveQueries" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>

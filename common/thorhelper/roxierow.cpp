@@ -697,7 +697,7 @@ protected:
 
     void testSetup()
     {
-        setTotalMemoryLimit(false, 40*HEAP_ALIGNMENT_SIZE, 0, NULL, NULL);
+        setTotalMemoryLimit(false, true, 40*HEAP_ALIGNMENT_SIZE, 0, NULL, NULL);
     }
 
     void testCleanup()

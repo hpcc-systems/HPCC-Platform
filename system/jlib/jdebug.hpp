@@ -307,7 +307,8 @@ extern jlib_decl unsigned getAffinityCpus();
 extern jlib_decl void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffer *lnout, MemoryBuffer *mb, bool useprintf);
 extern jlib_decl void PrintMemoryReport(bool full=true);
 extern jlib_decl void printAllocationSummary();
-
+extern jlib_decl bool areTransparentHugePagesEnabled();
+extern jlib_decl memsize_t getHugePageSize();
 
 #endif
 

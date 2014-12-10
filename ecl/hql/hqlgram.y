@@ -4241,15 +4241,11 @@ fieldDefs
 
 fieldDef
     : expression        {
-                            parser->normalizeExpression($1);
-                            IHqlExpression *value = $1.getExpr();
-
-                            IIdAtom * name = parser->createFieldNameFromExpr(value);
-
-                            IHqlExpression * attrs = extractAttrsFromExpr(value);
-
-                            ITypeInfo * type = value->queryType();
-                            parser->addField($1, name, LINK(type), value, attrs);
+                            parser->addFieldFromValue($1, $1);
+                            $$.clear();
+                        }
+    | DATASET '(' dataSet ')' {
+                            parser->addFieldFromValue($1, $3);
                             $$.clear();
                         }
     | VALUE_ID_REF      {
@@ -4313,7 +4309,7 @@ fieldDef
                             parser->addField($1, $1.getId(), makeRowType(LINK(value->queryRecordType())), value, attrs);
                             $$.clear();
                         }
-    | typeDef knownOrUnknownId optFieldAttrs defaultValue
+    | typeDef knownOrUnknownId optFieldAttrs optDefaultValue
                         {
                             $$.clear($1);
                             IHqlExpression *value = $4.getExpr();
@@ -4324,7 +4320,7 @@ fieldDef
                                 type.setown(makeRowType(type.getClear()));
                             parser->addField($2, $2.getId(), type.getClear(), value, $3.getExpr());
                         }
-    | ANY knownOrUnknownId optFieldAttrs defaultValue
+    | ANY knownOrUnknownId optFieldAttrs optDefaultValue
                         {
                             $$.clear($1);
                             IHqlExpression *value = $4.getExpr();
@@ -4333,7 +4329,7 @@ fieldDef
                             OwnedITypeInfo type = makeAnyType();
                             parser->addField($2, $2.getId(), type.getClear(), value, $3.getExpr());
                         }
-    | typeDef knownOrUnknownId '[' expression ']' optFieldAttrs defaultValue
+    | typeDef knownOrUnknownId '[' expression ']' optFieldAttrs optDefaultValue
                         {
                             $$.clear($1);
                             parser->normalizeExpression($4, type_int, false);
@@ -4353,7 +4349,7 @@ fieldDef
                             Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)));
                             parser->addDatasetField($2, $2.getId(), datasetType, value, attrs.getClear());
                         }
-    | setType knownOrUnknownId optFieldAttrs defaultValue
+    | setType knownOrUnknownId optFieldAttrs optDefaultValue
                         {
                             $$.clear($1);
                             IHqlExpression *value = $4.getExpr();
@@ -4361,7 +4357,7 @@ fieldDef
                             ITypeInfo *type = $1.getType();
                             parser->addField($2, $2.getId(), type, value, $3.getExpr());
                         }
-    | explicitDatasetType knownOrUnknownId optFieldAttrs defaultValue
+    | explicitDatasetType knownOrUnknownId optFieldAttrs optDefaultValue
                         {
                             $$.clear($1);
                             Owned<ITypeInfo> type = $1.getType();
@@ -4373,7 +4369,7 @@ fieldDef
                             parser->addDatasetField($1, $1.getId(), NULL, value, $2.getExpr());
                             $$.clear();
                         }
-    | explicitDictionaryType knownOrUnknownId optFieldAttrs defaultValue
+    | explicitDictionaryType knownOrUnknownId optFieldAttrs optDefaultValue
                         {
                             $$.clear($1);
                             Owned<ITypeInfo> type = $1.getType();
@@ -4385,7 +4381,7 @@ fieldDef
                             parser->addDictionaryField($1, $1.getId(), value->queryType(), value, $2.getExpr());
                             $$.clear();
                         }
-    | alienTypeInstance knownOrUnknownId optFieldAttrs defaultValue
+    | alienTypeInstance knownOrUnknownId optFieldAttrs optDefaultValue
                         {
                             $$.clear($1);
                             parser->addField($2, $2.getId(), $1.getType(), $4.getExpr(), $3.getExpr());
@@ -4398,15 +4394,7 @@ fieldDef
                             $$.clear();
                         }
     | dictionary        {
-                            parser->normalizeExpression($1);
-                            IHqlExpression *value = $1.getExpr();
-
-                            IIdAtom * name = parser->createFieldNameFromExpr(value);
-
-                            IHqlExpression * attrs = extractAttrsFromExpr(value);
-
-                            ITypeInfo * type = value->queryType();
-                            parser->addField($1, name, LINK(type), value, attrs);
+                            parser->addFieldFromValue($1, $1);
                             $$.clear();
                         }
     | dataSet               {
@@ -4414,12 +4402,8 @@ fieldDef
                             parser->addFields($1, e->queryRecord(), e, true);
                             $$.clear();
                         }
-    | dataRow               {
-                            IHqlExpression *e = $1.getExpr();
-                            IHqlExpression * attrs = extractAttrsFromExpr(e);
-                            IIdAtom * name = parser->createFieldNameFromExpr(e);
-                            parser->addField($1, name, makeRowType(LINK(e->queryRecordType())), e, attrs);
-                            //e->Release();
+    | dataRow           {
+                            parser->addFieldFromValue($1, $1);
                             $$.clear();
                         }
     | ifblock
@@ -4611,6 +4595,14 @@ optParams
     |                   {   $$.setNullExpr();   }
     ;
 
+optDefaultValue
+    : defaultValue
+    |                       
+                        {
+                            $$.setNullExpr();
+                        }
+    ;
+    
 defaultValue
     : ASSIGN expression 
                         {
@@ -4632,10 +4624,6 @@ defaultValue
     | ASSIGN abstractModule
                         {
                             $$.inherit($2);
-                        }
-    |                       
-                        {
-                            $$.setNullExpr();
                         }
     ;
 

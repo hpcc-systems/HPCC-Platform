@@ -17,10 +17,16 @@
 #ifndef HQLEXPR_IPP_INCL
 #define HQLEXPR_IPP_INCL
 
+//The following needs to be defined to allow multi-threaded access to the expressions
+//Required inside esp and other areas for parsing record definitions etc.
+#define HQLEXPR_MULTI_THREADED
+
 #define NUM_PARALLEL_TRANSFORMS 1
 //I'm not sure if the following is needed or not - I'm slight concerned that remote scopes (e.g.,, plugins)
 //may be accessed in parallel from multiple threads, causing potential conflicts
+#ifdef HQLEXPR_MULTI_THREADED
 #define THREAD_SAFE_SYMBOLS
+#endif
 
 //The following flag is to allow tracing when expressions are created, linked, released, destroyed
 //It allocates a unique id to each expression that is created, then add the unique ids into the
@@ -145,11 +151,17 @@ protected:
     UsedExpressionHashTable newScopeTables;
 };
 
-class HQL_API CHqlExpression : public CInterfaceOf<IHqlExpression>
+#ifdef HQLEXPR_MULTI_THREADED
+typedef CInterfaceOf<IHqlExpression> LinkedBaseIHqlExpression;
+#else
+typedef CSingleThreadInterfaceOf<IHqlExpression> LinkedBaseIHqlExpression;
+#endif
+
+class HQL_API CHqlExpression : public LinkedBaseIHqlExpression
 {
 public:
     friend class CHqlExprMeta;
-    typedef CInterfaceOf<IHqlExpression> Parent;
+    typedef LinkedBaseIHqlExpression Parent;
 
 #ifdef USE_TBB
     void *operator new(size32_t size) { return scalable_malloc(size); }

@@ -646,6 +646,7 @@ public:
     void addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo * type, IHqlExpression *value, IHqlExpression * attrs);
     void addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeInfo * type, IHqlExpression *value, IHqlExpression * attrs);
     void addField(const attribute &errpos, IIdAtom * name, ITypeInfo *type, IHqlExpression *value, IHqlExpression *attrs);
+    void addFieldFromValue(const attribute &errpos, attribute & valueAttr);
     void addFields(const attribute &errpos, IHqlExpression *record, IHqlExpression * dataset, bool clone);
     void addIfBlockToActive(const attribute &errpos, IHqlExpression * ifblock);
     void addToActiveRecord(IHqlExpression * newField);

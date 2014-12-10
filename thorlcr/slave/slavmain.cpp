@@ -663,11 +663,12 @@ void slaveMain()
         WARNLOG("Slave has less memory than master node");
     unsigned gmemSize = globals->getPropInt("@globalMemorySize");
     bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
+    bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
     if (gmemSize >= hdwInfo.totalMemory)
     {
         // should prob. error here
     }
-    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)gmemSize) * 0x100000, 0, thorAllocSizes, NULL);
+    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, ((memsize_t)gmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
     CJobListener jobListener;
     CThorResourceSlave slaveResource;
