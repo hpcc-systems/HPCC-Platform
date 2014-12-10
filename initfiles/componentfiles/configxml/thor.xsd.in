@@ -381,6 +381,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="heapUseTransparentHugePages" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Allow Thor master and slave to use memory from transparent huge pages.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="pluginsPath" type="relativePath" default="${PLUGINS_PATH}/"/>
       <xs:attribute name="nodeGroup" type="xs:string" use="optional">
         <xs:annotation>

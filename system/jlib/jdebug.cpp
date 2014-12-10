@@ -2778,6 +2778,50 @@ void PrintMemoryReport(bool full)
 #endif
 
 
+bool areTransparentHugePagesEnabled()
+{
+#ifdef __linux__
+    StringBuffer contents;
+    try
+    {
+        contents.loadFile("/sys/kernel/mm/transparent_hugepage/enabled");
+        return !strstr(contents.str(), "[never]");
+    }
+    catch (IException * e)
+    {
+        e->Release();
+    }
+#endif
+    return false;
+}
+
+memsize_t getHugePageSize()
+{
+#ifdef __linux__
+    StringBuffer contents;
+    try
+    {
+        //Search for an entry   Hugepagesize:      xxxx kB
+        const char * const tag = "Hugepagesize:";
+        contents.loadFile("/proc/meminfo");
+        const char * hugepage = strstr(contents.str(), tag);
+        if (hugepage)
+        {
+            const char * next = hugepage + strlen(tag);
+            char * end;
+            memsize_t size = strtoul(next, &end, 10);
+            if (strncmp(end, " kB", 3) == 0)
+                return size * 0x400;
+        }
+    }
+    catch (IException * e)
+    {
+        e->Release();
+    }
+#endif
+    return 0x200000; // Default for an x86 system
+}
+
 //===========================================================================
 
 #ifdef LEAK_CHECK

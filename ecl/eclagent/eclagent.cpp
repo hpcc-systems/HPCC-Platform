@@ -2024,6 +2024,9 @@ void EclAgent::runProcess(IEclProcess *process)
     bool allowHugePages = agentTopology->getPropBool("@heapUseHugePages", false);
     allowHugePages = globals->getPropBool("heapUseHugePages", allowHugePages);
 
+    bool allowTransparentHugePages = agentTopology->getPropBool("@heapUseTransparentHugePages", true);
+    allowTransparentHugePages = globals->getPropBool("heapUseTransparentHugePages", allowTransparentHugePages);
+
 #ifndef __64BIT__
     if (memLimitMB > 4096)
     {
@@ -2033,7 +2036,7 @@ void EclAgent::runProcess(IEclProcess *process)
     }
 #endif
     memsize_t memLimitBytes = (memsize_t)memLimitMB * 1024 * 1024;
-    roxiemem::setTotalMemoryLimit(allowHugePages, memLimitBytes, 0, NULL, NULL);
+    roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, memLimitBytes, 0, NULL, NULL);
 
     rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
     setHThorRowManager(rowManager.get());

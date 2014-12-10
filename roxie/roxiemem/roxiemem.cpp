@@ -97,6 +97,8 @@ static unsigned heapLWM;
 static unsigned heapLargeBlocks;
 static unsigned heapLargeBlockGranularity;
 static ILargeMemCallback * heapLargeBlockCallback;
+static bool heapNotifyUnusedEachFree = true;
+static bool heapNotifyUnusedEachBlock = false;
 static unsigned __int64 lastStatsCycles;
 static unsigned __int64 statsCyclesInterval;
 
@@ -107,6 +109,7 @@ static atomic_t dataBuffersActive;
 const unsigned UNSIGNED_BITS = sizeof(unsigned) * 8;
 const unsigned UNSIGNED_ALLBITS = (unsigned) -1;
 const unsigned TOPBITMASK = 1<<(UNSIGNED_BITS-1);
+const memsize_t heapBlockSize = UNSIGNED_BITS*HEAP_ALIGNMENT_SIZE;
 
 template <typename VALUE_TYPE, typename ALIGN_TYPE>
 inline VALUE_TYPE align_pow2(VALUE_TYPE value, ALIGN_TYPE alignment)
@@ -116,13 +119,25 @@ inline VALUE_TYPE align_pow2(VALUE_TYPE value, ALIGN_TYPE alignment)
 
 #define PAGES(x, alignment)    (((x) + ((alignment)-1)) / (alignment))           // hope the compiler converts to a shift
 
+inline void notifyMemoryUnused(void * address, memsize_t size)
+{
+#ifdef NOTIFY_UNUSED_PAGES_ON_FREE
+#ifdef _WIN32
+        VirtualAlloc(address, size, MEM_RESET, PAGE_READWRITE);
+#else
+        // for linux mark as unwanted
+        madvise(address,size,MADV_DONTNEED);
+#endif
+#endif
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 typedef MapBetween<unsigned, unsigned, memsize_t, memsize_t> MapActivityToMemsize;
 
 static CriticalSection heapBitCrit;
 
-static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
+static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, unsigned pages, unsigned largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
 {
     if (heapBase) return;
 
@@ -157,6 +172,9 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
         if (heapBase != MAP_FAILED)
         {
             heapUseHugePages = true;
+            heapNotifyUnusedEachFree = false;
+            //MORE: At the moment I'm not sure calling madvise() has any benefit, it may be better for the following to stay false;
+            heapNotifyUnusedEachBlock = true;
             DBGLOG("Using Huge Pages for roxiemem");
         }
         else
@@ -172,8 +190,14 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
 
     if (!heapBase)
     {
+        const memsize_t hugePageSize = getHugePageSize();
+        bool useTransparentHugePages = allowTransparentHugePages && areTransparentHugePagesEnabled();
+        memsize_t heapAlignment = useTransparentHugePages ? hugePageSize : HEAP_ALIGNMENT_SIZE;
+        if (heapAlignment < HEAP_ALIGNMENT_SIZE)
+            heapAlignment = HEAP_ALIGNMENT_SIZE;
+
         int ret;
-        if ((ret = posix_memalign((void **) &heapBase, HEAP_ALIGNMENT_SIZE, memsize)) != 0) {
+        if ((ret = posix_memalign((void **) &heapBase, heapAlignment, memsize)) != 0) {
 
         	switch (ret)
         	{
@@ -196,6 +220,37 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
 
         	}
             HEAPERROR("RoxieMemMgr: Unable to create heap");
+        }
+
+        //If system supports transparent huge pages, use madvise to mark the memory as request huge pages
+        if (useTransparentHugePages)
+        {
+            if (madvise(heapBase,memsize,MADV_HUGEPAGE) == 0)
+            {
+                //Prevent the transparent huge page code from working hard trying to defragment memory when single heaplets are released
+                heapNotifyUnusedEachFree = false;
+                if ((heapBlockSize % hugePageSize) == 0)
+                {
+                    //If we notify heapBlockSize items at a time it will always be a multiple of hugePageSize so shouldn't trigger defragmentation
+                    heapNotifyUnusedEachBlock = true;
+                    DBGLOG("Transparent huge pages used for roxiemem heap - memory released in blocks");
+                }
+                else
+                {
+                    DBGLOG("Transparent huge pages used for roxiemem heap- MEMORY WILL NOT BE RELEASED.");
+                    DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*32 is a multiple of huge page size"");");
+                }
+            }
+        }
+        else
+        {
+            if (!allowTransparentHugePages)
+            {
+                madvise(heapBase,memsize,MADV_NOHUGEPAGE);
+                DBGLOG("Transparent huge pages disabled in configuration by user.");
+            }
+            else
+                DBGLOG("Transparent huge pages unsupported or disabled by system.");
         }
     }
 #endif
@@ -553,18 +608,15 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
         DBGLOG("RoxieMemMgr: Incorrect alignment of freed area (ptr=%p)", ptr);
         HEAPERROR("RoxieMemMgr: Incorrect alignment of freed area");
     }
-#ifdef NOTIFY_UNUSED_PAGES_ON_FREE
-#ifdef _WIN32
-    VirtualAlloc(ptr, pages*HEAP_ALIGNMENT_SIZE, MEM_RESET, PAGE_READWRITE);
-#else
-    // for linux mark as unwanted
-    madvise(ptr,pages*HEAP_ALIGNMENT_SIZE,MADV_DONTNEED);
-#endif
-#endif
+    if (heapNotifyUnusedEachFree)
+        notifyMemoryUnused(ptr, pages*HEAP_ALIGNMENT_SIZE);
+
     unsigned wordOffset = (unsigned) (pageOffset / UNSIGNED_BITS);
     unsigned bitOffset = (unsigned) (pageOffset % UNSIGNED_BITS);
     unsigned mask = 1<<bitOffset;
     unsigned nextPageOffset = (pageOffset+pages + (UNSIGNED_BITS-1)) / UNSIGNED_BITS;
+    char * firstReleaseBlock = NULL;
+    char * lastReleaseBlock = NULL;
     {
         CriticalBlock b(heapBitCrit);
         heapAllocated -= pages;
@@ -590,7 +642,17 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
         {
             unsigned prev = heapBitmap[wordOffset];
             if ((prev & mask) == 0)
-                heapBitmap[wordOffset] = (prev|mask);
+            {
+                unsigned next = prev | mask;
+                heapBitmap[wordOffset] = next;
+                if ((next == UNSIGNED_ALLBITS) && heapNotifyUnusedEachBlock)
+                {
+                    char * address = heapBase + wordOffset * heapBlockSize;
+                    if (!firstReleaseBlock)
+                        firstReleaseBlock = address;
+                    lastReleaseBlock = address;
+                }
+            }
             else
                 HEAPERROR("RoxieMemMgr: Page freed twice");
             if (!--pages)
@@ -604,6 +666,10 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
                 mask <<= 1;
         }
     }
+
+    if (firstReleaseBlock)
+        notifyMemoryUnused(firstReleaseBlock, (lastReleaseBlock - firstReleaseBlock) + heapBlockSize);
+
     if (memTraceLevel >= 2)
         DBGLOG("RoxieMemMgr: subfree_aligned() %u pages ok - addr=%p heapLWM=%u totalPages=%u", _pages, ptr, heapLWM, heapTotalPages);
 }
@@ -4159,7 +4225,7 @@ extern void setMemoryStatsInterval(unsigned secs)
     lastStatsCycles = get_cycles_now();
 }
 
-extern void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
+extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
 {
     assertex(largeBlockSize == align_pow2(largeBlockSize, HEAP_ALIGNMENT_SIZE));
     unsigned totalMemoryLimit = (unsigned) (max / HEAP_ALIGNMENT_SIZE);
@@ -4168,7 +4234,7 @@ extern void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t la
         totalMemoryLimit = 1;
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: Setting memory limit to %"I64F"d bytes (%u pages)", (unsigned __int64) max, totalMemoryLimit);
-    initializeHeap(allowHugePages, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
+    initializeHeap(allowHugePages, allowTransparentHugePages, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
     initAllocSizeMappings(allocSizes ? allocSizes : defaultAllocSizes);
 }
 
@@ -4421,7 +4487,7 @@ protected:
         ASSERT(HugeHeaplet::dataOffset() >= sizeof(HugeHeaplet));
 
         memsize_t memory = (useLargeMemory ? largeMemory : smallMemory) * (unsigned __int64)0x100000U;
-        initializeHeap(false, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
+        initializeHeap(false, true, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
         initAllocSizeMappings(defaultAllocSizes);
     }
 
@@ -4529,6 +4595,8 @@ protected:
             _heapLWM = heapLWM;
             _heapAllocated = heapAllocated;
             _heapUseHugePages = heapUseHugePages;
+            _heapNotifyUnusedEachFree = heapNotifyUnusedEachFree;
+            _heapNotifyUnusedEachBlock = heapNotifyUnusedEachBlock;
         }
         ~HeapPreserver()
         {
@@ -4540,6 +4608,8 @@ protected:
             heapLWM = _heapLWM;
             heapAllocated = _heapAllocated;
             heapUseHugePages = _heapUseHugePages;
+            heapNotifyUnusedEachFree = _heapNotifyUnusedEachFree;
+            heapNotifyUnusedEachBlock = _heapNotifyUnusedEachBlock;
         }
         char *_heapBase;
         char *_heapEnd;
@@ -4549,6 +4619,8 @@ protected:
         unsigned _heapLWM;
         unsigned _heapAllocated;
         bool _heapUseHugePages;
+        bool _heapNotifyUnusedEachFree;
+        bool _heapNotifyUnusedEachBlock;
     };
     void initBitmap(unsigned size)
     {
@@ -4743,6 +4815,8 @@ protected:
         HeapPreserver preserver;
 
         initBitmap(maxBitmapSize);
+        heapNotifyUnusedEachFree = false; // prevent calls to map out random chunks of memory!
+        heapNotifyUnusedEachBlock = false;
 
         Semaphore sem;
         BitmapAllocatorThread * threads[numBitmapThreads];
@@ -4773,12 +4847,9 @@ protected:
     }
     void testBitmapThreading()
     {
-#ifndef NOTIFY_UNUSED_PAGES_ON_FREE
-        //Don't run this with NOTIFY_UNUSED_PAGES_ON_FREE enabled - I'm not sure what the calls to map out random memory are likely to do!
         testBitmapThreading(1);
         testBitmapThreading(3);
         testBitmapThreading(11);
-#endif
     }
 
     void testHuge()
@@ -5670,7 +5741,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(false, memorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, memorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
@@ -5866,7 +5937,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(false, hugeMemorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, hugeMemorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
