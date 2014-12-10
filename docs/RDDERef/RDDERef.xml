@@ -108,6 +108,11 @@
     the Roxie cluster by opening a socket to one of the servers in the
     cluster, or it can communicate via an ESP service such as WsECL.</para>
 
+    <para>Typically, Roxie results are returned to the requester rather than
+    writing a result to a file. However, Roxie can write data files, although
+    you generally would not want to write a file when a query is not
+    workunit-based. </para>
+
     <sect1 id="Roxie_Overview">
       <title>Roxie Overview</title>
 
