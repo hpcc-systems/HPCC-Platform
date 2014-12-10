@@ -326,7 +326,7 @@ MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _options)
         throw;
     }
 #else
-    pool = memcached_pool(_servers, strlen(_servers));
+    pool = memcached_pool(_options, strlen(_options));
 #endif
     assertPool();
 
