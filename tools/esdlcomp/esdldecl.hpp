@@ -20,12 +20,12 @@
 
 #ifdef _WIN32
  #ifdef ESDLCOMP_EXPORTS
-  #define esdl_decl __declspec(dllexport)
+  #define esdlcomp_decl __declspec(dllexport)
  #else
-  #define esdl_decl __declspec(dllimport)
+  #define esdlcomp_decl __declspec(dllimport)
  #endif
 #else
- #define esdl_decl
+ #define esdlcomp_decl
 #endif
 
 #endif
