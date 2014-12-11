@@ -95,7 +95,6 @@ public:
 
 class CActivityInfo : public CInterface, implements IInterface
 {
-    IEspContext& context;
     CDateTime timeCached;
     BoolHash uniqueECLWUIDs;
 
@@ -114,12 +113,12 @@ class CActivityInfo : public CInterface, implements IInterface
     bool findQueueInStatusServer(IPropertyTree* serverStatusRoot, const char* serverName, const char* queueName);
     const char *getStatusServerTypeName(WsSMCStatusServerType type);
     bool readJobQueue(const char* queueName, StringArray& wuids, StringBuffer& state, StringBuffer& stateDetails);
-    void readActiveWUsAndQueuedWUs(IPropertyTree* envRoot, IPropertyTree* serverStatusRoot);
-    void readRunningWUsOnStatusServer(IPropertyTree* serverStatusRoot, WsSMCStatusServerType statusServerType);
-    void readWUsInTargetClusterJobQueues(CIArrayOf<CWsSMCTargetCluster>& targetClusters);
-    void readWUsInTargetClusterJobQueue(CWsSMCTargetCluster& targetCluster, CWsSMCQueue& jobQueue, const char* queueName);
-    void readRunningWUsAndJobQueueforOtherStatusServers(IPropertyTree* serverStatusRoot);
-    void createActiveWorkUnit(Owned<IEspActiveWorkunit>& ownedWU, const char* wuid, const char* location,
+    void readActiveWUsAndQueuedWUs(IEspContext& context, IPropertyTree* envRoot, IPropertyTree* serverStatusRoot);
+    void readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, WsSMCStatusServerType statusServerType);
+    void readWUsInTargetClusterJobQueues(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters);
+    void readWUsInTargetClusterJobQueue(IEspContext& context, CWsSMCTargetCluster& targetCluster, CWsSMCQueue& jobQueue, const char* queueName);
+    void readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& context, IPropertyTree* serverStatusRoot);
+    void createActiveWorkUnit(IEspContext& context, Owned<IEspActiveWorkunit>& ownedWU, const char* wuid, const char* location,
         unsigned index, const char* serverName, const char* queueName, const char* instanceName, const char* targetClusterName, bool useContext);
     void getDFUServersAndWUs(IPropertyTree* envRoot, IPropertyTree* serverStatusRoot);
     unsigned readDFUWUIDs(IPropertyTree* serverStatusRoot, const char* queueName, StringArray& wuidList);
@@ -130,16 +129,16 @@ class CActivityInfo : public CInterface, implements IInterface
     CWsSMCTargetCluster* findWUClusterInfo(const char* wuid, bool isOnECLAgent, CIArrayOf<CWsSMCTargetCluster>& targetClusters,
         CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2);
     CWsSMCTargetCluster* findTargetCluster(const char* clusterName, CIArrayOf<CWsSMCTargetCluster>& targetClusters);
-    bool isDuplicatedECLWUID(const char* wuid);
+    bool checkSetUniqueECLWUID(const char* wuid);
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CActivityInfo(IEspContext& _context): context(_context) {};
+    CActivityInfo() {};
     virtual ~CActivityInfo() { jobQueueSnapshot.clear(); };
 
     bool isCachedActivityInfoValid(unsigned timeOutSeconds);
-    void createActivityInfo();
+    void createActivityInfo(IEspContext& context);
 
     inline CIArrayOf<CWsSMCTargetCluster>& queryThorTargetClusters() { return thorTargetClusters; };
     inline CIArrayOf<CWsSMCTargetCluster>& queryRoxieTargetClusters() { return roxieTargetClusters; };
