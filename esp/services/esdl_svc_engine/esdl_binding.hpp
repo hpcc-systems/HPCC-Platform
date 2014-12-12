@@ -24,6 +24,7 @@
 #include "dasds.hpp"
 #include "jptree.hpp"
 #include "xsdparser.hpp"
+#include "loggingmanager.h"
 
 static const char* ESDL_DEFS_ROOT_PATH="/ESDL/Definitions/";
 static const char* ESDL_DEF_PATH="/ESDL/Definitions/Definition";
@@ -64,6 +65,7 @@ class EsdlServiceImpl : public CInterface, implements IEspService
 private:
     IEspContainer *container;
     MapStringToMyClass<ISmartSocketFactory> connMap;
+    Owned<ILoggingManager> loggingManager;
 
 public:
     StringBuffer                m_espServiceType;
@@ -108,6 +110,7 @@ public:
             m_pServiceMethodTargets.clear();
     }
 
+    virtual bool loadLogggingManager();
     virtual void init(const IPropertyTree *cfg, const char *process, const char *service);
     virtual void configureTargets(IPropertyTree *cfg, const char *service);
     virtual void handleServiceRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, const char *ns, const char *schema_location, IPropertyTree *req, StringBuffer &out, StringBuffer &logdata, unsigned int flags);
@@ -122,7 +125,7 @@ public:
     virtual void processRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req, StringBuffer &hashedReq) {};
     virtual void processResponse(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &resp,StringBuffer &hashedReq) {};
     virtual void createServersList(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &servers) {};
-
+    virtual bool handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawresp, const char * finalresp);
     void handleEchoTest(const char *mthName, IPropertyTree *req, StringBuffer &soapResp, unsigned flags=0);
     virtual void handleFinalRequest(IEspContext &context, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy);
     void getSoapBody(StringBuffer& out,StringBuffer& soapresp);

@@ -164,6 +164,37 @@ bool loadDefinitions(const char * espServiceName, IEsdlDefinition * esdl, IPrope
     return true;
 }
 
+
+bool EsdlServiceImpl::loadLogggingManager()
+{
+    if (!loggingManager)
+    {
+        StringBuffer realName;
+        realName.append(SharedObjectPrefix).append(LOGGINGMANAGERLIB).append(SharedObjectExtension);
+
+        HINSTANCE loggingManagerLib = LoadSharedObject(realName.str(), true, false);
+
+        if(loggingManagerLib == NULL)
+        {
+            ESPLOG(LogNormal,"ESP service %s: cannot load logging manager library(%s)", m_espServiceName.str(), realName.str());
+            return false;
+        }
+
+        newLoggingManager_t_ xproc = NULL;
+        xproc = (newLoggingManager_t_)GetSharedProcedure(loggingManagerLib, "newLoggingManager");
+
+        if (!xproc)
+        {
+            ESPLOG(LogNormal,"ESP service %s: procedure newLogggingManager of %s can't be loaded\n", m_espServiceName.str(), realName.str());
+            return false;
+        }
+
+        loggingManager.setown((ILoggingManager*) xproc());
+    }
+
+    return true;
+}
+
 void EsdlServiceImpl::init(const IPropertyTree *cfg,
                            const char *process,
                            const char *service)
@@ -180,6 +211,19 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
         m_espServiceType.set(srvcfg->queryProp("@type"));
         if (m_espServiceType.length() <= 0)
             throw MakeStringException(-1, "Could not determine ESDL service configuration type: esp process '%s' service name '%s'", process, service);
+
+        //Rodrigo: this will depend on how Kevin/Gleb structure the configuration
+        IPropertyTree* loggingConfig = srvcfg->queryPropTree("LoggingManager");
+        if (loggingConfig)
+        {
+            ESPLOG(LogNormal, "ESP Service %s attempting to load configured logging manager.", service);
+            if (loadLogggingManager())
+                loggingManager->init(loggingConfig, service);
+            else
+                throw MakeStringException(-1, "ESDL Service %s could not load logging manager", service);
+        }
+        else
+            ESPLOG(LogNormal, "ESP Service %s is not attached to any logging manager.", service);
     }
     else
         throw MakeStringException(-1, "Could not access ESDL service configuration: esp process '%s' service name '%s'", process, service);
@@ -300,7 +344,9 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSON : WTStandard);
         m_pEsdlTransformer->processHPCCResult(context, mthdef, soapresp.str(), respWriter.get(), logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
 
-        out.append(respWriter->str());
+        const char * finalresp = respWriter->str();
+        handleResultLogging(context, tgtcfg.get(), req,  soapresp.str(), finalresp);
+        out.append(finalresp);
     }
     else if(isproxy)
         getSoapBody(out, soapresp);
@@ -308,7 +354,32 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         m_pEsdlTransformer->process(context, EsdlResponseMode, srvdef.queryName(), mthdef.queryName(), out, soapresp.str(), ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
 
     ESPLOG(LogMax,"Customer Response: %s", out.str());
-    ESPLOG(LogMax,"Generic log data: %s", logdata.str());
+}
+
+bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawresp, const char * finalresp)
+{
+    if (loggingManager)
+    {
+        StringBuffer requestContextXML;
+        toXML(reqcontext, requestContextXML, 0, 0);
+
+        StringBuffer requestXML;
+        toXML(request, requestXML, 0, 0);
+
+        StringBuffer espuser;
+        espcontext.getUserID(espuser);
+        StringBuffer sourceIP;
+        short port;
+        espcontext.getServAddress(sourceIP, port);
+
+        StringBuffer logrequest;
+        logrequest.setf("<LogContent><ESPContext><UserName>%s</UserName><SourceIP>%s</SourceIP></ESPContext><UserContext>%s</UserContext><UserRequest>%s</UserRequest><UserResponse>%s</UserResponse><BackEndResponse>%s</BackEndResponse></LogContent>", espuser.str(), sourceIP.str(), requestContextXML.str(),  requestXML.str(), finalresp,  "<TopBusinessSearchResponseEx><response><Header><Status>0</Status></Header><RecordCount>28</RecordCount> </response></TopBusinessSearchResponseEx>"/*soapresp.str()*/);
+
+        StringBuffer logresp;
+        loggingManager->updateLog(LOGGINGDBSINGLEINSERT, logrequest.str(), logresp);
+    }
+
+    return true;
 }
 
 void EsdlServiceImpl::getSoapBody(StringBuffer& out,StringBuffer& soapresp)

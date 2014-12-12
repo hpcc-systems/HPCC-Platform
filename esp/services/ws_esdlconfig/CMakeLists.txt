@@ -24,8 +24,6 @@
 
 project( ws_esdlconfig )
 
-
-#include(${HPCC_LN_SOURCE_DIR}/esp/scm/lnespscm.cmake)
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set (    SRCS
@@ -52,6 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
          ${HPCC_SOURCE_DIR}/esp/services/esdl_svc_engine
          ${HPCC_SOURCE_DIR}/esp/esdllib
+         ${HPCC_SOURCE_DIR}/esp/logging
     )
 
 ADD_DEFINITIONS( -D_USRDLL )
