@@ -19925,9 +19925,12 @@ public:
             if (helper.getFlags() & POFmaxsize)
                 outputLimit = helper.getMaxSize();
             else
-                outputLimit = workunit->getDebugValueInt("outputLimit", DALI_RESULT_LIMIT_DEFAULT);
-            if (outputLimit>DALI_RESULT_OUTPUTMAX)
-                throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the current limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, DALI_RESULT_LIMIT_DEFAULT);
+            {
+                // In absense of OPT_OUTPUTLIMIT check pre 5.2 legacy name OPT_OUTPUTLIMIT_LEGACY
+                outputLimit = workunit->getDebugValueInt(OPT_OUTPUTLIMIT, workunit->getDebugValueInt(OPT_OUTPUTLIMIT_LEGACY, defaultDaliResultLimit));
+            }
+            if (outputLimit>defaultDaliResultOutputMax)
+                throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the current limit is %d MB. A huge dali result usually indicates the ECL needs altering.", defaultDaliResultOutputMax, defaultDaliResultLimit);
             assertex(outputLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
             outputLimitBytes = outputLimit * 0x100000;
         }
@@ -20803,12 +20806,13 @@ class CRoxieServerCsvReadActivity : public CRoxieServerDiskReadBaseActivity
     const char *separators;
     const char *terminators;
     const char *escapes;
+    size32_t maxRowSize;
 public:
     CRoxieServerCsvReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
                                 unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager,
-                                const char *_quotes, const char *_separators, const char *_terminators, const char *_escapes)
+                                const char *_quotes, const char *_separators, const char *_terminators, const char *_escapes, size32_t _maxRowSize)
         : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager),
-          quotes(_quotes), separators(_separators), terminators(_terminators), escapes(_escapes)
+          quotes(_quotes), separators(_separators), terminators(_terminators), escapes(_escapes), maxRowSize(_maxRowSize)
     {
         compoundHelper = NULL;
         readHelper = (IHThorCsvReadArg *)&helper;
@@ -20865,7 +20869,6 @@ public:
                 }
                 // MORE - there are rumours of a  csvSplitter that operates on a stream... if/when it exists, this should use it
                 size32_t rowSize = 4096; // MORE - make configurable
-                size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
                 size32_t thisLineLength;
                 loop
                 {
@@ -20875,7 +20878,7 @@ public:
                     if (thisLineLength < rowSize || avail < rowSize)
                         break;
                     if (rowSize == maxRowSize)
-                        throw MakeStringException(0, "Row too big");
+                        throw MakeStringException(0, "File contained a line of length greater than %d bytes.", maxRowSize);
                     if (rowSize >= maxRowSize/2)
                         rowSize = maxRowSize;
                     else
@@ -21372,6 +21375,7 @@ public:
     const char *separators;
     const char *terminators;
     const char *escapes;
+    size32_t maxCsvRowSize;
 
     CRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), remoteId(_remoteId)
@@ -21408,6 +21412,19 @@ public:
                     manager.setown(getEmptyIndexManager());
             }
         }
+        switch (kind)
+        {
+            case TAKcsvread:
+            {
+                maxCsvRowSize = defaultDaliResultLimit * 1024 * 1024;
+                IConstWorkUnit *workunit = _queryFactory.queryWorkUnit();
+                if (workunit)
+                    maxCsvRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultDaliResultLimit) * 1024 * 1024;
+                break;
+            }
+            default:
+                maxCsvRowSize = 0; // unused
+        }
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
@@ -21417,7 +21434,7 @@ public:
         {
         case TAKcsvread:
             return new CRoxieServerCsvReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager,
-                                                   quotes, separators, terminators, escapes);
+                                                   quotes, separators, terminators, escapes, maxCsvRowSize);
         case TAKxmlread:
         case TAKjsonread:
             return new CRoxieServerXmlReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);

@@ -62,14 +62,12 @@
 #define THOROPT_PARALLEL_FUNNEL       "parallelFunnel"          // Use parallel funnel impl. if !ordered                                         (default = true)
 #define THOROPT_SORT_MAX_DEVIANCE     "sort_max_deviance"       // Max (byte) variance allowed during sort partitioning                          (default = 10Mb)
 #define THOROPT_OUTPUT_FLUSH_THRESHOLD "output_flush_threshold" // When above limit, workunit result is flushed (committed to Dali)              (default = -1 [off])
-#define THOROPT_OUTPUTLIMIT           "outputLimit"             // OUTPUT Mb limit                                                               (default = 10)
 #define THOROPT_PARALLEL_MATCH        "parallel_match"          // Use multi-threaded join helper (retains sort order without unsorted_output)   (default = false)
 #define THOROPT_UNSORTED_OUTPUT       "unsorted_output"         // Allow Join results to be reodered, implies parallel match                     (default = false)
 #define THOROPT_JOINHELPER_THREADS    "joinHelperThreads"       // Number of threads to use in threaded variety of join helper
 #define THOROPT_LKJOIN_LOCALFAILOVER  "lkjoin_localfailover"    // Force SMART to failover to distributed local lookup join (for testing only)   (default = false)
 #define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover" // Force SMART to failover to hash join (for testing only)                     (default = false)
 #define THOROPT_MAX_KERNLOG           "max_kern_level"          // Max kernel logging level, to push to workunit, -1 to disable                  (default = 3)
-#define THOROPT_MAXCSVROWSIZE         "maxCsvRowSize"           // Upper limit on csv read line size                                             (default = 10 [MB])
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 

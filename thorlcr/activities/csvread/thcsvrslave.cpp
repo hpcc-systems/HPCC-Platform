@@ -33,8 +33,6 @@
 #include "csvsplitter.hpp"
 #include "thdiskbaseslave.ipp"
 
-static unsigned const defaultMaxCsvRowSize = 10; // MB
-
 class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDataLink
 {
     IHThorCsvReadArg *helper;
@@ -88,7 +86,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             //Initialise information...
             ICsvParameters * csvInfo = activity.helper->queryCsvParameters();
             csvSplitter.init(activity.helper->getMaxColumns(), csvInfo, activity.csvQuote, activity.csvSeparate, activity.csvTerminate, activity.csvEscape);
-            maxRowSize = activity.getOptInt(THOROPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
+            maxRowSize = activity.getOptInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
         }
         virtual void setPart(IPartDescriptor *partDesc, unsigned partNoSerialized)
         {
