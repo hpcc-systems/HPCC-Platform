@@ -423,6 +423,9 @@ startCmd() {
         echo "compName=$compName compPath=$compPath compProcessName=$compType"
     fi
 
+    # use less heap when threaded
+    export MALLOC_ARENA_MAX=8
+
     # Creating logfiles for component
     logDir=$log/${compName}
     logFile=$log/${compName}/${compName}_init.log
