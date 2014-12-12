@@ -46,8 +46,8 @@
   INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
   role="bold"> [, MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
-    </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis role="bold">] ]);
-  </emphasis></para>
+    </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
+  role="bold">] ]); </emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -172,10 +172,10 @@
         <row>
           <entry><emphasis role="bold">FILEPOSITION</emphasis></entry>
 
-          <entry>Optional. If <emphasis>flag</emphasis> is flag, prevents the
-          implicit fileposition field from being created and will not treat a
-          trailing integer field any differently from the rest of the
-          payload.</entry>
+          <entry>Optional. If <emphasis>flag</emphasis> is FALSE, prevents the
+          normal behavior of implicit fileposition field being created and
+          will not treat a trailing integer field any differently from the
+          rest of the payload.</entry>
         </row>
 
         <row>
