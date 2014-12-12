@@ -20,6 +20,7 @@
 #include "deploy.hpp"
 #include "build-config.h"
 #include "jutil.hpp"
+#include "jhash.ipp"
 
 #define STANDARD_INDIR COMPONENTFILES_DIR"/configxml"
 #define STANDARD_OUTDIR RUNTIME_DIR
@@ -582,7 +583,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   }
   else if (listMachines)
   {
-    StringArray strArrayOfMachinesIPs;
+    MapStringTo<bool> mapOfMachineIPs;
     StringBuffer out;
     Owned<IPropertyTreeIterator> computers = pEnv->getElements("Hardware/Computer");
     ForEach(*computers)
@@ -590,9 +591,13 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       IPropertyTree* pComputer = &computers->query();
       const char *netAddress = pComputer->queryProp("@netAddress");
 
-      if (strArrayOfMachinesIPs.appendUniq(netAddress) == false)
+      if (mapOfMachineIPs.getValue(netAddress) != NULL)
       {
           continue;
+      }
+      else
+      {
+          mapOfMachineIPs.setValue(netAddress, true);
       }
 
       StringBuffer xpath;
