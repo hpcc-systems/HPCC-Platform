@@ -112,6 +112,19 @@ const unsigned UNSIGNED_ALLBITS = (unsigned) -1;
 const unsigned TOPBITMASK = 1<<(UNSIGNED_BITS-1);
 const memsize_t heapBlockSize = UNSIGNED_BITS*HEAP_ALIGNMENT_SIZE;
 
+//Constants used when maintaining a list of blocks.  The blocks are stored as unsigned numbers, null has an unusual number so
+//that block 0 can be the heaplet at address heapBase.  The top bits are used as a mask to prevent the ABA problem in
+//a lockless list.  I suspect the mask could be increased.
+const unsigned BLOCKLIST_MASK = 0xFFFFFF;
+const unsigned BLOCKLIST_ABA_INC = (BLOCKLIST_MASK+1);
+const unsigned BLOCKLIST_ABA_MASK = ~BLOCKLIST_MASK;
+const unsigned BLOCKLIST_NULL = BLOCKLIST_MASK; // Used to represent a null entry
+
+inline bool isNullBlock(unsigned block)
+{
+    return (block & BLOCKLIST_MASK) == BLOCKLIST_NULL;
+}
+
 template <typename VALUE_TYPE, typename ALIGN_TYPE>
 inline VALUE_TYPE align_pow2(VALUE_TYPE value, ALIGN_TYPE alignment)
 {
@@ -138,19 +151,33 @@ typedef MapBetween<unsigned, unsigned, memsize_t, memsize_t> MapActivityToMemsiz
 
 static CriticalSection heapBitCrit;
 
-static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, unsigned pages, unsigned largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
+static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, memsize_t pages, memsize_t largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
 {
     if (heapBase) return;
 
     // CriticalBlock b(heapBitCrit); // unnecessary - must call this exactly once before any allocations anyway!
-    heapBitmapSize = (pages + UNSIGNED_BITS - 1) / UNSIGNED_BITS;
-    heapTotalPages = heapBitmapSize * UNSIGNED_BITS;
+    memsize_t bitmapSize = (pages + UNSIGNED_BITS - 1) / UNSIGNED_BITS;
+    memsize_t totalPages = bitmapSize * UNSIGNED_BITS;
+    memsize_t memsize = totalPages * HEAP_ALIGNMENT_SIZE;
+
+    if (totalPages > (unsigned)-1)
+        throw makeStringExceptionV(ROXIEMM_TOO_MUCH_MEMORY,
+                    "Heap cannot support memory of size %" I64F "u - decrease memory or increase HEAP_ALIGNMENT_SIZE",
+                    (__uint64)memsize);
+
+    if (totalPages >= BLOCKLIST_NULL)
+        throw makeStringExceptionV(ROXIEMM_TOO_MUCH_MEMORY,
+                    "Heap cannot support memory of size %" I64F "u - decrease memory or increase HEAP_ALIGNMENT_SIZE or BLOCKLIST_MASK",
+                    (__uint64)memsize);
+
+    heapBitmapSize = (unsigned)bitmapSize;
+    heapTotalPages = (unsigned)totalPages;
     heapLargeBlockGranularity = largeBlockGranularity;
     heapLargeBlockCallback = largeBlockCallback;
-    memsize_t memsize = memsize_t(heapTotalPages) * HEAP_ALIGNMENT_SIZE;
 
     heapNotifyUnusedEachFree = !retainMemory;
     heapNotifyUnusedEachBlock = false;
+
 #ifdef _WIN32
     // Not the world's best code but will do 
     char *next = (char *) HEAP_ALIGNMENT_SIZE;
@@ -954,9 +981,11 @@ class Heaplet : public HeapletBase
     friend class CHeap;
 protected:
     Heaplet *next;
+    Heaplet *prev;
     const IRowAllocatorCache *allocatorCache;
     CHeap * const heap;
     memsize_t chunkCapacity;
+    atomic_t nextSpace;
     
     inline unsigned getActivityId(unsigned allocatorId) const
     {
@@ -966,8 +995,10 @@ protected:
 public:
     Heaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, memsize_t _chunkCapacity) : heap(_heap), chunkCapacity(_chunkCapacity)
     {
+        atomic_set(&nextSpace, 0); // Zero indicates it is not on the list.
         assertex(heap);
         next = NULL;
+        prev = NULL;
         allocatorCache = _allocatorCache;
     }
 
@@ -977,6 +1008,7 @@ public:
     virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const = 0;
     virtual void checkHeap() const = 0;
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const = 0;
+    virtual bool isFull() const = 0;
 
 #ifdef _WIN32
 #ifdef new
@@ -989,6 +1021,9 @@ public:
     {
         subfree_aligned(p, 1);
     }
+
+    inline void addToSpaceList();
+    virtual void verifySpaceList();
 };
 
 
@@ -1033,6 +1068,19 @@ public:
     virtual size32_t sizeInPages() { return 1; }
 
     inline unsigned numChunks() const { return queryCount()-1; }
+
+    //Is there any space within the heaplet that hasn't ever been allocated.
+    inline bool hasAnyFreeSpace() const
+    {
+        unsigned curFreeBase = atomic_read(&freeBase);
+        size32_t bytesFree = dataAreaSize() - curFreeBase;
+        return (bytesFree >= chunkSize);
+    }
+
+    virtual bool isFull() const
+    {
+        return !hasAnyFreeSpace() && (atomic_read(&r_blocks) & RBLOCKS_OFFSET_MASK) == 0;
+    }
 
     inline static unsigned dataOffset() { return HEAPLET_DATA_AREA_OFFSET(ChunkedHeaplet); }
 
@@ -1084,6 +1132,7 @@ public:
     }
 
     char * allocateChunk();
+    virtual void verifySpaceList();
 
 protected:
     inline unsigned makeRelative(const char *ptr)
@@ -1128,7 +1177,14 @@ protected:
             unsigned new_tag = ((old_blocks & RBLOCKS_CAS_TAG_MASK) + RBLOCKS_CAS_TAG);
             unsigned new_blocks = new_tag | r_ptr;
             if (atomic_cas(&r_blocks, new_blocks, old_blocks))
+            {
+                //If this is the first block being added to the free chain then add it to the space list
+                //It is impossible to make it more restrictive -e.g., only when freeing and full because of
+                //various race conditions.
+                if (atomic_read(&nextSpace) == 0)
+                    addToSpaceList();
                 break;
+            }
         }
 
         CHeap * savedHeap = heap;
@@ -1607,6 +1663,7 @@ public:
                 allocatorCache->onDestroy(allocatorId & MAX_ACTIVITY_ID, (void *)ptr);
 
             CHeap * savedHeap = heap;
+            addToSpaceList();
             // after the following dec(count) it is possible that the page could be freed, so cannot access any members of this
             compiler_memory_barrier();
             unsigned cnt = atomic_dec_and_read(&count);
@@ -1673,7 +1730,28 @@ public:
     {
         throwUnexpected();
     }
+
+    virtual bool isFull() const
+    {
+        return (atomic_read(&count) > 1);
+    }
 };
+
+//================================================================================
+
+inline unsigned heapletToBlock(Heaplet * heaplet)
+{
+    dbgassertex(heaplet);
+    return ((char *)heaplet - heapBase) / HEAP_ALIGNMENT_SIZE;
+}
+
+inline Heaplet * blockToHeaplet(unsigned block)
+{
+    unsigned maskedBlock = block & BLOCKLIST_MASK;
+    dbgassertex(maskedBlock != BLOCKLIST_NULL);
+    return (Heaplet *)(heapBase + maskedBlock * HEAP_ALIGNMENT_SIZE);
+}
+
 
 //================================================================================
 //
@@ -1955,48 +2033,173 @@ protected:
 //Responsible for allocating memory for a chain of chunked blocks
 class CHeap : public CInterface
 {
+    friend class HeapCompactState;
 public:
     CHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _flags)
-        : logctx(_logctx), rowManager(_rowManager), allocatorCache(_allocatorCache), active(NULL), flags(_flags)
+        : logctx(_logctx), rowManager(_rowManager), allocatorCache(_allocatorCache), activeHeaplet(NULL), heaplets(NULL), flags(_flags)
     {
         atomic_set(&possibleEmptyPages, 0);
+        atomic_set(&headMaybeSpace, BLOCKLIST_NULL);
     }
 
     ~CHeap()
     {
-        Heaplet *finger = active;
-        while (finger)
+        //The following is here to ensure verifySpaceListConsistency isn't triggered by leaked allocations that are never freed.
+        if (activeHeaplet && atomic_read(&activeHeaplet->nextSpace) == 0)
+            atomic_set(&activeHeaplet->nextSpace, BLOCKLIST_NULL);
+
+        verifySpaceListConsistency();
+        if (heaplets)
         {
-            if (memTraceLevel >= 3)
-                logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor freeing heaplet linked in active list - addr=%p rowMgr=%p",
-                        finger, this);
-            Heaplet *next = getNext(finger);
-            delete finger;
-            finger = next;
+            Heaplet *finger = heaplets;
+            //NB: This loop doesn't unlink the list
+            do
+            {
+                if (memTraceLevel >= 3)
+                    logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor freeing heaplet linked in active list - addr=%p rowMgr=%p",
+                            finger, this);
+                Heaplet *next = getNext(finger);
+                delete finger;
+                finger = next;
+            } while (finger != heaplets);
         }
-        active = NULL;
+        heaplets = NULL;
+        activeHeaplet = NULL;
+    }
+
+    void addToSpaceList(Heaplet * heaplet)
+    {
+        //Careful: Two threads might be calling this at exactly the same time: ensure only one goes any further
+        if (!atomic_cas(&heaplet->nextSpace, BLOCKLIST_NULL, 0))
+            return;
+
+        unsigned block = heapletToBlock(heaplet);
+        loop
+        {
+            unsigned head = atomic_read(&headMaybeSpace);
+            assertex((head & BLOCKLIST_MASK) != block);
+            //Update the next pointer, and or mask to ensure it is nonzero - so other code can check we are on a list.
+            atomic_set(&heaplet->nextSpace, head | BLOCKLIST_ABA_INC);
+            //Ensure any items added onto the list have a new aba tag
+            unsigned newHead = block + (head & BLOCKLIST_ABA_MASK) + BLOCKLIST_ABA_INC;
+            if (atomic_cas(&headMaybeSpace, newHead, head))
+                break;
+        }
+    }
+
+    Heaplet * popFromSpaceList()
+    {
+        //This must only be called within a critical section so only one thread can access at once.
+        loop
+        {
+            unsigned head = atomic_read(&headMaybeSpace);
+            if (isNullBlock(head))
+                return NULL;
+
+            Heaplet * heaplet = blockToHeaplet(head);
+            //Always valid to access a heaplet on a list, because we must remove from all lists before disposing.
+            unsigned next = atomic_read(&heaplet->nextSpace);
+
+            //No need to update the aba mask on removal since removal cannot create a false positives.
+            if (atomic_cas(&headMaybeSpace, next, head))
+            {
+                //Indicate that this item is no longer on the list.
+                atomic_set(&heaplet->nextSpace, 0);
+                //NOTE: If another thread tries to add it before this set succeeds that doesn't cause a problem since on return this heaplet will be processed
+                return heaplet;
+            }
+        }
+    }
+
+    void removeFromSpaceList(Heaplet * toRemove)
+    {
+        //This must only be called within a critical section so only one thread can access at once.
+        //NOTE: We don't care about items being added while this loop is iterating - since the item
+        //being removed cannot be being added.
+        //And nothing else can be being removed - since we are protected by the critical section
+
+        //NextSpace can't change while this function is executing
+        unsigned nextSpace = atomic_read(&toRemove->nextSpace);
+        //If not on the list then return immediately
+        if (nextSpace == 0)
+            return;
+
+        //Special case head because that can change while this is being executed...
+        unsigned searchBlock = heapletToBlock(toRemove);
+        unsigned head = atomic_read(&headMaybeSpace);
+        if (isNullBlock(head))
+        {
+            //The block wasn't found on the space list even though it should have been
+            throwUnexpected();
+            return;
+        }
+
+        if ((head & BLOCKLIST_MASK) == searchBlock)
+        {
+            //Currently head of the list, try and remove it
+            if (atomic_cas(&headMaybeSpace, nextSpace, head))
+            {
+                atomic_set(&toRemove->nextSpace, 0);
+                return;
+            }
+
+            //head changed - reread head and fall through since it must now be a child of that new head
+            head = atomic_read(&headMaybeSpace);
+        }
+
+        //Not at the head of the list, and head is not NULL
+        Heaplet * prevHeaplet = blockToHeaplet(head);
+        loop
+        {
+            unsigned next = atomic_read(&prevHeaplet->nextSpace);
+            if (isNullBlock(next))
+            {
+                throwUnexpected();
+                return;
+            }
+
+            Heaplet * heaplet = blockToHeaplet(next);
+            if (heaplet == toRemove)
+            {
+                //Remove the item from the list, and indicate it is no longer on the list
+                atomic_set(&prevHeaplet->nextSpace, nextSpace);
+                atomic_set(&toRemove->nextSpace, 0);
+                return;
+            }
+            prevHeaplet = heaplet;
+        }
     }
 
     void reportLeaks(unsigned &leaked) const
     {
         SpinBlock c1(crit);
-        Heaplet *finger = active;
-        while (leaked && finger)
+        Heaplet * start = heaplets;
+        if (start)
         {
-            if (leaked && memTraceLevel >= 1)
-                finger->reportLeaks(leaked, logctx);
-            finger = getNext(finger);
+            Heaplet * finger = start;
+            while (leaked)
+            {
+                if (leaked && memTraceLevel >= 1)
+                    finger->reportLeaks(leaked, logctx);
+                finger = getNext(finger);
+                if (finger == start)
+                    break;
+            }
         }
     }
 
     void checkHeap()
     {
         SpinBlock c1(crit);
-        Heaplet *finger = active;
-        while (finger)
+        Heaplet * start = heaplets;
+        if (start)
         {
-            finger->checkHeap();
-            finger = getNext(finger);
+            Heaplet * finger = start;
+            do
+            {
+                finger->checkHeap();
+                finger = getNext(finger);
+            } while (finger != start);
         }
     }
 
@@ -2004,59 +2207,144 @@ public:
     {
         unsigned total = 0;
         SpinBlock c1(crit);
-        Heaplet *finger = active;
-        while (finger)
+        Heaplet * start = heaplets;
+        if (start)
         {
-            total += finger->queryCount() - 1; // There is one refcount for the page itself on the active q
-            finger = getNext(finger);
+            Heaplet * finger = start;
+            do
+            {
+                total += finger->queryCount() - 1; // There is one refcount for the page itself on the active q
+                finger = getNext(finger);
+            } while (finger != start);
         }
         return total;
     }
 
+    void verifySpaceListConsistency()
+    {
+        //Check that all blocks are either full, on the with-possible-space list or active
+        Heaplet * start = heaplets;
+        Heaplet * finger = start;
+        if (start)
+        {
+            do
+            {
+                if (!finger->isFull())
+                    finger->verifySpaceList();
+                finger = getNext(finger);
+            } while (finger != start);
+        }
+    }
+
+    unsigned releasePage(Heaplet * finger)
+    {
+        if (memTraceLevel >= 3)
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%"I64F"u rowMgr=%p",
+                    finger, finger->sizeInPages(), (unsigned __int64) finger->_capacity(), this);
+
+        removeHeaplet(finger);
+        if (finger == activeHeaplet)
+            activeHeaplet = NULL;
+
+        unsigned size = finger->sizeInPages();
+        //Very unlikely, but after removing from the free list, a final ReleaseRoxieRow could release the
+        //last row (and re-add it onto the list).  Therefore we need to possibly remove it just in case.
+        removeFromSpaceList(finger);
+        delete finger;
+        return size;
+    }
+
     unsigned releaseEmptyPages(bool forceFreeAll)
     {
+        //If releaseEmptyPages() is called between the last release on a page (setting count to 1), and this flag
+        //getting set, it won't release the page *this time*.  But that is the same as the release happening
+        //slightly later.
+        if (atomic_read(&possibleEmptyPages) == 0)
+            return 0;
+
+        unsigned total = 0;
+        SpinBlock c1(crit);
+        //Check again in case other thread has also called this function and no other pages have been released.
         if (atomic_read(&possibleEmptyPages) == 0)
             return 0;
 
         //You will get a false positive if possibleEmptyPages is set while walking the active page list, but that
         //only mean the list is walked more than it needs to be.
-        //If releaseEmptyPages() is called between the last release on a page (setting count to 1), and this flag
-        //getting set, it won't release the page *this time*.  But that is the same as the release happening
-        //slightly later.
         atomic_set(&possibleEmptyPages, 0);
-        unsigned total = 0;
-        Heaplet *prev = NULL;
-        SpinBlock c1(crit);
-        Heaplet *finger = active;
-        while (finger)
+
+        //Any blocks that could me freed must either be the active block and/or on the maybe space list.
+        Heaplet * headHeaplet;
+        Heaplet * preserved = NULL;
+        //First free any empty blocks at the head of the maybe space list
+        loop
         {
-            Heaplet *next = getNext(finger);
-            if (finger->queryCount()==1)
+            unsigned head = atomic_read(&headMaybeSpace);
+            if (isNullBlock(head))
             {
-                //If this is the only page then only free it if forced to.
-                if (!prev && !next && !forceFreeAll)
-                {
-                    //There is still a potential page to release so reset the flag.
-                    atomic_set(&possibleEmptyPages, 1);
+                headHeaplet = NULL;
+                break;
+            }
+
+            headHeaplet = blockToHeaplet(head);
+            //Is it possible to free this heaplet?
+            if (headHeaplet->queryCount() != 1)
+                break;
+
+            //If this is the only page then only free it if forced to.
+            if ((headHeaplet->next == headHeaplet) && !forceFreeAll)
+            {
+                preserved = headHeaplet;
+                break;
+            }
+
+            //Always valid to access a heaplet on a list, because we must remove from all lists before disposing.
+            unsigned next = atomic_read(&headHeaplet->nextSpace);
+
+            //No need to update the aba mask on removal since removal cannot create a false positives.
+            if (atomic_cas(&headMaybeSpace, next, head))
+            {
+                atomic_set(&headHeaplet->nextSpace, 0);
+                total += releasePage(headHeaplet);
+            }
+        }
+
+        //Not going to modify head, so can now walk the rest of the items, other threads can only add to head.
+        if (headHeaplet)
+        {
+            Heaplet * prevHeaplet = headHeaplet;
+            loop
+            {
+                unsigned curSpace = atomic_read(&prevHeaplet->nextSpace);
+                if (isNullBlock(curSpace))
                     break;
+
+                Heaplet * heaplet = blockToHeaplet(curSpace);
+                if (heaplet->queryCount() == 1)
+                {
+                    //Remove it directly rather than walking the list to remove it.
+                    unsigned nextSpace = atomic_read(&heaplet->nextSpace);
+                    atomic_set(&prevHeaplet->nextSpace, nextSpace);
+                    atomic_set(&heaplet->nextSpace, 0);
+                    total += releasePage(heaplet);
                 }
-
-                if (memTraceLevel >= 3)
-                    logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%"I64F"u rowMgr=%p",
-                            finger, finger->sizeInPages(), (unsigned __int64) finger->_capacity(), this);
-                if (prev)
-                    setNext(prev, next);
                 else
-                    active = next;
+                    prevHeaplet = heaplet;
+            }
+        }
 
-                total += finger->sizeInPages();
-                delete finger;
-            }
-            else
-            {
-                prev = finger;
-            }
-            finger = next;
+        if (activeHeaplet && forceFreeAll)
+        {
+            //I am not convinced this can ever lead to an extra page being released - except when it is released
+            //after the space list has been walked.  Keep for the moment just to be sure.
+            assertex(!preserved);
+            if (activeHeaplet->queryCount() == 1)
+                total += releasePage(activeHeaplet);
+        }
+        else if (preserved)
+        {
+            //Add this page back onto the potential-space list
+            atomic_set(&possibleEmptyPages, 1);
+            addToSpaceList(preserved);
         }
 
         return total;
@@ -2068,22 +2356,26 @@ public:
         memsize_t numAllocs = 0;
         {
             SpinBlock c1(crit);
-            Heaplet *finger = active;
-            while (finger)
+            Heaplet * start = heaplets;
+            if (start)
             {
-                unsigned thisCount = finger->queryCount()-1;
-                if (thisCount != 0)
-                    finger->getPeakActivityUsage(usageMap);
-                numAllocs += thisCount;
-                numPages++;
-                finger = getNext(finger);
+                Heaplet * finger = start;
+                do
+                {
+                    unsigned thisCount = finger->queryCount()-1;
+                    if (thisCount != 0)
+                        finger->getPeakActivityUsage(usageMap);
+                    numAllocs += thisCount;
+                    numPages++;
+                    finger = getNext(finger);
+                } while (finger != start);
             }
         }
         if (numPages)
             reportHeapUsage(usageMap, numPages, numAllocs);
     }
 
-    inline bool isEmpty() const { return !active; }
+    inline bool isEmpty() const { return !heaplets; }
 
     virtual bool matches(size32_t searchSize, unsigned searchActivity, unsigned searchFlags) const
     {
@@ -2092,31 +2384,62 @@ public:
 
     void noteEmptyPage() { atomic_set(&possibleEmptyPages, 1); }
 
-    inline void internalLock() { crit.enter(); }
-    inline void internalUnlock() { crit.leave(); }
-
-
 protected:
     virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const = 0;
 
     inline Heaplet * getNext(const Heaplet * ptr) const { return ptr->next; }
     inline void setNext(Heaplet * ptr, Heaplet * next) const { ptr->next = next; }
+    inline Heaplet * getPrev(const Heaplet * ptr) const { return ptr->prev; }
+    inline void setPrev(Heaplet * ptr, Heaplet * prev) const { ptr->prev = prev; }
 
-    inline void moveHeapletToHead(Heaplet * prev, Heaplet * newHead)
+    //Must be called within a critical section
+    void insertHeaplet(Heaplet * ptr)
     {
-        Heaplet * next = getNext(newHead);
-        setNext(prev, next);
-        setNext(newHead, active);
-        active = newHead;
+        if (!heaplets)
+        {
+            ptr->prev = ptr;
+            ptr->next = ptr;
+            heaplets = ptr;
+        }
+        else
+        {
+            Heaplet * next = heaplets;
+            Heaplet * prev = next->prev;
+            ptr->next = next;
+            ptr->prev = prev;
+            prev->next = ptr;
+            next->prev = ptr;
+        }
     }
+
+    void removeHeaplet(Heaplet * ptr)
+    {
+        Heaplet * next = ptr->next;
+        if (next != ptr)
+        {
+            Heaplet * prev = ptr->prev;
+            next->prev = prev;
+            prev->next = next;
+            //Ensure that heaplets isn't invalid
+            heaplets = next;
+        }
+        else
+            heaplets = NULL;
+        //NOTE: We do not clear next/prev in the heaplet being removed.
+    }
+
+    inline void internalLock() { crit.enter(); }
+    inline void internalUnlock() { crit.leave(); }
 
 protected:
     unsigned flags; // before the pointer so it packs better in 64bit.
-    Heaplet *active;
+    Heaplet * activeHeaplet; // which block is the current candidate for adding rows.
+    Heaplet * heaplets; // the linked list of heaplets for this heap
     CChunkingRowManager * rowManager;
     const IRowAllocatorCache *allocatorCache;
     const IContextLogger & logctx;
     mutable SpinLock crit;      // MORE: Can probably be a NonReentrantSpinLock if we're careful
+    atomic_t headMaybeSpace;  // The head of the list of heaplets which potentially have some space.
     atomic_t possibleEmptyPages;  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
 };
 
@@ -2144,8 +2467,12 @@ public:
                 heap->internalUnlock();
             heap = _heap;
             if (_heap)
+            {
                 _heap->internalLock();
-            next = NULL;
+                next = _heap->heaplets;
+            }
+            else
+                next = NULL;
         }
     }
 public:
@@ -2195,6 +2522,7 @@ public:
     const void * compactRow(const void * ptr, HeapCompactState & state);
 
     inline unsigned maxChunksPerPage() const { return chunksPerPage; }
+
 
 protected:
     inline void * inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCost);
@@ -2262,6 +2590,28 @@ void noteEmptyPage(CHeap * const heap)
     heap->noteEmptyPage();
 }
 
+void Heaplet::addToSpaceList()
+{
+    if (atomic_read(&nextSpace) != 0)
+        return;
+    heap->addToSpaceList(this);
+}
+
+void Heaplet::verifySpaceList()
+{
+    if (atomic_read(&nextSpace) == 0)
+    {
+        ERRLOG("%p@%u: Verify failed: %p %u", heap, (unsigned)GetCurrentThreadId(), this, isFull());
+    }
+}
+
+void ChunkedHeaplet::verifySpaceList()
+{
+    if (atomic_read(&nextSpace) == 0)
+    {
+        ERRLOG("%p@%u: Verify failed: %p %u %x %x", heap, (unsigned)GetCurrentThreadId(), this, isFull(), atomic_read(&freeBase), atomic_read(&r_blocks));
+    }
+}
 
 char * ChunkedHeaplet::allocateChunk()
 {
@@ -3690,8 +4040,7 @@ void * CHugeHeap::doAllocate(memsize_t _size, unsigned allocatorId, unsigned max
     }
 
     SpinBlock b(crit);
-    setNext(head, active);
-    active = head;
+    insertHeaplet(head);
     return head->allocateHuge(_size);
 }
 
@@ -3720,32 +4069,14 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
         {
             HugeHeaplet *oldhead = (HugeHeaplet *) oldbase;
             HugeHeaplet *head = (HugeHeaplet *) realloced;
+            //NOTE: Huge pages are only added to the space list when they are freed => no need to check
+            //if it needs removing and re-adding to that list.
             if (realloced != oldbase)
             {
                 // Remove the old block from the chain
                 {
                     SpinBlock b(crit);
-                    if (active==oldhead)
-                    {
-                        active = getNext(oldhead);
-                    }
-                    else
-                    {
-                        Heaplet *finger = active;
-                        // Remove old pointer from the chain
-                        while (finger)
-                        {
-                            Heaplet *next = getNext(finger);
-                            if (next == oldhead)
-                            {
-                                setNext(finger, getNext(oldhead));
-                                break;
-                            }
-                            else
-                                finger = next;
-                        }
-                        assert(finger != NULL); // Should always have found it
-                    }
+                    removeHeaplet(oldhead);
                 }
 
                 //Copying data within the block => must lock for the duration
@@ -3754,10 +4085,9 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
 
                 // MORE - If we were really clever, we could manipulate the page table to avoid moving ANY data here...
                 memmove(realloced, oldbase, copysize + HugeHeaplet::dataOffset());  // NOTE - assumes no trailing data (e.g. end markers)
+
                 SpinBlock b(crit);
-                // Add at front of chain
-                setNext(head, active);
-                active = head;
+                insertHeaplet(head);
             }
             void * ret = (char *) realloced + HugeHeaplet::dataOffset();
             memsize_t newCapacity = head->setCapacity(newsize);
@@ -3808,28 +4138,43 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
     ChunkedHeaplet * donorHeaplet;
     char * chunk;
     {
-        Heaplet *prev = NULL;
         SpinBlock b(crit);
-        Heaplet *finger = active;
-        while (finger)
+        if (activeHeaplet)
         {
             //This cast is safe because we are within a member of CChunkedHeap
-            donorHeaplet = static_cast<ChunkedHeaplet *>(finger);
+            donorHeaplet = static_cast<ChunkedHeaplet *>(activeHeaplet);
             chunk = donorHeaplet->allocateChunk();
             if (chunk)
             {
-                if (prev)
-                    moveHeapletToHead(prev, finger);
-
                 //The code at the end of this function needs to be executed outside of the spinblock.
                 //Just occasionally gotos are the best way of expressing something
                 goto gotChunk;
             }
-            prev = finger;
-            finger = getNext(finger);
+            activeHeaplet = NULL;
+        }
+
+        //Now walk the list of blocks which may potentially have some free space:
+        loop
+        {
+            Heaplet * next = popFromSpaceList();
+            if (!next)
+                break;
+
+            //This cast is safe because we are within a member of CChunkedHeap
+            donorHeaplet = static_cast<ChunkedHeaplet *>(next);
+            chunk = donorHeaplet->allocateChunk();
+            if (chunk)
+            {
+                activeHeaplet = donorHeaplet;
+                //The code at the end of this function needs to be executed outside of the spinblock.
+                //Just occasionally gotos are the best way of expressing something
+                goto gotChunk;
+            }
         }
     }
 
+    //NB: At this point activeHeaplet = NULL;
+    //MORE: Should there be a different critical section to ensure this is only done on one thread?
     loop
     {
         rowManager->checkLimit(1, maxSpillCost);
@@ -3848,8 +4193,14 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
 
     {
         SpinBlock b(crit);
-        setNext(donorHeaplet, active);
-        active = donorHeaplet;
+        insertHeaplet(donorHeaplet);
+
+        //While this thread was allocating a block, another thread also did the same.  Ensure that other block is
+        //placed on the list of those with potentially free space.
+        if (activeHeaplet)
+            addToSpaceList(activeHeaplet);
+        activeHeaplet = donorHeaplet;
+
         //If no protecting spinblock there would be a race e.g., if another thread allocates all the rows!
         chunk = donorHeaplet->allocateChunk();
         dbgassertex(chunk);
@@ -3862,38 +4213,41 @@ gotChunk:
 
 const void * CChunkedHeap::compactRow(const void * ptr, HeapCompactState & state)
 {
-    Heaplet *prev = NULL;
-
     //Use protect heap instead of a lock, so that multiple compacts on the same heap (very likely) avoid
     //re-entering the critical sections.
     state.protectHeap(this);
     Heaplet *finger = state.next;
-    if (!finger)
-        finger = active;
-    while (finger)
-    {
-       //This cast is safe because we are within a member of CChunkedHeap
-        ChunkedHeaplet * chunkedFinger = static_cast<ChunkedHeaplet *>(finger);
-        const void *ret = chunkedFinger->moveRow(ptr);
-        if (ret)
-        {
-            //Instead of moving this block to the head of the list, save away the next block to try to put a block into
-            //since we know what all blocks before this must be filled.
-            state.next = finger;
-            //if (prev)
-            //    moveHeapletToHead(prev, finger);
 
-            HeapletBase *srcBase = HeapletBase::findBase(ptr);
-            if (srcBase->isEmpty())
+    //This loop currently walks through the heaplet list.  It *might* be more efficient to walk the list of
+    //heaplets with potential space
+    if (finger)
+    {
+        loop
+        {
+           //This cast is safe because we are within a member of CChunkedHeap
+            ChunkedHeaplet * chunkedFinger = static_cast<ChunkedHeaplet *>(finger);
+            const void *ret = chunkedFinger->moveRow(ptr);
+            if (ret)
             {
-                state.numPagesEmptied++;
-                //could call releaseEmptyPages(false) at this point since already in the crit section.
+                //Instead of moving this block to the head of the list, save away the next block to try to put a block into
+                //since we know what all blocks before this must be filled.
+                state.next = finger;
+
+                HeapletBase *srcBase = HeapletBase::findBase(ptr);
+                if (srcBase->isEmpty())
+                {
+                    state.numPagesEmptied++;
+                    //could call releaseEmptyPages(false) at this point since already in the crit section.
+                }
+                return ret;
             }
-            return ret;
+            dbgassertex((chunkedFinger->numChunks() == maxChunksPerPage()) || (chunkedFinger->numChunks() == 0));
+            finger = getNext(finger);
+
+            //Check if we have looped all the way around
+            if (finger == heaplets)
+                break;
         }
-        prev = finger;
-        dbgassertex((chunkedFinger->numChunks() == maxChunksPerPage()) || (chunkedFinger->numChunks() == 0));
-        finger = getNext(finger);
     }
     return ptr;
 }
@@ -4265,12 +4619,12 @@ extern void setMemoryStatsInterval(unsigned secs)
 extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
 {
     assertex(largeBlockSize == align_pow2(largeBlockSize, HEAP_ALIGNMENT_SIZE));
-    unsigned totalMemoryLimit = (unsigned) (max / HEAP_ALIGNMENT_SIZE);
-    unsigned largeBlockGranularity = (unsigned)(largeBlockSize / HEAP_ALIGNMENT_SIZE);
+    memsize_t totalMemoryLimit = (unsigned) (max / HEAP_ALIGNMENT_SIZE);
+    memsize_t largeBlockGranularity = (unsigned)(largeBlockSize / HEAP_ALIGNMENT_SIZE);
     if ((max != 0) && (totalMemoryLimit == 0))
         totalMemoryLimit = 1;
     if (memTraceLevel)
-        DBGLOG("RoxieMemMgr: Setting memory limit to %"I64F"d bytes (%u pages)", (unsigned __int64) max, totalMemoryLimit);
+        DBGLOG("RoxieMemMgr: Setting memory limit to %" I64F "d bytes (%" I64F "u pages)", (unsigned __int64) max, (unsigned __int64)totalMemoryLimit);
     initializeHeap(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
     initAllocSizeMappings(allocSizes ? allocSizes : defaultAllocSizes);
 }
@@ -4904,8 +5258,8 @@ protected:
 
     void testSizes()
     {
-        ASSERT(ChunkedHeaplet::dataOffset() == CACHE_LINE_SIZE);
-        ASSERT(HugeHeaplet::dataOffset() == CACHE_LINE_SIZE);
+        ASSERT(ChunkedHeaplet::dataOffset() % CACHE_LINE_SIZE == 0);
+        ASSERT(HugeHeaplet::dataOffset() % CACHE_LINE_SIZE == 0);
         ASSERT(FixedSizeHeaplet::chunkHeaderSize == 8);
         ASSERT(PackedFixedSizeHeaplet::chunkHeaderSize == 4);  // NOTE - this is NOT 8 byte aligned, so can't safely be used to allocate ptr arrays
 
@@ -5295,7 +5649,7 @@ protected:
     };
     void testHeapletCas()
     {
-        memsize_t maxMemory = numCasThreads * numCasIter * numCasAlloc * 32;
+        memsize_t maxMemory = (((memsize_t)numCasThreads * numCasIter) * numCasAlloc) * 32;
         //Because this is allocating from a single heaplet check if it can overflow the memory
         if (maxMemory > FixedSizeHeaplet::dataAreaSize())
             return;
@@ -5605,10 +5959,10 @@ protected:
 
         //NOTE: The efficiency of the packing does depend on the row order, so ideally this would test multiple orderings
         //of the array
-        unsigned rowsPerPage = (HEAP_ALIGNMENT_SIZE - sizeof(FixedSizeHeaplet)) / compactingAllocSize;
+        unsigned rowsPerPage = (HEAP_ALIGNMENT_SIZE - FixedSizeHeaplet::dataOffset()) / compactingAllocSize;
         unsigned numPagesBefore = rowManager->numPagesAfterCleanup(false);
         unsigned expectedPages = (numRowsLeft + rowsPerPage-1)/rowsPerPage;
-        ASSERT(numPagesFull == numPagesBefore);
+        CPPUNIT_ASSERT_EQUAL(numPagesFull, numPagesBefore);
         unsigned startTime = msTick();
         memsize_t compacted = rowManager->compactRows(numRows, rows);
         unsigned endTime = msTick();
@@ -5635,7 +5989,7 @@ protected:
         Owned<IFixedRowHeap> rowHeap1 = rowManager->createFixedRowHeap(compactingAllocSize-FixedSizeHeaplet::chunkHeaderSize, 0, 0);
         Owned<IFixedRowHeap> rowHeap2 = rowManager->createFixedRowHeap(compactingAllocSize-PackedFixedSizeHeaplet::chunkHeaderSize, 0, RHFpacked);
 
-        unsigned rowsPerPage = (HEAP_ALIGNMENT_SIZE - sizeof(FixedSizeHeaplet)) / compactingAllocSize;
+        unsigned rowsPerPage = (HEAP_ALIGNMENT_SIZE - FixedSizeHeaplet::dataOffset()) / compactingAllocSize;
         memsize_t maxRows = (useLargeMemory ? largeMemory : smallMemory) * rowsPerPage;
         testCompacting(rowManager, rowHeap1, maxRows, 50);
         testCompacting(rowManager, rowHeap1, maxRows, 800);
