@@ -223,6 +223,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         }
 
         //If system supports transparent huge pages, use madvise to mark the memory as request huge pages
+#ifdef MADV_HUGEPAGE
         if (useTransparentHugePages)
         {
             if (madvise(heapBase,memsize,MADV_HUGEPAGE) == 0)
@@ -252,6 +253,9 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
             else
                 DBGLOG("Transparent huge pages unsupported or disabled by system.");
         }
+#else
+        DBGLOG("Transparent huge pages are not supported on this kernel.  Requires kernel version > 2.6.38.");
+#endif
     }
 #endif
 
