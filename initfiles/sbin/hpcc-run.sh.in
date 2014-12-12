@@ -200,28 +200,10 @@ doStop() {
 }
 
 doStopall() {
-    echo "$action stop in the cluster ..."
-    init stop
-    scriptFile=/tmp/${action}_stop_$$
-    createScript $scriptFile $action "stop" $comp
-    if [ -n "${comp}" ]; then
-        OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsFile"
-        runScript $IPsFile
-        report "${action} stop"
-    else
-        OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsExcludeDIP"
-        runScript $IPsExcludeDIP
-        report "${action} stop" $DIP
-        doOneIP $DIP $action "stop" $comp
-    fi
-
-    echo "dafilesrv stop in the cluster ..."
-    init stop
-    scriptFile=/tmp/dafilesrv__stop_$$
-    createScript $scriptFile "dafilesrv" "stop" $comp
-    OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsFile"
-    runScript $IPsFile
-    report "dafilesrv stop"
+    action="hpcc-init"
+    doStop
+    action="dafilesrv"
+    doStop
 }
 
 
