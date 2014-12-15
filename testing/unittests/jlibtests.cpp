@@ -166,7 +166,8 @@ protected:
         bool setValue = !initial;
         bool clearValue = initial;
         const unsigned numBits = 400;
-        for (unsigned pass=0; pass < 10000; pass++)
+        const unsigned passes = 10000;
+        for (unsigned pass=0; pass < passes; pass++)
         {
             Owned<IBitSet> bs = createThreadSafeBitSet();
             testSet1(initial, bs, 0, numBits, setValue, clearValue);
@@ -174,7 +175,7 @@ protected:
         unsigned elapsed = msTick()-now;
         fprintf(stdout, "Bit test (%u) time taken = %dms\n", initial, elapsed);
         now = msTick();
-        for (unsigned pass=0; pass < 10000; pass++)
+        for (unsigned pass=0; pass < passes; pass++)
         {
             Owned<IBitSet> bs = createBitSet();
             testSet1(initial, bs, 0, numBits, setValue, clearValue);
@@ -185,7 +186,7 @@ protected:
         size32_t bitSetMemSz = getBitSetMemoryRequirement(numBits+5);
         MemoryBuffer mb;
         void *mem = mb.reserveTruncate(bitSetMemSz);
-        for (unsigned pass=0; pass < 10000; pass++)
+        for (unsigned pass=0; pass < passes; pass++)
         {
             Owned<IBitSet> bs = createBitSet(bitSetMemSz, mem);
             testSet1(initial, bs, 0, numBits, setValue, clearValue);

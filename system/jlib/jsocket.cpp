@@ -401,6 +401,7 @@ public:
     void        readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timedelaysecs);
     void        read(void* buf, size32_t size);
     size32_t    write(void const* buf, size32_t size);
+    size32_t    writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER);
     size32_t    write_multiple(unsigned num,void const**buf, size32_t *size);
     size32_t    udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size);
     void        close();
@@ -465,7 +466,7 @@ private:
             sock = INVALID_SOCKET;
             STATS.activesockets--;
     #ifdef SOCKTRACE
-            PROGLOG("SOCKTRACE: Closing socket %x %d (%x)", s, s, this);
+            PROGLOG("SOCKTRACE: Closing socket %x %d (%p)", s, s, this);
     #endif
     #ifdef _WIN32
             return ::closesocket(s);
@@ -834,7 +835,7 @@ int CSocket::pre_connect (bool block)
     } else
         atomic_set(&pre_conn_unreach_cnt, 0);
 #ifdef SOCKTRACE
-    PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%x) err=%d", block?"(block)":"", sock, sock, (int)this, err);
+    PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%p) err=%d", block?"(block)":"", sock, sock, this, err);
 #endif
     return err;
 }
@@ -870,7 +871,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
     STATS.activesockets++;
 
 #ifdef SOCKTRACE
-    PROGLOG("SOCKTRACE: opened socket %x %d (%x)", sock,sock,this);
+    PROGLOG("SOCKTRACE: opened socket %x %d (%p)", sock,sock,this);
 #endif
 
     if ((hostport==0)&&(sockmode==sm_udp)) {
@@ -962,7 +963,7 @@ ISocket* CSocket::accept(bool allowcancel)
         newsock = (sock!=INVALID_SOCKET)?::accept(sock, NULL, NULL):INVALID_SOCKET;
         in_accept = false;
     #ifdef SOCKTRACE
-        PROGLOG("SOCKTRACE: accept created socket %x %d (%x)", newsock,newsock,this);
+        PROGLOG("SOCKTRACE: accept created socket %x %d (%p)", newsock,newsock,this);
     #endif
 
         if (newsock!=INVALID_SOCKET) {
@@ -1128,7 +1129,7 @@ void CSocket::cancel_accept()
         THROWJSOCKEXCEPTION(JSOCKERR_connectionless_socket);
     }
 #ifdef SOCKTRACE
-    PROGLOG("SOCKTRACE: Cancel accept socket %x %d (%x)", sock, sock, this);
+    PROGLOG("SOCKTRACE: Cancel accept socket %x %d (%p)", sock, sock, this);
 #endif
     if (!in_accept) {
         accept_cancel_state = accept_cancelled;
@@ -1408,7 +1409,7 @@ void CSocket::udpconnect()
     socklen_t  ul = setSockAddr(u,targetip,hostport);
     sock = ::socket(u.sa.sa_family, SOCK_DGRAM, targetip.isIp4()?0:PF_INET6);
 #ifdef SOCKTRACE
-    PROGLOG("SOCKTRACE: udp connected socket %x %d (%x)", sock, sock, this);
+    PROGLOG("SOCKTRACE: udp connected socket %x %d (%p)", sock, sock, this);
 #endif
     STATS.activesockets++;
     if (sock == INVALID_SOCKET) {
@@ -1773,6 +1774,58 @@ EintrRetry:
     STATS.writesize += size_writ;
     STATS.writetime+=usTick()-startt;
     return res;
+}
+
+size32_t CSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
+{
+    if (size==0)
+        return 0;
+
+    if (state != ss_open)
+    {
+        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
+    }
+
+    if (timeoutms == WAIT_FOREVER)
+        return write(buf, size);
+
+    const char *p = (const char *)buf;
+    unsigned start, elapsed;
+    start = msTick();
+    elapsed = 0;
+    size32_t nwritten = 0;
+    size32_t nleft = size;
+    unsigned rollover = 0;
+
+    bool prevblock = set_nonblock(true);
+
+    while ( (nwritten < size) && (elapsed <= timeoutms) )
+    {
+        size32_t amnt = write(p,nleft);
+
+        if ( ((amnt == (size32_t)-1) || (amnt == 0)) && (++rollover >= 20) )
+        {
+            rollover = 0;
+            Sleep(20);
+        }
+        else
+        {
+            nwritten += amnt;
+            nleft -= amnt;
+            p += amnt;
+        }
+        elapsed = msTick() - start;
+    }
+
+    set_nonblock(prevblock);
+
+    if (nwritten < size)
+    {
+        ERRLOG("writetms timed out; timeout: %u, nwritten: %u, size: %u", timeoutms, nwritten, size);
+        THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
+    }
+
+    return nwritten;
 }
 
 bool CSocket::check_connection()
@@ -2196,7 +2249,7 @@ void CSocket::shutdown(unsigned mode)
     if (state == ss_open) {
         state = ss_shutdown;
 #ifdef SOCKTRACE
-        PROGLOG("SOCKTRACE: shutdown(%d) socket %x %d (%x)", mode, sock, sock, this);
+        PROGLOG("SOCKTRACE: shutdown(%d) socket %x %d (%p)", mode, sock, sock, this);
 #endif
         int rc = ::shutdown(sock, mode);
         if (rc != 0) {
@@ -2221,7 +2274,7 @@ void CSocket::errclose()
     if (state != ss_close) {
         state = ss_close;
 #ifdef SOCKTRACE
-        PROGLOG("SOCKTRACE: errclose socket %x %d (%x)", sock, sock, this);
+        PROGLOG("SOCKTRACE: errclose socket %x %d (%p)", sock, sock, this);
 #endif
         if (mcastreq)
             setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP,(char*)mcastreq,sizeof(*mcastreq));
@@ -2240,7 +2293,7 @@ void CSocket::close()
 #endif
     if (state != ss_close) {
 #ifdef SOCKTRACE
-        PROGLOG("SOCKTRACE: close socket %x %d (%x)", sock, sock, this);
+        PROGLOG("SOCKTRACE: close socket %x %d (%p)", sock, sock, this);
 #endif
         state = ss_close;
         if (mcastreq)
@@ -3729,7 +3782,7 @@ class CSocketSelectThread: public CSocketBaseThread
         if (dummysockopen) { 
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
 #ifdef SOCKTRACE
-            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%x)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
+            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%p)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
 #endif
             ::close(dummysock[0]);
             ::close(dummysock[1]);
@@ -4302,7 +4355,7 @@ class CSocketEpollThread: public CSocketBaseThread
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
             epoll_op(epfd, EPOLL_CTL_DEL, dummysock[0], 0);
 #ifdef SOCKTRACE
-            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%x)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
+            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%p)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
 #endif
             ::close(dummysock[0]);
             ::close(dummysock[1]);

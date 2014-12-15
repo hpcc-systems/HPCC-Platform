@@ -1445,14 +1445,12 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
                 fileName = "eclccserver.xml";
             else if (!stricmp(compType, eqEclScheduler))
                 fileName = "eclscheduler.xml";
-            else if (!stricmp(compType, eqAgentExec))
+            else if (!stricmp(compType, eqEclAgent))
                 fileName = "agentexec.xml";
             else if (!stricmp(compType, eqEsp))
                 fileName = "esp.xml";
             else if (!stricmp(compType, eqSashaServer))
                 fileName = "sashaconf.xml";
-            else if (!stricmp(compType, eqEclAgent))
-                fileName = osType==OS_WINDOWS ? "setvars.bat" : NULL;
             else 
             {
                 const unsigned int len = strlen(compType);

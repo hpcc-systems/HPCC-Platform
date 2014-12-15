@@ -18,6 +18,7 @@
 #include "roxiemem.hpp"
 #include "roxierowbuff.hpp"
 #include "jlog.hpp"
+#include "jset.hpp"
 #include <new>
 
 #ifndef _WIN32
@@ -223,6 +224,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         }
 
         //If system supports transparent huge pages, use madvise to mark the memory as request huge pages
+#ifdef MADV_HUGEPAGE
         if (useTransparentHugePages)
         {
             if (madvise(heapBase,memsize,MADV_HUGEPAGE) == 0)
@@ -252,6 +254,9 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
             else
                 DBGLOG("Transparent huge pages unsupported or disabled by system.");
         }
+#else
+        DBGLOG("Transparent huge pages are not supported on this kernel.  Requires kernel version > 2.6.38.");
+#endif
     }
 #endif
 
@@ -528,13 +533,10 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
             unsigned hbi = heapBitmap[i];
             if (hbi)
             {
-                char *ret = heapBase + i*UNSIGNED_BITS*HEAP_ALIGNMENT_SIZE;
-                unsigned mask = 1;
-                while (!(hbi & mask))
-                {
-                    ret += HEAP_ALIGNMENT_SIZE;
-                    mask <<= 1;
-                }
+                const unsigned pos = countTrailingUnsetBits(hbi);
+                const unsigned mask = 1U << pos;
+                const unsigned match = i*UNSIGNED_BITS + pos;
+                char *ret = heapBase + match*HEAP_ALIGNMENT_SIZE;
                 heapBitmap[i] = (hbi & ~mask);
                 heapLWM = i;
                 heapAllocated++;
@@ -650,32 +652,30 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
 
         if (wordOffset < heapLWM)
             heapLWM = wordOffset;
+
         loop
         {
             unsigned prev = heapBitmap[wordOffset];
-            if ((prev & mask) == 0)
-            {
-                unsigned next = prev | mask;
-                heapBitmap[wordOffset] = next;
-                if ((next == UNSIGNED_ALLBITS) && heapNotifyUnusedEachBlock)
-                {
-                    char * address = heapBase + wordOffset * heapBlockSize;
-                    if (!firstReleaseBlock)
-                        firstReleaseBlock = address;
-                    lastReleaseBlock = address;
-                }
-            }
-            else
+            if ((prev & mask) != 0)
                 HEAPERROR("RoxieMemMgr: Page freed twice");
+
+            unsigned next = prev | mask;
+            heapBitmap[wordOffset] = next;
+            if ((next == UNSIGNED_ALLBITS) && heapNotifyUnusedEachBlock)
+            {
+                char * address = heapBase + wordOffset * heapBlockSize;
+                if (!firstReleaseBlock)
+                    firstReleaseBlock = address;
+                lastReleaseBlock = address;
+            }
             if (!--pages)
                 break;
-            if (mask==TOPBITMASK)
+            mask <<= 1;
+            if (mask==0)
             {
                 mask = 1;
                 wordOffset++;
             }
-            else
-                mask <<= 1;
         }
     }
 
@@ -700,21 +700,19 @@ static void clearBits(unsigned start, unsigned len)
         unsigned heapword = heapBitmap[wordOffset];
         while (len--)
         {
-            if (heapword & mask)
-                heapword &= ~mask;
-            else
+            if ((heapword & mask) == 0)
                 HEAPERROR("RoxieMemMgr: Page freed twice");
-            if (mask==TOPBITMASK)
+            heapword &= ~mask;
+            mask <<= 1;
+            if (mask==0)
             {
                 heapBitmap[wordOffset] = heapword;
-                mask = 1;
                 wordOffset++;
                 if (wordOffset==heapBitmapSize)
                     return;    // Avoid read off end of array
                 heapword = heapBitmap[wordOffset];
+                mask = 1;
             }
-            else
-                mask <<= 1;
         }
         heapBitmap[wordOffset] = heapword;
     }
@@ -4882,21 +4880,21 @@ protected:
     }
 
 #ifdef __64BIT__
-    enum { numBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // Test larger range - in case we ever reduce the granularity
+    enum { maxBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // Test larger range - in case we ever reduce the granularity
 #else
     // Restrict heap sizes on 32-bit systems
-    enum { numBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // 4Gb
+    enum { maxBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // 4Gb
 #endif
     class BitmapAllocatorThread : public Thread
     {
     public:
-        BitmapAllocatorThread(Semaphore & _sem, unsigned _size) : Thread("AllocatorThread"), sem(_sem), size(_size)
+        BitmapAllocatorThread(Semaphore & _sem, unsigned _size, unsigned _numThreads) : Thread("AllocatorThread"), sem(_sem), size(_size), numThreads(_numThreads)
         {
         }
 
         int run()
         {
-            unsigned numBitmapIter = (maxBitmapSize * 32 / size) / numBitmapThreads;
+            unsigned numBitmapIter = (maxBitmapSize * 32 / size) / numThreads;
             sem.wait();
             memsize_t total = 0;
             for (unsigned i=0; i < numBitmapIter; i++)
@@ -4915,9 +4913,10 @@ protected:
     protected:
         Semaphore & sem;
         const unsigned size;
+        const unsigned numThreads;
         volatile memsize_t final;
     };
-    void testBitmapThreading(unsigned size)
+    void testBitmapThreading(unsigned size, unsigned numThreads)
     {
         HeapPreserver preserver;
 
@@ -4926,19 +4925,19 @@ protected:
         heapNotifyUnusedEachBlock = false;
 
         Semaphore sem;
-        BitmapAllocatorThread * threads[numBitmapThreads];
-        for (unsigned i1 = 0; i1 < numBitmapThreads; i1++)
-            threads[i1] = new BitmapAllocatorThread(sem, size);
-        for (unsigned i2 = 0; i2 < numBitmapThreads; i2++)
+        BitmapAllocatorThread * threads[maxBitmapThreads];
+        for (unsigned i1 = 0; i1 < numThreads; i1++)
+            threads[i1] = new BitmapAllocatorThread(sem, size, numThreads);
+        for (unsigned i2 = 0; i2 < numThreads; i2++)
             threads[i2]->start();
 
         unsigned startTime = msTick();
-        sem.signal(numBitmapThreads);
-        for (unsigned i3 = 0; i3 < numBitmapThreads; i3++)
+        sem.signal(numThreads);
+        for (unsigned i3 = 0; i3 < numThreads; i3++)
             threads[i3]->join();
         unsigned endTime = msTick();
 
-        for (unsigned i4 = 0; i4 < numBitmapThreads; i4++)
+        for (unsigned i4 = 0; i4 < numThreads; i4++)
             threads[i4]->Release();
         DBGLOG("Time taken for bitmap threading(%d) = %d", size, endTime-startTime);
 
@@ -4947,16 +4946,20 @@ protected:
         unsigned maxBlock;
         memstats(totalPages, freePages, maxBlock);
         ASSERT(totalPages == maxBitmapSize * 32);
-        unsigned numAllocated = ((maxBitmapSize * 32 / size) / numBitmapThreads) * numBitmapThreads * size;
+        unsigned numAllocated = ((maxBitmapSize * 32 / size) / numThreads) * numThreads * size;
         ASSERT(freePages == maxBitmapSize * 32 - numAllocated);
 
         delete[] heapBitmap;
     }
     void testBitmapThreading()
     {
-        testBitmapThreading(1);
-        testBitmapThreading(3);
-        testBitmapThreading(11);
+        //Don't run this with NOTIFY_UNUSED_PAGES_ON_FREE enabled - I'm not sure what the calls to map out random memory are likely to do!
+        testBitmapThreading(1, 1);
+        testBitmapThreading(3, 1);
+        testBitmapThreading(11, 1);
+        testBitmapThreading(1, maxBitmapThreads);
+        testBitmapThreading(3, maxBitmapThreads);
+        testBitmapThreading(11, maxBitmapThreads);
     }
 
     void testCompressSize()

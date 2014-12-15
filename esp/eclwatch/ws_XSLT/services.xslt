@@ -696,7 +696,7 @@
                               <xsl:value-of select="Netaddress"/>
                               <xsl:text>%26FileType%3dcfg%26Directory%3d</xsl:text>
                               <xsl:value-of select="$absolutePath"/>
-                              <xsl:text>%26CompType%3dAgentExecProcess</xsl:text>
+                              <xsl:text>%26CompType%3dEclAgentProcess</xsl:text>
                               <xsl:text>%26OsType%3d</xsl:text>
                               <xsl:value-of select="OS"/>
                             </xsl:attribute>
