@@ -2110,15 +2110,15 @@ public:
 
 CWorkUnitFactory::CWorkUnitFactory()
 {
-    deletedllworkq.setown(createWorkQueueThread());
 }
 
 CWorkUnitFactory::~CWorkUnitFactory()
 {
 }
 
-IWorkUnit* CWorkUnitFactory::secCreateNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
 {
+    checkWuScopeSecAccess(user, *secmgr, secuser, SecAccess_Write, "Create", true, true);
     Owned<CLocalWorkUnit> cw = _createWorkUnit(wuid, secmgr, secuser);
     if (user)
         cw->setWuScope(user);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
@@ -2128,17 +2128,7 @@ IWorkUnit* CWorkUnitFactory::secCreateNamedWorkUnit(const char *wuid, const char
     return ret;
 }
 
-IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *user)
-{
-    return secCreateNamedWorkUnit(wuid, app, user, NULL, NULL);
-}
-
-IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *user)
-{
-    return secCreateWorkUnit(app, user, NULL, NULL);
-}
-
-IWorkUnit* CWorkUnitFactory::secCreateWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
 {
     StringBuffer wuid("W");
     char result[32];
@@ -2149,14 +2139,14 @@ IWorkUnit* CWorkUnitFactory::secCreateWorkUnit(const char *app, const char *user
     wuid.append(result);
     if (workUnitTraceLevel > 1)
         PrintLog("createWorkUnit created %s", wuid.str());
-    IWorkUnit* ret = secCreateNamedWorkUnit(wuid.str(), app, user, secmgr, secuser);
+    IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user, secmgr, secuser);
     if (workUnitTraceLevel > 1)
         PrintLog("createWorkUnit created %s", ret->queryWuid());
     addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
     return ret;
 }
 
-bool CWorkUnitFactory::secDeleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser)
+bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser)
 {
     if (workUnitTraceLevel > 1)
         PrintLog("deleteWorkUnit %s", wuid);
@@ -2180,12 +2170,7 @@ bool CWorkUnitFactory::secDeleteWorkUnit(const char * wuid, ISecManager *secmgr,
     return true;
 }
 
-bool CWorkUnitFactory::deleteWorkUnit(const char * wuid)
-{
-    return secDeleteWorkUnit(wuid,NULL,NULL);
-}
-
-IConstWorkUnit* CWorkUnitFactory::secOpenWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser)
+IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser)
 {
     StringBuffer wuidStr(wuid);
     wuidStr.trim();
@@ -2217,12 +2202,7 @@ IConstWorkUnit* CWorkUnitFactory::secOpenWorkUnit(const char *wuid, bool lock, I
     }
 }
 
-IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, bool lock)
-{
-    return secOpenWorkUnit(wuid, lock, NULL, NULL);
-}
-
-IWorkUnit* CWorkUnitFactory::secUpdateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+IWorkUnit* CWorkUnitFactory::updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
 {
     if (workUnitTraceLevel > 1)
         PrintLog("updateWorkUnit %s", wuid);
@@ -2241,11 +2221,6 @@ IWorkUnit* CWorkUnitFactory::secUpdateWorkUnit(const char *wuid, ISecManager *se
     }
 }
 
-IWorkUnit* CWorkUnitFactory::updateWorkUnit(const char *wuid)
-{
-    return secUpdateWorkUnit(wuid, NULL, NULL);
-}
-
 int CWorkUnitFactory::setTracingLevel(int newLevel)
 {
     if (newLevel)
@@ -2255,7 +2230,7 @@ int CWorkUnitFactory::setTracingLevel(int newLevel)
     return level;
 }
 
-void CWorkUnitFactory::descheduleAllWorkUnits()
+void CWorkUnitFactory::descheduleAllWorkUnits(ISecManager *secmgr, ISecUser *secuser)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/Schedule", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if(!conn) return;
@@ -2270,42 +2245,13 @@ void CWorkUnitFactory::descheduleAllWorkUnits()
         {
             entries.addAtom(entry);
             ncnameUnescape(entry, wuid.clear());
-            Owned<IWorkUnit> wu = updateWorkUnit(wuid);
+            Owned<IWorkUnit> wu = updateWorkUnit(wuid, secmgr, secuser);
             if(wu && (wu->getState() == WUStateWait))
                 wu->setState(WUStateCompleted);
         }
     }
     bool more;
     do more = root->removeProp("*"); while(more);
-}
-
-IConstWorkUnitIterator * CWorkUnitFactory::getWorkUnitsByOwner(const char * owner)
-{
-    return secGetWorkUnitsByOwner(owner, NULL, NULL);
-}
-IConstWorkUnitIterator * CWorkUnitFactory::getWorkUnitsByState(WUState state)
-{
-    return secGetWorkUnitsByState(state, NULL, NULL);
-}
-IConstWorkUnitIterator * CWorkUnitFactory::getWorkUnitsByECL(const char * ECL)
-{
-    return secGetWorkUnitsByECL(ECL, NULL, NULL);
-}
-IConstWorkUnitIterator * CWorkUnitFactory::getWorkUnitsByCluster(const char * cluster)
-{
-    return secGetWorkUnitsByCluster(cluster, NULL, NULL);
-}
-
-IConstWorkUnitIterator* CWorkUnitFactory::getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
-                                            WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
-                                            const void *filterbuf,  // (appended) string values for filters
-                                            unsigned startoffset,
-                                            unsigned maxnum,
-                                            const char *queryowner,
-                                            __int64 *cachehint,
-                                            unsigned *total)
-{
-    return secGetWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, NULL, NULL, total);
 }
 
 IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuerySortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
@@ -2506,31 +2452,35 @@ void CWorkUnitFactory::clearAborting(const char *wuid)
     }
 }
 
-unsigned CWorkUnitFactory::secNumWorkUnitsFiltered(WUSortField *filters,
+unsigned CWorkUnitFactory::numWorkUnitsFiltered(WUSortField *filters,
                                     const void *filterbuf,
                                     ISecManager *secmgr,
                                     ISecUser *secuser)
 {
+    if (!filters && !secuser && !secmgr)
+        return numWorkUnits();
     unsigned total;
-    Owned<IConstWorkUnitIterator> iter =  secGetWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,secmgr,secuser,&total);
+    Owned<IConstWorkUnitIterator> iter =  getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,&total,secmgr,secuser);
     return total;
 }
 
-unsigned CWorkUnitFactory::numWorkUnitsFiltered(WUSortField *filters,const void *filterbuf)
+static CriticalSection deleteDllLock;
+static Owned<IWorkQueueThread> deleteDllWorkQ;
+
+static void asyncRemoveDll(const char * name)
 {
-    if (!filters)
-        return numWorkUnits();
-    return secNumWorkUnitsFiltered(filters, filterbuf, NULL, NULL);
+    CriticalBlock b(deleteDllLock);
+    if (!deleteDllWorkQ)
+        deleteDllWorkQ.setown(createWorkQueueThread());
+    deleteDllWorkQ->post(new asyncRemoveDllWorkItem(name));
 }
 
-void CWorkUnitFactory::asyncRemoveDll(const char * name)
+static void asyncRemoveFile(const char * ip, const char * name)
 {
-    deletedllworkq->post(new asyncRemoveDllWorkItem(name));
-}
-
-void CWorkUnitFactory::asyncRemoveFile(const char * ip, const char * name)
-{
-    deletedllworkq->post(new asyncRemoveRemoteFileWorkItem(ip, name));
+    CriticalBlock b(deleteDllLock);
+    if (!deleteDllWorkQ)
+        deleteDllWorkQ.setown(createWorkQueueThread());
+    deleteDllWorkQ->post(new asyncRemoveRemoteFileWorkItem(ip, name));
 }
 
 class CDaliWorkUnitFactory : public CWorkUnitFactory, implements IDaliClientShutdown
@@ -2582,8 +2532,9 @@ public:
             return NULL;
     }
 
-    virtual IWorkUnit* getGlobalWorkUnit()
+    virtual IWorkUnit* getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
     {
+        // MORE - should it check security?
         StringBuffer wuRoot;
         getXPath(wuRoot, GLOBAL_WORKUNIT);
         IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
@@ -2592,27 +2543,27 @@ public:
         return &cw->lockRemote(false);
     }
 
-    virtual IConstWorkUnitIterator* secGetWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
+    virtual IConstWorkUnitIterator* getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer path("*");
         if (owner && *owner)
             path.append("[@submitID=\"").append(owner).append("\"]");
         return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
     }
-    IConstWorkUnitIterator* secGetWorkUnitsByState(WUState state, ISecManager *secmgr, ISecUser *secuser)
+    IConstWorkUnitIterator* getWorkUnitsByState(WUState state, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer path("*");
         path.append("[@state=\"").append(getEnumText(state, states)).append("\"]");
         return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
     }
-    IConstWorkUnitIterator* secGetWorkUnitsByECL(const char* ecl, ISecManager *secmgr, ISecUser *secuser)
+    IConstWorkUnitIterator* getWorkUnitsByECL(const char* ecl, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer path("*");
         if (ecl && *ecl)
             path.append("[Query/Text=~\"*").append(ecl).append("*\"]");
         return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
     }
-    IConstWorkUnitIterator* secGetWorkUnitsByCluster(const char* cluster, ISecManager *secmgr, ISecUser *secuser)
+    IConstWorkUnitIterator* getWorkUnitsByCluster(const char* cluster, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer path("*");
         if (cluster && *cluster)
@@ -2620,13 +2571,7 @@ public:
         return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
     }
 
-    IConstWorkUnitIterator* getWorkUnitsByXPath(const char *xpath)
-    {
-        // NOTE - this is deprecated - we want to get rid of it (daliadmin MAY be allowed to use it, but nothing else should)
-        return _getWorkUnitsByXPath(xpath, NULL, NULL);
-    }
-
-    IConstWorkUnitIterator* secGetWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
+    IConstWorkUnitIterator* getWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
     {
         // NOTE - this is deprecated - we want to get rid of it (daliadmin MAY be allowed to use it, but nothing else should)
         return _getWorkUnitsByXPath(xpath, secmgr, secuser);
@@ -2643,16 +2588,16 @@ public:
         return root->numChildren();
     }
 
-    IConstWorkUnitIterator* secGetWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
+    IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
                                                 WUSortField *filters,   // NULL or list of fields to folteron (terminated by WUSFterm)
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,
                                                 unsigned maxnum,
                                                 const char *queryowner,
                                                 __int64 *cachehint,
+                                                unsigned *total,
                                                 ISecManager *secmgr,
-                                                ISecUser *secuser,
-                                                unsigned *total)
+                                                ISecUser *secuser)
     {
         class CWorkUnitsPager : public CSimpleInterface, implements IElementsPager
         {
@@ -2792,7 +2737,7 @@ protected:
     SessionId session;
 };
 
-static Owned<CDaliWorkUnitFactory> factory;
+static Owned<IWorkUnitFactory> factory;
 
 void CDaliWorkUnitFactory::clientShutdown()
 {
@@ -2804,6 +2749,12 @@ void clientShutdownWorkUnit()
     factory.clear();
 }
 
+extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory)
+{
+    // Used by plugins that override the default (dali) workunit factory
+    factory.setown(_factory);
+}
+
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
 {
     // MORE - This is not threadsafe - do we care?
@@ -2812,71 +2763,94 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
     return factory.getLink();
 }
 
+// A SecureWorkUnitFactory allows the security params to be supplied once to the factory rather than being supplied to each call.
+// They can still be supplied if you want...
+
 class CSecureWorkUnitFactory : public CInterface, implements IWorkUnitFactory
 {
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSecureWorkUnitFactory(CWorkUnitFactory *_baseFactory, ISecManager &_secMgr, ISecUser &_secUser)
-        : baseFactory(_baseFactory), secMgr(&_secMgr), secUser(&_secUser)
+    CSecureWorkUnitFactory(IWorkUnitFactory *_baseFactory, ISecManager *_secMgr, ISecUser *_secUser)
+        : baseFactory(_baseFactory), defaultSecMgr(_secMgr), defaultSecUser(_secUser)
     {
     }
-    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
+    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
-        checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        return baseFactory->secCreateNamedWorkUnit(wuid, app, user, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->createNamedWorkUnit(wuid, app, user, secMgr, secUser);
     }
-    virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
+    virtual IWorkUnit* createWorkUnit(const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
-        checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        return baseFactory->secCreateWorkUnit(app, user, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        checkWuScopeSecAccess(user, *secMgr, secUser, SecAccess_Write, "Create", true, true);
+        return baseFactory->createWorkUnit(app, user, secMgr, secUser);
     }
-    virtual bool deleteWorkUnit(const char * wuid)
+    virtual bool deleteWorkUnit(const char * wuid, ISecManager *secMgr, ISecUser *secUser)
     {
-        return baseFactory->secDeleteWorkUnit(wuid, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->deleteWorkUnit(wuid, secMgr, secUser);
     }
-    virtual IConstWorkUnit* openWorkUnit(const char *wuid, bool lock)
+    virtual IConstWorkUnit* openWorkUnit(const char *wuid, bool lock, ISecManager *secMgr, ISecUser *secUser)
     {
-        return baseFactory->secOpenWorkUnit(wuid, lock, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->openWorkUnit(wuid, lock, secMgr, secUser);
     }
-    virtual IWorkUnit* updateWorkUnit(const char *wuid)
+    virtual IWorkUnit* updateWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser)
     {
-        return baseFactory->secUpdateWorkUnit(wuid, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->updateWorkUnit(wuid, secMgr, secUser);
     }
-    virtual IWorkUnit * getGlobalWorkUnit()
+    virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secMgr, ISecUser *secUser)
     {
-        // MORE - any security needed?
-        return baseFactory->getGlobalWorkUnit();
-    }
-
-    //make cached workunits a non secure pass through for now.
-    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner)
-    {
-        return baseFactory->secGetWorkUnitsByOwner(owner, secMgr.get(), secUser.get());
-    }
-    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state)
-    {
-        return baseFactory->secGetWorkUnitsByState(state, secMgr.get(), secUser.get());
-    }
-    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char* ecl)
-    {
-        return baseFactory->secGetWorkUnitsByECL(ecl, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getGlobalWorkUnit(secMgr, secUser);
     }
 
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char* cluster)
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secMgr, ISecUser *secUser)
+    {
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByOwner(owner, secMgr, secUser);
+    }
+    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secMgr, ISecUser *secUser)
+    {
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByState(state, secMgr, secUser);
+    }
+    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char* ecl, ISecManager *secMgr, ISecUser *secUser)
+    {
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByECL(ecl, secMgr, secUser);
+    }
+
+    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char* cluster, ISecManager *secMgr, ISecUser *secUser)
     {   
-        return baseFactory->secGetWorkUnitsByCluster(cluster, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByCluster(cluster, secMgr, secUser);
     }
 
-    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath)
+    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secMgr, ISecUser *secUser)
     {
-        return baseFactory->secGetWorkUnitsByXPath(xpath, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByXPath(xpath, secMgr, secUser);
     }
 
-    virtual void descheduleAllWorkUnits()
+    virtual void descheduleAllWorkUnits(ISecManager *secMgr, ISecUser *secUser)
     {
-        // MORE - why no security?
-        baseFactory->descheduleAllWorkUnits();
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        baseFactory->descheduleAllWorkUnits(secMgr, secUser);
     }
 
     virtual int setTracingLevel(int newLevel)
@@ -2891,9 +2865,12 @@ public:
                                                         unsigned maxnum,
                                                         const char *queryowner, 
                                                         __int64 *cachehint,
-                                                        unsigned *total)
+                                                        unsigned *total,
+                                                        ISecManager *secMgr, ISecUser *secUser)
     {
-        return baseFactory->secGetWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, secMgr.get(), secUser.get(), total);
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, total, secMgr, secUser);
     }
 
     virtual IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder,
@@ -2906,7 +2883,7 @@ public:
                                                 const MapStringTo<bool> *subset)
     {
         // MORE - why no security?
-        return baseFactory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total, subset);
+        return baseFactory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total,subset);
     }
 
     virtual unsigned numWorkUnits()
@@ -2915,9 +2892,12 @@ public:
     }
 
     virtual unsigned numWorkUnitsFiltered(WUSortField *filters,
-                                        const void *filterbuf)
+                                        const void *filterbuf,
+                                        ISecManager *secMgr, ISecUser *secUser)
     {
-        return baseFactory->secNumWorkUnitsFiltered(filters, filterbuf, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->numWorkUnitsFiltered(filters, filterbuf, secMgr, secUser);
     }
 
     virtual bool isAborting(const char *wuid) const
@@ -2930,20 +2910,15 @@ public:
         baseFactory->clearAborting(wuid);
     }
 private:
-    Owned<CWorkUnitFactory> baseFactory;
-    Linked<ISecManager> secMgr;
-    Linked<ISecUser> secUser;
+    Owned<IWorkUnitFactory> baseFactory;
+    Linked<ISecManager> defaultSecMgr;
+    Linked<ISecUser> defaultSecUser;
 };
-
-extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser)
-{
-    return new CSecureWorkUnitFactory(static_cast<CWorkUnitFactory*> (getWorkUnitFactory()), secmgr, secuser);
-}
 
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser)
 {
     if (secmgr && secuser)
-        return getSecWorkUnitFactory(*secmgr, *secuser);
+        return new CSecureWorkUnitFactory(getWorkUnitFactory(), secmgr, secuser);
     else
         return getWorkUnitFactory();
 }
@@ -3109,13 +3084,13 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
                     {
                         Owned<IDllEntry> entry = queryDllServer().getEntry(name.str());
                         if (entry.get())
-                            factory->asyncRemoveDll(name.str());
+                            asyncRemoveDll(name.str());
                         else
                         {
                             SCMStringBuffer ip, localPath;
                             cur.getName(localPath);
                             cur.getIp(ip);
-                            factory->asyncRemoveFile(ip.str(), localPath.str());
+                            asyncRemoveFile(ip.str(), localPath.str());
                         }
                     }
                 }
@@ -5804,7 +5779,7 @@ IConstWUResult* CLocalWorkUnit::getGlobalByName(const char *qname) const
     if (strcmp(p->queryName(), GLOBAL_WORKUNIT)==0)
         return getVariableByName(qname);
 
-    Owned <IWorkUnit> global = factory->getGlobalWorkUnit();
+    Owned <IWorkUnit> global = factory->getGlobalWorkUnit(secMgr, secUser);
     return global->getVariableByName(qname);
 }
 
@@ -5814,7 +5789,7 @@ IWUResult* CLocalWorkUnit::updateGlobalByName(const char *qname)
     if (strcmp(p->queryName(), GLOBAL_WORKUNIT)==0)
         return updateVariableByName(qname);
 
-    Owned <IWorkUnit> global = factory->getGlobalWorkUnit();
+    Owned <IWorkUnit> global = factory->getGlobalWorkUnit(secMgr, secUser);
     return global->updateVariableByName(qname);
 }
 
@@ -9191,7 +9166,7 @@ extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr
 {
     if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Read, "Debug", false, true))
     {
-        Owned<IConstWorkUnit> wu = factory->secOpenWorkUnit(wuid, false, &secmgr, &secuser);
+        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false, &secmgr, &secuser);
         SCMStringBuffer ip;
         unsigned port;
         port = wu->getDebugAgentListenerPort();

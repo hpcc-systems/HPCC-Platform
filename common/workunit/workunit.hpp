@@ -1260,27 +1260,28 @@ typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 interface IWorkUnitFactory : extends IInterface
 {
-    virtual IWorkUnit * createWorkUnit(const char * app, const char * user) = 0;
-    virtual bool deleteWorkUnit(const char * wuid) = 0;
-    virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner) = 0;
-    virtual IWorkUnit * updateWorkUnit(const char * wuid) = 0;
+    virtual IWorkUnit *createWorkUnit(const char *app, const char *user, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual bool deleteWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnit * openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user) = 0;
-    virtual IWorkUnit * getGlobalWorkUnit() = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf, unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total) = 0;
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf,
+                                                        unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total,
+                                                        ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual unsigned numWorkUnits() = 0;
-    virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf) = 0;
-    virtual void descheduleAllWorkUnits() = 0;
+    virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual void descheduleAllWorkUnits(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) = 0;
     virtual bool isAborting(const char *wuid) const = 0;
     virtual void clearAborting(const char *wuid) = 0;
 };
-
 
 interface IWorkflowScheduleConnection : extends IInterface
 {
@@ -1360,8 +1361,8 @@ extern WORKUNIT_API StringBuffer &formatGraphTimerScope(StringBuffer &str, const
 extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphNum, unsigned &subId);
 extern WORKUNIT_API bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphId);
 extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column);
+extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
-extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
 extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
 extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack, bool includeProgress);

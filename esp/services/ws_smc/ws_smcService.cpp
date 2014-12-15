@@ -1547,14 +1547,14 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
     return true;
 }
 
-void CWsSMCEx::setJobPriority(IWorkUnitFactory* factory, const char* wuid, const char* queueName, WUPriorityClass& priority)
+void CWsSMCEx::setJobPriority(IEspContext &context, IWorkUnitFactory* factory, const char* wuid, const char* queueName, WUPriorityClass& priority)
 {
     if (!wuid || !*wuid)
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit ID not specified.");
     if (!queueName || !*queueName)
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "queue not specified.");
 
-    Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
+    Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid, context.querySecManager(), context.queryUser());
     if (!lw)
         throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cannot update Workunit %s", wuid);
 
@@ -1583,10 +1583,10 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
             priority = PriorityClassLow;
 
         {
-            Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             IArrayOf<IConstSMCJob>& jobs = req.getSMCJobs();
             if (!jobs.length())
-                setJobPriority(factory, req.getWuid(), req.getQueueName(), priority);
+                setJobPriority(context, factory, req.getWuid(), req.getQueueName(), priority);
             else
             {
                 ForEachItemIn(i, jobs)
@@ -1595,7 +1595,7 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
                     const char *wuid = item.getWuid();
                     const char *queueName = item.getQueueName();
                     if (wuid && *wuid && queueName && *queueName)
-                        setJobPriority(factory, wuid, queueName, priority);
+                        setJobPriority(context, factory, wuid, queueName, priority);
                 }
             }
         }
