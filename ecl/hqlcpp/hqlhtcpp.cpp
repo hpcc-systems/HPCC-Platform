@@ -1880,49 +1880,6 @@ void ActivityInstance::removeAttribute(const char * name)
     removeGraphAttribute(graphNode, name);
 }
 
-static void expandHintValue(StringBuffer & s, IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_constant:
-        expr->queryValue()->getStringValue(s);
-        break;
-    case no_comma:
-        expandHintValue(s, expr->queryChild(0));
-        expandHintValue(s.append(","), expr->queryChild(1));
-        break;
-    case no_range:
-        expandHintValue(s, expr->queryChild(0));
-        expandHintValue(s.append(".."), expr->queryChild(1));
-        break;
-    case no_rangefrom:
-        expandHintValue(s, expr->queryChild(0));
-        s.append("..");
-        break;
-    case no_rangeto:
-        expandHintValue(s.append(".."), expr->queryChild(0));
-        break;
-    case no_list:
-        {
-            s.append("[");
-            ForEachChild(i, expr)
-            {
-                if (i)
-                    s.append(",");
-                expandHintValue(s, expr->queryChild(i));
-            }
-            s.append("]");
-            break;
-        }
-    case no_attr:
-        s.append(expr->queryName());
-        break;
-    default:
-        s.append("?");
-        break;
-    }
-}
-
 void ActivityInstance::processAnnotation(IHqlExpression * annotation)
 {
     switch (annotation->getAnnotationKind())
@@ -1966,20 +1923,12 @@ void ActivityInstance::processAnnotations(IHqlExpression * expr)
 
 void ActivityInstance::processHint(IHqlExpression * attr)
 {
-    IAtom * name = attr->queryName();
+    StringBuffer name;
     StringBuffer value;
-    ForEachChild(i, attr)
-    {
-        if (i)
-            value.append(",");
-        expandHintValue(value, attr->queryChild(i));
-    }
-    if (value.length() == 0)
-        value.append("1");
-
+    getHintNameValue(attr, name, value);
     IPropertyTree * att = createPTree();
-    att->setProp("@name", name->str());
-    att->setProp("@value", value.str());
+    att->setProp("@name", name);
+    att->setProp("@value", value);
     graphNode->addPropTree("hint", att);
 }
 
@@ -5299,12 +5248,13 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
     {
         HqlExprArray xmlnsAttrs;
         gatherAttributes(xmlnsAttrs, xmlnsAtom, originalExpr);
+        Owned<IWUResult> result;
         if (retType == type_row)
         {
             OwnedHqlExpr record = LINK(::queryRecord(schemaType));
             if (originalExpr->hasAttribute(noXpathAtom))
                 record.setown(removeAttributeFromFields(record, xpathAtom));
-            Owned<IWUResult> result = createDatasetResultSchema(seq, name, record, xmlnsAttrs, false, false);
+            result.setown(createDatasetResultSchema(seq, name, record, xmlnsAttrs, false, false));
             if (result)
                 result->setResultTotalRowCount(1);
         }
@@ -5312,7 +5262,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         {
             // Bit of a mess - should split into two procedures
             int sequence = (int) seq->queryValue()->getIntValue();
-            Owned<IWUResult> result = createWorkunitResult(sequence, name);
+            result.setown(createWorkunitResult(sequence, name));
             if(result)
             {
                 StringBuffer fieldName;
@@ -5344,6 +5294,19 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
                     xmlbuilder.getXml(xml);
                 }
                 addSchemaResource(sequence, resultName.str(), xml.length()+1, xml.str());
+            }
+        }
+
+        IHqlExpression * format =  originalExpr->queryAttribute(storedFieldFormatAtom);
+        if (format)
+        {
+            ForEachChild(i, format)
+            {
+                StringBuffer name;
+                StringBuffer value;
+                OwnedHqlExpr folded = foldHqlExpression(format->queryChild(i));
+                getHintNameValue(folded, name, value);
+                result->setResultFieldOpt(name, value);
             }
         }
     }

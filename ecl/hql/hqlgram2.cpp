@@ -10466,6 +10466,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case FIRST: msg.append("FIRST"); break;
     case TOK_FIXED: msg.append("FIXED"); break;
     case FLAT: msg.append("FLAT"); break;
+    case FORMAT: msg.append("FORMAT"); break;
     case FORMAT_ATTR: msg.append("FORMAT"); break;
     case FORWARD: msg.append("FORWARD"); break;
     case FROM: msg.append("FROM"); break;
@@ -10731,6 +10732,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case HASH_STORED: msg.append("#STORED"); break;
     case HASH_LINK: msg.append("#LINK"); break;
     case HASH_WORKUNIT: msg.append("#WORKUNIT"); break;
+    case HASH_WEBSERVICE: msg.append("#WEBSERVICE"); break;
     case SIMPLE_TYPE: msg.append("type-name"); break;
 
     case EQ: msg.append("="); break;

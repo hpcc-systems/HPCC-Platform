@@ -565,6 +565,12 @@ xpathseq      ([^}\r\n])+
                             return SKIPPED; 
                         return(HASH_WORKUNIT); 
                     }
+#WEBSERVICE         {
+                        setupdatepos;
+                        if (lexer->skipNesting || lexer->macroGathering)
+                            return SKIPPED;
+                        return(HASH_WEBSERVICE);
+                    }
 __LINE__            {
                         setupdatepos; 
                         returnToken.setExpr(createIntegerConstant(lexer->yyLineNo, false));
@@ -699,6 +705,7 @@ FILTERED            { RETURNSYM(FILTERED); }
 FIRST               { RETURNSYM(FIRST); }
 FIXED               { RETURNSYM(TOK_FIXED); }
 FLAT                { RETURNSYM(FLAT); }
+FORMAT              { RETURNSYM(FORMAT); }
 FROM                { RETURNSYM(FROM); }
 FORMAT              { RETURNSYM(FORMAT_ATTR); }
 FORWARD             { RETURNSYM(FORWARD); }
