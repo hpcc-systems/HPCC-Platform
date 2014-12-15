@@ -23,6 +23,10 @@
 
 #ifndef _WIN32
 #include <sys/mman.h>
+# ifdef _USE_NUMA
+#  include <numa.h>
+#  include <numaif.h>
+# endif // _USE_NUMA
 #endif
 
 #ifdef _DEBUG
@@ -165,6 +169,28 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     }
 #else
     heapUseHugePages = false;
+
+#ifdef _USE_NUMA
+    bool has_numa = numa_available() >= 0;
+    if (has_numa)
+    {
+        struct bitmask *nodemask = numa_get_mems_allowed();
+        if (nodemask && *nodemask->maskp)
+        {
+            int serr = set_mempolicy(MPOL_INTERLEAVE, nodemask->maskp, nodemask->size);
+            if (serr)
+                DBGLOG("RoxieMemMgr: memory policy set failed");
+            else
+                DBGLOG("RoxieMemMgr: memory policy set to interleave (nodemask: 0x%lx)", *nodemask->maskp);
+        }
+        else
+            DBGLOG("RoxieMemMgr: numa memory nodemask empty, memory policy not set");
+    }
+    else
+        DBGLOG("RoxieMemMgr: numa memory features not available");
+#else // _USE_NUMA
+    DBGLOG("RoxieMemMgr: numa memory features not configured");
+#endif // _USE_NUMA
 
 #ifdef MAP_HUGETLB
     if (allowHugePages)
