@@ -515,7 +515,6 @@ ESPresponse [exceptions_inline] TpLogFileResponse
     [min_ver("1.05")] int NextPage(-1);
     [min_ver("1.06")] int TotalPages;
     [min_ver("1.20")] string AcceptLanguage;
-    [http_content("application/octet-stream")] binary thefile;
 };
 
 ESPrequest [nil_remove] SystemLogRequest
