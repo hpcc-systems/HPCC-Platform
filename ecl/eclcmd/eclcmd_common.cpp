@@ -380,6 +380,8 @@ public:
         cmdLine.set("eclcc -E");
         if (cmd.optLegacy)
             cmdLine.append(" -legacy");
+        if (cmd.optDebug)
+            cmdLine.append(" -g");
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
         appendOptPath(cmdLine, 'L', cmd.optLibPath.str());
         if (cmd.optAttributePath.length())
@@ -585,6 +587,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchFlag(optNoArchive, ECLOPT_ECL_ONLY))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optLegacy, ECLOPT_LEGACY) || iter.matchFlag(optLegacy, ECLOPT_LEGACY_DASH))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optDebug, ECLOPT_DEBUG) || iter.matchFlag(optDebug, ECLOPT_DEBUG_DASH))
         return EclCmdOptionMatch;
     if (iter.matchOption(optResultLimit, ECLOPT_RESULT_LIMIT))
         return EclCmdOptionMatch;
