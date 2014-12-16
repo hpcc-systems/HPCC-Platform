@@ -97,11 +97,13 @@ static void wuAccessError(const char *username, const char *action, const char *
     if (excpt)
         throw MakeStringException(WUERR_AccessError, "%s", err.str());
 }
-static bool checkWuScopeSecAccess(const char *wuscope, ISecManager &secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
+static bool checkWuScopeSecAccess(const char *wuscope, ISecManager *secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
 {
-    bool ret=(!secuser) ? true : (secmgr.authorizeEx(RT_WORKUNIT_SCOPE, *secuser, wuscope)>=required);
+    if (!secmgr || !secuser)
+        return true;
+    bool ret = secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, wuscope)>=required;
     if (!ret && (log || excpt))
-        wuAccessError(secuser ? secuser->getName() : NULL, action, wuscope, NULL, excpt, log);
+        wuAccessError(secuser->getName(), action, wuscope, NULL, excpt, log);
     return ret;
 }
 static bool checkWuScopeListSecAccess(const char *wuscope, ISecResourceList *scopes, int required, const char *action, bool excpt, bool log)
@@ -128,17 +130,19 @@ static bool checkWuScopeListSecAccess(const char *wuscope, ISecResourceList *sco
         wuAccessError(NULL, action, wuscope, NULL, excpt, log);
     return ret;
 }
-static bool checkWuSecAccess(IConstWorkUnit &cw, ISecManager &secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
+static bool checkWuSecAccess(IConstWorkUnit &cw, ISecManager *secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
 {
+    if (!secmgr || !secuser)
+        return true;
     SCMStringBuffer wuscope;
-    bool ret=(!secuser) ? true : (secmgr.authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw.getWuScope(wuscope).str())>=required);
+    bool ret=secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw.getWuScope(wuscope).str())>=required;
     if (!ret && (log || excpt))
     {
-        wuAccessError(secuser ? secuser->getName() : NULL, action, wuscope.str(), cw.queryWuid(), excpt, log);
+        wuAccessError(secuser->getName(), action, wuscope.str(), cw.queryWuid(), excpt, log);
     }
     return ret;
 }
-static bool checkWuSecAccess(const char *wuid, ISecManager &secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
+static bool checkWuSecAccess(const char *wuid, ISecManager *secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
 {
     StringBuffer wuRoot;
     Owned<IRemoteConnection> conn = querySDS().connect(getXPath(wuRoot, wuid).str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
@@ -2118,7 +2122,7 @@ CWorkUnitFactory::~CWorkUnitFactory()
 
 IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
 {
-    checkWuScopeSecAccess(user, *secmgr, secuser, SecAccess_Write, "Create", true, true);
+    checkWuScopeSecAccess(user, secmgr, secuser, SecAccess_Write, "Create", true, true);
     Owned<CLocalWorkUnit> cw = _createWorkUnit(wuid, secmgr, secuser);
     if (user)
         cw->setWuScope(user);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
@@ -2153,7 +2157,7 @@ bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, IS
     StringBuffer wuRoot;
     getXPath(wuRoot, wuid);
     Owned<CLocalWorkUnit> cw = _updateWorkUnit(wuid, secmgr, secuser);
-    if (secmgr && !checkWuSecAccess(*cw.get(), *secmgr, secuser, SecAccess_Full, "delete", true, true))
+    if (!checkWuSecAccess(*cw.get(), secmgr, secuser, SecAccess_Full, "delete", true, true))
         return false;
     try
     {
@@ -2190,7 +2194,7 @@ IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, bool lock, ISec
     Owned<IConstWorkUnit> wu = _openWorkUnit(wuid, lock, secmgr, secuser);
     if (wu)
     {
-        if (secmgr && !checkWuSecAccess(*wu, *secmgr, secuser, SecAccess_Read, "opening", true, true))
+        if (!checkWuSecAccess(*wu, secmgr, secuser, SecAccess_Read, "opening", true, true))
             return NULL; // Actually throws exception on failure, so won't reach here
         return wu.getClear();
     }
@@ -2209,7 +2213,7 @@ IWorkUnit* CWorkUnitFactory::updateWorkUnit(const char *wuid, ISecManager *secmg
     Owned<CLocalWorkUnit> wu = _updateWorkUnit(wuid, secmgr, secuser);
     if (wu)
     {
-        if (secmgr && !checkWuSecAccess(*wu.get(), *secmgr, secuser, SecAccess_Write, "updating", true, true))
+        if (!checkWuSecAccess(*wu.get(), secmgr, secuser, SecAccess_Write, "updating", true, true))
             return NULL;
         return &wu->lockRemote(false);
     }
@@ -2654,7 +2658,7 @@ public:
                     if (b)
                         return *b;
                 }
-                bool ret = checkWuScopeSecAccess(scopename,*secmgr,secuser,SecAccess_Read,"iterating",false,false);
+                bool ret = checkWuScopeSecAccess(scopename,secmgr,secuser,SecAccess_Read,"iterating",false,false);
                 {
                     // conceivably could have already been checked and added, but ok.
                     CriticalBlock block(crit);
@@ -2785,7 +2789,6 @@ public:
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
-        checkWuScopeSecAccess(user, *secMgr, secUser, SecAccess_Write, "Create", true, true);
         return baseFactory->createWorkUnit(app, user, secMgr, secUser);
     }
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secMgr, ISecUser *secUser)
@@ -3504,7 +3507,7 @@ void CLocalWorkUnit::unlockRemote()
 IWorkUnit &CLocalWorkUnit::lockRemote(bool commit)
 {
     if (secMgr)
-        checkWuSecAccess(*this, *secMgr.get(), secUser.get(), SecAccess_Write, "write lock", true, true);
+        checkWuSecAccess(*this, secMgr.get(), secUser.get(), SecAccess_Write, "write lock", true, true);
     locked.lock();
     CriticalBlock block(crit);
     if (commit)
@@ -3695,7 +3698,7 @@ void CLocalWorkUnit::setWuScope(const char * value)
 { 
     if (value && *value)
     {
-        if (checkWuScopeSecAccess(value, *secMgr.get(), secUser.get(), SecAccess_Write, "Change Scope", true, true))
+        if (checkWuScopeSecAccess(value, secMgr.get(), secUser.get(), SecAccess_Write, "Change Scope", true, true))
         {
             CriticalBlock block(crit);
             p->setProp("@scope", value);
@@ -8507,13 +8510,13 @@ extern WORKUNIT_API void abortWorkUnit(const char *wuid)
 }
 extern WORKUNIT_API void secSubmitWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser)
 {
-    if (checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Write, "Submit", true, true))
+    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
         submitWorkUnit(wuid, secuser.getName(), secuser.credentials().getPassword());
 }
 
 extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser)
 {
-    if (checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Write, "Submit", true, true))
+    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
         abortWorkUnit(wuid);
 }
 
@@ -9136,7 +9139,7 @@ extern WUState waitForWorkUnitToComplete(const char * wuid, int timeout, bool re
 
 extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout, bool returnOnWaitState)
 {
-    if (checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Read, "Wait for Complete", false, true))
+    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Wait for Complete", false, true))
         return waitForWorkUnitToComplete(wuid, timeout, returnOnWaitState);
     return WUStateUnknown;
 }
@@ -9157,14 +9160,14 @@ extern bool waitForWorkUnitToCompile(const char * wuid, int timeout)
 
 extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout)
 {
-    if (checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Read, "Wait for Compile", false, true))
+    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Wait for Compile", false, true))
         return waitForWorkUnitToCompile(wuid, timeout);
     return false;
 }
 
 extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr, ISecUser &secuser, const char *command, StringBuffer &response)
 {
-    if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Read, "Debug", false, true))
+    if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Debug", false, true))
     {
         Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false, &secmgr, &secuser);
         SCMStringBuffer ip;
