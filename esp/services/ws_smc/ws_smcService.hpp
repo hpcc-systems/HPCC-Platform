@@ -182,7 +182,7 @@ private:
     void setServerJobQueueStatus(double version, IEspServerJobQueue* jobQueue, const char* status, const char* details);
     void setServerJobQueueStatus(IEspServerJobQueue* jobQueue, const char* status, const char* details);
     void setServerJobQueueStatusDetails(IEspServerJobQueue* jobQueue, const char* status, const char* details);
-    void setJobPriority(IWorkUnitFactory* factory, const char* wuid, const char* queue, WUPriorityClass& priority);
+    void setJobPriority(IEspContext &context, IWorkUnitFactory* factory, const char* wuid, const char* queue, WUPriorityClass& priority);
 
     void readTargetClusterInfo(IEspContext &context, CConstWUClusterInfoArray& clusters, IPropertyTree* serverStatusRoot,
         ActivityInfo* activityInfo);

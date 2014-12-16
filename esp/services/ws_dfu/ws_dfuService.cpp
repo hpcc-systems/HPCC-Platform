@@ -1528,10 +1528,10 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
         {
             try
             {
-                Owned<IWorkUnitFactory> factory = (context.querySecManager() ? getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser()) : getWorkUnitFactory());
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 if (factory)
                 {
-                    IConstWorkUnit* wu = factory->openWorkUnit(wuid, false);
+                    IConstWorkUnit* wu = factory->openWorkUnit(wuid, false, context.querySecManager(), context.queryUser());
                     if (wu)
                         eclCluster.set(wu->queryClusterName());
                 }
