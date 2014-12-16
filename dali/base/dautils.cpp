@@ -138,8 +138,6 @@ public:
             return;
         StringArray lfnExpanded;
         StringBuffer tmp;
-        const char * s = prefix.str();
-        const char *start = strchr(s,'{');
         for (unsigned idx=0; idx < dlfns.size(); idx++)
         {
             const char *suffix = dlfns.at(idx).get();
@@ -152,7 +150,6 @@ public:
                     tmp.append(suffix);
                 tmp.clip().toLowerCase();
                 Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),_udesc,false,true,NULL);
-                prefix.setLength(start-s);
                 ForEach(*iter)
                 {
                     IPropertyTree &attr = iter->query();
