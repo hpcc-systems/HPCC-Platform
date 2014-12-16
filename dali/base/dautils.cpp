@@ -323,7 +323,6 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
             StringBuffer err;
             e->errorMessage(err);
             ERRLOG("CDfsLogicalFileName::expand %s",err.str());
-            e->Release();
             throw;
         }
     }
