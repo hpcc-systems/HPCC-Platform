@@ -404,7 +404,7 @@ start_dafilesrv() {
       return $?
    else
       printf "Starting %-21s" "$compName.... "
-      log_success_msg
+      log_success_msg "Already started"
       return 0
    fi
 }
@@ -434,7 +434,7 @@ startCmd() {
               log_success_msg "Lock or Pid file already exists"
           else
               #Since component is already started but current script is failed till returning 0
-              log_success_msg
+              log_success_msg "Already started"
           fi
           return ${RCSTART}
        fi
@@ -527,7 +527,7 @@ stop_component() {
        if [ ${DEBUG} != "NO_DEBUG" ]; then
           log_success_msg "Process already stopped :: check_status code is ${RCSTOP}"
        else
-          log_success_msg
+          log_success_msg "Already stopped"
        fi
        removePid ${PIDPATH}
        unlock ${LOCKPATH}
