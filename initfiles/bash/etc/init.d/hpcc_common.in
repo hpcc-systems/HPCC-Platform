@@ -428,7 +428,7 @@ startCmd() {
     logFile=$log/${compName}/${compName}_init.log
 
     if [ ${noStatusCheck} -ne 1 ]; then
-       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1 
        RCSTART=$?
        if [ ${RCSTART} -ne 0 ];then
           if [ ${DEBUG} != "NO_DEBUG" ]; then
@@ -1044,7 +1044,7 @@ cleanup_component() {
     # take care of thor slaves on remote nodes
     if [ "${compType}" = "thor" -a -e "${instancedir}/uslaves.start" ]; then
       nslaves=$( cat $instancedir/uslaves.start | wc -l )
-      $bin_path/frunssh $instancedir/uslaves.start "/bin/sh -c '$bin_path/stop_slaves ${compName} ${PID_DIR}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves &> /dev/null
+      $bin_path/frunssh $instancedir/uslaves.start "/bin/sh -c '$bin_path/stop_slaves ${compName} ${INSTALL_DIR}/sbin/hpcc_setenv'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves &> /dev/null
     fi
   fi
 }
