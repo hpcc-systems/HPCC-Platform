@@ -55,13 +55,13 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
         CRC32 inputCRC;
         bool readFinished;
         offset_t localOffset;
+        size32_t maxRowSize;
 
         unsigned splitLine()
         {
             if (inputStream->eos())
                 return 0;
             size32_t minRequired = 4096; // MORE - make configurable
-            size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
             size32_t thisLineLength;
             loop
             {
@@ -86,6 +86,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             //Initialise information...
             ICsvParameters * csvInfo = activity.helper->queryCsvParameters();
             csvSplitter.init(activity.helper->getMaxColumns(), csvInfo, activity.csvQuote, activity.csvSeparate, activity.csvTerminate, activity.csvEscape);
+            maxRowSize = activity.getOptInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
         }
         virtual void setPart(IPartDescriptor *partDesc, unsigned partNoSerialized)
         {
