@@ -21416,10 +21416,10 @@ public:
         {
             case TAKcsvread:
             {
-                maxCsvRowSize = defaultDaliResultLimit * 1024 * 1024;
+                maxCsvRowSize = defaultMaxCsvRowSize * 1024 * 1024;
                 IConstWorkUnit *workunit = _queryFactory.queryWorkUnit();
                 if (workunit)
-                    maxCsvRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultDaliResultLimit) * 1024 * 1024;
+                    maxCsvRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
                 break;
             }
             default:

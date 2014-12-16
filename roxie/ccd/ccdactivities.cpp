@@ -1187,7 +1187,7 @@ public:
     CRoxieCsvReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
-        maxRowSize = defaultDaliResultLimit * 1024 * 1024;
+        maxRowSize = defaultMaxCsvRowSize * 1024 * 1024;
         IConstWorkUnit *workunit = _queryFactory.queryWorkUnit();
         if (workunit)
             maxRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
@@ -4558,7 +4558,7 @@ public:
         maxColumns = helper->getMaxColumns();
         ICsvParameters *csvInfo = helper->queryCsvParameters();
         assertex(!csvInfo->queryEBCDIC());
-        maxRowSize = defaultDaliResultLimit * 1024 * 1024;
+        maxRowSize = defaultMaxCsvRowSize * 1024 * 1024;
         IConstWorkUnit *workunit = _queryFactory.queryWorkUnit();
         if (workunit)
             maxRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
