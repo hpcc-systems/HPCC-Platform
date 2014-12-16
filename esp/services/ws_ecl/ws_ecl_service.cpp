@@ -1119,14 +1119,12 @@ void appendEclInputXsds(StringBuffer &content, IPropertyTree *xsd, BoolHash &add
     }
 }
 
-void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest, IPropertyTree *xsdtree)
+void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wuinfo, IPropertyTree *parmTree, StringBuffer &schema, bool isRequest, IPropertyTree *xsdtree)
 {
-    Owned<IPropertyTree> tree = createPTreeFromXMLString(parmXml);
-
-    schema.appendf("<xsd:element name=\"%s%s\">", wsinfo.queryname.str(), isRequest ? "Request" : "Response");
+    schema.appendf("<xsd:element name=\"%s%s\">", wuinfo.queryname.str(), isRequest ? "Request" : "Response");
     schema.append("<xsd:complexType>");
     schema.append("<xsd:all>");
-    Owned<IPropertyTreeIterator> parts = tree->getElements("part");
+    Owned<IPropertyTreeIterator> parts = parmTree->getElements("part");
     if (parts)
     {
         ForEach(*parts)
@@ -1151,13 +1149,16 @@ void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wsinfo, const char *parmXml, S
             }
 
             schema.appendf("<xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"%s\" type=\"%s\"", name, type.str());
-            if (strieq(type.str(), "tns:XmlDataSet"))
+            if (part.hasProp("@width") || part.hasProp("@height"))
             {
-                schema.append(">"
-                        "<xsd:annotation><xsd:appinfo>"
-                            "<form formRows=\"25\" formCols=\"60\"/>"
-                        "</xsd:appinfo></xsd:annotation>"
-                    "</xsd:element>");
+                schema.append("><xsd:annotation><xsd:appinfo><form");
+                unsigned rows = part.getPropInt("@height");
+                if (rows)
+                    schema.appendf(" formRows='%u'", rows);
+                unsigned cols = part.getPropInt("@width");
+                if (cols)
+                    schema.appendf(" formCols='%u'", cols);
+                schema.appendf("/></xsd:appinfo></xsd:annotation></xsd:element>");
             }
             else
                 schema.append("/>");
@@ -1213,20 +1214,21 @@ int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request,
 
         if (wsinfo.queryname.length()>0)
         {
-            StringBuffer parmXml;
-            if (wsinfo.getWsResource("SOAP", parmXml))
+
+            IPropertyTree *parmTree = wsinfo.queryParamInfo();
+            if (xsdtree)
             {
-                if (xsdtree)
+                BoolHash added;
+                Owned<IPropertyTreeIterator> input_xsds =xsdtree->getElements("Input");
+                ForEach (*input_xsds)
                 {
-                    BoolHash added;
-                    Owned<IPropertyTreeIterator> input_xsds =xsdtree->getElements("Input");
-                    ForEach (*input_xsds)
-                    {
-                        appendEclInputXsds(content, &input_xsds->query(), added);
-                    }
+                    IPropertyTree &input = input_xsds->query();
+                    VStringBuffer xpath("part[@name='%s']", input.queryProp("@name"));
+                    if (parmTree->hasProp(xpath))
+                        appendEclInputXsds(content, &input, added);
                 }
-                SOAPSectionToXsd(wsinfo, parmXml.str(), content, true, xsdtree);
             }
+            SOAPSectionToXsd(wsinfo, parmTree, content, true, xsdtree);
 
             content.appendf("<xsd:element name=\"%sResponse\">", wsinfo.queryname.str());
             content.append("<xsd:complexType>");
@@ -1323,9 +1325,9 @@ bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpReque
     return true;
 }
 
-int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool box)
+int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wuinfo, bool box)
 {
-    IConstWorkUnit *wu = wsinfo.ensureWorkUnit();
+    IConstWorkUnit *wu = wuinfo.ensureWorkUnit();
     IProperties *parms = request->queryParameters();
 
     StringBuffer page;
@@ -1333,24 +1335,43 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
 
     StringBuffer v;
     StringBuffer formxml("<FormInfo>");
-    appendXMLTag(formxml, "WUID", wsinfo.queryWuid());
-    appendXMLTag(formxml, "QuerySet", wsinfo.qsetname.str());
-    appendXMLTag(formxml, "QueryName", wsinfo.queryname.str());
+    appendXMLTag(formxml, "WUID", wuinfo.queryWuid());
+    appendXMLTag(formxml, "QuerySet", wuinfo.qsetname.str());
+    appendXMLTag(formxml, "QueryName", wuinfo.queryname.str());
     appendXMLTag(formxml, "ClientVersion", v.appendf("%g",context.getClientVersion()).str());
-    appendXMLTag(formxml, "RequestElement", v.clear().append(wsinfo.queryname).append("Request").str());
+    appendXMLTag(formxml, "RequestElement", v.clear().append(wuinfo.queryname).append("Request").str());
 
-    Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
+    StringBuffer help;
+    StringBuffer info;
+
+    Owned<IConstWUWebServicesInfo> ws = wu->getWebServicesInfo();
+    if (ws)
+    {
+        StringBufferAdaptor helpSv(help);
+        StringBufferAdaptor infoSv(info);
+
+        ws->getText("help", helpSv);
+        ws->getText("description", infoSv);
+    }
+
+    Owned<IWuWebView> web = createWuWebView(*wu, wuinfo.qsetname.get(), wuinfo.queryname.get(), getCFD(), true);
     if (web)
     {
-        appendXMLTag(formxml, "Help", web->aggregateResources("HELP", v.clear()).str());
-        appendXMLTag(formxml, "Info", web->aggregateResources("INFO", v.clear()).str());
+        if (!help.length())
+            web->aggregateResources("HELP", help);
+        if (!info.length())
+            web->aggregateResources("INFO", info);;
     }
+    if (help.length())
+        appendXMLTag(formxml, "Help", help.str());
+    if (info.length())
+        appendXMLTag(formxml, "Info", info.str());
 
     context.addOptions(ESPCTX_ALL_ANNOTATION);
     if (box)
     {
         StringBuffer xmlreq;
-        getWsEcl2XmlRequest(xmlreq, context, request, wsinfo, "xml", NULL, 0, true);
+        getWsEcl2XmlRequest(xmlreq, context, request, wuinfo, "xml", NULL, 0, true);
         if (xmlreq.length())
         {
             Owned<IPropertyTree> pretty = createPTreeFromXMLString(xmlreq.str(), ipt_ordered);
@@ -1364,7 +1385,7 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
         }
     }
     else
-        getSchema(formxml, context, request, wsinfo);
+        getSchema(formxml, context, request, wuinfo);
 
     formxml.append("<CustomViews>");
     if (web)

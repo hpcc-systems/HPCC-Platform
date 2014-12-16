@@ -312,6 +312,7 @@ interface IConstWUResult : extends IInterface
     virtual void getResultDecimal(void * val, unsigned length, unsigned precision, bool isSigned) const = 0;
     virtual bool getResultIsAll() const = 0;
     virtual const IProperties *queryResultXmlns() = 0;
+    virtual IStringVal &getResultFieldOpt(const char *name, IStringVal &str) const = 0;
 };
 
 
@@ -348,6 +349,7 @@ interface IWUResult : extends IConstWUResult
     virtual void setResultXML(const char * xml) = 0;
     virtual void setResultRow(unsigned len, const void * data) = 0;
     virtual void setResultXmlns(const char *prefix, const char *uri) = 0;
+    virtual void setResultFieldOpt(const char *name, const char *value)=0;
 };
 
 
@@ -426,6 +428,7 @@ interface IConstWUWebServicesInfo : extends IInterface
     virtual IStringVal & getDefaultName(IStringVal & str) const = 0;
     virtual IStringVal & getInfo(const char * name, IStringVal & str) const = 0;
     virtual unsigned getWebServicesCRC() const = 0;
+    virtual IStringVal & getText(const char * name, IStringVal & str) const = 0;
 };
 
 
@@ -436,6 +439,7 @@ interface IWUWebServicesInfo : extends IConstWUWebServicesInfo
     virtual void setDefaultName(const char * pstr) = 0;
     virtual void setInfo(const char * name, const char * info) = 0;
     virtual void setWebServicesCRC(unsigned crc) = 0;
+    virtual void setText(const char * name, const char * text) = 0;
 };
 
 

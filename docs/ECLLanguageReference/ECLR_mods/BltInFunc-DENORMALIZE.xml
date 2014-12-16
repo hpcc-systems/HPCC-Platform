@@ -162,7 +162,7 @@ NamesTable := DATASET([ {0,'Kevin'},{0,'Liz'},{0,'Mr Nobody'},
 NormAddrs := DATASET([{'Kevin','10 Malt Lane'},
                       {'Liz','10 Malt Lane'},
                       {'Liz','3 The cottages'},
-                      {'Anywhee','Here'},
+                      {'Anywhere','Here'},
                       {'Anywhere','There'},
                       {'Anywhere','Near'},
                       {'Anywhere','Far'}],NormRec);

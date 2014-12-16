@@ -146,6 +146,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_MANIFEST_DASH "-manifest"
 #define ECLOPT_LEGACY "--legacy"
 #define ECLOPT_LEGACY_DASH "-legacy"
+#define ECLOPT_DEBUG "--debug"
+#define ECLOPT_DEBUG_DASH "-g"
 
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
@@ -243,7 +245,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1)
+    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1), optDebug(false)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -264,6 +266,7 @@ public:
             "   -Lpath                 Add path to locations to search for system libraries\n"
             "   --manifest             Specify path to manifest file\n"
             "   --legacy               Use legacy import semantics (deprecated)\n"
+            "   --debug, -g            Enable debug symbols in generated code\n"
         );
     }
 public:
@@ -279,6 +282,7 @@ public:
     unsigned optResultLimit;
     bool optNoArchive;
     bool optLegacy;
+    bool optDebug;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon

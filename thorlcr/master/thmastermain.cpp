@@ -124,7 +124,7 @@ class CRegistryServer : public CSimpleInterface
                 }
                 RegistryCode code;
                 msg.read((int &)code);
-                if (!rc_deregister == code)
+                if (rc_deregister != code)
                     throwUnexpected();
                 registry.deregisterNode(sender);
             }

@@ -26,8 +26,15 @@
 #include "thorhelper.hpp"
 #include "thorxmlwrite.hpp"
 
-#define DALI_RESULT_OUTPUTMAX 2000 // MB
-#define DALI_RESULT_LIMIT_DEFAULT 10 // MB
+static unsigned const defaultDaliResultOutputMax = 2000; // MB
+static unsigned const defaultDaliResultLimit = 10; // MB
+static unsigned const defaultMaxCsvRowSize = 10; // MB
+
+
+#define OPT_OUTPUTLIMIT_LEGACY    "outputLimit"             // OUTPUT Mb limit (legacy property name, renamed to outputLimitMb in 5.2)
+#define OPT_OUTPUTLIMIT           "outputLimitMb"           // OUTPUT Mb limit                                                               (default = 10 [MB])
+#define OPT_MAXCSVROWSIZE         "maxCsvRowSizeMb"         // Upper limit on csv read line size                                             (default = 10 [MB])
+
 
 class THORHELPER_API CSizingSerializer : implements IRowSerializerTarget
 {

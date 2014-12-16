@@ -2368,6 +2368,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     s.append("#STORED");
                 else if (kind == workunitAtom)
                     s.append("#WORKUNIT");
+                else if (kind == webserviceAtom)
+                    s.append("#WEBSERVICE");
                 else
                     s.append("#META:").append(kind);
 

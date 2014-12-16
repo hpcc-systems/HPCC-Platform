@@ -111,6 +111,7 @@ extern HQL_API bool isValidXmlRecord(IHqlExpression * expr);
 extern HQL_API bool matchesConstantValue(IHqlExpression * expr, __int64 test);
 extern HQL_API bool matchesBoolean(IHqlExpression * expr, bool test);
 extern HQL_API bool matchesConstantString(IHqlExpression * expr, const char * text, bool ignoreCase);
+extern HQL_API void getHintNameValue(IHqlExpression * attr, StringBuffer &name, StringBuffer &value);
 extern HQL_API bool getBoolValue(IHqlExpression * expr, bool dft);
 extern HQL_API __int64 getIntValue(IHqlExpression * expr, __int64 dft = 0);
 extern HQL_API StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft = NULL);
