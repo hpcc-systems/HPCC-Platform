@@ -73,15 +73,15 @@ if [ "$localthor" = "true" ]; then
   slavepid=`cat ${SLAVE_PID_NAME} 2> /dev/null`
   kill -9 $slavepid 2> /dev/null
 else
-  if [ -r $instancedir/slaves ]; then
+  if [ -r $instancedir/slaves.start ]; then
     if [ ! -z ${THORPRIMARY} ]; then
         groupName=${THORPRIMARY}
     else
         groupName=${THORNAME}
     fi
-    sort $instancedir/slaves | uniq > $instancedir/uslaves
-    nslaves=`cat $instancedir/uslaves.start | wc -l`
-    $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${THORNAME} ${PATH_PRE}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
+    sort $instancedir/slaves | uniq > $instancedir/uslaves.stop
+    nslaves=`cat $instancedir/uslaves.stop | wc -l`
+    $deploydir/frunssh $instancedir/uslaves.stop "/bin/sh -c '$deploydir/stop_slaves ${THORNAME} ${PATH_PRE}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
     echo slaves stopped
     daliadmin $DALISERVER dfsgroup ${groupName} > $instancedir/slaves
     errcode=$?
