@@ -96,7 +96,6 @@ class CMultiDLFN
 {
     std::vector<CDfsLogicalFileName> dlfns;
     bool expanded;
-    StringBuffer prefix;
 public:
     CMultiDLFN(const char *_prefix,const StringArray &lfns)
     {
@@ -121,13 +120,11 @@ public:
             if (expanded && (strchr(s,'*') || strchr(s,'?')))
                 expanded = false;
         }
-        prefix.append(_prefix);
     }
 
     CMultiDLFN(CMultiDLFN &other)
     {
         expanded = other.expanded;
-        prefix = other.prefix;
         ForEachItemIn(i,other)
             dlfns.push_back(other.item(i));
     }
@@ -158,13 +155,8 @@ public:
                     const char *name = attr.queryProp("@name");
                     if (!name||!*name)
                         continue;
-                    if (memicmp(name,prefix.str(),prefix.length())==0) // optimize
-                        lfnExpanded.append(name+prefix.length());
-                    else
-                    {
-                        tmp.clear().append('~').append(name); // need leading ~ otherwise will get two prefixes
-                        lfnExpanded.append(tmp.str());
-                    }
+                    tmp.clear().append('~').append(name); // need leading ~ otherwise will get two prefixes
+                    lfnExpanded.append(tmp.str());
                 }
             }
             else
@@ -195,7 +187,6 @@ public:
         const char *start = strchr(s,'{');
         if (!start)
             return NULL;
-        mlfn.setLength(start-s);//isolate prefix (anything before leading {
         StringArray lfns;
         lfns.appendList(start+1, ",");
         bool anywilds = false;
@@ -206,6 +197,7 @@ public:
                 break;
             }
         }
+        mlfn.setLength(start-s); // Just keep the prefix (anything before leading {)
         CMultiDLFN *ret =  new CMultiDLFN(mlfn.str(), lfns);
         if (ret->ordinality() || anywilds)
             return ret;
