@@ -450,14 +450,8 @@ void CHttpMessage::addParameter(const char* paramname, const char *value)
     if (strcmp(paramname,"form")==0)
         m_isForm = true;
 
-    if (!m_isForm)
-    {
-        // remove the leading '.'
-        if (*paramname=='.') 
-            paramname++;
-    }
-        m_queryparams->setProp(paramname, value);
-        m_paramCount++;
+    m_queryparams->setProp(paramname, value);
+    m_paramCount++;
 }
 
 StringBuffer& CHttpMessage::getParameter(const char* paramname, StringBuffer& paramval)

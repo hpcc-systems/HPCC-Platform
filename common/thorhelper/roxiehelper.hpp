@@ -31,8 +31,10 @@ class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     bool _isHttp;
+    StringAttr urlPath;
     StringAttr authToken;
     StringAttr contentType;
+    Owned<IProperties> parameters;
 private:
     inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
     {
@@ -44,22 +46,35 @@ private:
         if (len)
             s.set(v, len);
     }
+    void gatherUrlParameters();
+
 public:
     IMPLEMENT_IINTERFACE;
-    HttpHelper() { _isHttp = false; };
-    bool isHttp() { return _isHttp; };
-    void setIsHttp(bool __isHttp) { _isHttp = __isHttp; };
-    const char *queryAuthToken() { return authToken.sget(); };
+    HttpHelper() { _isHttp = false; parameters.setown(createProperties(true));}
+    bool isHttp() { return _isHttp; }
+    bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
+    void setIsHttp(bool __isHttp) { _isHttp = __isHttp; }
+    const char *queryAuthToken() { return authToken.sget(); }
     inline void setAuthToken(const char *v)
     {
         setHttpHeaderValue(authToken, v, false);
     };
-    const char *queryContentType() { return contentType.sget(); };
+    const char *queryContentType() { return contentType.sget(); }
     inline void setContentType(const char *v)
     {
         setHttpHeaderValue(contentType, v, true);
     };
+    inline void setUrlPath(const char *v)
+    {
+        const char *end = strstr(v, " HTTP");
+        if (end)
+        {
+            urlPath.set(v, end - v);
+            gatherUrlParameters();
+        }
+    }
     TextMarkupFormat queryContentFormat(){return (strieq(queryContentType(), "application/json")) ? MarkupFmt_JSON : MarkupFmt_XML;}
+    IProperties *queryUrlParameters(){return parameters;}
 };
 
 //========================================================================================= 
