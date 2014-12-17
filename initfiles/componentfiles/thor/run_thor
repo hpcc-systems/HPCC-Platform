@@ -34,6 +34,7 @@ echo $$ > $RUN_THOR_PID_NAME
 
 export SENTINEL="thor.sentinel"
 while [ 1 ]; do
+    # update slaves file in case state of environment has been altered since last run
     daliadmin $DALISERVER dfsgroup ${groupName} slaves
     errcode=$?
     if [ 0 != ${errcode} ]; then
