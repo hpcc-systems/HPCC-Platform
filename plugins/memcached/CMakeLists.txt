@@ -43,7 +43,10 @@ if (USE_MEMCACHED)
         )
 
     ADD_DEFINITIONS( -D_USRDLL -DECL_MEMCACHED_EXPORTS)
-    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=gnu++0x")
+
+    #libmemcached-1.0.18 includes the header <cinttypes> which translates to <bits/cinttypes> requiring ISO C++ 2011 standard to build.
+    #All lesser versions explicitly include <tr1/cinttypes> which does not.
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
 
     HPCC_ADD_LIBRARY( memcached SHARED ${SRCS} )
     if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
