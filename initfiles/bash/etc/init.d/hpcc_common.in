@@ -394,14 +394,11 @@ start_dafilesrv() {
    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
    if [ $? -ne 0 ];then
       #Dafilesrv is not running so start it , before starting cleanup the lock and pid file.
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "Pid or lock file exists, but process is not running"
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
-      else
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
+      if [ ${DEBUG} != "NO_DEBUG" ]; then
+        log_failure_msg "Pid or lock file exists, but process is not running"
       fi
+      removePid ${PIDPATH}
+      unlock ${LOCKPATH}
 
       noStatusCheck=1
       /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
@@ -429,6 +426,7 @@ startCmd() {
 
     if [ ${noStatusCheck} -ne 1 ]; then
        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1 
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
        RCSTART=$?
        if [ ${RCSTART} -ne 0 ];then
           if [ ${DEBUG} != "NO_DEBUG" ]; then
@@ -637,7 +635,7 @@ restart_component() {
        fi
          /etc/init.d/dafilesrv start 2>/dev/null
     else
-       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
        RCRESTART=$?
        if [ $RCRESTART -ne 0 ];then
            echo "Component $compName was not running. Will start it now for you ...."
@@ -647,7 +645,7 @@ restart_component() {
            stop_component ${compName}
        fi
        start_component $compName
-       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
        RCRESTART=$?
        return $RCRESTART
     fi
@@ -655,43 +653,16 @@ restart_component() {
 
 status_component() {
   sentinelFileCheck=1;
-  if strstr ${compType} "thor" && [ ${foundThorSlave}  -eq 1 ];
-  then
-    STAT=0
-    for i in `ls -lrt ${pid}/${compName}_slave*.pid | awk -F" " '{print $NF}'`;
-    do
-      checkPid ${i}
-      comp_name=`echo $i | awk -F"${pid}/" '{print $2}' | awk -F"." '{print $1}'`
-      if [ $__flagPid -eq 1 ]; then
-         checkPidExist ${i}
-         getPid ${i}
-         if [ $__pidExists -eq 1 ];then
-             printf "%-15s ( pid %8s ) is running..." "${comp_name}" "${__pidValue}"
-             statForEach=0
-         else
-             printf "%-15s is stopped" "${comp_name}"
-             statForEach=3
-         fi
-      else
-         printf "%-15s is stopped" "${comp_name}"
-         statForEach=3
-      fi
-      STAT=$(( ${STAT} == 0 ? ${statForEach} : ${STAT} ))
-    echo ""
-    done
-   return ${STAT}
+  check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${sentinelFileCheck}
+  RCSTATUS=$?
+  getPid ${COMPPIDPATH}
+  if [ ${RCSTATUS} -ne 0 ];then
+    printf "%-15s is stopped" "$compName"
   else
-    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${sentinelFileCheck}
-    RCSTATUS=$?
-    getPid ${COMPPIDPATH}
-    if [ ${RCSTATUS} -ne 0 ];then
-        printf "%-15s is stopped" "$compName"
-    else
-        printf "%-15s ( pid %8s ) is running..." "${compName}" "${__pidValue}"
-    fi
-    echo ""
-    return ${RCSTATUS}
+    printf "%-15s ( pid %8s ) is running..." "${compName}" "${__pidValue}"
   fi
+  echo ""
+  return ${RCSTATUS}
 }
 
 
