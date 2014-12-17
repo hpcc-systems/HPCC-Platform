@@ -894,11 +894,11 @@ bool HeapletBase::isShared(const void *ptr)
     throwUnexpected();
 }
 
-void HeapletBase::internalReleaseNoDestructor(const void *ptr)
+void HeapletBase::internalFreeNoDestructor(const void *ptr)
 {
     dbgassertex(isValidRoxiePtr(ptr));
     HeapletBase *h = findBase(ptr);
-    return h->_internalReleaseNoDestructor(ptr);
+    return h->_internalFreeNoDestructor(ptr);
 }
 
 memsize_t HeapletBase::capacity(const void *ptr)
@@ -1163,14 +1163,16 @@ public:
         //If count == 1 then no other thread can be releasing at the same time - so avoid locked operation
         //Subtract 1 here to try and minimize the conditional branches/simplify the fast path
         unsigned rowCount = atomic_read(&header->count)-1;
-        if (ROWCOUNT(rowCount) == 0)
-            atomic_set(&header->count, rowCount);
-        else
-            rowCount = atomic_dec_and_read(&header->count);
 
-        //NOTE: Gcc manages to avoid re-evaluating this expression for the 1st branch above
-        //which we could explicitly avoid by using a complex ? : operator with side-effects (yuk)
-        if (ROWCOUNT(rowCount) == 0)
+        //Check if this is the last release of this row.
+        //It is coded this way to avoid re-evaluating ROWCOUNT() == 0. You could code it using a goto, but it generates worse code.
+        if ((ROWCOUNT(rowCount) == 0) ?
+                //If the count is zero then use comma expression to set the count for the record to zero as a
+                //side-effect of this condition.  Could be avoided if leak checking and checkHeap worked differently.
+                (atomic_set(&header->count, rowCount), true) :
+                //otherwise atomically decrement the count, and check if this thread was the last one to release
+                //Note: the assignment to rowCount allows the compiler to reuse a register, improving the code slightly
+                ROWCOUNT(rowCount = atomic_dec_and_read(&header->count)) == 0)
         {
             if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
             {
@@ -1182,13 +1184,18 @@ public:
         }
     }
 
-    virtual void _internalReleaseNoDestructor(const void * _ptr)
+    virtual void _internalFreeNoDestructor(const void * _ptr)
     {
         char *ptr = (char *) _ptr - chunkHeaderSize;
         ChunkHeader * header = (ChunkHeader *)ptr;
+#ifdef _DEBUG
         unsigned rowCount = atomic_read(&header->count);
         assertex(ROWCOUNT(rowCount) == 1);
-        atomic_set(&header->count, rowCount-1);
+#endif
+        //Set to zero so that leak checking doesn't get false positives.  If the leak checking
+        //worked differently - e.g, deducing from the free list this could be removed.
+        atomic_set(&header->count, 0);
+
         inlineReleasePointer(ptr);
     }
 
@@ -1229,7 +1236,7 @@ public:
 
         //If this was the only instance then release the old row without calling the destructor
         if (ROWCOUNT(rowCountValue) == 1)
-            HeapletBase::internalReleaseNoDestructor(row);
+            HeapletBase::internalFreeNoDestructor(row);
         else
         {
             if (destructFlag)
@@ -1409,12 +1416,14 @@ public:
         }
     }
 
-    virtual void _internalReleaseNoDestructor(const void * _ptr)
+    virtual void _internalFreeNoDestructor(const void * _ptr)
     {
         char *ptr = (char *) _ptr - chunkHeaderSize;
+#ifdef _DEBUG
         ChunkHeader * header = (ChunkHeader *)ptr;
         unsigned rowCount = atomic_read(&header->count);
         assertex(ROWCOUNT(rowCount) == 1);
+#endif
         //NOTE: The free list overlaps the count, so there is no point in updating the count.
         inlineReleasePointer(ptr);
     }
@@ -1454,7 +1463,7 @@ public:
         //If this was the only instance then release the old row without calling the destructor
         //(to avoid the overhead of having to call onClone).
         if (ROWCOUNT(rowCountValue) == 1)
-            HeapletBase::internalReleaseNoDestructor(row);
+            HeapletBase::internalFreeNoDestructor(row);
         else
         {
             if (destructFlag)
@@ -1650,7 +1659,7 @@ public:
         return ptr;
     }
 
-    virtual void _internalReleaseNoDestructor(const void *ptr)
+    virtual void _internalFreeNoDestructor(const void *ptr)
     {
         throwUnexpected();
     }
