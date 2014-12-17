@@ -987,7 +987,7 @@ public:
 #define RBLOCKS_CAS_TAG_MASK   ~RBLOCKS_OFFSET_MASK
 #define ROWCOUNT_MASK            0x7fffffff
 #define ROWCOUNT_DESTRUCTOR_FLAG 0x80000000
-#define ROWCOUNT(x)              (x & ROWCOUNT_MASK)
+#define ROWCOUNT(x)              ((x) & ROWCOUNT_MASK)
 
 #define CACHE_LINE_SIZE 64
 #define HEAPLET_DATA_AREA_OFFSET(heapletType) ((size32_t) ((sizeof(heapletType) + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE) * CACHE_LINE_SIZE)
