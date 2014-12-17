@@ -1049,6 +1049,8 @@ public:
             if (minChunkSize > 0x10000)
                 minChunkSize += 2*(minSize+1);
         }
+        else if (0 == minSize) // unknown
+            minSize = 1;
         maxRows = (minChunkSize / minSize) + 1;
         outputCount = _outputCount;
         unsigned c=0;
