@@ -966,11 +966,11 @@ bool HeapletBase::isShared(const void *ptr)
     throwUnexpected();
 }
 
-void HeapletBase::internalReleaseNoDestructor(const void *ptr)
+void HeapletBase::internalFreeNoDestructor(const void *ptr)
 {
     dbgassertex(isValidRoxiePtr(ptr));
     HeapletBase *h = findBase(ptr);
-    return h->_internalReleaseNoDestructor(ptr);
+    return h->_internalFreeNoDestructor(ptr);
 }
 
 memsize_t HeapletBase::capacity(const void *ptr)
@@ -1061,7 +1061,7 @@ public:
 #define RBLOCKS_CAS_TAG_MASK   ~RBLOCKS_OFFSET_MASK
 #define ROWCOUNT_MASK            0x7fffffff
 #define ROWCOUNT_DESTRUCTOR_FLAG 0x80000000
-#define ROWCOUNT(x)              (x & ROWCOUNT_MASK)
+#define ROWCOUNT(x)              ((x) & ROWCOUNT_MASK)
 
 #define CACHE_LINE_SIZE 64
 #define HEAPLET_DATA_AREA_OFFSET(heapletType) ((size32_t) ((sizeof(heapletType) + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE) * CACHE_LINE_SIZE)
@@ -1232,8 +1232,19 @@ public:
 
         char *ptr = (char *) _ptr - chunkHeaderSize;
         ChunkHeader * header = (ChunkHeader *)ptr;
-        unsigned rowCount = atomic_dec_and_read(&header->count);
-        if (ROWCOUNT(rowCount) == 0)
+        //If count == 1 then no other thread can be releasing at the same time - so avoid locked operation
+        //Subtract 1 here to try and minimize the conditional branches/simplify the fast path
+        unsigned rowCount = atomic_read(&header->count)-1;
+
+        //Check if this is the last release of this row.
+        //It is coded this way to avoid re-evaluating ROWCOUNT() == 0. You could code it using a goto, but it generates worse code.
+        if ((ROWCOUNT(rowCount) == 0) ?
+                //If the count is zero then use comma expression to set the count for the record to zero as a
+                //side-effect of this condition.  Could be avoided if leak checking and checkHeap worked differently.
+                (atomic_set(&header->count, rowCount), true) :
+                //otherwise atomically decrement the count, and check if this thread was the last one to release
+                //Note: the assignment to rowCount allows the compiler to reuse a register, improving the code slightly
+                ROWCOUNT(rowCount = atomic_dec_and_read(&header->count)) == 0)
         {
             if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
             {
@@ -1245,12 +1256,18 @@ public:
         }
     }
 
-    virtual void _internalReleaseNoDestructor(const void * _ptr)
+    virtual void _internalFreeNoDestructor(const void * _ptr)
     {
         char *ptr = (char *) _ptr - chunkHeaderSize;
         ChunkHeader * header = (ChunkHeader *)ptr;
-        unsigned rowCount = atomic_dec_and_read(&header->count);
-        assertex(ROWCOUNT(rowCount) == 0);
+#ifdef _DEBUG
+        unsigned rowCount = atomic_read(&header->count);
+        assertex(ROWCOUNT(rowCount) == 1);
+#endif
+        //Set to zero so that leak checking doesn't get false positives.  If the leak checking
+        //worked differently - e.g, deducing from the free list this could be removed.
+        atomic_set(&header->count, 0);
+
         inlineReleasePointer(ptr);
     }
 
@@ -1291,7 +1308,7 @@ public:
 
         //If this was the only instance then release the old row without calling the destructor
         if (ROWCOUNT(rowCountValue) == 1)
-            HeapletBase::internalReleaseNoDestructor(row);
+            HeapletBase::internalFreeNoDestructor(row);
         else
         {
             if (destructFlag)
@@ -1456,8 +1473,13 @@ public:
         dbgassertex(_ptr != this);
         char *ptr = (char *) _ptr - chunkHeaderSize;
         ChunkHeader * header = (ChunkHeader *)ptr;
-        unsigned rowCount = atomic_dec_and_read(&header->count);
-        if (ROWCOUNT(rowCount) == 0)
+
+        //If count == 1 then no other thread can be releasing at the same time - so avoid locked operation
+        //Subtract 1 here to try and minimize the conditional branches
+        unsigned rowCount = atomic_read(&header->count)-1;
+        //No need to reassign to rowCount if dec and read is required - since only top bit is used, and that must be the same
+        //No need to ensure header->count is 0 because the free list overlaps the count so it is never checked.
+        if (ROWCOUNT(rowCount) == 0 || ROWCOUNT(atomic_dec_and_read(&header->count)) == 0)
         {
             if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
                 allocatorCache->onDestroy(sharedAllocatorId & MAX_ACTIVITY_ID, ptr + chunkHeaderSize);
@@ -1466,12 +1488,15 @@ public:
         }
     }
 
-    virtual void _internalReleaseNoDestructor(const void * _ptr)
+    virtual void _internalFreeNoDestructor(const void * _ptr)
     {
         char *ptr = (char *) _ptr - chunkHeaderSize;
+#ifdef _DEBUG
         ChunkHeader * header = (ChunkHeader *)ptr;
-        unsigned rowCount = atomic_dec_and_read(&header->count);
-        assertex(ROWCOUNT(rowCount) == 0);
+        unsigned rowCount = atomic_read(&header->count);
+        assertex(ROWCOUNT(rowCount) == 1);
+#endif
+        //NOTE: The free list overlaps the count, so there is no point in updating the count.
         inlineReleasePointer(ptr);
     }
 
@@ -1510,7 +1535,7 @@ public:
         //If this was the only instance then release the old row without calling the destructor
         //(to avoid the overhead of having to call onClone).
         if (ROWCOUNT(rowCountValue) == 1)
-            HeapletBase::internalReleaseNoDestructor(row);
+            HeapletBase::internalFreeNoDestructor(row);
         else
         {
             if (destructFlag)
@@ -1636,7 +1661,9 @@ public:
 
     virtual void noteReleased(const void *ptr)
     {
-        if (atomic_dec_and_test(&rowCount))
+        //If rowCount == 1 then this must be the last reference - avoid a locked operation.
+        //rowCount is not used once the heaplet is known to be freed, so no need to ensure rowCount=0
+        if (atomic_read(&rowCount) == 1 || atomic_dec_and_test(&rowCount))
         {
             if (allocatorId & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
                 allocatorCache->onDestroy(allocatorId & MAX_ACTIVITY_ID, (void *)ptr);
@@ -1704,7 +1731,7 @@ public:
         return ptr;
     }
 
-    virtual void _internalReleaseNoDestructor(const void *ptr)
+    virtual void _internalFreeNoDestructor(const void *ptr)
     {
         throwUnexpected();
     }
@@ -4450,7 +4477,7 @@ protected:
 class CallbackBlockAllocator : implements IBufferedRowCallback
 {
 public:
-    CallbackBlockAllocator(IRowManager * _rowManager, unsigned _size, unsigned _cost) : cost(_cost), rowManager(_rowManager), size(_size)
+    CallbackBlockAllocator(IRowManager * _rowManager, memsize_t _size, unsigned _cost) : cost(_cost), rowManager(_rowManager), size(_size)
     {
         rowManager->addRowBuffer(this);
     }
@@ -4485,7 +4512,7 @@ public:
 protected:
     OwnedRoxieRow row;
     IRowManager * rowManager;
-    unsigned size;
+    memsize_t size;
     unsigned cost;
 };
 
@@ -4494,7 +4521,7 @@ protected:
 class SimpleCallbackBlockAllocator : public CallbackBlockAllocator
 {
 public:
-    SimpleCallbackBlockAllocator(IRowManager * _rowManager, unsigned _size, unsigned _cost)
+    SimpleCallbackBlockAllocator(IRowManager * _rowManager, memsize_t _size, unsigned _cost)
         : CallbackBlockAllocator(_rowManager, _size, _cost)
     {
     }
@@ -5696,6 +5723,7 @@ protected:
     void testCompacting(IRowManager * rowManager, IFixedRowHeap * rowHeap, unsigned numRows, unsigned milliFraction)
     {
         const void * * rows = new const void * [numRows];
+        unsigned beginTime = msTick();
         for (unsigned i1 = 0; i1 < numRows; i1++)
             rows[i1] = rowHeap->allocate();
 
@@ -5719,17 +5747,18 @@ protected:
         memsize_t compacted = rowManager->compactRows(numRows, rows);
         unsigned endTime = msTick();
         unsigned numPagesAfter = rowManager->numPagesAfterCleanup(false);
-        if ((compacted>0) != (numPagesBefore != numPagesAfter))
-            DBGLOG("Compacted not returned correctly");
-        CPPUNIT_ASSERT_EQUAL(compacted != 0, (numPagesBefore != numPagesAfter));
-        DBGLOG("Compacting %d[%d] (%d->%d [%d] cf %d) Before: Time taken %d", numRows, milliFraction, numPagesBefore, numPagesAfter, (unsigned)compacted, expectedPages, endTime-startTime);
-        ASSERT(numPagesAfter == expectedPages);
 
         for (unsigned i3 = 0; i3 < numRows; i3++)
         {
             ReleaseClearRoxieRow(rows[i3]);
         }
 
+        unsigned finalTime = msTick();
+        if ((compacted>0) != (numPagesBefore != numPagesAfter))
+            DBGLOG("Compacted not returned correctly");
+        CPPUNIT_ASSERT_EQUAL(compacted != 0, (numPagesBefore != numPagesAfter));
+        DBGLOG("Compacting %d[%d] (%d->%d [%d] cf %d) Before: Time taken %u [%u]", numRows, milliFraction, numPagesBefore, numPagesAfter, (unsigned)compacted, expectedPages, endTime-startTime, finalTime-beginTime);
+        ASSERT(numPagesAfter == expectedPages);
         delete [] rows;
     }
 
@@ -5746,6 +5775,7 @@ protected:
         testCompacting(rowManager, rowHeap1, maxRows, 800);
         testCompacting(rowManager, rowHeap1, maxRows, 960);
         testCompacting(rowManager, rowHeap1, maxRows, 999);
+
         unsigned rowCount = maxRows/10;
         testCompacting(rowManager, rowHeap1, rowCount, 5);
         testCompacting(rowManager, rowHeap2, rowCount, 5);

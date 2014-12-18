@@ -135,7 +135,7 @@ protected:
     virtual unsigned _rawAllocatorId(const void *ptr) const = 0;
     virtual void noteLinked(const void *ptr) = 0;
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) = 0;
-    virtual void _internalReleaseNoDestructor(const void *ptr) = 0;
+    virtual void _internalFreeNoDestructor(const void *ptr) = 0;
 
 public:
     inline static HeapletBase *findBase(const void *ptr)
@@ -159,7 +159,7 @@ public:
     static void setDestructorFlag(const void *ptr);
     static bool hasDestructor(const void *ptr);
 
-    static void internalReleaseNoDestructor(const void *ptr);
+    static void internalFreeNoDestructor(const void *ptr);
 
     static inline void releaseClear(const void *&ptr)
     {
@@ -241,7 +241,7 @@ private:
     virtual bool _hasDestructor(const void *ptr) const { return false; }
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
-    virtual void _internalReleaseNoDestructor(const void *ptr) { throwUnexpected(); }
+    virtual void _internalFreeNoDestructor(const void *ptr) { throwUnexpected(); }
 protected:
     DataBuffer()
     {
@@ -276,7 +276,7 @@ private:
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual void noteLinked(const void *ptr);
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
-    virtual void _internalReleaseNoDestructor(const void *ptr) { throwUnexpected(); }
+    virtual void _internalFreeNoDestructor(const void *ptr) { throwUnexpected(); }
 
 public:
     DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain);
