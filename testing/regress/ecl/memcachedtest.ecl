@@ -27,7 +27,7 @@ REAL pi := 3.14159265359;
 SetReal(servers, 'pi', pi);
 GetReal(servers, 'pi');
 
-INTEGER i := 12345689;
+INTEGER i := 123456789;
 SetInteger(servers, 'i', i);
 GetInteger(servers, 'i');
 
