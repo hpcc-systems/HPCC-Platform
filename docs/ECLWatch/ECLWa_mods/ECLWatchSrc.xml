@@ -1428,8 +1428,8 @@
 
           <para>Superfiles are different from regular files. Selecting a
           superfile from the Logical Files page displays a different File
-          Details page the superfile details page.<figure>
-              <title> Superfile Details page </title>
+          Details page, the superfile details page.<figure>
+              <title>Superfile Details page</title>
 
               <mediaobject>
                 <imageobject>
@@ -1439,7 +1439,7 @@
               </mediaobject>
             </figure></para>
 
-          <para>On the superfile details page you can: </para>
+          <para>On the superfile details page you can:</para>
 
           <para><itemizedlist>
               <listitem>
@@ -1452,7 +1452,7 @@
               </listitem>
 
               <listitem>
-                <para>Select the subfiles.</para>
+                <para>Select the sub-files.</para>
               </listitem>
 
               <listitem>
@@ -1468,14 +1468,6 @@
               <listitem>
                 <para>Press the <emphasis role="bold">Remove</emphasis> button
                 to remove a sub-file from the superfile.</para>
-              </listitem>
-
-              <listitem>
-                <para>Select ... the logical file.</para>
-              </listitem>
-
-              <listitem>
-                <para>Select ... the various file parts.</para>
               </listitem>
             </itemizedlist></para>
         </sect3>
