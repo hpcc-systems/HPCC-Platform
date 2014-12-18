@@ -71,6 +71,11 @@ add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
 
+# Docs automation
+if (DOCS_AUTO)
+   add_subdirectory(Automation)
+endif()
+
 
 #WIP -  Docs
 #add_subdirectory(RuningHPCCinAmazonWebServicesEC2)
