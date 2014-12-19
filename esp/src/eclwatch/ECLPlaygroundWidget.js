@@ -31,6 +31,7 @@ define([
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/GraphWidget",
+    "hpcc/JSGraphWidget",
     "hpcc/ECLPlaygroundResultsWidget",
     "hpcc/ESPWorkunit",
     "hpcc/ESPQuery",
@@ -41,13 +42,14 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, xhr, dom, query,
                 BorderContainer, TabContainer, ContentPane, registry,
-                _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit, ESPQuery,
+                _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, JSGraphWidget, ResultsWidget, ESPWorkunit, ESPQuery,
                 template) {
     return declare("ECLPlaygroundWidget", [_Widget], {
         templateString: template,
         baseClass: "ECLPlaygroundWidget",
         i18n: nlsHPCC,
 
+        graphType: dojoConfig.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
         wu: null,
         editorControl: null,
         graphControl: null,

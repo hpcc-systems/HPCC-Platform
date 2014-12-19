@@ -1017,3 +1017,29 @@ margin-left:-20px;
     height: auto;
 }
 
+.claro .graph .zoom {
+    fill: white;
+}
+
+.claro .graph .edge .shape {
+    fill: white;
+}
+
+.claro .graph .graphVertex > .shape {
+    stroke: black;
+    fill: none;
+}
+
+.claro .graph .graphVertex > .shape.selected {
+    stroke: #1f77b4;
+}
+
+.claro .graph .graphVertex .textbox .shape {
+    stroke: black;
+    fill: white;
+}
+
+.claro .graph .graphVertex .textbox.selected .shape {
+    fill: #dcf1ff;
+    stroke: #1f77b4;
+}
