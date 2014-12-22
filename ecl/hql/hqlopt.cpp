@@ -2410,7 +2410,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                             {
                                 //This test should not be required, but it avoids problems with elements from rows
                                 //being used conditionally within transforms.  See HPCC-11018 for details.
-                                if (isIndependentOfScope(match))
+                                if ((options & HOOexpandselectcreaterow) || isIndependentOfScope(match))
                                 {
                                     DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(cur), queryNode1Text(transformed));
                                     noteUnused(child);
