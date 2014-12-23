@@ -13,17 +13,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+set (ECLIPSE_HTML_DIR ${CMAKE_CURRENT_BINARY_DIR}/eclipse_html)
 
 GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
-
-SET(XSLTPROC_DEPENDENCIES)
+SET(HELP_DEPENDENCIES)
 FOREACH(T ${Current_Targets})
-   MESSAGE("+++ ${T}")
-   IF("${T}" MATCHES ".*ECLLanguageReference.*" OR
-      "${T}" MATCHES ".*ECLProgrammersGuide.*" OR
-      "${T}" MATCHES ".*ECLStandardLibraryReference.*")
-      LIST(APPEND XSLTPROC_DEPENDENCIES  ${T})
+   IF("${T}" MATCHES ".*ECLReference.*")
+      LIST(APPEND HELP_DEPENDENCIES  ${T})
    ENDIF()
 ENDFOREACH()
-SET(DISABLE_PDF ON)
-DOCBOOK_TO_PDF( ${FO_XSL} ECLReference.xml "ECLReference")
+
+DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} ${ECL_REFERENCE_XML} ${ECLIPSE_HTML_DIR})
