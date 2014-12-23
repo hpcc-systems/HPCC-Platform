@@ -4253,7 +4253,6 @@ bool CWsWorkunitsEx::onWUCheckFeatures(IEspContext &context, IEspWUCheckFeatures
 
 static const char * checkGetStatsInput(const char * s)
 {
-    //Supplying * on the command line is a pain because it needs quoting. Allow - instead.
     if (!s || !*s)
         return "*";
     return s;

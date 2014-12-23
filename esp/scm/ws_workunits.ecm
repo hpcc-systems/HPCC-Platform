@@ -1582,9 +1582,9 @@ ESPStruct [nil_remove] WUStatisticItem
     string Measure;
     string Kind;
     string Value;
-    unsigned RawValue;
-    unsigned Count;
-    unsigned Max;
+    int64 RawValue;
+    int64 Count;
+    int64 Max;
 };
 
 ESPrequest [nil_remove] WUGetStatsRequest
