@@ -141,17 +141,21 @@ import subprocess
 
 def getRealIPAddress():
     ipAddress = '127.0.0.1'
+    found = False
     try:
-        result = subprocess.Popen("ifconfig",  shell=False,  bufsize=8192,  stdout=subprocess.PIPE).stdout.read()
-        ethernetFound=False
+        proc = subprocess.Popen(['ip', '-o', '-4', 'addr', 'show'], shell=False,  bufsize=8192, stdout=subprocess.PIPE, stderr=None)
+        result = proc.communicate()[0]
         results = result.split('\n')
         for line in results:
-            if 'Ethernet' in line:
-                ethernetFound=True
-
-            if ethernetFound and 'inet addr' in line:
+            if 'scope global' in line:
                 items = line.split()
-                ipAddress = items[1].split(':')[1]
+                ipAddress = items[3].split('/')[0]
+                found = True
+                break;
+        if not found:
+            for line in results:
+                items = line.split()
+                ipAddress = items[3].split('/')[0]
                 break;
     except  OSError:
         pass

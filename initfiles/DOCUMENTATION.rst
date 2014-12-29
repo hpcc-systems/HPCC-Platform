@@ -59,7 +59,6 @@ Directory structure of initfiles
   - alter_confs.sh - contains functions used by add_conf_settings.sh.in and rm_conf_settings.sh.in
   - complete-uninstall.sh.in - script to remove package and all directories from platform
   - configmgr.in - configmgr start script
-  - get_ip_address.sh.in - script to get base ip address of server
   - hpcc-push.sh.in - script to push files to servers defined in environment using ssh keys
   - hpcc-run.sh.in - script to run init commands on servers defined in environment using ssh keys
   - hpcc_setenv.in - source-able file that defines hpcc env vars, used by init system
