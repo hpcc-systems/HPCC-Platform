@@ -83,6 +83,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_JNI "Enable Java JNI support" ON)
   option(USE_RINSIDE "Enable R support" ON)
   option(USE_MEMCACHED "Enable Memcached support" ON)
+  if ( NOT APPLE AND NOT WIN32 )
+     option(USE_NUMA "Enable NUMA memory support" ON)
+  endif()
 
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
@@ -120,6 +123,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
+
+  set(OPTIONAL_DEB_PKGS "")
+  set(OPTIONAL_RPM_PKGS "")
 
   ##########################################################
 
@@ -654,6 +660,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       else()
         add_definitions (-D_NO_APR)
       endif(USE_APR)
+
+      if (USE_NUMA AND NOT APPLE AND NOT WIN32)
+        find_package (NUMA)
+        if (NUMA_FOUND)
+          add_definitions (-D_USE_NUMA)
+        else ()
+          message (FATAL_ERROR "NUMA requested but package not found")
+        endif ()
+      else ()
+        set (NUMA_LIBRARIES "")
+      endif ()
 
   ENDIF()
   ###########################################################################
