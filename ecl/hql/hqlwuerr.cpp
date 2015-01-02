@@ -109,6 +109,10 @@ public:
         assertex(mappedError == error); // should not expect any mapping below a compound.
         return mappedError.getClear();
     }
+    virtual void exportMappings(IWorkUnit * wu) const
+    {
+        // should not expect any mapping below a compound.
+    }
     virtual void report(IError* err)
     {
         primary->report(err);

@@ -1060,6 +1060,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual bool getCloneable() const = 0;
     virtual IUserDescriptor * queryUserDescriptor() const = 0;
     virtual IStringVal & getSnapshot(IStringVal & str) const = 0;
+    virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const = 0;
     virtual IPropertyTreeIterator & getFilesReadIterator() const = 0;
     virtual void protect(bool protectMode) = 0;
     virtual IStringVal & getAllowedClusters(IStringVal & str) const = 0;
@@ -1114,6 +1115,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setUser(const char * value) = 0;
     virtual void setWuScope(const char * value) = 0;
     virtual void setSnapshot(const char * value) = 0;
+    virtual void setWarningSeverity(unsigned code, ErrorSeverity severity) = 0;
     virtual IWorkflowItemIterator * updateWorkflowItems() = 0;
     virtual void syncRuntimeWorkflow(IWorkflowItemArray * array) = 0;
     virtual IWorkflowItem * addWorkflowItem(unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor) = 0;

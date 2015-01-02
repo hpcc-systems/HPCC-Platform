@@ -279,6 +279,7 @@ public:
     virtual IStringIterator *getProcesses(const char *type) const;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const;
     virtual IStringVal & getSnapshot(IStringVal & str) const;
+    virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const;
 
     virtual const char *queryUser() const;
     virtual IStringVal & getWuScope(IStringVal & str) const;
@@ -338,6 +339,7 @@ public:
     void setTracingValue(const char * propname, const char * value);
     void setTracingValueInt(const char * propname, int value);
     void setUser(const char * value);
+    void setWarningSeverity(unsigned code, ErrorSeverity severity);
     void setWuScope(const char * value);
     void setSnapshot(const char * value);
     void setDebugAgentListenerPort(unsigned port);

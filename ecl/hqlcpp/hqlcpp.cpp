@@ -1868,6 +1868,11 @@ unsigned HqlCppTranslator::getOptimizeFlags() const
 }
 
 
+void HqlCppTranslator::exportWarningMappings()
+{
+    globalOnWarnings->exportMappings(wu());
+}
+
 void HqlCppTranslator::overrideOptionsForLibrary()
 {
     options.workunitTemporaries = false;

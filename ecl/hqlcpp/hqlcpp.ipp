@@ -1905,6 +1905,7 @@ public:
     void checkNormalized(BuildCtx & ctx, IHqlExpression * expr);
 
     void checkAmbiguousRollupCondition(IHqlExpression * expr);
+    void exportWarningMappings();
 
 protected:
     HqlCppInstance *    code;

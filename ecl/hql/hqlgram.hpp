@@ -590,6 +590,7 @@ public:
     virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual void report(IError * error);
     virtual IError * mapError(IError * error);
+    virtual void exportMappings(IWorkUnit * wu) const;
     void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual size32_t errCount();
     virtual size32_t warnCount();
