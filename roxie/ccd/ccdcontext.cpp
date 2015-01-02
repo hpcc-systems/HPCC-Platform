@@ -3727,7 +3727,7 @@ private:
 
 public:
     CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, true, _logctx, xmlReadFlags, _querySetName)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, httpHelper.getTrim(), _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }
@@ -3786,7 +3786,7 @@ private:
 
 public:
     CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, true, _logctx, xmlReadFlags, _querySetName)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, httpHelper.getTrim(), _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }

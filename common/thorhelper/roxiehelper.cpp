@@ -563,6 +563,8 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 payload += 4;
                 char *str;
 
+                pHttpHelper->setUrlPath(header);
+
                 // capture authentication token
                 if ((str = strstr(header, "Authorization: Basic ")) != NULL)
                     pHttpHelper->setAuthToken(str+21);
@@ -1492,4 +1494,33 @@ void IRoxieContextLogger::CTXLOGae(IException *E, const char *file, unsigned lin
     va_start(args, format);
     CTXLOGaeva(E, file, line, prefix, format, args);
     va_end(args);
+}
+
+void HttpHelper::gatherUrlParameters()
+{
+    const char *finger = strchr(urlPath, '?');
+    if (!finger)
+        return;
+    finger++;
+    while (*finger)
+    {
+        StringBuffer s, prop, val;
+        while (*finger && *finger != '&' && *finger != '=')
+            s.append(*finger++);
+        appendDecodedURL(prop, s.trim());
+        if (!*finger || *finger == '&')
+            val.set("1");
+        else
+        {
+            s.clear();
+            finger++;
+            while (*finger && *finger != '&')
+                s.append(*finger++);
+            appendDecodedURL(val, s.trim());
+        }
+        if (prop.length())
+            parameters->setProp(prop, val);
+        if (*finger)
+            finger++;
+    }
 }

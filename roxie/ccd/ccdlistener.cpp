@@ -170,7 +170,7 @@ public:
         try
         {
             IPropertyTree &request = requestArray.item(idx);
-            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, true, logctx, xmlReadFlags, querySetName);
+            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, httpHelper.getTrim(), logctx, xmlReadFlags, querySetName);
             ctx->process();
             ctx->flush(idx);
             CriticalBlock b(crit);
