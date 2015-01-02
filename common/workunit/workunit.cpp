@@ -1145,7 +1145,7 @@ public:
 
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
-    virtual ErrorSeverity getWarningSeverity(unsigned code) const;
+    virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const;
 
     virtual IStringVal & getUser(IStringVal & str) const;
     virtual IStringVal & getWuScope(IStringVal & str) const;
@@ -1521,8 +1521,8 @@ public:
 
     virtual IStringVal & getSnapshot(IStringVal & str) const
             { return c->getSnapshot(str); } 
-    virtual ErrorSeverity getWarningSeverity(unsigned code) const
-            { return c->getWarningSeverity(code); }
+    virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const
+            { return c->getWarningSeverity(code, defaultSeverity); }
      virtual IStringVal & getUser(IStringVal & str) const
             { return c->getUser(str); }
     virtual IStringVal & getWuScope(IStringVal & str) const
@@ -5384,7 +5384,7 @@ const static mapEnums warningSeverityMap[] =
 };
 
 
-ErrorSeverity CLocalWorkUnit::getWarningSeverity(unsigned code) const
+ErrorSeverity CLocalWorkUnit::getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const
 {
     StringBuffer xpath;
     xpath.append("OnWarnings/OnWarning[@code='").append(code).append("']");
@@ -5392,7 +5392,7 @@ ErrorSeverity CLocalWorkUnit::getWarningSeverity(unsigned code) const
     IPropertyTree * mapping = p->queryPropTree(xpath);
     if (mapping)
         return (ErrorSeverity) getEnum(mapping, "@severity", warningSeverityMap);
-    return SeverityWarning;
+    return defaultSeverity;
 }
 
 void CLocalWorkUnit::setWarningSeverity(unsigned code, ErrorSeverity severity)
