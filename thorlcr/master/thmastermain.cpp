@@ -683,6 +683,7 @@ int main( int argc, char *argv[]  )
                 mmemSize = gmemSize;
         }
         bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
+        gmemAllowHugePages = globals->getPropBool("@heapMasterUseHugePages", gmemAllowHugePages);
         bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
 
         // if @masterMemorySize and @globalMemorySize unspecified gmemSize will be default based on h/w
