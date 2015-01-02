@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//class=textsearch
+
 //nothor
 
 #option ('checkAsserts',false);

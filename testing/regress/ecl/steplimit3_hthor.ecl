@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//class=textsearch
+
 //MORE: This really should be supported on thor....
 //Stepped global joins unsupported, see issue HPCC-8148
 //skip type==thorlcr TBD
