@@ -199,13 +199,13 @@ static void formatTimeStamp(StringBuffer & out, unsigned __int64 value)
 #ifdef _WIN32
     struct tm *gmtNow;
     gmtNow = gmtime(&tNow);
-    strftime(timeStamp, 64, "%Y-%m-%d %H:%M:%S", gmtNow);
+    strftime(timeStamp, 64, "%Y-%m-%dT%H:%M:%S", gmtNow);
 #else
     struct tm gmtNow;
     gmtime_r(&tNow, &gmtNow);
-    strftime(timeStamp, 64, "%Y-%m-%d %H:%M:%S", &gmtNow);
+    strftime(timeStamp, 64, "%Y-%m-%dT%H:%M:%S", &gmtNow);
 #endif //_WIN32
-    out.append(timeStamp).appendf(".%03u", us / 1000);
+    out.append(timeStamp).appendf(".%03uZ", us / 1000);
 }
 
 static const unsigned oneKb = 1024;

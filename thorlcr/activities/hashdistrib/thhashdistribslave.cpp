@@ -137,7 +137,12 @@ protected:
             for (unsigned i=0; i<c; i++)
                 dedupList.append(rows.item(i));
             rows.clear(); // NB: dedupList took ownership
-            dedupList.sort(*iCompare, owner.activity->queryMaxCores());
+
+            /* Relatively small sets and senders are parallel so use a single thread
+             * Using the default of a thread per core, would mean contention when all senders are sorting.
+             */
+            dedupList.sort(*iCompare, 1);
+
             OwnedConstThorRow prev;
             for (unsigned i = c; i>0;)
             {
