@@ -393,7 +393,7 @@ public:
                 //MORE: For the moment disable any expressions that are only used conditionally.
                 //Often including conditions improves the code, but sometimes the duplicate evaluation of the
                 //guard conditions in the parent and the child causes excessive code generation.
-                //And forcing it into an alias doesn't help becuase that isn't currently executed in the parent.
+                //And forcing it into an alias doesn't help because that isn't currently executed in the parent.
                 //Uncomment: if (moveTo->guards->guardContainsCandidate(expr))
                 {
                     invalid = true;
@@ -704,8 +704,7 @@ protected:
 
                 if (worthHoisting)
                 {
-                    //MORE: Remove || true to evaluate the subquery at the latest time.
-                    bool createSubQueryBeforeAll = forceRoot || true;
+                    bool createSubQueryBeforeAll = forceRoot;
                     spotter.transformAll(pending, createSubQueryBeforeAll);
                     translator.traceExpressions("spotted child", pending);
                 }
