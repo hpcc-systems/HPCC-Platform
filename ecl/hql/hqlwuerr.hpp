@@ -27,6 +27,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     virtual IError * mapError(IError * error);
+    virtual void exportMappings(IWorkUnit * wu) const { }
     virtual void report(IError*);
     virtual size32_t errCount();
     virtual size32_t warnCount();

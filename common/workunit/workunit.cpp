@@ -1145,6 +1145,7 @@ public:
 
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
+    virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const;
 
     virtual IStringVal & getUser(IStringVal & str) const;
     virtual IStringVal & getWuScope(IStringVal & str) const;
@@ -1207,6 +1208,7 @@ public:
     void setUser(const char * value);
     void setWuScope(const char * value);
     void setSnapshot(const char * value);
+    void setWarningSeverity(unsigned code, ErrorSeverity severity);
     void setDebugAgentListenerPort(unsigned port);
     void setDebugAgentListenerIP(const char * ip);
     void setXmlParams(const char *params);
@@ -1519,7 +1521,9 @@ public:
 
     virtual IStringVal & getSnapshot(IStringVal & str) const
             { return c->getSnapshot(str); } 
-    virtual IStringVal & getUser(IStringVal & str) const
+    virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const
+            { return c->getWarningSeverity(code, defaultSeverity); }
+     virtual IStringVal & getUser(IStringVal & str) const
             { return c->getUser(str); }
     virtual IStringVal & getWuScope(IStringVal & str) const
             { return c->getWuScope(str); }
@@ -1709,6 +1713,8 @@ public:
 
     virtual void setSnapshot(const char * value)
             { c->setSnapshot(value); }
+    virtual void setWarningSeverity(unsigned code, ErrorSeverity severity)
+            { c->setWarningSeverity(code, severity); }
     virtual void setTimeScheduled(const IJlibDateTime &val)
             { c->setTimeScheduled(val); }
     virtual void setDebugAgentListenerPort(unsigned port)
@@ -2165,7 +2171,7 @@ extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence)
 
 struct mapEnums { int val; const char *str; };
 
-const char *getEnumText(int value, mapEnums *map) 
+const char *getEnumText(int value, const mapEnums *map)
 {
     const char *defval = map->str;
     while (map->str)
@@ -2178,7 +2184,7 @@ const char *getEnumText(int value, mapEnums *map)
     return defval;
 }
 
-void setEnum(IPropertyTree *p, const char *propname, int value, mapEnums *map) 
+void setEnum(IPropertyTree *p, const char *propname, int value, const mapEnums *map)
 {
     const char *defval = map->str;
     while (map->str)
@@ -2194,7 +2200,7 @@ void setEnum(IPropertyTree *p, const char *propname, int value, mapEnums *map)
     p->setProp(propname, defval);
 }
 
-static int getEnum(const char *v, mapEnums *map) 
+static int getEnum(const char *v, const mapEnums *map)
 {
     if (v)
     {
@@ -2209,7 +2215,7 @@ static int getEnum(const char *v, mapEnums *map)
     return 0;
 }
 
-static int getEnum(const IPropertyTree *p, const char *propname, mapEnums *map)
+static int getEnum(const IPropertyTree *p, const char *propname, const mapEnums *map)
 {
     return getEnum(p->queryProp(propname),map);
 }
@@ -5367,6 +5373,45 @@ void CLocalWorkUnit::setSnapshot(const char * val)
     p->setProp("SNAPSHOT", val);
 }
 
+const static mapEnums warningSeverityMap[] =
+{
+    { SeverityIgnore, "ignore" },
+    { SeverityInfo, "info" },
+    { SeverityWarning, "warning" },
+    { SeverityError, "error" },
+    { SeverityFatal, "fatal" },
+    { SeverityUnknown, NULL }
+};
+
+
+ErrorSeverity CLocalWorkUnit::getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const
+{
+    StringBuffer xpath;
+    xpath.append("OnWarnings/OnWarning[@code='").append(code).append("']");
+    CriticalBlock block(crit);
+    IPropertyTree * mapping = p->queryPropTree(xpath);
+    if (mapping)
+        return (ErrorSeverity) getEnum(mapping, "@severity", warningSeverityMap);
+    return defaultSeverity;
+}
+
+void CLocalWorkUnit::setWarningSeverity(unsigned code, ErrorSeverity severity)
+{
+    StringBuffer xpath;
+    xpath.append("OnWarnings/OnWarning[@code='").append(code).append("']");
+
+    CriticalBlock block(crit);
+    IPropertyTree * mapping = p->queryPropTree(xpath);
+    if (!mapping)
+    {
+        IPropertyTree * onWarnings = ensurePTree(p, "OnWarnings");
+        mapping = onWarnings->addPropTree("OnWarning", createPTree());
+        mapping->setPropInt("@code", code);
+    }
+
+    setEnum(mapping, "@severity", severity, warningSeverityMap);
+}
+
 static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
 {
     IPropertyTree *l = (IPropertyTree *) *ll;
@@ -5470,6 +5515,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
         else
             p->setPropTree("Debug", LINK(pt));
     }
+    copyTree(p, fromP, "OnWarnings");
     copyTree(p, fromP, "Plugins");
     copyTree(p, fromP, "Libraries");
     copyTree(p, fromP, "Results");

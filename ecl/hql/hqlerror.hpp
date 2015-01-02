@@ -23,12 +23,14 @@
 
 #define HQLERR_ErrorAlreadyReported             4799            // special case...
 
+interface IWorkUnit;
 interface HQL_API IErrorReceiver : public IInterface
 {
     virtual void report(IError* error) = 0;
     virtual IError * mapError(IError * error) = 0;
     virtual size32_t errCount() = 0;
     virtual size32_t warnCount() = 0;
+    virtual void exportMappings(IWorkUnit * wu) const = 0;
 
     //global helper functions
     void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos);
@@ -46,6 +48,7 @@ public:
     ErrorReceiverSink() { errs = warns = 0; }
 
     virtual IError * mapError(IError * error) { return LINK(error); }
+    virtual void exportMappings(IWorkUnit * wu) const { }
     virtual void report(IError* err);
     virtual size32_t errCount() { return errs; }
     virtual size32_t warnCount() { return warns; }
@@ -77,6 +80,10 @@ public:
     virtual size32_t warnCount()
     {
         return prevErrorProcessor->warnCount();
+    }
+    virtual void exportMappings(IWorkUnit * wu) const
+    {
+        prevErrorProcessor->exportMappings(wu);
     }
 
 protected:
