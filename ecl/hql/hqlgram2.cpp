@@ -5956,6 +5956,11 @@ IError * HqlGram::mapError(IError * error)
     return errorHandler->mapError(error);
 }
 
+void HqlGram::exportMappings(IWorkUnit * wu) const
+{
+    return errorHandler->exportMappings(wu);
+}
+
 void HqlGram::report(IError* error)
 {
     if (errorHandler && !errorDisabled)

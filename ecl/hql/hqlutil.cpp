@@ -6676,6 +6676,19 @@ void ErrorSeverityMapper::restoreState(const ErrorSeverityMapperState & saved)
     activeSymbol = saved.symbol;
 }
 
+void ErrorSeverityMapper::exportMappings(IWorkUnit * wu) const
+{
+    IndirectErrorReceiver::exportMappings(wu);
+
+    const unsigned max = severityMappings.ordinality();
+    for (unsigned i=firstActiveMapping; i < max; i++)
+    {
+        IHqlExpression & cur = severityMappings.item(i);
+        wu->setWarningSeverity(getIntValue(cur.queryChild(0)), getCheckSeverity(cur.queryChild(1)->queryName()));
+    }
+}
+
+
 IError * ErrorSeverityMapper::mapError(IError * error)
 {
     //An error that is fatal cannot be mapped.
