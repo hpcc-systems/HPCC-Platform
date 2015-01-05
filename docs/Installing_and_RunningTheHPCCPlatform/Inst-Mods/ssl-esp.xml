@@ -275,7 +275,7 @@ sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer
         </listitem>
 
         <listitem>
-          <para>Rt-click on the list of services, then select <emphasis
+          <para>Right-click on the list of services, then select <emphasis
           role="bold">Add</emphasis>.</para>
         </listitem>
 
