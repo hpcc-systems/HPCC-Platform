@@ -282,7 +282,7 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Rt-click on the table below computers and select <emphasis
+        <para>Right-click on the table below computers and select <emphasis
         role="bold">New </emphasis>from the pop up menu.</para>
 
         <para><graphic fileref="../../images/LDAP_001.jpg"
@@ -347,10 +347,10 @@
 
     <orderedlist numeration="arabic">
       <listitem>
-        <para>Rt-click on <emphasis role="bold">Navigator</emphasis> Pane and
-        choose <emphasis role="bold">New Components</emphasis> from the pop up
-        menu, then choose <emphasis role="bold">ldapServer</emphasis> from the
-        pop-up menu. <graphic fileref="../../images/LDAP_003.jpg"
+        <para>Right-click on <emphasis role="bold">Navigator</emphasis> Pane
+        and choose <emphasis role="bold">New Components</emphasis> from the
+        pop-up menu, then choose <emphasis role="bold">ldapServer</emphasis>
+        from the pop-up menu. <graphic fileref="../../images/LDAP_003.jpg"
         vendor="configmgrSS" /></para>
 
         <para><emphasis role="bold">Note</emphasis>: The ldapServer component
@@ -368,8 +368,8 @@
         vendor="configmgrSS" /><orderedlist numeration="loweralpha">
             <listitem>
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
-              Rt-click on the table on the right hand side, choose <emphasis
-              role="bold">Add Instances…</emphasis></para>
+              Right-click on the table on the right hand side, choose
+              <emphasis role="bold">Add Instances…</emphasis></para>
 
               <para>The <emphasis role="bold">Select computers</emphasis>
               dialog appears.</para>
@@ -454,7 +454,7 @@
             </listitem>
 
             <listitem>
-              <para>For each ESP Service binding, edit the <emphasis
+              <para>For the ESP Service bindings, add the <emphasis
               role="bold">resourcesBasedn</emphasis> and <emphasis
               role="bold">workunitsBasedn</emphasis> to match your LDAP server
               settings.</para>
@@ -515,13 +515,13 @@
             <listitem>
               <para>On the <emphasis role="bold">RoxieCluster</emphasis> page
               on the right hand side, select the <emphasis
-              role="bold">Options</emphasis> tab.</para>
+              role="bold">LDAP</emphasis> tab.</para>
             </listitem>
 
             <listitem>
-              <para>Scroll down to the <emphasis
-              role="bold">ldapUser</emphasis> field and verify that there is a
-              "<emphasis>roxie</emphasis>" user.</para>
+              <para>Locate the <emphasis role="bold">ldapUser</emphasis> field
+              and verify that there is a "<emphasis>roxie</emphasis>"
+              user.</para>
             </listitem>
 
             <listitem>
