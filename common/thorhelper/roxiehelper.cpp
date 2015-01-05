@@ -1462,8 +1462,35 @@ StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
     return out;
 }
 
+static const char *skipLfnForeign(const char *lfn)
+{
+    const char *finger = lfn;
+    while (*finger=='~')
+        finger++;
+    const char *scope = strstr(finger, "::");
+    if (scope)
+    {
+        StringBuffer cmp;
+        if (strieq("foreign", cmp.append(scope-finger, finger).trim()))
+        {
+            // foreign scope - need to strip off the ip and port
+            scope += 2;  // skip ::
+            finger = strstr(scope,"::");
+            if (finger)
+            {
+                finger += 2;
+                while (*finger == ' ')
+                    finger++;
+                return finger;
+            }
+        }
+    }
+    return lfn;
+}
+
 StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
 {
+    fname = skipLfnForeign(fname); //foreign location should already be reflected in local dali dfs meta data
     if (fname[0]=='~')
         logicalName.append(fname+1);
     else if (resolveLocally)
