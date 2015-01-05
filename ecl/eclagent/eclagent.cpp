@@ -860,6 +860,16 @@ unsigned EclAgent::getResultHash(const char * name, unsigned sequence)
     return r->getResultHash();
 }
 
+unsigned EclAgent::getExternalResultHash(const char * wuid, const char * name, unsigned sequence)
+{
+    logGetResult("ExternalHash", name, sequence);
+    Owned<IConstWUResult> r = getExternalResult(wuid, name, sequence);
+    if (!r)
+        failv(0, "Failed to retrieve hash value %s from workunit %s", name, wuid);
+    return r->getResultHash();
+}
+
+
 
 //---------------------------------------------------------------------------
 

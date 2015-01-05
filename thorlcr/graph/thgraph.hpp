@@ -471,6 +471,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual char *getResultVarString(const char * name, unsigned sequence) { return ctx->getResultVarString(name, sequence); }
         virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { return ctx->getResultVarUnicode(name, sequence); }
         virtual unsigned getResultHash(const char * name, unsigned sequence) { return ctx->getResultHash(name, sequence); }
+        virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { return ctx->getExternalResultHash(wuid, name, sequence); }
         virtual const char *cloneVString(const char *str) const { return ctx->cloneVString(str); }
         virtual const char *cloneVString(size32_t len, const char *str) const { return ctx->cloneVString(len, str); }
         virtual char *getWuid() { return ctx->getWuid(); }
