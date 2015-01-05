@@ -454,7 +454,7 @@
             </listitem>
 
             <listitem>
-              <para>For each ESP Service binding, edit the <emphasis
+              <para>For the ESP Service bindings, add the <emphasis
               role="bold">resourcesBasedn</emphasis> and <emphasis
               role="bold">workunitsBasedn</emphasis> to match your LDAP server
               settings.</para>
@@ -515,13 +515,13 @@
             <listitem>
               <para>On the <emphasis role="bold">RoxieCluster</emphasis> page
               on the right hand side, select the <emphasis
-              role="bold">Options</emphasis> tab.</para>
+              role="bold">LDAP</emphasis> tab.</para>
             </listitem>
 
             <listitem>
-              <para>Scroll down to the <emphasis
-              role="bold">ldapUser</emphasis> field and verify that there is a
-              "<emphasis>roxie</emphasis>" user.</para>
+              <para>Locate the <emphasis role="bold">ldapUser</emphasis> field
+              and verify that there is a "<emphasis>roxie</emphasis>"
+              user.</para>
             </listitem>
 
             <listitem>
