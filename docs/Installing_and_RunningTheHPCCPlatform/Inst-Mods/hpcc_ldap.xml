@@ -349,7 +349,7 @@
       <listitem>
         <para>Right-click on <emphasis role="bold">Navigator</emphasis> Pane
         and choose <emphasis role="bold">New Components</emphasis> from the
-        pop up menu, then choose <emphasis role="bold">ldapServer</emphasis>
+        pop-up menu, then choose <emphasis role="bold">ldapServer</emphasis>
         from the pop-up menu. <graphic fileref="../../images/LDAP_003.jpg"
         vendor="configmgrSS" /></para>
 
