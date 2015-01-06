@@ -459,13 +459,12 @@
             <row>
               <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
 
-              <entry>Optional. Specifies the maximum length of a
-              variable-length index record. Fixed length records always use
-              the minimum size required. Indexes can be made backward
-              compatible for platform versions prior to 3.0 by adding the
-              MAXLENGTH option to the BUILD action. If the default maximum
-              length causes inefficiency problems, it can be explicitly
-              overridden.</entry>
+              <entry>Optional. This option is used to create indexes that are
+              backward compatible for platform versions prior to 3.0.
+              Specifies the maximum length of a variable-length index record.
+              Fixed length records always use the minimum size required. If
+              the default maximum length causes inefficiency problems, it can
+              be explicitly overridden.</entry>
             </row>
 
             <row>
