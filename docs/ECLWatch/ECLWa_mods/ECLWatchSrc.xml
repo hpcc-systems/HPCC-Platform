@@ -1426,9 +1426,11 @@
         <sect3>
           <title>Superfiles</title>
 
-          <para>Superfiles are different from regular files. Selecting a
-          superfile from the Logical Files page displays a different File
-          Details page, the superfile details page.<figure>
+          <para>A superfile is a managed list of sub-files (Logical Files)
+          treated as a single logical entity. When a file is a superfile, the
+          Summary tab displays the superfile details, such as each subfile.
+          Select a superfile from the Logical Files list, then press the Open
+          action button. This displays the superfile details page.<figure>
               <title>Superfile Details page</title>
 
               <mediaobject>
@@ -1452,7 +1454,7 @@
               </listitem>
 
               <listitem>
-                <para>Select the sub-files.</para>
+                <para>Select one or more sub-file(s).</para>
               </listitem>
 
               <listitem>
