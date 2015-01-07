@@ -408,7 +408,7 @@ start_dafilesrv() {
       return $?
    else
       printf "Starting %-21s" "$compName.... "
-      log_failure_msg "Already started"
+      log_success_msg "Already started"
       return 0
    fi
 }
@@ -419,6 +419,9 @@ startCmd() {
     if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo "compName=$compName compPath=$compPath compProcessName=$compType"
     fi
+
+    # use less heap when threaded
+    export MALLOC_ARENA_MAX=8
 
     # Creating logfiles for component
     logDir=$log/${compName}
@@ -509,9 +512,9 @@ stop_component() {
     RCSTOP=$?
     if [ $RCSTOP -ne 0 ];then
        if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "Failed: Process is not running"
+          log_success_msg "Process already stopped :: check_status code is ${RCSTOP}"
        else
-          log_failure_msg "Already Stopped"
+          log_success_msg "Already stopped"
        fi
        cleanup_component
        removePid ${PIDPATH}

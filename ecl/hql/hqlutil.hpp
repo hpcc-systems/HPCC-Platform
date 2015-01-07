@@ -556,6 +556,7 @@ public:
     ErrorSeverityMapper(IErrorReceiver & errorProcessor);
 
     virtual IError * mapError(IError * error);
+    virtual void exportMappings(IWorkUnit * wu) const;
 
     bool addCommandLineMapping(const char * mapping);
     bool addMapping(const char * category, const char * value);

@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//class=textsearch
+
 import $.Setup;
 import $.Setup.TS;
 searchIndex := Setup.Files('hthor', false).getSearchIndex();

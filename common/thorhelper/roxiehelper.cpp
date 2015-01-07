@@ -563,6 +563,8 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 payload += 4;
                 char *str;
 
+                pHttpHelper->setUrlPath(header);
+
                 // capture authentication token
                 if ((str = strstr(header, "Authorization: Basic ")) != NULL)
                     pHttpHelper->setAuthToken(str+21);
@@ -1460,8 +1462,35 @@ StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
     return out;
 }
 
+static const char *skipLfnForeign(const char *lfn)
+{
+    const char *finger = lfn;
+    while (*finger=='~')
+        finger++;
+    const char *scope = strstr(finger, "::");
+    if (scope)
+    {
+        StringBuffer cmp;
+        if (strieq("foreign", cmp.append(scope-finger, finger).trim()))
+        {
+            // foreign scope - need to strip off the ip and port
+            scope += 2;  // skip ::
+            finger = strstr(scope,"::");
+            if (finger)
+            {
+                finger += 2;
+                while (*finger == ' ')
+                    finger++;
+                return finger;
+            }
+        }
+    }
+    return lfn;
+}
+
 StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
 {
+    fname = skipLfnForeign(fname); //foreign location should already be reflected in local dali dfs meta data
     if (fname[0]=='~')
         logicalName.append(fname+1);
     else if (resolveLocally)
@@ -1492,4 +1521,33 @@ void IRoxieContextLogger::CTXLOGae(IException *E, const char *file, unsigned lin
     va_start(args, format);
     CTXLOGaeva(E, file, line, prefix, format, args);
     va_end(args);
+}
+
+void HttpHelper::gatherUrlParameters()
+{
+    const char *finger = strchr(urlPath, '?');
+    if (!finger)
+        return;
+    finger++;
+    while (*finger)
+    {
+        StringBuffer s, prop, val;
+        while (*finger && *finger != '&' && *finger != '=')
+            s.append(*finger++);
+        appendDecodedURL(prop, s.trim());
+        if (!*finger || *finger == '&')
+            val.set("1");
+        else
+        {
+            s.clear();
+            finger++;
+            while (*finger && *finger != '&')
+                s.append(*finger++);
+            appendDecodedURL(val, s.trim());
+        }
+        if (prop.length())
+            parameters->setProp(prop, val);
+        if (*finger)
+            finger++;
+    }
 }

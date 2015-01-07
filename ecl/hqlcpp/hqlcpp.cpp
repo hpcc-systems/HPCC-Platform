@@ -1731,6 +1731,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
         DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
         DebugOption(options.keyedJoinPreservesOrder,"keyedJoinPreservesOrder",true),
+        DebugOption(options.expandSelectCreateRow,"expandSelectCreateRow",false),
     };
 
     //get options values from workunit
@@ -1863,9 +1864,16 @@ unsigned HqlCppTranslator::getOptimizeFlags() const
         optFlags |= HOOfoldconstantdatasets;
     if (options.optimizeMax)
         optFlags |= HOOexpensive;
+    if (options.expandSelectCreateRow)
+        optFlags  |= HOOexpandselectcreaterow;
     return optFlags;
 }
 
+
+void HqlCppTranslator::exportWarningMappings()
+{
+    globalOnWarnings->exportMappings(wu());
+}
 
 void HqlCppTranslator::overrideOptionsForLibrary()
 {
