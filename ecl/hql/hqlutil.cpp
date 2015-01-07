@@ -2645,6 +2645,49 @@ void checkSelectConsistency(IHqlExpression * expr)
 
 //---------------------------------------------------------------------------
 
+static HqlTransformerInfo parameterDependencyCheckerInfo("ParameterDependencyChecker");
+class ParameterDependencyChecker  : public NewHqlTransformer
+{
+public:
+    ParameterDependencyChecker() : NewHqlTransformer(parameterDependencyCheckerInfo), foundParameter(false)
+    {
+    }
+
+    virtual void analyseExpr(IHqlExpression * expr)
+    {
+        if (expr->isFullyBound() || alreadyVisited(expr) || foundParameter)
+            return;
+
+        if (expr->getOperator() == no_param)
+        {
+            foundParameter = true;
+            return;
+        }
+
+        NewHqlTransformer::analyseExpr(expr);
+    }
+
+    bool isDependent(IHqlExpression * expr)
+    {
+        analyse(expr, 0);
+        return foundParameter;
+    }
+
+protected:
+    bool foundParameter;
+};
+
+
+bool isDependentOnParameter(IHqlExpression * expr)
+{
+    if (expr->isFullyBound())
+        return false;
+    ParameterDependencyChecker checker;
+    return checker.isDependent(expr);
+}
+
+//---------------------------------------------------------------------------
+
 void DependencyGatherer::doGatherDependencies(IHqlExpression * expr)
 {
     if (expr->queryTransformExtra())
@@ -6686,7 +6729,7 @@ void ErrorSeverityMapper::exportMappings(IWorkUnit * wu) const
     for (unsigned i=firstActiveMapping; i < max; i++)
     {
         IHqlExpression & cur = severityMappings.item(i);
-        wu->setWarningSeverity(getIntValue(cur.queryChild(0)), getCheckSeverity(cur.queryChild(1)->queryName()));
+        wu->setWarningSeverity((unsigned)getIntValue(cur.queryChild(0)), getCheckSeverity(cur.queryChild(1)->queryName()));
     }
 }
 
@@ -7108,7 +7151,7 @@ public:
         StringBuffer mangledReturnParameters;
         mangleFunctionReturnType(mangledReturn, mangledReturnParameters, retType);
 
-        if (body->hasAttribute(contextAtom))
+        if (functionBodyUsesContext(body))
             mangled.append("P12ICodeContext");
         else if (body->hasAttribute(globalContextAtom) )
             mangled.append("P18IGlobalCodeContext");
@@ -7355,7 +7398,7 @@ public:
 
         mangled.append(mangledReturn);
 
-        if (body->hasAttribute(contextAtom))
+        if (functionBodyUsesContext(body))
             mangled.append("PVICodeContext@@");
         else if (body->hasAttribute(globalContextAtom) )
             mangled.append("PVIGlobalCodeContext@@");

@@ -212,8 +212,9 @@ private:
 
 interface IFunctionTypeExtra : public IInterface
 {
-    virtual IInterface * queryParameters() = 0;
-    virtual IInterface * queryDefaults() = 0;
+    virtual IInterface * queryParameters() const = 0;
+    virtual IInterface * queryDefaults() const = 0;
+    virtual IInterface * queryAttributes() const = 0;
 };
 
 interface IEnumeratedTypeBuilder : public IInterface
@@ -254,7 +255,7 @@ extern DEFTYPE_API ITypeInfo *makeRowType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeSetType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeTransformType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeSortListType(ITypeInfo *basetype);
-extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * args, IInterface * defaults);
+extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * args, IInterface * defaults, IInterface * attrs);
 
 extern DEFTYPE_API ITypeInfo * makePointerType(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeArrayType(ITypeInfo * basetype, unsigned size=0);

@@ -4632,45 +4632,6 @@ void verifySplitConsistency(IHqlExpression * expr)
 
 //---------------------------------------------------------------------------
 
-static HqlTransformerInfo globalToParameterTransformerInfo("GlobalToParameterTransformer");
-class GlobalToParameterTransformer : public QuickHqlTransformer
-{
-public:
-    GlobalToParameterTransformer(HqlExprArray & _parameters, HqlExprArray & _defaults) 
-        : QuickHqlTransformer(globalToParameterTransformerInfo, NULL), parameters(_parameters), defaults(_defaults)
-    {}
-
-    virtual IHqlExpression * createTransformedBody(IHqlExpression * expr);
-
-protected:
-    HqlExprArray & parameters;
-    HqlExprArray & defaults;
-};
-
-IHqlExpression * GlobalToParameterTransformer::createTransformedBody(IHqlExpression * expr)
-{
-    if (expr->getOperator() != no_colon)
-        return QuickHqlTransformer::createTransformedBody(expr);
-
-    StringBuffer paramName;
-    paramName.append("_implicit_hidden_").append(parameters.ordinality());
-    HqlExprArray attrs;
-    attrs.append(*createAttribute(_hidden_Atom));
-    IHqlExpression * param = createParameter(createIdAtom(paramName.str()), parameters.ordinality(), expr->getType(), attrs);
-    parameters.append(*param);
-    defaults.append(*LINK(expr));
-    return LINK(param);
-}
-
-IHqlExpression * convertWorkflowToImplicitParmeters(HqlExprArray & parameters, HqlExprArray & defaults, IHqlExpression * expr)
-{
-    GlobalToParameterTransformer transformer(parameters, defaults);
-    return transformer.transform(expr);
-}
-
-
-//---------------------------------------------------------------------------
-
 static HqlTransformerInfo createRowSelectorExpanderInfo("CreateRowSelectorExpander");
 class CreateRowSelectorExpander : public NewHqlTransformer
 {

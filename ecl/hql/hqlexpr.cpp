@@ -158,6 +158,7 @@ static IHqlExpression * cachedNullRecord;
 static IHqlExpression * cachedNullRowRecord;
 static IHqlExpression * cachedOne;
 static IHqlExpression * cachedLocalAttribute;
+static IHqlExpression * cachedContextAttribute;
 static IHqlExpression * constantTrue;
 static IHqlExpression * constantFalse;
 static IHqlExpression * defaultSelectorSequenceExpr;
@@ -238,6 +239,7 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     cachedNullRowRecord = createRecord(nonEmptyAttr);
     cachedOne = createConstant(1);
     cachedLocalAttribute = createAttribute(localAtom);
+    cachedContextAttribute = createAttribute(contextAtom);
     constantTrue = createConstant(createBoolValue(true));
     constantFalse = createConstant(createBoolValue(false));
     defaultSelectorSequenceExpr = createAttribute(_selectorSequence_Atom);
@@ -271,6 +273,7 @@ MODULE_EXIT()
     constantFalse->Release();
     constantTrue->Release();
     blank->Release();
+    cachedContextAttribute->Release();
     cachedLocalAttribute->Release();
     cachedOne->Release();
     cachedActiveTableExpr->Release();
@@ -7790,13 +7793,27 @@ IHqlExpression * createFunctionDefinition(IIdAtom * id, IHqlExpression * value, 
     return createFunctionDefinition(id, args);
 }
 
+bool functionBodyUsesContext(IHqlExpression * body)
+{
+    //All functions are assumed to require the context, unless it is an external c++ function without a context attr
+    switch (body->getOperator())
+    {
+    case no_external:
+        return (body->queryAttribute(contextAtom) != NULL);
+    default:
+        return true;
+    }
+}
+
 IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
 {
     IHqlExpression * body = &args.item(0);
     IHqlExpression * formals = &args.item(1);
     IHqlExpression * defaults = args.isItem(2) ? &args.item(2) : NULL;
+    OwnedHqlExpr attrs;
+    if (functionBodyUsesContext(body))
+        attrs.set(cachedContextAttribute);
 
-#if 1
     //This is a bit of a waste of time, but need to improve assignableFrom for a function type to ignore the uids.
     QuickExpressionReplacer defaultReplacer;
     HqlExprArray normalized;
@@ -7813,11 +7830,7 @@ IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
     OwnedHqlExpr newFormals = formals->clone(normalized);
     OwnedHqlExpr newDefaults = defaults ? defaultReplacer.transform(defaults) : NULL;
 
-    ITypeInfo * type = makeFunctionType(body->getType(), newFormals.getClear(), newDefaults.getClear());
-#else
-    ITypeInfo * type = makeFunctionType(body->getType(), LINK(formals), LINK(defaults));
-#endif
-
+    ITypeInfo * type = makeFunctionType(body->getType(), newFormals.getClear(), newDefaults.getClear(), attrs.getClear());
     return createNamedValue(no_funcdef, type, id, args);
 }
 
@@ -12050,6 +12063,8 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*createAttribute(actionAtom));
     if (body->getInfoFlags() & HEFcontextDependentException)
         attrs.append(*createAttribute(contextSensitiveAtom));
+    if (functionBodyUsesContext(body))
+        attrs.append(*LINK(cachedContextAttribute));
 
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);

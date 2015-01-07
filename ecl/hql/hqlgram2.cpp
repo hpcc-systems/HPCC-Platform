@@ -890,15 +890,7 @@ IHqlExpression * HqlGram::convertToOutOfLineFunction(const ECLlocation & errpos,
     if (expr->getOperator() != no_outofline)
     {
         if (queryParametered())
-        {
-            OwnedHqlExpr mapped = convertWorkflowToImplicitParmeters(defineScopes.tos().activeParameters, defineScopes.tos().activeDefaults, expr);
-            if (containsWorkflow(mapped))
-            {
-                reportError(ERR_USER_FUNC_NO_WORKFLOW, errpos, "Out of line user functions cannot contain workflow/stored");
-                return mapped.getClear();
-            }
-            return createWrapper(no_outofline, mapped.getClear());
-        }
+            return createWrapper(no_outofline, LINK(expr));
     }
     return LINK(expr);
 }
@@ -996,7 +988,6 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
                 }
             }
         }
-
         return createWrapper(no_outofline, result->queryType(), args);
     }
     return result.getClear();
@@ -1674,8 +1665,10 @@ IHqlExpression * HqlGram::forceEnsureExprType(IHqlExpression * expr, ITypeInfo *
     //or the out of line node should be added much later.
     if (expr->getOperator() == no_outofline)
     {
-        OwnedHqlExpr ret = forceEnsureExprType(expr->queryChild(0), type);
-        return createWrapper(no_outofline, LINK(ret));
+        HqlExprArray args;
+        args.append(*forceEnsureExprType(expr->queryChild(0), type));
+        unwindChildren(args, expr, 1);
+        return expr->clone(args);
     }
         
     OwnedHqlExpr ret = ensureExprType(expr, type);
@@ -6076,7 +6069,7 @@ void HqlGram::addFunctionParameter(const attribute & errpos, IIdAtom * name, ITy
 
     HqlExprArray attrs;
     endList(attrs);
-    Owned<ITypeInfo> funcType = makeFunctionType(type, LINK(formals), defaults.getClear());
+    Owned<ITypeInfo> funcType = makeFunctionType(type, LINK(formals), defaults.getClear(), NULL);
     addActiveParameterOwn(errpos, createParameter(name, nextParameterIndex(), LINK(funcType), attrs), defValue);
 }
 
