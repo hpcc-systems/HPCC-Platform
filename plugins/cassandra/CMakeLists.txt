@@ -56,8 +56,13 @@ if (USE_CASSANDRA)
     option(CASS_INSTALL_HEADER "Install header file" OFF)
     option(CASS_BUILD_STATIC "Build static library" OFF)
     option(CASS_BUILD_EXAMPLES "Build examples" OFF)
+
+    SET (_SAVE_Boost_FOUND "${Boost_FOUND}")  # Working around a bug in the cassandra cmake file
+    UNSET(Boost_FOUND)
     add_subdirectory (cpp-driver ${PROJECT_BINARY_DIR}/cassandra)
     add_dependencies( cassandra libuv )
+
+    SET (Boost_FOUND "${_SAVE_Boost_FOUND}")
 
     set(SRCS cassandraembed.cpp)
 
