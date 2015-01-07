@@ -2172,7 +2172,7 @@ OUTPUT(L);</programlisting></para>
       </sect2>
 
       <sect2>
-        <title>Run the query on Thor<parameter></parameter></title>
+        <title>Run the query on Thor</title>
 
         <para><orderedlist>
             <listitem>
@@ -2253,17 +2253,16 @@ OUTPUT(ValidWords)
       </sect2>
 
       <sect2>
-        <title>Compile and Publish the query to
-        Roxie<parameter></parameter></title>
+        <title>Compile and Publish the query to Roxie</title>
 
         <para><orderedlist>
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>RT-CLICK on the <emphasis role="bold">My Files</emphasis>
-              folder in the Repository<emphasis role="bold"></emphasis>
-              window, and select <emphasis role="bold">Insert
-              Folder</emphasis> from the pop-up menu.</para>
+              <para>Right-click on the <emphasis role="bold">My
+              Files</emphasis> folder in the Repository window, and select
+              <emphasis role="bold">Insert Folder</emphasis> from the pop-up
+              menu.</para>
 
               <para><figure>
                   <title>Insert Folder</title>
@@ -2294,7 +2293,7 @@ OUTPUT(ValidWords)
             </listitem>
 
             <listitem>
-              <para>RT-CLICK on the <emphasis role="bold">Anagram
+              <para>Right-click on the <emphasis role="bold">Anagram
               </emphasis>Folder, and select <emphasis role="bold">Insert
               File</emphasis> from the pop-up menu.</para>
             </listitem>
