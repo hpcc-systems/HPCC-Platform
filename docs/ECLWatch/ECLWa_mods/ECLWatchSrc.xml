@@ -90,7 +90,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="../../images/ECLWA00A.jpg"
+              <imagedata fileref="../../images/ECLWa00a.jpg"
                          vendor="eclwatchSS" />
             </imageobject>
           </mediaobject>
@@ -1422,6 +1422,57 @@
             the drop menu.</para>
           </listitem>
         </itemizedlist>
+
+        <sect3>
+          <title>Superfiles</title>
+
+          <para>A superfile is a managed list of sub-files (Logical Files)
+          treated as a single logical entity. When a file is a superfile, the
+          Summary tab displays the superfile details, such as each subfile.
+          Select a superfile from the Logical Files list, then press the Open
+          action button. This displays the superfile details page.<figure>
+              <title>Superfile Details page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWAS00a.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>On the superfile details page you can:</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para>See a summary of the sub-files the superfile
+                contains.</para>
+              </listitem>
+
+              <listitem>
+                <para>See the details of the sub-files.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select one or more sub-file(s).</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the <emphasis role="bold">Save</emphasis> button
+                to save any changes the superfile.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the <emphasis role="bold">Delete</emphasis> button
+                delete the superfile.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the <emphasis role="bold">Remove</emphasis> button
+                to remove a sub-file from the superfile.</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
       </sect2>
     </sect1>
 
