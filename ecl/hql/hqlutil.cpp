@@ -2348,12 +2348,12 @@ void DependenciesUsed::addFilenameWrite(IHqlExpression * expr)
         allWritten = true;
 }
 
-void DependenciesUsed::addResultRead(IHqlExpression * seq, IHqlExpression * name, bool isGraphResult)
+void DependenciesUsed::addResultRead(IHqlExpression * wuid, IHqlExpression * seq, IHqlExpression * name, bool isGraphResult)
 {
     if (!isGraphResult)
         if (!seq || !seq->queryValue())
             return;         //Can be called in parser when no sequence has been allocated
-    OwnedHqlExpr result = createAttribute(resultAtom, LINK(seq), LINK(name));
+    OwnedHqlExpr result = createAttribute(resultAtom, LINK(seq), LINK(name), LINK(wuid));
     if (resultsWritten.find(*result) == NotFound)
         appendUniqueExpr(resultsRead, LINK(result));
 }
@@ -2477,12 +2477,13 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
         {
             IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
             IHqlExpression * name = queryAttributeChild(expr, nameAtom, 0);
-            addResultRead(sequence, name, false);
+            IHqlExpression * wuid = expr->queryAttribute(wuidAtom);
+            addResultRead(wuid, sequence, name, false);
         }
         break;
     case no_getgraphresult:
         if (flags & GatherGraphResultRead)
-            addResultRead(expr->queryChild(1), expr->queryChild(2), true);
+            addResultRead(NULL, expr->queryChild(1), expr->queryChild(2), true);
         break;
     case no_setgraphresult:
         if (flags & GatherGraphResultWrite)
@@ -2493,7 +2494,8 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
         {
             IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
             IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
-            addResultRead(sequence, name, false);
+            IHqlExpression * wuid = expr->queryAttribute(wuidAtom);
+            addResultRead(wuid, sequence, name, false);
         }
         break;
     case no_ensureresult:
@@ -2515,7 +2517,7 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
     case no_callsideeffect:
         if (flags & GatherResultRead)
         {
-            addResultRead(expr->queryAttribute(_uid_Atom), NULL, false);
+            addResultRead(NULL, expr->queryAttribute(_uid_Atom), NULL, false);
         }
         break;
     }

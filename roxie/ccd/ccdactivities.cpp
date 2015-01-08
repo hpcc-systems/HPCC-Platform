@@ -538,6 +538,7 @@ public:
     }
 
     virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { throwUnexpected(); }
 
     // Not yet thought about these....
 

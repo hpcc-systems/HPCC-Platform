@@ -659,6 +659,7 @@ const char * cppSystemText[]  = {
     "   varstring   getResultVarString(const varstring stepname, unsigned4 sequence) : ctxmethod,pure,entrypoint='getResultVarString';",
     "   varunicode  getResultVarUnicode(const varstring stepname, unsigned4 sequence) : ctxmethod,pure,entrypoint='getResultVarUnicode';",
     "   set of any getResultSet(const varstring stepname, unsigned4 sequence, boolean xmltransformer, boolean csvtransformer) : ctxmethod,pure,entrypoint='getResultSet',newset;",
+    "   unsigned4 getExternalResultHash(const varstring wuid, const varstring stepname, unsigned4 sequence) : ctxmethod,pure;",
 
     "   _linkcounted_ dataset getResultRowset(const varstring stepname, unsigned4 sequence, boolean _allocator, boolean isGrouped, boolean xmltransformer, boolean csvtransformer) : ctxmethod,allocator(false),pure,entrypoint='getResultRowset';",
     "   linkcounted dictionary getResultDictionary(const varstring stepname, unsigned4 sequence, boolean xmltransformer, boolean csvtransformer, boolean hasher) : ctxmethod,pure,entrypoint='getResultDictionary';",

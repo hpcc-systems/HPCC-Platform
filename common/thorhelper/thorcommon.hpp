@@ -360,6 +360,10 @@ public:
     {
         return ctx->getResultHash(name, sequence);
     }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence)
+    {
+        return ctx->getExternalResultHash(wuid, name, sequence);
+    }
     virtual char *getWuid()
     {
         return ctx->getWuid();
