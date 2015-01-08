@@ -10531,7 +10531,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         if (expr->hasAttribute(resultAtom))
             result->setResultRowLimit(-1);
 
-        buildFormatCrcFunction(instance->classctx, "getFormatCrc", dataset, NULL, 0);
+        //Remove virtual attributes from the record, so the crc will be compatible with the disk read record
+        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(dataset->queryRecord());
+        buildFormatCrcFunction(instance->classctx, "getFormatCrc", noVirtualRecord, NULL, 0);
 
         bool grouped = isGrouped(dataset);
         bool ignoreGrouped = !expr->hasAttribute(groupedAtom);
