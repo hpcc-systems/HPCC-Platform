@@ -716,11 +716,6 @@ public:
 
 class RoxieListener : public Thread, implements IRoxieListener, implements IThreadFactory
 {
-#ifndef _WIN32
-    cpu_set_t cpuMask;
-    unsigned cpuCores;
-    unsigned lastCore;
-#endif
 public:
     IMPLEMENT_IINTERFACE;
     RoxieListener(unsigned _poolSize, bool _suspended) : Thread("RoxieListener")
@@ -730,14 +725,18 @@ public:
         poolSize = _poolSize;
         threadsActive = 0;
         maxThreadsActive = 0;
+    }
+
+    static void updateAffinity()
+    {
 #ifndef _WIN32
-        cpuCores = 0;
-        lastCore = 0;
-        CPU_ZERO(&cpuMask);
         if (sched_getaffinity(0, sizeof(cpu_set_t), &cpuMask))
         {
             if (traceLevel)
                 DBGLOG("Unable to get CPU affinity - thread affinity settings will be ignored");
+            cpuCores = 0;
+            lastCore = 0;
+            CPU_ZERO(&cpuMask);
         }
         else
         {
@@ -838,12 +837,13 @@ public:
     void setAffinity(int numCores)
     {
 #ifndef _WIN32
+        // Note - strictly speaking not threadsafe but any race conditions are (a) unlikely and (b) harmless
         if (cpuCores)
         {
             if (numCores > 0 && numCores < cpuCores)
             {
                 cpu_set_t threadMask;
-                CPU_ZERO_S(sizeof(cpu_set_t), &threadMask);
+                CPU_ZERO(&threadMask);
                 unsigned cores = 0;
                 unsigned offset = lastCore;
                 unsigned core;
@@ -887,8 +887,14 @@ protected:
     CriticalSection activeCrit;
     friend class ActiveQueryLimiter;
 
+#ifndef _WIN32
+    static cpu_set_t cpuMask;
+    static unsigned cpuCores;
+    static unsigned lastCore;
+#endif
+
 private:
-    void traceAffinity(cpu_set_t *mask)
+    static void traceAffinity(cpu_set_t *mask)
     {
         StringBuffer trace;
         for (unsigned core = 0; core < CPU_SETSIZE; core++)
@@ -902,6 +908,28 @@ private:
 
     CIArrayOf<AccessTableEntry> accessTable;
 };
+
+cpu_set_t RoxieListener::cpuMask;
+unsigned RoxieListener::cpuCores;
+unsigned RoxieListener::lastCore;
+
+extern void updateAffinity(unsigned __int64 affinity)
+{
+    if (affinity)  // 0 means use the value already set for this process
+    {
+        cpu_set_t cpus;
+        CPU_ZERO(&cpus);
+        for (unsigned core = 0; core < CPU_SETSIZE; core++)
+        {
+            if (affinity & 1)
+                CPU_SET(core, &cpus);
+            affinity >>= 1;
+        }
+        if (sched_setaffinity(0, sizeof(cpu_set_t), &cpus))
+            throw makeStringException(errno, "Failed to set affinity");
+    }
+    RoxieListener::updateAffinity();
+}
 
 class RoxieWorkUnitListener : public RoxieListener
 {
