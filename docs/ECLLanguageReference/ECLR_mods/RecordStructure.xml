@@ -66,20 +66,23 @@
         <row>
           <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
 
-          <entry>Optional. Specifies the maximum number of characters allowed
-          in the RECORD structure or field. MAXLENGTH on the RECORD structure
-          overrides any MAXLENGTH on a field definition, which overrides any
-          MAXLENGTH specified in the TYPE structure<indexterm>
+          <entry>Optional. This option is used to create indexes that are
+          backward compatible for platform versions prior to 3.0. Specifies
+          the maximum number of characters allowed in the RECORD structure or
+          field. MAXLENGTH on the RECORD structure overrides any MAXLENGTH on
+          a field definition, which overrides any MAXLENGTH specified in the
+          TYPE structure<indexterm>
               <primary>TYPE structure</primary>
             </indexterm> if the <emphasis>datatype</emphasis> names an alien
           data type. This option defines the maximum size of variable-length
-          records. If omitted, a warning is generated. The default maximum
-          size of a record containing variable-length fields is 4096 bytes
-          (this may be overridden by using
+          records. If omitted, fixed size records use the minimum size
+          required and variable length records produce a warning. The default
+          maximum size of a record containing variable-length fields is 4096
+          bytes (this may be overridden by using
           <emphasis>#OPTION(maxLength,####)</emphasis> to change the default).
           The maximum record size should be set as conservatively as possible,
           and is better set on a per-field basis (see the <emphasis
-          role="bold">Field Modifiers</emphasis>section below).</entry>
+          role="bold">Field Modifiers</emphasis>section below). </entry>
         </row>
 
         <row>
