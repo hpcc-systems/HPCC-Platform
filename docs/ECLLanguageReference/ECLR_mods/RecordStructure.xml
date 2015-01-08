@@ -779,7 +779,7 @@ END;</programlisting>
     case field name, and the default value for Repeated is "Row." For example,
     this demonstrates "Container/Repeated":</para>
 
-    <programlisting>DATASET(PeopleNames) People{xpath('people/name])};
+    <programlisting>DATASET(PeopleNames) People{xpath('people/name'])};
           /*matches: &lt;people&gt;
                         &lt;name&gt;Gavin&lt;/name&gt;
                         &lt;name&gt;Ricardo&lt;/name&gt;
@@ -787,14 +787,14 @@ END;</programlisting>
 
     <para>This demonstrates "/Repeated":</para>
 
-    <programlisting>DATASET(Names) Names{xpath('/name])};
+    <programlisting>DATASET(Names) Names{xpath('/name'])};
           /*matches: &lt;name&gt;Gavin&lt;/name&gt;
                      &lt;name&gt;Ricardo&lt;/name&gt; */</programlisting>
 
     <para>"Container" and "Repeated" may also contain xpath filters, like
     this:</para>
 
-    <programlisting>DATASET(doctorRec) doctors{xpath('person[@job=\'doctor\'])};
+    <programlisting>DATASET(doctorRec) doctors{xpath('person[@job=\'doctor\']')};
           /*matches: &lt;person job='doctor'&gt;
                        &lt;FName&gt;Kevin&lt;/FName&gt;
                        &lt;LName&gt;Richards&lt;/LName&gt;
