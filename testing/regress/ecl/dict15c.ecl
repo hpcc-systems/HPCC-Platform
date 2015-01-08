@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,11 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+//version multiPart=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 //Find all anagrams of a word, that match the list of known words
+import $.Common.TextSearch;
+import $.setup.TS;
 
-import $.^.setup.TS;
-
-export dict15b(string searchWord, DICTIONARY({TS.wordType word}) knownWords) := FUNCTION
+search(string searchWord, DICTIONARY({TS.wordType word}) knownWords) := FUNCTION
 
   R := RECORD
     STRING Word;
@@ -36,7 +44,21 @@ export dict15b(string searchWord, DICTIONARY({TS.wordType word}) knownWords) := 
   END;
     
   anagrams := LOOP(Initial,LENGTH(trimmedWord),Pluck1(ROWS(LEFT),COUNTER-1));
-    
+   
   uniqueAnagrams := DEDUP(anagrams, Word, HASH);
   RETURN uniqueAnagrams(Word in knownWords);
 END;
+
+wordIndex := TextSearch.getWordIndex(multiPart, false);
+allWordsDs := DEDUP(wordIndex, word, HASH);
+knownWords := DICTIONARY(allWordsDs, { word });
+
+shortWords := TABLE(allWordsDs, { Word })(LENGTH(TRIM(Word)) <= 6); 
+
+//Find all words that have anagrams 
+//BUG: Without the NOFOLD the code generator merges the projects, and introduces an ambiguous dataset
+withAnagrams := TABLE(NOFOLD(shortWords), { word, anagrams := search(Word, knownWords) });
+
+moreThanOne := withAnagrams(count(anagrams)>1);
+
+OUTPUT(sort(moreThanOne, RECORD));

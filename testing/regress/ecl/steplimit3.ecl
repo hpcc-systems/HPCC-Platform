@@ -15,12 +15,28 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
+//class=textsearch
 
-#option ('checkAsserts',false);
-import $.Common.TextSearch;
-import $.Common.TextSearchQueries;
+//MORE: This really should be supported on thor....
+//Stepped global joins unsupported, see issue HPCC-8148
+//skip type==thorlcr TBD
+//version multiPart=false
+//version multiPart=true
 
-q1 := TextSearchQueries.WordTests;
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
 
-output(TextSearch.executeBatchAgainstWordIndex(q1, false, 'thorlcr', 0x40000000)); // 0x40000000 means never optimize
+//--- end of version configuration ---
+
+
+import $.Setup;
+import $.Setup.TS;
+searchIndex := Setup.Files(multiPart, false).getSearchIndex();
+failingLimit := LIMIT(SORTED(STEPPED(searchIndex(keyed(kind = TS.kindType.TextEntry and word in ['sheep'])), doc, segment, wpos),doc, segment, wpos), 420, count);
+
+RECORDOF(SearchIndex) failTransform := TRANSFORM
+  SELF.word := 'LIMITED';
+  SELF := []
+END;
+
+CATCH(failingLimit, onfail(failTransform));

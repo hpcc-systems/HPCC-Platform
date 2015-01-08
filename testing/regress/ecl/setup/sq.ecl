@@ -1,10 +1,11 @@
 //This is a module which is imported and used from other queries - don't execute it.
 //skip type==setup TBD
 
-EXPORT sq(string platform) := MODULE
+EXPORT sq(boolean multiPart) := MODULE
 
 //MORE: This is currently hard-wired to hthor since it is a tiny dataset
-EXPORT NamePrefix := '~REGRESS::' + platform + '::';
+STRING prefix := IF(multiPart, 'multi', 'single');
+EXPORT NamePrefix := '~REGRESS::' + prefix + '::';
 
 EXPORT HouseRec :=
             record

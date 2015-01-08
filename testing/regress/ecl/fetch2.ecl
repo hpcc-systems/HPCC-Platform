@@ -15,8 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 IMPORT Std;
 
@@ -49,7 +56,7 @@ recordof(sq.SimplePersonBookDs) removeFp(recfp l) := TRANSFORM
     SELF := l;
 END;
 sortIt(dataset(recfp) ds) := FUNCTION
-    RETURN IF(Std.System.Thorlib.platform() = 'thor', PROJECT(SORT(ds, rfpos),removeFp(LEFT)), PROJECT(ds,removeFp(LEFT)));
+    RETURN IF(Std.System.Thorlib.platform()[1..4] = 'thor', PROJECT(SORT(ds, rfpos),removeFp(LEFT)), PROJECT(ds,removeFp(LEFT)));
 END;
 
 sequential(

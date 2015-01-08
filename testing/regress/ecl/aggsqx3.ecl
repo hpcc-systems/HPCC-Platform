@@ -15,8 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 //Simple disk aggregate
 output(preload(sq.HousePersonBookDs), { dataset people := sort(table(persons, { surname, sum(group, aage) }, surname, few), surname)});

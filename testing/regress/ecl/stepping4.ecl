@@ -17,10 +17,18 @@
 
 //Stepped global joins unsupported, see issue HPCC-8148
 //skip type==thorlcr TBD
+//version multiPart=false
+//version multiPart=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 
 import $.Setup;
 import $.Setup.TS;
-wordIndex := Setup.Files('hthor', false).getWordIndex();
+wordIndex := Setup.Files(multiPart, false).getWordIndex();
 
 boy := STEPPED(WordIndex(keyed(kind = TS.kindType.TextEntry and word = 'boy')), doc);
 

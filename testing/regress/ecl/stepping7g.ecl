@@ -16,10 +16,18 @@
 ############################################################################## */
 
 //class=textsearch
+//version multiPart=false
+//version multiPart=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 
 import $.Setup;
 import $.Setup.TS;
-searchIndex := Setup.Files('hthor', false).getSearchIndex();
+searchIndex := Setup.Files(multiPart, false).getSearchIndex();
 
 //Multi level smart stepping, with priorities in the correct order
 

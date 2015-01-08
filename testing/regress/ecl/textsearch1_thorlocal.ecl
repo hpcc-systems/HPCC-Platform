@@ -16,6 +16,13 @@
 ############################################################################## */
 
 //nothor
+//version multiPart=true,useLocal=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+useLocal := #IFDEFINED(root.useLocal, false);
+
+//--- end of version configuration ---
 
 #option ('checkAsserts',false);
 import $.Common.TextSearch;
@@ -32,8 +39,7 @@ q1 := TextSearchQueries.SingleBatchQuery(SingleQuery);
 q1 := TextSearchQueries.WordTests;
 #end
 
-boolean useLocal := true;
-Files := Setup.Files('thorlcr', true);
+Files := Setup.Files(multiPart, useLocal);
 wordIndex := index(TS.textSearchIndex, Files.NameWordIndex());
 p := project(nofold(q1), TextSearch.doBatchExecute(wordIndex, LEFT, useLocal, 0x00000200));           // 0x200 forces paranoid order checking on
 output(p);

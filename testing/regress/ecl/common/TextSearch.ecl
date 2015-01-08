@@ -1839,8 +1839,8 @@ MaxResults := 10000;
 
 publicExports := MODULE
 
-    EXPORT getWordIndex(string source, boolean useLocal) := FUNCTION
-        Files := Setup.Files(source, useLocal);
+    EXPORT getWordIndex(boolean multiPart, boolean useLocal) := FUNCTION
+        Files := Setup.Files(multiPart, useLocal);
         RETURN Files.getWordIndex();
     END;
     
@@ -1867,8 +1867,8 @@ publicExports := MODULE
         return result;
     end;
 
-    EXPORT executeBatchAgainstWordIndex(DATASET(queryInputRecord) queries, boolean useLocal, string source, unsigned4 internalFlags=0) := FUNCTION
-        wordIndex := getWordIndex(source, useLocal);
+    EXPORT executeBatchAgainstWordIndex(DATASET(queryInputRecord) queries, boolean useLocal, boolean multiPart, unsigned4 internalFlags=0) := FUNCTION
+        wordIndex := getWordIndex(multiPart, useLocal);
         p := project(nofold(queries), doBatchExecute(wordIndex, LEFT, useLocal, internalFlags));
         RETURN p;
     END;
