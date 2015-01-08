@@ -15,5 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
-import $.common;
-common.aggds4('hthor');
+//version multiPart=false
+//version multiPart=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+import $.setup;
+sq := setup.sq(multiPart);
+
+pr:= table(sq.SimplePersonBookDs, { fullname := trim(surname) + ', ' + trim(forename), aage });
+
+//Aggregate on a projected table that can't be merged
+pr2:= table(sq.SimplePersonBookDs, { surname, forename, aage, unsigned8 seq := (random() % 100) / 2000 + aage; });
+
+ORDERED(
+    //Filtered Aggregate on a projected table.
+    output(sort(table(pr(aage > 20), { aage, max(group, fullname) }, aage, few), record));
+
+    //Filtered Aggregate on a projected table.
+    output(sort(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few), record));
+);
