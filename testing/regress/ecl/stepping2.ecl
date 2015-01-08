@@ -15,9 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+//version multiPart=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.Setup;
 import $.Setup.TS;
-wordIndex := Setup.Files('hthor', false).getWordIndex();
+wordIndex := Setup.Files(multiPart, false).getWordIndex();
 
 OUTPUT(SORTED(STEPPED(WordIndex(keyed(kind = TS.kindType.TextEntry and word in ['boy', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;
 OUTPUT(SORTED(STEPPED(WordIndex(keyed(kind = TS.kindType.TextEntry and word in ['b%%%', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;

@@ -16,6 +16,13 @@
 ############################################################################## */
 
 //nothor
+//version multiPart=false
+//version multiPart=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
 
 #option ('checkAsserts',false);
 import $.Common.TextSearch;
@@ -23,4 +30,4 @@ import $.Common.TextSearchQueries;
 
 q1 := TextSearchQueries.WordTests;
 
-output(TextSearch.executeBatchAgainstWordIndex(q1, false, 'hthor', 0x40000000)); // 0x40000000 means never optimize
+output(TextSearch.executeBatchAgainstWordIndex(q1, false, multiPart, 0x40000000)); // 0x40000000 means never optimize

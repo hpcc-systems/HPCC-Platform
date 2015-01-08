@@ -19,10 +19,15 @@
 
 //Thor doesn't currently support catch correctly, or in a child query, so disable.
 //nothor
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
 
 import $.setup;
-sq := setup.sq('hthor');
-
+sq := setup.sq(multiPart);
 
 filtered(STRING name, unsigned klimit, unsigned slimit) := FUNCTION
     f := sq.SimplePersonBookIndex(surname = name);

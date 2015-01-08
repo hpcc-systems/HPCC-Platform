@@ -15,8 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 //A mistyped query, but interesting never the less - needs to access a stored variable from the child.
 secondBookNameX := (string20)sort(sq.SimplePersonBookDs.books, name)[2].name;

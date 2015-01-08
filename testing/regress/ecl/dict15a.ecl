@@ -15,14 +15,43 @@
     limitations under the License.
 ############################################################################## */
 
-//Find all anagrams of a word, that match the list of known words
-import $.Common;
-import $.Common.TextSearch;
+//version multiPart=false
+//version multiPart=true
 
-wordIndex := TextSearch.getWordIndex('thorlcr', false);
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
+//Find all anagrams of a word, that match the list of known words
+import $.Common.TextSearch;
+import $.setup.TS;
+
+search(string searchWord, DICTIONARY({TS.wordType word}) knownWords) := FUNCTION
+
+  R := RECORD
+    STRING Word;
+  END;
+    
+  Initial := DATASET([{searchWord}],R);
+    
+  R Pluck1(DATASET(R) infile, unsigned4 numDone) := FUNCTION
+    R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+      SELF.Word := le.Word[1..numDone] + le.Word[c] + le.Word[numDone+1..c-1]+le.Word[c+1..]; // Boundary Conditions handled automatically
+    END;
+    RETURN NORMALIZE(infile,LENGTH(LEFT.Word)-numDone,TakeOne(LEFT,numDone+COUNTER));
+  END;
+    
+  Anagrams := LOOP(Initial,LENGTH(searchWord),Pluck1(ROWS(LEFT),COUNTER-1));
+    
+  RETURN Anagrams(Word in knownWords);
+END;
+
+
+wordIndex := TextSearch.getWordIndex(multiPart, false);
 allWordsDs := DEDUP(SORTED(wordIndex), word);
 knownWords := DICTIONARY(allWordsDs, { word });
 
 string searchWord := 'gabs' : stored('word');
 
-OUTPUT(Common.Dict15a(searchWord, knownWords));
+OUTPUT(search(searchWord, knownWords));

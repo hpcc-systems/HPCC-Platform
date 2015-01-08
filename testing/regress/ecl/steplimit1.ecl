@@ -15,18 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup;
-sq := setup.sq('hthor');
+//class=textsearch
+//version multiPart=false
 
-pr:= table(sq.SimplePersonBookDs, { fullname := trim(surname) + ', ' + trim(forename), aage });
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
 
-//Aggregate on a projected table that can't be merged.  seq is actually set to aage
-pr2:= table(sq.SimplePersonBookDs, { surname, forename, aage, unsigned8 seq := (random() % 100) / 2000 + aage; });
+//--- end of version configuration ---
 
-sequential(
-//Filtered Aggregate on a projected table.
-output(table(pr(aage > 20), { max(group, fullname) })),
+import $.Setup;
+import $.Setup.TS;
+searchIndex := Setup.Files(multiPart, false).getSearchIndex();
 
-//Filtered Aggregate on a projected table.
-output(table(pr2(seq > 30), { ave(group, aage) }))
-);
+OUTPUT(LIMIT(SORTED(STEPPED(searchIndex(keyed(kind = TS.kindType.TextEntry and word in ['sheep'])), doc, segment, wpos),doc, segment, wpos), 421, count));

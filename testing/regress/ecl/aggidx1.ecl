@@ -15,5 +15,43 @@
     limitations under the License.
 ############################################################################## */
 
-import $.common;
-common.aggidx1('hthor');
+//version multiPart=false
+//version multiPart=true
+//version multiPart=false,useSequential=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+useSequential := #IFDEFINED(root.useSequential, false);
+
+//--- end of version configuration ---
+
+import $.setup;
+sq := setup.sq(multiPart);
+
+//Check correctly checks canMatchAny()
+inlineDs := dataset([1,2],{integer value});
+
+#EXPAND(IF(useSequential, 'SEQUENTIAL', 'ORDERED'))
+(
+    #onwarning (4515, ignore);
+    //Simple disk aggregate
+    output(table(sq.SimplePersonBookIndex, { sum(group, aage),exists(group),exists(group,aage>0),exists(group,aage>100),count(group,aage>20) }));
+
+    //Filtered disk aggregate, which also requires a beenProcessed flag
+    output(table(sq.SimplePersonBookIndex(surname != 'Halliday'), { max(group, aage) }));
+
+    //Special case count.
+    output(table(sq.SimplePersonBookIndex(forename = 'Gavin'), { count(group) }));
+
+    output(count(sq.SimplePersonBookIndex));
+
+    //Special case count.
+    output(table(sq.SimplePersonBookIndex, { count(group, (forename = 'Gavin')) }));
+
+    output(table(inlineDs, { count(sq.SimplePersonBookIndex(inlineDs.value = 1)); }));
+
+    //existence checks
+    output(exists(sq.SimplePersonBookIndex));
+    output(exists(sq.SimplePersonBookIndex(forename = 'Gavin')));
+    output(exists(sq.SimplePersonBookIndex(forename = 'Joshua')));
+);

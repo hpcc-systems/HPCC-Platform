@@ -17,6 +17,13 @@
 
 //Stepped global joins unsupported, see issue HPCC-8148
 //skip type==thorlcr TBD
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 
 import lib_stringLib;
 import $.Common.TextSearch;
@@ -46,7 +53,7 @@ wordIdType      := TS.wordIdType;
 kindType        := TS.kindType;
 
 //Not worth executing on thor files as well..
-wordIndex := Setup.Files('hthor', false).getWordIndex();
+wordIndex := Setup.Files(multiPart, false).getWordIndex();
 
 //May want the following, probably not actually implemented as an index - would save having dpos in the index, but more importantly storing it in the candidate match results because the mapping could be looked up later.
 wordIndexRecord := TS.wordIndexRecord;

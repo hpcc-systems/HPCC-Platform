@@ -15,13 +15,21 @@
     limitations under the License.
 ############################################################################## */
 
-import $.^.setup;
+//version multiPart=false
+//version multiPart=true
+//version multiPart=false,useSequential=true
 
-EXPORT aggds1(string source) := function
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+useSequential := #IFDEFINED(root.useSequential, false);
 
-sq := setup.sq(source);
+//--- end of version configuration ---
 
-    RETURN SEQUENTIAL(
+import $.setup;
+sq := setup.sq(multiPart);
+
+#EXPAND(IF(useSequential, 'SEQUENTIAL', 'ORDERED'))
+(
     //Simple disk aggregate
     output(table(sq.SimplePersonBookDs, { sum(group, aage),exists(group),exists(group,aage>0),exists(group,aage>100),count(group,aage>20) }));
 
@@ -40,6 +48,4 @@ sq := setup.sq(source);
     output(exists(sq.SimplePersonBookDs));
     output(exists(sq.SimplePersonBookDs(forename = 'Gavin')));
     output(exists(sq.SimplePersonBookDs(forename = 'Joshua')));
-    );
-
-END;
+);

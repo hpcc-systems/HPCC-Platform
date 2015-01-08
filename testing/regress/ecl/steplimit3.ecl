@@ -17,19 +17,25 @@
 
 //class=textsearch
 
+//MORE: This really should be supported on thor....
 //Stepped global joins unsupported, see issue HPCC-8148
 //skip type==thorlcr TBD
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 
 import $.Setup;
 import $.Setup.TS;
-searchIndex := Setup.Files('thorlcr', false).getSearchIndex();
+searchIndex := Setup.Files(multiPart, false).getSearchIndex();
+failingLimit := LIMIT(SORTED(STEPPED(searchIndex(keyed(kind = TS.kindType.TextEntry and word in ['sheep'])), doc, segment, wpos),doc, segment, wpos), 420, count);
 
-//Multi level smart stepping, with priorities in the correct order
+RECORDOF(SearchIndex) failTransform := TRANSFORM
+  SELF.word := 'LIMITED';
+  SELF := []
+END;
 
-i2 := STEPPED(searchIndex(kind=1 AND word='the'), doc, PRIORITY(3),HINT(maxseeklookahead(50)));
-i1 := STEPPED(searchIndex(kind=1 AND word='walls'), doc, PRIORITY(2),HINT(maxseeklookahead(50)));
-
-d1 := DEDUP(i1, doc, KEEP(2));
-d2 := DEDUP(i2, doc, KEEP(2));
-j1 := MERGEJOIN([d1, d2], STEPPED(LEFT.doc =RIGHT.doc ), SORTED(doc));
-output(TABLE(j1, {src := TS.docid2source(doc); UNSIGNED doc := TS.docid2doc(doc), cnt := COUNT(GROUP)},doc));
+CATCH(failingLimit, onfail(failTransform));

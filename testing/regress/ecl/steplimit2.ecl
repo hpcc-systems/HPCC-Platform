@@ -15,12 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
+//class=textsearch
+//version multiPart=false
 
-#option ('checkAsserts',false);
-import $.Common.TextSearch;
-import $.Common.TextSearchQueries;
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
 
-q1 := TextSearchQueries.WordTests;
+//--- end of version configuration ---
 
-output(TextSearch.executeBatchAgainstWordIndex(q1, false, 'thorlcr', 0x40000000)); // 0x40000000 means never optimize
+
+import $.Setup;
+import $.Setup.TS;
+searchIndex := Setup.Files(multiPart, false).getSearchIndex();
+
+SEQUENTIAL(
+OUTPUT(LIMIT(SORTED(STEPPED(searchIndex(keyed(kind = TS.kindType.TextEntry and word in ['sheep'])), segment, wpos),segment, wpos), 421, count));
+);
