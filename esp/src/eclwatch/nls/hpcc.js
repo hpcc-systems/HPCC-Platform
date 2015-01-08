@@ -57,6 +57,7 @@ define({root:
     Comment: "Comment",
     Completed: "Completed",
     ComplexityWarning: "More than {threshold} activities ({activityCount}) - suppress initial display?",
+    CompressedFileSize: "Compressed File Size",
     Component: "Component",
     Compress: "Compress",
     Compressed: "Compressed",
