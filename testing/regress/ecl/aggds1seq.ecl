@@ -15,8 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
+multiPart := false;
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 sequential(
 //Simple disk aggregate

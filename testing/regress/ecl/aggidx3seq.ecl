@@ -15,8 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
+multiPart := false;
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 //A not-so-simple out of line subquery
 secondBookName := (string20)sort(sq.SimplePersonBookIndex.books, name)[2].name;

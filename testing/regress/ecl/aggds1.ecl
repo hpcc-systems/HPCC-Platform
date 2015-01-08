@@ -15,13 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-import $.^.setup;
+//version multiPart=false
+//version multiPart=true
 
-EXPORT aggds1(string source) := function
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
 
-sq := setup.sq(source);
+import $.setup;
+sq := setup.sq(multiPart);
 
-    RETURN SEQUENTIAL(
+SEQUENTIAL(
     //Simple disk aggregate
     output(table(sq.SimplePersonBookDs, { sum(group, aage),exists(group),exists(group,aage>0),exists(group,aage>100),count(group,aage>20) }));
 
@@ -40,6 +43,4 @@ sq := setup.sq(source);
     output(exists(sq.SimplePersonBookDs));
     output(exists(sq.SimplePersonBookDs(forename = 'Gavin')));
     output(exists(sq.SimplePersonBookDs(forename = 'Joshua')));
-    );
-
-END;
+);
