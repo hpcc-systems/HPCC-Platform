@@ -15,8 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#workunit ('name','ExportResult');
-
 namesRecord := 
             RECORD
 string10        forename;
