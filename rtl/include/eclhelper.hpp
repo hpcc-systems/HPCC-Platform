@@ -645,6 +645,7 @@ interface ICodeContext : public IResourceContext
 
     virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
     virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) = 0;
 };
 
 

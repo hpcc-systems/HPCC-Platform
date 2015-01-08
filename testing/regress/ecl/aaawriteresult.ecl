@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
-//class=textsearch
+#workunit ('name','ExportResult');
 
-import $.Setup;
-import $.Setup.TS;
-searchIndex := Setup.Files('hthor', false).getSearchIndex();
+namesRecord := 
+            RECORD
+string10        forename;
+string20        surname;
+            END;
 
-SEQUENTIAL(
-OUTPUT(LIMIT(SORTED(STEPPED(searchIndex(keyed(kind = TS.kindType.TextEntry and word in ['sheep'])), segment, wpos),segment, wpos), 421, count));
-);
+ds := dataset([{'Jo','Smith'},{'Jim','Smithe'},{'Joe','Schmitt'}], namesRecord);
+    
+output(ds,NAMED('ExportedNames'));

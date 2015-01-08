@@ -84,7 +84,7 @@ LOADXML(myxmlText);
      'OUTPUT(FETCH(Files.Vehicle,Files.VehicleIDX(personid= '
          + %'id'% + '),RIGHT.RecPos));\n' )
 #END
-%OutputStr%
+%OutStr%
 ENDMACRO;
     
 //this is an example of code for a drilldown (1 per row)

@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//class=textsearch
+
 #option ('checkAsserts',false);
 
 import $.SetupText;

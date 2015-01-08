@@ -951,6 +951,7 @@ public:
     virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
 
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { throwUnexpected(); }
 
     virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source)
     {

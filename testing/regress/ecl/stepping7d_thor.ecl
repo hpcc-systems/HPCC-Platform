@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//class=textsearch
+
 //Stepped global joins unsupported, see issue HPCC-8148
 //skip type==thorlcr TBD
 

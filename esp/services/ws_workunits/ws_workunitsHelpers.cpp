@@ -1620,6 +1620,60 @@ void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
+void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics)
+{
+    Owned<IConstWUStatisticIterator> stats = &cw->getStatistics(&filter);
+    ForEach(*stats)
+    {
+        IConstWUStatistic & cur = stats->query();
+        StringBuffer xmlBuf, tsValue;
+        SCMStringBuffer curCreator, curScope, curDescription, curFormattedValue;
+
+        StatisticCreatorType curCreatorType = cur.getCreatorType();
+        StatisticScopeType curScopeType = cur.getScopeType();
+        StatisticMeasure curMeasure = cur.getMeasure();
+        StatisticKind curKind = cur.getKind();
+        unsigned __int64 value = cur.getValue();
+        unsigned __int64 count = cur.getCount();
+        unsigned __int64 max = cur.getMax();
+        unsigned __int64 ts = cur.getTimestamp();
+        cur.getCreator(curCreator);
+        cur.getScope(curScope);
+        cur.getDescription(curDescription, createDescriptions);
+        cur.getFormattedValue(curFormattedValue);
+
+        Owned<IEspWUStatisticItem> wuStatistic = createWUStatisticItem();
+
+        if (curCreatorType != SCTnone)
+            wuStatistic->setCreatorType(queryCreatorTypeName(curCreatorType));
+        if (curCreator.length())
+            wuStatistic->setCreator(curCreator.str());
+        if (curScopeType != SSTnone)
+            wuStatistic->setScopeType(queryScopeTypeName(curScopeType));
+        if (curScope.length())
+            wuStatistic->setScope(curScope.str());
+        if (curMeasure != SMeasureNone)
+            wuStatistic->setMeasure(queryMeasureName(curMeasure));
+        if (curKind != StKindNone)
+            wuStatistic->setKind(queryStatisticName(curKind));
+        wuStatistic->setRawValue(value);
+        wuStatistic->setValue(curFormattedValue.str());
+        if (count != 1)
+            wuStatistic->setCount(count);
+        if (max)
+            wuStatistic->setMax(max);
+        if (ts)
+        {
+            formatStatistic(tsValue, ts, SMeasureTimestampUs);
+            wuStatistic->setTimeStamp(tsValue.str());
+        }
+        if (curDescription.length())
+            wuStatistic->setDescription(curDescription.str());
+
+        statistics.append(*wuStatistic.getClear());
+    }
+}
+
 bool WsWuInfo::getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize)
 {
     if (!fileName || !*fileName)

@@ -737,6 +737,7 @@ struct HqlCppOptions
     bool                reportAssertFilenameTail;
     bool                newBalancedSpotter;
     bool                keyedJoinPreservesOrder;
+    bool                expandSelectCreateRow;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

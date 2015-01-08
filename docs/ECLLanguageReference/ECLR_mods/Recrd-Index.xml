@@ -24,20 +24,30 @@
       <primary>FIRST</primary>
     </indexterm>) ]</emphasis><emphasis role="bold"> [,DISTRIBUTED<indexterm>
       <primary>DISTRIBUTED</primary>
-    </indexterm>]) <emphasis
-  role="bold">[,FILEPOSITION(<emphasis>false</emphasis>);</emphasis></emphasis><emphasis></emphasis></para>
+    </indexterm>] [,FILEPOSITION( [
+  </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
+  MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
+    </indexterm>[</emphasis>(<emphasis>**value</emphasis>**)<emphasis
+  role="bold">] ] );</emphasis></para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> keys, payload, indexfile
-  </emphasis><emphasis role="bold">[,SORTED] [,PRELOAD]</emphasis><emphasis
-  role="bold"> [,OPT] [,COMPRESSED( LZW | ROW | FIRST) ]</emphasis><emphasis
-  role="bold"> [,DISTRIBUTED]) </emphasis><emphasis
-  role="bold">[,FILEPOSITION(<emphasis>false</emphasis>);</emphasis><emphasis></emphasis></para>
+  </emphasis><emphasis role="bold">[,SORTED] [,PRELOAD][,OPT] [,COMPRESSED(
+  LZW | ROW | FIRST) ] [,DISTRIBUTED] [,FILEPOSITION( [
+  </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
+  MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
+    </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
+  role="bold">] ]</emphasis>);</para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
-  role="bold">);</emphasis></para>
+  role="bold"> [, MAXLENGTH<indexterm>
+      <primary>MAXLENGTH</primary>
+    </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
+  role="bold">] ]); </emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -160,11 +170,19 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">FILEPOSITION(false)</emphasis></entry>
+          <entry><emphasis role="bold">FILEPOSITION</emphasis></entry>
 
-          <entry>Optional. Prevents the implicit fileposition field from being
-          created and will not treat a trailing integer field any differently
-          from the rest of the payload.</entry>
+          <entry>Optional. If <emphasis>flag</emphasis> is FALSE, prevents the
+          normal behavior of implicit fileposition field being created and
+          will not treat a trailing integer field any differently from the
+          rest of the payload.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>flag</emphasis></entry>
+
+          <entry>Optional. TRUE or FALSE, indicating whether or not to create
+          the implicit fileposition field.</entry>
         </row>
 
         <row>
@@ -181,6 +199,26 @@
           the new index. See the <emphasis>Scope &amp; Logical
           Filenames</emphasis> section for more on logical
           filenames.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
+
+          <entry>Optional. This option is used to create indexes that are
+          backward compatible for platform versions prior to 3.0. Specifies
+          the maximum length of a variable-length index record. Fixed length
+          records always use the minimum size required. If the default maximum
+          length causes inefficiency problems, it can be explicitly
+          overridden.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>Optional. An integer value indicating the maximum length. If
+          omitted, the maximum size is calculated from the record structure.
+          Variable-length records that do not specify MAXLENGTH may be
+          slightly inefficient</entry>
         </row>
       </tbody>
     </tgroup>

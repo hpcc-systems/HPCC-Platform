@@ -7724,14 +7724,23 @@ IHqlExpression * HqlCppTranslator::calculatePersistInputCrc(BuildCtx & ctx, Depe
         IHqlExpression & cur = dependencies.resultsRead.item(idx2);
         IHqlExpression * seq = cur.queryChild(0);
         IHqlExpression * name = cur.queryChild(1);
+        IHqlExpression * wuid = cur.queryChild(2);
+        if (name->isAttribute())
+        {
+            assertex(name->queryName() == wuidAtom);
+            wuid = name;
+            name = NULL;
+        }
 
         //Not sure if we need to do this if the result is internal.  Leave on for the moment.
         //if (seq->queryValue()->getIntValue() != ResultSequenceInternal)
         bool expandLogical = matchesConstantValue(seq, ResultSequencePersist) && !cur.hasAttribute(_internal_Atom);
         HqlExprArray args;
+        if (wuid)
+            args.append(*LINK(wuid->queryChild(0)));
         args.append(*createResultName(name, expandLogical));
         args.append(*LINK(seq));
-        OwnedHqlExpr call = bindFunctionCall(getResultHashId, args);
+        OwnedHqlExpr call = bindFunctionCall(wuid ? getExternalResultHashId : getResultHashId, args);
         OwnedHqlExpr value = createValue(no_bxor, crcExpr->getType(), LINK(crcExpr), ensureExprType(call, crcExpr->queryType()));
         buildAssignToTemp(ctx, crcExpr, value);
     }

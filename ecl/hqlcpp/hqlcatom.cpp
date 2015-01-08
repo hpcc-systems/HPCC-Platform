@@ -340,6 +340,7 @@ IIdAtom * getEnvId;
 IIdAtom * getEventExtraId;
 IIdAtom * getEventNameId;
 IIdAtom * getExpandLogicalNameId;
+IIdAtom * getExternalResultHashId;
 IIdAtom * getFailMessageId;
 IIdAtom * getFilePositionId;
 IIdAtom * getGraphLoopCounterId;
@@ -989,6 +990,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(getEventExtra);
     MAKEID(getEventName);
     MAKEID(getExpandLogicalName);
+    MAKEID(getExternalResultHash);
     MAKEID(getFailMessage);
     MAKEID(getFilePosition);
     MAKEID(getGraphLoopCounter);

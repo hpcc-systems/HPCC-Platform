@@ -340,6 +340,7 @@ extern IIdAtom * getEnvId;
 extern IIdAtom * getEventExtraId;
 extern IIdAtom * getEventNameId;
 extern IIdAtom * getExpandLogicalNameId;
+extern IIdAtom * getExternalResultHashId;
 extern IIdAtom * getFailMessageId;
 extern IIdAtom * getFilePositionId;
 extern IIdAtom * getGraphLoopCounterId;

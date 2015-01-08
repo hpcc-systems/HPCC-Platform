@@ -4234,3 +4234,51 @@ bool CWsWorkunitsEx::onWUCheckFeatures(IEspContext &context, IEspWUCheckFeatures
     resp.updateDeployment().setUseCompression(true);
     return true;
 }
+
+static const char * checkGetStatsInput(const char * s)
+{
+    if (!s || !*s)
+        return "*";
+    return s;
+}
+
+bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &req, IEspWUGetStatsResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWUID();
+        WsWuHelpers::checkAndTrimWorkunit("WUInfo", wuid);
+
+        ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
+
+        const char* creatorType = checkGetStatsInput(req.getCreatorType());
+        const char* creator = checkGetStatsInput(req.getCreator());
+        const char* scopeType = checkGetStatsInput(req.getScopeType());
+        const char* scope = checkGetStatsInput(req.getScope());
+        const char* kind = checkGetStatsInput(req.getKind());
+        const char* measure = req.getMeasure();
+
+        StatisticsFilter filter(creatorType, creator, scopeType, scope, measure, kind);
+        if (!req.getMinScopeDepth_isNull() && !req.getMaxScopeDepth_isNull())
+            filter.setScopeDepth(req.getMinScopeDepth(), req.getMaxScopeDepth());
+        else if (!req.getMinScopeDepth_isNull())
+            filter.setScopeDepth(req.getMinScopeDepth());
+        if (!req.getIncludeGraphs_isNull())
+            filter.setMergeSources(req.getIncludeGraphs());
+
+        bool createDescriptions = false;
+        if (!req.getCreateDescriptions_isNull())
+            createDescriptions = req.getCreateDescriptions();
+
+        WsWuInfo winfo(context, wuid.str());
+        IArrayOf<IEspWUStatisticItem> statistics;
+        winfo.getStats(filter, createDescriptions, statistics);
+        resp.setStatistics(statistics);
+        resp.setWUID(wuid.str());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}

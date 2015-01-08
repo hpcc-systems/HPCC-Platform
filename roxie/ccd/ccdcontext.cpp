@@ -324,6 +324,12 @@ private:
         return r->getResultHash();
     }
 
+    unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence)
+    {
+        //GH->RKC Roxie should implement reading external results when connected to dali
+        UNIMPLEMENTED;
+    }
+
     unsigned __int64 getResultInt(const char * name, unsigned sequence)
     {
         Owned<IConstWUResult> r = getWorkUnitResult(workunit, name, sequence);
@@ -1516,6 +1522,7 @@ public:
     virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { throwUnexpected(); }
 
     virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { throwUnexpected(); }
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) { throwUnexpected(); }
 
     virtual char *getWuid() { throwUnexpected(); }
@@ -3713,7 +3720,7 @@ private:
 
 public:
     CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, true, _logctx, xmlReadFlags, _querySetName)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, httpHelper.getTrim(), _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }
@@ -3772,7 +3779,7 @@ private:
 
 public:
     CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, true, _logctx, xmlReadFlags, _querySetName)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, httpHelper.getTrim(), _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }

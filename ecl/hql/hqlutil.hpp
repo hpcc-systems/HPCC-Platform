@@ -299,7 +299,7 @@ protected:
     void addFilenameRead(IHqlExpression * expr);
     void addFilenameWrite(IHqlExpression * expr);
     void addRefDependency(IHqlExpression * expr);
-    void addResultRead(IHqlExpression * seq, IHqlExpression * name, bool isGraphResult);
+    void addResultRead(IHqlExpression * wuid, IHqlExpression * seq, IHqlExpression * name, bool isGraphResult);
     void addResultWrite(IHqlExpression * seq, IHqlExpression * name, bool isGraphResult);
     IHqlExpression * getNormalizedFilename(IHqlExpression * filename);
 

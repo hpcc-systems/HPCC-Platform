@@ -1832,7 +1832,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     return submitWsEclWorkunit(context, wsinfo, reqTree, out, flags, fmt, viewname, xsltname);
 }
 
-void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, StringBuffer &resp, StringBuffer &status, const char *query, const char *contentType)
+void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, StringBuffer &resp, StringBuffer &status, const char *query, bool trim, const char *contentType)
 {
     ISmartSocketFactory *conn = NULL;
     SocketEndpoint ep;
@@ -1845,7 +1845,9 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
 
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
         StringBuffer url("http://");
-        ep.getIpText(url).append(':').append(ep.port);
+        ep.getIpText(url).append(':').append(ep.port).append('/').append(target);
+        if (!trim)
+            url.append("?.trim=0");
 
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
         httpclient->setTimeOut(wsecl->roxieTimeout);
@@ -1890,13 +1892,15 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
     bool isRoxieReq = wsecl->connMap.getValue(wsinfo.qsetname.get())!=NULL;
     bool outputJSON = (format && strieq(format, "json"));
     const char *jsonp = context.queryRequestParameters()->queryProp("jsonp");
+    bool trim = context.queryRequestParameters()->getPropBool(".trim", true);
+    bool trim2 = context.queryRequestParameters()->getPropBool("trim", true);
     if (isRoxieReq && outputJSON)
     {
         StringBuffer jsonmsg;
         getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0, false);
         if (jsonp && *jsonp)
             output.append(jsonp).append('(');
-        sendRoxieRequest(wsinfo.qsetname.get(), jsonmsg, output, status, wsinfo.queryname, "application/json");
+        sendRoxieRequest(wsinfo.qsetname.get(), jsonmsg, output, status, wsinfo.queryname, trim, "application/json");
         if (jsonp && *jsonp)
             output.append(");");
     }
@@ -1917,7 +1921,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
         else
         {
             StringBuffer roxieresp;
-            sendRoxieRequest(wsinfo.qsetname, soapmsg, roxieresp, status, wsinfo.queryname);
+            sendRoxieRequest(wsinfo.qsetname, soapmsg, roxieresp, status, wsinfo.queryname, trim, "text/xml");
             if (xmlflags & WWV_OMIT_SCHEMAS)
                 expandWuXmlResults(output, wsinfo.queryname, roxieresp.str(), xmlflags);
             else
@@ -1965,7 +1969,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     const char *view = context.queryRequestParameters()->queryProp("view");
     if (strieq(clustertype.str(), "roxie"))
     {
-        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname);
+        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname, false, "text/xml");
         Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
         if (!view)
             web->applyResultsXSLT(xsltfile.str(), output.str(), html);
@@ -2360,7 +2364,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             StringBuffer status;
             if (getEspLogLevel()>LogNormal)
                 DBGLOG("roxie req: %s", soapreq.str());
-            sendRoxieRequest(target, soapreq, output, status, qid);
+            sendRoxieRequest(target, soapreq, output, status, qid, parms->getPropBool(".trim", true), "text/xml");
             if (getEspLogLevel()>LogNormal)
                 DBGLOG("roxie resp: %s", output.str());
 
@@ -2531,6 +2535,7 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
             nextPathNode(thepath, queryname);
         }
 
+        bool trim = ctx->queryRequestParameters()->getPropBool(".trim", true);
         const char *jsonp = ctx->queryRequestParameters()->queryProp("jsonp");
         if (jsonp && *jsonp)
             jsonresp.append(jsonp).append('(');
@@ -2541,7 +2546,7 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
 
         StringBuffer status;
         if (wsecl->connMap.getValue(queryset.str()))
-            sendRoxieRequest(queryset.str(), content, jsonresp, status, queryname.str(), "application/json");
+            sendRoxieRequest(queryset.str(), content, jsonresp, status, queryname.str(), trim, "application/json");
         else
         {
             WsEclWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
@@ -2655,9 +2660,10 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     if (wsecl->connMap.getValue(target))
     {
+        bool trim = ctx->queryRequestParameters()->getPropBool(".trim", true);
         StringBuffer content(request->queryContent());
         StringBuffer output;
-        sendRoxieRequest(target, content, output, status, queryname);
+        sendRoxieRequest(target, content, output, status, queryname, trim, "text/xml");
         if (!(xmlflags  & WWV_CDATA_SCHEMAS))
             soapresp.swapWith(output);
         else

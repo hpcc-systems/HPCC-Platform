@@ -1062,6 +1062,20 @@ public:
             return r->getResultHash();
         );
     }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * stepname, unsigned sequence)
+    {
+        try
+        {
+            LOG(MCdebugProgress, unknownJob, "getExternalResultRaw %s", stepname);
+
+            Owned<IConstWUResult> r = getExternalResult(wuid, stepname, sequence);
+            return r->getResultHash();
+        }
+        catch (CATCHALL)
+        {
+            throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "Failed to retrieve external data hash %s from workunit %s", stepname, wuid);
+        }
+    }
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {
         tgt = NULL;
