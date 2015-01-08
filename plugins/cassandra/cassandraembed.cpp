@@ -2083,9 +2083,10 @@ extern void cassandraToGenericXML()
 {
     CassandraCluster cluster(cass_cluster_new());
     cass_cluster_set_contact_points(cluster, "127.0.0.1");
-    CassandraFuture future(cass_cluster_connect_keyspace(cluster, "test"));
+
+    CassandraSession session(cass_session_new());
+    CassandraFuture future(cass_session_connect_keyspace(session, cluster, "test"));
     future.wait("connect");
-    CassandraSession session(cass_future_get_session(future));
     CassandraStatement statement(cass_statement_new(cass_string_init("select * from tbl1 where name = 'name1';"), 0));
     CassandraFuture future2(cass_session_execute(session, statement));
     future2.wait("execute");
@@ -2955,9 +2956,9 @@ extern void cassandraTestWorkunitXML()
 {
     CassandraCluster cluster(cass_cluster_new());
     cass_cluster_set_contact_points(cluster, "127.0.0.1");
-    CassandraFuture future(cass_cluster_connect_keyspace(cluster, "hpcc"));
+    CassandraSession session(cass_session_new());
+    CassandraFuture future(cass_session_connect_keyspace(session, cluster, "hpcc"));
     future.wait("connect");
-    CassandraSession session(cass_future_get_session(future));
 
     ensureTable(session, workunitsMappings);
     ensureTable(session, wuResultsMappings);
@@ -2982,9 +2983,9 @@ extern void cassandraTestGraphProgressXML()
 {
     CassandraCluster cluster(cass_cluster_new());
     cass_cluster_set_contact_points(cluster, "127.0.0.1");
-    CassandraFuture future(cass_cluster_connect_keyspace(cluster, "hpcc"));
+    CassandraSession session(cass_session_new());
+    CassandraFuture future(cass_session_connect_keyspace(session, cluster, "hpcc"));
     future.wait("connect");
-    CassandraSession session(cass_future_get_session(future));
 
     ensureTable(session, graphProgressMappings);
     Owned<IPTree> inXML = createPTreeFromXMLFile("/data/rchapman/hpcc/testing/regress/ecl/a.xml");
@@ -3016,9 +3017,9 @@ public:
     CCasssandraWorkUnitFactory() : cluster(cass_cluster_new())
     {
         cass_cluster_set_contact_points(cluster, "127.0.0.1");
-        CassandraFuture future(cass_cluster_connect_keyspace(cluster, "hpcc"));
+        session.set(cass_session_new());
+        CassandraFuture future(cass_session_connect_keyspace(session, cluster, "hpcc"));
         future.wait("connect");
-        session.set(cass_future_get_session(future));
     }
     ~CCasssandraWorkUnitFactory()
     {
