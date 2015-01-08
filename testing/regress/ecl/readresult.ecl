@@ -15,8 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noroxie       - roxie doesn't currently support reading from external workunits
-
 namesRecord := 
             RECORD
 string10        forename;
