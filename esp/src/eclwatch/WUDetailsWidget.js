@@ -344,6 +344,7 @@ define([
                 dom.byId(this.id + "ProtectedImage").src = this.wu.getProtectedImage();
             } else if (name === "Jobname") {
                 this.updateInput("Jobname2", oldValue, newValue);
+                this.summaryWidget.set("tooltip", newValue);
             } else if (name === "WorkflowCount" && newValue) {
                 this.widget._Workflows.set("title", this.i18n.Workflows + " (" + newValue + ")");
                 this.setDisabled(this.widget._Workflows.id, false);
