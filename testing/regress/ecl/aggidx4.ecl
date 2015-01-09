@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//version multiPart=false
 //version multiPart=true
 //version multiPart=false,useSequential=true
 
