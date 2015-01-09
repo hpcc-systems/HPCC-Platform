@@ -17,7 +17,7 @@
 #ifndef HQLGRAM_HPP_INCL
 #define HQLGRAM_HPP_INCL
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

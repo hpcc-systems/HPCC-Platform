@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #include "build-config.h"
-#include "platform.h"
+#include "hpccplatform.h"
 #include "thirdparty.h"
 #include "portlist.h"
 #include "jlib.hpp"

@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jutil.hpp"
 #include "jkeyboard.hpp"
 

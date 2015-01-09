@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include <platform.h>
+#include <hpccplatform.h>
 #include <signal.h>
 #include <jlib.hpp>
 #include <jio.hpp>

@@ -18,7 +18,7 @@
 #ifndef _MSG_H
 #define _MSG_H
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "win32.hpp"
 #include <tchar.h>
 #include <Lmcons.h>

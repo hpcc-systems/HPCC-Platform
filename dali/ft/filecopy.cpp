@@ -17,7 +17,7 @@
 
 #include "jliball.hpp"
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <algorithm>
 #include "jlib.hpp"
 #include "jio.hpp"

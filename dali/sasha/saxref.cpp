@@ -1,6 +1,6 @@
 //TBD check min time from when *finished*
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jlib.hpp"
 #include "jiface.hpp"

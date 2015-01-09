@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #define mp_decl __declspec(dllexport)
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"
 

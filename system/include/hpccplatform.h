@@ -55,7 +55,7 @@
 #endif
 
 #ifdef _FILE_OFFSET_BITS
-//#error PLATFORM.H must be included first
+//#error hpccplatform.h must be included first
 #endif
 
 #define _FILE_OFFSET_BITS 64

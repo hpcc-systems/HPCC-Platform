@@ -25,11 +25,11 @@
 */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #ifdef _VER_C5
 #include <clwclib.h>
 #else
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdio.h>
 #endif
 #include <algorithm>

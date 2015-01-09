@@ -20,7 +20,7 @@
 #pragma warning( disable : 4018)
 #endif
 
-#include "platform.h"
+#include "hpccplatform.h"
 #undef new
 #include <string>
 #include <map>

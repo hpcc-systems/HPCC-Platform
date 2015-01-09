@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jliball.hpp"
 #include "rtlbcd.hpp"
 #include "workunit.hpp"

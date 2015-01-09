@@ -13,4 +13,4 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/platform.h DESTINATION componentfiles/cl/include COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/hpccplatform.h DESTINATION componentfiles/cl/include COMPONENT Runtime )

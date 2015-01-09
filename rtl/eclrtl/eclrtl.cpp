@@ -17,9 +17,9 @@
 
 #include "limits.h"
 #ifdef _USE_BOOST_REGEX
-#include "boost/regex.hpp" // must precede platform.h ; n.b. this uses a #pragma comment(lib, ...) to link the appropriate .lib in MSVC
+#include "boost/regex.hpp" // must precede hpccplatform.h ; n.b. this uses a #pragma comment(lib, ...) to link the appropriate .lib in MSVC
 #endif
-#include "platform.h"
+#include "hpccplatform.h"
 #include <math.h>
 #include <stdio.h>
 #include "jexcept.hpp"

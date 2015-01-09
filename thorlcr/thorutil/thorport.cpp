@@ -17,7 +17,7 @@
 
 // Thor Port Allocation
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include <stddef.h>
 #include <stdlib.h>

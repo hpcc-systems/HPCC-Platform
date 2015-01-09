@@ -19,7 +19,7 @@
 #ifndef _thgroupaggregateslave_ipp
 #define _thgroupaggregateslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jiface.hpp"       // IInterface defined in jlib
 #include "eclhelper.hpp"
 #include "slave.ipp"

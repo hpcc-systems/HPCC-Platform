@@ -17,7 +17,7 @@
 
 
 // LZMA adapted for jlib
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jlzma.hpp"
 

@@ -18,7 +18,7 @@
 #ifndef _thgroupiterateslave_ipp
 #define _thgroupiterateslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"        // for IHThorGroupIterateArg
 #include "slave.ipp"
 

@@ -24,7 +24,7 @@
     look at all timeouts
 */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "portlist.h"
 #include "jlib.hpp"
 #include <limits.h>

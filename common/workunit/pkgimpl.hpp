@@ -18,7 +18,7 @@
 #ifndef WUPACKAGE_IMPL_HPP
 #define WUPACKAGE_IMPL_HPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jprop.hpp"
 #include "jptree.hpp"
 #include "jregexp.hpp"

@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <limits.h>
 #include "eclhelper.hpp"
 #include "slave.ipp"

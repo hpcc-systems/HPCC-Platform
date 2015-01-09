@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <algorithm>
 #include "limits.h"
 #include "jlib.hpp"

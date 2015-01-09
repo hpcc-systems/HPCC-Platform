@@ -19,7 +19,7 @@
 #ifndef _thgroupsortslave_ipp
 #define _thgroupsortslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"        // for IHThorGroupSortArg
 #include "slave.ipp"
 

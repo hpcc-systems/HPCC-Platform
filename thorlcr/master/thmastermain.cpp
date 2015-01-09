@@ -17,7 +17,7 @@
 
 // Entrypoint for ThorMaster.EXE
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include <stddef.h>
 #include <stdlib.h>

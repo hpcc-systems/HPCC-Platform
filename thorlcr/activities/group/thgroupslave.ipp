@@ -18,7 +18,7 @@
 #ifndef _thgroupslave_ipp
 #define _thgroupslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"        // for IHThorGroupArg
 #include "slave.ipp"
 #include "thactivityutil.ipp"

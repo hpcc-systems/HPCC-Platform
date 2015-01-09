@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "memcachedplugin.hpp"
 #include "eclrtl.hpp"
 #include "jexcept.hpp"

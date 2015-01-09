@@ -22,7 +22,7 @@
 #include "jexcept.hpp"
 #include "jlog.hpp"
 
-// platform.h's definition of new collides with xerces
+// hpccplatform.h's definition of new collides with xerces
 #undef new 
 
 // xalan has its own definitions and implementations:

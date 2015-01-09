@@ -18,7 +18,7 @@
 #ifndef _thwuidwriteslave_ipp
 #define _thwuidwriteslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp" // tmp for IHThor..Arg interfaces.
 #include "slave.ipp"
 

@@ -18,7 +18,7 @@
 #ifndef _thchoosesetsslave_ipp
 #define _thchoosesetsslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"
 #include "thactivityutil.ipp"
 #include "slave.ipp"

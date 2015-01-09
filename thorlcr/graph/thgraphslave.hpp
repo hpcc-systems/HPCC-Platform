@@ -28,7 +28,7 @@
     #define graphslave_decl
 #endif
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "slave.hpp"
 #include "thormisc.hpp"
 #include "thorcommon.hpp"

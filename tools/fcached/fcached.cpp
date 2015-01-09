@@ -17,7 +17,7 @@
 
 // Prints OS cached details for files open by a process
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>

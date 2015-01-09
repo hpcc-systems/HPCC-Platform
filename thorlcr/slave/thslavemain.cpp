@@ -17,7 +17,7 @@
 
 // Entrypoint for ThorSlave.EXE
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include <stddef.h>
 #include <stdlib.h>

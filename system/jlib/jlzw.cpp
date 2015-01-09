@@ -17,7 +17,7 @@
 
 
 // JLIB LZW compression class 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jmisc.hpp"
 #include "jlib.hpp"
 #include <time.h>

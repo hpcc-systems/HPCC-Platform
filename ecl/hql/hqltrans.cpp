@@ -22,7 +22,7 @@
 #endif
 
 #include "hql.hpp"
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jstream.ipp"

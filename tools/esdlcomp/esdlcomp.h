@@ -21,7 +21,7 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jmutex.hpp"
 #include "jstring.hpp"
 #include "jfile.hpp"

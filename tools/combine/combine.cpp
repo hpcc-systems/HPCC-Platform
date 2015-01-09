@@ -20,7 +20,7 @@
 #include <windows.h>
 #endif
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jio.hpp"
 #include "jfile.hpp"

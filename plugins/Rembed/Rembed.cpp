@@ -15,7 +15,7 @@
  limitations under the License.
  ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #ifdef RCPP_HEADER_ONLY
 // NOTE - these symbols need to be hidden from being exported from the Rembed .so file as RInside tries to dynamically

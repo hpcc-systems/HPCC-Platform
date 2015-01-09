@@ -21,7 +21,7 @@ remove SEND timings from grid
 calculate top 10
 #endif
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jsuperhash.hpp"

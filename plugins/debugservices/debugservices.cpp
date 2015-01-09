@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "debugservices.hpp"
 
 #define DEBUGSERVICES_VERSION "DEBUGSERVICES 1.0.1"

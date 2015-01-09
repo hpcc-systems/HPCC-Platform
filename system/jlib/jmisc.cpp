@@ -19,7 +19,7 @@
 //#define MINIMALTRACE // a more readable version of the trace file (IMO)
 //#define LOGCLOCK
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "stdio.h"
 #include <time.h>
 #include "jmisc.hpp"

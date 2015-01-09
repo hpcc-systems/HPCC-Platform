@@ -18,7 +18,7 @@
 #ifndef _THKEYEDJOINSLAVE_IPP
 #define _THKEYEDJOINSLAVE_IPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "slave.ipp"
 
 activityslaves_decl CActivityBase *createKeyedJoinSlave(CGraphElementBase *container);

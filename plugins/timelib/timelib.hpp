@@ -32,7 +32,7 @@
 
 #include <time.h>
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "hqlplugins.hpp"
 #include "eclinclude4.hpp"
 #include "eclrtl.hpp"

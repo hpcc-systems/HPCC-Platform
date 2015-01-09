@@ -19,7 +19,7 @@
 
 #include "esdl_utils.hpp"
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "esdlcomp.h"
 #undef new
 #include <map>

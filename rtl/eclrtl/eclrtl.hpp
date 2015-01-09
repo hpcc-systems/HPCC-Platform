@@ -42,7 +42,7 @@
 #endif
 
 #ifdef _MSC_VER
-#undef __attribute__ // in case platform.h has been included
+#undef __attribute__ // in case hpccplatform.h has been included
 #define __attribute__(param) /* do nothing */
 #endif
 

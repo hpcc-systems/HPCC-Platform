@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <limits.h>
 #include <ctype.h>
 #include <stdio.h>

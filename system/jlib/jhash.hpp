@@ -20,7 +20,7 @@
 #ifndef JHASH_HPP
 #define JHASH_HPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdio.h>
 #include "jiface.hpp"
 #include "jobserve.hpp"

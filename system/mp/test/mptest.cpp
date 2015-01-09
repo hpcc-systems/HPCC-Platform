@@ -2,7 +2,7 @@
 
 // CSocketSelectThread error 10038  
 
-#include <platform.h>
+#include "hpccplatform.h"
 #include <jlib.hpp>
 #include <jthread.hpp>
 #include <jmisc.hpp>

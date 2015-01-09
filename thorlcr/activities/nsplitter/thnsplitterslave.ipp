@@ -18,7 +18,7 @@
 #ifndef _THNSPLITTERSLAVE_IPP
 #define _THNSPLITTERSLAVE_IPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "jmutex.hpp"
 

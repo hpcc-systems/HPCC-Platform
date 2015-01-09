@@ -24,7 +24,7 @@
 #endif
 
 //ESP Bindings
-#include "platform.h"
+#include "hpccplatform.h"
 #include <xpp/XmlPullParser.h>
 #include "SOAP/Platform/soapservice.hpp"
 #include "http/platform/httpservice.hpp"

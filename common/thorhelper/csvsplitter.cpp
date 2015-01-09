@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jregexp.hpp"
 #include "jlib.hpp"
 #include "jexcept.hpp"

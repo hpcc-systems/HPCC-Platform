@@ -18,7 +18,7 @@
 #ifndef _thiterateslave_ipp
 #define _thiterateslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"        // for IHThorIterateArg
 #include "slave.ipp"
 #include "thactivityutil.ipp"

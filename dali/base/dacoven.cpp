@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #define da_decl __declspec(dllexport)
-#include "platform.h"
+#include "hpccplatform.h"
 #include <time.h>
 #include "jlib.hpp"
 #include "jexcept.hpp"

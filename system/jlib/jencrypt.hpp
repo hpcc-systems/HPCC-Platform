@@ -19,7 +19,7 @@
 #ifndef JENCRYPT_HPP
 #define JENCRYPT_HPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jiface.hpp"
 #include "jbuff.hpp"
 #include "jexcept.hpp"

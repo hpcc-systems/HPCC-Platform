@@ -22,7 +22,7 @@
 
 #include <new>
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jiface.hpp"
 
 typedef size32_t aindex_t;

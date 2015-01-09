@@ -16,7 +16,7 @@
 ############################################################################## */
 
 // Slave Watchdog
-#include "platform.h"
+#include "hpccplatform.h"
 #include <stdio.h>
 #include "jsocket.hpp"
 #include "jmisc.hpp"

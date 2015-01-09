@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#include <platform.h>
+#include <hpccplatform.h>
 #include "jexcept.hpp"
 #include "jptree.hpp"
 #include "jsocket.hpp"

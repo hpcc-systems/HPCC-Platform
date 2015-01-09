@@ -18,7 +18,7 @@
 #ifndef _THFILTERSLAVE_IPP
 #define _THFILTERSLAVE_IPP
 
-#include "platform.h"
+#include "hpccplatform.h"
 
 #include "eclhelper.hpp" // tmp for IHThor..Arg interfaces.
 

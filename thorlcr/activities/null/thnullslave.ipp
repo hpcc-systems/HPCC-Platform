@@ -18,7 +18,7 @@
 #ifndef _thnullslave_ipp
 #define _thnullslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"
 #include "slave.ipp"
 #include "thactivityutil.ipp"

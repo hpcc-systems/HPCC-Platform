@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jmutex.hpp"
 #include "jsuperhash.hpp"
 #include "jmisc.hpp"

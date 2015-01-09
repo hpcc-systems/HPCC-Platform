@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jprop.hpp"
 #include "jptree.hpp"
 #include "pkgimpl.hpp"

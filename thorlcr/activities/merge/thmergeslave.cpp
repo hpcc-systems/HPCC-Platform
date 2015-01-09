@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jfile.hpp"
 #include "thormisc.hpp"
 #include "thexception.hpp"

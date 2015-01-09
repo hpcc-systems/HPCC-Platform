@@ -25,7 +25,7 @@
 #include "jmisc.hpp"
 
 #include "mpcomm.hpp"
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "mpbase.hpp"
 #include "daclient.hpp"

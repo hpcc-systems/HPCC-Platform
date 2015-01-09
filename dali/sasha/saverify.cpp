@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "hpccplatform.h"
 #include "jlib.hpp"
 #include "jlog.ipp"
 #include "jptree.hpp"

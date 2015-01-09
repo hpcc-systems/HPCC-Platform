@@ -18,7 +18,7 @@
 #ifndef _thcountprojectslave_ipp
 #define _thcountprojectslave_ipp
 
-#include "platform.h"
+#include "hpccplatform.h"
 #include "eclhelper.hpp"
 #include "thactivityutil.ipp"
 #include "slave.ipp"
