@@ -427,25 +427,22 @@ startCmd() {
     logDir=$log/${compName}
     logFile=$log/${compName}/${compName}_init.log
 
+
     if [ ${noStatusCheck} -ne 1 ]; then
-       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
-       RCSTART=$?
-       if [ ${RCSTART} -ne 0 ];then
-          if [ ${DEBUG} != "NO_DEBUG" ]; then
-              log_failure_msg "fixing orphan :: check_status code is ${RCSTART}"              log_failure_msg "Pid or lock file exists, but process is not running"
-          fi
-          cleanup_component
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
-       else
-          if [ ${DEBUG} != "NO_DEBUG" ]; then
-              log_success_msg "Lock or Pid file already exists"
-          else
-              #Since component is already started but current script is failed till returning 0
-              log_success_msg "Already started"
-          fi
-          return ${RCSTART}
-       fi
+      check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+      RCSTART=$?
+      if [ ${RCSTART} -gt 1 ];then
+        # take care of failure message in check_status function
+        cleanup_component
+        removePid ${PIDPATH}
+        removePid ${COMPPIDPATH}
+        unlock ${LOCKPATH}
+      fi
+      if [ ${RCSTART} -eq 0 ]; then
+        #Since component is already started but current script is failed till returning 0
+        log_success_msg "Already Started"
+        return ${RCSTART}
+      fi
     fi
 
     UMASK_ARG=""
@@ -496,19 +493,6 @@ startCmd() {
 
     if [ ${WAITTIME} -eq 0 ]; then
         log_failure_msg "${compName} has timed out, but may still be starting"
-    elif [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
-        if [ ${DEBUG} != "NO_DEBUG" ]; then
-            log_failure_msg "${compName} is not running, Pidfile exists"
-        else
-            log_failure_msg
-        fi
-    else
-        # RCSTART -eq 2
-        if [ ${DEBUG} != "NO_DEBUG" ]; then
-            log_failure_msg "${compName} is not running, lockfile exists"
-        else
-            log_failure_msg
-        fi
     fi
 
     chmod 644 ${envfile}
@@ -534,6 +518,7 @@ stop_component() {
        fi
        cleanup_component
        removePid ${PIDPATH}
+       removePid ${COMPPIDPATH}
        unlock ${LOCKPATH}
        return 0
     fi
@@ -633,6 +618,7 @@ restart_component() {
        else
            echo "Component $compName was not running. Will start it now for you ...."
            removePid ${PIDPATH}
+           removePid ${COMPPIDPATH}
            unlock ${LOCKPATH}
        fi
          /etc/init.d/dafilesrv start 2>/dev/null
@@ -642,6 +628,7 @@ restart_component() {
        if [ $RCRESTART -ne 0 ];then
            echo "Component $compName was not running. Will start it now for you ...."
            removePid ${PIDPATH}
+           removePid ${COMPPIDPATH}
            unlock ${LOCKPATH}
        else
            stop_component ${compName}
@@ -654,8 +641,7 @@ restart_component() {
 }
 
 status_component() {
-  sentinelFileCheck=1;
-  check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${sentinelFileCheck}
+  check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
   RCSTATUS=$?
   getPid ${COMPPIDPATH}
   if [ ${RCSTATUS} -ne 0 ];then
@@ -1012,12 +998,6 @@ cleanup_component() {
         echo "sending SIGKILL to ${compName} orphans"
       fi
       kill -9 -$pgid
-    fi
-
-    # take care of thor slaves on remote nodes
-    if [ "${compType}" = "thor" -a -e "${instancedir}/uslaves.start" ]; then
-      nslaves=$( cat $instancedir/uslaves.start | wc -l )
-      $bin_path/frunssh $instancedir/uslaves.start "/bin/sh -c '$bin_path/stop_slaves ${compName} ${PID_DIR}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves &> /dev/null
     fi
   fi
 }
