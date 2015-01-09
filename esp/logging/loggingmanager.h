@@ -20,7 +20,7 @@
 
 #include "jiface.hpp"
 #include "esp.hpp"
-#include "ws_loggingservice_esp.ipp"
+#include "loggingagentbase.hpp"
 
 #define LOGGINGMANAGERLIB "loggingmanager"
 #define LOGGINGDBSINGLEINSERT "SingleInsert"
@@ -29,7 +29,9 @@ interface ILoggingManager : implements IInterface
 {
     virtual bool init(IPropertyTree* loggingConfig, const char* service) = 0;
     virtual bool updateLog(const char* option, const char* logContent, StringBuffer& status) = 0;
-    virtual bool updateLog(IEspUpdateLogRequest& req, IEspUpdateLogResponse& resp) = 0;
+    virtual bool updateLog(const char* option, IEspContext& espContext, IPropertyTree* userContext, IPropertyTree* userRequest,
+        const char* backEndResp, const char* userResp, StringBuffer& status) = 0;
+    virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status) = 0;
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
 };
