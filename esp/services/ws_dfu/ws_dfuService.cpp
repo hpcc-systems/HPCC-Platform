@@ -4249,6 +4249,139 @@ bool CWsDfuEx::onDFUSearchData(IEspContext &context, IEspDFUSearchDataRequest &r
     return true;
 }
 
+static const char * const columnTypes[] = { "Boolean", "Integer", "Unsigned Integer", "Real", "String",
+    "Data", "Unicode", "Unknown", "BeginIfBlock", "EndIfBlock", "BeginRecord", "EndRecord", "Set", "Dataset", NULL };
+
+bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaDataRequest & req, IEspDFUGetFileMetaDataResponse & resp)
+{
+    class CDFUFileMetaDataReader
+    {
+        int totalColumnCount;
+        int keyedColumnCount;
+        StringBuffer XmlSchema, XmlXPathSchema;
+        IArrayOf<IEspDFUDataColumn> dataColumns;
+        const IResultSetMetaData& meta;
+
+        bool readColumnLabel(const int columnID, IEspDFUDataColumn* out)
+        {
+            SCMStringBuffer columnLabel;
+            bool isNaturalColumn = true;
+            if (meta.hasSetTranslation(columnID))
+                meta.getNaturalColumnLabel(columnLabel, columnID);
+            if (columnLabel.length() < 1)
+            {
+                meta.getColumnLabel(columnLabel, columnID);
+                isNaturalColumn = false;
+            }
+            out->setColumnLabel(columnLabel.str());
+            out->setIsNaturalColumn(isNaturalColumn);
+            return isNaturalColumn;
+        }
+        void readColumnEclType(const int columnID, IEspDFUDataColumn* out)
+        {
+            SCMStringBuffer s;
+            out->setColumnEclType(meta.getColumnEclType(s, columnID).str());
+        }
+        void readColumnRawSize(const int columnID, IEspDFUDataColumn* out)
+        {
+            DisplayType columnType = meta.getColumnDisplayType(columnID);
+            if ((columnType == TypeUnicode) || columnType == TypeString)
+                out->setColumnRawSize(meta.getColumnRawSize(columnID));
+        }
+        void readColumn(const int columnID, const bool isKeyed, IArrayOf<IEspDFUDataColumn>& dataColumns)
+        {
+            Owned<IEspDFUDataColumn> dataItem = createDFUDataColumn();
+            dataItem->setColumnID(columnID+1);
+            dataItem->setIsKeyedColumn(isKeyed);
+
+            if (readColumnLabel(columnID, dataItem))
+                dataItem->setColumnType("Others");
+            else
+                dataItem->setColumnType(columnTypes[meta.getColumnDisplayType(columnID)]);
+            readColumnRawSize(columnID, dataItem);
+            readColumnEclType(columnID, dataItem);
+            dataColumns.append(*dataItem.getClear());
+        }
+
+    public:
+        CDFUFileMetaDataReader(const IResultSetMetaData& _meta) : meta(_meta)
+        {
+            totalColumnCount = meta.getColumnCount();
+            keyedColumnCount = meta.getNumKeyedColumns();
+            unsigned i = 0;
+            for (; i < keyedColumnCount; i++)
+                readColumn(i, true, dataColumns);
+            for (i = keyedColumnCount; i < totalColumnCount; i++)
+                readColumn(i, false, dataColumns);
+        };
+        inline unsigned getTotalColumnCount() { return totalColumnCount; }
+        inline unsigned getKeyedColumnCount() { return keyedColumnCount; }
+        inline IArrayOf<IEspDFUDataColumn>& getDataColumns() { return dataColumns; }
+        inline StringBuffer& getXmlSchema(StringBuffer& s, const bool addHeader)
+        {
+            StringBufferAdaptor schema(s);
+            meta.getXmlSchema(schema, addHeader);
+            return s;
+        }
+        inline StringBuffer& getXmlXPathSchema(StringBuffer& s, const bool addHeader)
+        {
+            StringBufferAdaptor XPathSchema(s);
+            meta.getXmlXPathSchema(XPathSchema, addHeader);
+            return s;
+        }
+    };
+
+    try
+    {
+        StringBuffer fileNameStr = req.getLogicalFileName();
+        const char* fileName = fileNameStr.trim().str();
+        if (!fileName || !*fileName)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: LogicalFileName not set");
+
+        {//Check whether the meta data is available for the file. If not, throw an exception.
+            StringBuffer nameStr;
+            Owned<IUserDescriptor> userdesc = createUserDescriptor();
+            userdesc->set(context.getUserID(nameStr).str(), context.queryPassword());
+            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc);
+            if(!df)
+                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"CWsDfuEx::onDFUGetFileMetaData: Could not find file %s.", fileName);
+
+            IDistributedSuperFile *sf = df->querySuperFile();
+            if (sf && (sf->numSubFiles() > 1))
+                throw MakeStringException(ECLWATCH_INVALID_ACTION, "CWsDfuEx::onDFUGetFileMetaData: This feature is not designed to work with a superfile which contains multiple subfiles.");
+        }
+
+        const char* cluster = NULL;
+        StringBuffer clusterNameStr = req.getClusterName();
+        if (clusterNameStr.trim().length() > 0)
+            cluster = clusterNameStr.str();
+
+        Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
+        Owned<INewResultSet> result = resultSetFactory->createNewFileResultSet(fileName, cluster);
+        if (!result)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: Failed to access FileResultSet for %s.", fileName);
+
+        Owned<IResultSetCursor> cursor = result->createCursor();
+        CDFUFileMetaDataReader dataReader(cursor->queryResultSet()->getMetaData());
+        resp.setTotalColumnCount(dataReader.getTotalColumnCount());
+        resp.setKeyedColumnCount(dataReader.getKeyedColumnCount());
+        resp.setDataColumns(dataReader.getDataColumns());
+
+        StringBuffer s, s1;
+        if (req.getIncludeXmlSchema())
+            resp.setXmlSchema(dataReader.getXmlSchema(s, req.getAddHeaderInXmlSchema()).str());
+        if (req.getIncludeXmlXPathSchema())
+            resp.setXmlXPathSchema(dataReader.getXmlXPathSchema(s1, req.getAddHeaderInXmlXPathSchema()).str());
+
+        resp.setTotalResultRows(result->getNumRows());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &req, IEspDFUBrowseDataResponse &resp)
 {
     try
