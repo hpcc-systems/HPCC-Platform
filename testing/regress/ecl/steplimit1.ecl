@@ -15,14 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
-//Find all anagrams of a word, that match the list of known words
-import $.Common;
-import $.Common.TextSearch;
+//class=textsearch
+//version multiPart=false
+//version multiPart=true
 
-wordIndex := TextSearch.getWordIndex('thorlcr', false);
-allWordsDs := DEDUP(SORTED(wordIndex), word);
-knownWords := DICTIONARY(allWordsDs, { word });
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
 
-string searchWord := 'gabs' : stored('word');
+//--- end of version configuration ---
 
-OUTPUT(Common.Dict15(searchWord, knownWords));
+import $.Setup;
+import $.Setup.TS;
+searchIndex := Setup.Files(multiPart, false).getSearchIndex();
+
+OUTPUT(LIMIT(SORTED(STEPPED(searchIndex(keyed(kind = TS.kindType.TextEntry and word in ['sheep'])), doc, segment, wpos),doc, segment, wpos), 421, count));

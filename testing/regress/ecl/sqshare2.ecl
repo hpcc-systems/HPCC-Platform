@@ -15,8 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 // Test that shared subqueries are handled correctly, and that shared cses are also handled
 

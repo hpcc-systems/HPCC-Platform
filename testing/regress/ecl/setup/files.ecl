@@ -19,7 +19,7 @@
 import $.TS;
 
 //define constants
-EXPORT files(string platform, boolean useLocal) := module
+EXPORT files(boolean multiPart, boolean useLocal) := module
 SHARED DG_GenFlat           := true;   //TRUE gens FlatFile
 SHARED DG_GenChild          := true;   //TRUE gens ChildFile
 SHARED DG_GenGrandChild     := true;   //TRUE gens GrandChildFile
@@ -39,12 +39,13 @@ SHARED useDynamic := false;
 SHARED useLayoutTrans := false;
 SHARED useVarIndex := false;
 
+STRING prefix := IF(multiPart, 'multi', 'single');
 #if (useDynamic=true)
 VarString EmptyString := '' : STORED('dummy');
-EXPORT  filePrefix := platform + EmptyString;
+EXPORT  filePrefix := prefix + EmptyString;
 #option ('allowVariableRoxieFilenames', 1);
 #else
-EXPORT  filePrefix := platform;
+EXPORT  filePrefix := prefix;
 #end
 
 EXPORT DG_FileOut           := '~REGRESS::' + filePrefix + '::DG_';

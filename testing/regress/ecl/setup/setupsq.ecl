@@ -17,7 +17,9 @@
 
 import Std.File AS FileServices;
 import $;
-sq := $.sq(__PLATFORM__);
+
+boolean createMultiPart := (__PLATFORM__[1..4] = 'thor');
+sq := $.sq(createMultiPart);
 
 //******************************** Child query setup code ***********************
 

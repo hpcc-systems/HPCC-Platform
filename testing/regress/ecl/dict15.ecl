@@ -15,10 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
-//Find all anagrams of a word, that match the list of known words
-import $.^.setup.TS;
+//version multiPart=false
+//version multiPart=true
 
-export dict15(string searchWord, DICTIONARY({TS.wordType word}) knownWords) := FUNCTION
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
+//Find all anagrams of a word, that match the list of known words
+import $.Common.TextSearch;
+import $.setup.TS;
+
+search(string searchWord, DICTIONARY({TS.wordType word}) knownWords) := FUNCTION
 
     R := RECORD
       STRING SoFar;
@@ -42,3 +51,10 @@ export dict15(string searchWord, DICTIONARY({TS.wordType word}) knownWords) := F
     RETURN Anagrams(Word in knownWords);
 END;
 
+wordIndex := TextSearch.getWordIndex(multiPart, false);
+allWordsDs := DEDUP(SORTED(wordIndex), word);
+knownWords := DICTIONARY(allWordsDs, { word });
+
+string searchWord := 'gabs' : stored('word');
+
+OUTPUT(search(searchWord, knownWords));
