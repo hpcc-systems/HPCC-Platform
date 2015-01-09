@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(1005, ignore);
 
 RecDef := 
             RECORD

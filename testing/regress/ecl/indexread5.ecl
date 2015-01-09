@@ -22,6 +22,8 @@ multiPart := #IFDEFINED(root.multiPart, false);
 
 //--- end of version configuration ---
 
+#onwarning(4523, ignore);
+
 import $.setup;
 sq := setup.sq(multiPart);
 

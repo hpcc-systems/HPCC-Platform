@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4523, ignore);
+#onwarning(4522, ignore);
+
 d := dataset('regress::no::such::file', {string10 f}, FLAT, OPT);
 output(d);
 count(d);

@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(1036, ignore);
+
 MyRec := RECORD
     STRING1 Value1;
     STRING1 Value2;

@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4531, ignore);
+
 //TEST: thor=1 hthor=1 roxie=0
 App_1(file,outname) := macro
 #uniquename(rec)

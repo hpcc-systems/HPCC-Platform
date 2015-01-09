@@ -20,8 +20,8 @@
 //nothorlcr
 //publish
 
-#option ('targetService', 'aaaLibrary4')
-#option ('createServiceAlias', true)
+#option ('targetService', 'aaaLibrary4');
+#option ('createServiceAlias', true);
 
 namesRecord := 
             RECORD

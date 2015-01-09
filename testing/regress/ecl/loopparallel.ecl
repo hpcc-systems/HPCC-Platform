@@ -20,7 +20,7 @@
 //nothorlcr
 //nohthor
 
-#option ('recreateMapFromIf', true)
+#option ('recreateMapFromIf', true);
 
 numInitialRecord := 1000;
 filterSuccess := 100;

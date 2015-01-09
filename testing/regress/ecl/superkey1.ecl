@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4523, ignore);
+
 import Std.File AS FileServices;
 // Super Key regression test
 

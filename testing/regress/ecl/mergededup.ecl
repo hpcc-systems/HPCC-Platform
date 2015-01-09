@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('spanMultipleCpp', true)
+#option ('spanMultipleCpp', true);
 
 rec := RECORD
     UNSIGNED1 i;

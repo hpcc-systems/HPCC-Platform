@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4537, ignore);
+#onwarning(1038, ignore);
+
 //version multiPart=false
 
 import ^ as root;
