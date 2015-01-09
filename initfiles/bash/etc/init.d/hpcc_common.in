@@ -641,7 +641,7 @@ restart_component() {
 }
 
 status_component() {
-  check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1 
+  check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
   RCSTATUS=$?
   getPid ${COMPPIDPATH}
   if [ ${RCSTATUS} -ne 0 ];then
