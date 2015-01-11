@@ -146,8 +146,8 @@ define([
                     context.wu.fetchResults(function (response) {
                         var newSel = null;
                         arrayUtil.forEach(response, function(item, idx) {
-                            arrayUtil.forEach(vizResponse, function(vizItem, idx) {
-                                if (vizItem.value.indexOf(item.Name) >= 0) {
+                            arrayUtil.forEach(vizResponse, function (vizItem, idx) {
+                                if (vizItem.label.split(" ").join("").indexOf(item.Name) >= 0) {
                                     newSel = vizItem.value;
                                     return true;
                                 }
@@ -354,13 +354,17 @@ define([
         },
 
         vizType: "",
-        refreshVizType: function (value) {
+        refreshVizType: function (_value) {
+            var valueParts = _value.split(" ");
+            var value = valueParts[0];
+            var chartType = valueParts[1];
             var deferred = new Deferred();
             if (this.vizType !== value) {
                 this.vizType = value;
                 var context = this;
                 require(["hpcc/viz/" + this.vizType], function (D3Viz) {
                     context.d3Viz = new D3Viz();
+                    context.d3Viz._chartType = chartType;
                     domConstruct.empty(context.id + "VizCP");
                     context.d3Viz.renderTo({
                         domNodeID: context.id + "VizCP"
@@ -368,6 +372,9 @@ define([
                     deferred.resolve(context.vizType);
                 });
             } else {
+                if (chartType && this.d3Viz.chart) {
+                    this.d3Viz.chart.chartType(chartType);
+                }
                 deferred.resolve(this.vizType);
             }
             return deferred.promise;
@@ -395,7 +402,9 @@ define([
                     }));
                 });
                 all(allArray).then(function (response) {
-                    context.params.viz = context.vizSelect.get("value");
+                    var valueParts = context.vizSelect.get("value").split(" ");
+                    context.params.viz = valueParts[0];
+                    context.params.chartType = valueParts[1];
                     context.params.mapping = domForm.toQuery(context.id + "MappingForm");
                     context.d3Viz.display();
                 });

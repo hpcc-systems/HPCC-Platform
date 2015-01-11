@@ -82,7 +82,11 @@ var dojoConfig = (function () {
         }, {
             name: "d3",
             location: urlInfo.basePath + "/Visualization/widgets/lib/d3",
-            main:"d3"
+            main: "d3"
+        }, {
+            name: "c3",
+            location: urlInfo.basePath + "/Visualization/widgets/lib/c3",
+            main: "c3"
         }, {
             name: "topojson",
             location: urlInfo.basePath + "/Visualization/widgets/lib/topojson"
