@@ -27,6 +27,8 @@ useSequential := #IFDEFINED(root.useSequential, false);
 
 //--- end of version configuration ---
 
+#onwarning (2168, ignore);
+
 import $.setup;
 sq := setup.sq(multiPart);
 

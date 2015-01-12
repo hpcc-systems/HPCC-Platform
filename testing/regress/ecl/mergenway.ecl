@@ -15,32 +15,25 @@
     limitations under the License.
 ############################################################################## */
 
-#onwarning(4515, ignore);
-
+//class=file
+//class=index
+//nothor
+//version multiPart=false
 //version multiPart=true
-//version multiPart=false,useSequential=true
 
 import ^ as root;
-multiPart := #IFDEFINED(root.multiPart, false);
-useSequential := #IFDEFINED(root.useSequential, false);
+multiPart := #IFDEFINED(root.multiPart, true);
+useLocal := #IFDEFINED(root.useLocal, false);
+useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
-#onwarning (4515, ignore);
-
 import $.setup;
-sq := setup.sq(multiPart);
+import setup.TS;
+Files := setup.Files(multiPart, useLocal, useTranslation);
 
-pr:= table(sq.SimplePersonBookIndex, { fullname := trim(surname) + ', ' + trim(forename), aage });
+boy := STEPPED(Files.getWordIndex()(keyed(kind = TS.kindType.TextEntry and word = 'boy')), doc);
+sheep := STEPPED(Files.getWordIndex()(keyed(kind = TS.kindType.TextEntry and word = 'sheep')), doc);
+both := MERGE([boy, sheep], SORTED(kind, word, doc));
 
-//Aggregate on a projected table that can't be merged
-pr2:= table(sq.SimplePersonBookIndex, { surname, forename, aage, unsigned8 seq := (random() % 100) / 2000 + aage; });
-
-#EXPAND(IF(useSequential, 'SEQUENTIAL', 'ORDERED'))
-(
-    //Filtered Aggregate on a projected table.
-    output(sort(table(pr(aage > 20), { aage, max(group, fullname) }, aage, few), aage));
-
-    //Filtered Aggregate on a projected table.
-    output(sort(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few), surname));
-);
+output(both);
