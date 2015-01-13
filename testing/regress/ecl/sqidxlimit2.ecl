@@ -17,9 +17,15 @@
 
 #option ('globalAutoHoist', false);
 
-import $.setup;
-sq := setup.sq('hthor');
+//version multiPart=false
 
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
+import $.setup;
+sq := setup.sq(multiPart);
 
 ds2 := DATASET([
             {'Halliday', 4},

@@ -299,6 +299,7 @@ extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *d
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
 extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu);
 extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo);
+extern unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu );
 
 inline unsigned findParentId(IPropertyTree &node)
 {

@@ -15,8 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
+#onwarning(2168, ignore);
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 // Test a case that needs serialize due to child dataset...
 sort(table(sq.SimplePersonBookds, { dataset books := sq.SimplePersonBookDs.books, sq.SimplePersonBookDs.surname, sq.SimplePersonBookDs.forename, count(group) }, sq.SimplePersonBookDs.surname, few), surname, forename);

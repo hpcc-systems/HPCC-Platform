@@ -15,9 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
-#option ('newChildQueries', true)
-
 namesRecord := 
             RECORD
 string20        surname;

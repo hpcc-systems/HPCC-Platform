@@ -160,8 +160,17 @@ define([
             var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, node);
             if (lang.exists("Row", cell)) {
                 cell = cell.Row;
-            } 
-            if (Object.prototype.toString.call(cell) === '[object Array]') {
+            }
+            if (Object.prototype.toString.call(cell) === '[object Object]') {
+                //  Set of Scalar  ---
+                if (cell.Item && Object.prototype.toString.call(cell.Item) === '[object Array]') {
+                    for (var i = 0; i < cell.Item.length; ++i) {
+                        var tr = domConstruct.create("tr", null, table);
+                        domConstruct.create("td", { innerHTML: cell.Item[i] }, tr);
+                    }
+                }
+            } else if (Object.prototype.toString.call(cell) === '[object Array]') {
+                //  Child Dataset  ---
                 for (var i = 0; i < cell.length; ++i) {
                     if (i == 0) {
                         var tr = domConstruct.create("tr", null, table);

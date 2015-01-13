@@ -215,7 +215,15 @@ hr.dashedLine {
     padding-left:25px;
 }
 
-.claro .dgrid-cell { text-overflow: ellipsis; white-space: nowrap; }
+.claro .dgrid-cell { 
+    text-overflow: ellipsis; 
+    white-space: nowrap; 
+}
+
+.claro .wrap .dgrid-cell { 
+    text-overflow: initial; 
+    white-space: normal; 
+}
 
 .claro .hpccCentered { 
     text-align: center; 

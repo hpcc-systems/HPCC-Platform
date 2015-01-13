@@ -16,9 +16,9 @@
 ############################################################################## */
 
 //noRoxie
-#option ('optimizeDiskSource',true)
-#option ('optimizeThorCounts',false)
-#option ('optimizeChildSource',true)
+#option ('optimizeDiskSource',true);
+#option ('optimizeThorCounts',false);
+#option ('optimizeChildSource',true);
 
 namesRecord := 
             RECORD

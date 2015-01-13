@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4541, ignore);
+#onwarning(4542, ignore);
+
 MyRec := RECORD
     UNSIGNED Value1;
     UNSIGNED value2;

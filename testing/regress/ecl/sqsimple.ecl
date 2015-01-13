@@ -15,8 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 unsigned8 skipId := 4 : stored('skipId');
 string searchAuthor := 'Dr. Seuss' : stored('searchAuthor');

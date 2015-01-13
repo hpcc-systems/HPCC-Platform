@@ -1138,13 +1138,14 @@ public:
     {
         Owned <IRoxieDaliHelper> daliHelper = connectToDali();
         Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
-        daliHelper->noteWorkunitRunning(wuid.get(), true);
-        if (!wu)
-            throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         Owned<IQueryFactory> queryFactory;
         try
         {
+            checkWorkunitVersionConsistency(wu);
+            daliHelper->noteWorkunitRunning(wuid.get(), true);
+            if (!wu)
+                throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
             queryFactory.setown(createServerQueryFactoryFromWu(wu));
         }
         catch (IException *E)

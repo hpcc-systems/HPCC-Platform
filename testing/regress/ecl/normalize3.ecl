@@ -15,8 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 o1 := normalize(sq.NamesTable1, left.books, transform(right));
 o2 := normalize(sq.NamesTable1, sort(left.books, -rating100, +author), transform(right));

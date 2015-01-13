@@ -17,8 +17,15 @@
 
 #onwarning (1036, ignore);
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 sequential(
 output(count(sq.SimplePersonBookIndex));

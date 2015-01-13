@@ -324,12 +324,6 @@ private:
         return r->getResultHash();
     }
 
-    unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence)
-    {
-        //GH->RKC Roxie should implement reading external results when connected to dali
-        UNIMPLEMENTED;
-    }
-
     unsigned __int64 getResultInt(const char * name, unsigned sequence)
     {
         Owned<IConstWUResult> r = getWorkUnitResult(workunit, name, sequence);
@@ -3521,6 +3515,34 @@ public:
         }
         ROQ->sendAbortCallback(header, lfn, *this);
         throwUnexpected();
+    }
+
+    IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence)
+    {
+        Owned <IRoxieDaliHelper> daliHelper = connectToDali();
+        if (daliHelper && daliHelper->connected())
+        {
+            Owned<IConstWorkUnit> externalWU = daliHelper->attachWorkunit(wuid, NULL);
+            if (externalWU)
+            {
+                externalWU->remoteCheckAccess(queryUserDescriptor(), false);
+                return getWorkUnitResult(externalWU, name, sequence);
+            }
+            else
+            {
+                throw MakeStringException(0, "Missing or invalid workunit name %s in getExternalResult()", nullText(wuid));
+            }
+        }
+        else
+            throw MakeStringException(ROXIE_DALI_ERROR, "WorkUnit read: no dali connection available");
+    }
+
+    unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence)
+    {
+        Owned<IConstWUResult> r = getExternalResult(wuid, name, sequence);
+        if (!r)
+            throw MakeStringException(0, "Failed to retrieve hash value %s from workunit %s", name, wuid);
+        return r->getResultHash();
     }
 
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)

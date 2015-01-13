@@ -689,10 +689,10 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
                 wordOffset++;
             }
         }
-    }
 
-    if (firstReleaseBlock)
-        notifyMemoryUnused(firstReleaseBlock, (lastReleaseBlock - firstReleaseBlock) + heapBlockSize);
+        if (firstReleaseBlock)
+            notifyMemoryUnused(firstReleaseBlock, (lastReleaseBlock - firstReleaseBlock) + heapBlockSize);
+    }
 
     if (memTraceLevel >= 2)
         DBGLOG("RoxieMemMgr: subfree_aligned() %u pages ok - addr=%p heapLWM=%u totalPages=%u", _pages, ptr, heapLWM, heapTotalPages);

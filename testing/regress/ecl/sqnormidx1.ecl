@@ -15,8 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
+#onwarning(4523, ignore);
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 //Normalized, no filter
 output(sq.SimplePersonBookIndex.books, { name, author, rating100 });

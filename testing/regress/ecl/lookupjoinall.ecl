@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4531, ignore);
+
 dsLeft := DATASET([1,2,3], { unsigned id; });
 dsRight := DATASET([4,5,6], { unsigned id; });
 

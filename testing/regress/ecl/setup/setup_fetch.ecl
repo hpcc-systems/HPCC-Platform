@@ -17,7 +17,9 @@
 
 import Std.File AS FileServices;
 import $;
-C := $.files(__PLATFORM__, false);
+
+boolean createMultiPart := (__PLATFORM__[1..4] = 'thor');
+C := $.files(createMultiPart, false);
 
 FetchData   := DATASET([
     {3000,   'FL', 'Boca Raton',  'London',   'Bridge'},
