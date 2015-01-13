@@ -52,7 +52,7 @@ public:
             if (optVerbose)
             {
                 fprintf(stdout, "Processing ESDL definition: %s\n", source);
-                if (!outdir || !*outdir)
+                if (out==NULL && (!outdir || !*outdir))
                     fprintf(stdout, "Output directory not specified\n");
             }
 
