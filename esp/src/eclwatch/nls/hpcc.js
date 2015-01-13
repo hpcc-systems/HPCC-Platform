@@ -166,6 +166,7 @@ define({root:
     FindPrevious: "Find Previous",
     FirstName: "First Name",
     Fixed: "Fixed",
+    Folder: "Folder",
     Format: "Format",
     FromDate: "From Date",
     FromSizes: "From Sizes",

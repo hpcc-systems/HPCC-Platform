@@ -62,6 +62,8 @@ define([
                 this.loadGroups();
             } else if (params.DropZones === true) {
                 this.loadDropZones();
+            } else if (params.DropZoneFolders === true) {
+                this.loadDropZoneFolders();
             } else if (params.WUState === true) {
                 this.loadWUState();
             } else if (params.DFUState === true) {
@@ -129,6 +131,32 @@ define([
                     }
                 }
             });
+        },
+
+        loadDropZoneFolders: function () {
+            var context = this;
+            if (this._dropZoneTarget) {
+                FileSpray.FileList({
+                    request: {
+                        Netaddr: this._dropZoneTarget.machine.Netaddress,
+                        Path: this._dropZoneTarget.machine.Directory,
+                        OS: this._dropZoneTarget.machine.OS
+                    }
+                }).then(function (response) {
+                    if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
+                        var files = response.FileListResponse.files.PhysicalFileStruct;
+                        for (var i = 0; i < files.length; ++i) {
+                            if (files[i].isDir) {
+                                context.options.push({
+                                    label: files[i].name,
+                                    value: files[i].name
+                                });
+                            }
+                        }
+                        context._postLoad();
+                    }
+                });
+            }
         },
 
         loadGroups: function () {
