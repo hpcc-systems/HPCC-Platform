@@ -23,6 +23,7 @@
     <xsl:template match="EspService">
         <xsl:param name="bindingNode"/>
         <xsl:param name="authNode"/>
+
         <xsl:variable name="serviceType" >
             <xsl:choose>
                 <xsl:when test="Properties/@type='DynamicESDL'">
@@ -33,7 +34,8 @@
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
-        <xsl:variable name="serviceName" select="concat($serviceType, '_', @name, '_', $process)"/>
+
+        <xsl:variable name="serviceName" select="@name"/>
         <xsl:variable name="bindName" select=" $bindingNode/@name"/>
         <xsl:variable name="bindType">
             <xsl:variable name="protocolBasedBindingType" select="Properties/Binding[@protocol=$bindingNode/@protocol]/@type"/>
@@ -51,11 +53,7 @@
                 <xsl:with-param name="plugin" select="Properties/@plugin"/>
             </xsl:call-template>
         </xsl:variable>
-        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
-            <!--xsl:call-template name="processServiceSpecifics">
-                <xsl:with-param name="serviceType" select="$serviceType"/>
-            </xsl:call-template-->
-        </EspService>
+        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}" defaultBinding="true">
             <xsl:call-template name="bindAuthentication">
                 <xsl:with-param name="bindingNode" select="$bindingNode"/>
