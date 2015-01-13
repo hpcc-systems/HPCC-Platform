@@ -2892,10 +2892,7 @@ OUTPUT(ValidWords)
                 <row>
                   <entry>-t</entry>
 
-                  <entry>Target directory. The default is
-                  &lt;install_directory&gt;/classes. If it is only for adding
-                  to classpath, the value can be the full path of the java jar
-                  file.</entry>
+                  <entry>Target file or directory. </entry>
                 </row>
 
                 <row>
