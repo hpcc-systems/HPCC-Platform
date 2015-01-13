@@ -834,7 +834,7 @@ public:
         info.append("</ACCESSINFO>\n");
     }
 
-    void setAffinity(int numCores)
+    void setThreadAffinity(int numCores)
     {
 #ifndef _WIN32
         // Note - strictly speaking not threadsafe but any race conditions are (a) unlikely and (b) harmless
@@ -891,7 +891,6 @@ protected:
     static cpu_set_t cpuMask;
     static unsigned cpuCores;
     static unsigned lastCore;
-#endif
 
 private:
     static void traceAffinity(cpu_set_t *mask)
@@ -905,18 +904,24 @@ private:
         if (trace.length())
             DBGLOG("Process affinity is set to use core(s) %s", trace.str()+1);
     }
+#endif
 
     CIArrayOf<AccessTableEntry> accessTable;
 };
 
+#ifndef _WIN32
 cpu_set_t RoxieListener::cpuMask;
 unsigned RoxieListener::cpuCores;
 unsigned RoxieListener::lastCore;
+#endif
 
 extern void updateAffinity(unsigned __int64 affinity)
 {
     if (affinity)  // 0 means use the value already set for this process
     {
+#ifdef _WIN32
+        throw makeStringException(ROXIE_INTERNAL_ERROR, "Setting Roxie affinity is not supported on this operating system");
+#else
         cpu_set_t cpus;
         CPU_ZERO(&cpus);
         for (unsigned core = 0; core < CPU_SETSIZE; core++)
@@ -927,6 +932,7 @@ extern void updateAffinity(unsigned __int64 affinity)
         }
         if (sched_setaffinity(0, sizeof(cpu_set_t), &cpus))
             throw makeStringException(errno, "Failed to set affinity");
+#endif
     }
     RoxieListener::updateAffinity();
 }
@@ -1293,7 +1299,7 @@ public:
                 }
                 int bindCores = wu->getDebugValueInt("bindCores", coresPerQuery);
                 if (bindCores > 0)
-                    pool->setAffinity(bindCores);
+                    pool->setThreadAffinity(bindCores);
             }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
@@ -1764,7 +1770,7 @@ readAnother:
                             int bindCores = queryFactory->queryOptions().bindCores;
                             bindCores = queryXml->getPropInt("@bindCores", bindCores);
                             if (bindCores > 0)
-                                pool->setAffinity(bindCores);
+                                pool->setThreadAffinity(bindCores);
                             bool stripWhitespace = queryFactory->queryOptions().stripWhitespaceFromStoredDataset;
                             stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
                             PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
