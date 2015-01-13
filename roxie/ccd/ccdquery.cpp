@@ -1613,14 +1613,20 @@ public:
     }
 };
 
-static void checkWorkunitVersionConsistency(const IQueryDll *dll)
+unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu)
 {
-    assertex(dll->queryWorkUnit());
-    unsigned wuVersion = dll->queryWorkUnit()->getCodeVersion();
+    assertex(wu);
+    unsigned wuVersion = wu->getCodeVersion();
     if (wuVersion == 0)
         throw makeStringException(ROXIE_MISMATCH, "Attempting to execute a workunit that hasn't been compiled");
     if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
         throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+    return wuVersion;
+}
+
+static void checkWorkunitVersionConsistency(const IQueryDll *dll)
+{
+    unsigned wuVersion = checkWorkunitVersionConsistency(dll->queryWorkUnit());
 
     EclProcessFactory processFactory = (EclProcessFactory) dll->queryDll()->getEntry("createProcess");
     if (processFactory)
