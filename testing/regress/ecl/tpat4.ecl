@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4537, ignore);
+
 import lib_parselib;
 //See pp229-> of dragon.  This generates a s/r conflict from the SLR tables.
 

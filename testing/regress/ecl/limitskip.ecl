@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4528, ignore);
+
 irec := RECORD
     UNSIGNED1 i;
 END;

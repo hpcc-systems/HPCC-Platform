@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4531, ignore);
+
 rec :=
 RECORD
         integer i;

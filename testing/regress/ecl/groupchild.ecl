@@ -15,10 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
 //Test iteration of grouped datasets in child queries.
 
-#option ('groupedChildIterators', true)
+#option ('groupedChildIterators', true);
 
 childRecord := RECORD
 string      name;

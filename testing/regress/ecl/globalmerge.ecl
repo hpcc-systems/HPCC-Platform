@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(1045, ignore);
+
 // global merge regression test (also tests large variable rows)
 //noRoxie
 

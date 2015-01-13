@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('globalFold', false)
+#option ('globalFold', false);
+
 REGEXFIND(NOFOLD('s.t'), 'set');
 NOT(REGEXFIND(NOFOLD('s.t'), 'select'));
 REGEXFIND(NOFOLD('s.*t'), 'select');

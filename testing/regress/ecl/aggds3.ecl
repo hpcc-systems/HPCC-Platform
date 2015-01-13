@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(2168, ignore);
+#onwarning(1038, ignore);
+
 //version multiPart=true
 //version multiPart=false,useSequential=true
 

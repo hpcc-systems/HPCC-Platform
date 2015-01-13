@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(2168, ignore);
+#onwarning(1028, ignore);
+
 
 idRecord :=
             RECORD

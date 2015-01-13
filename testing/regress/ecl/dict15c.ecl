@@ -23,6 +23,8 @@ multiPart := #IFDEFINED(root.multiPart, false);
 
 //--- end of version configuration ---
 
+#onwarning(4523, ignore);
+
 //Find all anagrams of a word, that match the list of known words
 import $.Common.TextSearch;
 import $.setup.TS;

@@ -15,9 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4537, ignore);
+
 import Std.Str;
 
-export jlib:= SERVICE
+jlib:= SERVICE
     unsigned8 rtlTick() : library='jlib',eclrtl,entrypoint='rtlNano';
 END;
 
@@ -49,12 +51,12 @@ TRANSFORM
         SELF := R;
 END;
 
-export Docs_by_DocNum := ITERATE (TextData, GenerateDocIDs(LEFT, RIGHT));
+Docs_by_DocNum := ITERATE (TextData, GenerateDocIDs(LEFT, RIGHT));
 
 
-export PATTERN AlphaUpper := PATTERN('[A-Z]');
-export PATTERN AlphaLower := PATTERN('[a-z]');
-export pattern Alpha := PATTERN('[A-Za-z]');
+PATTERN AlphaUpper := PATTERN('[A-Z]');
+PATTERN AlphaLower := PATTERN('[a-z]');
+pattern Alpha := PATTERN('[A-Za-z]');
 
 // Flags for type of match
 Flag_FullMatch := 2;

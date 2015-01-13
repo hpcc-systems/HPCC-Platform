@@ -16,7 +16,7 @@
 ############################################################################## */
 
 //Test that the new action() replacement for setresult is called
-#option ('maxRootMaybeThorActions', 10)
+#option ('maxRootMaybeThorActions', 10);
 
 namesRecord := 
             RECORD
