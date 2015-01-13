@@ -1581,7 +1581,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                       write file(s) to the destination directory before
                       attempting to copy. If prompted to overwrite the
                       destination file, you should answer <emphasis
-                      role="bold">yes</emphasis>. </entry>
+                      role="bold">yes</emphasis>.</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -2871,21 +2871,65 @@ OUTPUT(ValidWords)
       <sect2 role="brk">
         <title>hpcc-push.sh</title>
 
-        <para>To use this script, the ssh keys need to be properly configured
-        on all nodes, and you must use sudo:</para>
+        <para><emphasis
+        role="bold">hpcc-push.sh</emphasis><emphasis><emphasis> [-s
+        &lt;source&gt;] [-t &lt;target&gt;] [-n &lt;concurrent&gt;] [-x]
+        </emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="150pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>Source file or directory.</entry>
+                </row>
+
+                <row>
+                  <entry>-t</entry>
+
+                  <entry>Target directory. The default is
+                  &lt;install_directory&gt;/classes. If it is only for adding
+                  to classpath, the value can be the full path of the java jar
+                  file.</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --concurrent</entry>
+
+                  <entry>When specified, denotes the number of concurrent
+                  executions. Default is 5. Optional.</entry>
+                </row>
+
+                <row>
+                  <entry>-x</entry>
+
+                  <entry>When specified, this option excludes execution on the
+                  current host.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
 
         <para><emphasis role="bold">This script "pushes" files from the source
         filename and path to the destination filename and path for all IP
         addresses in the active environment.xml. </emphasis></para>
 
+        <para>To use this script, the ssh keys need to be properly configured
+        on all nodes, and you must use sudo.</para>
+
         <para>The IP addresses were defined when editing the environment in
         ConfigMgr.</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;
 </programlisting>For example:</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
-     /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.xml
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -x \
+     -s /etc/HPCCSystems/environment.xml -t /etc/HPCCSystems/environment.xml
 </programlisting></para>
       </sect2>
 
