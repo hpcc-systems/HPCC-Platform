@@ -133,6 +133,7 @@ unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
 
 unsigned slaveQueryReleaseDelaySeconds = 60;
+unsigned coresPerQuery = 0;
 
 unsigned logQueueLen;
 unsigned logQueueDrop;
@@ -747,6 +748,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
 
         slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);
+        coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
@@ -819,6 +821,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         setLeafCacheMem(leafCacheMB * 0x100000);
         blobCacheMB = topology->getPropInt("@blobCacheMem", 0);
         setBlobCacheMem(blobCacheMB * 0x100000);
+
+        unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
+        updateAffinity(affinity);
 
         minFreeDiskSpace = topology->getPropInt64("@minFreeDiskSpace", (1024 * 0x100000)); // default to 1 GB
         if (topology->getPropBool("@jumboFrames", false))

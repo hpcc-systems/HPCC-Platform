@@ -2547,7 +2547,13 @@ private:
             break;
 
         case 'S':
-            if (stricmp(queryName, "control:setCopyResources")==0)
+            if (stricmp(queryName, "control:setAffinity")==0)
+            {
+                __uint64 affinity = control->getPropBool("@val", true);
+                topology->setPropInt64("@affinity", affinity);
+                updateAffinity(affinity);
+            }
+            else if (stricmp(queryName, "control:setCopyResources")==0)
             {
                 copyResources = control->getPropBool("@val", true);
                 topology->setPropBool("@copyResources", copyResources);
