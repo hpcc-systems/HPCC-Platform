@@ -5,8 +5,6 @@
 #include "dmetaphone.hpp"
 #include "metaphone.h"
 
-static char buildVersion[] = "$HeadURL: https://svn.br.seisint.com/ecl/trunk/ln/plugins/dmetaphone/dmetaphone.cpp $ $Id: dmetaphone.cpp 60037 2010-10-07 13:00:46Z ghalliday $";
-
 #define DMETAPHONE_VERSION "DMETAPHONE 1.1.05"
 
 static const char * compatibleVersions[] = {

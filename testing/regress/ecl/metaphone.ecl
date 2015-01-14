@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-import lib_metaphone;
+import Std.Metaphone, lib_metaphone;
 
 input := DATASET([
   {'Algernon'},
@@ -36,9 +36,9 @@ END;
 
 outrec t(string name) := TRANSFORM
    SELF.name := name;
-   SELF.d1 := lib_metaphone.MetaphoneLib.DMetaphone1(name);
-   SELF.d2 := lib_metaphone.MetaphoneLib.DMetaphone2(name);
-   SELF.db := lib_metaphone.MetaphoneLib.DMetaphoneBoth(name);
+   SELF.d1 := Metaphone.primary(name);
+   SELF.d2 := Metaphone.secondary(name);
+   SELF.db := Metaphone.double(name);
    SELF.d1_20 := lib_metaphone.MetaphoneLib.DMetaphone1_20(name);
    SELF.d2_20 := lib_metaphone.MetaphoneLib.DMetaphone2_20(name);
    SELF.db_40  := lib_metaphone.MetaphoneLib.DMetaphoneBoth_40(name);

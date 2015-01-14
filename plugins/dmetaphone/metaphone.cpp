@@ -12,6 +12,8 @@
 //
 //  13-Dec-00   mtw Modified to return a number (e.g. 77th returns 77)
 //
+// Placed in the public domain by Lawrence Philips
+//
 ////////////////////////////////////////////////////////////////////////////////
 #include "metaphone.h"
 #include <ctype.h>
