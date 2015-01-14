@@ -1410,8 +1410,14 @@ public:
                     StringBuffer s;
                     CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
                 }
-                if (created)
+                if (created)  // Partially-created graphs are liable to crash if you call abort() on them...
                     endGraph(startCycles, true);
+                else
+                {
+                    // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
+                    graph.clear();
+                    childGraphs.kill();
+                }
                 CTXLOG("Done cleaning up");
                 throw;
             }
@@ -1420,6 +1426,12 @@ public:
                 CTXLOG("Exception thrown in query - cleaning up");
                 if (created)
                     endGraph(startCycles, true);
+                else
+                {
+                    // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
+                    graph.clear();
+                    childGraphs.kill();
+                }
                 CTXLOG("Done cleaning up");
                 throw;
             }
