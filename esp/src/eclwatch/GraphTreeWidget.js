@@ -38,6 +38,7 @@ define([
 
     "hpcc/_Widget",
     "hpcc/GraphWidget",
+    "hpcc/JSGraphWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
     "hpcc/TimingTreeMapWidget",
@@ -59,7 +60,7 @@ define([
             registry, Dialog, Menu, MenuItem, MenuSeparator, CheckedMenuItem,
             entities,
             tree,
-            _Widget, GraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
+            _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
             template) {
 
     return declare("GraphTreeWidget", [_Widget], {
@@ -67,6 +68,7 @@ define([
         baseClass: "GraphTreeWidget",
         i18n: nlsHPCC,
 
+        graphType: dojoConfig.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
         graphName: "",
         wu: null,
         global: null,
@@ -370,6 +372,20 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (this.global._plugin) {
+                this.doInit(params);
+            } else {
+                this.global.on("ready", lang.hitch(this, function (evt) {
+                    this.doInit(params);
+                }));
+            }
+        },
+
+        doInit: function (params) {
+            if (this.global.version.major < 5) {
+                dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
+            }
+
             if (params.SafeMode && params.SafeMode != "false") {
                 this.main.depth.set("value", 1);
                 var dotAttrs = this.global.getDotMetaAttributes();
@@ -419,12 +435,6 @@ define([
                 },
                 hideHelp: true
             }, params));
-
-            this.global.on("ready", lang.hitch(this, function(evt) {
-                if (this.global.version.major < 5) {
-                    dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
-                }
-            }));
         },
 
         refreshData: function () {
