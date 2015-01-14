@@ -223,6 +223,12 @@ define([
             }
             this.set("DFUFileParts", DFUFileParts);
         },
+        _CompressedFileSizeSetter: function (CompressedFileSize) {
+            this.CompressedFileSize = "";
+            if (CompressedFileSize) {
+                this.CompressedFileSize = CompressedFileSize.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+        },
         constructor: function (args) {
             if (args) {
                 declare.safeMixin(this, args);

@@ -2339,7 +2339,7 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
             StringBuffer querySetXPath("QuerySets");
             if (!querySet.isEmpty())
                 querySetXPath.appendf("/QuerySet[@id=\"%s\"]", querySet.get());
-            Owned<IRemoteConnection> conn = querySDS().connect(querySetXPath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+            Owned<IRemoteConnection> conn = querySDS().connect(querySetXPath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
             if (!conn)
                 return NULL;
 

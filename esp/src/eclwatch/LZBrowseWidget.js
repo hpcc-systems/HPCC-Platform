@@ -98,7 +98,8 @@ define([
             this.landingZonesTab = registry.byId(this.id + "_LandingZones");
             this.uploader = registry.byId(this.id + "Upload");
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
-            this.dropZoneSelect = registry.byId(this.id + "DropZoneTargetSelect");
+            this.dropZoneTargetSelect = registry.byId(this.id + "DropZoneTargetSelect");
+            this.dropZoneFolderSelect = registry.byId(this.id + "DropZoneFolderSelect");
             this.fileListDialog = registry.byId(this.id + "FileListDialog");
             this.overwriteCheckbox = registry.byId(this.id + "FileOverwriteCheckbox");
 
@@ -176,11 +177,11 @@ define([
                 this._onUploadSubmit();
                 this.fileListDialog.hide();
             } else {
-                var item = context.dropZoneSelect.get("row");
+                var target = context.dropZoneTargetSelect.get("row");
                 FileSpray.FileList({
                     request: {
-                        Netaddr: item.machine.Netaddress,
-                        Path: item.machine.Directory
+                        Netaddr: target.machine.Netaddress,
+                        Path: context.getUploadPath()
                     }
                 }).then(function (response) {
                     var fileName = "";
@@ -216,9 +217,15 @@ define([
             }
         },
 
+        getUploadPath: function () {
+            var target = this.dropZoneTargetSelect.get("row");
+            var folder = this.dropZoneFolderSelect.get("row");
+            return target.machine.Directory + (this.endsWith(target.machine.Directory, "/") ? "" : "/") + folder.value;
+        },
+
         _onUploadSubmit: function (event) {
-            var item = this.dropZoneSelect.get("row");
-            this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + item.machine.Netaddress + "&OS=" + item.machine.OS + "&Path=" + item.machine.Directory);
+            var target = this.dropZoneTargetSelect.get("row");
+            this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + target.machine.Netaddress + "&OS=" + target.machine.OS + "&Path=" + this.getUploadPath());
             this.uploader.upload();
         },
 
@@ -427,10 +434,21 @@ define([
             this.sprayBlobDestinationSelect.init({
                 Groups: true
             });
-            this.dropZoneSelect.init({
-                DropZones: true
+            var context = this;
+            this.dropZoneTargetSelect.init({
+                DropZones: true,
+                callback: function (value, row) {
+                    if (context.dropZoneFolderSelect) {
+                        context.dropZoneFolderSelect._dropZoneTarget = row;
+                        context.dropZoneFolderSelect.defaultValue = context.dropZoneFolderSelect.get("value");
+                        context.dropZoneFolderSelect.loadDropZoneFolders();
+                    }
+                }
             });
-
+            this.dropZoneFolderSelect.init({
+                DropZoneFolders: true,
+                includeBlank: true
+            });
         },
 
         initTab: function () {

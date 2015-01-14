@@ -29,6 +29,7 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/store/util/QueryResults",
+    "dojo/Evented",
 
     "dijit/registry",
     "dijit/layout/BorderContainer",
@@ -43,7 +44,7 @@ define([
     "dijit/form/Button",
     "dijit/form/NumberSpinner"
     
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
             registry, BorderContainer, ContentPane,
             _Widget,
             template) {
@@ -263,7 +264,7 @@ define([
                                         this.graphViewHistory.getLatest().navigateTo(this);
                                     }
                                     deferred.resolve("Layout Complete.");
-                                    this.refreshRootState(context.selectedGlobalIDs);
+                                    this.refreshRootState(context.rootGlobalIDs);
                                 };
                                 if (this.svg) {
                                     targetGraphWidget.startCachedLayout(this.svg);
@@ -278,7 +279,7 @@ define([
                             targetGraphWidget.setSelectedAsGlobalID(context.selectedGlobalIDs);
                             targetGraphWidget.setMessage("");
                             deferred.resolve("XGMML Did Not Change.");
-                            targetGraphWidget.refreshRootState(context.selectedGlobalIDs);
+                            targetGraphWidget.refreshRootState(context.rootGlobalIDs);
                         }
                     }));
                 }));
@@ -296,6 +297,7 @@ define([
 
         constructor: function (sourceGraphWidget) {
             this.sourceGraphWidget = sourceGraphWidget;
+            this.historicPos = 0;
             this.history = [];
             this.index = {};
         },
@@ -488,7 +490,7 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
-                this._isPluginInstalled = this.isPluginInstalled();
+                this._isPluginInstalled = dojoConfig.isPluginInstalled();
                 this.createPlugin();
                 this.watchStyleChange();
             },
@@ -748,24 +750,6 @@ define([
                             domConstruct.create("br", null, place);
                         }
                     }
-                }
-            },
-
-            isPluginInstalled: function () {
-                if (this.isIE || this.isIE11) {
-                    try {
-                        var o = new ActiveXObject("HPCCSystems.HPCCSystemsGraphViewControl.1");
-                        o = null;
-                        return true;
-                    } catch (e) { }
-                    return false;
-                } else {
-                    for (var i = 0, p = navigator.plugins, l = p.length; i < l; i++) {
-                        if (p[i].name.indexOf("HPCCSystemsGraphViewControl") > -1) {
-                            return true;
-                        }
-                    }
-                    return false;
                 }
             },
 
@@ -1174,7 +1158,9 @@ define([
 
             registerEvent: function (evt, func) {
                 if (this.hasPlugin()) {
-                    if (this.isIE11) {
+                    if (this._plugin instanceof Evented) {
+                        this._plugin.on(evt, func);
+                    } else if (this.isIE11) {
                         this._plugin["on" + evt] = func;
                     } else if (this._plugin.attachEvent !== undefined) {
                         return this._plugin.attachEvent("on" + evt, func);
@@ -1188,7 +1174,6 @@ define([
             refreshActionState: function () {
                 this.setDisabled(this.id + "Previous", !this.graphViewHistory.hasPrevious(), "iconLeft", "iconLeftDisabled");
                 this.setDisabled(this.id + "Next", !this.graphViewHistory.hasNext(), "iconRight", "iconRightDisabled");
-                var selection = this.getSelection();
                 this.setDisabled(this.id + "SyncSelection", !this.getSelection().length, "iconSync", "iconSyncDisabled");
             },
 

@@ -380,21 +380,21 @@ protected:
 
 static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
                                               StNumRowsProcessed, StNumSlaves, StNumStarted, StNumStopped, StKindNone);
-static const StatisticsMapping joinStatistics(actStatistics, StNumAtmostTriggered, StKindNone);
-static const StatisticsMapping keyedJoinStatistics(joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+static const StatisticsMapping joinStatistics(&actStatistics, StNumAtmostTriggered, StKindNone);
+static const StatisticsMapping keyedJoinStatistics(&joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                     StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                     StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
                                                     StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                     StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                     StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
                                                     StNumDiskRejected, StKindNone);
-static const StatisticsMapping indexStatistics(actStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+static const StatisticsMapping indexStatistics(&actStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
                                                 StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                 StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
                                                 StNumIndexRowsRead, StKindNone);
-static const StatisticsMapping diskStatistics(actStatistics, StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
+static const StatisticsMapping diskStatistics(&actStatistics, StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                StNumDiskRejected, StKindNone);
 
 //=================================================================================

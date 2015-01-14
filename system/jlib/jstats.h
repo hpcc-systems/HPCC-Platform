@@ -408,7 +408,7 @@ public:
     //Takes a list of StatisticKind terminated by StKindNone
     StatisticsMapping(StatisticKind kind, ...);
     //Takes an existing Mapping, and extends it with a list of StatisticKind terminated by StKindNone
-    StatisticsMapping(const StatisticsMapping &, ...);
+    StatisticsMapping(const StatisticsMapping * from, ...);
     //Accepts all StatisticKind values
     StatisticsMapping();
 

@@ -699,10 +699,10 @@ StatisticsMapping::StatisticsMapping(StatisticKind kind, ...)
     createMappings();
 }
 
-StatisticsMapping::StatisticsMapping(const StatisticsMapping &from, ...)
+StatisticsMapping::StatisticsMapping(const StatisticsMapping * from, ...)
 {
-    ForEachItemIn(idx, from.indexToKind)
-        indexToKind.append(from.indexToKind.item(idx));
+    ForEachItemIn(idx, from->indexToKind)
+        indexToKind.append(from->indexToKind.item(idx));
     va_list args;
     va_start(args, from);
     for (;;)
@@ -732,10 +732,10 @@ void StatisticsMapping::createMappings()
     for (unsigned i=0; i < StMax; i++)
         kindToIndex.append(numStatistics());
 
-    ForEachItemIn(i, indexToKind)
+    ForEachItemIn(i2, indexToKind)
     {
-        unsigned kind = indexToKind.item(i);
-        kindToIndex.replace(i, kind);
+        unsigned kind = indexToKind.item(i2);
+        kindToIndex.replace(i2, kind);
     }
 }
 
