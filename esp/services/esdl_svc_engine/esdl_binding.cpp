@@ -344,8 +344,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSON : WTStandard);
         m_pEsdlTransformer->processHPCCResult(context, mthdef, soapresp.str(), respWriter.get(), logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
 
-        const char * finalresp = respWriter->str();
-        out.append(finalresp);
+        out.append(respWriter->str());
     }
     else if(isproxy)
         getSoapBody(out, soapresp);
