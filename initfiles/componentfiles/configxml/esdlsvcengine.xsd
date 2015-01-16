@@ -35,6 +35,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="LoggingManager" type="loggingmanagerType" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Specifies the Logging Manager.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
