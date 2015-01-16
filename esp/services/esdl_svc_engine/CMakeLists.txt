@@ -52,6 +52,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/esdllib
+         ${HPCC_SOURCE_DIR}/esp/logging
     )
 
 ADD_DEFINITIONS( -D_USRDLL )
