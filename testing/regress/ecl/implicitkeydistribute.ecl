@@ -15,24 +15,33 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=true
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+useSequential := #IFDEFINED(root.useSequential, false);
+
+//--- end of version configuration ---
+
+#onwarning (2309, ignore);      // remove complaint aboute filtered right preventing keyed join
+#onwarning (4515, ignore);
+
 import $.setup;
 
-EXPORT ImplicitKeyDistribute(string source = 'thorlcr') := function
+files := setup.files(multiPart, false);
 
-    files := setup.files(source, false);
+inlineDs := dataset([
+        {'AAAA','AAA'},
+        {'CLAIRE','BAYLISS'},
+        {'KIMBERLY','SMITH'},
+        {'ZZZ','ZZZ'}]
+        , { string first, STRING last} );
+        
+myIndex := files.DG_VarIndex(dg_lastname != '');
 
-    inlineDs := dataset([
-            {'AAAA','AAA'},
-            {'CLAIRE','BAYLISS'},
-            {'KIMBERLY','SMITH'},
-            {'ZZZ','ZZZ'}]
-            , { string first, STRING last} );
-            
-    myIndex := files.DG_VarIndex(dg_lastname != '');
-    
-    j := JOIN(inlineDs, myIndex, LEFT.last = RIGHT.dg_lastname AND LEFT.first = RIGHT.dg_firstName);
-    
-    gr := TABLE(j, { last, cnt := COUNT(GROUP) }, last); 
-    
-    RETURN gr;
-END;
+j := JOIN(inlineDs, myIndex, LEFT.last = RIGHT.dg_lastname AND LEFT.first = RIGHT.dg_firstName);
+
+gr := TABLE(j, { last, cnt := COUNT(GROUP) }, last); 
+
+gr;
