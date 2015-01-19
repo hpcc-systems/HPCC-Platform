@@ -1549,181 +1549,6 @@ static int exec(const char* _command)
 }
 #endif 
 
-bool callExternalProgram(const char *progname, const StringBuffer &input, StringBuffer &output, StringArray *env_in)
-{
-#ifdef _WIN32 
-    StringBuffer envp;
-    if (env_in)
-    {
-        ForEachItemIn(index, *env_in)
-            envp.append(env_in->item(index)).append('\0');
-    }
-    win32::ProcessPipe p(progname, envp.length() ? envp.str() : NULL);
-    p.Write(input.str(), input.length());
-    p.CloseWrite();
-
-    char buf[4096];
-    for(;;)
-    {
-        // Read program output
-        DWORD bread = (DWORD)p.Read(buf, sizeof(buf));
-        if(!bread)
-        {
-            break;
-        }
-        output.append(bread, buf);
-    }
-#else
-    struct Pipe
-    {
-        Pipe()
-        { 
-            p[0]=p[1]=-1;
-            if(pipe(p))
-                throw MakeStringException(-1,"Pipe create failed: %d",errno);
-        }
-
-        ~Pipe()
-        {
-            if(p[0]>=0)
-                close(p[0]);
-            if(p[1]>=0)
-                close(p[1]);
-        }
-
-        int Read(void *buf, size32_t nbyte)
-        {
-            return read(p[0],buf,nbyte);
-        }
-
-        int Write(const void *buf, size32_t nbyte)
-        {
-            return write(p[1],buf,nbyte);
-        }
-
-        void SetStdout()
-        {
-            if(p[1]!=STDOUT_FILENO)
-            {
-                if(dup2(p[1],STDOUT_FILENO)<0)
-                    throw MakeStringException(-1,"stdout failed: %d",errno);
-                close(p[1]);
-            }
-        }
-
-        void SetStdin()
-        {
-            if(p[0]!=STDIN_FILENO)
-            {
-                if(dup2(p[0],STDIN_FILENO)<0)
-                    throw MakeStringException(-1,"stdin failed: %d",errno);
-                close(p[0]);
-            }
-        }
-
-        void CloseRead()
-        {
-            close(p[0]);
-            p[0]=-1;
-        }
-
-        void CloseWrite()
-        {
-            close(p[1]);
-            p[1]=-1;
-        }
-
-        int p[2];
-    } pipe1, pipe2;
-    
-    struct ChildProc
-    {
-        ChildProc()
-        {
-            if((pid=fork())<0)
-                throw MakeStringException(-1,"Fork failed: %d",errno);
-        }
-        ~ChildProc()
-        {
-            if(!inChild())
-            {
-                for(;;)
-                {
-                    if(waitpid(pid,0,0)>=0)
-                        break;
-                    else if (errno==EINTR)
-                    {
-                    }
-                }
-            }
-        }
-        bool inChild()
-        {
-            return pid==0;
-        }
-        int pid;
-    } fchild;
-
-    if(fchild.inChild())
-    {
-        pipe1.CloseWrite();
-        pipe1.SetStdin();
-
-        pipe2.CloseRead();
-        pipe2.SetStdout();
-
-        if (env_in)
-        {
-            const char **envp = (const char **) alloca((env_in->ordinality()+1) * sizeof(const char *));
-            ForEachItemIn(index, *env_in)
-                envp[index]=env_in->item(index);
-            envp[env_in->ordinality()] = NULL;
-            execle(progname, progname, (const char *) NULL, (char * const *)envp);  // will not return, on success
-        }
-        else
-            execlp(progname, progname, (const char *) NULL);  // will not return, on success
-        _exit(EXIT_FAILURE); // must be _exit!!
-    }
-    else
-    {
-        pipe1.CloseRead();
-        pipe2.CloseWrite();
-        const char* data=input.str();
-        size32_t count=input.length();
-        for(;count>0;)
-        {
-            ssize_t w=pipe1.Write(data,count);
-            if(w<0)
-            {
-                if (errno!=EINTR)
-                    throw MakeStringException(-1,"Pipe write failed: %d",errno);
-            }
-            else
-            {
-                data+=w;
-                count-=w;
-            }
-        }
-        pipe1.CloseWrite();
-
-        char buf[4096];
-        for(;;)
-        {
-            int r=pipe2.Read(buf, sizeof(buf));
-            if(r>0)
-            {
-                output.append(r, buf);
-            }
-            else if(r==0)
-                break;
-            else if(errno!=EINTR)
-                throw MakeStringException(-1,"Pipe read failed: %d",errno); 
-        }
-    }
-#endif
-    return true;
-}
-
 //Calculate the greatest common divisor using Euclid's method
 unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 right)
 {
@@ -1885,6 +1710,44 @@ static const char *findExtension(const char *fn)
         }
     }
     return ret;
+}
+
+unsigned runExternalCommand(StringBuffer &output, const char *cmd, const char *input)
+{
+    try
+    {
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        pipe->run(cmd, cmd, ".", input != NULL, true, true, 1024*1024);
+        if (input)
+        {
+            pipe->write(strlen(input), input);
+            pipe->closeInput();
+        }
+        char buf[1024];
+        while (true)
+        {
+            size32_t read = pipe->read(sizeof(buf), buf);
+            if (!read)
+                break;
+            output.append(read, buf);
+        }
+        int ret = pipe->wait();
+        StringBuffer error;
+        while (true)
+        {
+            size32_t read = pipe->readError(sizeof(buf), buf);
+            if (!read)
+                break;
+            error.append(read, buf);
+        }
+        return ret;
+    }
+    catch (IException *E)
+    {
+        E->Release();
+        output.clear();
+        return 255;
+    }
 }
 
 bool matchesMask(const char *fn, const char *mask, unsigned p, unsigned n)
