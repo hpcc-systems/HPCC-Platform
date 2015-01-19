@@ -6033,6 +6033,7 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
     bodyArgs.append(*createExprAttribute(entrypointAtom, LINK(funcNameExpr)));
     OwnedHqlExpr newBody = body->clone(bodyArgs);
     inheritDependencies(newBody);
+    copyDependencies(queryBodyExtra(ecl), queryBodyExtra(newBody));
 
     HqlExprArray funcdefArgs;
     funcdefArgs.append(*LINK(newBody));
@@ -6058,6 +6059,7 @@ IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * tra
     unwindChildren(paramters, transformed);
     OwnedHqlExpr rebound = createReboundFunction(newFuncDef, paramters);
     inheritDependencies(rebound);
+    copyDependencies(queryBodyExtra(newFuncDef), queryBodyExtra(rebound));
     return rebound.getClear();
 }
 

@@ -19,6 +19,9 @@
 
 IMPORT mysql;
 
+myUser := 'rchapman' : stored('myUser');
+myDb := 'test' : stored('myDb');
+
 childrec := RECORD
    string name,
    integer4 value { default(99999) },
@@ -50,15 +53,15 @@ create() := EMBED(mysql : user('rchapman'),database('test'))
   CREATE TABLE tbl1 ( name VARCHAR(20), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10) );
 ENDEMBED;
 
-initialize(dataset(childrec) values) := EMBED(mysql : user('rchapman'),database('test'))
+initialize(dataset(childrec) values) := EMBED(mysql : user(myUser),database(myDb))
   INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?);
 ENDEMBED;
 
-initializeNulls() := EMBED(mysql : user('rchapman'),database('test'))
+initializeNulls() := EMBED(mysql : user('rchapman'),database(myDb))
   INSERT INTO tbl1 (name) values ('nulls');
 ENDEMBED;
 
-initializeUtf8() := EMBED(mysql : user('rchapman'),database('test'))
+initializeUtf8() := EMBED(mysql : user(myUser),database('test'))
   INSERT INTO tbl1 values ('utf8test', 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße');
 ENDEMBED;
 
