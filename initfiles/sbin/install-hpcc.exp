@@ -34,6 +34,21 @@ proc print_usage {} {
     exit 1
 }
 
+proc sshcmd { cmd params_string } {
+  global password user
+  if {[string length $password] == 0 } {
+     set cmd2 "$cmd -o BatchMode=yes -o StrictHostKeyChecking=no"
+     if {[string compare $::env(USER) $user] == 0} {
+        return "$cmd2 $params_string"
+     } else {
+        return "su $user -c \"$cmd2  [regsub -all "\"" $params_string \\\"]\""
+     }
+  } else {
+     return "$cmd $params_string"
+  }
+}
+
+
 
 proc testWithPing {} {
    global ip
@@ -54,7 +69,7 @@ proc checkSSHConnection {} {
 
    set timeout 60
    # JIRA 12585 in chance root user cannot ssh with key pairs
-   spawn su ${user} -c "ssh ${user}@${ip}"
+   eval "spawn [sshcmd ssh "${user}@${ip}"]"
    expect {
       *?assword:* {
          send "${password}\r";
@@ -83,7 +98,7 @@ proc copyPayload {} {
    global ip user password prompt
 
    set timeout 300
-   spawn su ${user} -c "scp /tmp/remote_install.tgz ${user}@${ip}:~;"
+   eval "spawn [sshcmd scp "/tmp/remote_install.tgz ${user}@${ip}:~;"]"
    expect {
       *?assword:* {
          send "${password}\r";
@@ -110,7 +125,7 @@ proc expandPayload {} {
    global ip user password prompt
 
    set timeout 180
-   spawn su ${user} -c "ssh ${user}@${ip} \"cd /; tar -zxf ~/remote_install.tgz\""
+   eval "spawn [sshcmd ssh "${user}@${ip} \"cd /; tar -zxf ~/remote_install.tgz\""]"
    expect {
       *?assword:* {
          send "${password}\r"
@@ -140,7 +155,7 @@ proc runPayload {} {
    set timeout 60
 
    expect -re $
-   spawn su ${user} -c "ssh ${user}@${ip}"
+   eval "spawn [sshcmd ssh ${user}@${ip}]"
    expect {
       *?assword:* {
          send "${password}\r"

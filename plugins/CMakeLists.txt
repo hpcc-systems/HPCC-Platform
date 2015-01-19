@@ -15,6 +15,7 @@
 ################################################################################
 add_subdirectory (auditlib)
 add_subdirectory (debugservices)
+add_subdirectory (dmetaphone)
 add_subdirectory (fileservices)
 add_subdirectory (logging)
 add_subdirectory (parselib)

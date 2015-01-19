@@ -21,6 +21,8 @@
 
 ###<REPLACE>###
 
+DEBUG=${DEBUG:-NO_DEBUG}
+
 createConf ()
 {
     awk -f ${reg_path}/regex.awk -v NEW_ENVFILE=$1 -v NEW_PORT=$2 -v NEW_CONFFILE=$3< ${path}${configs}/configmgr/esp.xml >${runtime}/${compName}/esp.xml
@@ -29,7 +31,7 @@ createConf ()
 removePidfiles ()
 {
     rm -rf ${runtime}/${compName}.pid
-    rm -rf ${lock}/${compName}.lock
+    rm -rf ${lock}/${compName}/${compName}.lock
     rm -rf ${pid}/${compName}_init.pid
     rm -rf ${pid}/${compName}.pid
     rm -rf ${pid}/init_${compName}.pid
@@ -120,7 +122,7 @@ logFile=${log}/${compName}/${compName}.log
 
 initPidFile=${pid}/${compName}_init.pid
 compPidFile=${pid}/${compName}.pid
-lockFile=${lock}/${compName}.lock
+lockFile=${lock}/${compName}/${compName}.lock
 defaultEnv=0
 
 # Checking input arguments
@@ -195,6 +197,14 @@ EXEC_COMMAND="${exec_script_path}/init_configesp >> $logFile 2>&1"
 startcmd="${START_STOP_DAEMON} -S -p ${initPidFile} -c ${user}:${group} -d ${runtime}/${compName} -m -x ${EXEC_COMMAND} -b"
 eval ${startcmd}
 started=$?
+
+# Creating a Lock
+lockPath=${lock}/${compName}
+if [ ! -d $lockPath ]; then
+  mkdir -p $lockPath >> $logFile 2>&1
+fi
+chown -c $user:$group $lockPath >> /dev/null 2>&1
+lock $lockFile
 
 if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
     echo $startcmd

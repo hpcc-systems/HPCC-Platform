@@ -103,49 +103,17 @@ static bool versionOk(const char *versionPresent, const char *minOk, const char 
 
 unsigned doPipeCommand(StringBuffer &output, const char *cmd, const char *args, const char *input)
 {
-    try
+    VStringBuffer runcmd("%s %s", cmd, args);
+    if (optVerbose)
     {
-        Owned<IPipeProcess> pipe = createPipeProcess();
-        VStringBuffer runcmd("%s %s", cmd, args);
-        pipe->run(cmd, runcmd, ".", input != NULL, true, true, 1024*1024);
-        if (optVerbose)
-        {
-            printf("Running %s\n", runcmd.str());
-            if (input)
-                printf("with input %s\n", input);
-        }
+        printf("Running %s\n", runcmd.str());
         if (input)
-        {
-            pipe->write(strlen(input), input);
-            pipe->closeInput();
-        }
-        char buf[1024];
-        while (true)
-        {
-            size32_t read = pipe->read(sizeof(buf), buf);
-            if (!read)
-                break;
-            output.append(read, buf);
-        }
-        int ret = pipe->wait();
-        StringBuffer error;
-        while (true)
-        {
-            size32_t read = pipe->readError(sizeof(buf), buf);
-            if (!read)
-                break;
-            error.append(read, buf);
-        }
-        if (optVerbose && (ret > 0 || error.length()))
-            printf("%s return code was %d, output to stderr:\n%s", cmd, ret, error.str());
-        return ret;
+            printf("with input %s\n", input);
     }
-    catch (IException *E)
-    {
-        E->Release();
-        output.clear();
-        return 255;
-    }
+    unsigned ret = runExternalCommand(output, runcmd, input);
+    if (optVerbose && (ret > 0))
+        printf("%s return code was %d", cmd, ret);
+    return ret;
 }
 
 static bool platformVersionDone = false;

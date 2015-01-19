@@ -78,7 +78,6 @@ public:
     virtual int onGetDynNavData(CHttpRequest* request, CHttpResponse* response);
     virtual int onGetNavEvent(CHttpRequest* request, CHttpResponse* response);
     virtual int onGetMainWindow(CHttpRequest* request, CHttpResponse* response);
-    virtual int onRunCGI(CHttpRequest* request, CHttpResponse* response, const char *path);
 #ifdef _USE_OPENLDAP
     virtual int onUpdatePasswordInput(CHttpRequest* request, CHttpResponse* response);
     virtual int onUpdatePassword(CHttpRequest* request, CHttpResponse* response);
