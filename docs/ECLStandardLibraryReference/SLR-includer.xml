@@ -17,7 +17,7 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> </para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Please include <emphasis role="bold">Documentation
       Feedback</emphasis> in the subject line and reference the document name,
@@ -25,13 +25,13 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. </para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. </para>
+      registered trademarks of their respective companies.</para>
 
       <para>All names and example data used in this manual are fictitious. Any
       similarity to actual persons, living or dead, is purely
@@ -350,6 +350,23 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WordCount.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+
+  <chapter id="DoubleMetaphoneSupport">
+    <title>Double Metaphone Support</title>
+
+    <para>These functions provide a means to implement Double Metaphone
+    phonetic encoding or fuzzy-match algorithms which return a primary code, a
+    secondary code, or both for a given string.</para>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Primary.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Secondary.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Double.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
