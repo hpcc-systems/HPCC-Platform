@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include "platform.h"
 #include "thmfilemanager.hpp"
 #include "eclhelper.hpp"
 #include "deftype.hpp"
