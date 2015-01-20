@@ -1574,8 +1574,8 @@ IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, 
     }
 
     IHqlExpression * attr1 = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
-    IHqlExpression * attr2 = requestSpilling ? createAttribute(internalAtom) : NULL;
-    return createDatasetF(no_sort, LINK(dataset), LINK(order), attr1 ? attr1 : attr2, attr1 ? attr2 : NULL, NULL);
+    IHqlExpression * attr2 = requestSpilling ? createAttribute(spillAtom) : NULL;
+    return createDatasetF(no_sort, LINK(dataset), LINK(order), createComma(attr1, attr2), NULL);
 }
 
 //-------------------------------

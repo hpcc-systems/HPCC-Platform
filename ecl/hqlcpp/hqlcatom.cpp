@@ -89,7 +89,6 @@ IAtom * serializerInstanceMarkerAtom;
 IAtom * skipActionMarkerAtom;
 IAtom * skipReturnMarkerAtom;
 IAtom * speedAtom;
-IAtom * spillAtom;
 IAtom * _spill_Atom;
 IAtom * _spillReason_Atom;
 IAtom * _steppedMeta_Atom;
@@ -1470,7 +1469,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(skipActionMarker);
     MAKEATOM(skipReturnMarker);
     MAKEATOM(speed);
-    MAKEATOM(spill);
     MAKEATOM(subgraph);
     utf8Atom = createAtom("utf-8");
     MAKEATOM(wrapper);
