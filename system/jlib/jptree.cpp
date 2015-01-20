@@ -15,9 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-
-#include <stdio.h>
-
+#include "platform.h"
 #include "jarray.hpp"
 #include "jdebug.hpp"
 #include "jhash.hpp"
