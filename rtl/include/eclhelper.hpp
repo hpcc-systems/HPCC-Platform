@@ -1573,6 +1573,7 @@ enum
 
     TAFstable           = 0x0002,
     TAFunstable         = 0x0004,
+    TAFspill            = 0x0008,
 };
 
 struct IHThorSortArg : public IHThorArg

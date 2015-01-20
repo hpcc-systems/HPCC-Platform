@@ -7446,7 +7446,7 @@ class CSpillingQuickSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>, imp
     IRoxieSlaveContext * ctx;
     Owned<IDiskMerger> diskMerger;
     Owned<IRowStream> diskReader;
-    Owned<IOutputMetaData> rowMeta;
+    IOutputMetaData *rowMeta;
     unsigned activityId;
 
 public:
@@ -8128,7 +8128,9 @@ public:
         if (sortMethod)
         {
             sortFlags = sortMethod->getAlgorithmFlags();
-            if (sortFlags & TAFunstable)
+            if (sortFlags & TAFspill)
+                sortAlgorithm = spillingQuickSort;
+            else if (sortFlags & TAFunstable)
                 sortAlgorithm = quickSort;
             if (!(sortFlags & TAFconstant))
                 sortAlgorithm = unknownSort;

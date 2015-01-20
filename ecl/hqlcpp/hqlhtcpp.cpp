@@ -16368,6 +16368,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
     IHqlExpression * stable = expr->queryAttribute(stableAtom);
     IHqlExpression * unstable = expr->queryAttribute(unstableAtom);
+    IHqlExpression * internal = expr->queryAttribute(internalAtom);
     IHqlExpression * method = NULL;
     StringBuffer flags;
     if (stable)
@@ -16380,7 +16381,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
         flags.append("|TAFunstable");
         method = unstable->queryChild(0);
     }
-
+    if (internal)
+    {
+        flags.append("|TAFspill");
+    }
     if (!method || method->isConstant())
         flags.append("|TAFconstant");
 

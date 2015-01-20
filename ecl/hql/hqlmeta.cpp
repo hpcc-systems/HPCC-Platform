@@ -1558,7 +1558,7 @@ IHqlExpression * getSubSort(IHqlExpression * dataset, IHqlExpression * order, bo
 
 //--------------------------------------------------------------------------------------------------------------------
 
-IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowSubSort)
+IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowSubSort, bool requestSpilling)
 {
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return LINK(dataset);
@@ -1573,8 +1573,9 @@ IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, 
         }
     }
 
-    IHqlExpression * attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
-    return createDatasetF(no_sort, LINK(dataset), LINK(order), attr, NULL);
+    IHqlExpression * attr1 = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
+    IHqlExpression * attr2 = requestSpilling ? createAttribute(internalAtom) : NULL;
+    return createDatasetF(no_sort, LINK(dataset), LINK(order), attr1 ? attr1 : attr2, attr1 ? attr2 : NULL, NULL);
 }
 
 //-------------------------------
