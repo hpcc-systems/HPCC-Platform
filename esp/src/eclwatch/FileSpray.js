@@ -145,7 +145,7 @@ define([
                 OS: row.Linux === "true" ? 2 : 0
             });
             lang.mixin(row, {
-                calculatedID: row.NetAddress,
+                calculatedID: row.NetAddress+row.Name,
                 displayName: row.Name,
                 type: "dropzone",
                 partialPath: "",
