@@ -167,14 +167,18 @@ public:
             char buf[1024];
             while (fgets(buf,1024,inFile))
             {
-                const char *s=buf;
+                sbuff.clear();
                 do // handle lines longer than 1024 (bit kludgy)
                 {
                     size32_t l=(size32_t)strlen(buf);
                     if (!l || (buf[l-1]=='\n')) // should end in \n unless overflowed
                         break;
-                    s = sbuff.append(buf).str();
+                    sbuff.append(buf);
                 } while (fgets(buf,1024,inFile));
+
+                const char *s=buf;
+                if (sbuff.length())
+                    s = sbuff.append(buf).str();
 
                 if (*s == '#')
                     continue;
