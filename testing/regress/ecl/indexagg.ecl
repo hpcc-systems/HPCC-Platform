@@ -19,7 +19,7 @@
 //class=index
 //version multiPart=false
 //version multiPart=true
-//version multiPart=true,useTranslation=true
+//version multiPart=true,useTranslation=true,nothor
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
