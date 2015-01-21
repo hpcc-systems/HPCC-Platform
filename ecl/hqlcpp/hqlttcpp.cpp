@@ -1920,7 +1920,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
             }
         }
 
-        OwnedHqlExpr sorted = ensureSorted(dataset, newsort, expr->hasAttribute(localAtom), true, alwaysLocal, allowImplicitSubSort);
+        OwnedHqlExpr sorted = ensureSorted(dataset, newsort, expr->hasAttribute(localAtom), true, alwaysLocal, allowImplicitSubSort, true);
         if (sorted == dataset)
             return NULL;
 
@@ -2523,7 +2523,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
         {
             IHqlExpression & cur = inputs.item(i);
             OwnedHqlExpr mappedOrder = replaceSelector(bestSortOrder, queryActiveTableSelector(), &cur);
-            sortedInputs.append(*ensureSorted(&cur, mappedOrder, true, true, alwaysLocal, options.implicitSubSort));
+            sortedInputs.append(*ensureSorted(&cur, mappedOrder, true, true, alwaysLocal, options.implicitSubSort, false));
         }
         HqlExprArray sortedArgs;
         unwindChildren(sortedArgs, bestSortOrder);
@@ -2565,7 +2565,7 @@ static IHqlExpression * getNonThorSortedJoinInput(IHqlExpression * joinExpr, IHq
     groupOrder.setown(replaceSelector(groupOrder, queryActiveTableSelector(), expr->queryNormalizedSelector()));
 
     //not used for thor, so sort can be local
-    OwnedHqlExpr table = ensureSorted(expr, groupOrder, false, true, true, implicitSubSort);
+    OwnedHqlExpr table = ensureSorted(expr, groupOrder, false, true, true, implicitSubSort, false);
     if (table != expr)
         table.setown(cloneInheritedAnnotations(joinExpr, table));
 

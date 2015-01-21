@@ -393,6 +393,7 @@ extern HQL_API IAtom * sort_AllAtom;
 extern HQL_API IAtom * sort_KeyedAtom;
 extern HQL_API IAtom * sortedAtom;
 extern HQL_API IAtom * sourceAtom;
+extern HQL_API IAtom * spillAtom;
 extern HQL_API IAtom * stableAtom;
 extern HQL_API IAtom * _state_Atom;
 extern HQL_API IAtom * steppedAtom;
