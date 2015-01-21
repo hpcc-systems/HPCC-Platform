@@ -110,7 +110,7 @@ extern HQL_API bool matchesAnyDistribution(IHqlExpression * distn);
 extern HQL_API bool appearsToBeSorted(IHqlExpression * dataset, bool isLocal, bool ignoreGrouping);
 extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
 extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * newSort, bool isLocal, bool ignoreGrouping);
-extern HQL_API IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowSubSort, bool requestSpilling);
+extern HQL_API IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, IHqlExpression * parentExpr, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowSubSort, bool requestSpilling);
 
 extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping);
 extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
