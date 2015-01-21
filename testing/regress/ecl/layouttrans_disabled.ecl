@@ -15,32 +15,25 @@
     limitations under the License.
 ############################################################################## */
 
-#onwarning(4515, ignore);
-
-//version multiPart=true
-//version multiPart=false,useSequential=true
+//class=error
 
 import ^ as root;
-multiPart := #IFDEFINED(root.multiPart, false);
-useSequential := #IFDEFINED(root.useSequential, false);
+multiPart := #IFDEFINED(root.multiPart, true);
+useLocal := #IFDEFINED(root.useLocal, false);
+useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
 #onwarning (4515, ignore);
 
 import $.setup;
-sq := setup.sq(multiPart);
+Files := setup.Files(multiPart, useLocal, useTranslation);
 
-pr:= table(sq.SimplePersonBookIndex, { fullname := trim(surname) + ', ' + trim(forename), aage });
+// this would use RLT, but we have not enabled it, so it should fail
+#option ('layoutTranslationEnabled', false);
 
-//Aggregate on a projected table that can't be merged
-pr2:= table(sq.SimplePersonBookIndex, { surname, forename, aage, unsigned8 seq := (random() % 100) / 2000 + aage; });
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname,__filepos},Files.DG_FetchIndex1Name);
 
-#EXPAND(IF(useSequential, 'SEQUENTIAL', 'ORDERED'))
-(
-    //Filtered Aggregate on a projected table.
-    output(sort(table(pr(aage > 20), { aage, max(group, fullname) }, aage, few), aage));
+ds := DATASET([{'Anderson'}, {'Doe'}], {STRING25 Lname});
 
-    //Filtered Aggregate on a projected table.
-    output(sort(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few), surname));
-);
+OUTPUT(SORT(DG_FetchIndex1Alt1(Lname = 'Smith'), record), {Fname, Lname});
