@@ -583,8 +583,7 @@ The format of the output is the same as 'run', except there is a log, result and
     To allow multiple tests to be generated from a single source file
     The regression suite engine executes the file once for each //version line in the file. It is compiled with command line option -Dn1=v1 -Dn2=v2 etc.
     The string value should quoted with \'.
-    Optionally 'no<target>' exclusion info can add at the end of tag.
-//version <n1>=<v1>,<n2>=<v2>,...[,no<target>[,no<target>]]
+//version <n1>=<v1>,<n2>=<v2>,...
 
 7. Key file handling:
 ---------------------
