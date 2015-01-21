@@ -207,7 +207,7 @@ extern jlib_decl void doStackProbe();
 #define arraysize(T) (sizeof(T)/sizeof(*T))
 #endif
 
-extern unsigned runExternalCommand(StringBuffer &output, const char *cmd, const char *input);
+extern jlib_decl unsigned runExternalCommand(StringBuffer &output, const char *cmd, const char *input);
 
 extern jlib_decl unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 right);
 

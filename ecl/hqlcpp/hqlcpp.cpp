@@ -11626,6 +11626,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     bool isImport = bodyCode->hasAttribute(importAtom);
 
     funcctx.addQuotedCompound(proto);
+    funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+    funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
 
     HqlExprArray noargs;
     OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
@@ -11638,24 +11640,36 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         createParam.append("|EFnoreturn");
     if (formals->numChildren()==0)
         createParam.append("|EFnoparams");
-    StringBuffer attrParam;
+
+    HqlExprArray attrArgs;
     ForEachChild(idx, bodyCode)
     {
         IHqlExpression *child = bodyCode->queryChild(idx);
         if (child->isAttribute() && child->queryName() != languageAtom && child->queryName() != importAtom)
         {
-            attrParam.append(",");
+            StringBuffer attrParam;
+            if (attrArgs.ordinality())
+                attrParam.append(",");
             attrParam.append(child->queryName());
-            StringBuffer attrValue;
-            if (getStringValue(attrValue, child->queryChild(0)).length())
-            {
-                attrParam.append('=');
-                appendStringAsCPP(attrParam, attrValue.length(), attrValue.str(), true);
-            }
+
+            IHqlExpression * value = child->queryChild(0);
+            if (value)
+                attrParam.append("=");
+            attrArgs.append(*createConstant(attrParam));
+            if (value)
+                attrArgs.append(*ensureExprType(value, unknownStringType));
         }
     }
-    if (attrParam.length())
-        createParam.append(",\"").append(attrParam.str()+1).append('"');
+    if (attrArgs.length())
+    {
+        OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
+        OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
+        OwnedHqlExpr folded = foldHqlExpression(cast);
+        CHqlBoundExpr bound;
+        buildExpr(funcctx, folded, bound);
+        createParam.append(",");
+        generateExprCpp(createParam, bound.expr);
+    }
     else
         createParam.append(",NULL");
     createParam.append(");");

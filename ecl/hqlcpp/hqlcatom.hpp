@@ -89,7 +89,6 @@ extern IAtom * serializerInstanceMarkerAtom;
 extern IAtom * skipActionMarkerAtom;
 extern IAtom * skipReturnMarkerAtom;
 extern IAtom * speedAtom;
-extern IAtom * spillAtom;
 extern IAtom * _spill_Atom;
 extern IAtom * _spillReason_Atom;
 extern IAtom * _steppedMeta_Atom;

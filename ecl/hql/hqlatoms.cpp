@@ -390,6 +390,7 @@ IAtom * sort_AllAtom;
 IAtom * sort_KeyedAtom;
 IAtom * sortedAtom;
 IAtom * sourceAtom;
+IAtom * spillAtom;
 IAtom * stableAtom;
 IAtom * _state_Atom;
 IAtom * steppedAtom;
@@ -821,6 +822,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     sort_KeyedAtom = createLowerCaseAtom("SORT KEYED");
     MAKEATOM(sorted);
     MAKEATOM(source);
+    MAKEATOM(spill);
     MAKEATOM(stable);
     MAKESYSATOM(state);
     MAKEATOM(stepped);

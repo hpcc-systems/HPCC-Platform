@@ -2301,7 +2301,7 @@ public:
                         CJoinGroup *jg = lookupRowResult->jg;
                         if (lookupRowResult->eog)
                         {
-                            jg->noteCandidates(lookupRowResult->fpos); // fpos holds candidates for end of group
+                            jg->noteCandidates((unsigned)lookupRowResult->fpos); // fpos holds candidates for end of group
                             jg->noteEndCandidate(); // any onFail transform will be done when dequeued
                             if (!onFailTransform) // unless going to transform later, check and abort now if necessary.
                                 checkAbortLimit(jg);

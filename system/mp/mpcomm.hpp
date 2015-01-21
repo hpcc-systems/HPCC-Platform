@@ -56,6 +56,7 @@ interface ICommunicator: extends IInterface
     virtual bool verifyConnection(rank_t rank, unsigned timeout=1000*60*5) = 0; // verifies connected to rank
     virtual bool verifyAll(bool duplex=false, unsigned timeout=1000*60*30) = 0;
     virtual void disconnect(INode *node) = 0;
+    virtual void barrier() = 0;
 };
 
 interface IInterCommunicator: extends IInterface

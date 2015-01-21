@@ -290,6 +290,12 @@ public:
         return (coven.queryGroup().rank(ep)!=RANK_NULL);
     }
 
+    virtual void barrier(void)
+    {
+        assertex(comm);
+        return comm->barrier();
+    }
+
     virtual bool verifyConnection(rank_t rank, unsigned timeout=1000*60*5)
     {
         assertex(comm);

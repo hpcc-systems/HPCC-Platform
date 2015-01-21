@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Double">
+  <title><emphasis role="bold">Double</emphasis></title>
+
+  <para><emphasis role="bold">STD.Metaphone.Double<indexterm>
+      <primary>Std.Metaphone.Double</primary>
+    </indexterm><indexterm>
+      <primary>Metaphone.Double</primary>
+    </indexterm><indexterm>
+      <primary>Double</primary>
+    </indexterm>( </emphasis>source <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>The string to process.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Double returns a STRING value. </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Double</emphasis> function returns a textual
+  representation of the <emphasis>source</emphasis> data, similar to a Soundex
+  code. This function returns both return values from the Double Metaphone
+  algorithm, concatenating the two into a single result string. </para>
+
+  <para>Example:</para>
+
+  <programlisting>r := RECORD 
+  STRING source; 
+  STRING M1; 
+  STRING M2; 
+  STRING Mboth;
+END;
+
+r XF(ProgGuide.Person.File L) := TRANSFORM 
+  SELF.source := L.LastName;
+  SELF.M1     := STD.Metaphone.Primary( L.LastName ); 
+  SELF.M2     := STD.Metaphone.Secondary( L.LastName ); 
+  SELF.Mboth  := STD.Metaphone.Double( L.LastName );
+END;
+
+ds := PROJECT(ProgGuide.Person.File,XF(LEFT)); 
+
+COUNT(ds);
+COUNT(ds(M1 &lt;&gt; M2)); 
+OUTPUT(ds); 
+OUTPUT(ds(M1 &lt;&gt; M2));</programlisting>
+</sect1>
