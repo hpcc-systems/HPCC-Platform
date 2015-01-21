@@ -35,25 +35,33 @@ fi
 # this must match jsocket hard limit
 export handlelimit=32768
 
-echo `date` Initializing dafilesrv setup
-sudo /etc/init.d/hpcc-init -c dafilesrv setup
-echo `date` Dafilesrv setup done
+
+# insuring parent directory structure is setup properly
+sudo /etc/init.d/dafilesrv status &>/dev/null
+if [ $? -ne 0 ];then
+  sudo /etc/init.d/dafilesrv start &>/dev/null
+  if [ $? -ne 0 ];then
+    exit 1
+  fi
+fi
+
 mkdir -p $instancedir
 mkdir -p `dirname $logredirect`
 exec >>$logredirect 2>&1
 
 cd $instancedir
 
-echo "slave(${ip}) init `date`"
+echo "`date` Dependency dafilesrv is running"
+echo "`date` slave(${ip}) init"
 
 lckfile="$PID/start_slaves_${hpcc_compname}_${ip}.pid"
 
 # prevent two of these scripts starting together
 while [ -e $lckfile ]; do
-  echo waiting on lckfile: $lckfile
+  echo "`date` waiting on lckfile: ${lckfile}"
   oldpid=`cat $lckfile`
   if ps h $oldpid; then
-     echo killing pid $oldpid start_slaves
+     echo "`date` killing pid ${oldpid} start_slaves"
      kill -9 $oldpid
      rm $lckfile                   # just in case
      sleep 1
@@ -67,13 +75,13 @@ echo $$ > $lckfile
 ulimit -c unlimited
 ulimit -n $handlelimit
 
-echo "slave(s) starting `date`"
+echo "`date` slave(s) starting"
 
 # create symlink for easier identification of slaves by compName
 ln -s -f $deploydir/thorslave_lcr thorslave_${hpcc_compname}
 
 # sync to current master thorgroup
-echo rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
+echo "`date` rsync -e ssh -o StrictHostKeyChecking=no ${master}:${instancedir}/thorgroup ${instancedir}/thorgroup.slave"
 rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
 
 let "slavenum = 1";
@@ -84,15 +92,15 @@ for slave in $(cat $instancedir/thorgroup.slave); do
     if [ "$slaveport" = "" ]; then
       slaveport=$THORSLAVEPORT
     fi
-    echo thorslave_$hpcc_compname  master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth
+    echo "`date` thorslave_$hpcc_compname  master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth"
     ./thorslave_$hpcc_compname master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth 2>/dev/null 1>/dev/null &
     slavepid=$!
     PID_NAME="$PID/${hpcc_compname}_slave_${slavenum}.pid"
     echo $slavepid > $PID_NAME
     if [ "$slavepid" -eq "0" ]; then
-      echo "failed to start at `date`"
+      echo "`date` failed to start"
     else
-      echo "slave pid $slavepid started `date`"
+      echo "`date` slave pid $slavepid started"
     fi
   fi
   let "slavenum += 1";
