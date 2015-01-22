@@ -50,21 +50,21 @@ IError * WorkUnitErrorReceiver::mapError(IError * error)
 
 void WorkUnitErrorReceiver::report(IError* eclError)
 {
-    WUExceptionSeverity wuSeverity = ExceptionSeverityInformation;
+    ErrorSeverity wuSeverity = SeverityInformation;
     ErrorSeverity severity = eclError->getSeverity();
 
     switch (severity)
     {
     case SeverityIgnore:
         return;
-    case SeverityInfo:
+    case SeverityInformation:
         break;
     case SeverityWarning:
-        wuSeverity = ExceptionSeverityWarning;
+        wuSeverity = SeverityWarning;
         break;
     case SeverityError:
     case SeverityFatal:
-        wuSeverity = ExceptionSeverityError;
+        wuSeverity = SeverityError;
         break;
     }
 
@@ -81,7 +81,7 @@ size32_t WorkUnitErrorReceiver::errCount()
     unsigned count = 0;
     Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
     ForEach(*exceptions)
-        if (exceptions->query().getSeverity() == ExceptionSeverityError)
+        if (exceptions->query().getSeverity() == SeverityError)
             count++;
     return count;
 }
@@ -91,7 +91,7 @@ size32_t WorkUnitErrorReceiver::warnCount()
     unsigned count = 0;
     Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
     ForEach(*exceptions)
-        if (exceptions->query().getSeverity() == ExceptionSeverityWarning)
+        if (exceptions->query().getSeverity() == SeverityWarning)
             count++;
     return count;
 }

@@ -52,16 +52,16 @@ EclDirectWUExceptions::EclDirectWUExceptions(IConstWorkUnit& cw)
         switch (it->query().getSeverity())
         {
             default:
-            case ExceptionSeverityError:
+            case SeverityError:
                 e->setSeverity("Error");
                 break;
-            case ExceptionSeverityWarning:
+            case SeverityWarning:
                 e->setSeverity("Warning");
                 break;
-            case ExceptionSeverityInformation:
+            case SeverityInformation:
                 e->setSeverity("Info");
                 break;
-            case ExceptionSeverityAlert:
+            case SeverityAlert:
                 e->setSeverity("Alert");
                 break;
         }

@@ -20,13 +20,18 @@
 #define JERROR_HPP
 
 #include "jexcept.hpp"
-#include "jerrorrange.hpp"
+#include "errorlist.h"
+
+#if (JLIB_ERROR_START != 6000 || JLIB_ERROR_END != 6499)
+#error "JLIB_ERROR_START has changed"
+#endif
 
 /* Errors generated in jlib */
 
-#define JLIBERR_BadlyFormedDateTime             1000
-#define JLIBERR_BadUtf8InArguments              1001
-#define JLIBERR_InternalError                   1002
+#define JLIBERR_BadlyFormedDateTime             6000
+#define JLIBERR_BadUtf8InArguments              6001
+#define JLIBERR_InternalError                   6002
+#define JLIBERR_CppCompileError                 6003
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 

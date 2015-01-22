@@ -1072,18 +1072,18 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
     return true;
 }
 
-WUExceptionSeverity checkGetExceptionSeverity(CWUExceptionSeverity severity)
+ErrorSeverity checkGetExceptionSeverity(CWUExceptionSeverity severity)
 {
     switch (severity)
     {
         case CWUExceptionSeverity_INFO:
-            return ExceptionSeverityInformation;
+            return SeverityInformation;
         case CWUExceptionSeverity_WARNING:
-            return ExceptionSeverityWarning;
+            return SeverityWarning;
         case CWUExceptionSeverity_ERROR:
-            return ExceptionSeverityError;
+            return SeverityError;
         case CWUExceptionSeverity_ALERT:
-            return ExceptionSeverityAlert;
+            return SeverityAlert;
     }
 
     throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT,"invalid exception severity");
@@ -1101,7 +1101,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
         const char* runWuid = wuidStr.trim().str();
         StringBuffer wuid;
 
-        WUExceptionSeverity severity = checkGetExceptionSeverity(req.getExceptionSeverity());
+        ErrorSeverity severity = checkGetExceptionSeverity(req.getExceptionSeverity());
 
         if (runWuid && *runWuid)
         {
@@ -3996,16 +3996,16 @@ void CWsWorkunitsEx::createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<
     {
         switch (exceptions->query().getSeverity())
         {
-        case ExceptionSeverityInformation:
+        case SeverityInformation:
             info.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
             break;
-        case ExceptionSeverityWarning:
+        case SeverityWarning:
             warn.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
             break;
-        case ExceptionSeverityError:
+        case SeverityError:
             err.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
             break;
-        case ExceptionSeverityAlert:
+        case SeverityAlert:
             alert.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
             break;
         }

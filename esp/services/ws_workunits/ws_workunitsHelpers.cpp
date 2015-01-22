@@ -160,10 +160,10 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
         switch (it->query().getSeverity())
         {
             default:
-            case ExceptionSeverityError: label = "Error"; numerr++; break;
-            case ExceptionSeverityWarning: label = "Warning"; numwrn++; break;
-            case ExceptionSeverityInformation: label = "Info"; numinf++; break;
-            case ExceptionSeverityAlert: label = "Alert"; numalert++; break;
+            case SeverityError: label = "Error"; numerr++; break;
+            case SeverityWarning: label = "Warning"; numwrn++; break;
+            case SeverityInformation: label = "Info"; numinf++; break;
+            case SeverityAlert: label = "Alert"; numalert++; break;
         }
 
         e->setSeverity(label);
@@ -3052,7 +3052,7 @@ void WsWuHelpers::runWsWorkunit(IEspContext &context, IConstWorkUnit *cw, const 
     submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml, variables, debugs);
 }
 
-IException * WsWuHelpers::noteException(IWorkUnit *wu, IException *e, WUExceptionSeverity level)
+IException * WsWuHelpers::noteException(IWorkUnit *wu, IException *e, ErrorSeverity level)
 {
     if (wu)
     {
@@ -3061,7 +3061,7 @@ IException * WsWuHelpers::noteException(IWorkUnit *wu, IException *e, WUExceptio
         we->setExceptionMessage(e->errorMessage(s).str());
         we->setExceptionSource("WsWorkunits");
         we->setSeverity(level);
-        if (level==ExceptionSeverityError)
+        if (level==SeverityError)
             wu->setState(WUStateFailed);
     }
     return e;

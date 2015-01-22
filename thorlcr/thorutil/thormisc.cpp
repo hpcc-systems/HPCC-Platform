@@ -218,11 +218,11 @@ protected:
     bool notified;
     unsigned line, column;
     StringAttr file, origin;
-    WUExceptionSeverity severity;
+    ErrorSeverity severity;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     CThorException(LogMsgAudience _audience,int code, const char *str) 
-        : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), node(0), line(0), column(0), severity(ExceptionSeverityInformation), kind(TAKnone), notified(false) { };
+        : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), node(0), line(0), column(0), severity(SeverityInformation), kind(TAKnone), notified(false) { };
     CThorException(MemoryBuffer &mb)
     {
         mb.read((unsigned &)action);
@@ -255,7 +255,7 @@ public:
     void getAssert(StringAttr &_file, unsigned &_line, unsigned &_column) { _file.set(file); _line = line; _column = column; }
     const char *queryOrigin() { return origin; }
     const char *queryMessage() { return msg; }
-    WUExceptionSeverity querySeverity() { return severity; }
+    ErrorSeverity querySeverity() { return severity; }
     bool queryNotified() const { return notified; }
     MemoryBuffer &queryData() { return data; }
     void setNotified() { notified = true; }
@@ -269,7 +269,7 @@ public:
     void setMessage(const char *_msg) { msg.set(_msg); }
     void setAssert(const char *_file, unsigned _line, unsigned _column) { file.set(_file); line = _line; column = _column; }
     void setOrigin(const char *_origin) { origin.set(_origin); }
-    void setSeverity(WUExceptionSeverity _severity) { severity = _severity; }
+    void setSeverity(ErrorSeverity _severity) { severity = _severity; }
 
 // IException
     int errorCode() const { return errorcode; }
@@ -409,7 +409,7 @@ IThorException *MakeActivityWarning(CActivityBase *activity, int code, const cha
     va_start(args, format);
     IThorException *e = _MakeActivityException(activity->queryContainer(), code, format, args);
     e->setAction(tea_warning);
-    e->setSeverity(ExceptionSeverityWarning);
+    e->setSeverity(SeverityWarning);
     va_end(args);
     return e;
 }
@@ -420,7 +420,7 @@ IThorException *MakeActivityWarning(CActivityBase *activity, IException *e, cons
     va_start(args, format);
     IThorException *e2 = _MakeActivityException(activity->queryContainer(), e, format, args);
     e2->setAction(tea_warning);
-    e2->setSeverity(ExceptionSeverityWarning);
+    e2->setSeverity(SeverityWarning);
     va_end(args);
     return e2;
 }
@@ -454,7 +454,7 @@ IThorException *MakeActivityWarning(CGraphElementBase *container, int code, cons
     va_start(args, format);
     IThorException *e = _MakeActivityException(*container, code, format, args);
     e->setAction(tea_warning);
-    e->setSeverity(ExceptionSeverityWarning);
+    e->setSeverity(SeverityWarning);
     va_end(args);
     return e;
 }
@@ -465,7 +465,7 @@ IThorException *MakeActivityWarning(CGraphElementBase *container, IException *e,
     va_start(args, format);
     IThorException *e2 = _MakeActivityException(*container, e, format, args);
     e2->setAction(tea_warning);
-    e2->setSeverity(ExceptionSeverityWarning);
+    e2->setSeverity(SeverityWarning);
     va_end(args);
     return e2;
 }
@@ -730,7 +730,7 @@ void ensureDirectoryForFile(const char *fName)
 }
 
 // Not recommended to be used from slaves as tend to be one or more trying at same time.
-void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, WUExceptionSeverity severity)
+void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity)
 {
     LOG(MCwarning, thorJob, e, "Reporting exception to WU");
     Owned<IWorkUnit> wu = &workunit.lock();
@@ -1261,7 +1261,7 @@ IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMo
             if ((maxLevel != -1) && (level <= maxLevel)) // maxLevel of -1 means disabled
             {
                 Owned<IThorException> e = MakeThorException(TE_KERN, "%s", msg);
-                e->setSeverity(ExceptionSeverityAlert);
+                e->setSeverity(SeverityAlert);
                 e->setAction(tea_warning);
                 job.fireException(e);
             }

@@ -2077,7 +2077,7 @@ void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, co
     doReportWarning(category, SeverityUnknown, NULL, id, s.str());
 }
 
-void HqlCppTranslator::addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * text, IHqlExpression * location)
+void HqlCppTranslator::addWorkunitException(ErrorSeverity severity, unsigned code, const char * text, IHqlExpression * location)
 {
     Owned<IWUException> msg = wu()->createException();
     msg->setExceptionSource("Code Generator");

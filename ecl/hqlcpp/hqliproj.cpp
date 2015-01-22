@@ -2699,7 +2699,7 @@ void ImplicitProjectTransformer::logChange(const char * message, IHqlExpression 
         {
             StringBuffer messageText;
             messageText.appendf(format, message, name.str(), fieldText.str());
-            translator.addWorkunitException(ExceptionSeverityInformation, 0, messageText.str(), NULL);
+            translator.addWorkunitException(SeverityInformation, 0, messageText.str(), NULL);
         }
     }
 }

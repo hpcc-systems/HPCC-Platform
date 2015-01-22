@@ -959,7 +959,7 @@ public:
         Owned<IThorException> e = MakeThorException(code, "%s", text);
         e->setOrigin(source);
         e->setAction(tea_warning);
-        e->setSeverity((WUExceptionSeverity)severity);
+        e->setSeverity((ErrorSeverity)severity);
         job.fireException(e);
     }
     virtual unsigned getNodes() { return job.queryJobGroup().ordinality()-1; }
@@ -1001,7 +1001,7 @@ public:
         Owned<IThorException> e = MakeThorException(code, "%s", text);
         e->setAssert(filename, lineno, column);
         e->setOrigin("user");
-        e->setSeverity(ExceptionSeverityError);
+        e->setSeverity(SeverityError);
         if (!isAbort)
             e->setAction(tea_warning);
         job.fireException(e);

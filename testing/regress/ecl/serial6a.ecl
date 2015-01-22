@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning (4522, ignore);
+
 //Test serializing a dataset to the slave for a remote keyed join
 
 import Setup.SerialTest;

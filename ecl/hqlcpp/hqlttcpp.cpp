@@ -5976,7 +5976,7 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
             s.append("[").append(expr->queryName()).append("] ");
         s.append(" to common up code between workflow items");
         DBGLOG("%s", s.str());
-        translator.addWorkunitException(ExceptionSeverityInformation, HQLWRN_TryAddingIndependent, s.str(), location);
+        translator.addWorkunitException(SeverityInformation, HQLWRN_TryAddingIndependent, s.str(), location);
         if (!translator.queryOptions().performWorkflowCse)
             return LINK(transformed);
     }
@@ -5990,7 +5990,7 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
         s.append("[").append(expr->queryName()).append("] ");
     s.append(" to common up between workflow items [").append(wfid).append("]");
     DBGLOG("%s", s.str());
-    translator.addWorkunitException(ExceptionSeverityInformation, 0, s.str(), location);
+    translator.addWorkunitException(SeverityInformation, 0, s.str(), location);
 
     GlobalAttributeInfo info("spill::wfa", "wfa", transformed);
     info.extractGlobal(NULL, translator.getTargetClusterType());       // should really be a slightly different function

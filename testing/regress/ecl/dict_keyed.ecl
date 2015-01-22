@@ -26,6 +26,8 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
+#onwarning (4523, ignore);
+
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
 

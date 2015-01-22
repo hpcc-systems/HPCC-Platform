@@ -542,11 +542,11 @@ public:
     virtual const char *queryTemporaryFile(const char *fname);
     virtual void deleteFile(const char * logicalName);
 
-    void addException(WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort);
+    void addException(ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort);
     void logException(IException *e);  
     void logException(WorkflowException *e);  
     void logException(std::exception & e);
-    void logException(WUExceptionSeverity severity, unsigned code, const char * text, bool isAbort);
+    void logException(ErrorSeverity severity, unsigned code, const char * text, bool isAbort);
 
     void doProcess();
     void runProcess(IEclProcess *process);
