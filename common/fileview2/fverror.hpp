@@ -20,41 +20,42 @@
 
 #include "errorlist.h"
 
-//Don't remove items from this list - otherwise the error codes will change
-enum
-{
-    FVERR_CouldNotResolveX = FILEVIEW_ERROR_START,
-    FVERR_NoRecordDescription,
-    FVERR_BadRecordDesc,
-    FVERR_NeedClusterToBrowseX,
-    FVERR_TimeoutRemoteFileView,
-    FVERR_UnknownRemoteCommand,
-    FVERR_UnknownUTFFormat,
-    FVERR_FailedOpenFile,
-    FVERR_CompressedFile,
-    FVERR_CannotViewKey,
-    FVERR_ViewComplexKey,
-    FVERR_FilterTooRestrictive,
-    FVERR_ZeroSizeRecord,
-    FVERR_FailedOpenCompressedFile,
-    FVERR_UnrecognisedJoinFieldSyntax,
-    FVERR_UnrecognisedJoinFieldSyntaxXX,
-    FVERR_UnrecognisedMappingFunctionX,
-    FVERR_UnrecognisedFieldX,
-    FVERR_ExpectedFieldSelectedFromDatasetXX,
-    FVERR_CannotSelectFromDatasetX,
-    FVERR_CannotSelectManyFromDatasetX,
-    FVERR_ExpectedFieldSelectedFromRecordXX,
-    FVERR_NumJoinFieldsMismatchXY,
-    FVERR_ExpectedX,
-    FVERR_FailTransformation,
-    FVERR_UnrecognisedMappingFunctionXY,
-    FVERR_BadStringTermination,
-    FVERR_CannotBrowseFile,
-    FVERR_PluginMismatch,
-    FVERR_RowTooLarge,
-    FVERR_CouldNotProcessSchema,
-};
+//Range 6700..6749 is reserved
+#if (FILEVIEW_ERROR_START != 6700 || FILEVIEW_ERROR_END != 6749)
+#error "FILEVIEW_ERROR_START has changed"
+#endif
+
+#define FVERR_CouldNotResolveX                  6700
+#define FVERR_NoRecordDescription               6701
+#define FVERR_BadRecordDesc                     6702
+#define FVERR_NeedClusterToBrowseX              6703
+#define FVERR_TimeoutRemoteFileView             6704
+#define FVERR_UnknownRemoteCommand              6705
+#define FVERR_UnknownUTFFormat                  6706
+#define FVERR_FailedOpenFile                    6707
+#define FVERR_CompressedFile                    6708
+#define FVERR_CannotViewKey                     6709
+#define FVERR_ViewComplexKey                    6710
+#define FVERR_FilterTooRestrictive              6711
+#define FVERR_ZeroSizeRecord                    6712
+#define FVERR_FailedOpenCompressedFile          6713
+#define FVERR_UnrecognisedJoinFieldSyntax       6714
+#define FVERR_UnrecognisedJoinFieldSyntaxXX     6715
+#define FVERR_UnrecognisedMappingFunctionX      6716
+#define FVERR_UnrecognisedFieldX                6717
+#define FVERR_ExpectedFieldSelectedFromDatasetXX 6718
+#define FVERR_CannotSelectFromDatasetX          6719
+#define FVERR_CannotSelectManyFromDatasetX      6720
+#define FVERR_ExpectedFieldSelectedFromRecordXX 6721
+#define FVERR_NumJoinFieldsMismatchXY           6722
+#define FVERR_ExpectedX                         6723
+#define FVERR_FailTransformation                6724
+#define FVERR_UnrecognisedMappingFunctionXY     6725
+#define FVERR_BadStringTermination              6726
+#define FVERR_CannotBrowseFile                  6727
+#define FVERR_PluginMismatch                    6728
+#define FVERR_RowTooLarge                       6729
+#define FVERR_CouldNotProcessSchema             6730
 
 #define FVERR_CouldNotResolveX_Text             "Could not resolve file '%s' in DFS"
 #define FVERR_NoRecordDescription_Text          "DFS did not contain a record description for '%s'"

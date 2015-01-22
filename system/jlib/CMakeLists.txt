@@ -96,7 +96,6 @@ set (    INCLUDES
         jelogtype.hpp
         jencrypt.hpp
         jerror.hpp
-        jerrorrange.hpp
         jexcept.hpp
         jfile.hpp
         jfile.ipp

@@ -23,16 +23,16 @@
 #include "workunit.hpp"
 #include "layouttrans.hpp"
 
-//Don't remove items from this list - otherwise the error codes will change
-enum
-{
-    WRN_SkipMissingOptIndex             = ECLAGENT_ERROR_START,
-    WRN_SkipMissingOptFile,
-    WRN_UseLayoutTranslation,
-    WRN_UnsupportedAlgorithm,
-    WRN_MismatchGroupInfo,
-    WRN_MismatchCompressInfo,
-};
+#if (ECLAGENT_ERROR_START != 5400 || ECLAGENT_ERROR_END != 5499)
+#error "ECLAGENT_ERROR_START has changed"
+#endif
+
+#define WRN_SkipMissingOptIndex             5400
+#define WRN_SkipMissingOptFile              5401
+#define WRN_UseLayoutTranslation            5402
+#define WRN_UnsupportedAlgorithm            5403
+#define WRN_MismatchGroupInfo               5404
+#define WRN_MismatchCompressInfo            5405
 
 struct IHThorGraphResult : extends IInterface
 {
