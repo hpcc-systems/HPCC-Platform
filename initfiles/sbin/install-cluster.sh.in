@@ -62,7 +62,7 @@ getUserAndPasswd(){
        echo ""
 
        password_string="and a password ($(echo $PASS | sed 's/./\./g'))."
-       [ -z "$password" ] && password_string="with an empty password for passwordless login."
+       [ -z "$password_string" ] && password_string="with an empty password for passwordless login."
        echo "You entered user $ADMIN_USER $password_string"
        read -p  "Are these correct? [Y|n] " answer
        if [ "$answer" = "Y" ] || [ "$answer" = "y" ]
