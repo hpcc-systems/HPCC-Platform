@@ -88,6 +88,12 @@ ESPStruct [nil_remove] DFUWorkunit
     [min_ver("1.10")] bool quotedTerminator(true);
 };
 
+ESPStruct [nil_remove] GroupNode
+{
+    string Name;
+    string ClusterType;
+};
+
 ESPStruct DFUException
 {
     int Code;
@@ -610,6 +616,15 @@ ESPresponse [exceptions_inline] UploadFilesResponse
     ESParray<ESPstruct DFUActionResult> UploadFileResults;
 };
 
+ESPrequest GetSprayTargetsRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove] GetSprayTargetsResponse
+{
+    ESParray<ESPstruct GroupNode, GroupNode> GroupNodes; 
+};
+
 ESPservice [
     version("1.10"), default_client_version("1.10"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
@@ -644,6 +659,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/opensave.xslt")] OpenSave(OpenSaveRequest, OpenSaveResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dropzonefile.xslt")] DropZoneFiles(DropZoneFilesRequest, DropZoneFilesResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfuwuaction_results.xslt")] DeleteDropZoneFiles(DeleteDropZoneFilesRequest, DFUWorkunitsActionResponse);
+    ESPmethod GetSprayTargets(GetSprayTargetsRequest, GetSprayTargetsResponse);
 };
 
 SCMexportdef(FileSpray);
