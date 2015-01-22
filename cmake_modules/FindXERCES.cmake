@@ -44,10 +44,14 @@ if (NOT XERCES_FOUND)
     IF (NOT ("${osdir}" STREQUAL "unknown"))
       FIND_PATH (XERCES_INCLUDE_DIR NAMES xercesc/util/XercesDefs.hpp PATHS "${EXTERNALS_DIRECTORY}/xalan/xerces-c/include" NO_DEFAULT_PATH)
       FIND_LIBRARY (XERCES_LIBRARIES NAMES ${xerces_libs} PATHS "${EXTERNALS_DIRECTORY}/xalan/${osdir}" NO_DEFAULT_PATH)
+      IF ((NOT ${XERCES_INCLUDE_DIR} MACHES ".*-NOTFOUND") AND
+          (NOT ${XERCES_LIBRARIES} MACHES ".*-NOTFOUND"))
+        SET(XERCES_FOUND TRUE)
+      ENDIF()
     ENDIF() 
   ENDIF()
 
-  if (USE_NATIVE_LIBRARIES)
+  if (USE_NATIVE_LIBRARIES AND (NOT XERCES_FOUND))
     # if we didn't find in externals, look in system include path
     FIND_PATH (XERCES_INCLUDE_DIR NAMES xercesc/util/XercesDefs.hpp )
     FIND_LIBRARY (XERCES_LIBRARIES NAMES ${xerces_libs})

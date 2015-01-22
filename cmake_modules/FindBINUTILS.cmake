@@ -31,9 +31,14 @@ IF (NOT BINUTILS_FOUND)
     # We also need libiberty - but that is complicated by the fact that some distros ship libibery_pic that you have to use in .so's, while on others libiberty.a is PIC-friendly
     FIND_LIBRARY (IBERTY_LIBRARIES NAMES iberty_pic PATHS "${EXTERNALS_DIRECTORY}/binutils/${osdir}/lib" NO_DEFAULT_PATH)
     FIND_LIBRARY (IBERTY_LIBRARIES NAMES iberty PATHS "${EXTERNALS_DIRECTORY}/binutils/${osdir}/lib" NO_DEFAULT_PATH)
+    IF ((NOT ${BINUTILS_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+        (NOT ${BINUTILS_LIBRARIES} MATCHES ".*-NOTFOUND") AND
+        (NOT ${IBERTY_LIBRARIES} MATCHES ".*-NOTFOUND"))
+      SET(BINUTILS_FOUND TRUE)
+    ENDIF()
   ENDIF()
   # if we didn't find in externals, look in system include path
-  if (USE_NATIVE_LIBRARIES)
+  if (USE_NATIVE_LIBRARIES AND (NOT BINUTILS_FOUND))
     FIND_PATH (BINUTILS_INCLUDE_DIR NAMES bfd.h)
     FIND_LIBRARY (BINUTILS_LIBRARIES NAMES bfd)
     if ( NOT APPLE )

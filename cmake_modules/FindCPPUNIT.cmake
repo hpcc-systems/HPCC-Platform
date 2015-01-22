@@ -50,12 +50,16 @@ IF (NOT CPPUNIT_FOUND)
     IF (NOT ("${osdir}" STREQUAL "unknown"))
       FIND_PATH (CPPUNIT_INCLUDE_DIR NAMES cppunit/TestFixture.h PATHS "${EXTERNALS_DIRECTORY}/cppunit/include" NO_DEFAULT_PATH)
       FIND_LIBRARY (CPPUNIT_LIBRARIES NAMES ${cppunit_dll} PATHS "${EXTERNALS_DIRECTORY}/cppunit/lib/${osdir}" NO_DEFAULT_PATH)
+      IF ((NOT ${CPPUNIT_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+          (NOT ${CPPUNIT_LIBRARIES} MATCHES ".*-NOTFOUND"))
+        SET(CPPUNIT_FOUND TRUE)
+      ENDIF()
     ENDIF() 
     
   ENDIF()
 
   # if we didn't find in externals, look in system include path
-  if (USE_NATIVE_LIBRARIES)
+  if (USE_NATIVE_LIBRARIES AND (NOT CPPUNIT_FOUND))
     FIND_PATH (CPPUNIT_INCLUDE_DIR NAMES cppunit/TestFixture.h)
     FIND_LIBRARY (CPPUNIT_LIBRARIES NAMES ${cppunit_dll})
   endif()

@@ -51,10 +51,14 @@ IF (NOT ZLIB_FOUND)
     IF (NOT ("${osdir}" STREQUAL "unknown"))
       FIND_PATH (ZLIB_INCLUDE_DIR NAMES zlib.h PATHS "${EXTERNALS_DIRECTORY}/zlib/${zlibver}/include" NO_DEFAULT_PATH)
       FIND_LIBRARY (ZLIB_LIBRARIES NAMES ${zlib_lib} PATHS "${EXTERNALS_DIRECTORY}/zlib/${zlibver}/lib/${osdir}" NO_DEFAULT_PATH)
+      IF ((NOT ${ZLIB_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+          (NOT ${ZLIB_LIBRARIES} MATCHES ".*-NOTFOUND"))
+          SET(ZLIB_FOUND TRUE)
+        ENDIF()
     ENDIF()
   ENDIF()
 
-  if (USE_NATIVE_LIBRARIES)
+  if ((USE_NATIVE_LIBRARIES) AND (NOT ZLIB_FOUND))
     # if we didn't find in externals, look in system include path
     FIND_PATH (ZLIB_INCLUDE_DIR NAMES zlib.h)
     FIND_LIBRARY (ZLIB_LIBRARIES NAMES ${zlib_lib})

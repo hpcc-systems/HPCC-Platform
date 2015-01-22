@@ -44,10 +44,14 @@ if (NOT LIBXML2_FOUND)
     IF (NOT ("${osdir}" STREQUAL "unknown"))
       FIND_PATH (LIBXML2_INCLUDE_DIR NAMES libxml/xpath.h PATHS "${EXTERNALS_DIRECTORY}/libxml2/include/" NO_DEFAULT_PATH)
       FIND_LIBRARY (LIBXML2_LIBRARIES NAMES ${libxml2_libs} PATHS "${EXTERNALS_DIRECTORY}/libxml2/${osdir}" NO_DEFAULT_PATH)
+      IF ((NOT ${LIBXML2_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+          (NOT ${LIBXML2_LIBRARIES} MATCHES ".*-NOTFOUND"))
+        SET(LIBXML2_FOUND TRUE)
+      ENDIF()
     ENDIF() 
   ENDIF()
 
-  if (USE_NATIVE_LIBRARIES)
+  if (USE_NATIVE_LIBRARIES AND (NOT LIBXML2_FOUND))
     # if we didn't find in externals, look in system include path
     FIND_PATH (LIBXML2_INCLUDE_DIR NAMES libxml/xpath.h PATH_SUFFIXES libxml2)
     FIND_LIBRARY (LIBXML2_LIBRARIES NAMES xml2 libxml2)

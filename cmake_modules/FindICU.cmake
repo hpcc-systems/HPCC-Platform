@@ -38,10 +38,14 @@ IF (NOT ICU_FOUND)
     IF (NOT ("${osdir}" STREQUAL "unknown"))
       FIND_PATH (ICU_INCLUDE_DIR NAMES unicode/uchar.h PATHS "${EXTERNALS_DIRECTORY}/icu/include" NO_DEFAULT_PATH)
       FIND_LIBRARY (ICU_LIBRARIES NAMES icuuc PATHS "${EXTERNALS_DIRECTORY}/icu/lib/${osdir}" NO_DEFAULT_PATH)
+      IF ((NOT ${ICU_INCLUDE_DIR} MATCHES ".*-NOTFOUND") AND
+          (NOT ${ICU_LIBRARIES} MATCHES ".*-NOTFOUND"))
+        SET(ICU_FOUND TRUE)
+      ENDIF()
     ENDIF()
   ENDIF()
 
-  if (USE_NATIVE_LIBRARIES)
+  if (USE_NATIVE_LIBRARIES AND (NOT ICU_FOUND))
     # if we didn't find in externals, look in system include path
     FIND_PATH (ICU_INCLUDE_DIR NAMES unicode/uchar.h)
     FIND_LIBRARY (ICU_LIBRARIES NAMES icuuc)
