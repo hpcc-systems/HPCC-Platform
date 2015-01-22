@@ -1,0 +1,80 @@
+HPCC Juju Charm Development Guide
+
+Table of Contents
+-----------------
+Introduction
+How to get source code
+How to open a bug
+How to work on a bug or new feature code
+
+
+Introduction
+------------
+HPCC Juju Charm helps users deploy HPCC Platform on various cloud environment.
+It can be deployed either directly from charm store or on local system image.
+It currently supports deploying HPCC to Ubuntu 12.04 amd64 (precise) and 14.04 amd64 (trusty).
+
+Development system is also on Ubuntu precise or trusty for easily test with local provider.
+
+There are not many differences between precise and trusty codes except HPCC images, checksum
+and README items.
+
+HPCC Juju Charm for precise:  https://jujucharms.com/hpcc/precise/
+HPCC Juju Charm for trusty:  https://jujucharms.com/hpcc/trusty/
+
+Juju charm Documentation: https://juju.ubuntu.com/docs/
+
+
+How to get source code
+----------------------
+1. Install charm-tools
+   sudo add-apt-repository ppa:juju/stable
+   sudo apt-get update
+   sudo apt-get install charm-tools
+   sudo apt-get bzr
+
+2. Get HPCC Juju Charm source for Ubuntu precise:
+   mkdir precise
+
+   download Download.zip from  https://jujucharms.com/hpcc/precise
+   or
+   charm get cs:precise/hpcc
+   or
+   bzr branch ip:~charmers/charms/precise/hpcc/trunk hpcc
+
+3. Get HPCC Juju Charm source for Ubuntu trusty:
+   mkdir trusty
+   download Download.zip from  https://jujucharms.com/hpcc/trusty
+   or
+   charm get cs:trusty/hpcc
+   or
+   bzr branch ip:~charmers/charms/trusty/hpcc/trunk hpcc
+
+How to open a bug
+----------------------------------------
+1. Create launchpad id if haven't at: https://launchpad.net
+2. https://bugs.launchpad.net/juju-core/+filebug
+
+
+How to work on a bug or new feature code
+----------------------------------------
+For development (fix bugs or add new features) you should checkout the source code
+from launchpad with bzr command as documented in "How to get source code" section.
+
+After you get the source code you can work with the code:
+1. Make your changes
+2. bzr commit -m "<comment>"
+3  bzr push lp:~<your-launchpad-username>/charms/<precise|trusty>/hpcc/<branch name>
+   This is where you could create a merge proposal with the hpcc charm
+
+4. If you are or  want to be the  owner of the bug
+   Click on "Link to related branch" in
+     https://bugs.launchpad.net/charms/+source/hpcc/+bug/<bug number>
+5. Assign the bug to yourself
+6. Change the status to "Fix Committed"
+7. That should enter your bug in the review queue. Juju Charm Development team will
+   assign a tester/developer to review it.
+
+
+Reference https://juju.ubuntu.com/docs/authors-charm-store.html#submitting-a-fix-to-an-existing-charm
+for more information
