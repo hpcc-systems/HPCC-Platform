@@ -260,7 +260,7 @@ Command:
 
 The result looks like this:
 
-        Available Clusters: 
+        Available Clusters:
             - hthor
             - thor
             - roxie
