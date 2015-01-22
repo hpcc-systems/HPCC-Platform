@@ -59,7 +59,11 @@ class RegressMain:
             else:
                 # We have simple ECL file in parameter list, put it on the eclfile list
                 eclPath = os.path.join(self.regress.dir_ec, ecl)
-                eclfiles.append(eclPath)
+                if os.path.isfile(eclPath):
+                    eclfiles.append(eclPath)
+                else:
+                    logging.error("%s. ECL file '%s' doesn't exist!" % (1,  eclPath))
+                    raise Error("4001")
 
         if len(eclfiles) > 1:
             # Remove duplicates
