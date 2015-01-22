@@ -323,7 +323,7 @@ class ECLFile:
             eclText = open(self.getEcl(), 'rb')
             for line in eclText:
                 if tag in line.lower():
-                    items = line.replace(tag, '').strip().replace('"', '')
+                    items = line.replace(tag, '').strip().replace('"', '').replace(' ', '')
                     if '=' in items:
                         self.versions.append(items)
                         retVal = True
