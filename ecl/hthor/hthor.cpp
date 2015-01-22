@@ -3853,7 +3853,7 @@ void CHThorGroupSortActivity::createSorter()
     {
         StringBuffer sb;
         sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname.get());
-        agent.addWuException(sb.str(),0,ExceptionSeverityWarning,"hthor");
+        agent.addWuException(sb.str(),WRN_UnsupportedAlgorithm,SeverityWarning,"hthor");
         if((flags & TAFunstable) != 0)
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         else
@@ -6138,16 +6138,6 @@ CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, un
 void CHThorRemoteResultActivity::execute()
 {
     OwnedConstRoxieRow result(input->nextInGroup());
-#if 0
-    //This isn't correct - it can have a null input - at least until TAKaction is generated for that case.
-    if(!result)
-    {
-        char const * msg = "Remote Result activity had null input, not sending result";
-        WARNLOG(msg);
-        agent.addWuException(msg, 0, ExceptionSeverityWarning, "hthor");
-        return;
-    }
-#endif
     helper.sendResult(result);
 }
 
@@ -7871,7 +7861,7 @@ void CHThorDiskReadBaseActivity::resolve()
             StringBuffer buff;
             buff.appendf("Input file '%s' was missing but declared optional", mangledHelperFileName.str());
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+            agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
         }
     }
 }
@@ -7888,7 +7878,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
                 StringBuffer msg;
                 msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
                 WARNLOG("%s", msg.str());
-                agent.addWuException(msg.str(), 0, ExceptionSeverityWarning, "hthor");
+                agent.addWuException(msg.str(), WRN_MismatchGroupInfo, SeverityError, "hthor");
             }
         }
         else
@@ -7925,7 +7915,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
                 StringBuffer msg;
                 msg.append("Ignoring compression attribute on file ").append(mangledHelperFileName.str()).append(", which is not published as compressed");
                 WARNLOG("%s", msg.str());
-                agent.addWuException(msg.str(), 0, ExceptionSeverityWarning, "hthor");
+                agent.addWuException(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, "hthor");
                 compressed = true;
             }
         }

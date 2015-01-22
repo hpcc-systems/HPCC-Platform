@@ -2137,7 +2137,7 @@ public:
     virtual IStringVal& getExceptionSource(IStringVal &str) const;
     virtual IStringVal& getExceptionMessage(IStringVal &str) const;
     virtual unsigned    getExceptionCode() const;
-    virtual WUExceptionSeverity getSeverity() const;
+    virtual ErrorSeverity getSeverity() const;
     virtual IStringVal & getTimeStamp(IStringVal & dt) const;
     virtual IStringVal & getExceptionFileName(IStringVal & str) const;
     virtual unsigned    getExceptionLineNo() const;
@@ -2145,7 +2145,7 @@ public:
     virtual void        setExceptionSource(const char *str);
     virtual void        setExceptionMessage(const char *str);
     virtual void        setExceptionCode(unsigned code);
-    virtual void        setSeverity(WUExceptionSeverity level);
+    virtual void        setSeverity(ErrorSeverity level);
     virtual void        setTimeStamp(const char * dt);
     virtual void        setExceptionFileName(const char *str);
     virtual void        setExceptionLineNo(unsigned r);
@@ -5375,10 +5375,11 @@ void CLocalWorkUnit::setSnapshot(const char * val)
 
 const static mapEnums warningSeverityMap[] =
 {
-    { SeverityIgnore, "ignore" },
-    { SeverityInfo, "info" },
+    { SeverityInformation, "info" },
     { SeverityWarning, "warning" },
     { SeverityError, "error" },
+    { SeverityAlert, "alert" },
+    { SeverityIgnore, "ignore" },
     { SeverityFatal, "fatal" },
     { SeverityUnknown, NULL }
 };
@@ -8794,9 +8795,9 @@ unsigned  CLocalWUException::getExceptionCode() const
     return p->getPropInt("@code", 0);
 }
 
-WUExceptionSeverity CLocalWUException::getSeverity() const
+ErrorSeverity CLocalWUException::getSeverity() const
 {
-    return (WUExceptionSeverity)p->getPropInt("@severity", ExceptionSeverityError);
+    return (ErrorSeverity)p->getPropInt("@severity", SeverityError);
 }
 
 IStringVal & CLocalWUException::getTimeStamp(IStringVal & dt) const
@@ -8836,7 +8837,7 @@ void CLocalWUException::setExceptionCode(unsigned code)
     p->setPropInt("@code", code);
 }
 
-void CLocalWUException::setSeverity(WUExceptionSeverity level)
+void CLocalWUException::setSeverity(ErrorSeverity level)
 {
     p->setPropInt("@severity", level);
 }
@@ -10179,7 +10180,7 @@ extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IWorkUnit * wu)
 }
 
 
-extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column)
+extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column)
 {
     Owned<IWUException> we = wu->createException();
     we->setSeverity(severity);

@@ -23,6 +23,7 @@
 #include "jsem.hpp"
 #include "jexcept.hpp"
 #include "jregexp.hpp"
+#include "jerror.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -564,9 +565,9 @@ void CppCompiler::extractErrors(IArrayOf<IError> & errors)
                 gccErrorPattern.findstr(msg, 5);
 
                 if (strieq(kind, "error"))
-                    errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+                    errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), atoi(column), 0));
                 else
-                    errors.append(*createError(CategoryCpp, SeverityWarning, 2999, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+                    errors.append(*createError(CategoryCpp, SeverityWarning, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), atoi(column), 0));
             }
             else if (gccErrorPattern2.find(next))
             {
@@ -577,9 +578,9 @@ void CppCompiler::extractErrors(IArrayOf<IError> & errors)
                 gccErrorPattern2.findstr(msg, 4);
 
                 if (strieq(kind, "error"))
-                    errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), atoi(line), 0, 0));
+                    errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
                 else
-                    errors.append(*createError(CategoryCpp, SeverityWarning, 2999, msg.str(), filename.str(), atoi(line), 0, 0));
+                    errors.append(*createError(CategoryCpp, SeverityWarning, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
             }
             else if (gccLinkErrorPattern.find(next))
             {
@@ -589,14 +590,14 @@ void CppCompiler::extractErrors(IArrayOf<IError> & errors)
                 gccLinkErrorPattern.findstr(msg, 3);
 
                 ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
-                errors.append(*createError(CategoryError, severity, 2999, msg.str(), filename.str(), atoi(line), 0, 0));
+                errors.append(*createError(CategoryError, severity, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
             }
             else if (gccLinkErrorPattern2.find(next))
             {
                 StringBuffer msg("C++ link error: ");
                 gccLinkErrorPattern2.findstr(msg, 1);
                 ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
-                errors.append(*createError(CategoryError, severity, 2999, msg.str(), NULL, 0, 0, 0));
+                errors.append(*createError(CategoryError, severity, JLIBERR_CppCompileError, msg.str(), NULL, 0, 0, 0));
             }
             else if (vsErrorPattern.find(next))
             {
@@ -604,14 +605,14 @@ void CppCompiler::extractErrors(IArrayOf<IError> & errors)
                 vsErrorPattern.findstr(filename, 1);
                 vsErrorPattern.findstr(line, 2);
                 vsErrorPattern.findstr(msg, 3);
-                errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), atoi(line), 0, 0));
+                errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
             }
             else if (vsLinkErrorPattern.find(next))
             {
                 StringBuffer filename, msg("C++ link error: ");
                 vsLinkErrorPattern.findstr(filename, 1);
                 vsLinkErrorPattern.findstr(msg, 2);
-                errors.append(*createError(CategoryError, SeverityError, 2999, msg.str(), filename.str(), 0, 0, 0));
+                errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), 0, 0, 0));
             }
         } while (cur);
     }

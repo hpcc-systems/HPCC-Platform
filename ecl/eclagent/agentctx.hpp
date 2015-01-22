@@ -17,10 +17,22 @@
 #ifndef AGENTCTX_HPP_INCL
 #define AGENTCTX_HPP_INCL
 
+#include "errorlist.h"
 #include "dautils.hpp"
 #include "eclhelper.hpp"
 #include "workunit.hpp"
 #include "layouttrans.hpp"
+
+//Don't remove items from this list - otherwise the error codes will change
+enum
+{
+    WRN_SkipMissingOptIndex             = ECLAGENT_ERROR_START,
+    WRN_SkipMissingOptFile,
+    WRN_UseLayoutTranslation,
+    WRN_UnsupportedAlgorithm,
+    WRN_MismatchGroupInfo,
+    WRN_MismatchCompressInfo,
+};
 
 struct IHThorGraphResult : extends IInterface
 {

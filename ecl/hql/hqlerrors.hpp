@@ -18,14 +18,7 @@
 #define _HQLERRORS_HPP_
 
 
-/* Error severity: obsoleted */
-
-#define ERR_SEMANTIC                1    /* no resulting expression tree */
-#define ERR_SYNTACTIC               2    /* there is an expression tree, but should not be executed */
-#define ERR_FATAL                   3    /* fatal error: unrecoverable error */
-
 ///////////////////////////////////////////////////////////////////////////////
-/* Warning numbers */
 
 #define WRN_MACROEXPANSION          1001 /* error in macro (see error following this warning) */
 #define WRN_LOCALNONDIST            1004 /* LOCAL specified on dataset that is not distributed */
@@ -75,7 +68,8 @@
 #define WRN_SILLY_EXISTS            1051
 #define WRN_INT_OR_RANGE_EXPECTED   1052 /* Integer or integer range (i.e. 2..3) expected when real detected */
 #define WRN_UNRESOLVED_SYMBOL       1053
-//#define ECL_WARN_END          1100
+
+//Do not define any warnings > 1099 - use the range below instead
 
 ///////////////////////////////////////////////////////////////////////////////
 /* Error numbers */

@@ -299,7 +299,7 @@ interface IThorException : extends IException
     virtual const char *queryJobId() = 0;
     virtual void getAssert(StringAttr &file, unsigned &line, unsigned &column) = 0;
     virtual const char *queryOrigin() = 0;
-    virtual WUExceptionSeverity querySeverity() = 0;
+    virtual ErrorSeverity querySeverity() = 0;
     virtual const char *queryMessage() = 0;
     virtual bool queryNotified() const = 0;
     virtual MemoryBuffer &queryData() = 0;
@@ -314,7 +314,7 @@ interface IThorException : extends IException
     virtual void setMessage(const char *msg) = 0;
     virtual void setAssert(const char *file, unsigned line, unsigned column) = 0;
     virtual void setOrigin(const char *origin) = 0;
-    virtual void setSeverity(WUExceptionSeverity severity) = 0;
+    virtual void setSeverity(ErrorSeverity severity) = 0;
 };
 
 class CGraphElementBase;
@@ -415,7 +415,7 @@ extern graph_decl const char *queryTempDir(bool altdisk=false);
 extern graph_decl void loadCmdProp(IPropertyTree *tree, const char *cmdProp);
 
 extern graph_decl void ensureDirectoryForFile(const char *fName);
-extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, WUExceptionSeverity severity=ExceptionSeverityWarning);
+extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity=SeverityWarning);
 
 extern graph_decl IPropertyTree *globals;
 extern graph_decl mptag_t masterSlaveMpTag;

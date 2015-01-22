@@ -923,7 +923,7 @@ public:
     void reportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg, ...) __attribute__((format(printf, 6, 7)));
     void reportError(IHqlExpression * location, int code, const char *format, ...) __attribute__((format(printf, 4, 5)));
     void reportErrorDirect(IHqlExpression * location, int code,const char *msg, bool alwaysAbort);
-    void addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * msg, IHqlExpression * location);
+    void addWorkunitException(ErrorSeverity severity, unsigned code, const char * msg, IHqlExpression * location);
     void useFunction(IHqlExpression * funcdef);
     void useLibrary(const char * libname);
     void finalizeResources();

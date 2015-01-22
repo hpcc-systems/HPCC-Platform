@@ -231,18 +231,18 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                     err->setExceptionLineNo(atoi(line));
                     err->setExceptionColumn(atoi(col));
                     if (stricmp(errClass, "info")==0)
-                        err->setSeverity(ExceptionSeverityInformation);
+                        err->setSeverity(SeverityInformation);
                     else if (stricmp(errClass, "warning")==0)
-                        err->setSeverity(ExceptionSeverityWarning);
+                        err->setSeverity(SeverityWarning);
                     else
-                        err->setSeverity(ExceptionSeverityError);
+                        err->setSeverity(SeverityError);
                     err->setExceptionCode(atoi(errCode));
                     err->setExceptionMessage(errText);
                     err->setExceptionFileName(file); // any point if it just says stdin?
                 }
                 else
                 {
-                    err->setSeverity(retcode ? ExceptionSeverityError : ExceptionSeverityWarning);
+                    err->setSeverity(retcode ? SeverityError : SeverityWarning);
                     err->setExceptionMessage(errStr);
                     DBGLOG("%s", errStr);
                 }
@@ -490,7 +490,7 @@ public:
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            addExceptionToWorkunit(workunit, ExceptionSeverityError, "eclccserver", e->errorCode(), msg.str(), NULL, 0, 0);
+            addExceptionToWorkunit(workunit, SeverityError, "eclccserver", e->errorCode(), msg.str(), NULL, 0, 0);
             e->Release();
         }
         if (ok)

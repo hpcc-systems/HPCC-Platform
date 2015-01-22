@@ -20,13 +20,18 @@
 #define JERROR_HPP
 
 #include "jexcept.hpp"
-#include "jerrorrange.hpp"
+#include "errorlist.h"
 
 /* Errors generated in jlib */
 
-#define JLIBERR_BadlyFormedDateTime             1000
-#define JLIBERR_BadUtf8InArguments              1001
-#define JLIBERR_InternalError                   1002
+//Don't remove items from this list - otherwise the error codes will change
+enum
+{
+    JLIBERR_BadlyFormedDateTime = JLIB_ERROR_START,
+    JLIBERR_BadUtf8InArguments,
+    JLIBERR_InternalError,
+    JLIBERR_CppCompileError,
+};
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 

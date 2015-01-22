@@ -44,9 +44,6 @@
 
 #define PARALLEL_EXECUTE
 
-#define RE_FailedToLoadProcedure    0x1000
-#define RE_FailedToLoadSharedObject 0x2000
-
 #define MAXTRACELEVEL 100     // don't want traceLevel+1 to wrap to 0 in lsb
 #define MAX_CLUSTER_SIZE 1024
 #define UDP_QUEUE_SIZE 100

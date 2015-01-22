@@ -18,41 +18,43 @@
 #ifndef FVERROR_HPP
 #define FVERROR_HPP
 
-#include "jerrorrange.hpp"
+#include "errorlist.h"
 
-#define ERR_FILEVIEW_FIRST  2000
-#define ERR_FILEVIEW_LAST   2049
-
-#define FVERR_CouldNotResolveX                  2000
-#define FVERR_NoRecordDescription               2001
-#define FVERR_BadRecordDesc                     2002
-#define FVERR_NeedClusterToBrowseX              2003
-#define FVERR_TimeoutRemoteFileView             2004
-#define FVERR_UnknownRemoteCommand              2005
-#define FVERR_UnknownUTFFormat                  2006
-#define FVERR_FailedOpenFile                    2007
-#define FVERR_CompressedFile                    2008
-#define FVERR_CannotViewKey                     2009
-#define FVERR_ViewComplexKey                    2010
-#define FVERR_FilterTooRestrictive              2011
-#define FVERR_ZeroSizeRecord                    2012
-#define FVERR_FailedOpenCompressedFile          2013
-#define FVERR_UnrecognisedJoinFieldSyntax       2014
-#define FVERR_UnrecognisedJoinFieldSyntaxXX     2015
-#define FVERR_UnrecognisedMappingFunctionX      2016
-#define FVERR_UnrecognisedFieldX                2017
-#define FVERR_ExpectedFieldSelectedFromDatasetXX 2018
-#define FVERR_CannotSelectFromDatasetX          2019
-#define FVERR_CannotSelectManyFromDatasetX      2020
-#define FVERR_ExpectedFieldSelectedFromRecordXX 2021
-#define FVERR_NumJoinFieldsMismatchXY           2022
-#define FVERR_ExpectedX                         2023
-#define FVERR_FailTransformation                2024
-#define FVERR_UnrecognisedMappingFunctionXY     2025
-#define FVERR_BadStringTermination              2026
-#define FVERR_CannotBrowseFile                  2027
-#define FVERR_PluginMismatch                    2028
-#define FVERR_RowTooLarge                       2029
+//Don't remove items from this list - otherwise the error codes will change
+enum
+{
+    FVERR_CouldNotResolveX = FILEVIEW_ERROR_START,
+    FVERR_NoRecordDescription,
+    FVERR_BadRecordDesc,
+    FVERR_NeedClusterToBrowseX,
+    FVERR_TimeoutRemoteFileView,
+    FVERR_UnknownRemoteCommand,
+    FVERR_UnknownUTFFormat,
+    FVERR_FailedOpenFile,
+    FVERR_CompressedFile,
+    FVERR_CannotViewKey,
+    FVERR_ViewComplexKey,
+    FVERR_FilterTooRestrictive,
+    FVERR_ZeroSizeRecord,
+    FVERR_FailedOpenCompressedFile,
+    FVERR_UnrecognisedJoinFieldSyntax,
+    FVERR_UnrecognisedJoinFieldSyntaxXX,
+    FVERR_UnrecognisedMappingFunctionX,
+    FVERR_UnrecognisedFieldX,
+    FVERR_ExpectedFieldSelectedFromDatasetXX,
+    FVERR_CannotSelectFromDatasetX,
+    FVERR_CannotSelectManyFromDatasetX,
+    FVERR_ExpectedFieldSelectedFromRecordXX,
+    FVERR_NumJoinFieldsMismatchXY,
+    FVERR_ExpectedX,
+    FVERR_FailTransformation,
+    FVERR_UnrecognisedMappingFunctionXY,
+    FVERR_BadStringTermination,
+    FVERR_CannotBrowseFile,
+    FVERR_PluginMismatch,
+    FVERR_RowTooLarge,
+    FVERR_CouldNotProcessSchema,
+};
 
 #define FVERR_CouldNotResolveX_Text             "Could not resolve file '%s' in DFS"
 #define FVERR_NoRecordDescription_Text          "DFS did not contain a record description for '%s'"

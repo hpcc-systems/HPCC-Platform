@@ -15,17 +15,28 @@
     limitations under the License.
 ############################################################################## */
 
+//class=file
+//class=index
+//version multiPart=false
+//version multiPart=true
 
-#ifndef JERRORRANGE_HPP
-#define JERRORRANGE_HPP
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, true);
+useLocal := #IFDEFINED(root.useLocal, false);
+useTranslation := #IFDEFINED(root.useTranslation, false);
 
-//Error ranges used throughout the system...
+//--- end of version configuration ---
 
-#define ERR_EXE_FIRST       1     // All .exes can safely use the same range.
-#define ERR_EXE_LAST        999   // Codes 1000+ should be used in .dlls.
+#option ('layoutTranslationEnabled', useTranslation);
+#onwarning (5402, ignore);
 
-#define ERR_JLIB_FIRST      1000
-#define ERR_JLIB_LAST       1999
-#define ERR_FILEVIEW_FIRST  2000
-#define ERR_FILEVIEW_LAST   2049
-#endif
+import $.setup;
+Files := setup.Files(multiPart, useLocal, useTranslation);
+
+sequential(
+
+output(max(choosen(Files.DG_FetchIndex, 1,3), Fname));
+output(min(choosen(Files.DG_FetchIndex, 1,3), Fname));
+
+output(count(choosen(Files.DG_FetchIndex, 1,3)))
+);

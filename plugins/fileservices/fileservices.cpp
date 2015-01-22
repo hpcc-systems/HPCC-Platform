@@ -270,7 +270,7 @@ StringBuffer & constructLogicalName(ICodeContext * ctx, const char * partialLogi
     return constructLogicalName(wu, partialLogicalName, result);
 }
 
-static void WUmessage(ICodeContext *ctx, WUExceptionSeverity sev, const char *fn, const char *msg)
+static void WUmessage(ICodeContext *ctx, ErrorSeverity sev, const char *fn, const char *msg)
 {
     StringBuffer s("fileservices");
     if (fn)
@@ -331,7 +331,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
             s.append("') added to transaction");
         else
             s.append("') done");
-        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
         AuditMessage(ctx,"DeleteLogicalFile",lfn.str());
 
     }
@@ -445,14 +445,14 @@ FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, c
         queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),udesc,transaction);
         StringBuffer s("RenameLogicalFile ('");
         s.append(lfn).append(", '").append(nlfn).append("') done");
-        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
         AuditMessage(ctx,"RenameLogicalFile",lfn.str(),nlfn.str());
     }
     catch (IException *e)
     {
         StringBuffer s;
         e->errorMessage(s);
-        WUmessage(ctx,ExceptionSeverityWarning,"RenameLogicalFile",s.str());
+        WUmessage(ctx,SeverityWarning,"RenameLogicalFile",s.str());
         throw e;
      }
 }
@@ -463,7 +463,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmail(ICodeContext * ctx, const ch
     StringArray warnings;
     sendEmail( to, subject, body, mailServer, port, sender, &warnings);
     ForEachItemIn(i,warnings)
-        WUmessage(ctx, ExceptionSeverityWarning, "SendEmail", warnings.item(i));
+        WUmessage(ctx, SeverityWarning, "SendEmail", warnings.item(i));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender)
@@ -471,7 +471,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText(ICodeContext * ctx
     StringArray warnings;
     sendEmailAttachText(to, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings);
     ForEachItemIn(i,warnings)
-        WUmessage(ctx, ExceptionSeverityWarning, "SendEmailAttachText", warnings.item(i));
+        WUmessage(ctx, SeverityWarning, "SendEmailAttachText", warnings.item(i));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx, const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender)
@@ -479,7 +479,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx
     StringArray warnings;
     sendEmailAttachData(to, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings);
     ForEachItemIn(i,warnings)
-        WUmessage(ctx, ExceptionSeverityWarning, "SendEmailAttachData", warnings.item(i));
+        WUmessage(ctx, SeverityWarning, "SendEmailAttachData", warnings.item(i));
 }
 
 
@@ -585,7 +585,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             {   //  Add warning of DFU Abort Request - should this be information  ---
                 StringBuffer s("DFU Workunit Abort Requested for ");
                 s.append(wuid);
-                WUmessage(ctx,ExceptionSeverityWarning,"blockUntilComplete",s.str());
+                WUmessage(ctx,SeverityWarning,"blockUntilComplete",s.str());
             }
 
             wu->setState(WUStateAborting);
@@ -1067,7 +1067,7 @@ static void CheckNotInTransaction(ICodeContext *ctx, const char *fn)
     if (transaction->active()) {
         StringBuffer s("Operation not part of transaction : ");
         s.append(fn);
-        WUmessage(ctx,ExceptionSeverityWarning,fn,s.str());
+        WUmessage(ctx,SeverityWarning,fn,s.str());
     }
 }
 
@@ -1082,7 +1082,7 @@ FILESERVICES_API void FILESERVICES_CALL fsCreateSuperFile(ICodeContext *ctx, con
     StringBuffer s("CreateSuperFile ('");
     s.append(lsfn).append("') done");
     AuditMessage(ctx,"CreateSuperFile",lsfn.str());
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
 }
 
 FILESERVICES_API bool FILESERVICES_CALL fsSuperFileExists(ICodeContext *ctx, const char *lsuperfn)
@@ -1111,7 +1111,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, con
     } else {
         s.append(" file not found");
     }
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     if (found)
         AuditMessage(ctx,"DeleteSuperFile",lsfn.str());
 }
@@ -1180,7 +1180,7 @@ FILESERVICES_API void FILESERVICES_CALL fslStartSuperFileTransaction(ICodeContex
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
     transaction->start();
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,"StartSuperFileTransaction");
+    WUmessage(ctx,SeverityInformation,NULL,"StartSuperFileTransaction");
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsAddSuperFile(IGlobalCodeContext *gctx, const char *lsuperfn,const char *_lfn,unsigned atpos,bool addcontents, bool strict)
@@ -1256,7 +1256,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
         s.append("trans");
     else
         s.append("done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"AddSuperFile",lsfn.str(),lfn.str());
 }
 
@@ -1297,7 +1297,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
         s.append("trans");
     else
         s.append("done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"RemoveSuperFile",lsfn.str(),lfn.str());
 }
 
@@ -1336,7 +1336,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveOwnedSubFiles(ICodeContext *ctx
         s.append("trans");
     else
         s.append("done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"RemoveOwnedSubFiles",lsfn.str());
 }
 
@@ -1375,7 +1375,7 @@ FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, cons
         s.append("trans");
     else
         s.append("done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"SwapSuperFile",lsfn1.str(),lsfn2.str());
 }
 
@@ -1412,7 +1412,7 @@ FILESERVICES_API void FILESERVICES_CALL fslFinishSuperFileTransaction(ICodeConte
             s.append("rollback");
         else
             s.append("commit");
-        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
     }
     else {
         StringBuffer s("Invalid FinishSuperFileTransaction ");
@@ -1421,7 +1421,7 @@ FILESERVICES_API void FILESERVICES_CALL fslFinishSuperFileTransaction(ICodeConte
         else
             s.append("done");
         s.append(", transaction not active");
-        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
     }
 }
 
@@ -1470,12 +1470,12 @@ FILESERVICES_API char *  FILESERVICES_CALL fslWaitDfuWorkunit(ICodeContext *ctx,
     setServerAccess(server, wu);
     StringBuffer s("Waiting for DFU Workunit ");
     s.append(wuid);
-    WUmessage(ctx,ExceptionSeverityInformation,"WaitDfuWorkunit",s.str());
+    WUmessage(ctx,SeverityInformation,"WaitDfuWorkunit",s.str());
     StringBuffer state;
     wu.clear();
     blockUntilComplete("WaitDfuWorkunit", server, ctx, wuid, timeout, &state);
     s.clear().append("Finished waiting for DFU Workunit ").append(wuid).append(" state=").append(state.str());
-    WUmessage(ctx,ExceptionSeverityInformation,"WaitDfuWorkunit",s.str());
+    WUmessage(ctx,SeverityInformation,"WaitDfuWorkunit",s.str());
     return state.detach();
 }
 
@@ -1495,7 +1495,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAbortDfuWorkunit(ICodeContext *ctx, c
     Linked<IClientAbortDFUWorkunitResponse> abortResp = server.AbortDFUWorkunit(abortReq);
     StringBuffer s("DFU Workunit Abort Requested for ");
     s.append(wuid);
-    WUmessage(ctx,ExceptionSeverityInformation,"AbortDfuWorkunit",s.str());
+    WUmessage(ctx,SeverityInformation,"AbortDfuWorkunit",s.str());
 }
 
 FILESERVICES_API void  FILESERVICES_CALL fsMonitorLogicalFileName(ICodeContext *ctx, const char *eventname, const char *_lfn,int shotcount, const char * espServerIpPort)
@@ -1521,7 +1521,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorLogicalFileName(ICodeContex
     StringBuffer res(result->getWuid());
     StringBuffer s("MonitorLogicalFileName ('");
     s.append(lfn).append("'): ").append(res);
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     wu.clear();
     if (res.length()!=0)
         blockUntilComplete("MonitorLogicalFileName",server,ctx,res.str(),1000*60*60,NULL,true);
@@ -1551,7 +1551,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorFile(ICodeContext *ctx, con
     StringBuffer res(result->getWuid());
     StringBuffer s("MonitorFile (");
     s.append(ip).append(", '").append(filename).append("'): '").append(res);
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     wu.clear();
     if (res.length()!=0)
         blockUntilComplete("MonitorFile",server,ctx,res.str(),1000*60*60,NULL,true);
@@ -1971,7 +1971,7 @@ FILESERVICES_API void FILESERVICES_CALL fsAddFileRelationship(ICodeContext * ctx
     queryDistributedFileDirectory().addFileRelationship(pfn.str(),sfn.str(),primflds,secflds,kind,cardinality,payload,ctx->queryUserDescriptor(), description);
     StringBuffer s("AddFileRelationship('");
     s.append(pfn.str()).append("','").append(sfn.str()).append("','").append(primflds?primflds:"").append("','").append(secflds?secflds:"").append("','").append(kind?kind:"").append("') done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
 
 }
 
@@ -2144,7 +2144,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,c
     file->move(topath);
     StringBuffer s("MoveExternalFile ('");
     s.append(location).append(',').append(frompath).append(',').append(topath).append(") done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"MoveExternalFile",frompath,topath);
 }
 
@@ -2162,7 +2162,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile(ICodeContext * ctx
     file->remove();
     StringBuffer s("DeleteExternalFile ('");
     s.append(location).append(',').append(path).append(") done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"DeleteExternalFile",path);
 }
 
@@ -2180,7 +2180,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext 
     file->createDirectory();
     StringBuffer s("CreateExternalDirectory ('");
     s.append(location).append(',').append(path).append(") done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"CreateExternalDirectory",path);
 }
 
@@ -2317,7 +2317,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const c
         void info(const char *msg)
         {
             if (ctx&&(++limit<100))
-                WUmessage(ctx,ExceptionSeverityInformation,NULL,msg);
+                WUmessage(ctx,SeverityInformation,NULL,msg);
         }
         void err(const char *msg)
         {

@@ -202,9 +202,9 @@ extern FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * cu
 #define WorkUnitXML_NoRoot          0x0002
 #define WorkUnitXML_SeverityTags    0x0004
 
-extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const char *password, const IConstWorkUnit *cw, IXmlWriter &writer, unsigned flags, WUExceptionSeverity minSeverity, const char *rootTag);
-extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, WUExceptionSeverity minSeverity=ExceptionSeverityInformation);
-extern FILEVIEW_API IStringVal& getFullWorkUnitResultsJSON(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, WUExceptionSeverity minSeverity=ExceptionSeverityInformation);
+extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const char *password, const IConstWorkUnit *cw, IXmlWriter &writer, unsigned flags, ErrorSeverity minSeverity, const char *rootTag);
+extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, ErrorSeverity minSeverity=SeverityInformation);
+extern FILEVIEW_API IStringVal& getFullWorkUnitResultsJSON(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, ErrorSeverity minSeverity=SeverityInformation);
 
 extern FILEVIEW_API void startRemoteDataSourceServer(const char * queue, const char * cluster);
 extern FILEVIEW_API void stopRemoteDataSourceServer();

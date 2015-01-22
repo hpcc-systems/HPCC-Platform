@@ -1130,7 +1130,7 @@ public:
         {
             Owned<IWorkUnit> w = updateWorkUnit();
             Owned<IWUException> we = w->createException();
-            we->setSeverity((WUExceptionSeverity)severity);
+            we->setSeverity((ErrorSeverity)severity);
             we->setExceptionMessage(text);
             we->setExceptionSource(source);
             if (code)
@@ -1154,7 +1154,7 @@ public:
         try
         {
             Owned<IWorkUnit> w = updateWorkUnit();
-            addExceptionToWorkunit(w, ExceptionSeverityError, "user", code, text, filename, lineno, column);
+            addExceptionToWorkunit(w, SeverityError, "user", code, text, filename, lineno, column);
         }
         catch (IException *E)
         {
