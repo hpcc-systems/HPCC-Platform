@@ -234,12 +234,11 @@ define([
             return ESPRequest.send("WsWorkunits", "WUAction", {
                 request: request,
                 load: function (response) {
-                    arrayUtil.forEach(workunits, function (item, index) {
-                        if (item.refresh) { //  if action is delete then there will be no refresh
-                            item.refresh();
-                        }
-                    });
                     if (lang.exists("WUActionResponse.ActionResults.WUActionResult", response)) {
+                        var wuMap = {};
+                        arrayUtil.forEach(workunits, function (item, index) {
+                            wuMap[item.Wuid] = item;
+                        });
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
                             if (item.Result.indexOf("Failed:") === 0) {
                                 topic.publish("hpcc/brToaster", {
@@ -247,6 +246,14 @@ define([
                                     Source: "WsWorkunits.WUAction",
                                     Exceptions: [{Source: item.Action + " " + item.Wuid, Message: item.Result}]
                                 });
+                            } else {
+                                var wu = wuMap[item.Wuid];
+                                if (actionType === "delete" && item.Result === "Success") {
+                                    wu.set("StateID", 999);
+                                    wu.set("State", "deleted");
+                                } else if (wu.refresh) {
+                                    wu.refresh();
+                                }
                             }
                         });
                     }
