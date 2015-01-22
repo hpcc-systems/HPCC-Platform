@@ -82,7 +82,7 @@ void showMessage(const char * text)
     {
         if (echoResults)
             fwrite(text, strlen(text), 1, stdout);
-        if (saveResults)
+        if (saveResults && trace != NULL)
             fwrite(text, strlen(text), 1, trace);
     }
 }
@@ -236,7 +236,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
             case '-':
                 if (echoResults)
                     fputs("Error:", stdout);
-                if (saveResults)
+                if (saveResults && trace != NULL)
                     fputs("Error:", trace);
                 break;
             case 'D':
@@ -535,13 +535,17 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     {
         endtime = get_cycles_now();
         CriticalBlock b(traceCrit);
-        fprintf(trace, "query: %s\n", query);
-        if (saveResults)
-            fprintf(trace, "result: %s\n", result.str());
 
-        if (showTiming)
-            fprintf(trace, "Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
-        fputs("----------------------------------------------------------------------------\n", trace);
+        if (trace != NULL)
+        {
+            fprintf(trace, "query: %s\n", query);
+            if (saveResults)
+                fprintf(trace, "result: %s\n", result.str());
+
+            if (showTiming)
+                fprintf(trace, "Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
+            fputs("----------------------------------------------------------------------------\n", trace);
+        }
     }
 
     if (!persistConnections)
@@ -801,6 +805,12 @@ int main(int argc, char **argv)
 
     int ret = 0;
     trace = fopen(outputName, "w");
+
+    if (trace == NULL)
+    {
+        printf("Can't open %s for writing\n", outputName.str());
+    }
+
     __int64 starttime,endtime;
     starttime = get_cycles_now();
     if (arg < argc || fromStdIn)
@@ -926,10 +936,16 @@ int main(int argc, char **argv)
     endtime = get_cycles_now();
     if (!justResults)
     {
-        fprintf(trace, "Total Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
-        fputs("----------------------------------------------------------------------------\n", trace);
+        if (trace != NULL)
+        {
+            fprintf(trace, "Total Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
+            fputs("----------------------------------------------------------------------------\n", trace);
+        }
     }
-    fclose(trace);
+    if (trace != NULL)
+    {
+        fclose(trace);
+    }
     
 #ifdef _DEBUG
     releaseAtoms();
