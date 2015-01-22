@@ -144,7 +144,7 @@ public:
 
     void reset()
     {
-        flags &= RefSubFile;
+        flags &= (RefSubFile | RefFileIndex | RefFileForeign | RefFileSuper | RefSubFile | RefFileInPackage);
     }
 
     IPropertyTree *getRemoteFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
@@ -295,7 +295,13 @@ void ReferencedFile::processRemoteFileTree(IPropertyTree *tree, const char *srcC
         {
             Owned<IPropertyTreeIterator> it = tree->getElements("SubFile");
             ForEach(*it)
-                subfiles->append(it->query().queryProp("@name"));
+            {
+                const char *lfn = it->query().queryProp("@name");
+                StringBuffer foreignLfn;
+                if (flags & RefFileForeign)
+                    lfn = foreignLfn.append("foreign::").append(this->daliip).append("::").append(lfn).str();
+                subfiles->append(lfn);
+            }
         }
     }
     else if (srcCluster && *srcCluster)
