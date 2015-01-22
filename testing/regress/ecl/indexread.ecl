@@ -29,6 +29,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 //--- end of version configuration ---
 
 #option ('layoutTranslationEnabled', useTranslation);
+#onwarning (5402, ignore);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
@@ -39,25 +40,6 @@ IMPORT Std;
 
 o1 := output(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),1,SKIP), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
 o2 := output(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),10,SKIP), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
-o3 := output(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),1,SKIP,KEYED), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
-o4 := output(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),10,SKIP,KEYED), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
 
-iresult := Files.DG_FetchIndex(Lname IN ['Anderson', 'Taylor']);
-
-lkresult := LIMIT(iresult,10,KEYED);
-lsresult := LIMIT(lkresult,10,SKIP);
-sresult := IF(Std.System.Thorlib.platform() != 'hthor', SORT(lsresult,Lname), lsresult);
-o5 := output(sresult, {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
-
-// then try with a keyed and unkeyed....
-
-o6 := output(LIMIT(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),1,SKIP,keyed),1,skip), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
-o7 := output(LIMIT(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),10,SKIP,keyed),10,skip), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
-
- o1:independent;
- o2:independent;
- o3:independent;
- o4:independent;
- o5:independent;
- o6:independent;
- o7:independent;
+o1:independent;
+o2:independent;

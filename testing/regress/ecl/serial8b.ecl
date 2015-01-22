@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning (4523, ignore);
+
 //Test that dictionaries are correctly serialized to nonlocal child queries
 
 import Setup.SerialTest;

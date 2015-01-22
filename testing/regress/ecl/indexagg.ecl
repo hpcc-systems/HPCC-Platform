@@ -19,6 +19,7 @@
 //class=index
 //version multiPart=false
 //version multiPart=true
+//version multiPart=true,useLocal=true
 //version multiPart=true,useTranslation=true,nothor
 
 import ^ as root;
@@ -29,14 +30,14 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 //--- end of version configuration ---
 
 #option ('layoutTranslationEnabled', useTranslation);
+#onwarning (5402, ignore);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
 
 sequential(
 
-output(max(choosen(Files.DG_FetchIndex, 1,3), Fname));
-output(min(choosen(Files.DG_FetchIndex, 1,3), Fname));
-
-output(count(choosen(Files.DG_FetchIndex, 1,3)))
+output(max(Files.DG_FetchIndex, Fname));
+output(min(Files.DG_FetchIndex, Fname));
+output(count(Files.DG_FetchIndex))
 );
