@@ -47,6 +47,7 @@
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
 #define SDS_SUB_LOCK_TIMEOUT (10000)
 #define SDS_TRANSACTION_RETRY (60000)
+#define SDS_UPDATEFS_TIMEOUT (10000)
 
 #define DEFAULT_NUM_DFS_THREADS 30
 #define TIMEOUT_ON_CLOSEDOWN 120000 // On closedown, give up on trying to join a thread in CDaliDFSServer after two minutes
@@ -890,6 +891,7 @@ public:
         defaultudesc.setown(createUserDescriptor());
         redirection.setown(createDFSredirection());
     }
+    unsigned queryDefaultTimeout() const { return defaultTimeout; }
 
     IDistributedFile *dolookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
 
@@ -3099,7 +3101,7 @@ protected:
             root.setown(closeConnection(removeFile));
             // NB: The file is now unlocked
             if (removeFile)
-                updateFS(logicalName, timeoutMs);
+                updateFS(logicalName, parent->queryDefaultTimeout());
 
             logicalName.clear();
         }
@@ -5343,7 +5345,7 @@ public:
         clearSuperOwners(timeoutMs);
         writeLock.clear();
         root.setown(closeConnection(true));
-        updateFS(logicalName, timeoutMs);
+        updateFS(logicalName, parent->queryDefaultTimeout());
         logicalName.clear();
     }
 
