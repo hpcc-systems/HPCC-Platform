@@ -234,6 +234,7 @@ class Regression:
 
                         self.taskParam[threadId]['timeoutValue'] = self.timeouts[threadId]
                         query = suiteItems[self.taskParam[threadId]['taskId']]
+                        query.setTimeout(self.timeouts[threadId])
                         #logging.debug("self.timeout[%d]:%d", threadId, self.timeouts[threadId])
                         sysThreadId = thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  threadId))
                         time.sleep(0.4)
@@ -382,6 +383,7 @@ class Regression:
                 else:
                     self.timeouts[th] = self.timeout
 
+                query.setTimeout(self.timeouts[th])
                 thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
                 time.sleep(0.1)
                 self.CheckTimeout(cnt, th,  query)
