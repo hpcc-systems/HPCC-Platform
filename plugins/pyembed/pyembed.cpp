@@ -17,6 +17,7 @@
 
 #include "platform.h"
 #include "Python.h"
+#include "frameobject.h"
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
@@ -82,6 +83,25 @@ public:
     inline void set(PyObject *_ptr)         { clear(); ptr = _ptr; if (ptr) Py_INCREF(ptr);}
     inline PyObject *getLink()              { if (ptr) Py_INCREF(ptr); return ptr;}
     inline PyObject **ref()                 { return &ptr; }
+};
+
+template <class X>
+class OwnedPyX
+{
+    X *ptr;
+public:
+    inline OwnedPyX<X>() : ptr(NULL) {}
+    inline OwnedPyX<X>(X *_ptr) : ptr(_ptr) {}
+    inline ~OwnedPyX<X>()            { if (ptr) Py_DECREF(ptr); }
+    inline X * get() const           { return ptr; }
+    inline X * getClear()            { PyObject *ret = ptr; ptr = NULL; return ret; }
+    inline X * operator -> () const  { return ptr; }
+    inline operator X *() const      { return ptr; }
+    inline void clear()              { if (ptr) Py_DECREF(ptr); ptr = NULL; }
+    inline void setown(X *_ptr)      { clear(); ptr = _ptr; }
+    inline void set(X *_ptr)         { clear(); ptr = _ptr; if (ptr) Py_INCREF(ptr);}
+    inline X *getLink()              { if (ptr) Py_INCREF(ptr); return ptr;}
+    inline X **ref()                 { return &ptr; }
 };
 
 // call checkPythonError to throw an exception if Python error state is set
@@ -277,6 +297,34 @@ public:
     {
         return initialized;
     }
+    PyFrameObject *pushDummyFrame()
+    {
+        PyThreadState* threadstate = PyThreadState_GET();
+        if (!threadstate->frame)
+        {
+            OwnedPyObject globals = PyDict_New();
+            OwnedPyObject locals = PyDict_New();
+            OwnedPyObject dummyString = PyString_FromString("Dummy");
+            OwnedPyObject dummyTuple = PyTuple_New(0);
+            OwnedPyObject empty = PyString_FromString("");
+            OwnedPyX<PyCodeObject> code = PyCode_New(0,0,0,0,empty,dummyTuple,dummyTuple,dummyTuple,dummyTuple,dummyTuple,dummyString,dummyString,0,empty);
+//            OwnedPyX<PyCodeObject> code = PyCode_NewEmpty("<dummy>","<dummy>", 0); // (this would be easier but won't compile in Python 2.6)
+            checkPythonError();
+            PyFrameObject *frame = PyFrame_New(threadstate, code, globals, locals);
+            checkPythonError();
+            threadstate->frame = frame;
+            return frame;
+        }
+        return NULL;
+    }
+
+    void popDummyFrame(PyFrameObject *frame)
+    {
+        PyThreadState* threadstate = PyThreadState_GET();
+        if (threadstate->frame == frame)
+            threadstate->frame = NULL;
+    }
+
     PyObject *getNamedTupleType(const RtlTypeInfo *type)
     {
         // It seems the customized namedtuple types leak, and they are slow to create, so take care to reuse
@@ -309,7 +357,10 @@ public:
         {
             OwnedPyObject recname = PyString_FromString("namerec");     // MORE - do we care what the name is?
             OwnedPyObject ntargs = PyTuple_Pack(2, recname.get(), pnames.get());
+            OwnedPyX<PyFrameObject> frame = pushDummyFrame();
             mynamedtupletype.setown(PyObject_CallObject(namedtuple, ntargs));
+            popDummyFrame(frame);
+            checkPythonError();
             PyDict_SetItem(namedtupleTypes, pnames, mynamedtupletype);
         }
         checkPythonError();
