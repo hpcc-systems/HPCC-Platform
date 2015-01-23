@@ -12573,7 +12573,7 @@ extern IHqlExpression * createCompound(node_operator op, const HqlExprArray & ac
     if (op == no_compound)
         return createCompound(actions);
     else
-        return createActionList(actions);
+        return createActionList(op, actions);
 }
 
 extern IHqlExpression * createComma(IHqlExpression * expr1, IHqlExpression * expr2)

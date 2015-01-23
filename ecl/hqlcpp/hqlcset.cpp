@@ -817,6 +817,16 @@ InlineLinkedDictionaryCursor::InlineLinkedDictionaryCursor(HqlCppTranslator & _t
 {
 }
 
+IHqlExpression * InlineLinkedDictionaryCursor::getFirstSearchValue(IHqlExpression * searchExpr, IHqlExpression * searchRecord)
+{
+    if (searchExpr->getOperator() == no_alias)
+        searchExpr = searchExpr->queryChild(0);
+
+    IHqlExpression * matched = getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord), false);
+    assertex(matched);
+    return matched;
+}
+
 BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpression * mapExpr)
 {
     Owned<BoundRow> tempRow = translator.declareLinkedRow(ctx, mapExpr, false);
@@ -863,7 +873,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
     if (optimizedLookupFunc.length())
     {
         args.add(*LINK(dictionary), 0);
-        args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord), false));
+        args.append(*getFirstSearchValue(searchExpr, searchRecord));
         args.append(*::createRow(no_null, LINK(record))); // the default record
         lookupFunction = createIdAtom(optimizedLookupFunc);
     }
@@ -889,6 +899,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     IHqlExpression *record = ds->queryRecord();
     IHqlExpression *dictionary = inExpr->queryChild(1);
     IHqlExpression *searchExpr = inExpr->queryChild(0);
+
     HqlExprArray args;
 
     OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
@@ -927,7 +938,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     if (optimizedLookupFunc.length())
     {
         args.add(*LINK(dictionary), 0);
-        args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord), false));
+        args.append(*getFirstSearchValue(searchExpr, searchRecord));
         lookupFunction = createIdAtom(optimizedLookupFunc);
     }
     else
