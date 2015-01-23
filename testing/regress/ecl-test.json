@@ -17,17 +17,17 @@
         "resultDir": "results",
         "regressionDir": "~/HPCCSystems-regression",
         "logDir": "~/HPCCSystems-regression/log",
-        "Clusters": [
+        "Platforms": [
             "hthor",
             "thor",
             "roxie"
         ],
         "timeout":"720",
         "maxAttemptCount":"3",
-        "defaultSetupClusters": [
+        "defaultSetupPlatforms": [
             "all"
         ],
-        "defaultTargetClusters": [
+        "defaultTargetPlatforms": [
             "all"
         ],
         "Params":[

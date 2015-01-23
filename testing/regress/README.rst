@@ -87,7 +87,7 @@ Result:
 |                            [--loglevel [{info,debug}]]
 |
 |       positional arguments:
-|        targets                  print target clusters from config (ecl-test.json by default).
+|        targets                  print target platforms from config (ecl-test.json by default).
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
@@ -117,7 +117,7 @@ Result:
 |                             [--pq threadNumber]
 |                             [--runclass class[,class,...]]
 |                             [--excludeclass class[,class,...]]
-|                             [--target [target_cluster_list | all]]
+|                             [--target [target_platform_list | all]]
 |
 |       optional arguments:
 |        -h, --help               show this help message and exit
@@ -139,8 +139,8 @@ Result:
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
-|        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
+|        --target [target_platform_list | all], -t [target_platform_list | all]
+|                                 run the setup on target platform(s). If target = 'all' then run setup on all platforms. If undefined the config 'defaultSetupPlatforms' value will be used.
 |
 
 Parameters of Regression Suite run sub-command:
@@ -164,7 +164,7 @@ Result:
 |                           [--pq threadNumber]
 |                           [--runclass class[,class,...]]
 |                           [--excludeclass class[,class,...]]
-|                           [--target [target_cluster_list | all]]
+|                           [--target [target_platform_list | all]]
 |                           [--publish]
 |
 |       optional arguments:
@@ -187,8 +187,8 @@ Result:
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
-|        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
+|        --target [target_platform_list | all], -t [target_platform_list | all]
+|                                 run the setup on target platform(s). If target = 'all' then run setup on all platforms. If undefined the config 'defaultSetupPlatforms' value will be used.
 |        --publish, -p            publish compiled query instead of run.
 |
 
@@ -214,7 +214,7 @@ Result:
 |                             [--pq threadNumber]
 |                             [--runclass class[,class,...]]
 |                             [--excludeclass class[,class,...]]
-|                             [--target [target_cluster_list | all]]
+|                             [--target [target_platform_list | all]]
 |                             [--publish]
 |                             ECL_query [ECL_query ...]
 |
@@ -241,8 +241,8 @@ Result:
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
-|        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
+|        --target [target_platform_list | all], -t [target_platform_list | all]
+|                                 run the setup on target platform(s). If target = 'all' then run setup on all platforms. If undefined the config 'defaultSetupPlatforms' value will be used.
 |        --publish, -p            publish compiled query instead of run.
 |
 
@@ -252,7 +252,7 @@ Steps to run Regression Suite
 1. Change directory to HPCC-Platform/testing/regress subdirectory.
 ------------------------------------------------------------------
 
-2. To list all available clusters:
+2. To list all available platforms:
 ----------------------------------
 Command:
 
@@ -260,7 +260,7 @@ Command:
 
 The result looks like this:
 
-        Available Clusters: 
+        Available platforms:
             - hthor
             - thor
             - roxie
@@ -274,12 +274,12 @@ Command:
 
         ./ecl-test setup
 
-to run setup on the default (thor) cluster
+to run setup on the default (thor) platform
 
 or
-        ./ecl-test setup -t <target cluster> | all
+        ./ecl-test setup -t <target platform> | all
 
-to run setup on a selected or all clusters
+to run setup on a selected or all platforms
 
 The result for thor:
 
@@ -312,16 +312,16 @@ The result for thor:
 
 To setup the proper environment for text search test cases there is a new component called setuptext.ecl. It uses data files from another location and the default location stored into the options.ecl. RS generates location from the run-time environment and passes it to the setup via stored variable called 'OriginalTextFilesEclPath'.
 
-4. To run Regression Suite on a selected cluster (e.g. Thor):
+4. To run Regression Suite on a selected platform (e.g. Thor):
 -------------------------------------------------------------
 Command:
 
-        ./ecl-test run [-t <target cluster>|all] [-h] [--pq threadNumber]
+        ./ecl-test run [-t <target platform>|all] [-h] [--pq threadNumber]
 
 Optional arguments:
   -h, --help         show help message and exit
-   --target [target_cluster | all], -t [target_cluster | all]
-|                        Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
+   --target [target_platform | all], -t [target_platform | all]
+|                        Target platform for single query run. If target = 'all' then run query on all platforms. Default value is thor.
   --pq threadNumber  Parallel query execution with threadNumber threads.
                     ('-1' can be use to calculate usable thread count on a single node system)
 
@@ -451,26 +451,26 @@ If --pq option used (in this case with 16 threads) then then the content of the 
 The logfile generated into the HPCCSystems-regression/log subfolder of the user personal folder and sorted by the test case number.
 
 
-5. To run Regression Suite with selected test case on a selected cluster (e.g. Thor) or all:
+5. To run Regression Suite with selected test case on a selected platform (e.g. Thor) or all:
 --------------------------------------------------------------------------------------------------------------------------
 
 Command:
 
-        ./ecl-test query test_name [test_name...] [-h] [--target <cluster|all>] [--publish] [--pq <threadNumber|-1>]
+        ./ecl-test query test_name [test_name...] [-h] [--target <platform|all>] [--publish] [--pq <threadNumber|-1>]
 
 Positional arguments:
         test_name               Name of a single ECL query. It can contain wildcards. (mandatory).
 
 Optional arguments:
         -h, --help            Show help message and exit
-        --target [target_cluster | all], -t [target_cluster | all]
-                              Target cluster for query to run. If target = 'all' then run query on all clusters. Default value is thor.
+        --target [target_platform | all], -t [target_platform | all]
+                              Target platform for query to run. If target = 'all' then run query on all platforms. Default value is thor.
         --publish             Publish compiled query instead of run.
         --pq threadNumber     Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )
 
 
 
-The format of the output is the same as 'run', except there is a log, result and diff per cluster targeted:
+The format of the output is the same as 'run', except there is a log, result and diff per platform targeted:
 
 |         [Action] Suite: hthor
 |         [Action] Queries: 9
@@ -558,11 +558,11 @@ The format of the output is the same as 'run', except there is a log, result and
 6. Tags used in testcases:
 --------------------------
 
-    To exclude testcase from cluster or clusters, the tag is:
-//no<cluster_name>
+    To exclude testcase from platform or platforms, the tag is:
+//no<platform_name>
 
     To skip (similar to exclusion)
-//skip type==<cluster> <reason>
+//skip type==<platform> <reason>
 
     To build and publish testcase (e.g.:for libraries)
 //publish
@@ -593,9 +593,9 @@ After an ECL test case execution finished and all output collected the result ch
 
 If the ECL source contains //nokey tag
     then the key file and output comparison skipped and the output can control by //nooutput tag
-    else RS checks cluster specific key directory and key file existence
+    else RS checks platform specific key directory and key file existence
         If both exist
-            then output compared with cluster specific keyfile
+            then output compared with platform specific keyfile
             else output compared with the keyfile located KEY directory
 
 Examples:
@@ -614,7 +614,7 @@ If we execute this query:
 
      ./regress query alljoin.ecl all
 
-Then the RS executes alljoin.ecl on all target clusters and
+Then the RS executes alljoin.ecl on all target platforms and
     on hthor the output compared with hthor/alljoin.xml
     on thor and roxie the output compared with key/alljoin.xml
 
@@ -659,9 +659,9 @@ Then the RS executes all ecl files from setup directory and
 
 The regression suite stores every test case output into ~/HPCCSystems-regression/result directory. This is the latest version of result. (The previous version can be found in ~/HPCCSystems-regression/archives directory.) When a test case execution finished Regression Suite compares this output file with the relevant key file to verify the result.
 
-So if you have a new test case and it works well on all clusters (or some of them and excluded from all others by //no<cluster> tag inside it See: 6. ) then you can get key file in 2 steps:
+So if you have a new test case and it works well on all platforms (or some of them and excluded from all others by //no<platform> tag inside it See: 6. ) then you can get key file in 2 steps:
 
-1. Run test case with ./ecl-test [suitedir] query <testcase.ecl> <cluster> .
+1. Run test case with ./ecl-test [suitedir] query <testcase.ecl> <platform> .
 
 2. Copy the output (testcase.xml) file from ~/HPCCSystems-regression/result to the relevant key file directory.
 
@@ -687,7 +687,7 @@ So if you have a new test case and it works well on all clusters (or some of the
         "resultDir": "results",                         - Current testcases generated XML results
         "regressionDir": "~/HPCCSystems-regression",    - Regression suite work and log file directory (in user private space)
         "logDir": "~/HPCCSystems-regression/log",       - Regression suite run log directory
-        "Clusters": [                                   - List of known clusters name
+        "Platforms": [                                   - List of known platforms name
             "hthor",
             "thor",
             "roxie"
@@ -697,14 +697,14 @@ So if you have a new test case and it works well on all clusters (or some of the
 
 Optionally the config file can contain some sections of default values:
 
-If the -t | --target command line parameter is omitted then the regression test engine uses the default target(s) from one of these default definitions. If undefined, then the engine uses the first cluster from the Cluster array.
+If the -t | --target command line parameter is omitted then the regression test engine uses the default target(s) from one of these default definitions. If undefined, then the engine uses the first platform from the Platform array.
 
-        "defaultSetupClusters": [
+        "defaultSetupPlatforms": [
             "hthor",
             "thor3"
         ]
 
-        "defaultTargetClusters": [
+        "defaultTargetPlatforms": [
             "thor",
             "thor3"
         ]

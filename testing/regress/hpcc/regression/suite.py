@@ -24,7 +24,7 @@ import glob
 
 from ..util.ecl.file import ECLFile
 from ..common.error import Error
-from ..util.util import checkClusters, getConfig
+from ..util.util import checkPlatforms, getConfig
 
 class Suite:
     def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir, args, isSetup=False,  fileList = None):
@@ -132,8 +132,8 @@ class Suite:
                 else:
                     # Remove exclusion key(s) from version string
                     config = getConfig();
-                    for cluster in config.Clusters:
-                        version = version.replace(',no'+str(cluster), '')
+                    for platform in config.Platforms:
+                        version = version.replace(',no'+str(platform), '')
 
                     files.append({'basename':basename, 'version':version,  'id':versionId })
                     versionId += 1

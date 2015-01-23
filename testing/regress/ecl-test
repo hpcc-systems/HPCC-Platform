@@ -28,7 +28,7 @@ import glob
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath, checkClusters, checkHpccStatus
+from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath, checkPlatforms, checkHpccStatus
 from hpcc.common.error import Error
 
 # For coverage
@@ -37,12 +37,12 @@ if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
 
 class RegressMain:
 
-    def listClusters(self):
-        Clusters = []
-        for cluster in self.regress.config.Clusters:
-            Clusters.append(str(cluster))
-        print "Avaliable Clusters: "
-        for i in Clusters:
+    def listPlatforms(self):
+        Platforms = []
+        for platform in self.regress.config.Platforms:
+            Platforms.append(str(platform))
+        print "Avaliable Platforms: "
+        for i in Platforms:
             print i
 
     def query(self):
@@ -73,44 +73,44 @@ class RegressMain:
             # Sort ECL filenames to ensure correct execution order
             eclfiles.sort()
 
-        # Go through the cluster list
-        for cluster in self.targetClusters:
+        # Go through the platform list
+        for platform in self.targetPlatforms:
             try:
-                self.regress.config.ip = self.regress.config.IpAddress[cluster]
+                self.regress.config.ip = self.regress.config.IpAddress[platform]
                 if len(eclfiles) :
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
-                    self.regress.bootstrap(cluster, self.args,  eclfiles)
+                    self.regress.bootstrap(platform, self.args,  eclfiles)
                     if  self.args.pq:
-                        self.regress.runSuiteP(cluster, self.regress.suites[cluster])
+                        self.regress.runSuiteP(platform, self.regress.suites[platform])
                     else:
-                        self.regress.runSuite(cluster, self.regress.suites[cluster])
+                        self.regress.runSuite(platform, self.regress.suites[platform])
                 else:
-                    logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  self.args.target))
+                    logging.error("%s. No ECL file match for platform:'%s'!" % (1,  self.args.target))
                     raise Error("4001")
             except IOError:
                 logging.error("%s. Query %s does not exist!" % (1,  eclfile.getBaseEcl()))
                 exit()
 
     def setup(self):
-        # Go through the cluster list
-        for cluster in self.targetClusters:
-            self.args.target = cluster
-            self.regress.config.ip = self.regress.config.IpAddress[cluster]
+        # Go through the platform list
+        for platform in self.targetPlatforms:
+            self.args.target = platform
+            self.regress.config.ip = self.regress.config.IpAddress[platform]
             if  self.args.pq :
-                self.regress.runSuiteP(cluster, self.regress.Setup(self.args))
+                self.regress.runSuiteP(platform, self.regress.Setup(self.args))
             else:
-                self.regress.runSuite(cluster, self.regress.Setup(self.args))
+                self.regress.runSuite(platform, self.regress.Setup(self.args))
 
     def run(self):
-        # Go through the cluster list
-        for cluster in self.targetClusters:
-            self.regress.bootstrap(cluster, self.args)
-            self.args.target = cluster
-            self.regress.config.ip = self.regress.config.IpAddress[cluster]
+        # Go through the platform list
+        for platform in self.targetPlatforms:
+            self.regress.bootstrap(platform, self.args)
+            self.args.target = platform
+            self.regress.config.ip = self.regress.config.IpAddress[platform]
             if  self.args.pq :
-                self.regress.runSuiteP(cluster, self.regress.suites[cluster])
+                self.regress.runSuiteP(platform, self.regress.suites[platform])
             else:
-                self.regress.runSuite(cluster, self.regress.suites[cluster])
+                self.regress.runSuite(platform, self.regress.suites[platform])
 
     def main(self):
         try:
@@ -172,18 +172,18 @@ class RegressMain:
 
         parser_list = subparsers.add_parser('list', help='list help', parents=[helperParser])
         parser_list.set_defaults(func='list')
-        parser_list.add_argument('targets', help="Print target clusters from config (ecl-test.json by default).",
+        parser_list.add_argument('targets', help="Print target platforms from config (ecl-test.json by default).",
                                  action='store_true')
 
         parser_setup = subparsers.add_parser('setup', help='setup help',  parents=[helperParser, commonParser, executionParser])
         parser_setup.set_defaults(func='setup')
-        parser_setup.add_argument('--target', '-t', help="Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
-                                nargs='?', type=str,  default='', metavar="target_cluster_list | all")
+        parser_setup.add_argument('--target', '-t', help="Run the setup on target platform(s). If target = 'all' then run setup on all platforms. If not defined then default value(s) come from config (ecl-test.json by default).",
+                                nargs='?', type=str,  default='', metavar="target_platform_list | all")
 
         parser_run = subparsers.add_parser('run', help='run help',  parents=[helperParser, commonParser, executionParser])
         parser_run.set_defaults(func='run')
-        parser_run.add_argument('--target', '-t', help="Run the cluster(s) suite. If target = 'all' then run suite on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
-                                nargs='?', type=str,  default='', metavar="target_cluster_list | all")
+        parser_run.add_argument('--target', '-t', help="Run the platform(s) suite. If target = 'all' then run suite on all platforms. If not defined then default value(s) come from config (ecl-test.json by default).",
+                                nargs='?', type=str,  default='', metavar="target_platform_list | all")
         parser_run.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
 
@@ -191,8 +191,8 @@ class RegressMain:
         parser_query.set_defaults(func='query')
         parser_query.add_argument('query', help="One or more ECL file(s). It can contain wildcards. (mandatory).",
                                   nargs='+', metavar="ECL_query")
-        parser_query.add_argument('--target', '-t', help="Target cluster(s) for query to run. If target = 'all' then run query on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
-                                nargs='?', default='', metavar="target_cluster_list | all")
+        parser_query.add_argument('--target', '-t', help="Target platform(s) for query to run. If target = 'all' then run query on all platforms. If not defined then default value(s) come from config (ecl-test.json by default).",
+                                nargs='?', default='', metavar="target_platform_list | all")
         parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
 
@@ -220,40 +220,40 @@ class RegressMain:
             self.regress = Regression(self.args)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
 
-            self.targetClusters = []
+            self.targetPlatforms= []
             if 'target' in self.args:
                 if '' == self.args.target:
                     # Target not specified, use default from config
                     try:
                         if self.args.func == 'setup':
-                            defaultTargets = self.regress.config.defaultSetupClusters
-                            targetSet='defaultSetupClusters'
+                            defaultTargets = self.regress.config.defaultSetupPlatforms
+                            targetSet='defaultSetupPlatforms'
                         else:
-                            defaultTargets = self.regress.config.defaultTargetClusters
-                            targetSet='defaultTargetClusters'
+                            defaultTargets = self.regress.config.defaultTargetPlatforms
+                            targetSet='defaultTargetPlatforms'
 
-                        self.targetClusters = checkClusters(defaultTargets, targetSet)
+                        self.targetPlatforms = checkPlatforms(defaultTargets, targetSet)
 
                     except AttributeError:
-                        # It seems there is no defaultSetupClusters|defaultTargetClusters array in the config file
-                        # use the first one of cluster list in config file
-                        self.targetClusters.append(self.regress.config.Clusters[0])
+                        # It seems there is no defaultSetupplatforms|defaultTargetplatforms array in the config file
+                        # use the first one of platform list in config file
+                        self.targetPlatforms.append(self.regress.config.Platforms[0])
                 elif 'all' == self.args.target:
-                    for cluster in self.regress.config.Clusters:
-                        self.targetClusters.append(str(cluster))
+                    for platform in self.regress.config.Platforms:
+                        self.targetPlatforms.append(str(platform))
                 else:
                     if ',' in self.args.target:
                         # target is a list, process it
                         targets = self.args.target.split(',')
-                        self.targetClusters = checkClusters(targets, 'target')
-                    elif self.args.target in self.regress.config.Clusters:
-                        self.targetClusters.append(self.args.target)
+                        self.targetPlatforms = checkPlatforms(targets, 'target')
+                    elif self.args.target in self.regress.config.Platforms:
+                        self.targetPlatforms.append(self.args.target)
                     else:
-                        logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
+                        logging.error("%s. Unknown target platform:'%s'!" % (1,  self.args.target))
                         raise Error("4000")
 
             if self.args.func == 'list':
-                self.listClusters()
+                self.listPlatforms()
             elif self.args.func == 'query':
                 self.query()
             elif self.args.func == 'setup':

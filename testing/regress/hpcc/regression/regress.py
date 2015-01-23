@@ -121,14 +121,14 @@ class Regression:
     def setLogLevel(self, level):
         self.log.setLevel(level)
 
-    def bootstrap(self, cluster, args,   fileList=None):
+    def bootstrap(self, platform, args,   fileList=None):
         self.createDirectory(self.regressionDir)
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
 
-        self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, args, False, fileList)
-        self.maxtasks = len(self.suites[cluster].getSuite())
+        self.suites[platform] = Suite(platform, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, args, False, fileList)
+        self.maxtasks = len(self.suites[platform].getSuite())
 
     def createDirectory(self, dir_n):
         if not os.path.isdir(dir_n):
@@ -189,9 +189,9 @@ class Regression:
 
     def runSuiteP(self, name, suite):
         if name == "setup":
-            cluster = 'hthor'
+            platform = 'hthor'
         else:
-            cluster = name
+            platform = name
 
         logName = name
         if 'setup' in suite.getSuiteName():
@@ -236,7 +236,7 @@ class Regression:
                         query = suiteItems[self.taskParam[threadId]['taskId']]
                         query.setTimeout(self.timeouts[threadId])
                         #logging.debug("self.timeout[%d]:%d", threadId, self.timeouts[threadId])
-                        sysThreadId = thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  threadId))
+                        sysThreadId = thread.start_new_thread(self.runQuery, (platform, query, report, cnt, suite.testPublish(query.ecl),  threadId))
                         time.sleep(0.4)
                         self.taskParam[threadId]['jobName'] = query.getJobname()
                         self.taskParam[threadId]['retryCount'] = int(self.config.maxAttemptCount)
@@ -355,9 +355,9 @@ class Regression:
 
     def runSuite(self, name, suite):
         if name == "setup":
-            cluster = 'hthor'
+            platform = 'hthor'
         else:
-            cluster = name
+            platform = name
 
         logName = name
         if 'setup' in suite.getSuiteName():
@@ -385,7 +385,7 @@ class Regression:
                     self.timeouts[th] = self.timeout
 
                 query.setTimeout(self.timeouts[th])
-                thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
+                thread.start_new_thread(self.runQuery, (platform, query, report, cnt, suite.testPublish(query.ecl),  th))
                 time.sleep(0.1)
                 self.CheckTimeout(cnt, th,  query)
                 cnt += 1
@@ -406,20 +406,20 @@ class Regression:
             suite.close()
             raise(e)
 
-    def runSuiteQ(self, clusterName, eclfile):
-        report = self.buildLogging(clusterName)
-        logging.debug("runSuiteQ( clusterName:'%s', eclfile:'%s')",  clusterName,  eclfile.ecl,  extra={'taskId':0})
+    def runSuiteQ(self, platformName, eclfile):
+        report = self.buildLogging(platformName)
+        logging.debug("runSuiteQ( platformName:'%s', eclfile:'%s')",  platformName,  eclfile.ecl,  extra={'taskId':0})
 
-        if clusterName == "setup":
-            cluster = 'hthor'
+        if platformName == "setup":
+            platform = 'hthor'
         else:
-            cluster = clusterName
+            platform = platformName
 
         cnt = 1
         eclfile.setTaskId(cnt)
         eclfile.setIgnoreResult(self.args.ignoreResult)
         threadId = 0
-        logging.warn("Target: %s" % clusterName)
+        logging.warn("Target: %s" % platformName)
         logging.warn("Queries: %s" % 1)
         start = time.time()
         try:
@@ -431,7 +431,7 @@ class Regression:
                 self.timeouts[threadId] = timeout
             else:
                 self.timeouts[threadId] = self.timeout
-            sysThreadId = thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
+            sysThreadId = thread.start_new_thread(self.runQuery, (platform, eclfile, report, cnt, eclfile.testPublish(),  threadId))
             time.sleep(0.1)
             self.CheckTimeout(cnt, threadId,  eclfile)
 
@@ -449,12 +449,12 @@ class Regression:
             eclfile.close()
             raise(e)
 
-    def runQuery(self, cluster, query, report, cnt=1, publish=False,  th = 0):
+    def runQuery(self, platform, query, report, cnt=1, publish=False,  th = 0):
         startTime = time.time()
         self.loggermutex.acquire()
         self.exitmutexes[th].acquire()
 
-        logging.debug("runQuery(cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( cluster, query.ecl, cnt, publish,  th))
+        logging.debug("runQuery(platform: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( platform, query.ecl, cnt, publish,  th))
         logging.warn("%3d. Test: %s" % (cnt, query.getBaseEclRealName()),  extra={'taskId':cnt})
 
         self.loggermutex.release()
@@ -464,12 +464,12 @@ class Regression:
             eclCmd = ECLcmd()
             try:
                 if publish:
-                    res = eclCmd.runCmd("publish", cluster, query, report[0],
+                    res = eclCmd.runCmd("publish", platform, query, report[0],
                                       server=self.config.ip,
                                       username=self.config.username,
                                       password=self.config.password)
                 else:
-                    res = eclCmd.runCmd("run", cluster, query, report[0],
+                    res = eclCmd.runCmd("run", platform, query, report[0],
                                       server=self.config.ip,
                                       username=self.config.username,
                                       password=self.config.password)

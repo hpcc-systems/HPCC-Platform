@@ -52,12 +52,12 @@ class ECLFile:
             self.tempFile.close()
             pass
 
-    def __init__(self, ecl, dir_a, dir_ex, dir_r,  cluster, args):
+    def __init__(self, ecl, dir_a, dir_ex, dir_r,  platform, args):
         self.dir_ec = os.path.dirname(ecl)
         self.dir_ex = dir_ex
         self.dir_r = dir_r
         self.dir_a = dir_a
-        self.cluster = cluster;
+        self.platform = platform;
         self.baseEcl = os.path.basename(ecl)
         self.basename = os.path.splitext(self.baseEcl)[0]
         self.baseXml = self.basename + '.xml'
@@ -154,17 +154,17 @@ class ECLFile:
         return str
 
     def getExpected(self):
-        path = os.path.join(self.dir_ec, self.cluster)
+        path = os.path.join(self.dir_ec, self.platform)
         logging.debug("%3d. getExpected() checks path:'%s' ",  self.taskId,  path )
         if os.path.isdir(path):
-            # we have cluster specific key dir, check keyfile
+            # we have platform specific key dir, check keyfile
             path = os.path.join(path, self.xml_e)
             if not os.path.isfile(path):
                 # we haven't keyfile use the common
-                logging.debug("%3d. getExpected() cluster specific keyfile does not exist:'%s' ",  self.taskId,  path )
+                logging.debug("%3d. getExpected() platform specific keyfile does not exist:'%s' ",  self.taskId,  path )
                 path =  os.path.join(self.dir_ex, self.xml_e)
         else:
-            # we have not cluster specific key dir use common dir and file
+            # we have not platform specific key dir use common dir and file
             path =  os.path.join(self.dir_ex, self.xml_e)
 
         logging.debug("%3d. getExpected() returns with path:'%s'",  self.taskId,  path )
