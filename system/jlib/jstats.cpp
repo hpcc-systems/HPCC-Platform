@@ -396,7 +396,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
     "@" #x "Avg" # y, \
     "@Skew" # y, \
     "@SkewMin" # y, \
-    "SkewMax" # y, \
+    "@SkewMax" # y, \
     "@NodeMin" # y, \
     "@NodeMax" # y,
 
@@ -406,26 +406,34 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
     BASE_TAGS(x, y) \
     "@" #x "Delta" # y
 
-//Define tags when the default needs to be overriden
-#define XTAGS(x, y, dft) \
-    dft, \
-    BASE_TAGS(x, y) \
-    #x "Delta" # y
-
 //Define the tags for time items.
 #define TIMETAGS(x, y) \
     "@" #x #y, \
     BASE_TAGS(x, y) \
     "@TimeDelta" # y
 
-#define STAT(x, y, m) St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }
-#define TAGSTAT(x, y, m, dft) St##x##y, m, { NAMES(x, y) }, { XTAGS(x, y, dft) }
+#define LEGACYTAGS(dft)    \
+        dft, \
+        NULL, \
+        NULL, \
+        NULL, \
+        NULL, \
+        NULL, \
+        NULL, \
+        NULL, \
+        NULL, \
+        NULL
+
+#define CORESTAT(x, y, m)     St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }
+#define STAT(x, y, m)         CORESTAT(x, y, m), { LEGACYTAGS(NULL) }
+#define TAGSTAT(x, y, m, dft) St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }, { LEGACYTAGS(dft) }
+
 
 //--------------------------------------------------------------------------------------------------------------------
 
 //These are the macros to use to define the different entries in the stats meta table
 #define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }
+#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }, { LEGACYTAGS(NULL) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -447,6 +455,7 @@ public:
     StatisticMeasure measure;
     const char * names[StNextModifier/StVariantScale];
     const char * tags[StNextModifier/StVariantScale];
+    const char * legacytags[StNextModifier/StVariantScale];
 };
 
 static const StatisticMeta statsMetaData[StMax] = {
@@ -461,13 +470,13 @@ static const StatisticMeta statsMetaData[StMax] = {
     { WHENSTAT(Compiled) },
     { WHENSTAT(WorkunitModified) },
     { TIMESTAT(Elapsed) },
-    { TIMESTAT2(LocalExecute, "@localTime") },
+    { CORESTAT(Time, LocalExecute, SMeasureTimeNs), { "@localTime", "@timeMinMs", "@timeMaxMs" } },
     { TIMESTAT2(TotalExecute, "@totalTime") },
     { TIMESTAT(Remaining) },
     { SIZESTAT(GeneratedCpp) },
     { SIZESTAT(PeakMemory) },
     { SIZESTAT(MaxRowSize) },
-    { NUMSTAT2(RowsProcessed, "@count") },
+    { CORESTAT(Num, RowsProcessed, SMeasureCount), { "@count", "@min", "@max", NULL, "skew", "minskew", "maxskew", NULL, NULL, NULL } },
     { NUMSTAT2(Slaves, "@slaves") },
     { NUMSTAT2(Started, "@started") },
     { NUMSTAT2(Stopped, "@stopped") },
@@ -511,7 +520,7 @@ static const StatisticMeta statsMetaData[StMax] = {
 
 StatisticMeasure queryMeasure(StatisticKind kind)
 {
-    unsigned varient = (kind & ~StKindMask);
+    unsigned varient = queryStatsVarient(kind);
     switch (varient)
     {
     case StSkew:
@@ -565,6 +574,15 @@ const char * queryTreeTag(StatisticKind kind)
     dbgassertex(rawkind >= StKindNone && rawkind < StMax);
     dbgassertex(variant < (StNextModifier/StVariantScale));
     return statsMetaData[rawkind].tags[variant];
+}
+
+const char * queryLegacyTreeTag(StatisticKind kind)
+{
+    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
+    unsigned variant = (kind / StVariantScale);
+    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
+    dbgassertex(variant < (StNextModifier/StVariantScale));
+    return statsMetaData[rawkind].legacytags[variant];
 }
 
 //--------------------------------------------------------------------------------------------------------------------
