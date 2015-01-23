@@ -93,6 +93,9 @@ public:
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) { throwUnexpected(); }
     virtual void buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual void buildExistsDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
+
+private:
+    IHqlExpression * getFirstSearchValue(IHqlExpression * searchExpr, IHqlExpression * searchRecord);
 };
 
 class MultiLevelDatasetCursor : public BaseDatasetCursor
