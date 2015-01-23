@@ -353,9 +353,26 @@
         from the pop-up menu. <graphic fileref="../../images/LDAP_003.jpg"
         vendor="configmgrSS" /></para>
 
-        <para><emphasis role="bold">Note</emphasis>: The ldapServer component
-        is merely a definition that specifies an existing LDAP server. It does
-        not install one.</para>
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png" /></entry>
+
+                  <entry><emphasis role="bold">Note</emphasis>: The ldapServer
+                  component is merely a definition that specifies an existing
+                  LDAP server. It does not install one.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
       </listitem>
 
       <listitem>
@@ -562,7 +579,11 @@
   <sect2>
     <title>Installing the Default Admin user</title>
 
-    <para>After enabling your configuration for LDAP security, you need to run
+    <para>After enabling your configuration for LDAP security, you must copy
+    your environment file to the /etc/HPCCSystems directory. See the section
+    <link linkend="configuring-a-multi-node-system"><emphasis>Configuring a
+    Multi-Node System</emphasis></link> for more info about configuring your
+    system. With the correct Environment.xml file in place, you must then run
     the <emphasis role="bold">initldap</emphasis> utility that installs the
     initial security components and the default users.</para>
 
