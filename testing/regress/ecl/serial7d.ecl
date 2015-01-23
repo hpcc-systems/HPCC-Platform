@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning (4523, ignore);
+
 import Setup.SerialTest;
 
 interestingWords := DICTIONARY([{'elves'},{'cheddar'}], SerialTest.wordRec) : once; // Shouldn't need to serialize to slaves in roxie.

@@ -1102,7 +1102,7 @@ bool FVDataSource::setReturnedInfoFromResult()
     wuResult->getResultEclSchema(s);
     returnedRecord.setown(parseQuery(s.str()));
     if (!returnedRecord)
-        throw MakeStringException(ERR_FILEVIEW_FIRST+4, "Could not process result schema [%s]", s.str());
+        throw MakeStringException(FVERR_CouldNotProcessSchema, "Could not process result schema [%s]", s.str());
 
     bool isKey = false;
     bool isGrouped = false;     // this isn't strictly true...it could be true for an internal result, but no current flag to test
@@ -1248,7 +1248,7 @@ IFvDataSourceMetaData * createMetaData(IConstWUResult * wuResult)
     wuResult->getResultEclSchema(s);
     OwnedHqlExpr record = parseQuery(s.str());
     if (!record)
-        throw MakeStringException(ERR_FILEVIEW_FIRST+4, "Could not process result schema [%s]", s.str());
+        throw MakeStringException(FVERR_CouldNotProcessSchema, "Could not process result schema [%s]", s.str());
 
     OwnedHqlExpr simplifiedRecord = getFileViewerRecord(record, false);
     bool isGrouped = false;     // more not sure this is strictly true...

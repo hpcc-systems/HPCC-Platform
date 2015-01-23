@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning (4522, ignore);
+
 import Setup.SerialTest;
 
 inDs := DATASET(SerialTest.DictFilename, SerialTest.LibraryDictRec, THOR);

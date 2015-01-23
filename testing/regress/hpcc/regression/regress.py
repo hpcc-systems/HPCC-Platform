@@ -293,7 +293,7 @@ class Regression:
                                 self.loggermutex.acquire()
                                 query = suiteItems[self.taskParam[threadId]['taskId']]
                                 query.setAborReason('Timeout')
-                                logging.info("%3d. Timeout occured. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                logging.info("%3d. Timeout occured. Force to abort... " % (self.taskParam[threadId]['taskId']+1),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                 logging.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                 self.loggermutex.release()
                                 self.timeouts[threadId] = -1

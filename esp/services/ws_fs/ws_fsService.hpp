@@ -94,6 +94,7 @@ public:
     virtual bool onOpenSave(IEspContext &context, IEspOpenSaveRequest &req, IEspOpenSaveResponse &resp);
     virtual bool onDropZoneFiles(IEspContext &context, IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp);
     virtual bool onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZoneFilesRequest &req, IEspDFUWorkunitsActionResponse &resp);
+    virtual bool onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRequest &req, IEspGetSprayTargetsResponse &resp);
 
 protected:
     StringBuffer m_QueueLabel;
@@ -111,6 +112,7 @@ protected:
     bool ParseLogicalPath(const char * pLogicalPath, StringBuffer &title);
     bool ParseLogicalPath(const char * pLogicalPath, const char *group, const char* cluster, StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder);
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
+    void appendGroupNode(IArrayOf<IEspGroupNode>& groupNodes, const char* nodeName, const char* clusterType);
 };
 
 #endif //_ESPWIZ_FileSpray_HPP__

@@ -1464,9 +1464,9 @@ StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
 
 static const char *skipLfnForeign(const char *lfn)
 {
+    while (*lfn=='~')
+        lfn++;
     const char *finger = lfn;
-    while (*finger=='~')
-        finger++;
     const char *scope = strstr(finger, "::");
     if (scope)
     {
@@ -1490,12 +1490,12 @@ static const char *skipLfnForeign(const char *lfn)
 
 StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
 {
-    fname = skipLfnForeign(fname); //foreign location should already be reflected in local dali dfs meta data
+    const char *native = skipLfnForeign(fname); //foreign location should already be reflected in local dali dfs meta data
     if (fname[0]=='~')
-        logicalName.append(fname+1);
+        logicalName.append(native);
     else if (resolveLocally)
     {
-        StringBuffer sb(fname);
+        StringBuffer sb(native);
         sb.replaceString("::",PATHSEPSTR);
         makeAbsolutePath(sb.str(), logicalName.clear());
     }
@@ -1508,7 +1508,7 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
             if(lfn.length())
                 logicalName.append(lfn.s).append("::");
         }
-        logicalName.append(fname);
+        logicalName.append(native);
     }
     return logicalName;
 }

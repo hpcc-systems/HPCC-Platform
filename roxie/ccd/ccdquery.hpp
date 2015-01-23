@@ -115,6 +115,7 @@ public:
     bool skipFileFormatCrcCheck;
     bool stripWhitespaceFromStoredDataset;
     bool timeActivities;
+    bool allSortsMaySpill;
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);

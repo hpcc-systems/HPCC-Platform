@@ -3564,9 +3564,9 @@ public:
 
     virtual void addWuException(const char * text, unsigned code, unsigned _severity, const char * source)
     {
-        WUExceptionSeverity severity = (WUExceptionSeverity) _severity;
+        ErrorSeverity severity = (ErrorSeverity) _severity;
         CTXLOG("%s", text);
-        if (severity > ExceptionSeverityInformation)
+        if (severity > SeverityInformation)
             OERRLOG("%d - %s", code, text);
         if (workUnit)
         {
@@ -3581,7 +3581,7 @@ public:
         if (workUnit)
         {
             WorkunitUpdate wu(&workUnit->lock());
-            addExceptionToWorkunit(wu, ExceptionSeverityError, "user", code, text, filename, lineno, column);
+            addExceptionToWorkunit(wu, SeverityError, "user", code, text, filename, lineno, column);
         }
         if (isAbort)
             rtlFailOnAssert();      // minimal implementation

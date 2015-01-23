@@ -71,7 +71,7 @@ public:
     void appendResults(IConstWorkUnit *wu, const char *username, const char *pw)
     {
         StringBufferAdaptor resultXML(buffer);
-        getFullWorkUnitResultsXML(username, pw, wu, resultXML, WorkUnitXML_NoRoot, ExceptionSeverityError);
+        getFullWorkUnitResultsXML(username, pw, wu, resultXML, WorkUnitXML_NoRoot, SeverityError);
     }
 
     void appendSingleResult(IConstWorkUnit *wu, const char *resultname, const char *username, const char *pw)
@@ -665,7 +665,7 @@ void WuWebView::renderResultsJSON(StringBuffer &out, const char *jsonp)
     responseName.append("Response");
     appendJSONName(out, responseName);
     StringBufferAdaptor json(out);
-    getFullWorkUnitResultsJSON(username, pw, cw, json, 0, ExceptionSeverityError);
+    getFullWorkUnitResultsJSON(username, pw, cw, json, 0, SeverityError);
     out.append("}");
     if (jsonp && *jsonp)
         out.append(");");

@@ -26,6 +26,8 @@ useLocal := #IFDEFINED(root.useLocal, false);
 
 //--- end of version configuration ---
 
+#onwarning (4523, ignore);
+
 import $.setup;
 files := setup.files(multiPart, useLocal);
 

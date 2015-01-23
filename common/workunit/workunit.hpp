@@ -162,17 +162,6 @@ enum WUResultStatus
 
 
 
-enum WUExceptionSeverity
-{
-    ExceptionSeverityInformation = 0,
-    ExceptionSeverityWarning = 1,
-    ExceptionSeverityError = 2,
-    ExceptionSeverityAlert = 3,
-    ExceptionSeveritySize = 4
-};
-
-
-
 //! IConstWUGraph
 
 enum WUGraphType
@@ -508,7 +497,7 @@ interface IConstWUException : extends IInterface
     virtual IStringVal & getExceptionSource(IStringVal & str) const = 0;
     virtual IStringVal & getExceptionMessage(IStringVal & str) const = 0;
     virtual unsigned getExceptionCode() const = 0;
-    virtual WUExceptionSeverity getSeverity() const = 0;
+    virtual ErrorSeverity getSeverity() const = 0;
     virtual IStringVal & getTimeStamp(IStringVal & dt) const = 0;
     virtual IStringVal & getExceptionFileName(IStringVal & str) const = 0;
     virtual unsigned getExceptionLineNo() const = 0;
@@ -521,7 +510,7 @@ interface IWUException : extends IConstWUException
     virtual void setExceptionSource(const char * str) = 0;
     virtual void setExceptionMessage(const char * str) = 0;
     virtual void setExceptionCode(unsigned code) = 0;
-    virtual void setSeverity(WUExceptionSeverity level) = 0;
+    virtual void setSeverity(ErrorSeverity level) = 0;
     virtual void setTimeStamp(const char * dt) = 0;
     virtual void setExceptionFileName(const char * str) = 0;
     virtual void setExceptionLineNo(unsigned r) = 0;
@@ -1366,7 +1355,7 @@ extern WORKUNIT_API StringBuffer &formatGraphTimerLabel(StringBuffer &str, const
 extern WORKUNIT_API StringBuffer &formatGraphTimerScope(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId);
 extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphNum, unsigned &subId);
 extern WORKUNIT_API bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphId);
-extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column);
+extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column);
 extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);

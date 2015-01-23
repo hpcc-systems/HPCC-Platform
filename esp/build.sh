@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echoerr() { echo "$@" 1>&2; }
 
 set -e
 
@@ -26,7 +27,7 @@ rm -rf "$DISTDIR"
 echo " Done"
 
 if [ ! -d "$TOOLSDIR" ]; then
-    echo "Can't find Dojo build tools -- did you initialise submodules? (git submodule update --init --recursive)"
+    echoerr "ERROR:  Can't find Dojo build tools -- did you initialise submodules? (git submodule update --init --recursive)"
     exit 1
 fi
 
@@ -41,16 +42,14 @@ perl -pe "
 
 echo "Building: $SRCDIR/Visualization"
 cd "$SRCDIR/Visualization/"
-./build.sh
-mkdir -p "$DISTDIR/Visualization"
-cp -r "$SRCDIR/Visualization/build" "$DISTDIR/Visualization/widgets"
+./build.sh "$DISTDIR/Visualization/widgets"
 
 cd "$TOOLSDIR"
 
 if which node >/dev/null; then
     node ../../dojo/dojo.js baseUrl=../../dojo load=build --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
 else
-    echo "node.js is required to build ECL Watch - see https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager"
+    echoerr "ERROR:  node.js is required to build - see https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager"
     exit 1
 fi
 

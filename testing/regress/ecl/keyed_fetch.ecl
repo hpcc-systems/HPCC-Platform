@@ -30,6 +30,7 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 #option ('layoutTranslationEnabled', useTranslation);
 #onwarning (4515, ignore);
+#onwarning (4523, ignore);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);

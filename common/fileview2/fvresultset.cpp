@@ -3265,19 +3265,19 @@ extern FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * re
     return getResultCursorBin(ret, cursor, start, count);
 }
 
-inline const char *getSeverityTagname(WUExceptionSeverity severity, unsigned flags)
+inline const char *getSeverityTagname(ErrorSeverity severity, unsigned flags)
 {
     if (flags & WorkUnitXML_SeverityTags)
     {
         switch (severity)
         {
-        case ExceptionSeverityInformation:
+        case SeverityInformation:
             return "Info";
-        case ExceptionSeverityWarning:
+        case SeverityWarning:
             return "Warning";
-        case ExceptionSeverityAlert:
+        case SeverityAlert:
             return "Alert";
-        case ExceptionSeverityError:
+        case SeverityError:
         default:
             break;
         }
@@ -3285,7 +3285,7 @@ inline const char *getSeverityTagname(WUExceptionSeverity severity, unsigned fla
     return "Exception";
 }
 
-extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const char *password, const IConstWorkUnit *cw, IXmlWriter &writer, unsigned flags, WUExceptionSeverity minSeverity, const char *rootTag)
+extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const char *password, const IConstWorkUnit *cw, IXmlWriter &writer, unsigned flags, ErrorSeverity minSeverity, const char *rootTag)
 {
     if (rootTag && *rootTag && !(flags & WorkUnitXML_NoRoot))
         writer.outputBeginNested(rootTag, true);
@@ -3294,7 +3294,7 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
     ForEach(*exceptions)
     {
         IConstWUException & exception = exceptions->query();
-        WUExceptionSeverity severity = exception.getSeverity();
+        ErrorSeverity severity = exception.getSeverity();
         if (severity>=minSeverity)
         {
             SCMStringBuffer src, msg, filename;
@@ -3351,7 +3351,7 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
         writer.outputEndNested(rootTag);
 }
 
-extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, WUExceptionSeverity minSeverity)
+extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, ErrorSeverity minSeverity)
 {
     Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
     writeFullWorkUnitResults(username, password, cw, *writer, flags, minSeverity, "Result");
@@ -3364,7 +3364,7 @@ extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, 
     return str;
 }
 
-extern FILEVIEW_API IStringVal& getFullWorkUnitResultsJSON(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, WUExceptionSeverity minSeverity)
+extern FILEVIEW_API IStringVal& getFullWorkUnitResultsJSON(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, ErrorSeverity minSeverity)
 {
     Owned<CommonJsonWriter> writer = new CommonJsonWriter(0);
     writer->outputBeginRoot();

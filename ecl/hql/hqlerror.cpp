@@ -32,7 +32,7 @@ ErrorSeverity getSeverity(IAtom * name)
     if (name == ignoreAtom)
         return SeverityIgnore;
     if (name == logAtom)
-        return SeverityInfo;
+        return SeverityInformation;
     return SeverityUnknown;
 }
 
@@ -41,7 +41,7 @@ ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
     if (category == CategoryError)
         return SeverityFatal;
     if (category == CategoryInformation)
-        return SeverityInfo;
+        return SeverityInformation;
     if (category == CategoryMistake)
         return SeverityError;
     return SeverityWarning;
@@ -184,7 +184,7 @@ public:
         {
         case SeverityIgnore:
             return;
-        case SeverityInfo:
+        case SeverityInformation:
             severityText = "info";
             break;
         case SeverityWarning:
@@ -357,14 +357,14 @@ void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * ecl
             else if (minor != LANGUAGE_VERSION_MINOR)
             {
                 VStringBuffer msg("Mismatch in minor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
-                Owned<IError> warning = createError(CategoryUnexpected, SeverityInfo, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
+                Owned<IError> warning = createError(CategoryUnexpected, SeverityInformation, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
                 errors.setown(new ErrorInserter(*errors, warning));
             }
             else if (subminor != LANGUAGE_VERSION_SUB)
             {
                 //This adds the warning if any other warnings occur.
                 VStringBuffer msg("Mismatch in subminor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
-                Owned<IError> warning = createError(CategoryUnexpected, SeverityInfo, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
+                Owned<IError> warning = createError(CategoryUnexpected, SeverityInformation, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
                 errors.setown(new ErrorInserter(*errors, warning));
             }
         }

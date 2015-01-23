@@ -15,58 +15,44 @@
     limitations under the License.
 ############################################################################## */
 
-//class=file
 //class=index
 //version multiPart=false
 //version multiPart=true
 //version multiPart=true,useLocal=true
-//version multiPart=true,useTranslation=true,nothor
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
 useLocal := #IFDEFINED(root.useLocal, false);
-useTranslation := #IFDEFINED(root.useTranslation, false);
+useTranslation := false;    // keyed limits do not produce the same results.
 
 //--- end of version configuration ---
 
-#option ('layoutTranslationEnabled', useTranslation);
-#onwarning (4515, ignore);
-#onwarning (4523, ignore);
 #onwarning (5402, ignore);
 
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
 
-krec := RECORD
-    STRING20 lname;
-END;
+IMPORT Std;
 
-d1 := DATASET([{'BAYLISS'}, {'SMITH'}, {'DOLSON'}, {'XXXXXXX'}], {STRING20 lname});
+// try it with just one limit
 
-orec := RECORD
-    STRING20 fname;
-    STRING20 lname;
-END;
+o3 := output(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),1,SKIP,KEYED), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
+o4 := output(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),10,SKIP,KEYED), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
 
-orec xfm1(d1 l) := TRANSFORM
-    SELF.fname := (SORT(Files.DG_indexFile(dg_lastName=l.lname), dg_firstName))[1].dg_firstName;
-    SELF := l;
-    END;
+iresult := Files.DG_FetchIndex(Lname IN ['Anderson', 'Taylor']);
 
-orec xfm2(d1 l) := TRANSFORM
-    SELF.fname := (SORT(Files.DG_indexFile(dg_lastName=l.lname), -dg_firstName))[1].dg_firstName;
-    SELF := l;
-    END;
+lkresult := LIMIT(iresult,10,KEYED);
+lsresult := LIMIT(lkresult,10,SKIP);
+sresult := IF(useTranslation OR Std.System.Thorlib.platform() != 'hthor', SORT(lsresult,Lname), lsresult);
+o5 := output(sresult, {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
 
-orec xfm3(d1 l) := TRANSFORM
-    SELF.fname := (SORT(Files.DG_indexFile((dg_lastName=l.lname) AND (dg_firstName >= 'D')), dg_firstName))[1].dg_firstName;
-    SELF := l;
-    END;
+// then try with a keyed and unkeyed....
 
-OUTPUT(PROJECT(d1, xfm1(LEFT)));
-OUTPUT(PROJECT(d1, xfm2(LEFT)));
-OUTPUT(PROJECT(d1, xfm3(LEFT)));
+o6 := output(LIMIT(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),1,SKIP,keyed),1,skip), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
+o7 := output(LIMIT(LIMIT(Files.DG_FetchIndex(Lname='Anderson'),10,SKIP,keyed),10,skip), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
 
-s := IF (useTranslation, SORT(Files.DG_indexFile, WHOLE RECORD), Files.DG_indexFile);
-
-OUTPUT(s, { DG_firstname, DG_lastname, DG_prange, filepos} );
+ o3:independent;
+ o4:independent;
+ o5:independent;
+ o6:independent;
+ o7:independent;

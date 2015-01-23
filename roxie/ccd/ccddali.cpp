@@ -887,5 +887,5 @@ extern void addWuException(IConstWorkUnit *workUnit, IException *E)
     unsigned code = E->errorCode();
     OERRLOG("%u - %s", code, message.str());
     WorkunitUpdate w(&workUnit->lock());
-    addExceptionToWorkunit(w, ExceptionSeverityError, "Roxie", code, message.str(), NULL, 0, 0);
+    addExceptionToWorkunit(w, SeverityError, "Roxie", code, message.str(), NULL, 0, 0);
 }

@@ -162,17 +162,20 @@ void  jlib_decl printStackReport();
 
 //---------------------------------------------------------------------------------------------------------------------
 
+//These values are persisted - so should not be reordered.
 enum ErrorSeverity
 {
-    SeverityIgnore,
-    SeverityInfo,
-    SeverityWarning,
-    SeverityError,    // a warning treated as an error
-    SeverityFatal,      // a fatal error - can't be mapped to anything else
+    SeverityInformation = 0,
+    SeverityWarning = 1,
+    SeverityError = 2,
+    SeverityAlert = 3,
+    SeverityIgnore = 4,
+    SeverityFatal = 5,      // a fatal error - can't be mapped to anything else
     SeverityUnknown,
+    SeverityMax = SeverityUnknown
 };
 
-inline bool isError(ErrorSeverity severity) { return severity >= SeverityError; }
+inline bool isError(ErrorSeverity severity) { return severity == SeverityError || severity == SeverityFatal; }
 inline bool isFatal(ErrorSeverity severity) { return severity == SeverityFatal; }
 
 //TBD in a separate commit - add support for warnings to be associated with different categories
