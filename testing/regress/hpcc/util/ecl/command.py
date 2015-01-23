@@ -32,13 +32,13 @@ class ECLcmd(Shell):
     def __ECLcmd(self):
         return self.command(self.cmd, *self.defaults)
 
-    def runCmd(self, cmd, cluster, eclfile, report, **kwargs):
+    def runCmd(self, cmd, platform, eclfile, report, **kwargs):
         args = []
         args.append(cmd)
         args.append('-v')
         args.append('-fpickBestEngine=false')
-        args.append('--target=' + cluster)
-        args.append('--cluster=' + cluster)
+        args.append('--target=' + platform)
+        args.append('--cluster=' + platform)
         args.append('--wait='+str(eclfile.getTimeout()*1000))
 
         server = kwargs.pop('server', False)

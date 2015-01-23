@@ -26,7 +26,7 @@ ERROR = {
     "2002": "suiteDir not set. Set in ecl-test.json or use --suiteDir",
     "3000": "Return is null",
     "3001": "Return diff does not match.",
-    "4000": "Unknown cluster!",
+    "4000": "Unknown platform!",
     "4001": "No ECl file!",
     "5000": "Missing argument of -X parameter!\nIt should be 'name=val[,name2=val2..]'",
     "6000": "HPCC System not istalled!",

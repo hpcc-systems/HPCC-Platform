@@ -164,21 +164,21 @@ def getRealIPAddress():
 
     return ipAddress
 
-def checkClusters(clusters,  targetSet):
-    targetClusters =[]
-    if 'all' in clusters:
-        for cluster in gConfig.Clusters:
-            targetClusters.append(str(cluster))
+def checkPlatforms(platforms,  targetSet):
+    targetPlatforms =[]
+    if 'all' in platforms:
+        for platform in gConfig.Platforms:
+            targetPlatforms.append(str(platform))
     else:
-        for cluster in clusters:
-            cluster = cluster.strip()
-            if cluster in gConfig.Clusters:
-                targetClusters.append(cluster)
+        for platform in platforms:
+            platform = platform.strip()
+            if platform in gConfig.Platforms:
+                targetPlatforms.append(platforms)
             else:
-                logging.error("%s. Unknown cluster:'%s' in %s:'%s'!" % (1,  cluster,  targetSet,  clusters))
+                logging.error("%s. Unknown platform:'%s' in %s:'%s'!" % (1,  platform,  targetSet,  platforms))
                 raise Error("4000")
 
-    return  targetClusters
+    return  targetPlatforms
 
 def checkHpccStatus():
     status='OK'
