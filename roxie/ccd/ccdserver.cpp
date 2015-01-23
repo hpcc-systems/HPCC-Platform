@@ -26834,7 +26834,8 @@ protected:
         else
             sortAlgorithm = "quickSort";
         DBGLOG("Testing %s activity", sortAlgorithm);
-        Owned <IRoxieServerActivityFactory> factory = createRoxieServerSortActivityFactory(1, 1, *queryFactory, sortActivityTestFactory, TAKsort);
+        Owned<IPropertyTree> dummyNode = createPTree("node");
+        Owned <IRoxieServerActivityFactory> factory = createRoxieServerSortActivityFactory(1, 1, *queryFactory, sortActivityTestFactory, TAKsort, *dummyNode);
         Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
         const char * test[] = { NULL, NULL };
         const char * test12345[] = { "1", "2", "3", "4", "5", NULL, NULL };
