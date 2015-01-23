@@ -298,6 +298,7 @@ QueryOptions::QueryOptions()
     skipFileFormatCrcCheck = false;
     stripWhitespaceFromStoredDataset = ((ptr_ignoreWhiteSpace & defaultXmlReadFlags) != 0);
     timeActivities = defaultTimeActivities;
+    allSortsMaySpill = false; // No global default for this
 }
 
 QueryOptions::QueryOptions(const QueryOptions &other)
@@ -320,7 +321,8 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     enableFieldTranslation = other.enableFieldTranslation;
     skipFileFormatCrcCheck = other.skipFileFormatCrcCheck;
     stripWhitespaceFromStoredDataset = other.stripWhitespaceFromStoredDataset;
-    timeActivities =other.timeActivities;
+    timeActivities = other.timeActivities;
+    allSortsMaySpill = other.allSortsMaySpill;
 }
 
 void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
@@ -354,6 +356,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(skipFileFormatCrcCheck, wu, "skipFileFormatCrcCheck");
     updateFromWorkUnit(stripWhitespaceFromStoredDataset, wu, "stripWhitespaceFromStoredDataset");
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
+    updateFromWorkUnit(allSortsMaySpill, wu, "allSortsMaySpill");
 }
 
 void QueryOptions::updateFromWorkUnitM(memsize_t &value, IConstWorkUnit &wu, const char *name)
@@ -397,6 +400,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(skipFileFormatCrcCheck, ctx, "_SkipFileFormatCrcCheck", "@skipFileFormatCrcCheck");
         updateFromContext(stripWhitespaceFromStoredDataset, ctx, "_StripWhitespaceFromStoredDataset", "@stripWhitespaceFromStoredDataset");
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
+        // Note: allSortsMaySpill is not permitted at context level (too late anyway, unless I refactored)
     }
 }
 
@@ -718,7 +722,7 @@ protected:
         case TAKsoap_datasetaction:
             return createRoxieServerSoapDatasetActionActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKsort:
-            return createRoxieServerSortActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerSortActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKspill:
         case TAKmemoryspillsplit:
             return createRoxieServerThroughSpillActivityFactory(id, subgraphId, *this, helperFactory, kind);
@@ -1042,6 +1046,7 @@ public:
         isLoadFailed = false;
         libraryInterfaceHash = 0;
         options.enableFieldTranslation = package.getEnableFieldTranslation();  // NOTE - can be overridden by wu settings
+        options.allSortsMaySpill = dynamic;
     }
 
     ~CQueryFactory()
