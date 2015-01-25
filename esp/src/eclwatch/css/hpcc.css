@@ -1025,29 +1025,29 @@ margin-left:-20px;
     height: auto;
 }
 
-.claro .graph .zoom {
+.claro .graph_Graph .zoom {
     fill: white;
 }
 
-.claro .graph .edge .shape {
+.claro .graph_Graph .edge .common_Shape {
     fill: white;
 }
 
-.claro .graph .graphVertex > .shape {
+.claro .graph_Graph .graphVertex > .common_Shape {
     stroke: black;
     fill: none;
 }
 
-.claro .graph .graphVertex > .shape.selected {
+.claro .graph_Graph .graphVertex > .common_Shape.selected {
     stroke: #1f77b4;
 }
 
-.claro .graph .graphVertex .textbox .shape {
+.claro .graph_Graph .graphVertex .common_TextBox .common_Shape {
     stroke: black;
     fill: white;
 }
 
-.claro .graph .graphVertex .textbox.selected .shape {
+.claro .graph_Graph .graphVertex .common_TextBox.selected .common_Shape {
     fill: #dcf1ff;
     stroke: #1f77b4;
 }
