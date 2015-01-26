@@ -67,6 +67,9 @@ define([
             resize: function (args) {
                 this.inherited(arguments);
                 this.borderContainer.resize();
+                if (this.editor) {
+                    this.editor.setSize("100%", "100%");
+                }
             },
 
             layout: function (args) {
@@ -91,14 +94,14 @@ define([
                 this.editor = CodeMirror.fromTextArea(document.getElementById(this.id + "EclCode"), {
                     tabMode: "indent",
                     matchBrackets: true,
-                    gutter: true,
                     lineNumbers: true,
                     mode: mode,
                     readOnly: this.readOnly,
-                    gutter: mode === "xml" ? true : false,
-                    onGutterClick: CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder)
+                    foldGutter: mode === "xml" ? true : false,
+                    gutters: mode === "xml" ? ["CodeMirror-linenumbers", "CodeMirror-foldgutter"] : ["CodeMirror-linenumbers"]
                 });
                 dom.byId(this.id + "EclContent").style.backgroundColor = this.readOnly ? 0xd0d0d0 : 0xffffff;
+                this.editor.setSize("100%", "100%");
 
                 var context = this;
                 if (params.Wuid) {

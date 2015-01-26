@@ -61,6 +61,9 @@ define([
             resize: function (args) {
                 this.inherited(arguments);
                 this.borderContainer.resize();
+                if (this.editor) {
+                    this.editor.setSize("100%", "100%");
+                }
             },
 
             layout: function (args) {
@@ -75,14 +78,14 @@ define([
                 this.editor = CodeMirror.fromTextArea(document.getElementById(this.id + "XMLCode"), {
                     tabMode: "indent",
                     matchBrackets: true,
-                    gutter: true,
                     lineNumbers: true,
                     mode: this.isXmlContent ? "xml" : "ecl",
                     readOnly: this.readOnly,
-                    gutter: this.isXmlContent ? true : false,
-                    onGutterClick: CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder)
+                    foldGutter: this.isXmlContent ? true : false,
+                    gutters: this.isXmlContent ? ["CodeMirror-linenumbers", "CodeMirror-foldgutter"] : ["CodeMirror-linenumbers"]
                 });
                 dom.byId(this.id + "XMLContent").style.backgroundColor = this.readOnly ? 0xd0d0d0 : 0xffffff;
+                this.editor.setSize("100%", "100%");
 
                 var context = this;
                 if (this.isXmlContent) {
