@@ -583,7 +583,7 @@
     your environment file to the /etc/HPCCSystems directory. See the section
     <link linkend="configuring-a-multi-node-system"><emphasis>Configuring a
     Multi-Node System</emphasis></link> for more info about configuring your
-    system. With the correct Environment.xml file in place, you must then run
+    system. With the correct environment.xml file in place, you must then run
     the <emphasis role="bold">initldap</emphasis> utility that installs the
     initial security components and the default users.</para>
 
@@ -595,9 +595,9 @@
       the LDAPServer component(s) in the environment.xml bound to the
       configured ESPs.</para>
 
-      <para>Once you complete your configuration, (add the LDAPServer
-      components and distribute your environment.xml file) you must then run
-      the <emphasis role="bold">initldap</emphasis> utility.</para>
+      <para>Once you complete your configuration with LDAP components enabled
+      and have distributed your environment.xml file to all nodes, you must
+      then run the <emphasis role="bold">initldap</emphasis> utility.</para>
 
       <programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting>
 
