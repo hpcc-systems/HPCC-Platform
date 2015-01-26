@@ -80,7 +80,7 @@ public:
     inline operator PyObject *() const    { return ptr; }
     inline void clear()                     { if (ptr) Py_DECREF(ptr); ptr = NULL; }
     inline void setown(PyObject *_ptr)      { clear(); ptr = _ptr; }
-    inline void set(PyObject *_ptr)         { clear(); ptr = _ptr; if (ptr) Py_INCREF(ptr);}
+    inline void set(PyObject *_ptr)         { if (_ptr) Py_INCREF(_ptr); clear(); ptr = _ptr; }
     inline PyObject *getLink()              { if (ptr) Py_INCREF(ptr); return ptr;}
     inline PyObject **ref()                 { return &ptr; }
 };
@@ -99,7 +99,7 @@ public:
     inline operator X *() const      { return ptr; }
     inline void clear()              { if (ptr) Py_DECREF(ptr); ptr = NULL; }
     inline void setown(X *_ptr)      { clear(); ptr = _ptr; }
-    inline void set(X *_ptr)         { clear(); ptr = _ptr; if (ptr) Py_INCREF(ptr);}
+    inline void set(X *_ptr)         { if (_ptr) Py_INCREF(_ptr); clear(); ptr = _ptr; }
     inline X *getLink()              { if (ptr) Py_INCREF(ptr); return ptr;}
     inline X **ref()                 { return &ptr; }
 };
