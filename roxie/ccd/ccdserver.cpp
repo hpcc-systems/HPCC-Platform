@@ -7444,9 +7444,17 @@ public:
         curIndex = 0;
         if (input->nextGroup(sorted))
         {
-            unsigned size = sorted.ordinality();
-            MemoryAttr indexbuff(size*sizeof(void **));
-            qsortvecstable(const_cast<void * *>(sorted.getArray()), size, *compare, (void ***)indexbuff.bufferBase());
+            unsigned numRows = sorted.ordinality();
+            void **rows = const_cast<void * *>(sorted.getArray());
+            MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
+            void **temp = (void **) tempAttr.bufferBase();
+            memcpy(temp, rows, numRows*sizeof(void **));
+            qsortvecstable(temp, numRows, *compare, (void ***)rows);
+            for (unsigned i = 0; i < numRows; i++)
+            {
+                *rows = **((void ***)rows);
+                rows++;
+            }
         }
     }
 };
@@ -7527,15 +7535,22 @@ public:
             unsigned numRows = rowsToSort.numCommitted();
             if (numRows)
             {
-                const void * * rows = rowsToSort.getBlock(numRows);
+                void ** rows = const_cast<void * *>(rowsToSort.getBlock(numRows));
                 //MORE: Should this be parallel?  Should that be dependent on whether it is grouped?  Should be a hint.
                 if (stable)
                 {
-                    MemoryAttr indexbuff(numRows*sizeof(void **));
-                    qsortvecstable(const_cast<void * *>(rows), numRows, *compare, (void ***)indexbuff.bufferBase());
+                    MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
+                    void **temp = (void **) tempAttr.bufferBase();
+                    memcpy(temp, rows, numRows*sizeof(void **));
+                    qsortvecstable(temp, numRows, *compare, (void ***)rows);
+                    for (unsigned i = 0; i < numRows; i++)
+                    {
+                        *rows = **((void ***)rows);
+                        rows++;
+                    }
                 }
                 else
-                    qsortvec(const_cast<void * *>(rows), numRows, *compare);
+                    qsortvec(rows, numRows, *compare);
             }
             sorted.transferFrom(rowsToSort);
         }

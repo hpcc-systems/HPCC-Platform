@@ -344,12 +344,13 @@ define([
                     context.configSourceCM = CodeMirror.fromTextArea(dom.byId(context.id + "ConfigTextArea"), {
                         tabMode: "indent",
                         matchBrackets: true,
-                        gutter: true,
                         lineNumbers: true,
                         mode: "xml",
                         readOnly: true,
-                        onGutterClick: CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder)
+                        foldGutter: true,
+                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
                     });
+                    context.configSourceCM.setSize("100%", "100%");
                     context.configSourceCM.setValue(context.configText);
                 }); 
             }
