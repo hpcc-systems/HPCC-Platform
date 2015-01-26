@@ -54,7 +54,7 @@ else ()
         message ( "-- ECL Watch:  Including map/uncompressed files" )
         Install ( DIRECTORY "${ECLWATCH_BUILD_DEST}/" DESTINATION componentfiles/files COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN "build-report.txt" )
     else ()
-        Install ( DIRECTORY "${ECLWATCH_BUILD_DEST}/" DESTINATION componentfiles/files COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN "build-report.txt" EXCLUDE PATTERN "*.map" EXCLUDE  PATTERN "*.uncompressed.js" EXCLUDE )
+        Install ( DIRECTORY "${ECLWATCH_BUILD_DEST}/" DESTINATION componentfiles/files COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN "build-report.txt" EXCLUDE PATTERN "*.map" EXCLUDE PATTERN "*.uncompressed.js" EXCLUDE PATTERN "*.consoleStripped.js" EXCLUDE )
     endif ()
 endif ()
 
