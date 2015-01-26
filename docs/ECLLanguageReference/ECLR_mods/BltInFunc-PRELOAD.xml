@@ -22,7 +22,7 @@
           <row>
             <entry><emphasis>file</emphasis></entry>
 
-            <entry>The name of a DATASET or INDEX definition.</entry>
+            <entry>The name of a DATASET definition.</entry>
           </row>
 
           <row>
@@ -46,13 +46,12 @@
   <para>The <emphasis role="bold">PRELOAD </emphasis>function leaves the
   <emphasis>file </emphasis>in memory after loading (valid only for Data
   Delivery Engine use). This is exactly equivalent to using the PRELOAD option
-  on the DATASET or INDEX definition.</para>
+  on the DATASET definition.</para>
 
   <para>Example:</para>
 
   <programlisting>MyFile := DATASET('MyFile',{STRING20 F1, STRING20 F2},THOR);
   COUNT(PRELOAD(MyFile))</programlisting>
 
-  <para>See Also: <link linkend="DATASET">DATASET</link>, <link
-  linkend="INDEX_record_structure">INDEX</link></para>
+  <para>See Also: <link linkend="DATASET">DATASET</link></para>
 </sect1>
