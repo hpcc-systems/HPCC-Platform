@@ -4340,7 +4340,10 @@ class CSocketEpollThread: public CSocketBaseThread
             else
                 dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
             CHECKSOCKRANGE(dummysock);
-            epoll_op(epfd, EPOLL_CTL_ADD, dummysock, (EPOLLIN | EPOLLERR));
+            // added EPOLLIN also because cannot find anywhere MSG_OOB is sent
+            // added here to match existing select() code above which sets
+            // the except fd_set mask.
+            epoll_op(epfd, EPOLL_CTL_ADD, dummysock, (EPOLLIN | EPOLLPRI));
 #endif
             dummysockopen = true;
         }
@@ -4487,16 +4490,15 @@ public:
                     if (si.mode != 0) {
                         ep_mode = 0;
                         if (si.mode & SELECTMODE_READ) {
-                            ep_mode |= (EPOLLIN | EPOLLPRI);
+                            ep_mode |= EPOLLIN;
                         }
                         if (si.mode & SELECTMODE_WRITE) {
                             ep_mode |= EPOLLOUT;
                         }
                         if (si.mode & SELECTMODE_EXCEPT) {
-                            ep_mode |= EPOLLERR;
+                            ep_mode |= EPOLLPRI;
                         }
                         if (ep_mode != 0) {
-                            ep_mode |= EPOLLRDHUP;
                             epoll_op(epfd, EPOLL_CTL_ADD, si.handle, ep_mode);
                         }
                     }
@@ -4648,18 +4650,14 @@ public:
                                 SelectItem *epsi = items.getArray(epfdtbl[epevents[j].data.fd]);
                                 if (!epsi->del) {
                                     unsigned int ep_mode = 0;
-                                    if (epevents[j].events & (EPOLLIN | EPOLLPRI)) {
-                                        ep_mode |= SELECTMODE_READ;
-                                    }
-                                    if (epevents[j].events & (EPOLLERR | EPOLLHUP)) {
-                                        ep_mode |= SELECTMODE_READ;
-                                    }
-                                    if (epevents[j].events & EPOLLRDHUP) {
-                                        // TODO - or should we set EXCEPT ?
+                                    if (epevents[j].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
                                         ep_mode |= SELECTMODE_READ;
                                     }
                                     if (epevents[j].events & EPOLLOUT) {
                                         ep_mode |= SELECTMODE_WRITE;
+                                    }
+                                    if (epevents[j].events & EPOLLPRI) {
+                                        ep_mode |= SELECTMODE_EXCEPT;
                                     }
                                     if (ep_mode != 0) {
                                         tonotify.append(*epsi);
