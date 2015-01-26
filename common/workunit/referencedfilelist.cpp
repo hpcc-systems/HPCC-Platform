@@ -669,6 +669,9 @@ void ReferencedFileList::addFilesFromWorkUnit(IConstWorkUnit *cw)
 
 void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalFirst, bool resolveForeign)
 {
+    StringBuffer daliip;
+    if (remote)
+        remote->endpoint().getIpText(daliip);
     StringArray childSubFiles;
     ForEachItemIn(i, subfiles)
     {
@@ -676,7 +679,7 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalF
         if (!allowForeign && checkForeign(lfn))
             throw MakeStringException(-1, "Foreign sub file not allowed: %s", lfn);
 
-        Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL, false, allowSizeCalc);
+        Owned<ReferencedFile> file = new ReferencedFile(lfn, daliip, NULL, NULL, true, 0, NULL, false, allowSizeCalc);
         if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
         {
             file->resolve(process.get(), srcCluster, user, remote, remotePrefix, checkLocalFirst, &childSubFiles, resolveForeign);
