@@ -48,7 +48,7 @@ ENDEMBED;
 
 dataset(namesRecord) streamedNames(data d, utf8 u) := EMBED(Python)
   return [  \
-     ("Gavin", "Halliday", [("a", 1),("b", 2),("c", 3)], [("aa", 11)], ("aaa", 111), 250, -1,  U'là',  U'là',  U'là', 0x01000000, d, False, {"1","2"}), \
+     ("Gavin", "Halliday", [("a", 1),("b", 2),("c", 3)], [("aa", 11)], ("aaa", 111), 250, -1,  U'là',  U'là',  U'là', 0x01000000, d, False, set(["1","2"])), \
      ("John", "Smith", [], [], ("c", 3), 250, -1,  U'là',  U'là',  u, 0x02000000, d, True, []) \
      ]
 ENDEMBED;
