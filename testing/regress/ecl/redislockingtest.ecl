@@ -16,7 +16,7 @@
 ############################################################################## */
 
 IMPORT * FROM lib_redis.locking;
-IMPORT Clear FROM lib_redis.sync;
+IMPORT FlushDB FROM lib_redis.sync;
 
 STRING servers := '--SERVER=127.0.0.1:6379';
 
