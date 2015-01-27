@@ -120,3 +120,5 @@ apt-get install redis-server #includes redis-cli
 apt-get insatll libhiredis-dev
 apt-get install libev-dev
 
+To watch the transactions live, open redis-cli and enter 'MONITOR' into the prompt.
+
