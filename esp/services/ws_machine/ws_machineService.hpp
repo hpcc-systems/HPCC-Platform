@@ -732,6 +732,8 @@ public:
     bool onGetMachineInfo(IEspContext &context, IEspGetMachineInfoRequest &req, IEspGetMachineInfoResponse &resp);
     bool onGetTargetClusterInfo(IEspContext &context, IEspGetTargetClusterInfoRequest &req, IEspGetTargetClusterInfoResponse &resp);
     bool onGetMachineInfoEx(IEspContext &context, IEspGetMachineInfoRequestEx &req, IEspGetMachineInfoResponseEx &resp);
+    bool onGetComponentStatus(IEspContext &context, IEspGetComponentStatusRequest &req, IEspGetComponentStatusResponse &resp);
+    bool onUpdateComponentStatus(IEspContext &context, IEspUpdateComponentStatusRequest &req, IEspUpdateComponentStatusResponse &resp);
 
     bool onGetMetrics(IEspContext &context, IEspMetricsRequest &req, IEspMetricsResponse &resp);
     bool onStartStop( IEspContext &context, IEspStartStopRequest &req,  IEspStartStopResponse &resp);
