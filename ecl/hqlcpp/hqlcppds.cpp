@@ -4884,7 +4884,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
             specialCase = true;
             break;
         default:
-            specialCase = alwaysEvaluatesToBound(dataset);
+            specialCase = alwaysEvaluatesToBound(dataset) || hasSingleRow(dataset) || !canIterateInline(&ctx, dataset);
             break;
         }
 
