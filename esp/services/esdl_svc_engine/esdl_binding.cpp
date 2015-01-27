@@ -905,7 +905,7 @@ void EsdlBindingImpl::addService(const char * name,
 
                  m_pESDLService->configureTargets(m_esdlBndCfg, name);
 
-                CEspBinding::addService(name, host, port, service);
+                 CEspBinding::addService(name, host, port, service);
             }
             else
                 DBGLOG("ESDL Binding: Error adding service '%s': ESDL definition objectnot available", name);
@@ -1517,7 +1517,11 @@ bool EsdlBindingImpl::qualifyServiceName(IEspContext &context,
         methQName->clear();
         IEsdlDefMethod *mth = srv->queryMethodByName(methname);
         if (mth)
+        {
             methQName->append(mth->queryName());
+            addMethodDescription(methQName->str(), mth->queryProp(ESDL_METHOD_DESCRIPTION));
+            addMethodHelp(methQName->str(), mth->queryProp(ESDL_METHOD_HELP));
+        }
     }
     else if (methQName != NULL)
         methQName->clear();
