@@ -159,6 +159,8 @@ class RegressMain:
                             nargs=1, type=checkXParam,  default='None',  metavar="optionA=valueA[,optionB=valueB...]")
         commonParser.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )",
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
+        commonParser.add_argument('--noversion', help="Avoid version expansion of queries. Execute them as a standard test.",
+                                action = 'store_true')
 
         executionParser=argparse.ArgumentParser(add_help=False)
         executionParser.add_argument('--runclass', '-r', help="run subclass(es) of the suite. Default value is 'all'",

@@ -120,7 +120,7 @@ class Suite:
 
     def addFileToSuite(self, eclfile):
         haveVersions = eclfile.testVesion()
-        if haveVersions:
+        if haveVersions and not self.args.noversion:
             basename = eclfile.getEcl()
             files=[]
             versions = eclfile.getVersions()
