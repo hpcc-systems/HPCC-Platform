@@ -96,19 +96,20 @@ class Regression:
                 numOfThreads = args.pq
         self.loggermutex = thread.allocate_lock()
         self.numOfCpus = 2
+        self.threadPerCpu = 2
         ver = getVersionNumbers()
         if numOfThreads == -1:
             if (ver['main'] >= 2) and (ver['minor'] >= 7):
                 if 'linux' in sys.platform :
-                    command = 'grep cores /proc/cpuinfo | sort -u'
+                    command = "grep 'core\|processor' /proc/cpuinfo | awk '{print $3}' | sort -nru | head -1"
                     cpuInfo = os.popen(command).read()
                     if cpuInfo == "":
                         self.numOfCpus = 1
                     else:
-                        self.numOfCpus = int(cpuInfo.split()[3])
-                numOfThreads = self.numOfCpus  * 2
+                        self.numOfCpus = int(cpuInfo)+1
+                numOfThreads = self.numOfCpus  * self.threadPerCpu
             elif (ver['main'] <= 2) and (ver['minor'] < 7):
-                    numOfThreads = self.numOfCpus  * 2
+                    numOfThreads = self.numOfCpus  * self.threadPerCpu
         logging.debug("Number of CPUs:%d, NUmber of threads:%d", self.numOfCpus, numOfThreads  )
 
         self.maxthreads = numOfThreads
