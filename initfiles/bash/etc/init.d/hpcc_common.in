@@ -549,7 +549,8 @@ stop_component() {
                             removePid ${PIDPATH}
                             unlock ${LOCKPATH}
                             log_success_msg
-                            return 0
+                            RCSTOP=0
+                            break 2
                         fi
                     fi
                     sleep 1
@@ -563,6 +564,7 @@ stop_component() {
         log_success_msg
         RCSTOP=0
     fi
+
     return ${RCSTOP}
 }
 
