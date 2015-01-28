@@ -30,6 +30,8 @@
 #include "dfuwu.hpp"
 #include "exception_util.hpp"
 
+#include "bindutil.hpp"
+#include "dadiags.hpp"
 #include "roxiecontrol.hpp"
 #include "workunit.hpp"
 
@@ -2254,3 +2256,96 @@ void CWsSMCEx::setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspAc
     }
 }
 
+bool CWsSMCEx::onGetLocks(IEspContext& context, IEspGetLocksRequest& req, IEspGetLocksResponse& resp)
+{
+#ifdef _USE_OPENLDAP
+    CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+    if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        throw MakeStringException(ECLWATCH_ADMIN_ACCESS_DENIED, "Access denied, administrators only.");
+#endif
+    if (queryDaliServerVersion().compare("6.0") < 0)
+        throw MakeStringException(ECLWATCH_ADMIN_ACCESS_DENIED, "Dali server (version < 6.0) does not support WsSMC.GetLocks.");
+
+    class CSMCGetLockHelper
+    {
+    public:
+        CSMCGetLockHelper() {};
+
+        StringBuffer& readGetLockFilters(IEspGetLocksRequest& req, StringBuffer& filterBuf)
+        {
+            if (!req.getFileLockOnly_isNull() && req.getFileLockOnly())
+                filterBuf.append(DALFTLockType).append(DALockFilterSeparator).append(DALTFFileLock).append(DALockFilterSeparator);
+            else if (!req.getNonFileLockOnly_isNull() && req.getNonFileLockOnly())
+                filterBuf.append(DALFTLockType).append(DALockFilterSeparator).append(DALTFNonFileLock).append(DFUQFilterSeparator);
+
+            const char* endpointReq = req.getEndpoint();
+            if (endpointReq && *endpointReq)
+                filterBuf.append(DALFTEndpoint).append(DALockFilterSeparator).append(endpointReq).append(DALockFilterSeparator);
+
+            StringBuffer buf;
+            if (!req.getDurationLow_isNull())
+                buf.append(req.getDurationLow());
+            buf.append(DALockFilterSeparator);
+            if (!req.getDurationHigh_isNull())
+                buf.append(req.getDurationHigh());
+            if (!req.getDurationLow_isNull() || !req.getDurationHigh_isNull())
+                filterBuf.append(DALFTDuration).append(DALockFilterSeparator).append(buf.str()).append(DALockFilterSeparator);
+            return filterBuf;
+        }
+        void readLocks(IPropertyTree& lockTree, IArrayOf<IEspLock>& locks)
+        {
+            const char* path = lockTree.queryProp(getDALockFieldName(DALFpath));
+            const char* file = lockTree.queryProp(getDALockFieldName(DALFfile));
+            if ((!path || !*path) && (!file || !*file))
+                return;
+
+            Owned<IEspLock> lock = createLock();
+            if (file && *file)
+                lock->setFile(file);
+            else
+                lock->setPath(path);
+
+            IArrayOf<IConstLockEndpoint>& lockEndpoints = lock->getEndpoints();
+
+            Owned<IPropertyTreeIterator> it = lockTree.getElements("Endpoint");
+            ForEach(*it)
+            {
+                IPropertyTree &t = it->query();
+
+                StringBuffer connectionIdStr, sessionIdStr;
+                sessionIdStr.setf("%"I64F"x", t.getPropInt64(getDALockFieldName(DALFsessId), 0));
+                connectionIdStr.setf("%"I64F"x", t.getPropInt64(getDALockFieldName(DALFconnId), 0));
+
+                const char* endpoint = t.queryProp(getDALockFieldName(DALFendpoint));
+                int mode = t.getPropInt(getDALockFieldName(DALFmode), 0);
+                int duration = t.getPropInt(getDALockFieldName(DALFduration), 0);
+
+                Owned<IEspLockEndpoint> lockEndpoint = createLockEndpoint();
+                if (endpoint && *endpoint)
+                    lockEndpoint->setEndpoint(endpoint);
+                lockEndpoint->setSessionID(sessionIdStr.str());
+                lockEndpoint->setConnectionID(connectionIdStr.str());
+                lockEndpoint->setDurationMS(duration);
+                lockEndpoint->setMode(mode);
+                lockEndpoints.append(*lockEndpoint.getClear());
+            }
+            locks.append(*lock.getClear());
+        }
+    };
+
+    try
+    {
+        IArrayOf<IEspLock> locks;
+        CSMCGetLockHelper helper;
+        StringBuffer filterBuf;
+        Owned<IDALockIterator> li = getDALocks(helper.readGetLockFilters(req, filterBuf));
+        ForEach(*li)
+            helper.readLocks(li->query(), locks);
+        resp.setLocks(locks);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}

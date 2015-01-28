@@ -22,9 +22,25 @@
 #define da_decl __declspec(dllimport)
 #endif
 
+#include "jiter.hpp"
+
 extern da_decl StringBuffer & getDaliDiagnosticValue(const char *name,StringBuffer &ret);
 extern da_decl MemoryBuffer & getDaliDiagnosticValue(MemoryBuffer &m);
 
+enum DALockField
+{
+    DALFpath = 0,
+    DALFfile = 1,
+    DALFendpoint = 2,
+    DALFsessId = 3,
+    DALFconnId = 4,
+    DALFmode = 5,
+    DALFduration = 6
+};
+
+typedef IIteratorOf<IPropertyTree> IDALockIterator;
+extern da_decl IDALockIterator* getDALocks(StringBuffer &filters);
+extern da_decl const char* getDALockFieldName(DALockField feild);
 
 // for server use
 interface IDaliServer;

@@ -28,6 +28,7 @@
 #include "mplog.hpp"
 #include "jptree.ipp"
 #include "jqueue.tpp"
+#include "jregexp.hpp"
 #include "dautils.hpp"
 #include "dadfs.hpp"
 
@@ -288,6 +289,119 @@ public:
 #define CHECKEDDALIREADLOCKBLOCK(l,timeout)   ReadLockBlock glue(block,__LINE__)(l)
 #define CHECKEDDALIWRITELOCKBLOCK(l,timeout)  WriteLockBlock glue(block,__LINE__)(l)
 #endif
+
+class CLockFilters : public CInterface
+{
+    DALockTypeFilter lockType;
+    int durationLow;
+    int durationHigh;
+    StringAttr endpoint;
+
+    bool beginWith(const char*& ln, const char* pat)
+    {
+        size32_t sz = strlen(pat);
+        if (memicmp(ln, pat, sz))
+            return false;
+
+        ln += sz;
+        return true;
+    }
+public:
+    CLockFilters()
+    {
+        lockType = DALTFAll;
+        endpoint.set("*");
+        durationLow = -1;
+        durationHigh = -1;
+    };
+    void readFilters(const char *filterStr)
+    {
+        if (!filterStr || !*filterStr)
+            return;
+        StringArray filterStringArray;
+        char sep[] = { DALockFilterSeparator, '\0' };
+        filterStringArray.appendList(filterStr, sep);
+
+        unsigned filterFieldsToRead = filterStringArray.length();
+        ForEachItemIn(i,filterStringArray)
+        {
+            const char* filterTypeStr = filterStringArray.item(i);
+            if (!filterTypeStr || !*filterTypeStr || !isdigit(*filterTypeStr))
+                continue;
+            unsigned filterSize = 2;
+            DALockFilterType filterType = (DALockFilterType) atoi(filterTypeStr);
+            switch(filterType)
+            {
+            case DALFTLockType:
+                if (filterFieldsToRead >= filterSize)
+                {
+                    const char* lockTypeStr = filterStringArray.item(i+1);
+                    if (lockTypeStr && *lockTypeStr && isdigit(*lockTypeStr))
+                        lockType = (DALockTypeFilter) atoi(lockTypeStr);
+                }
+                break;
+            case DALFTEndpoint:
+                if (filterFieldsToRead >= filterSize)
+                    endpoint.set(filterStringArray.item(i+1));
+                break;
+            case DALFTDuration:
+                filterSize = 3;
+                if (filterFieldsToRead >= filterSize)
+                {
+                    const char* durationLowStr = filterStringArray.item(i+1);
+                    if (durationLowStr && *durationLowStr && isdigit(*durationLowStr))
+                        durationLow = atoi(durationLowStr);
+                    const char* durationHighStr = filterStringArray.item(i+2);
+                    if (durationHighStr && *durationHighStr && isdigit(*durationHighStr))
+                        durationHigh = atoi(durationHighStr);
+                }
+                break;
+            }
+            filterFieldsToRead -= filterSize;
+            i += (filterSize - 1);
+        }
+    }
+    bool checkEndpoint(const char *_endpoint)
+    {
+        if (!_endpoint || !*_endpoint)
+            return false;
+        if (endpoint.length() && !streq(endpoint.get(), "*") && !WildMatch(_endpoint, endpoint.get(), true))
+            return false;
+        return true;
+    }
+    bool checkDuration(int duration)
+    {
+        if ((duration < durationLow) || ((durationHigh > -1) && (durationHigh < duration)))
+            return false;
+        return true;
+    }
+    bool checkAndReadPath(const char* xpath, bool& isFile, StringBuffer& file)
+    {
+        if (!xpath || !*xpath)
+            return false;
+
+        const char* ptr = xpath;
+        isFile = beginWith(ptr, "Files");
+        if ((isFile && (lockType == DALTFNonFileLock)) || (!isFile && (lockType == DALTFFileLock)))
+            return false;
+
+        file.clear();
+        //Build file name with path using scope names and file name
+        while (ptr && *ptr && (beginWith(ptr,"/Scope[@name=\"")
+            || beginWith(ptr,"/File[@name=\"") || beginWith(ptr,"/SuperFile[@name=\"")))
+        {
+            if (file.length())
+                file.append("::");
+            while (ptr && *ptr && (*ptr != '"'))
+                file.append(*(ptr++));
+            if (ptr && (*ptr == '"'))
+                ptr++;
+            if (ptr && (*ptr == ']')) //Skip ']' no matter whether it follows the '"' or not.
+                ptr++;
+        }
+        return true;
+    }
+};
 
 #define OVERFLOWSIZE 50000
 class CFitArray
@@ -1998,6 +2112,7 @@ public:
     virtual void unsubscribe(SubscriptionId id);
     virtual void unsubscribeExact(SubscriptionId id);
     virtual StringBuffer &getLocks(StringBuffer &out);
+    virtual void getFilteredLocks(const char *filters, MemoryBuffer &out);
     virtual StringBuffer &getUsageStats(StringBuffer &out);
     virtual StringBuffer &getConnections(StringBuffer &out);
     virtual StringBuffer &getSubscribers(StringBuffer &out);
@@ -3673,6 +3788,78 @@ public:
         }
         out.newline();
         return out;
+    }
+
+    bool getFilteredLocks(CLockFilters &filters, MemoryBuffer &mb)
+    {
+        bool isFile;
+        StringBuffer file;
+        if (!filters.checkAndReadPath(xpath, isFile, file))
+            return false;
+
+        unsigned nlocks=0;
+        MemoryBuffer locks, localMB;
+        UInt64Array keys;
+        {
+            CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
+            HashIterator iter(connectionInfo);
+            ForEach(iter)
+            {
+                IMapping &imap = iter.query();
+                LockData *lD = connectionInfo.mapToValue(&imap);
+                keys.append(* ((ConnectionId *) imap.getKey()));
+                locks.append(sizeof(LockData), lD);
+                ++nlocks;
+            }
+        }
+
+        if (nlocks < 1)
+            return false;
+
+        if (isFile)
+        {
+            localMB.append(true);
+            localMB.append(file.str());
+        }
+        else
+        {
+            localMB.append(false);
+            localMB.append(xpath);
+        }
+
+        unsigned lockCount=0;
+        size32_t lockCountPos = localMB.length();
+        localMB.append(lockCount);
+
+        unsigned l = 0;
+        unsigned msNow = msTick();
+        loop
+        {
+            LockData lD;
+            memcpy(&lD, ((const byte *)locks.toByteArray())+l*sizeof(LockData), sizeof(LockData));
+
+            StringBuffer sessEpStr;
+            unsigned lockedFor = msNow-lD.timeLockObtained;
+            const char* endpoint = querySessionManager().getClientProcessEndpoint(lD.sessId, sessEpStr).str();
+            if (filters.checkEndpoint(endpoint) && filters.checkDuration(lockedFor))
+            {
+                localMB.append(endpoint);
+                localMB.append(lD.sessId);
+                localMB.append(keys.item(l));
+                localMB.append(lD.mode);
+                localMB.append(lockedFor);
+                lockCount++;
+            }
+            ++l;
+            if (l>=nlocks)
+                break;
+        }
+        if (lockCount < 1)
+            return false;
+
+        localMB.writeDirect(lockCountPos,sizeof(lockCount),&lockCount);
+        mb.append(localMB);
+        return true;
     }
 
     void setDROLR(CServerRemoteTree *_parent, CServerRemoteTree *_child)
@@ -7831,7 +8018,7 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
 StringBuffer &CCovenSDSManager::getLocks(StringBuffer &out)
 {
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-    SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());    
+    SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());
     iter.first();
     while (iter.isValid())
     {
@@ -7843,6 +8030,31 @@ StringBuffer &CCovenSDSManager::getLocks(StringBuffer &out)
         if (out.length()) out.newline();
     }
     return out.length() ? out : out.append("No current locks");
+}
+
+void CCovenSDSManager::getFilteredLocks(const char* filters, MemoryBuffer &mb)
+{
+    CLockFilters clFilters;
+    clFilters.readFilters(filters);
+
+    unsigned count=0;
+    mb.clear().append(count);
+
+    CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
+    SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());
+    iter.first();
+    while (iter.isValid())
+    {
+        CLockInfo &lockInfo = iter.query();
+        if (lockInfo.lockCount())
+        {
+            if (lockInfo.getFilteredLocks(clFilters, mb))
+                count++;
+        }
+        if (!iter.next())
+            break;
+    }
+    mb.writeDirect(0,sizeof(count),&count);;
 }
 
 StringBuffer &formatUsageStats(MemoryBuffer &src, StringBuffer &out)

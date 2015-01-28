@@ -124,6 +124,11 @@ public:
                 else if (0 == stricmp(id, "locks")) {
                     mb.append(querySDS().getLocks(buf).str());
                 }
+                else if (0 == stricmp(id, "filteredlocks")) {
+                    StringAttr filters;
+                    params.read(filters);
+                    querySDS().getFilteredLocks(filters.get(), mb);
+                }
                 else if (0 == stricmp(id, "sdsstats")) {
                     mb.append(querySDS().getUsageStats(buf).str());
                 }
@@ -278,11 +283,124 @@ StringBuffer & getDaliDiagnosticValue(const char *name,StringBuffer &ret)
     return ret;
 }
 
+const char* DALockFieldNames[] = { "@path", "@file", "@endpoint", "@sessionId", "@connectionId", "@mode", "@duration" };
+
+extern da_decl const char* getDALockFieldName(DALockField feild)
+{
+    return DALockFieldNames[feild];
+}
+
+class CDALockIterator: public CInterface, implements IDALockIterator
+{
+    IArrayOf<IPropertyTree> locks;
+    unsigned index;
+    IPropertyTree* getLockByPath(const char* path)
+    {
+        ForEachItemIn(i,locks)
+        {
+            IPropertyTree& lock = locks.item(i);
+            const char* lockPath = lock.queryProp(getDALockFieldName(DALFpath));
+            if (!lockPath || !*lockPath)
+                lockPath = lock.queryProp(getDALockFieldName(DALFfile));
+            if (lockPath && strieq(lockPath, path))
+            {
+                lock.Link();
+                return &lock;
+            }
+        }
+        return NULL;
+    }
+    void deserializeEndpoints(MemoryBuffer& mb, IPropertyTree* lock)
+    {
+        unsigned lockCount;
+        mb.read(lockCount);
+
+        while (lockCount--)
+        {
+            StringAttr endpoint;
+            __int64 sessId, connId;
+            unsigned mode, duration;
+            mb.read(endpoint);
+            mb.read(sessId);
+            mb.read(connId);
+            mb.read(mode);
+            mb.read(duration);
+
+            IPropertyTree* endpointBranch = lock->addPropTree("Endpoint", createPTree("Endpoint"));
+            if (endpoint.length())
+                endpointBranch->addProp(getDALockFieldName(DALFendpoint), endpoint.get());
+            endpointBranch->addPropInt64(getDALockFieldName(DALFsessId), sessId);
+            endpointBranch->addPropInt64(getDALockFieldName(DALFconnId), connId);
+            endpointBranch->addPropInt(getDALockFieldName(DALFmode), mode);
+            endpointBranch->addPropInt(getDALockFieldName(DALFduration), duration);
+        }
+    }
+public:
+    IMPLEMENT_IINTERFACE;
+    CDALockIterator(MemoryBuffer &mb)
+    {
+        unsigned lockCount;
+        mb.read(lockCount);
+
+        while (lockCount--)
+        {
+            bool isFile;
+            StringAttr path;
+            mb.read(isFile);
+            mb.read(path);
+
+            bool newPath = false;
+            Owned<IPropertyTree> lock = getLockByPath(path);
+            if (!lock)
+            {
+                lock.setown(createPTree("Lock"));
+                if (isFile)
+                    lock->addProp(getDALockFieldName(DALFfile), path);
+                else
+                    lock->addProp(getDALockFieldName(DALFpath), path);
+                newPath = true;
+            }
+
+            deserializeEndpoints(mb, lock);
+            if (newPath)
+                locks.append(*lock.getClear());
+        }
+    }
+    ~CDALockIterator()
+    {
+        locks.kill();
+    }
+    bool  first()
+    {
+        index = 0;
+        return (locks.ordinality()!=0);
+    }
+    bool  next()
+    {
+        index++;
+        return (index<locks.ordinality());
+    }
+    bool  isValid()
+    {
+        return (index<locks.ordinality());
+    }
+    IPropertyTree &  query()
+    {
+        return locks.item(index);
+    }
+};
+
+IDALockIterator* getDALocks(StringBuffer &filters)
+{
+    MemoryBuffer mb;
+    mb.append("filteredlocks").append(filters.str());
+    getDaliDiagnosticValue(mb);
+    return new CDALockIterator(mb);
+}
+
 IDaliServer *createDaliDiagnosticsServer()
 {
     assertex(!daliDiagnosticsServer); // initialization problem
     daliDiagnosticsServer = new CDaliDiagnosticsServer();
     return daliDiagnosticsServer;
 }
-
-
