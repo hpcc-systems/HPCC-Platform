@@ -32,7 +32,7 @@
 #define INDEXWRITE_SMART_BUFFER_SIZE            (0x100000*12)           // 12MB
 #define COUNTPROJECT_SMART_BUFFER_SIZE          (0x100000*12)           // 12MB
 #define ENTH_SMART_BUFFER_SIZE                  (0x100000*12)           // 12MB
-#define JOIN_SMART_BUFFER_SIZE                 (0x100000*12)            // 12MB
+#define JOIN_SMART_BUFFER_SIZE                  (0x100000*12)           // 12MB
 #define LOOKUPJOINL_SMART_BUFFER_SIZE           (0x100000*12)           // 12MB
 #define CATCH_BUFFER_SIZE                       (0x100000*12)           // 12MB
 #define SKIPLIMIT_BUFFER_SIZE                   (0x100000*12)           // 12MB
@@ -42,7 +42,8 @@
 #define NSPLITTER_SPILL_BUFFER_SIZE             (0x100000)              // 1MB
 #define DISTRIBUTE_PULL_BUFFER_SIZE             (0x100000*32)           // 32MB
 #define SORT_BUFFER_TOTAL                       (0x100000*20)           // 20MB (estimate)
-#define DISTRIBUTE_SINGLE_BUFFER_SIZE           (0x10000)               // 64K  - NB per node and multiplied by async send
+#define DISTRIBUTE_DEFAULT_OUT_BUFFER_SIZE      (0x100000)              // 1MB (* targets (numnodes), on each slave)
+#define DISTRIBUTE_DEFAULT_IN_BUFFER_SIZE       (0x100000*32)           // 32MB input buffer (on each slave)
 #define FUNNEL_MIN_BUFF_SIZE                    (0x100000*2)            // 2MB
 #define FUNNEL_MAX_BUFF_SIZE                    (0x100000*20)           // 20MB
 #define COMBINE_MAX_BUFF_SIZE                   (0x100000*20)           // 20MB
@@ -54,6 +55,7 @@
 #define LOOP_SMART_BUFFER_SIZE                  (0x100000*12)           // 12MB
 #define LOCALRESULT_BUFFER_SIZE                 (0x100000*10)           // 10MB
 
+#define DISTRIBUTE_RESMEM(N) ((DISTRIBUTE_DEFAULT_OUT_BUFFER_SIZE * (N)) + DISTRIBUTE_DEFAULT_IN_BUFFER_SIZE)
 
 
 #endif

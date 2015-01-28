@@ -53,8 +53,6 @@
 
 #define NUMSLAVEPORTS       2
 #define DEFAULTCONNECTTIMEOUT 10000
-#define DEFAULT_OUT_BUFFER_SIZE 0x100000        // 1MB
-#define DEFAULT_IN_BUFFER_SIZE  0x100000*32  // 32MB input buffer
 #define DEFAULT_WRITEPOOLSIZE 16
 #define DISK_BUFFER_SIZE 0x10000 // 64K
 #define DEFAULT_TIMEOUT (1000*60*60)
@@ -979,9 +977,9 @@ public:
         iCompare = NULL;
         ihash = NULL;
         fixedEstSize = 0;
-        bucketSendSize = activity->getOptUInt(THOROPT_HDIST_BUCKET_SIZE, DEFAULT_OUT_BUFFER_SIZE);
+        bucketSendSize = activity->getOptUInt(THOROPT_HDIST_BUCKET_SIZE, DISTRIBUTE_DEFAULT_OUT_BUFFER_SIZE);
         istop = _istop;
-        inputBufferSize = activity->getOptUInt(THOROPT_HDIST_BUFFER_SIZE, DEFAULT_IN_BUFFER_SIZE);
+        inputBufferSize = activity->getOptUInt(THOROPT_HDIST_BUFFER_SIZE, DISTRIBUTE_DEFAULT_IN_BUFFER_SIZE);
         pullBufferSize = DISTRIBUTE_PULL_BUFFER_SIZE;
         selfstopped = false;
         pull = false;
