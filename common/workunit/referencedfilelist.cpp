@@ -358,6 +358,7 @@ IPropertyTree *ReferencedFile::getSpecifiedOrRemoteFileTree(IUserDescriptor *use
     if (!fileTree)
         return NULL;
     StringAttrBuilder daliipText(daliip);
+    remote->endpoint().getUrlStr(daliipText);
     filePrefix.set(remotePrefix);
     return fileTree.getClear();
 }

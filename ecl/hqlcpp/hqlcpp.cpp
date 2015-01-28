@@ -2864,7 +2864,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprEvaluate(ctx, expr, tgt);
         return;
     case no_thor:
-        throwUnexpected();
+        throwUnexpectedX("THOR() annotation created in a scalar context");
 //      assertex(expr->queryType()->isScalar());
 //      buildExpr(ctx, expr->queryChild(0), tgt);
         return;

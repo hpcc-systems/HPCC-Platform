@@ -33,6 +33,8 @@ static const char* ESDL_DEF_ENTRY="Definition";
 static const char* ESDL_BINDINGS_ROOT_PATH="/ESDL/Bindings/";
 static const char* ESDL_BINDING_PATH="/ESDL/Bindings/Binding";
 static const char* ESDL_BINDING_ENTRY="Binding";
+static const char* ESDL_METHOD_DESCRIPTION="description";
+static const char* ESDL_METHOD_HELP="help";
 
 #define SDS_LOCK_TIMEOUT (30*1000) // 5mins, 30s a bit short
 

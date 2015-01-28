@@ -51,7 +51,7 @@ enum
     HEFassigninline     = 0x0002,
     HEFiterateinline    = 0x0004,
     HEFevaluateinline   = 0x0008,                   // can evaluate without any temporary dataset being created (temporary row is ok)
-    HEFspillinline      = 0x0010,                   // I'm not sure I can do this - because whether it spills depends on how it is being used.
+//    HEFspillinline      = 0x0010,                   // I'm not sure I can do this - because whether it spills depends on how it is being used.
 
     RETassign       = HEFassigninline|HEFprocessinline,
     RETiterate      = HEFiterateinline|HEFassigninline|HEFprocessinline,
@@ -59,9 +59,9 @@ enum
 
 };
 
-#define canAssignNoSpill(childFlags)        ((childFlags & (HEFspillinline|HEFassigninline)) == HEFassigninline)
-#define canIterateNoSpill(childFlags)       ((childFlags & (HEFspillinline|HEFiterateinline)) == HEFiterateinline)
-#define canEvaluateNoSpill(childFlags)      ((childFlags & (HEFspillinline|HEFevaluateinline)) == HEFevaluateinline)
+#define canAssignNoSpill(childFlags)        ((childFlags & HEFassigninline) == HEFassigninline)
+#define canIterateNoSpill(childFlags)       ((childFlags & HEFiterateinline) == HEFiterateinline)
+#define canEvaluateNoSpill(childFlags)      ((childFlags & HEFevaluateinline) == HEFevaluateinline)
 
 // assign is superset of iterate, iterate is a superset of evaluate
 
@@ -86,6 +86,12 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         }
     }
 
+    //This function should return the first value that matches:
+    // RETevaluate - the dataset is completely available, and all elements can be accessed directly
+    // RETiterate - each element in the dataset can be accessed without evaluating the entire dataset
+    // RETassign - the dataset can be assigned to a temporary
+    // 0 - the dataset cannot be evaluated inline, it requires a child query.
+
     node_operator op = expr->getOperator();
     switch (op)
     {
@@ -98,12 +104,16 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if (childFlags == 0)
                 return 0;
-            if (isGrouped(expr))
-                return RETevaluate;
-            return RETevaluate|RETiterate;
+
+            //This always creates a temporary, so can be evaluated efficiently
+            return RETevaluate;
         }
     case no_dataset_alias:
         return getInlineFlags(ctx, expr->queryChild(0));
+    case no_call:
+    case no_externalcall:               // no so sure about this - should possibly be assignable only. (also no_call above)
+    case no_getresult:
+        return RETassign;
     }
 
     if (isGrouped(expr))
@@ -126,9 +136,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if ((childFlags == 0) || queryRealChild(expr, 3))
                 return 0;
-            if (canIterateNoSpill(childFlags))
-                return RETevaluate;
-            return RETevaluate|HEFspillinline;
+            //Always effectively requires a temporary
+            return RETassign;
         }
     case no_hqlproject:
         //can't do a skip inside an inline project - since the generated code doesn't allow "continue" to be used.
@@ -145,13 +154,12 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return 0;
             if (hasSingleRow(ds))
             {
-                if (canEvaluateNoSpill(childFlags))
-                    return RETevaluate;
-                return RETevaluate|HEFspillinline;
+                //Probably not worth iterating...
+                return RETassign;
             }
             if (canIterateNoSpill(childFlags))
                 return RETiterate;
-            return RETiterate|HEFspillinline;
+            return RETassign;
         }
     case no_selectmap:
     case no_selectnth:
@@ -165,9 +173,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                     childFlags = getInlineFlags(ctx, ds->queryChild(0));
                     if (childFlags == 0)
                         return 0;
-                    if (canIterateNoSpill(childFlags))
-                        return RETevaluate;
-                    return RETevaluate|HEFspillinline;
+                    //Dataset will be calculated => can just access the 1st element
+                    return RETevaluate;
                 }
                 return 0;
             }
@@ -175,18 +182,16 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return RETevaluate;
             if (canIterateNoSpill(childFlags))
                 return RETevaluate;
-            return RETevaluate|HEFspillinline;
+            return RETassign;
         }
     case no_filter:
         {
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if (childFlags == 0)
                 return 0;
-            if (canIterateNoSpill(childFlags))
-                return RETiterate;
-            if (filterIsTableInvariant(expr) && canAssignNoSpill(childFlags))
+            if (!canIterateNoSpill(childFlags) && filterIsTableInvariant(expr))
                 return RETassign;
-            return RETiterate|HEFspillinline;
+            return RETiterate;
         }
     case no_choosen:        
     case no_index:
@@ -194,9 +199,11 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if (childFlags == 0)
                 return 0;
+//            if (canEvaluateNoSpill(childFlags))
+//                return RETevaluate;
             if (canIterateNoSpill(childFlags))
                 return RETiterate;
-            return RETiterate|HEFspillinline;
+            return RETassign;
         }
     case no_limit:
         {
@@ -205,14 +212,11 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if (childFlags == 0)
                 return 0;
-            unsigned flags = 0;
             if (canEvaluateNoSpill(childFlags))
-                flags |= RETevaluate;
+                return RETevaluate;
             if (canIterateNoSpill(childFlags))
-                flags |= RETiterate;
-            if (flags)
-                return flags;
-            return RETevaluate|HEFspillinline;
+                return RETiterate;
+            return RETassign;
         }
     case no_fail:
         return RETevaluate;
@@ -229,20 +233,17 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if (childFlags == 0)
                 return 0;
-            return RETevaluate|HEFspillinline;
+            return RETassign;
         }
     case no_addfiles:
         {
-            unsigned ret = RETassign;
             for (unsigned i=0; i < 2; i++)
             {
                 unsigned childFlags = getInlineFlags(ctx, expr->queryChild(i));
                 if (childFlags == 0)
                     return 0;
-                if (childFlags & HEFspillinline)
-                    ret |= HEFspillinline;
             }
-            return ret;
+            return RETassign;
         }
     case no_if:
     case no_choose:
@@ -257,8 +258,6 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 unsigned childFlags = getInlineFlags(ctx, cur);
                 if (childFlags == 0)
                     return 0;
-                if (childFlags & HEFspillinline)
-                    ret |= HEFspillinline;
             }
             return ret;
         }
@@ -284,10 +283,6 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         if (expr->hasAttribute(graphAtom))       // force it to appear in the graph
             return 0;
         return getInlineFlags(ctx, expr->queryChild(0));
-    case no_call:               
-    case no_externalcall:               // no so sure about this - should possibly be assignable only. (also no_call above)
-    case no_getresult:
-        return expr->isDatarow() ? RETevaluate : RETassign;
     case no_getgraphresult:
         if (expr->hasAttribute(_distributed_Atom))
             return 0;
@@ -319,7 +314,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             return 0;
         return RETevaluate;
     case no_translated:
-        return RETassign|RETiterate|RETevaluate;
+        return RETevaluate;
     case no_projectrow:
         {
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
@@ -348,7 +343,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if (childFlags == 0)
                 return 0;
-            return RETevaluate|(childFlags & HEFspillinline);
+            return RETevaluate;
         }
     case no_activetable:
         return RETassign;
@@ -372,7 +367,9 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             unsigned childRFlags = getInlineFlags(ctx, expr->queryChild(1));
             if ((childLFlags == 0) || (childRFlags == 0))
                 return 0;
-            return RETassign|((childLFlags|childRFlags) & HEFspillinline);
+            if (canIterateNoSpill(childLFlags) && canIterateNoSpill(childRFlags))
+                return RETiterate;
+            return RETassign;
         }
     case no_compound:
         return getInlineFlags(ctx, expr->queryChild(1));

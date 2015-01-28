@@ -10,9 +10,7 @@
   role="bold">]</emphasis><emphasis> keys, indexfile </emphasis><emphasis
   role="bold">[,SORTED<indexterm>
       <primary>SORTED</primary>
-    </indexterm>] [,PRELOAD<indexterm>
-      <primary>PRELOAD</primary>
-    </indexterm>]</emphasis><emphasis role="bold"> [,OPT<indexterm>
+    </indexterm>] [,OPT<indexterm>
       <primary>OPT</primary>
     </indexterm>] [,COMPRESSED<indexterm>
       <primary>COMPRESSED</primary>
@@ -34,8 +32,8 @@
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> keys, payload, indexfile
-  </emphasis><emphasis role="bold">[,SORTED] [,PRELOAD][,OPT] [,COMPRESSED(
-  LZW | ROW | FIRST) ] [,DISTRIBUTED] [,FILEPOSITION( [
+  </emphasis><emphasis role="bold">[,SORTED] [,OPT] [,COMPRESSED( LZW | ROW |
+  FIRST) ] [,DISTRIBUTED] [,FILEPOSITION( [
   </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
   MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
@@ -117,14 +115,6 @@
           <entry>Optional. Specifies that when the index is accessed the
           records come out in the order of the <emphasis>keys</emphasis>. If
           omitted, the returned record order is undefined.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis role="bold">PRELOAD</emphasis></entry>
-
-          <entry>Optional. Specifies that the <emphasis>indexfile</emphasis>
-          is left in memory after loading (valid only for Data Delivery Engine
-          use).</entry>
         </row>
 
         <row>

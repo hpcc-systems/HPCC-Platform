@@ -97,7 +97,6 @@ StringBuffer::StringBuffer(bool useInternal)
 
 StringBuffer::~StringBuffer()
 {
-    dbgassertex(buffer);
     freeBuffer();
 }
 

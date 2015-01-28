@@ -1088,7 +1088,7 @@ IHqlExpression * HqlGram::processIndexBuild(attribute & indexAttr, attribute * r
     if (flags)
         flags->unwindList(args, no_comma);
 
-    checkDistributer(flagsAttr, args);
+    checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
 }
 
@@ -3884,7 +3884,7 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     if (a1.isDataset() || a2.isDataset())
     {
         OwnedHqlExpr right = a2.getExpr();
-        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2, false));
+        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, false));
         ensureDataset(a1);
         ensureDataset(a2);
         return NULL;
@@ -3892,7 +3892,7 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     if (a1.isDatarow() || a2.isDatarow())
     {
         OwnedHqlExpr right = a2.getExpr();
-        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2, true));
+        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, true));
         checkDatarow(a1);
         checkDatarow(a2);
         return NULL;
@@ -3900,7 +3900,7 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     if (a1.isDictionary() || a2.isDictionary())
     {
         OwnedHqlExpr right = a2.getExpr();
-        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2, true));
+        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2.pos, true));
         checkDictionary(a1);
         checkDictionary(a2);
         return NULL;
@@ -6642,12 +6642,11 @@ void HqlGram::checkBuildIndexFilenameFlags(IHqlExpression * dataset, attribute &
 }
 
 
-IHqlExpression * HqlGram::createBuildFileFromTable(IHqlExpression * table, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos)
+IHqlExpression * HqlGram::createBuildFileFromTable(IHqlExpression * table, const HqlExprArray & buildOptions, IHqlExpression * filename, attribute & errpos)
 {
     IHqlExpression * originAttr = table->queryAttribute(_origin_Atom);
     IHqlExpression * ds = originAttr->queryChild(0);
     IHqlExpression * mode = table->queryChild(2);
-    OwnedHqlExpr flags=flagsAttr.getExpr();
     if (!filename) filename = table->queryChild(0);
 
     HqlExprArray args;
@@ -6662,111 +6661,145 @@ IHqlExpression * HqlGram::createBuildFileFromTable(IHqlExpression * table, attri
         args.append(*createAttribute(xmlAtom, LINK(mode->queryChild(0))));
         break;
     }
-    if (flags)
+
+    ForEachItemIn(i, buildOptions)
     {
-        HqlExprArray expandedFlags;
-        flags->unwindList(expandedFlags, no_comma);
-        ForEachItemIn(i, expandedFlags)
-        {
-            IHqlExpression & cur = expandedFlags.item(i);
-            IAtom * name = cur.queryName();
-            if ((name == overwriteAtom) ||(name == backupAtom) || (name == namedAtom) || (name == updateAtom) || (name == expireAtom))
-                args.append(OLINK(cur));
-            else if (name == persistAtom)
-                args.append(*createAttribute(persistAtom, LINK(ds)));       // preserve so changes in representation don't affect crc.
-        }
+        IHqlExpression & cur = buildOptions.item(i);
+        IAtom * name = cur.queryName();
+        if ((name == overwriteAtom) ||(name == backupAtom) || (name == namedAtom) || (name == updateAtom) || (name == expireAtom))
+            args.append(OLINK(cur));
+        else if (name == persistAtom)
+            args.append(*createAttribute(persistAtom, LINK(ds)));       // preserve so changes in representation don't affect crc.
     }
+
     return createValue(no_output, makeVoidType(), args);
 }
 
-IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos)
+IHqlExpression * queryRootIndex(IHqlExpression * index)
 {
-    OwnedHqlExpr index = indexAttr.getExpr();
     loop
     {
         node_operator op = index->getOperator();
         if (op == no_compound)
-            index.set(index->queryChild(1));
+            index = index->queryChild(1);
         else if (op == no_executewhen)
-            index.set(index->queryChild(0));
+            index = index->queryChild(0);
         else
-            break;
+            return index;
+    }
+}
+
+IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attribute & flagsAttr, attribute & errpos)
+{
+    warnIfRecordPacked(indexAttr);
+
+    OwnedHqlExpr index = indexAttr.getExpr();
+    index.set(queryRootIndex(index));
+
+    HqlExprArray buildOptions;
+    flagsAttr.unwindCommaList(buildOptions);
+
+    LinkedHqlExpr filename;
+    LinkedHqlExpr sourceDataset;
+    ForEachItemInRev(iOption, buildOptions)
+    {
+        IHqlExpression & cur = buildOptions.item(iOption);
+        if (cur.isDataset())
+        {
+            if (sourceDataset)
+                reportError(ERR_DUPLICATE_SOURCE,errpos,"Source dataset cannot be specified more than once");
+            sourceDataset.set(&cur);
+            buildOptions.remove(iOption);
+        }
+        else if (!cur.isAttribute())
+        {
+            if (cur.getOperator() != no_distributer)
+            {
+                if (filename)
+                    reportError(ERR_DUPLICATE_FILENAME,errpos,"Index filename cannot be specified more than once");
+                filename.set(&cur);
+                buildOptions.remove(iOption);
+            }
+        }
     }
 
     if (!isKey(index))
     {
         if (index->getOperator() == no_table && index->hasAttribute(_origin_Atom))
-            return createBuildFileFromTable(index, flagsAttr, filename, errpos);
-        flagsAttr.release();
+            return createBuildFileFromTable(index, buildOptions, filename, errpos);
+
         reportError(ERR_EXPECTED_INDEX,indexAttr,"Expected an index as the first parameter");
         return createDataset(no_null, LINK(queryNullRecord()));
     }
 
-    IHqlExpression *dataset = LINK(index->queryChild(0));
+    LinkedHqlExpr dataset = index->queryChild(0);
     IHqlExpression *record = index->queryChild(1);
-    IHqlExpression *transform = NULL;
+    OwnedHqlExpr transform;
     if (index->getOperator() == no_keyindex)
     {
         if (!filename)
-            filename = index->queryChild(2);
+            filename.set(index->queryChild(2));
     }
     else
     {
-        transform = index->queryChild(2);
+        transform.set(index->queryChild(2));
         if (!filename)
-            filename = index->queryChild(3);
+            filename.set(index->queryChild(3));
     }
+
+    if (sourceDataset)
+        transform.setown(createDefaultAssignTransform(record, sourceDataset->queryNormalizedSelector(), indexAttr));
 
     //need to tag record scope in this case so it generates no_activetable as top selector
     OwnedHqlExpr distribution;
-
-    checkBuildIndexFilenameFlags(dataset, flagsAttr);
-    bool allConstant = true;
-    bool someMissing = false;
-    ForEachChild(idx, record)
+    if (!sourceDataset)
     {
-        IHqlExpression * field = record->queryChild(idx);
-        if (field->isAttribute())
-            continue;
-        IHqlExpression * value = field->queryChild(0);
-        if (!value)
-            someMissing = true;
-        else if (!value->isAttribute() && !value->isConstant())
-            allConstant = false;
+        bool allConstant = true;
+        bool someMissing = false;
+        ForEachChild(idx, record)
+        {
+            IHqlExpression * field = record->queryChild(idx);
+            if (field->isAttribute())
+                continue;
+            IHqlExpression * value = field->queryChild(0);
+            if (!value)
+                someMissing = true;
+            else if (!value->isAttribute() && !value->isConstant())
+                allConstant = false;
+        }
+        if (someMissing)
+            reportError(ERR_KEYEDINDEXINVALID,indexAttr,"The index record contains fields with no mappings - cannot build an index on it");
+        else if (allConstant)
+            reportError(ERR_KEYEDINDEXINVALID,indexAttr,"The index record has no mappings from the dataset - cannot build an index on it");
     }
-    if (someMissing)
-        reportError(ERR_KEYEDINDEXINVALID,indexAttr,"The index record contains fields with no mappings - cannot build an index on it");
-    else if (allConstant)
-        reportError(ERR_KEYEDINDEXINVALID,indexAttr,"The index record has no mappings from the dataset - cannot build an index on it");
 
-    IHqlExpression * newRecord = LINK(record);
-    if (!transform)
-        newRecord = checkBuildIndexRecord(newRecord, errpos);
     IHqlExpression * select;
-    if (transform)
-        select = createDatasetF(no_newusertable, dataset, newRecord, LINK(transform), NULL); //createUniqueId(), NULL);
+    if (sourceDataset)
+        select = createDatasetF(no_newusertable, LINK(sourceDataset), LINK(record), LINK(transform), NULL); //createUniqueId(), NULL);
+    else if (transform)
+        select = createDatasetF(no_newusertable, LINK(dataset), LINK(record), LINK(transform), NULL); //createUniqueId(), NULL);
     else
-        select = createDatasetF(no_selectfields, dataset, newRecord, NULL); //createUniqueId(), NULL);
+    {
+        IHqlExpression * newRecord = checkBuildIndexRecord(LINK(record), errpos);
+        select = createDatasetF(no_selectfields, LINK(dataset), newRecord, NULL); //createUniqueId(), NULL);
+    }
+
     HqlExprArray args;
     args.append(*select);
     args.append(*LINK(filename));
-    OwnedHqlExpr flags=flagsAttr.getExpr();
-    if (flags)
+
+    ForEachItemIn(i, buildOptions)
     {
-        HqlExprArray extra;
-        flags->unwindList(extra, no_comma);
-        ForEachItemIn(i, extra)
-        {
-            IHqlExpression & cur = extra.item(i);
-            IAtom * name = cur.queryName();
-            if (name == distributedAtom)
-                distribution.setown(&cur);
-            else if (name == persistAtom)
-                args.append(*createAttribute(persistAtom, LINK(index)));        // preserve so changes in representation don't affect crc.
-            else
-                args.append(OLINK(cur));
-        }
+        IHqlExpression & cur = buildOptions.item(i);
+        IAtom * name = cur.queryName();
+        if (name == distributedAtom)
+            distribution.setown(&cur);
+        else if (name == persistAtom)
+            args.append(*createAttribute(persistAtom, LINK(index)));        // preserve so changes in representation don't affect crc.
+        else
+            args.append(OLINK(cur));
     }
+
     //Clone flags from the index that are required.
     ForEachChild(iflag, index)
     {
@@ -6799,7 +6832,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
     if (distribution)
         args.append(*distribution.getClear());
 
-    checkDistributer(flagsAttr, args);
+    checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
 }
 
@@ -8297,7 +8330,7 @@ void HqlGram::checkDedup(IHqlExpression *ds, IHqlExpression *flags, attribute &a
 {
 }
 
-void HqlGram::checkDistributer(attribute & err, HqlExprArray & args)
+void HqlGram::checkDistributer(const ECLlocation & errPos, HqlExprArray & args)
 {
     IHqlExpression * input = &args.item(0);
     IHqlExpression * inputPayload = queryAttribute(_payload_Atom, args);
@@ -8311,8 +8344,8 @@ void HqlGram::checkDistributer(attribute & err, HqlExprArray & args)
             unsigned numKeyedFields = firstPayloadField(index);
             unsigned inputKeyedFields = firstPayloadField(input->queryRecord(), inputPayload ? (unsigned)getIntValue(inputPayload->queryChild(0)) : 1);
             if (numKeyedFields != inputKeyedFields)
-                reportError(ERR_DISTRIBUTED_MISSING, err, "Index and DISTRIBUTE(index) have different numbers of keyed fields");
-            checkRecordTypesSimilar(args.item(0).queryRecord(), cur.queryChild(0)->queryRecord(), err, numKeyedFields);
+                reportError(ERR_DISTRIBUTED_MISSING, errPos, "Index and DISTRIBUTE(index) have different numbers of keyed fields");
+            checkRecordTypesSimilar(args.item(0).queryRecord(), cur.queryChild(0)->queryRecord(), errPos, numKeyedFields);
         }
     }
 }
@@ -8359,7 +8392,7 @@ void HqlGram::checkValidPipeRecord(const attribute & errpos, IHqlExpression * re
         checkValidCsvRecord(errpos, record);
 }
 
-int HqlGram::checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const attribute &atr, unsigned maxFields)
+int HqlGram::checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const ECLlocation & errPos, unsigned maxFields)
 {
     if (recordTypesMatch(left, right)) 
         return 0;
@@ -8375,9 +8408,9 @@ int HqlGram::checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right
     if(lnumChildren != rnumChildren) 
     {
         if (getFieldCount(lrecord) != getFieldCount(rrecord))
-            reportError(ERR_TYPEMISMATCH_DATASET, atr, "Datasets must have the same number of fields: %d vs %d", lnumChildren, rnumChildren);
+            reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same number of fields: %d vs %d", lnumChildren, rnumChildren);
         else
-            reportError(ERR_TYPEMISMATCH_DATASET, atr, "Datasets must have the same attributes");
+            reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same attributes");
         return -1;
     }
     
@@ -8388,7 +8421,7 @@ int HqlGram::checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right
         if (lfield->isAttribute() || rfield->isAttribute())
         {
             if (lfield != rfield)
-                reportError(ERR_TYPEMISMATCH_DATASET, atr, "Record attributes differ: %d vs %d", lnumChildren, rnumChildren);
+                reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Record attributes differ: %d vs %d", lnumChildren, rnumChildren);
         }
         
         assertex(lfield);
@@ -8413,55 +8446,55 @@ int HqlGram::checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right
                 if (lAlien && rAlien && 
                     queryExpression(lType)->queryFunctionDefinition() == queryExpression(rType)->queryFunctionDefinition())
                 {
-                    reportError(ERR_TYPEMISMATCH_DATASET, atr, "Fields %s and %s use incompatible instances of the same user type %s",lfield->queryName()->str(), rfield->queryName()->str(), ltype.str());
+                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Fields %s and %s use incompatible instances of the same user type %s",lfield->queryName()->str(), rfield->queryName()->str(), ltype.str());
                 }
                 else
                 {
-                    reportError(ERR_TYPEMISMATCH_DATASET, atr, "Type mismatch for corresponding fields %s (%s) vs %s (%s)",lfield->queryName()->str(), ltype.str(), rfield->queryName()->str(), rtype.str());
+                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Type mismatch for corresponding fields %s (%s) vs %s (%s)",lfield->queryName()->str(), ltype.str(), rfield->queryName()->str(), rtype.str());
                 }
             }
         }
         else if(lchildrectype == NULL || rchildrectype == NULL) 
         {
-            reportError(ERR_TYPEMISMATCH_DATASET, atr, "Datasets must have the same types for field %d: one is Record, the other is not", idx+1);
+            reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same types for field %d: one is Record, the other is not", idx+1);
             return -1;
         }
         
         // recursive call to check sub fields.
         if(lchildrectype && rchildrectype)
-            return checkRecordTypesSimilar(lfield, rfield, atr);
+            return checkRecordTypesSimilar(lfield, rfield, errPos);
     }
 
     return 0;
 }
 
 
-bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const attribute &atr)
+bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const ECLlocation & errPos)
 {
     if (leftExpr->getOperator() != rightExpr->getOperator())
     {
         if (leftExpr->isAttribute() || rightExpr->isAttribute())
-            reportError(ERR_TYPEMISMATCH_DATASET, atr, "Datasets must have the same attributes");
+            reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same attributes");
         else
-            reportError(ERR_TYPEMISMATCH_DATASET, atr, "Datasets must have the same structure");
+            reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same structure");
         return false;
     }
 
     switch (rightExpr->getOperator())
     {
     case no_ifblock:
-        return checkRecordCreateTransform(assigns, leftExpr->queryChild(1), leftSelect, rightExpr->queryChild(1), rightSelect, atr);
+        return checkRecordCreateTransform(assigns, leftExpr->queryChild(1), leftSelect, rightExpr->queryChild(1), rightSelect, errPos);
     case no_record:
     {
         unsigned lnumChildren = leftExpr->numChildren();
         unsigned rnumChildren = rightExpr->numChildren();
         if (lnumChildren != rnumChildren) 
         {
-            reportError(ERR_TYPEMISMATCH_DATASET, atr, "Datasets must have the same number of fields: %d vs %d", lnumChildren, rnumChildren);
+            reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same number of fields: %d vs %d", lnumChildren, rnumChildren);
             return false;
         }
         for (unsigned i= 0; i < lnumChildren; i++)
-            if (!checkRecordCreateTransform(assigns, leftExpr->queryChild(i), leftSelect, rightExpr->queryChild(i), rightSelect, atr))
+            if (!checkRecordCreateTransform(assigns, leftExpr->queryChild(i), leftSelect, rightExpr->queryChild(i), rightSelect, errPos))
                 return false;
         return true;
     }
@@ -8483,7 +8516,7 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
             IAtom * rightName = rightExpr->queryName();
             if (leftName != rightName)
             {
-                reportError(ERR_TYPEMISMATCH_DATASET, atr, "Name mismatch for corresponding fields %s vs %s",leftName->str(), rightName->str());
+                reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Name mismatch for corresponding fields %s vs %s",leftName->str(), rightName->str());
                 return false;
             }
 
@@ -8496,17 +8529,17 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
                     StringBuffer ltype, rtype;
                     getFriendlyTypeStr(leftExpr, ltype);
                     getFriendlyTypeStr(rightExpr, rtype);
-                    reportError(ERR_TYPEMISMATCH_DATASET, atr, "Type mismatch for corresponding fields %s (%s) vs %s (%s)",leftName->str(), ltype.str(), rightName->str(), rtype.str());
+                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Type mismatch for corresponding fields %s (%s) vs %s (%s)",leftName->str(), ltype.str(), rightName->str(), rtype.str());
                 }
                 else
-                    reportError(ERR_TYPEMISMATCH_DATASET, atr, "Datasets must have the same types for field %s vs %s: one is Record, the other is not", leftName->str(), rightName->str());
+                    reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Datasets must have the same types for field %s vs %s: one is Record, the other is not", leftName->str(), rightName->str());
                 return false;
             }
 
             if (rightExpr->isDatarow())
-                return checkRecordCreateTransform(assigns, leftRecord, leftSelected, rightRecord, rightSelected, atr);
+                return checkRecordCreateTransform(assigns, leftRecord, leftSelected, rightRecord, rightSelected, errPos);
 
-            assigns.append(*createAssign(LINK(leftSelected), checkEnsureRecordsMatch(leftSelected, rightSelected, atr, false)));
+            assigns.append(*createAssign(LINK(leftSelected), checkEnsureRecordsMatch(leftSelected, rightSelected, errPos, false)));
             return true;
         }
     }
@@ -8515,21 +8548,21 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
 }
 
 
-IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const attribute & errpos, bool rightIsRow)
+IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const ECLlocation & errPos, bool rightIsRow)
 {
     //Need to add a project to make the field names correct, otherwise problems occur if one the left side is optimized away,
     //because that causes the record type and fields to change.
     if (recordTypesMatch(left, right)) 
         return LINK(right);
 
-    if (checkRecordTypesSimilar(left, right, errpos) != 0)
+    if (checkRecordTypesSimilar(left, right, errPos) != 0)
         return LINK(left); // error conditional - return something compatible with left
 
     HqlExprArray assigns;
     OwnedHqlExpr seq = createActiveSelectorSequence(right, NULL);
     OwnedHqlExpr rightSelect = createSelector(no_left, right, seq);
     OwnedHqlExpr leftSelect = getSelf(left);
-    if (!checkRecordCreateTransform(assigns, left->queryRecord(), leftSelect, right->queryRecord(), rightSelect, errpos))
+    if (!checkRecordCreateTransform(assigns, left->queryRecord(), leftSelect, right->queryRecord(), rightSelect, errPos))
         return LINK(right);
 
     IHqlExpression * transform = createValue(no_transform, makeTransformType(LINK(left->queryRecordType())), assigns);
@@ -8555,7 +8588,7 @@ void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray &
         IHqlExpression * value = mapTo.queryChild(1);
         if (isGrouped(value) != isGrouped(expected))
             groupingDiffers = true;
-        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, value, errpos, isRow);
+        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, value, errpos.pos, isRow);
         if (value != checked)
         {
             args.replace(*replaceChild(&mapTo, 1, checked), i);
@@ -8567,7 +8600,7 @@ void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray &
     {
         if (isGrouped(defaultExpr) != isGrouped(expected))
             groupingDiffers = true;
-        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, defaultExpr, errpos, isRow);
+        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, defaultExpr, errpos.pos, isRow);
         if (defaultExpr != checked)
         {
             defaultExpr.set(checked);
@@ -8703,15 +8736,15 @@ void HqlGram::checkGrouped(attribute & atr)
         reportError(ERR_ROLLUP_NOT_GROUPED, atr, "Input to activity must be grouped");
 }
 
-void HqlGram::checkRegrouping(attribute & atr, HqlExprArray & args)
+void HqlGram::checkRegrouping(const ECLlocation & errPos, HqlExprArray & args)
 {
     IHqlExpression * left = &args.item(0);
     ForEachItemIn(i, args)
     {
-        args.replace(*checkEnsureRecordsMatch(left, &args.item(i), atr, false), i);
+        args.replace(*checkEnsureRecordsMatch(left, &args.item(i), errPos, false), i);
         IHqlExpression * cur = &args.item(i);
         if (!isGrouped(cur))
-            reportError(ERR_ROLLUP_NOT_GROUPED, atr, "Input %d to REGROUP must be grouped", i);
+            reportError(ERR_ROLLUP_NOT_GROUPED, errPos, "Input %d to REGROUP must be grouped", i);
     }
 }
 
@@ -8811,7 +8844,7 @@ void HqlGram::createAppendFiles(attribute & targetAttr, attribute & leftAttr, at
     OwnedHqlExpr right = rightAttr.getExpr();
     if (left->isDatarow()) 
         left.setown(createDatasetFromRow(LINK(left)));
-    right.setown(checkEnsureRecordsMatch(left, right, rightAttr, right->isDatarow()));
+    right.setown(checkEnsureRecordsMatch(left, right, rightAttr.pos, right->isDatarow()));
     if (right->isDatarow())
         right.setown(createDatasetFromRow(LINK(right)));
     IHqlExpression * attr = kind ? createAttribute(kind) : NULL;
@@ -8826,7 +8859,7 @@ void HqlGram::createAppendDictionaries(attribute & targetAttr, attribute & leftA
     assertex(left->isDictionary());
     if (!right->isDictionary())
         reportError(WRN_UNSUPPORTED_FEATURE, rightAttr, "Only dictionary may be appended to dictionary");
-    right.setown(checkEnsureRecordsMatch(left, right, rightAttr, right->isDatarow()));
+    right.setown(checkEnsureRecordsMatch(left, right, rightAttr.pos, right->isDatarow()));
     // TODO: support for dict + row, dict + dataset
 //    if (right->isDatarow())
 //        right.setown(createDatasetFromRow(LINK(right)));
@@ -8856,7 +8889,7 @@ IHqlExpression * HqlGram::processIfProduction(attribute & condAttr, attribute & 
     }
 
     if (left->queryRecord() && falseAttr)
-        right.setown(checkEnsureRecordsMatch(left, right, *falseAttr, false));
+        right.setown(checkEnsureRecordsMatch(left, right, falseAttr->pos, false));
 
     if (isGrouped(left) != isGrouped(right))
         reportError(ERR_GROUPING_MISMATCH, trueAttr, "Branches of the condition have different grouping");

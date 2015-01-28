@@ -2310,17 +2310,7 @@ actionStmt
                         }
     | BUILD '(' startTopFilter optBuildFlags ')' endTopFilter
                         {
-                            parser->warnIfRecordPacked($3);
-                            $$.setExpr(parser->createBuildIndexFromIndex($3, $4, NULL, $5), $1);
-                            parser->processUpdateAttr($$);
-                        }
-    | BUILD '(' startTopFilter ',' expression optBuildFlags ')' endTopFilter
-                        {
-                            parser->normalizeExpression($5, type_string, false);
-                            parser->warnIfRecordPacked($3);
-
-                            OwnedHqlExpr filename = $5.getExpr();
-                            $$.setExpr(parser->createBuildIndexFromIndex($3, $6, filename, $7), $1);
+                            $$.setExpr(parser->createBuildIndexFromIndex($3, $4, $5), $1);
                             parser->processUpdateAttr($$);
                         }
     | OUTPUT '(' startTopFilter ',' optRecordDef endTopFilter optOutputFlags ')'
@@ -2850,21 +2840,22 @@ buildFlag
                             OwnedHqlExpr ds = $3.getExpr();
                             if (ds->getOperator() != no_table)
                                 parser->reportError(ERR_EXPECTED_DATASET, $3, "Expected parameter to be a DATASET definition");
-                            IHqlExpression * record = createAttribute(recordAtom, LINK(ds->queryRecord()));
-                            IHqlExpression * name = createAttribute(nameAtom, LINK(ds->queryChild(0)));
-                            $$.setExpr(createComma(record, name));
-                            $$.setPosition($1);
+                            $$.setExpr(NULL, $1);
                         }
     | commonAttribute
     | SORTED            {   $$.setExpr(createAttribute(sortedAtom)); $$.setPosition($1); }
-    | DISTRIBUTE '(' startTopFilter startDistributeAttrs optDistributeAttrs ')' endTopFilter
+    | dataSet
                         {
-                            IHqlExpression * arg = $3.getExpr();
-                            $5.release();   // They are only there to prevent s/r error with the dataset form.
-                            if (!isKey(arg))
-                                parser->reportError(ERR_EXPECTED_INDEX,$3,"Expected an index");
-                            $$.setExpr(createValue(no_distributer, makeNullType(), arg));
-                            $$.setPosition($1);
+                            //Ugly, but special case DISTRIBUTE '(' dataSet ')'
+                            OwnedHqlExpr ds = $1.getExpr();
+                            if (ds->getOperator() == no_distribute)
+                            {
+                                IHqlExpression * arg = ds->queryChild(0);
+                                if (!isKey(arg))
+                                    parser->reportError(ERR_EXPECTED_INDEX,$1,"Expected an index");
+                                ds.setown(createValue(no_distributer, makeNullType(), LINK(arg)));
+                            }
+                            $$.setExpr(ds.getClear(), $1);
                         }
     | MERGE             {
                             $$.setExpr(createAttribute(mergeAtom));
@@ -2946,6 +2937,7 @@ buildFlag
                             parser->normalizeExpression($3, type_numeric, false);
                             $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
                         }
+    | expression
     ;
 
 localAttribute
@@ -7600,7 +7592,7 @@ dataSet
                         {
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $3.getExpr();
-                            parser->checkRecordTypesSimilar(left, right, $3);
+                            parser->checkRecordTypesSimilar(left, right, $3.pos);
 
                             OwnedHqlExpr seq = parser->createActiveSelectorSequence(left, right);
                             OwnedHqlExpr leftSelect = createSelector(no_left, left, seq);
@@ -8398,7 +8390,7 @@ simpleDataSet
                             OwnedHqlExpr ds = $3.getExpr();
                             HqlExprArray args;
                             ds->unwindList(args, no_comma);
-                            parser->checkRegrouping($3, args);
+                            parser->checkRegrouping($3.pos, args);
                             $$.setExpr(createDataset(no_regroup, args));
                             $$.setPosition($1);
                         }
@@ -8974,7 +8966,7 @@ simpleDataSet
                                     {
                                         if (isGrouped(cur) != isGrouped(compareDs))
                                             parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
-                                        OwnedHqlExpr mapped = parser->checkEnsureRecordsMatch(compareDs, cur, $5, false);
+                                        OwnedHqlExpr mapped = parser->checkEnsureRecordsMatch(compareDs, cur, $5.pos, false);
                                         if (mapped != cur)
                                             args.replace(*mapped.getClear(), idx);
                                     }

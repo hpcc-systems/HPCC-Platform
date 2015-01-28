@@ -24,6 +24,7 @@ Result:
 |                       [-X name1=value1[,name2=value2...]]
 |                       [-f optionA=valueA[,optionB=valueB...]]
 |                       [--pq threadNumber]
+|                       [--noversion]
 |                       [--runclass class[,class,...]]
 |                       [--excludeclass class[,class,...]]
 |                       {list,setup,run,query} ...
@@ -53,6 +54,7 @@ Result:
 |        -f optionA=valueA[,optionB=valueB...]
 |                                 set an ECL option (equivalent to #option).
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --noversion              avoid version expansion of queries. Execute them as a standard test.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
@@ -115,6 +117,7 @@ Result:
 |                             [-X name1=value1[,name2=value2...]]
 |                             [-f optionA=valueA[,optionB=valueB...]]
 |                             [--pq threadNumber]
+|                             [--noversion]
 |                             [--runclass class[,class,...]]
 |                             [--excludeclass class[,class,...]]
 |                             [--target [target_cluster_list | all]]
@@ -135,6 +138,7 @@ Result:
 |        -f optionA=valueA[,optionB=valueB...]
 |                                 set an ECL option (equivalent to #option).
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --noversion              avoid version expansion of queries. Execute them as a standard test.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
@@ -162,6 +166,7 @@ Result:
 |                           [-X name1=value1[,name2=value2...]]
 |                           [-f optionA=valueA[,optionB=valueB...]]
 |                           [--pq threadNumber]
+|                           [--noversion]
 |                           [--runclass class[,class,...]]
 |                           [--excludeclass class[,class,...]]
 |                           [--target [target_cluster_list | all]]
@@ -183,6 +188,7 @@ Result:
 |        -f optionA=valueA[,optionB=valueB...]
 |                                 set an ECL option (equivalent to #option).
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --noversion              avoid version expansion of queries. Execute them as a standard test.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
@@ -212,6 +218,7 @@ Result:
 |                             [-X name1=value1[,name2=value2...]]
 |                             [-f optionA=valueA[,optionB=valueB...]]
 |                             [--pq threadNumber]
+|                             [--noversion]
 |                             [--runclass class[,class,...]]
 |                             [--excludeclass class[,class,...]]
 |                             [--target [target_cluster_list | all]]
@@ -237,6 +244,7 @@ Result:
 |        -f optionA=valueA[,optionB=valueB...]
 |                                 set an ECL option (equivalent to #option).
 |        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --noversion              avoid version expansion of queries. Execute them as a standard test.
 |        --runclass class[,class,...], -r class[,class,...]
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]

@@ -446,6 +446,30 @@ private:
             unsigned __int64 value;
             collection.getStatistic(kind, value, i);
             formatStatistic(formattedValue.clear(), value, kind);
+
+                //Until 6.0 generate the backward compatible tag name
+            const char * legacyTreeTag = queryLegacyTreeTag(kind);
+            if (legacyTreeTag)
+            {
+                StatisticMeasure measure = queryMeasure(kind);
+                if (measure == SMeasureSkew)
+                {
+                    //Minimum stats were always output as +ve numbers
+                    if (queryStatsVariant(kind) == StSkewMin)
+                        value = -value;
+
+                    target->setPropInt64(legacyTreeTag, value/100);
+                }
+                else if (measure == SMeasureTimeNs)
+                {
+                    //Legacy timings are in ms => scale
+                    target->setPropInt64(legacyTreeTag, value/1000000);
+                }
+                else
+                    target->setProp(legacyTreeTag, formattedValue);
+            }
+
+            //Unconditionally output in the new format.
             target->setProp(queryTreeTag(kind), formattedValue);
         }
     }
