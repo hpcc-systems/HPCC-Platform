@@ -47,10 +47,6 @@ namespace RedisPlugin {
 static const struct timeval REDIS_TIMEOUT = { 1, 500000 }; // { sec, ms } => 1.5 seconds
 static const unsigned unitExpire = 86400;//1 day (secs)
 
-//redis base commands
-#define setCmd "SET %b %b"
-#define getCmd "GET %b"
-
 #define setFailMsg "'Set' request failed - "
 #define getFailMsg "'Get<type>' request failed - "
 

@@ -42,7 +42,7 @@ IPluginContext * parentCtx = NULL;
 StringBuffer & appendExpire(StringBuffer & buffer, unsigned expire)
 {
     if (expire > 0)
-        buffer.append(" EX ").append(expire*RedisPlugin::unitExpire);
+        buffer.append(" EX ").append(expire*unitExpire);
     return buffer;
 }
 
@@ -70,29 +70,27 @@ const char * Reply::typeToStr() const
 }
 
 static CriticalSection crit;
-typedef Owned<RedisPlugin::Connection> OwnedConnection;
-static OwnedConnection cachedConnection;
+static Owned<Connection> cachedConnection;
 
 Connection * createConnection(ICodeContext * ctx, const char * options, unsigned __int64 _database)
 {
     CriticalBlock block(crit);
     if (!cachedConnection)
     {
-        cachedConnection.setown(new RedisPlugin::Connection(ctx, options, _database));
+        cachedConnection.setown(new Connection(ctx, options, _database));
         return LINK(cachedConnection);
     }
 
     if (cachedConnection->isSameConnection(ctx, options, _database))
         return LINK(cachedConnection);
 
-    cachedConnection.setown(new RedisPlugin::Connection(ctx, options, _database));
+    cachedConnection.setown(new Connection(ctx, options, _database));
     return LINK(cachedConnection);
 }
-}//close namespace
 
-ECL_REDIS_API void setPluginContext(IPluginContext * ctx) { RedisPlugin::parentCtx = ctx; }
+ECL_REDIS_API void setPluginContext(IPluginContext * ctx) { parentCtx = ctx; }
 
-void RedisPlugin::parseOptions(ICodeContext * ctx, const char * _options, StringAttr & master, int & port)
+void parseOptions(ICodeContext * ctx, const char * _options, StringAttr & master, int & port)
 {
     StringArray optionStrings;
     optionStrings.appendList(_options, " ");
@@ -124,46 +122,41 @@ void RedisPlugin::parseOptions(ICodeContext * ctx, const char * _options, String
     VStringBuffer msg("Redis Plugin: WARNING - using default server (%s:%d)", master.str(), port);
     ctx->logString(msg.str());
 }
-
-RedisPlugin::Connection::Connection(ICodeContext * ctx, const char * _options, unsigned __int64 _database)
+Connection::Connection(ICodeContext * ctx, const char * _options, unsigned __int64 _database)
 {
     alreadyInitialized = false;
     options.set(_options);
     database = _database;
-    RedisPlugin::parseOptions(ctx, _options, master, port);
+    parseOptions(ctx, _options, master, port);
     selectDB(ctx);
 }
-//-----------------------------------------------------------------------------
-
-bool RedisPlugin::Connection::isSameConnection(ICodeContext * ctx, const char * _options, unsigned __int64 _database) const
+bool Connection::isSameConnection(ICodeContext * ctx, const char * _options, unsigned __int64 _database) const
 {
     if (!_options || database != _database)
         return false;
 
     StringAttr newMaster;
     int newPort = 0;
-    RedisPlugin::parseOptions(ctx, _options, newMaster, newPort);
+    parseOptions(ctx, _options, newMaster, newPort);
 
     return stricmp(master.get(), newMaster.get()) == 0 && port == newPort;
 }
-
-void * RedisPlugin::Connection::cpy(const char * src, size_t size)
+void * Connection::cpy(const char * src, size_t size)
 {
     void * value = rtlMalloc(size);
     return memcpy(value, src, size);
 }
-
-const char * RedisPlugin::Connection::appendIfKeyNotFoundMsg(const redisReply * reply, const char * key, StringBuffer & target) const
+const char * Connection::appendIfKeyNotFoundMsg(const redisReply * reply, const char * key, StringBuffer & target) const
 {
     if (reply && reply->type == REDIS_REPLY_NIL)
         target.append("(key: '").append(key).append("') ");
     return target.str();
 }
-
-void RedisPlugin::Connection::init(ICodeContext * ctx)
+void Connection::init(ICodeContext * ctx)
 {
     logServerStats(ctx);
 }
 
+}//close namespace
 
 

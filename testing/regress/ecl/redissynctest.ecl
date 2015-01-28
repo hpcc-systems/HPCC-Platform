@@ -55,7 +55,7 @@ DATA mydata := x'd790d791d792d793d794d795d796d798d799d79ad79bd79cd79dd79dd79ed79
 SetData(servers, 'data', mydata);
 GetData(servers,'data');
 
-Exist(servers, 'utf8');
+Exists(servers, 'utf8');
 Del(servers, 'utf8');
 Expire(servers, 'str', 1); 
 Persist(servers, 'str');
