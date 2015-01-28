@@ -60,6 +60,8 @@ define([
             }
             if (params.Groups === true) {
                 this.loadGroups();
+            } else if (params.SprayTargets === true) {
+                this.loadSprayTargets();
             } else if (params.DropZones === true) {
                 this.loadDropZones();
             } else if (params.DropZoneFolders === true) {
@@ -165,6 +167,24 @@ define([
                 load: function (response) {
                     if (lang.exists("TpGroupQueryResponse.TpGroups.TpGroup", response)) {
                         var targetData = response.TpGroupQueryResponse.TpGroups.TpGroup;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.options.push({
+                                label: targetData[i].Name,
+                                value: targetData[i].Name
+                            });
+                        }
+                        context._postLoad();
+                    }
+                }
+            });
+        },
+
+        loadSprayTargets: function () {
+            var context = this;
+            FileSpray.GetSprayTargets({
+                load: function (response) {
+                    if (lang.exists("GetSprayTargetsResponse.GroupNodes.GroupNode", response)) {
+                        var targetData = response.GetSprayTargetsResponse.GroupNodes.GroupNode;
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].Name,

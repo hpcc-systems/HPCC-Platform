@@ -372,6 +372,9 @@ define([
                 }
                 return response; 
             });
+        },
+        GetSprayTargets: function(params) {
+            return ESPRequest.send("FileSpray", "GetSprayTargets", params);
         }
     };
 });
