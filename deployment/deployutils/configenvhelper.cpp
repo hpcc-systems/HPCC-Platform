@@ -65,7 +65,7 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
         {
             IPropertyTree* pComp = &iterComputers->query();
             const char* pszCompName = pComp->queryProp(XML_ATTR_NAME);
-            xpath.clear().appendf(XML_TAG_HARDWARE"/"XML_TAG_COMPUTER"/["XML_ATTR_NAME"='%s']", pszCompName);
+            xpath.clear().appendf( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "/[" XML_ATTR_NAME "='%s']", pszCompName);
             IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
 
             if (pComputer)
@@ -146,7 +146,7 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
 
   if (pszFarm && strlen(pszFarm))
   {
-    xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
+    xpath.clear().appendf("RoxieCluster[@name='%s']/" XML_TAG_ROXIE_FARM, pszRoxieCluster);
     pFarm = getSoftwareNode(xpath.str(), pszFarm);
 
     if (pFarm == NULL)
@@ -174,13 +174,13 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
   }
   else
   {
-    xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
+    xpath.clear().appendf("RoxieCluster[@name='%s']/" XML_TAG_ROXIE_FARM, pszRoxieCluster);
     createUniqueName("farm", xpath.str(), sFarmName);
     bNewFarm = true;
 
     Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
       
-    xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
+    xpath.clear().appendf("RoxieCluster[@name='%s']/" XML_TAG_ROXIE_FARM, pszRoxieCluster);
     pFarm = pParent->addPropTree(xpath.str(), createPTree());
     pFarm->addProp    (XML_ATTR_NAME,       sFarmName.str());
     pFarm->addPropInt("@port", pSrcTree->getPropInt("@port", 9876));
@@ -230,12 +230,12 @@ bool CConfigEnvHelper::handleReplaceRoxieServer(const char* xmlArg)
       if (pServer && pszNewComputer && *pszNewComputer)
       {
         pServer->setProp(XML_ATTR_COMPUTER, pszNewComputer);
-        xpath.clear().appendf(XML_TAG_ROXIECLUSTER"[@name='%s']/"XML_TAG_ROXIE_SERVER"[@name='%s']", pszRoxieCluster, pszName);
+        xpath.clear().appendf(XML_TAG_ROXIECLUSTER"[@name='%s']/" XML_TAG_ROXIE_SERVER "[@name='%s']", pszRoxieCluster, pszName);
         IPropertyTree* pOldVerRoxieServer = pParent->queryPropTree(xpath.str());
         if (pOldVerRoxieServer)
         {
           pOldVerRoxieServer->setProp(XML_ATTR_COMPUTER, pszNewComputer);
-          xpath.clear().appendf("Hardware/"XML_TAG_COMPUTER"["XML_ATTR_NAME"='%s']", pszNewComputer);
+          xpath.clear().appendf("Hardware/" XML_TAG_COMPUTER "[" XML_ATTR_NAME "='%s']", pszNewComputer);
           IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
           if (pComputer)
             pOldVerRoxieServer->setProp(XML_ATTR_NETADDRESS, pComputer->queryProp(XML_ATTR_NETADDRESS));
@@ -442,7 +442,7 @@ IPropertyTree* CConfigEnvHelper::lookupComputerByName(const char* szName) const
 {
   if (!szName || !*szName) return NULL;
 
-  Owned<IPropertyTreeIterator> iter = m_pRoot->getElements(XML_TAG_HARDWARE"/"XML_TAG_COMPUTER);
+  Owned<IPropertyTreeIterator> iter = m_pRoot->getElements( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER );
   for (iter->first(); iter->isValid(); iter->next())
   {
     const char* szValue = iter->query().queryProp(XML_ATTR_NAME);
@@ -809,14 +809,14 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
         if (!pRoxie)
             throw MakeStringException(-1, "Cannot find roxie with name %s", pszRoxie);
 
-        Owned<IPropertyTreeIterator> iterComputers = pSrcTree->getElements(XML_TAG_INSTANCES"/"XML_TAG_INSTANCE);
+        Owned<IPropertyTreeIterator> iterComputers = pSrcTree->getElements(XML_TAG_INSTANCES "/" XML_TAG_INSTANCE);
         IPropertyTreePtrArray computers;
 
         ForEach (*iterComputers)
         {
             IPropertyTree* pComp = &iterComputers->query();
             const char* pszCompName = pComp->queryProp(XML_ATTR_NAME);
-            xpath.clear().appendf(XML_TAG_HARDWARE"/"XML_TAG_COMPUTER"/["XML_ATTR_NAME"='%s']", pszCompName);
+            xpath.clear().appendf( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "/[" XML_ATTR_NAME "='%s']", pszCompName);
             IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
             
             if (pComputer)
@@ -952,7 +952,7 @@ void CConfigEnvHelper::UpdateThorAttributes(IPropertyTree* pParentNode)
           if (!multiSlaves)
           {
             StringBuffer xpath(XML_TAG_THORSLAVEPROCESS);
-            xpath.appendf("["XML_ATTR_COMPUTER"='%s']", computer);
+            xpath.appendf("[" XML_ATTR_COMPUTER "='%s']", computer);
 
             Owned<IPropertyTreeIterator> iterNodes = pParentNode->getElements(xpath.str());
             int count = 0;
@@ -1043,7 +1043,7 @@ bool CConfigEnvHelper::CheckTopologyComputerUse(IPropertyTree* pComputerNode, IP
         {
             IPropertyTree* pTree = &iter->query();
             const char* pszComputer = pTree->queryProp(XML_ATTR_COMPUTER);
-            xpath.clear().appendf(XML_TAG_HARDWARE"/"XML_TAG_COMPUTER"["XML_ATTR_NAME"='%s']", pszComputer);
+            xpath.clear().appendf( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "[" XML_ATTR_NAME "='%s']", pszComputer);
             IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
             const char* szNetAddress1 = pComputer?pComputer->queryProp(XML_ATTR_NETADDRESS):NULL;
             if (szNetAddress1 && strcmp(szNetAddress1, szNetAddress)==0)

@@ -107,7 +107,7 @@ const char* getRealTabName(const char* tabName)
     return "Type";
   else if (!strcmp(tabName, XML_TAG_COMPUTERTYPE))
     return "Computer Types";
-  else if (!strcmp(tabName, XML_TAG_COMPUTER))
+  else if (!strcmp(tabName,  XML_TAG_COMPUTER ))
     return "Computers";
   else if (!strcmp(tabName, XML_TAG_SWITCH))
     return "Switches";
@@ -1552,7 +1552,7 @@ public:
            }
            else if(!strcmp(attr.queryProp(tempPath.str()), "$hthorcluster"))
            {
-              tempPath.clear().append(XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY"/"XML_TAG_CLUSTER);
+              tempPath.clear().append(XML_TAG_SOFTWARE "/" XML_TAG_TOPOLOGY "/" XML_TAG_CLUSTER);
               Owned<IPropertyTreeIterator> iterClusters = m_pEnv->getElements(tempPath.str());
               ForEach (*iterClusters)
               {
@@ -1763,7 +1763,7 @@ public:
               {
                 IPropertyTree* pHard = m_pEnv->queryPropTree(tempPath.str());
                 if(pHard)
-                  wizDefVal.clear().append(pHard->queryProp("./"XML_ATTR_NETADDRESS)).append(":").append(defaultPort);
+                  wizDefVal.clear().append(pHard->queryProp("./" XML_ATTR_NETADDRESS)).append(":").append(defaultPort);
               }
            }
          }
@@ -1915,7 +1915,7 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     xpath.clear().append(XML_ATTR_NICSPEED);
     pComputerType->addProp(xpath, sbdefaultValue.str());
 
-    IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER, createPTree());
+    IPropertyTree* pComputer = pCompTree->addPropTree( XML_TAG_COMPUTER , createPTree());
     xpath.clear().append(XML_ATTR_NAME);
     pComputer->addProp(xpath, sbdefaultValue.str());
     xpath.clear().append(XML_ATTR_NETADDRESS);
@@ -1970,10 +1970,10 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     addItem(jsStrBuf, pEnv, XML_TAG_DOMAIN,  TAG_USERNAME, "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_DOMAIN,  TAG_PASSWORD, "", 0, 1, "", 5);
     addItem(jsStrBuf, pEnv, XML_TAG_DOMAIN,  TAG_SNMPSECSTRING, "", 0, 1, "", 5);
-    addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_NAME, "", 0, 1, "", 1);
-    addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_NETADDRESS, "", 0, 1, "", 1);
-    addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_DOMAIN, "", 0, 1, XML_TAG_HARDWARE"/"XML_TAG_DOMAIN, 4);
-    addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_COMPUTERTYPE, "", 0, 1, XML_TAG_HARDWARE"/"XML_TAG_COMPUTERTYPE, 4);
+    addItem(jsStrBuf, pEnv,  XML_TAG_COMPUTER ,  TAG_NAME, "", 0, 1, "", 1);
+    addItem(jsStrBuf, pEnv,  XML_TAG_COMPUTER ,  TAG_NETADDRESS, "", 0, 1, "", 1);
+    addItem(jsStrBuf, pEnv,  XML_TAG_COMPUTER ,  TAG_DOMAIN, "", 0, 1,  XML_TAG_HARDWARE "/" XML_TAG_DOMAIN, 4);
+    addItem(jsStrBuf, pEnv,  XML_TAG_COMPUTER ,  TAG_COMPUTERTYPE, "", 0, 1,  XML_TAG_HARDWARE "/" XML_TAG_COMPUTERTYPE, 4);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,  TAG_NAME, "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_SUBNET,       "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_DIRECTORY,       "", 0, 1, "", 1);
@@ -2161,13 +2161,13 @@ bool generateBuildHeaders(const IPropertyTree* pEnv, bool isPrograms, StringBuff
   jsStrBuf.append("compTabs['Programs'] = new Array();");
   jsStrBuf.append("var compTabToNode = new Array();");
   jsStrBuf.append("var cS = new Array();");
-  addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS, TAG_NAME, "", 0, 1, "", 1);
-  addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_URL, "", 0, 1, "", 1);
-  addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS, TAG_PATH, "", 0, 1, "", 1);
-  addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_INSTALLSET, "", 0, 1, "", 1);
-  addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_PROCESSNAME, "", 0, 1, "", 1);
-  addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_SCHEMA, "", 0, 1, "", 1);
-  addItem(jsStrBuf, pEnv, XML_TAG_PROGRAMS,  TAG_DEPLOYABLE, "", 0, 1, "", 1);
+  addItem(jsStrBuf, pEnv,  XML_TAG_PROGRAMS , TAG_NAME, "", 0, 1, "", 1);
+  addItem(jsStrBuf, pEnv,  XML_TAG_PROGRAMS ,  TAG_URL, "", 0, 1, "", 1);
+  addItem(jsStrBuf, pEnv,  XML_TAG_PROGRAMS , TAG_PATH, "", 0, 1, "", 1);
+  addItem(jsStrBuf, pEnv,  XML_TAG_PROGRAMS ,  TAG_INSTALLSET, "", 0, 1, "", 1);
+  addItem(jsStrBuf, pEnv,  XML_TAG_PROGRAMS ,  TAG_PROCESSNAME, "", 0, 1, "", 1);
+  addItem(jsStrBuf, pEnv,  XML_TAG_PROGRAMS ,  TAG_SCHEMA, "", 0, 1, "", 1);
+  addItem(jsStrBuf, pEnv,  XML_TAG_PROGRAMS ,  TAG_DEPLOYABLE, "", 0, 1, "", 1);
   jsStrBuf.append("compTabs['Programs'][compTabs['Programs'].length]= 'Programs';");
   jsStrBuf.append("var colIndex = new Array();");
   jsStrBuf.appendf("colIndex['namePrograms']=%d;", index++);
@@ -2240,14 +2240,14 @@ nodeFullData[0] = nodeRoot;  \
     StringBuffer compTypeName;
     compTypeTree.getName(compTypeName);
 
-    if (!stricmp(compTypeName.str(), "Data") || !stricmp(compTypeName.str(), "EnvSettings") || !strcmp(compTypeName.str(), XML_TAG_PROGRAMS))
+    if (!stricmp(compTypeName.str(), "Data") || !stricmp(compTypeName.str(), "EnvSettings") || !strcmp(compTypeName.str(),  XML_TAG_PROGRAMS ))
       continue;
 
     const char* pszCompTypeName = compTypeName.str();
     jsStrBuf.appendf("var node%s = {};", pszCompTypeName);
     jsStrBuf.appendf("node%s['Name'] = '%s';", pszCompTypeName, pszCompTypeName);
 
-    if (!strcmp(pszCompTypeName, XML_TAG_PROGRAMS))
+    if (!strcmp(pszCompTypeName,  XML_TAG_PROGRAMS ))
       jsStrBuf.appendf("node%s['DisplayName'] = '%s';", pszCompTypeName, "Builds");
     else if (!strcmp(pszCompTypeName, "EnvSettings"))
       jsStrBuf.appendf("node%s['DisplayName'] = '%s';", pszCompTypeName, "Environment Settings");
@@ -2991,7 +2991,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    String str(startIP);
    iprange.append("-").append(endIP + str.lastIndexOf('.') + 1);
    range.ipsetrange(iprange.str());
-   StringBuffer sNode("<"XML_TAG_HARDWARE">"), sName, sIP;
+   StringBuffer sNode("<" XML_TAG_HARDWARE ">"), sName, sIP;
    int count = (e >> 24) - (s >> 24) + 1;
    nCount = count;
    
@@ -3003,7 +3003,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
      range.getNetAddress(sizeof(x),&x);
 
      StringBuffer strCheckXPath;
-     strCheckXPath.setf("%s/%s[%s=\"%s\"][1]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, sIP.str());
+     strCheckXPath.setf("%s/%s[%s=\"%s\"][1]",  XML_TAG_HARDWARE ,  XML_TAG_COMPUTER , XML_ATTR_NETADDRESS, sIP.str());
 
      if (pEnv->hasProp(strCheckXPath.str()) == true)
      {
@@ -3012,8 +3012,8 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
      }
 
      sName.clear().appendf("%s%03d%03d", prefix, (x >> 16) & 0xFF, (x >> 24) & 0xFF);
-     sNode.appendf("<"XML_TAG_COMPUTER" %s=\"%s\" %s=\"%s\" %s/>",
-                      &XML_ATTR_NAME[1], getUniqueName(pEnv, sName, XML_TAG_COMPUTER, XML_TAG_HARDWARE),
+     sNode.appendf("<" XML_TAG_COMPUTER " %s=\"%s\" %s=\"%s\" %s/>",
+                      &XML_ATTR_NAME[1], getUniqueName(pEnv, sName,  XML_TAG_COMPUTER ,  XML_TAG_HARDWARE ),
                       &XML_ATTR_NETADDRESS[1], sIP.str(),
                       attr.str());
      range.ipincrement(1);
@@ -3021,7 +3021,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    
    if (sNode.length() > 10)
    {
-    sNode.append("</"XML_TAG_HARDWARE">");
+    sNode.append("</" XML_TAG_HARDWARE ">");
     IPropertyTree* pTree = createPTreeFromXMLString(sNode);
     return pTree;
    }
@@ -3516,7 +3516,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
           {
             if(ipAssigned.length())
             {
-              Owned<IPropertyTreeIterator> espSerIter = pCompTree->getElements("./"XML_TAG_ESPBINDING);
+              Owned<IPropertyTreeIterator> espSerIter = pCompTree->getElements("./" XML_TAG_ESPBINDING);
               ForEach(*espSerIter)
               {
                 IPropertyTree* pEspBinding = &espSerIter->query();
@@ -3547,7 +3547,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
           {
             if(pCompTree->hasProp(XML_ATTR_COMPUTER))
             { 
-              xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]", XML_TAG_COMPUTER, XML_ATTR_NAME, pCompTree->queryProp(XML_ATTR_COMPUTER));
+              xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]",  XML_TAG_COMPUTER , XML_ATTR_NAME, pCompTree->queryProp(XML_ATTR_COMPUTER));
               IPropertyTree* pHardware = pEnvRoot->queryPropTree(xpath.str());
               if(pHardware)
                 ipAssigned.clear().append(pHardware->queryProp(XML_ATTR_NETADDRESS));
@@ -3585,7 +3585,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
                  computerName.clear().append(pMaster->queryProp(XML_ATTR_COMPUTER));
                  if(computerName.length())
                  {
-                   xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]", XML_TAG_COMPUTER, XML_ATTR_NAME, computerName.str());
+                   xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]",  XML_TAG_COMPUTER , XML_ATTR_NAME, computerName.str());
                    IPropertyTree* pHardware = pEnvRoot->queryPropTree(xpath.str());
                    if(pHardware)
                      ipAssigned.clear().append(pHardware->queryProp(XML_ATTR_NETADDRESS)).append(",");
@@ -3598,7 +3598,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
                  computerName.clear().append(pServer->queryProp(XML_ATTR_COMPUTER));
                  if(computerName.length())
                  {
-                   xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]", XML_TAG_COMPUTER, XML_ATTR_NAME, computerName.str()); 
+                   xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]",  XML_TAG_COMPUTER , XML_ATTR_NAME, computerName.str());
                    IPropertyTree* pHardware = pEnvRoot->queryPropTree(xpath.str());
                    if(pHardware)
                      ipAssigned.append(pHardware->queryProp(XML_ATTR_NETADDRESS)).append(",");

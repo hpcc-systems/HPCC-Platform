@@ -416,7 +416,7 @@ void testVM()
         if (!vm->dealloc(ptrs[i],(i+1)*VMPAGESIZE))
             printf("not deallocated %d\n",i);
     }
-    printf("deallocated %u now allocated =%"I64F"d\n",allocated,vm->allocated());
+    printf("deallocated %u now allocated =%" I64F "d\n",allocated,vm->allocated());
     delete [] sizes;
     delete [] ptrs;
 }

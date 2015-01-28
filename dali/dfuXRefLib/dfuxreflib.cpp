@@ -1242,7 +1242,7 @@ void CLogicalNameEntry::resolve(CFileEntry *entry)
                     ((entry->size%recordsize)!=0)&&
                     !compressed&&
                     (!grouped||(entry->size%(recordsize+1)!=0))) {
-                    manager.error(lname.get(),"Part %d: Record size %d not multiple of file size %"I64F"d\n",part+1,recordsize,entry->size);
+                    manager.error(lname.get(),"Part %d: Record size %d not multiple of file size %" I64F "d\n",part+1,recordsize,entry->size);
                 }
             }
 #endif
@@ -1251,7 +1251,7 @@ void CLogicalNameEntry::resolve(CFileEntry *entry)
     }
 #ifdef PARTS_SIZE_NEEDED
     if (primaryresolved[part]&&replicateresolved[part]&&(primaryresolved[part]->size!=replicateresolved[part]->size)) {
-        manager.error(lname.get(),"Part %d: primary size %"I64F"d is different to replicate size %"I64F"d",part+1,primaryresolved[part]->size,replicateresolved[part]->size);
+        manager.error(lname.get(),"Part %d: primary size %" I64F "d is different to replicate size %" I64F "d",part+1,primaryresolved[part]->size,replicateresolved[part]->size);
     }
 #endif
 }
@@ -1652,7 +1652,7 @@ public:
 #ifdef PARTS_SIZE_NEEDED
                 if (entry->owner->compressed) {
                     if ((entry->expsize>=0)&&((sz!=entry->size)||((entry->size==0)&&(entry->expsize>0)))) {
-                        manager.error(entry->owner->lname.get(),"Part %d: %s size mismatch: recorded size %"I64F"d, actual size %"I64F"d, expanded size %"I64F"d",entry->part,entry->replicate?"replicate":"primary",entry->size,sz,entry->expsize); 
+                        manager.error(entry->owner->lname.get(),"Part %d: %s size mismatch: recorded size %" I64F "d, actual size %" I64F "d, expanded size %" I64F "d",entry->part,entry->replicate?"replicate":"primary",entry->size,sz,entry->expsize);
                         entry->owner->addMismatchedSize(entry->size,sz,entry->expsize,entry);
                     }
                     if (entry->size>=0) {
@@ -1665,7 +1665,7 @@ public:
                     if (!entry->replicate) {
                         entry->owner->addMismatchedSize(entry->size,sz,-1,entry);
                     }
-                    manager.error(entry->owner->lname.get(),"Part %d: %s size mismatch: recorded size %"I64F"d, actual size %"I64F"d",entry->part,entry->replicate?"replicate":"primary",entry->size,sz); 
+                    manager.error(entry->owner->lname.get(),"Part %d: %s size mismatch: recorded size %" I64F "d, actual size %" I64F "d",entry->part,entry->replicate?"replicate":"primary",entry->size,sz);
                     entry->size=sz; // set to actual size for fix
                 }
 #endif              
@@ -1793,7 +1793,7 @@ class CXRefManager: public CXRefManagerBase
                             if (sz!=entry->size) {
                                 StringBuffer s1;
                                 entry->getLogicalName(s1);
-                                outf("SIZEFIX: Changing size for %s from %"I64F"d to %"I64F"d\n",s1.str(),sz,entry->size);
+                                outf("SIZEFIX: Changing size for %s from %" I64F "d to %" I64F "d\n",s1.str(),sz,entry->size);
                                 part->lockProperties().setPropInt64("@size", entry->size);
                                 part->unlockProperties();
                             }
@@ -1805,7 +1805,7 @@ class CXRefManager: public CXRefManagerBase
                     }
                     sz = file->queryAttributes().getPropInt64("@size", -1);
                     if (sz!=total) {
-                        outf("SIZEFIX: Changing total size for %s from %"I64F"d to %"I64F"d\n",item.lname.get(),sz,total);
+                        outf("SIZEFIX: Changing total size for %s from %" I64F "d to %" I64F "d\n",item.lname.get(),sz,total);
                         if (total!=-1)
                             file->lockProperties().setPropInt64("@size", total);
                         else
@@ -1922,7 +1922,7 @@ class CXRefManager: public CXRefManagerBase
                 rname.setPath(ep,fullname);
                 rname.getRemotePath(name);
                 Owned<IFile> f= createIFile(name.str());
-                outf("%12"I64F"d %s\n",f->size(),name.str());
+                outf("%12" I64F "d %s\n",f->size(),name.str());
             }
 
 
@@ -2083,9 +2083,9 @@ class CXRefManager: public CXRefManagerBase
                 COrphanEntry &item = orphanlist.item(i);
                 if (!item.complete()&&item.misplaced) {
                     if (item.max>0)
-                        outf("%s %s (found %d, size %"I64F"d, modified %s)\n",item.fname.get(),item.misplaced->lname.get(),item.num(),item.size,item.modified.get());
+                        outf("%s %s (found %d, size %" I64F "d, modified %s)\n",item.fname.get(),item.misplaced->lname.get(),item.num(),item.size,item.modified.get());
                     else
-                        outf("%s (size %"I64F"d, modified %s)\n",item.fname.get(),item.size,item.modified.get());
+                        outf("%s (size %" I64F "d, modified %s)\n",item.fname.get(),item.size,item.modified.get());
                     StringBuffer s1;
                     item.getEps(s1,false);
                     outf("        primary: %s\n",s1.str());
@@ -2100,9 +2100,9 @@ class CXRefManager: public CXRefManagerBase
                 COrphanEntry &item = orphanlist.item(i);
                 if (!item.complete()&&!item.misplaced) {
                     if (item.max>0)
-                        outf("%s (found %d, size %"I64F"d, modified %s)\n",item.fname.get(),item.num(),item.size,item.modified.get());
+                        outf("%s (found %d, size %" I64F "d, modified %s)\n",item.fname.get(),item.num(),item.size,item.modified.get());
                     else
-                        outf("%s (size %"I64F"d, modified %s)\n",item.fname.get(),item.size,item.modified.get());
+                        outf("%s (size %" I64F "d, modified %s)\n",item.fname.get(),item.size,item.modified.get());
                     StringBuffer s1;
                     item.getEps(s1,false);
                     outf("        primary: %s\n",s1.str());
@@ -2119,9 +2119,9 @@ class CXRefManager: public CXRefManagerBase
                     StringBuffer sname;
                     if (item.isSingleton()) {
                         if (item.singletonName(sname,false))
-                            outf("%s (size %"I64F"d)\n",sname.str(),item.size);
+                            outf("%s (size %" I64F "d)\n",sname.str(),item.size);
                         if (item.singletonName(sname.clear(),true))
-                            outf("%s (size %"I64F"d)\n",sname.str(),item.size);
+                            outf("%s (size %" I64F "d)\n",sname.str(),item.size);
                     }
                 }
             }
@@ -2133,7 +2133,7 @@ class CXRefManager: public CXRefManagerBase
                 if (item.complete()) {
                     StringBuffer sname;
                     if (!item.isSingleton()) {
-                        outf("%s %s(size %"I64F"d)\n",item.fname.get(),item.misplaced?item.misplaced->lname.get():"",item.size);
+                        outf("%s %s(size %" I64F "d)\n",item.fname.get(),item.misplaced?item.misplaced->lname.get():"",item.size);
                         StringBuffer s1;
                         item.getEps(s1,false);
                         outf("        primary: %s\n",s1.str());
@@ -2304,7 +2304,7 @@ class CXRefManager: public CXRefManagerBase
                     item.maxip.getIpText(s2);
                 StringBuffer skew;
                 item.getskew(skew);
-                outf("%s numfiles=%u totalsize=%"CF"d minsize=%"CF"d(%s) maxsize=%"CF"d(%s), skew=%s\n",item.name.get(),item.num,item.size,
+                outf("%s numfiles=%u totalsize=%" CF "d minsize=%" CF "d(%s) maxsize=%" CF "d(%s), skew=%s\n",item.name.get(),item.num,item.size,
                     item.minsize,s1.str(),item.maxsize,s2.str(),skew.str());
             }
         }
@@ -2317,8 +2317,8 @@ class CXRefManager: public CXRefManagerBase
                 }
             }
         }
-        outf("TOTAL ORPHANS: %d files %"I64F"d bytes\n",totalNumOrphans,totalSizeOrphans);
-        outf("Row Compression: %d files %"I64F"d compressed %"I64F"d uncompressed\n",totalCompressed,totalCompressedSize, totalUncompressedSize);
+        outf("TOTAL ORPHANS: %d files %" I64F "d bytes\n",totalNumOrphans,totalSizeOrphans);
+        outf("Row Compression: %d files %" I64F "d compressed %" I64F "d uncompressed\n",totalCompressed,totalCompressedSize, totalUncompressedSize);
         outfileio.clear();
     }
 
@@ -2339,7 +2339,7 @@ class CXRefManager: public CXRefManagerBase
             ForEachItemIn(i,orphanlist) {
                 COrphanEntry &item = orphanlist.item(i);
                 if ((!item.complete())&&!item.misplaced) {
-                    outf("%s,%d,%"I64F"d,%s\n",item.fname.get(),item.num(),item.size,item.modified.get());
+                    outf("%s,%d,%" I64F "d,%s\n",item.fname.get(),item.num(),item.size,item.modified.get());
                 }
             }
         }
@@ -2381,7 +2381,7 @@ class CXRefManager: public CXRefManagerBase
             ForEachItemIn(i,orphanlist) {
                 COrphanEntry &item = orphanlist.item(i);
                 if (item.complete()&&!item.isSingleton()) {
-                    outf("%s,%d,%"I64F"d,%s %s\n",item.fname.get(),item.num(),item.size,item.modified.get(),item.misplaced?item.misplaced->lname.get():"");
+                    outf("%s,%d,%" I64F "d,%s %s\n",item.fname.get(),item.num(),item.size,item.modified.get(),item.misplaced?item.misplaced->lname.get():"");
                 }
             }
         }
@@ -2396,7 +2396,7 @@ class CXRefManager: public CXRefManagerBase
                     if (!item.primaryresolved[j0a]&&!item.replicateresolved[j0a]) 
                         incomplete = true;
                 if (incomplete&&(!item.outsidedir)&&(item.outsidenodes.ordinality()==0)&&(item.primarynum!=item.max)) {
-                    outf("%s,%d,%d,%d,%"I64F"d\n",item.lname.get(),item.primarynum,item.replicatenum,item.max,item.totalsize);
+                    outf("%s,%d,%d,%d,%" I64F "d\n",item.lname.get(),item.primarynum,item.replicatenum,item.max,item.totalsize);
                     item.done = true;
                 }
             }
@@ -2406,7 +2406,7 @@ class CXRefManager: public CXRefManagerBase
             ForEachItemIn(i,logicalnamelist) {
                 CLogicalNameEntry &item = logicalnamelist.item(i);
                 if (!item.outsidedir&&(item.outsidenodes.ordinality()==0)&&(item.primarynum!=item.max)) {
-                    outf("%s,%d,%d,%"I64F"d\n",item.lname.get(),item.primarynum,item.max,item.totalsize);
+                    outf("%s,%d,%d,%" I64F "d\n",item.lname.get(),item.primarynum,item.max,item.totalsize);
                     item.done = true;
                 }
             }
@@ -2416,7 +2416,7 @@ class CXRefManager: public CXRefManagerBase
             ForEachItemIn(i,logicalnamelist) {
                 CLogicalNameEntry &item = logicalnamelist.item(i);
                 if (!item.outsidedir&&(item.outsidenodes.ordinality()==0)&&(item.replicatenum!=item.max)) {
-                    outf("%s,%d,%d,%"I64F"d\n",item.lname.get(),item.replicatenum,item.max,item.totalsize);
+                    outf("%s,%d,%d,%" I64F "d\n",item.lname.get(),item.replicatenum,item.max,item.totalsize);
                     item.done = true;
                 }
             }

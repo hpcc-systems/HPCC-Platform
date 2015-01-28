@@ -488,7 +488,7 @@ void CJHTreeNode::releaseMem(void *togo, size32_t len)
         _countAllocationsCurrent = countAllocationsCurrent;
     }
     if (traceJHtreeAllocations)
-        DBGLOG("JHTREE memory usage: Released  %d - %"I64F"d currently allocated in %d allocations", len, _totalAllocatedCurrent, _countAllocationsCurrent);
+        DBGLOG("JHTREE memory usage: Released  %d - %" I64F "d currently allocated in %d allocations", len, _totalAllocatedCurrent, _countAllocationsCurrent);
 }
 
 void *CJHTreeNode::allocMem(size32_t len)
@@ -522,7 +522,7 @@ void *CJHTreeNode::allocMem(size32_t len)
         _countAllocationsEver = countAllocationsEver;
     }
     if (traceJHtreeAllocations)
-        DBGLOG("JHTREE memory usage: Allocated %d - %"I64F"d currently allocated in %d allocations", len, _totalAllocatedCurrent, _countAllocationsCurrent);
+        DBGLOG("JHTREE memory usage: Allocated %d - %" I64F "d currently allocated in %d allocations", len, _totalAllocatedCurrent, _countAllocationsCurrent);
     return ret;
 }
 
@@ -566,9 +566,9 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
     if (!hdr.isValid(keyHdr->getNodeSize()))
     {
         PROGLOG("hdr.leafFlag=%d",(int)hdr.leafFlag);
-        PROGLOG("hdr.rightSib=%"I64F"d",hdr.rightSib);
-        PROGLOG("hdr.leftSib=%"I64F"d",hdr.leftSib);
-        PROGLOG("maxsib=%"I64F"d",maxsib);
+        PROGLOG("hdr.rightSib=%" I64F "d",hdr.rightSib);
+        PROGLOG("hdr.leftSib=%" I64F "d",hdr.leftSib);
+        PROGLOG("maxsib=%" I64F "d",maxsib);
         PROGLOG("nodeSize=%d", keyHdr->getNodeSize());
         PROGLOG("keyBytes=%d",(int)hdr.keyBytes);
         PrintStackReport();
@@ -759,7 +759,7 @@ void CJHTreeNode::dump()
         StringBuffer nodeval;
         for (unsigned j = 0; j < keyLen; j++)
             nodeval.appendf("%02x", dst[j] & 0xff);
-        DBGLOG("keyVal %d [%"I64F"d] = %s", i, pos, nodeval.str());
+        DBGLOG("keyVal %d [%" I64F "d] = %s", i, pos, nodeval.str());
     }
     DBGLOG("==========");
 }
@@ -842,18 +842,18 @@ extern jhtree_decl void validateKeyFile(const char *filename, offset_t nodePos)
     _WINREV(hdr.root);
     _WINREV(hdr.nodeSize);
     if (hdr.phyrec != size-1)
-        throw MakeStringException(5, "Invalid key %s: phyrec was %"I64F"d, expected %"I64F"d", filename, hdr.phyrec, size-1);
+        throw MakeStringException(5, "Invalid key %s: phyrec was %" I64F "d, expected %" I64F "d", filename, hdr.phyrec, size-1);
     if (size % hdr.nodeSize)
-        throw MakeStringException(3, "Invalid key %s: size %"I64F"d is not a multiple of key node size (%d)", filename, size, hdr.nodeSize);
+        throw MakeStringException(3, "Invalid key %s: size %" I64F "d is not a multiple of key node size (%d)", filename, size, hdr.nodeSize);
     if (!hdr.root || hdr.root % hdr.nodeSize !=0)
-        throw MakeStringException(6, "Invalid key %s: invalid root pointer %"I64F"x", filename, hdr.root);
+        throw MakeStringException(6, "Invalid key %s: invalid root pointer %" I64F "x", filename, hdr.root);
     NodeHdr root;
     if (io->read(hdr.root, sizeof(root), &root) != sizeof(root))
         throw MakeStringException(7, "Invalid key %s: failed to read root node", filename);
     _WINREV(root.rightSib);
     _WINREV(root.leftSib);
     if (root.leftSib || root.rightSib)
-        throw MakeStringException(8, "Invalid key %s: invalid root node sibling pointers 0x%"I64F"x, 0x%"I64F"x (expected 0,0)", filename, root.leftSib, root.rightSib);
+        throw MakeStringException(8, "Invalid key %s: invalid root node sibling pointers 0x%" I64F "x, 0x%" I64F "x (expected 0,0)", filename, root.leftSib, root.rightSib);
 
     for (offset_t nodeOffset = (nodePos ? nodePos : hdr.nodeSize); nodeOffset < (nodePos ? nodePos+1 : size); nodeOffset += hdr.nodeSize)
     {
@@ -871,14 +871,14 @@ extern jhtree_decl void validateKeyFile(const char *filename, offset_t nodePos)
         NodeHdr *nodeHdr = (NodeHdr *) buffer;
         SwapBigEndian(*nodeHdr);
         if (!nodeHdr->isValid(hdr.nodeSize))
-            throw MakeStringException(9, "Invalid key %s: invalid node header at position 0x%"I64F"x", filename, nodeOffset);
+            throw MakeStringException(9, "Invalid key %s: invalid node header at position 0x%" I64F "x", filename, nodeOffset);
         if (nodeHdr->leftSib >= size || nodeHdr->rightSib >= size)
-            throw MakeStringException(9, "Invalid key %s: out of range sibling pointers 0x%"I64F"x, 0x%"I64F"x at position 0x%"I64F"x", filename, nodeHdr->leftSib, nodeHdr->rightSib, nodeOffset);
+            throw MakeStringException(9, "Invalid key %s: out of range sibling pointers 0x%" I64F "x, 0x%" I64F "x at position 0x%" I64F "x", filename, nodeHdr->leftSib, nodeHdr->rightSib, nodeOffset);
         if (nodeHdr->crc32)
         {
             unsigned crc = crc32(buffer + sizeof(NodeHdr), nodeHdr->keyBytes, 0);
             if (crc != nodeHdr->crc32)
-                throw MakeStringException(9, "Invalid key %s: crc mismatch at position 0x%"I64F"x", filename, nodeOffset);
+                throw MakeStringException(9, "Invalid key %s: crc mismatch at position 0x%" I64F "x", filename, nodeOffset);
         }
         else
         {
@@ -928,7 +928,7 @@ void CJHVarTreeNode::dump()
         StringBuffer nodeval;
         for (unsigned j = 0; j < reclen; j++)
             nodeval.appendf("%02x", dst[j] & 0xff);
-        DBGLOG("keyVal %d [%"I64F"d] = %s", i, pos, nodeval.str());
+        DBGLOG("keyVal %d [%" I64F "d] = %s", i, pos, nodeval.str());
     }
     DBGLOG("==========");
 }

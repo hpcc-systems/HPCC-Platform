@@ -91,7 +91,7 @@ StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *co
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
-    res.appendf("activity(%s, %"ACTPF"d)",activityKindStr(container->getKind()), container->queryId());
+    res.appendf("activity(%s, %" ACTPF "d)",activityKindStr(container->getKind()), container->queryId());
     if (0 != (flags & thorlog_ecl))
     {
         StringBuffer ecltext;
@@ -168,7 +168,7 @@ void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnu
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
-    res.appendf("graph(%s, %"GIDPF"d)", graph->queryJob().queryGraphName(), graph->queryGraphId());
+    res.appendf("graph(%s, %" GIDPF "d)", graph->queryJob().queryGraphName(), graph->queryGraphId());
 }
 
 void GraphPrintLogArgs(CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)

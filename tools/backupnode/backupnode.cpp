@@ -351,9 +351,9 @@ static void CompressDirectory(const char *target, unsigned numSlaves, bool compr
                         if (!silent)
                         {
                             if (compressThis)
-                                println("Compress %s before %"I64F"d", targetFile.queryFilename(), targetFile.size());
+                                println("Compress %s before %" I64F "d", targetFile.queryFilename(), targetFile.size());
                             else
-                                println("Decompress %s before %"I64F"d", targetFile.queryFilename(), targetFile.compressedSize());
+                                println("Decompress %s before %" I64F "d", targetFile.queryFilename(), targetFile.compressedSize());
                         }
                         if (!checkMode)
                             targetFile.setCompression(compressThis);
@@ -364,10 +364,10 @@ static void CompressDirectory(const char *target, unsigned numSlaves, bool compr
                                 if (checkMode)
                                     println("");  // size after not known
                                 else
-                                    println("after %"I64F"d", targetFile.compressedSize());
+                                    println("after %" I64F "d", targetFile.compressedSize());
                             }
                             else
-                                println("after %"I64F"d", targetFile.size());
+                                println("after %" I64F "d", targetFile.size());
                         }
                     }
                 }

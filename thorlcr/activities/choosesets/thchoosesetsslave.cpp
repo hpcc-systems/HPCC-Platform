@@ -381,7 +381,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
         for (unsigned idx=0; idx < numSets; idx++)
         {
             rowcount_t firstToCopy = 0;
-            ActPrintLog("CHOOSESETSLAST: %d P(%"RCPF"d) C(%"RCPF"d) L(%"I64F"d) T(%"RCPF"d)", idx, priorCounts[idx], counts[idx], limits[idx], totalCounts[idx]);
+            ActPrintLog("CHOOSESETSLAST: %d P(%" RCPF "d) C(%" RCPF "d) L(%" I64F "d) T(%" RCPF "d)", idx, priorCounts[idx], counts[idx], limits[idx], totalCounts[idx]);
             if (((rowcount_t)limits[idx]) < totalCounts[idx])
                 firstToCopy = totalCounts[idx] - (rowcount_t)limits[idx];
             if (priorCounts[idx] + counts[idx] > firstToCopy)
@@ -393,7 +393,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
                 numToReturn[idx] = (unsigned)(priorCounts[idx] + counts[idx] - firstToCopy);
                 skipAll = false;
 #if THOR_TRACE_LEVEL >= 5
-                ActPrintLog("CHOOSESETSLAST: Selection %d.  Range(%d,%"RCPF"d)", idx, numToSkip[idx], counts[idx]);
+                ActPrintLog("CHOOSESETSLAST: Selection %d.  Range(%d,%" RCPF "d)", idx, numToSkip[idx], counts[idx]);
 #endif
             }
         }

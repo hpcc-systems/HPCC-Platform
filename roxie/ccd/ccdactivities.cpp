@@ -92,7 +92,7 @@ extern void putStatsValue(StringBuffer &reply, const char *statName, const char 
 {
     if (val)
     {
-        reply.appendf("   <att name='%s' type='%s' value='%"I64F"d'/>\n", statName, statType, val);
+        reply.appendf("   <att name='%s' type='%s' value='%" I64F "d'/>\n", statName, statType, val);
     }
 }
 
@@ -4510,7 +4510,7 @@ public:
         {
             while(!lastMatch)
             if(!parser->next())
-                throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %"I64F"d", pos);
+                throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %" I64F "d", pos);
             IHThorXmlFetchArg *h = (IHThorXmlFetchArg *) helper;
             unsigned thisSize = h->transform(rowBuilder, lastMatch, inputData, rawpos);
             lastMatch.clear();
@@ -4520,7 +4520,7 @@ public:
         catch (IException *E)
         {
             ::Release(E);
-            throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %"I64F"d", pos);
+            throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %" I64F "d", pos);
         }
     }
 
@@ -4819,12 +4819,12 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                 {
                     candidateCount = atmost+1;
                     if (logctx.queryTraceLevel() > 5)
-                        logctx.CTXLOG("Pre-aborting since candidate count is at least %"I64F"d", precount);
+                        logctx.CTXLOG("Pre-aborting since candidate count is at least %" I64F "d", precount);
                 }
                 else
                 {
                     if (logctx.queryTraceLevel() > 10)
-                        logctx.CTXLOG("NOT Pre-aborting since candidate count is %"I64F"d", precount);
+                        logctx.CTXLOG("NOT Pre-aborting since candidate count is %" I64F "d", precount);
                     tlk->reset(false);
                 }
             }

@@ -1211,9 +1211,9 @@ void holeIntFormat(size32_t maxlen, char * target, __int64 value, unsigned width
 {
     StringBuffer result;
     if (flags & 1)
-        result.appendf("%0*"I64F"d", width, value);
+        result.appendf("%0*" I64F "d", width, value);
     else
-        result.appendf("%*"I64F"d", width, value);
+        result.appendf("%*" I64F "d", width, value);
     size32_t written = result.length();
     if (written > maxlen)
         memset(target, '*', maxlen);

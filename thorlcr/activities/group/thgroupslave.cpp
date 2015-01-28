@@ -113,7 +113,7 @@ public:
                 }
             }
             writer.clear();
-            ActPrintLog("GROUP: %"RCPF"d records to send", collector->numRows());
+            ActPrintLog("GROUP: %" RCPF "d records to send", collector->numRows());
             Owned<IRowStream> strm = collector->getStream();
             rowServer.setown(createRowServer(this, strm, container.queryJob().queryJobComm(), mpTag));
         }

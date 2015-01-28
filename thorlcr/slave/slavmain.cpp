@@ -331,7 +331,7 @@ public:
                         Owned<IPropertyTree> graphNode = createPTree(msg);
                         Owned<CSlaveGraph> subGraph = (CSlaveGraph *)job->createGraph();
                         subGraph->createFromXGMML(graphNode, NULL, NULL, NULL);
-                        PROGLOG("GraphInit: %s, graphId=%"GIDPF"d", jobKey.get(), subGraph->queryGraphId());
+                        PROGLOG("GraphInit: %s, graphId=%" GIDPF "d", jobKey.get(), subGraph->queryGraphId());
                         subGraph->setExecuteReplyTag(subGraph->queryJob().deserializeMPTag(msg));
                         size32_t len;
                         msg.read(len);

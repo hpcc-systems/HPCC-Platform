@@ -882,7 +882,7 @@ class CSuperAllocator: public CInterface, implements IAllocator
         if (OsTotal+sz>OsMax)
         {
             PrintStackReport();
-            DBGLOG("Free list mem = %"I64F"d", (unsigned __int64)freeListMemRemaining(true));
+            DBGLOG("Free list mem = %" I64F "d", (unsigned __int64)freeListMemRemaining(true));
             throw new CAllocatorOutOfMemException(e_out_of_memory,sz,OsTotal);
         }
 
@@ -894,7 +894,7 @@ class CSuperAllocator: public CInterface, implements IAllocator
         if (ret == (void *)MAP_FAILED) {
 #endif
             PrintStackReport();
-            DBGLOG("Free list mem = %"I64F"d", (unsigned __int64)freeListMemRemaining(true));
+            DBGLOG("Free list mem = %" I64F "d", (unsigned __int64)freeListMemRemaining(true));
             throw new CAllocatorOutOfMemException(e_out_of_memory,sz,OsTotal);
             return NULL;
         }
@@ -1704,8 +1704,8 @@ public:
         } walker(logdata);
         walk(walker);
         if (walker.num)
-            PROGLOG("JMALLOC LEAKCHECKING: %d leaks, total memory %"I64F"d",walker.num,(__int64)walker.tot);
-        PROGLOG("JMALLOC OSBLOCKS: %d, total memory %"I64F"d",walker.osnum,(__int64)walker.ostot);
+            PROGLOG("JMALLOC LEAKCHECKING: %d leaks, total memory %" I64F "d",walker.num,(__int64)walker.tot);
+        PROGLOG("JMALLOC OSBLOCKS: %d, total memory %" I64F "d",walker.osnum,(__int64)walker.ostot);
     }
 
 };

@@ -82,7 +82,7 @@
 #define DFUERR_DifferentNodes_Text          "Part %d(%s): Nodes must be different (currently %s)"
 #define DFUERR_MultiNotAllowed_Text         "Wild or Multi-filenames not allowed for this operation"
 
-#define DFUERR_JobNotFound_Text             "No recovery information found for job %"I64F"d"
+#define DFUERR_JobNotFound_Text             "No recovery information found for job %" I64F "d"
 #define DFUERR_NoJobFound_Text              "No matching recovery information found."
 #define DFUERR_InconsistentInfo_Text        "Recovery information is inconsistent with current state."
 

@@ -887,7 +887,7 @@ public:
         manager->noteReceived(*pktHdr);
 
         if (udpTraceLevel >= 4) 
-            DBGLOG("UdpReceiver: CPacketCollator - unQed packet - ruid="RUIDF" id=0x%.8X mseq=%u pkseq=0x%.8X len=%d node=%u",
+            DBGLOG("UdpReceiver: CPacketCollator - unQed packet - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X len=%d node=%u",
                 pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->length, pktHdr->nodeIndex);
 
         Linked <IMessageCollator> msgColl;
@@ -899,7 +899,7 @@ public:
                 if (!msgColl)
                 {
                     if (udpTraceLevel)
-                        DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - using default - ruid="RUIDF" id=0x%.8X mseq=%u pkseq=0x%.8X node=%u", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex);
+                        DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - using default - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex);
                     msgColl.set(defaultMessageCollator); // MORE - if we get a header, we can send an abort.
                 }
             }
@@ -926,7 +926,7 @@ public:
         {
             // MORE - tell the slave to stop sending?
 //              if (udpTraceLevel > 1 && lastDiscardedMsgSeq != pktHdr->msgSeq)
-//              DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - discarding packet - ruid="RUIDF" id=0x%.8X mseq=%u pkseq=0x%.8X node=%u", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex);
+//              DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - discarding packet - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex);
 //          lastDiscardedMsgSeq = pktHdr->msgSeq;
         }
         if (dataBuff) 

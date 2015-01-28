@@ -599,7 +599,7 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
         return -1;
 
     if (getEspLogLevel()>LogNormal)
-        DBGLOG("Headers processed! content_length = %"I64F"d", m_content_length);
+        DBGLOG("Headers processed! content_length = %" I64F "d", m_content_length);
     
     if (isUpload())
         return 0;
@@ -2323,7 +2323,7 @@ int CHttpResponse::receive(bool alwaysReadContent, IMultiException *me)
         return -1;
 
     if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response headers processed! content_length = %"I64F"d", m_content_length);
+        DBGLOG("Response headers processed! content_length = %" I64F "d", m_content_length);
     
     char status_class = '2';
     if(m_status.length() > 0)

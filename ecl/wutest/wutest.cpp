@@ -75,7 +75,7 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     else if (stricmp(action, "temporaries")==0)
     {
         Owned<IConstWUResult> r = w.getTemporaryByName("a8QL");
-        printf("%s = %"I64F"d\n", "a8QL", r->getResultInt());
+        printf("%s = %" I64F "d\n", "a8QL", r->getResultInt());
     }
     else if (stricmp(action, "get")==0)
     {

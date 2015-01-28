@@ -190,7 +190,7 @@ public:
                     bool disconnect;
                     params.read(connectionId);
                     params.read(disconnect);
-                    PROGLOG("Dalidiag request to unlock connection id: %"I64F"x", connectionId);
+                    PROGLOG("Dalidiag request to unlock connection id: %" I64F "x", connectionId);
                     StringBuffer connectionInfo;
                     bool success = querySDSServer().unlock(connectionId, disconnect, connectionInfo);
                     mb.append(success);

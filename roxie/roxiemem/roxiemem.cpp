@@ -233,19 +233,19 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         	switch (ret)
         	{
         	case EINVAL:
-        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%"I64F"u, size=%"I64F"u) failed - ret=%d "
+        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
         				"(EINVAL The alignment argument was not a power of two, or was not a multiple of sizeof(void *)!)",
         		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
         		break;
 
         	case ENOMEM:
-        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%"I64F"u, size=%"I64F"u) failed - ret=%d "
+        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d "
         				"(ENOMEM There was insufficient memory to fulfill the allocation request.)",
         		        		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
         		break;
 
         	default:
-        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%"I64F"u, size=%"I64F"u) failed - ret=%d",
+        		DBGLOG("RoxieMemMgr: posix_memalign (alignment=%" I64F "u, size=%" I64F "u) failed - ret=%d",
         		                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
         		break;
 
@@ -309,7 +309,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     heapLWM = 0;
 
     if (memTraceLevel)
-        DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%"I64F"u base=%p alignment=%"I64F"u bitmapSize=%u", 
+        DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%" I64F "u base=%p alignment=%" I64F "u bitmapSize=%u", 
                 heapTotalPages, (unsigned __int64) memsize, heapBase, (unsigned __int64) HEAP_ALIGNMENT_SIZE, heapBitmapSize);
 }
 
@@ -1550,7 +1550,7 @@ public:
         //it isn't possible to walk the rows in 0..freeBase and see if they are allocated or not
         //so have to be content with a summary
         if (numLeaked)
-            logctx.CTXLOG("Packed allocator for size %"I64F"u activity %u leaks %u rows", (unsigned __int64) chunkCapacity, getActivityId(sharedAllocatorId), numLeaked);
+            logctx.CTXLOG("Packed allocator for size %" I64F "u activity %u leaks %u rows", (unsigned __int64) chunkCapacity, getActivityId(sharedAllocatorId), numLeaked);
         leaked -= numLeaked;
     }
 
@@ -1710,7 +1710,7 @@ public:
 
     virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const 
     {
-        logctx.CTXLOG("Block size %"I64F"u was allocated by activity %u and not freed", (unsigned __int64) chunkCapacity, getActivityId(allocatorId));
+        logctx.CTXLOG("Block size %" I64F "u was allocated by activity %u and not freed", (unsigned __int64) chunkCapacity, getActivityId(allocatorId));
         leaked--;
     }
 
@@ -1847,12 +1847,12 @@ public:
                 j++;
             }
             qsort(results, j, sizeof(results[0]), sortUsage);
-            logctx.CTXLOG("Snapshot of peak memory usage: %"I64F"u total bytes allocated", (unsigned __int64) totalUsed);
+            logctx.CTXLOG("Snapshot of peak memory usage: %" I64F "u total bytes allocated", (unsigned __int64) totalUsed);
             while (j)
             {
                 j--;
                 unsigned activityId = getRealActivityId(results[j]->allocatorId, allocatorCache);
-                logctx.CTXLOG("%"I64F"u bytes allocated by activity %u (%u allocations)", (unsigned __int64) results[j]->usage, activityId, results[j]->allocations);
+                logctx.CTXLOG("%" I64F "u bytes allocated by activity %u (%u allocations)", (unsigned __int64) results[j]->usage, activityId, results[j]->allocations);
             }
 
             memsize_t totalHeapPages = 0;
@@ -1872,7 +1872,7 @@ public:
                 //Should never be called with numPages == 0, but protect against divide by zero in case of race condition etc.
                 unsigned __int64 memReserved = cur.numPages * HEAP_ALIGNMENT_SIZE;
                 unsigned percentUsed = cur.numPages ? (unsigned)((cur.memUsed * 100) / memReserved) : 100;
-                logctx.CTXLOG("size: %"I64F"u [%s] reserved: %"I64F"up %u%% (%"I64F"u/%"I64F"u) used",
+                logctx.CTXLOG("size: %" I64F "u [%s] reserved: %" I64F "up %u%% (%" I64F "u/%" I64F "u) used",
                         (unsigned __int64) cur.allocatorSize, flags.str(), (unsigned __int64) cur.numPages, percentUsed, (unsigned __int64) cur.memUsed, (unsigned __int64) memReserved);
                 totalHeapPages += cur.numPages;
                 totalHeapUsed += cur.memUsed;
@@ -1881,7 +1881,7 @@ public:
             //Should never be called with numPages == 0, but protect against divide by zero in case of race condition etc.
             unsigned __int64 totalReserved = totalHeapPages * HEAP_ALIGNMENT_SIZE;
             unsigned percentUsed = totalHeapPages ? (unsigned)((totalHeapUsed * 100) / totalReserved) : 100;
-            logctx.CTXLOG("Total: %"I64F"up %u%% (%"I64F"u/%"I64F"u) used",
+            logctx.CTXLOG("Total: %" I64F "up %u%% (%" I64F "u/%" I64F "u) used",
                     (unsigned __int64) totalHeapPages, percentUsed, (unsigned __int64) totalHeapUsed, (unsigned __int64) totalReserved);
 
             logctx.CTXLOG("------------------ End of snapshot");
@@ -3176,7 +3176,7 @@ public:
         trackMemoryByActivity = false;
 #endif
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%"I64F"u pageLimit=%u rowMgr=%p", (unsigned __int64)_memLimit, pageLimit, this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%" I64F "u pageLimit=%u rowMgr=%p", (unsigned __int64)_memLimit, pageLimit, this);
         if (timeLimit)
         {
             cyclesChecked = get_cycles_now();
@@ -3369,7 +3369,7 @@ public:
     {
         if (memTraceSizeLimit && _size >= memTraceSizeLimit)
         {
-            logctx.CTXLOG("Activity %u requesting %"I64F"u bytes!", getActivityId(activityId), (unsigned __int64) _size);
+            logctx.CTXLOG("Activity %u requesting %" I64F "u bytes!", getActivityId(activityId), (unsigned __int64) _size);
             PrintStackReport();
         }
         if (timeLimit)
@@ -3461,7 +3461,7 @@ public:
             callbacks.stopReleaseBufferThread();
 
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::setMemoryLimit new memlimit=%"I64F"u pageLimit=%u spillLimit=%u rowMgr=%p", (unsigned __int64) bytes, pageLimit, spillPageLimit, this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::setMemoryLimit new memlimit=%" I64F "u pageLimit=%u spillLimit=%u rowMgr=%p", (unsigned __int64) bytes, pageLimit, spillPageLimit, this);
     }
 
     virtual void setMemoryCallbackThreshold(unsigned value)
@@ -4048,7 +4048,7 @@ void * CHugeHeap::doAllocate(memsize_t _size, unsigned allocatorId, unsigned max
     if (memTraceLevel >= 2 || (memTraceSizeLimit && _size >= memTraceSizeLimit))
     {
         unsigned numPages = head->sizeInPages();
-        logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %"I64F"u) allocated new HugeHeaplet size %"I64F"u - addr=%p pages=%u pageLimit=%u peakPages=%u rowMgr=%p",
+        logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %" I64F "u) allocated new HugeHeaplet size %" I64F "u - addr=%p pages=%u pageLimit=%u peakPages=%u rowMgr=%p",
             (unsigned __int64) _size, (unsigned __int64) (numPages*HEAP_ALIGNMENT_SIZE), head, numPages, rowManager->pageLimit, rowManager->peakPages, this);
     }
 
@@ -6213,7 +6213,7 @@ protected:
         }
         ReleaseRoxieRow(prev);
         unsigned endTime = msTick();
-        DBGLOG("Time for fragmenting allocate = %d, max allocation=%"I64F"u, limit = %"I64F"u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
+        DBGLOG("Time for fragmenting allocate = %d, max allocation=%" I64F "u, limit = %" I64F "u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
         ASSERT(requestSize > memorySize/4);
     }
 
@@ -6250,7 +6250,7 @@ protected:
         ReleaseRoxieRow(prev1);
         ReleaseRoxieRow(prev2);
         unsigned endTime = msTick();
-        DBGLOG("Time for fragmenting double allocate = %d, max allocation=%"I64F"u, limit = %"I64F"u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
+        DBGLOG("Time for fragmenting double allocate = %d, max allocation=%" I64F "u, limit = %" I64F "u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
         ASSERT(requestSize > memorySize/8);
     }
 
@@ -6281,7 +6281,7 @@ protected:
         }
         ReleaseRoxieRow(prev);
         unsigned endTime = msTick();
-        DBGLOG("Time for fragmenting resize = %d, max allocation=%"I64F"u, limit = %"I64F"u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
+        DBGLOG("Time for fragmenting resize = %d, max allocation=%" I64F "u, limit = %" I64F "u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
         ASSERT(requestSize > memorySize/1.3);
     }
 
@@ -6318,7 +6318,7 @@ protected:
         ReleaseRoxieRow(prev1);
         ReleaseRoxieRow(prev2);
         unsigned endTime = msTick();
-        DBGLOG("Time for fragmenting double resize = %d, max allocation=%"I64F"u, limit = %"I64F"u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
+        DBGLOG("Time for fragmenting double resize = %d, max allocation=%" I64F "u, limit = %" I64F "u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
         ASSERT(requestSize > memorySize/4);
     }
 

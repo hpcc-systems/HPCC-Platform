@@ -49,7 +49,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, public CThorDataLink, imp
                 createDefaultIfFail = true;
         }
         startN = N;
-        ActPrintLog("SELECTNTH: Selecting row %"I64F"d", N);
+        ActPrintLog("SELECTNTH: Selecting row %" I64F "d", N);
     }
     void sendN()
     {
@@ -111,7 +111,7 @@ public:
             ThorDataLinkMetaInfo info;
             inputs.item(0)->getMetaInfo(info);
             StringBuffer meta;
-            meta.appendf("META(totalRowsMin=%"I64F"d,totalRowsMax=%"I64F"d,rowsOutput=%"RCPF"d,spilled=%"I64F"d,byteTotal=%"I64F"d)",
+            meta.appendf("META(totalRowsMin=%" I64F "d,totalRowsMax=%" I64F "d,rowsOutput=%" RCPF "d,spilled=%" I64F "d,byteTotal=%" I64F "d)",
                 info.totalRowsMin,info.totalRowsMax,info.rowsOutput,info.spilled,info.byteTotal);
 #if 0                 
             Owned<IThorException> e = MakeActivityWarning(this, -1, "%s", meta.str());

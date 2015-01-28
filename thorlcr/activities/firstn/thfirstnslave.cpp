@@ -272,7 +272,7 @@ public:
         limitgot.signal();
         if (inputMeta.totalRowsMin==inputMeta.totalRowsMax)
         {
-            ActPrintLog("Row count pre-known to be %"I64F"d", inputMeta.totalRowsMin);
+            ActPrintLog("Row count pre-known to be %" I64F "d", inputMeta.totalRowsMin);
             rowcount_t r = (rowcount_t)inputMeta.totalRowsMin;
             if (limit+skipCount<r)
                 r = limit+skipCount;
@@ -285,7 +285,7 @@ public:
                 }
             }
         }
-        ActPrintLog("FIRSTN: Record limit is %"RCPF"d %"RCPF"d", limit, skipCount); 
+        ActPrintLog("FIRSTN: Record limit is %" RCPF "d %" RCPF "d", limit, skipCount); 
         return true;
     }
     void sendCount()
@@ -320,7 +320,7 @@ public:
         msgMb.append(read);
         msgMb.append(skip);
         container.queryJob().queryJobComm().send(msgMb, 0, mpTag);
-        ActPrintLog("FIRSTN: Read %"RCPF"d records, left to skip=%"RCPF"d", read, skip);
+        ActPrintLog("FIRSTN: Read %" RCPF "d records, left to skip=%" RCPF "d", read, skip);
     }
     CATCH_NEXTROW()
     {
@@ -374,7 +374,7 @@ public:
             
             sendCount();
         }
-        ActPrintLog("FIRSTN: maximum row count %"RCPF"d", count);
+        ActPrintLog("FIRSTN: maximum row count %" RCPF "d", count);
         if (0 == count)
         {
             limit = 0;

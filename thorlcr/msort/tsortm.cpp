@@ -579,7 +579,7 @@ public:
             else if (cmp>0)
                 ActPrintLog(activity, "ERROR: Min > Max!");
         }
-        ActPrintLog(activity, "Tot = %"I64F"d", tot);
+        ActPrintLog(activity, "Tot = %" I64F "d", tot);
 #endif
         return tot;
     }
@@ -990,7 +990,7 @@ public:
                     unsigned __int64 wanted = nodewanted*(i+1); // scaled total assumed >> numnodes
 #ifdef _DEBUG
                     if (logging) 
-                        ActPrintLog(activity, "  wanted = %"CF"d, %stotal = %"CF"d, loc = %"CF"d, locwanted = %"CF"d\n",wanted,(total!=stotal)?"scaled ":"",tot,loc,nodewanted);
+                        ActPrintLog(activity, "  wanted = %" CF "d, %stotal = %" CF "d, loc = %" CF "d, locwanted = %" CF "d\n",wanted,(total!=stotal)?"scaled ":"",tot,loc,nodewanted);
 #endif
                     bool isdone=false;
                     unsigned __int64 error = (loc>nodewanted)?(loc-nodewanted):(nodewanted-loc);
@@ -1013,7 +1013,7 @@ public:
                     break; // reached steady state 
                 }
                 if ((maxerror*10000<nodewanted)||((iter>3)&&(maxerror<variancelimit))) { // within .01% or within variancelimit 
-                    ActPrintLog(activity, "maxerror = %"CF"d, nodewanted = %"CF"d, variancelimit=%"CF"d, estrecsize=%u, maxdeviance=%u",
+                    ActPrintLog(activity, "maxerror = %" CF "d, nodewanted = %" CF "d, variancelimit=%" CF "d, estrecsize=%u, maxdeviance=%u",
                              maxerror,nodewanted,variancelimit,estrecsize,maxdeviance);
                     break;
                 }
@@ -1037,7 +1037,7 @@ public:
                 StringBuffer str;
                 str.appendf("%d: ",i);
                 for (j=0;j<numnodes;j++) {
-                    str.appendf("%"RCPF"d, ",splitmap[j+i*numnodes]);
+                    str.appendf("%" RCPF "d, ",splitmap[j+i*numnodes]);
                 }
                 ActPrintLog(activity, "%s",str.str());
             }
@@ -1184,7 +1184,7 @@ public:
         if (skewError<0.000000001)
             skewError = 1.0/(double) n;
         double cSkew = ((double)n*(double)max/(double)total - 1.0) / ((double)n-1.0);
-        ActPrintLog(activity, "Skew check: Threshold %"I64F"d/%"I64F"d  Skew: %f/[warning=%f, error=%f]",
+        ActPrintLog(activity, "Skew check: Threshold %" I64F "d/%" I64F "d  Skew: %f/[warning=%f, error=%f]",
                   (unsigned __int64)max*(unsigned __int64)estrecsize,threshold,cSkew,skewWarning,skewError);
         if ((unsigned __int64)max*(unsigned __int64)estrecsize>threshold)
         {
@@ -1213,7 +1213,7 @@ public:
             ActPrintLog(activity, "WARNING: Skew warning %f > skew error %f", skewWarning, skewError);
             skewWarning = 0.0;
         }
-        ActPrintLog(activity, "Sort: canoptimizenullcolumns=%s, usepartitionrow=%s, betweensort=%s skewWarning=%f skewError=%f minisortthreshold=%"I64F"d",canoptimizenullcolumns?"true":"false",usepartitionrow?"true":"false",betweensort?"true":"false",skewWarning,skewError,(__int64)minisortthreshold);
+        ActPrintLog(activity, "Sort: canoptimizenullcolumns=%s, usepartitionrow=%s, betweensort=%s skewWarning=%f skewError=%f minisortthreshold=%" I64F "d",canoptimizenullcolumns?"true":"false",usepartitionrow?"true":"false",betweensort?"true":"false",skewWarning,skewError,(__int64)minisortthreshold);
         assertex(partitioninfo);
         maxdeviance = _maxdeviance;
         unsigned i;
@@ -1234,9 +1234,9 @@ public:
             if (slave.numrecs<minrecsonnode)
                 minrecsonnode = slave.numrecs;
         }
-        ActPrintLog(activity,"Total recs in mem = %"RCPF"d scaled recs= %"RCPF"d size = %"CF"d bytes, minrecsonnode = %"RCPF"d, maxrecsonnode = %"RCPF"d",total,stotal,totalmem,minrecsonnode,maxrecsonnode);
+        ActPrintLog(activity,"Total recs in mem = %" RCPF "d scaled recs= %" RCPF "d size = %" CF "d bytes, minrecsonnode = %" RCPF "d, maxrecsonnode = %" RCPF "d",total,stotal,totalmem,minrecsonnode,maxrecsonnode);
         if (!usepartitionrow&&!betweensort&&(totalmem<minisortthreshold)&&!overflowed) {
-            ActPrintLog(activity, "Performing minisort of %"RCPF"d records", total);
+            ActPrintLog(activity, "Performing minisort of %" RCPF "d records", total);
             sorted = MiniSort(total);
             return;
         }
@@ -1392,7 +1392,7 @@ public:
                     CSortNode &slave = slaves.item(i);
                     char url[100];
                     slave.endpoint.getUrlStr(url,sizeof(url));
-                    ActPrintLog(activity, "Split point %d: %"RCPF"d rows on %s", i, tot[i], url);
+                    ActPrintLog(activity, "Split point %d: %" RCPF "d rows on %s", i, tot[i], url);
                 }
                 Owned<IThorException> e = CheckSkewed(threshold,skewWarning,skewError,numnodes,total,max);
                 if (e)
@@ -1410,7 +1410,7 @@ public:
 #endif
                     throw e.getClear();
                 }
-                ActPrintLog(activity, "Starting Merge of %"RCPF"d records",total);
+                ActPrintLog(activity, "Starting Merge of %" RCPF "d records",total);
                 for (i=0;i<numnodes;i++) {
                     CSortNode &slave = slaves.item(i);
                     char url[100];

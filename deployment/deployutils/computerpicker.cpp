@@ -405,7 +405,7 @@ void CComputerPicker::Refresh()
   int iItem = 0;
   m_pComputerTree.clear();
   m_pComputerTree.setown(createPTree("ComputerList"));
-  Owned<IPropertyTreeIterator> iComputer = m_pRootNode->getElements(XML_TAG_HARDWARE"/"XML_TAG_COMPUTER);
+  Owned<IPropertyTreeIterator> iComputer = m_pRootNode->getElements( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER );
   ForEach (*iComputer)
   {
     // Must have a valid name

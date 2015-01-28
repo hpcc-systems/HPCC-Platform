@@ -471,7 +471,7 @@ void CThorKeyArray::calcPositions(IFile *file,CThorKeyArray &sample)
             rowif->queryRowSerializer()->serialize(ssz,(const byte *)rowcmp.get());
             pos += ssz.size();
         }
-        //PROGLOG("CThorKeyArray::calcPositions %d: initpos = %"I64F"d pos = %"I64F"d",i,initpos,pos);
+        //PROGLOG("CThorKeyArray::calcPositions %d: initpos = %" I64F "d pos = %" I64F "d",i,initpos,pos);
         filepos->replace(pos,i);
     }
     totalfilesize = sample.totalfilesize;

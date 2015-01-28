@@ -150,7 +150,7 @@ private:
     {
         if (haveLocalCount()) // if local total count known, send total now
         {
-            ActPrintLog("COUNTPROJECT: row count pre-known to be %"RCPF"d", localRecCount);
+            ActPrintLog("COUNTPROJECT: row count pre-known to be %" RCPF "d", localRecCount);
             sendCount(prevRecCount + localRecCount);
         }
         else
@@ -227,7 +227,7 @@ public:
             prevRecCountSem.wait();
             if (!abortSoon)
             {
-                ActPrintLog("count is %"RCPF"d", localRecCount);
+                ActPrintLog("count is %" RCPF "d", localRecCount);
                 sendCount(prevRecCount + localRecCount);
             }
         }

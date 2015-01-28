@@ -678,7 +678,7 @@ public:
                     throw makeOsException(-1, "Unfinished threads detected!");
             }
 
-            Owned<IPropertyTreeIterator> iter = pComputers->getElements(XML_TAG_COMPUTER);
+            Owned<IPropertyTreeIterator> iter = pComputers->getElements( XML_TAG_COMPUTER );
             StringBuffer localip;
             queryHostIP().getIpText(localip);
 

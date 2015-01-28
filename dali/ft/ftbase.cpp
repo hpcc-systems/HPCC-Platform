@@ -145,7 +145,7 @@ void PartitionPoint::display()
 {
     StringBuffer fulli, fullo;
     LOG(MCdebugInfoDetail, unknownJob, 
-             "Partition %s{%d}[%"I64F"d size %"I64F"d]->%s{%d}[%"I64F"d size %"I64F"d]", 
+             "Partition %s{%d}[%" I64F "d size %" I64F "d]->%s{%d}[%" I64F "d size %" I64F "d]",
              inputName.getPath(fulli).str(), whichInput, inputOffset, inputLength, 
              outputName.getPath(fullo).str(), whichOutput, outputOffset, outputLength);
 }
@@ -548,7 +548,7 @@ MemoryBuffer & OutputProgress::deserializeExtra(MemoryBuffer & in, unsigned vers
 static const char * const statusText[] = {"Init","Active","Copied","Renamed"};
 void OutputProgress::trace()
 {
-    LOG(MCdebugInfoDetail, unknownJob, "[%d] %s  %"I64F"d[%x]->%"I64F"d[%x]", whichPartition, statusText[status], inputLength, inputCRC, outputLength, outputCRC);
+    LOG(MCdebugInfoDetail, unknownJob, "[%d] %s  %" I64F "d[%x]->%" I64F "d[%x]", whichPartition, statusText[status], inputLength, inputCRC, outputLength, outputCRC);
 }
 
 MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)        

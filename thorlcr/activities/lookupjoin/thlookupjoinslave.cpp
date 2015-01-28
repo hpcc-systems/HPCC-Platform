@@ -641,7 +641,7 @@ public:
         ++uniqueTotal;
         mark(rowCount-1); // last row is implicitly end of group
         cmp = NULL;
-        DBGLOG("CMarker::calculate - uniqueTotal=%"RIPF"d, took=%d ms", uniqueTotal, timer.elapsedMs());
+        DBGLOG("CMarker::calculate - uniqueTotal=%" RIPF "d, took=%d ms", uniqueTotal, timer.elapsedMs());
         return uniqueTotal;
     }
     rowidx_t findNextBoundary(rowidx_t start)
@@ -1274,7 +1274,7 @@ public:
             rows.flush();
             rhsRows += rows.numCommitted();
             if (rhsRows > RIMAX)
-                throw MakeActivityException(this, 0, "Too many RHS rows: %"RCPF"d", rhsRows);
+                throw MakeActivityException(this, 0, "Too many RHS rows: %" RCPF "d", rhsRows);
         }
         return (rowidx_t)rhsRows;
     }
@@ -1301,7 +1301,7 @@ public:
     }
     virtual void onInputFinished(rowcount_t count)
     {
-        ActPrintLog("LHS input finished, %"RCPF"d rows read", count);
+        ActPrintLog("LHS input finished, %" RCPF "d rows read", count);
     }
 };
 
@@ -1469,7 +1469,7 @@ protected:
                 clearedRows += clearNonLocalRows(rows, 0);
             }
         }
-        ActPrintLog("handleLowMem: clearedRows = %"RIPF"d", clearedRows);
+        ActPrintLog("handleLowMem: clearedRows = %" RIPF "d", clearedRows);
         return 0 != clearedRows;
     }
     bool setupHT(rowidx_t size)
@@ -1480,7 +1480,7 @@ protected:
         {
             rowcount_t res = size/3*4; // make HT 1/3 bigger than # rows
             if ((res < size) || (res > RIMAX)) // check for overflow, or result bigger than rowidx_t size
-                throw MakeActivityException(this, 0, "Too many rows on RHS for hash table: %"RCPF"d", res);
+                throw MakeActivityException(this, 0, "Too many rows on RHS for hash table: %" RCPF "d", res);
             size = (rowidx_t)res;
         }
         try
@@ -1754,7 +1754,7 @@ protected:
                         unsigned rwFlags = DEFAULT_RWFLAGS;
                         if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
                             rwFlags |= rw_compress;
-                        ActPrintLog("Reading overflow RHS broadcast rows : %"RCPF"d", overflowWriteCount);
+                        ActPrintLog("Reading overflow RHS broadcast rows : %" RCPF "d", overflowWriteCount);
                         Owned<IRowStream> overflowStream = createRowStream(&overflowWriteFile->queryIFile(), queryRowInterfaces(rightITDL), rwFlags);
                         rightStreams.append(* overflowStream.getClear());
                     }
@@ -1770,7 +1770,7 @@ protected:
 
             if (!rightStream)
             {
-                ActPrintLog("RHS local rows fitted in memory, count: %"RIPF"d", rhs.ordinality());
+                ActPrintLog("RHS local rows fitted in memory, count: %" RIPF "d", rhs.ordinality());
                 // all fitted in memory, rows were transferred out back into 'rhs' and sorted
 
                 /* Now need to size HT.
@@ -1814,7 +1814,7 @@ protected:
                 }
                 if (!success)
                 {
-                    ActPrintLog("Out of memory trying to allocate [LOCAL] tables for a SMART join (%"RIPF"d rows), will now failover to a std hash join", rhs.ordinality());
+                    ActPrintLog("Out of memory trying to allocate [LOCAL] tables for a SMART join (%" RIPF "d rows), will now failover to a std hash join", rhs.ordinality());
                     Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), NULL, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
                     collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
                     collector->transferRowsIn(rhs); // can spill after this
@@ -2503,7 +2503,7 @@ protected:
             {
                 rhsTotalCount = rightMeta.totalRowsMax;
                 if (rhsTotalCount > RIMAX)
-                    throw MakeActivityException(this, 0, "Too many rows on RHS for ALL join: %"RCPF"d", rhsTotalCount);
+                    throw MakeActivityException(this, 0, "Too many rows on RHS for ALL join: %" RCPF "d", rhsTotalCount);
                 rhs.ensure((rowidx_t)rhsTotalCount);
             }
             while (!abortSoon)

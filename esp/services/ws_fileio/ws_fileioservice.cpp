@@ -253,7 +253,7 @@ bool CWsFileIOEx::onReadFileData(IEspContext &context, IEspReadFileDataRequest &
     __int64 size = io->size();
     if (offset >= size)
     {
-        result.appendf("Invalid offset: file size = %"I64F"d.", size);
+        result.appendf("Invalid offset: file size = %" I64F "d.", size);
         resp.setResult(result.str());
         return true;
     }

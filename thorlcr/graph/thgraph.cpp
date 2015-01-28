@@ -498,7 +498,7 @@ void CGraphElementBase::addInput(unsigned input, CGraphElementBase *inputAct, un
 
 void CGraphElementBase::connectInput(unsigned input, CGraphElementBase *inputAct, unsigned inputOutIdx)
 {
-    ActPrintLog("CONNECTING (id=%"ACTPF"d, idx=%d) to (id=%"ACTPF"d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
+    ActPrintLog("CONNECTING (id=%" ACTPF "d, idx=%d) to (id=%" ACTPF "d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
     while (connectedInputs.ordinality()<=input) connectedInputs.append(NULL);
     connectedInputs.replace(new COwningSimpleIOConnection(LINK(inputAct), inputOutIdx), input);
     while (inputAct->connectedOutputs.ordinality()<=inputOutIdx) inputAct->connectedOutputs.append(NULL);
@@ -2294,7 +2294,7 @@ public:
         {
             loop
             {
-                PROGLOG("Waiting on subgraph %"GIDPF"d", subGraph->queryGraphId());
+                PROGLOG("Waiting on subgraph %" GIDPF "d", subGraph->queryGraphId());
                 if (runningSem.wait(MEDIUMTIMEOUT) || job.queryAborted() || job.queryPausing())
                     break;
             }
@@ -2334,7 +2334,7 @@ public:
             if (running.ordinality()<limit)
             {
                 running.append(*LINK(graphInfo));
-                PROGLOG("Add: Launching graph thread for graphId=%"GIDPF"d", subGraph->queryGraphId());
+                PROGLOG("Add: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
                 PooledThreadHandle h = graphPool->start(graphInfo.getClear());
                 subGraph->poolThreadHandle = h;
             }
@@ -2374,7 +2374,7 @@ public:
                         toRun.remove(0);
                         running.append(*LINK(graphInfo));
                         CGraphBase *subGraph = graphInfo->subGraph;
-                        PROGLOG("Wait: Launching graph thread for graphId=%"GIDPF"d", subGraph->queryGraphId());
+                        PROGLOG("Wait: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
                         added = true;
                         PooledThreadHandle h = graphPool->start(graphInfo.getClear());
                         subGraph->poolThreadHandle = h;
@@ -2547,7 +2547,7 @@ CJobBase::~CJobBase()
     PROGLOG("Roxiemem stats: %s", memStatsStr.str());
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
-        PROGLOG("Heap usage : %"I64F"d bytes", (unsigned __int64)heapUsage);
+        PROGLOG("Heap usage : %" I64F "d bytes", (unsigned __int64)heapUsage);
 }
 
 void CJobBase::startJob()

@@ -208,7 +208,7 @@ offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget,
             lock.queryAttributes().setPropInt64("@size", totalSize);
         }
     }
-    //LOG(MCdebugInfo(1000), unknownJob, "DFS: getSize(%s)=%"I64F"d", file->queryLogicalName(), totalSize);
+    //LOG(MCdebugInfo(1000), unknownJob, "DFS: getSize(%s)=%" I64F "d", file->queryLogicalName(), totalSize);
     return totalSize;
 }
 
@@ -266,7 +266,7 @@ offset_t CDistributedFileSystem::getSize(IDistributedFilePart * part, bool force
         }
     }
 
-    //LOG(MCdebugInfo(2000), unknownJob, "DFS: getSize(%s)=%"I64F"d", part->queryPartName(), size);
+    //LOG(MCdebugInfo(2000), unknownJob, "DFS: getSize(%s)=%" I64F "d", part->queryPartName(), size);
     return size;
 }
 

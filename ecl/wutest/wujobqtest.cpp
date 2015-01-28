@@ -275,7 +275,7 @@ static void cmd_list(IJobQueue *queue)
         IJobQueueItem &item = iter->query();
         StringBuffer eps;
         StringBuffer dts;
-        printf("%3d: %s owner=%s priority=%d session=%"I64F"x ep=%s port=%d enqueuedt=%s\n",n,item.queryWUID(),item.queryOwner(),item.getPriority(),item.getSessionId(),item.queryEndpoint().getUrlStr(eps).str(),item.getPort(),item.queryEnqueuedTime().getString(dts).str());
+        printf("%3d: %s owner=%s priority=%d session=%" I64F "x ep=%s port=%d enqueuedt=%s\n",n,item.queryWUID(),item.queryOwner(),item.getPriority(),item.getSessionId(),item.queryEndpoint().getUrlStr(eps).str(),item.getPort(),item.queryEnqueuedTime().getString(dts).str());
     }
 }
 
@@ -420,7 +420,7 @@ static void cmd_dequeue(IJobQueue *queue)
         return;
     }
     StringBuffer eps;
-    printf("%s owner=%s priority=%d session=%"I64F"x ep=%s port=%d\n",item->queryWUID(),item->queryOwner(),item->getPriority(),item->getSessionId(),item->queryEndpoint().getUrlStr(eps).str(),item->getPort());
+    printf("%s owner=%s priority=%d session=%" I64F "x ep=%s port=%d\n",item->queryWUID(),item->queryOwner(),item->getPriority(),item->getSessionId(),item->queryEndpoint().getUrlStr(eps).str(),item->getPort());
     queue->disconnect();
 }
 

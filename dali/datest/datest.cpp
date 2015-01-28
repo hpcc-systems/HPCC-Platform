@@ -246,31 +246,31 @@ void Test_SuperFile2()
     queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"B1",UNKNOWN_USER);
     sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"B1",UNKNOWN_USER,true));
     for (unsigned tst=0;tst<2;tst++) {
-        printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
+        printf("sfile size = %" I64F "d\n",sfile->getFileSize(false,false));
         for (i = 0;i<3;i++) {
             StringBuffer name(TEST_SUB_FILE);
             name.append(i+1);
             addTestFile(name.str(),i+2);
             Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,UNKNOWN_USER);
-            printf("adding size = %"I64F"d\n",sbfile->getFileSize(false,false));
+            printf("adding size = %" I64F "d\n",sbfile->getFileSize(false,false));
             sfile->addSubFile(name);
-            printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
+            printf("sfile size = %" I64F "d\n",sfile->getFileSize(false,false));
         }
         sfile.clear();
         sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"B1",UNKNOWN_USER));
         printf("NumSubFiles = %d\n",sfile->numSubFiles());
         if (tst==1) {
             sfile->removeSubFile(NULL,false);
-            printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
+            printf("sfile size = %" I64F "d\n",sfile->getFileSize(false,false));
         }
         else {
             for (i = 0;i<3;i++) {
                 StringBuffer name(TEST_SUB_FILE);
                 name.append(i+1);
                 Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,UNKNOWN_USER);
-                printf("removing size = %"I64F"d\n",sbfile->getFileSize(false,false));
+                printf("removing size = %" I64F "d\n",sbfile->getFileSize(false,false));
                 sfile->removeSubFile(name,false);
-                printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
+                printf("sfile size = %" I64F "d\n",sfile->getFileSize(false,false));
             }
         }
         printf("NumSubFiles = %d\n",sfile->numSubFiles());
@@ -1019,12 +1019,12 @@ public:
     Semaphore sem;
     void closed(SessionId id)
     {
-        PrintLog("Session closed %"I64F"d",id);
+        PrintLog("Session closed %" I64F "d",id);
         sem.signal();
     }
     void aborted(SessionId id)
     {
-        PrintLog("Session aborted %"I64F"d",id);
+        PrintLog("Session aborted %" I64F "d",id);
         sem.signal();
     }
 };
@@ -1046,7 +1046,7 @@ void Test_Session(const char *eps) // test for sessions
     loop {
         id = querySessionManager().lookupProcessSession(node);
         if (id) {
-            PrintLog("Session looked up %"I64F"d",id);
+            PrintLog("Session looked up %" I64F "d",id);
             break;
         }
         Sleep(1000);
@@ -1063,7 +1063,7 @@ void QTest2(bool testput)
     CMessageBuffer mb;
     if (testput) {
         SessionId session = querySessionManager().startSession(0);
-        PrintLog("session started = %"I64F"d",session);
+        PrintLog("session started = %" I64F "d",session);
         mb.append(session);
         channel->put(mb);
         while (!querySessionManager().sessionStopped(session,1000*5))
@@ -1075,7 +1075,7 @@ void QTest2(bool testput)
         mb.read(session);
         PrintLog("Started");
         Sleep(1000*6);
-        PrintLog("stopping session %"I64F"d",session);
+        PrintLog("stopping session %" I64F "d",session);
         querySessionManager().stopSession(session,false);
         PrintLog("Stopped");
     }
@@ -1092,7 +1092,7 @@ public:
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         static int nno = 0;
-        PrintLog("%d: Notification(%"I64F"d) of %s - flags = %d", nno++, (__int64) id, xpath, flags);
+        PrintLog("%d: Notification(%" I64F "d) of %s - flags = %d", nno++, (__int64) id, xpath, flags);
         if (valueData)
         {
             StringBuffer data;
@@ -1192,7 +1192,7 @@ void testSubscription(bool subscriber, int subs, int comms)
         IMPLEMENT_IINTERFACE;
         virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
         {
-            PrintLog("Notification(%"I64F"x) of %s - flags = %d",(__int64) id, xpath, flags);
+            PrintLog("Notification(%" I64F "x) of %s - flags = %d",(__int64) id, xpath, flags);
             if (valueData)
             {
                 StringBuffer data;

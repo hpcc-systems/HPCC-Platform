@@ -2491,7 +2491,7 @@ private:
                     ReadLockBlock readBlock(packageCrit);
                     shash = allQueryPackages->queryHash();
                 }
-                reply.appendf("<State hash='%"I64F"u' topologyHash='%"I64F"u'/>", shash, thash);
+                reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u'/>", shash, thash);
             }
             else if (stricmp(queryName, "control:resetindexmetrics")==0)
             {
@@ -2582,7 +2582,7 @@ private:
                     ReadLockBlock readBlock(packageCrit);
                     shash = allQueryPackages->queryHash();
                 }
-                reply.appendf("<State hash='%"I64F"u' topologyHash='%"I64F"u'/>", shash, thash);
+                reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u'/>", shash, thash);
             }
             else if (stricmp(queryName, "control:steppingEnabled")==0)
             {

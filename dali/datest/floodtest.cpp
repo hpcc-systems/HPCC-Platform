@@ -262,7 +262,7 @@ public:
                 }   
                 ninfo->sendbytes[dest] = done;
 #ifdef TRACE
-                DBGLOG("sent %d to %d  done = %"I64F"d",sz,dest+1,done);
+                DBGLOG("sent %d to %d  done = %" I64F "d",sz,dest+1,done);
 #endif
                 return true;
             }
@@ -908,7 +908,7 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
         Owned<IFileIO> res = resf->open(IFOcreate);
         res->write(0,out.length(),out.str());
         PROGLOG("Results written to floodlbres.txt");
-        PROGLOG("Floodtest loopback %"I64F"d messages received",total);
+        PROGLOG("Floodtest loopback %" I64F "d messages received",total);
         PROGLOG("Floodtest loopback finished, %d error%s reported",numerrs,(numerrs==1)?"":"s");
     }
     else {
