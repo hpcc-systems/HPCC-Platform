@@ -1089,6 +1089,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         }
 
         parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
+        bool exportDependencies = instance.wu->getDebugValueBool("exportDependencies",false);
+        if (exportDependencies)
+            parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
         try
         {
@@ -1149,6 +1152,22 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
                 updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile:parseTime", StTimeElapsed, NULL, parseTimeNs);
+
+            if (exportDependencies)
+            {
+                StringBuffer dependenciesName;
+                if (instance.outputFilename && !streq(instance.outputFilename, "-"))
+                    addNonEmptyPathSepChar(dependenciesName.append(optOutputDirectory)).append(instance.outputFilename);
+                else
+                    dependenciesName.append(DEFAULT_OUTPUTNAME);
+                dependenciesName.append(".dependencies.xml");
+
+                Owned<IWUQuery> query = instance.wu->updateQuery();
+                associateLocalFile(query, FileTypeXml, dependenciesName, "Dependencies", 0);
+
+                saveXML(dependenciesName.str(), parseCtx.nestedDependTree);
+            }
+
 
             if (optIncludeMeta || optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getMetaTree());
@@ -2190,6 +2209,7 @@ const char * const helpText[] = {
     "! -fapplyInstantEclTransformations Limit non file outputs with a CHOOSEN",
     "! -fapplyInstantEclTransformationsLimit Number of records to limit to",
     "! -fcheckAsserts          Check ASSERT() statements",
+    "! -fexportDependencies    Generate information about inter-definition dependencies",
     "! -fmaxCompileThreads     Number of compiler instances to compile the c++",
     "! -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
     "! -fpickBestEngine        Allow simple thor queries to be passed to thor",
