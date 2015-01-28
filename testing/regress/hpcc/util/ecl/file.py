@@ -75,11 +75,12 @@ class ECLFile:
         self.version=''
         self.versionId=0
         self.timeout = 0
+        self.args = args
 
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
-        if 'publish' in args:
-            self.forcePublish=args.publish
+        if 'publish' in self.args:
+            self.forcePublish=self.args.publish
 
         self.optX =[]
         self.optXHash={}
@@ -316,7 +317,7 @@ class ECLFile:
 
     # Test (and read all) //version tag in the ECL file
     def testVesion(self):
-        if self.isVersions == False:
+        if self.isVersions == False and not self.args.noversion:
             tag = b'//version'
             logging.debug("%3d. testVesion (ecl:'%s', tag:'%s')", self.taskId, self.ecl, tag)
             retVal = False
