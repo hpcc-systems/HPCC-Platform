@@ -520,8 +520,8 @@ static const StatisticMeta statsMetaData[StMax] = {
 
 StatisticMeasure queryMeasure(StatisticKind kind)
 {
-    unsigned varient = queryStatsVarient(kind);
-    switch (varient)
+    unsigned variant = queryStatsVariant(kind);
+    switch (variant)
     {
     case StSkew:
     case StSkewMin:

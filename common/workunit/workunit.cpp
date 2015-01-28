@@ -451,7 +451,7 @@ private:
                 if (measure == SMeasureSkew)
                 {
                     //Minimum stats were always output as +ve numbers
-                    if (queryStatsVarient(kind) == StSkewMin)
+                    if (queryStatsVariant(kind) == StSkewMin)
                         value = -value;
 
                     target->setPropInt64(legacyTreeTag, value/100);

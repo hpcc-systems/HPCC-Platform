@@ -181,7 +181,7 @@ enum StatisticKind
 
 };
 
-inline StatisticKind queryStatsVarient(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
+inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
