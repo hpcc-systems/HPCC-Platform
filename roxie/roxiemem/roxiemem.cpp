@@ -119,6 +119,7 @@ const unsigned BLOCKLIST_MASK = 0xFFFFFF;
 const unsigned BLOCKLIST_ABA_INC = (BLOCKLIST_MASK+1);
 const unsigned BLOCKLIST_ABA_MASK = ~BLOCKLIST_MASK;
 const unsigned BLOCKLIST_NULL = BLOCKLIST_MASK; // Used to represent a null entry
+const unsigned BLOCKLIST_LIMIT = BLOCKLIST_MASK; // Values above this are not valid
 
 inline bool isNullBlock(unsigned block)
 {
@@ -165,7 +166,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
                     "Heap cannot support memory of size %" I64F "u - decrease memory or increase HEAP_ALIGNMENT_SIZE",
                     (__uint64)memsize);
 
-    if (totalPages >= BLOCKLIST_NULL)
+    if (totalPages >= BLOCKLIST_LIMIT)
         throw makeStringExceptionV(ROXIEMM_TOO_MUCH_MEMORY,
                     "Heap cannot support memory of size %" I64F "u - decrease memory or increase HEAP_ALIGNMENT_SIZE or BLOCKLIST_MASK",
                     (__uint64)memsize);
@@ -995,7 +996,7 @@ protected:
 public:
     Heaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, memsize_t _chunkCapacity) : heap(_heap), chunkCapacity(_chunkCapacity)
     {
-        atomic_set(&nextSpace, 0); // Zero indicates it is not on the list.
+        atomic_set(&nextSpace, 0);
         assertex(heap);
         next = NULL;
         prev = NULL;
@@ -1070,8 +1071,10 @@ public:
     inline unsigned numChunks() const { return queryCount()-1; }
 
     //Is there any space within the heaplet that hasn't ever been allocated.
-    inline bool hasAnyFreeSpace() const
+    inline bool hasAnyUnallocatedSpace() const
     {
+        //This could use a special value of freeBase to indicate it was full, but that would add complication to
+        //the allocation code which is more time critical.
         unsigned curFreeBase = atomic_read(&freeBase);
         size32_t bytesFree = dataAreaSize() - curFreeBase;
         return (bytesFree >= chunkSize);
@@ -1079,7 +1082,8 @@ public:
 
     virtual bool isFull() const
     {
-        return !hasAnyFreeSpace() && (atomic_read(&r_blocks) & RBLOCKS_OFFSET_MASK) == 0;
+        //Has all the space been allocated at least once, and is the free chain empty.
+        return !hasAnyUnallocatedSpace() && (atomic_read(&r_blocks) & RBLOCKS_OFFSET_MASK) == 0;
     }
 
     inline static unsigned dataOffset() { return HEAPLET_DATA_AREA_OFFSET(ChunkedHeaplet); }
@@ -2044,15 +2048,20 @@ public:
 
     ~CHeap()
     {
-        //The following is here to ensure verifySpaceListConsistency isn't triggered by leaked allocations that are never freed.
-        if (activeHeaplet && atomic_read(&activeHeaplet->nextSpace) == 0)
-            atomic_set(&activeHeaplet->nextSpace, BLOCKLIST_NULL);
+        if (memTraceLevel >= 3)
+        {
+            //ensure verifySpaceListConsistency isn't triggered by leaked allocations that are never freed.
+            if (activeHeaplet && atomic_read(&activeHeaplet->nextSpace) == 0)
+                atomic_set(&activeHeaplet->nextSpace, BLOCKLIST_NULL);
 
-        verifySpaceListConsistency();
+            verifySpaceListConsistency();
+        }
+
         if (heaplets)
         {
             Heaplet *finger = heaplets;
-            //NB: This loop doesn't unlink the list
+
+            //Note: This loop doesn't unlink the list because the list and all blocks are going to be disposed.
             do
             {
                 if (memTraceLevel >= 3)
@@ -2077,9 +2086,10 @@ public:
         loop
         {
             unsigned head = atomic_read(&headMaybeSpace);
-            assertex((head & BLOCKLIST_MASK) != block);
-            //Update the next pointer, and or mask to ensure it is nonzero - so other code can check we are on a list.
+
+            //Update the next pointer.  BLOCKLIST_ABA_INC is ORed with the value to ensure it is non-zero.
             atomic_set(&heaplet->nextSpace, head | BLOCKLIST_ABA_INC);
+
             //Ensure any items added onto the list have a new aba tag
             unsigned newHead = block + (head & BLOCKLIST_ABA_MASK) + BLOCKLIST_ABA_INC;
             if (atomic_cas(&headMaybeSpace, newHead, head))
@@ -2089,7 +2099,8 @@ public:
 
     Heaplet * popFromSpaceList()
     {
-        //This must only be called within a critical section so only one thread can access at once.
+        //This must only be called within a critical section since some functions assume only one active thread is
+        //allowed to remove elements from the list
         loop
         {
             unsigned head = atomic_read(&headMaybeSpace);
@@ -2154,6 +2165,7 @@ public:
             unsigned next = atomic_read(&prevHeaplet->nextSpace);
             if (isNullBlock(next))
             {
+                //The block wasn't found on the space list even though it should have been
                 throwUnexpected();
                 return;
             }
@@ -2162,6 +2174,7 @@ public:
             if (heaplet == toRemove)
             {
                 //Remove the item from the list, and indicate it is no longer on the list
+                //Can use atomic_set() because no other thread can be removing (and therefore modifying nextSpace)
                 atomic_set(&prevHeaplet->nextSpace, nextSpace);
                 atomic_set(&toRemove->nextSpace, 0);
                 return;
@@ -2247,8 +2260,8 @@ public:
             activeHeaplet = NULL;
 
         unsigned size = finger->sizeInPages();
-        //Very unlikely, but after removing from the free list, a final ReleaseRoxieRow could release the
-        //last row (and re-add it onto the list).  Therefore we need to possibly remove it just in case.
+        //It is possible (but very unlikely) for another thread to have added this block to the space list.
+        //Ensure it is not on the list.
         removeFromSpaceList(finger);
         delete finger;
         return size;
@@ -2272,7 +2285,7 @@ public:
         //only mean the list is walked more than it needs to be.
         atomic_set(&possibleEmptyPages, 0);
 
-        //Any blocks that could me freed must either be the active block and/or on the maybe space list.
+        //Any blocks that could be freed must either be the active block and/or on the maybe space list.
         Heaplet * headHeaplet;
         Heaplet * preserved = NULL;
         //First free any empty blocks at the head of the maybe space list
@@ -4174,7 +4187,6 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
     }
 
     //NB: At this point activeHeaplet = NULL;
-    //MORE: Should there be a different critical section to ensure this is only done on one thread?
     loop
     {
         rowManager->checkLimit(1, maxSpillCost);
@@ -4183,6 +4195,9 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
         if (donorHeaplet)
             break;
         rowManager->restoreLimit(1);
+
+        //Could check if activeHeaplet was now set (and therefore allocated by another thread), and if so restart
+        //the function, but grabbing the spin lock would be inefficient.
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
             throwHeapExhausted(1);
     }
