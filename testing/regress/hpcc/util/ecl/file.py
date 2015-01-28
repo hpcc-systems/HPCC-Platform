@@ -382,11 +382,13 @@ class ECLFile:
                 raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
             expected = open(expectedKeyPath, 'r').readlines()
             recieved = open(self.getResults(), 'r').readlines()
-            for line in difflib.unified_diff(expected,
-                                             recieved,
-                                             fromfile=self.xml_e,
-                                             tofile=self.xml_r):
-                self.diff += str(line)
+            diffLines = ''
+            for line in difflib.unified_diff(expected, recieved, fromfile=self.xml_e, tofile=self.xml_r):
+                diffLines += str(line)
+            logging.debug("%3d. diffLines: " + diffLines,  self.taskId )
+            if len(diffLines) > 0:
+                self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
+                self.diff += diffLines
             logging.debug("%3d. self.diff: '" + self.diff +"'",  self.taskId )
         except Exception as e:
             logging.debug( e, extra={'taskId':self.taskId})

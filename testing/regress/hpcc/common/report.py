@@ -50,8 +50,8 @@ class Report:
     def display(self, log=None,  elapsTime = 0):
         logging.debug("Report::display(log='%s', elapsTime:%d",  log,  elapsTime)
         reportStr = "\n"
-        reportStr += "Results\n"
         reportStr += "-------------------------------------------------\n"
+        reportStr += "Result:\n"
         reportStr += "Passing: %i\n" % len(self.report._pass)
         reportStr += "Failure: %i\n" % len(self.report._fail)
         reportStr += "-------------------------------------------------\n"
@@ -68,9 +68,11 @@ class Report:
                     logging.debug("Exception:'%s'",  str(ex))
                     #reportStr += str(result.Diff)
             if len(passStr):
+                reportStr += "Output:\n"
                 reportStr += passStr
                 reportStr += "-------------------------------------------------\n"
         if self.report._fail:
+            reportStr += "Error:\n"
             for result in self.report._fail:
                 if len(result.Diff) > 0:
                     try:
