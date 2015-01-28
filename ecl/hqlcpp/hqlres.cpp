@@ -122,6 +122,50 @@ bool ResourceManager::getDuplicateResourceId(const char *srctype, const char *re
     return false;
 }
 
+void updateManifestResourcePaths(IPropertyTree &resource, const char *dir)
+{
+    StringBuffer filepath;
+    makeAbsolutePath(resource.queryProp("@filename"), dir, filepath);
+    resource.setProp("@originalFilename", filepath.str());
+
+    StringBuffer respath;
+    makePathUniversal(filepath.str(), respath);
+    resource.setProp("@resourcePath", respath.str());
+}
+
+void expandManifestDirectory(IPropertyTree *manifestSrc, IPropertyTree &res, StringBuffer &dir, IDirectoryIterator *it, const char*mask, bool recursive)
+{
+    if (!it)
+        return;
+    ForEach(*it)
+    {
+        if (it->isDir())
+        {
+            if (recursive)
+                expandManifestDirectory(manifestSrc, res, dir, it->query().directoryFiles(mask, false, true), mask, recursive);
+            continue;
+        }
+        StringBuffer reldir;
+        Owned<IPropertyTree> newRes = createPTreeFromIPT(&res);
+        reldir.append(splitRelativePath(it->query().queryFilename(), dir, reldir));
+        VStringBuffer xpath("Resource[@filename='%s']", reldir.str());
+        if (manifestSrc->hasProp(xpath))
+            continue;
+        newRes->setProp("@filename", reldir.str());
+        updateManifestResourcePaths(*newRes, dir.str());
+        if (manifestSrc->hasProp(xpath.setf("resource[@resourcePath='%s']", newRes->queryProp("@resourcePath"))))
+            continue;
+        manifestSrc->addPropTree("Resource", newRes.getClear());
+    }
+}
+
+void expandManifestDirectory(IPropertyTree *manifestSrc, IPropertyTree &res, StringBuffer &dir, const char *path, const char*mask, bool recursive)
+{
+    Owned<IDirectoryIterator> it = createDirectoryIterator(path, mask);
+    expandManifestDirectory(manifestSrc, res, dir, it, mask, recursive);
+}
+
+
 void ResourceManager::addManifestFile(const char *filename)
 {
     Owned<IPropertyTree> manifestSrc = createPTreeFromXMLFile(filename);
@@ -149,23 +193,38 @@ void ResourceManager::addManifestFile(const char *filename)
             item.setProp("@originalFilename", filepath.str());
             item.setProp("@resourcePath", respath.str());
 
-            if (!item.hasProp("@type"))
-                item.setProp("@type", "UNKNOWN");
-            int id;
-            if (getDuplicateResourceId(item.queryProp("@type"), respath.str(), NULL, id))
+            if (containsFileWildcard(filepath))
             {
-                item.setPropInt("@id", id);
-                manifest->addPropTree("Resource", LINK(&item));
+                StringBuffer wildpath;
+                const char *tail = splitDirTail(filepath, wildpath);
+                expandManifestDirectory(manifestSrc, item, dir, wildpath, tail, item.getPropBool("@recursive"));
+                manifestSrc->removeTree(&item);
             }
-            else
-            {
-                MemoryBuffer content;
-                loadResource(filepath.str(), content);
-                addCompress(item.queryProp("@type"), content.length(), content.toByteArray(), &item);
-            }
+
         }
         else
             manifest->addPropTree(item.queryName(), LINK(&item));
+    }
+
+    Owned<IPropertyTreeIterator> resources = manifestSrc->getElements("Resource[@filename]");
+    ForEach(*resources)
+    {
+        IPropertyTree &item = resources->query();
+
+        if (!item.hasProp("@type"))
+            item.setProp("@type", "UNKNOWN");
+        int id;
+        if (getDuplicateResourceId(item.queryProp("@type"), item.queryProp("@resourcePath"), NULL, id))
+        {
+            item.setPropInt("@id", id);
+            manifest->addPropTree("Resource", LINK(&item));
+        }
+        else
+        {
+            MemoryBuffer content;
+            loadResource(item.queryProp("@originalFilename"), content);
+            addCompress(item.queryProp("@type"), content.length(), content.toByteArray(), &item);
+        }
     }
 }
 

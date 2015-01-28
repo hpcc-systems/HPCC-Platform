@@ -711,10 +711,10 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
         setDefinitionText(attr, "", contents);
     }
 
+    ISourcePath * sourcePath = contents->querySourcePath();
+
     if (checkBeginMeta())
     {
-        ISourcePath * sourcePath = contents->querySourcePath();
-
         IPropertyTree * attr = metaTree->addPropTree("Source", createPTree("Source"));
         setFullNameProp(attr, "@name", scope->queryFullName(), name->str());
         attr->setProp("@sourcePath", sourcePath->str());
@@ -726,6 +726,7 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
         IPropertyTree * attr = globalDependTree->addPropTree("Attribute", createPTree("Attribute"));
         attr->setProp("@module", scope->queryFullName());
         attr->setProp("@name", name->str());
+        attr->setProp("@sourcePath", sourcePath->str());
         //attr->setPropInt("@flags", symbol->getObType());  MORE
     }
 }
