@@ -57,8 +57,8 @@ extern "C++"
     ECL_MEMCACHED_API unsigned __int64 ECL_MEMCACHED_CALL MGetUint8 (ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
     ECL_MEMCACHED_API double           ECL_MEMCACHED_CALL MGetDouble(ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
     ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetUtf8  (ICodeContext * _ctx, size32_t & valueLength, char * & returnValue, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetStr   (ICodeContext * _ctx, size32_t & valueLength, UChar * & returnValue, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetUChar (ICodeContext * _ctx, size32_t & valueLength, char * & returnValue, const char * options, const char * key, const char * partitionKey);
+    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetStr   (ICodeContext * _ctx, size32_t & valueLength, char * & returnValue, const char * options, const char * key, const char * partitionKey);
+    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetUChar (ICodeContext * _ctx, size32_t & valueLength, UChar * & returnValue, const char * options, const char * key, const char * partitionKey);
     ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetData  (ICodeContext * _ctx,size32_t & returnLength, void * & returnValue, const char * options, const char * key, const char * partitionKey);
     //--------------------------------AUXILLARIES---------------------------
     ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MExist  (ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
