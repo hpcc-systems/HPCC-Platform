@@ -181,6 +181,8 @@ enum StatisticKind
 
 };
 
+inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
+
 //---------------------------------------------------------------------------------------------------------------------
 
 interface IStatistic : extends IInterface
@@ -571,6 +573,7 @@ extern jlib_decl StatisticMeasure queryMeasure(StatisticKind kind);
 extern jlib_decl const char * queryStatisticName(StatisticKind kind);
 extern jlib_decl void queryLongStatisticName(StringBuffer & out, StatisticKind kind);
 extern jlib_decl const char * queryTreeTag(StatisticKind kind);
+extern jlib_decl const char * queryLegacyTreeTag(StatisticKind kind);
 extern jlib_decl const char * queryCreatorTypeName(StatisticCreatorType sct);
 extern jlib_decl const char * queryScopeTypeName(StatisticScopeType sst);
 extern jlib_decl const char * queryMeasureName(StatisticMeasure measure);
