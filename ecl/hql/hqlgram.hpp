@@ -669,9 +669,9 @@ public:
     void enterType(const attribute &errpos, bool isParameteried);
     void leaveType(const YYSTYPE & errpos);
     void checkRecordTypesMatch(IHqlExpression *ds1, IHqlExpression *ds2, const attribute & errpos);
-    int checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const attribute &atr, unsigned maxFields = (unsigned)-1);
-    bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const attribute &atr);
-    IHqlExpression * checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const attribute & errpos, bool rightIsRow);
+    int checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const ECLlocation & errPos, unsigned maxFields = (unsigned)-1);
+    bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const ECLlocation & errPos);
+    IHqlExpression * checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const ECLlocation & errPos, bool rightIsRow);
     void ensureMapToRecordsMatch(OwnedHqlExpr & recordExpr, HqlExprArray & args, const attribute & errpos, bool isRow);
     void checkRecordIsValid(const attribute &atr, IHqlExpression *record);
     void checkValidRecordMode(IHqlExpression * dataset, attribute & atr, attribute & modeatr);
@@ -719,8 +719,8 @@ protected:
     void checkNotAlreadyDefined(IIdAtom * name, IHqlScope * scope, const attribute & idattr);
     void checkNotAlreadyDefined(IIdAtom * name, const attribute & idattr);
     void checkBuildIndexFilenameFlags(IHqlExpression * dataset, attribute & flags);
-    IHqlExpression * createBuildFileFromTable(IHqlExpression * table, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos);
-    IHqlExpression * createBuildIndexFromIndex(attribute & indexAttr, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos);
+    IHqlExpression * createBuildFileFromTable(IHqlExpression * table, const HqlExprArray & createBuildFileFromTable, IHqlExpression * filename, attribute & errpos);
+    IHqlExpression * createBuildIndexFromIndex(attribute & indexAttr, attribute & flagsAttr, attribute & errpos);
     void checkOutputRecord(attribute & errpos, bool outerLevel);
     void checkSoapRecord(attribute & errpos);
     IHqlExpression * checkOutputRecord(IHqlExpression *record, const attribute & errpos, bool & allConstant, bool outerLevel);
@@ -760,7 +760,7 @@ protected:
     void checkSizeof(ITypeInfo* expr, attribute& errpos, bool isDataset = false);
     void normalizeStoredNameExpression(attribute & a);
     void checkPatternFailure(attribute & attr);
-    void checkDistributer(attribute & err, HqlExprArray & args);
+    void checkDistributer(const ECLlocation & errPos, HqlExprArray & args);
     IHqlExpression * createScopedSequenceExpr();
     IHqlExpression * createPatternOr(HqlExprArray & args, const attribute & errpos);
     IHqlExpression * mapAlienArg(IHqlSimpleScope * scope, IHqlExpression * expr);
@@ -962,7 +962,7 @@ protected:
     void checkDistribution(attribute &errpos, IHqlExpression *newExpr, bool ignoreGrouping);
     void checkMergeInputSorted(attribute &atr, bool isLocal);
     void checkGrouped(attribute & atr);
-    void checkRegrouping(attribute & atr, HqlExprArray & args);
+    void checkRegrouping(const ECLlocation & errPos, HqlExprArray & args);
     void checkRecordsMatch(attribute & atr, HqlExprArray & args);
 
     IHqlExpression * transformRecord(IHqlExpression *dataset, IAtom * targetCharset, const attribute & errpos);
