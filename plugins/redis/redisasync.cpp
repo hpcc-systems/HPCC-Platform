@@ -115,7 +115,7 @@ public :
     template<class type> void set(ICodeContext * ctx, const char * key, type value, unsigned expire, const char * channel);
     template<class type> void set(ICodeContext * ctx, const char * key, size32_t valueLength, const type * value, unsigned expire, const char * channel);
 
-    bool missThenLock(ICodeContext * ctx, KeyLock * keyPtr);
+    bool missThenLock(ICodeContext * ctx, KeyLock * lockObject);
     static void assertContextErr(const redisAsyncContext * context);
 
 protected :
@@ -486,9 +486,9 @@ void SubContainer::unsubscribe()
     assertRedisErr(redisAsyncCommand(context, NULL, NULL, "UNSUBSCRIBE %b", channel.str(), channel.length()), "UNSUBSCRIBE buffer write error");
     redisAsyncHandleWrite(context);
 }
-bool AsyncConnection::missThenLock(ICodeContext * ctx, KeyLock * keyPtr)
+bool AsyncConnection::missThenLock(ICodeContext * ctx, KeyLock * lockObject)
 {
-    return lock(keyPtr->getKey(), keyPtr->getChannel());
+    return lock(lockObject->getKey(), lockObject->getChannel());
 }
 void AsyncConnection::attachLibev()
 {
@@ -732,7 +732,7 @@ ECL_REDIS_API void ECL_REDIS_CALL AsyncRGetData(ICodeContext * ctx, size32_t & r
 //----------------------------------------LOCKING WRAPPERS------------------------------------------------------------------------------------------
 ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL RGetLockObject(ICodeContext * ctx, const char * options, const char * key, unsigned __int64 database)
 {
-    Owned<KeyLock> keyPtr;
+    Owned<KeyLock> lockObject;
     StringBuffer channel;
     channel.set(REDIS_LOCK_PREFIX);
     channel.append("_").append(key).append("_");
@@ -741,130 +741,130 @@ ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL RGetLockObject(ICodeContext * ctx,
     //srand(unsigned int seed);
     channel.append(rand()%REDIS_MAX_LOCKS+1);
 
-    keyPtr.set(new KeyLock(ctx, options, key, channel.str(), database));
-    return reinterpret_cast<unsigned long long>(keyPtr.get());
+    lockObject.set(new KeyLock(ctx, options, key, channel.str(), database));
+    return reinterpret_cast<unsigned long long>(lockObject.get());
 }
-ECL_REDIS_API bool ECL_REDIS_CALL RMissThenLock(ICodeContext * ctx, unsigned __int64 _keyPtr)
+ECL_REDIS_API bool ECL_REDIS_CALL RMissThenLock(ICodeContext * ctx, unsigned __int64 _lockObject)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    const char * channel = keyPtr->getChannel();
-    if (!keyPtr || strlen(channel) == 0)
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    const char * channel = lockObject->getChannel();
+    if (!lockObject || strlen(channel) == 0)
     {
         VStringBuffer msg("Redis Plugin : ERROR 'Locking.ExistLockSub' called without sufficient LockObject.");
         rtlFail(0, msg.str());
     }
-    const char * options = keyPtr->getOptions();
-    Owned<AsyncConnection> master = AsyncConnection::createConnection(ctx, options, keyPtr->getDatabase());
-    return master->missThenLock(ctx, keyPtr);
+    const char * options = lockObject->getOptions();
+    Owned<AsyncConnection> master = AsyncConnection::createConnection(ctx, options, lockObject->getDatabase());
+    return master->missThenLock(ctx, lockObject);
 }
 //-----------------------------------SET------------------------------------------
-ECL_REDIS_API void ECL_REDIS_CALL LockingRSetStr(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 _keyPtr, size32_t valueLength, const char * value, unsigned expire)
+ECL_REDIS_API void ECL_REDIS_CALL LockingRSetStr(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 _lockObject, size32_t valueLength, const char * value, unsigned expire)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRSet(ctx, keyPtr->getOptions(), keyPtr->getKey(), valueLength, value, expire, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRSet(ctx, lockObject->getOptions(), lockObject->getKey(), valueLength, value, expire, lockObject->getChannel(), lockObject->getDatabase());
     returnLength = valueLength;
     memcpy(&returnValue, value, returnLength);
 }
-ECL_REDIS_API void ECL_REDIS_CALL LockingRSetUChar(ICodeContext * ctx, size32_t & returnLength, UChar * & returnValue, unsigned __int64 _keyPtr, size32_t valueLength, const UChar * value, unsigned expire)
+ECL_REDIS_API void ECL_REDIS_CALL LockingRSetUChar(ICodeContext * ctx, size32_t & returnLength, UChar * & returnValue, unsigned __int64 _lockObject, size32_t valueLength, const UChar * value, unsigned expire)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRSet(ctx, keyPtr->getOptions(), keyPtr->getKey(), (valueLength)*sizeof(UChar), value, expire, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRSet(ctx, lockObject->getOptions(), lockObject->getKey(), (valueLength)*sizeof(UChar), value, expire, lockObject->getChannel(), lockObject->getDatabase());
     returnLength = valueLength;
     memcpy(&returnValue, value, returnLength);
 }
-ECL_REDIS_API signed __int64 ECL_REDIS_CALL LockingRSetInt(ICodeContext * ctx, unsigned __int64 _keyPtr, signed __int64 value, unsigned expire)
+ECL_REDIS_API signed __int64 ECL_REDIS_CALL LockingRSetInt(ICodeContext * ctx, unsigned __int64 _lockObject, signed __int64 value, unsigned expire)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRSet(ctx, keyPtr->getOptions(), keyPtr->getKey(), value, expire, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRSet(ctx, lockObject->getOptions(), lockObject->getKey(), value, expire, lockObject->getChannel(), lockObject->getDatabase());
     return value;
 }
-ECL_REDIS_API  unsigned __int64 ECL_REDIS_CALL LockingRSetUInt(ICodeContext * ctx, unsigned __int64 _keyPtr, unsigned __int64 value, unsigned expire)
+ECL_REDIS_API  unsigned __int64 ECL_REDIS_CALL LockingRSetUInt(ICodeContext * ctx, unsigned __int64 _lockObject, unsigned __int64 value, unsigned expire)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRSet(ctx, keyPtr->getOptions(), keyPtr->getKey(), value, expire, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRSet(ctx, lockObject->getOptions(), lockObject->getKey(), value, expire, lockObject->getChannel(), lockObject->getDatabase());
     return value;
 }
-ECL_REDIS_API double ECL_REDIS_CALL LockingRSetReal(ICodeContext * ctx, unsigned __int64 _keyPtr, double value, unsigned expire)
+ECL_REDIS_API double ECL_REDIS_CALL LockingRSetReal(ICodeContext * ctx, unsigned __int64 _lockObject, double value, unsigned expire)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRSet(ctx, keyPtr->getOptions(), keyPtr->getKey(), value, expire, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRSet(ctx, lockObject->getOptions(), lockObject->getKey(), value, expire, lockObject->getChannel(), lockObject->getDatabase());
     return value;
 }
-ECL_REDIS_API bool ECL_REDIS_CALL LockingRSetBool(ICodeContext * ctx, unsigned __int64 _keyPtr,  bool value, unsigned expire)
+ECL_REDIS_API bool ECL_REDIS_CALL LockingRSetBool(ICodeContext * ctx, unsigned __int64 _lockObject,  bool value, unsigned expire)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRSet(ctx, keyPtr->getOptions(), keyPtr->getKey(), value, expire, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRSet(ctx, lockObject->getOptions(), lockObject->getKey(), value, expire, lockObject->getChannel(), lockObject->getDatabase());
     return value;
 }
-ECL_REDIS_API void ECL_REDIS_CALL LockingRSetData(ICodeContext * ctx, size32_t & returnLength, void * & returnValue, unsigned __int64 _keyPtr, size32_t valueLength, const void * value, unsigned expire)
+ECL_REDIS_API void ECL_REDIS_CALL LockingRSetData(ICodeContext * ctx, size32_t & returnLength, void * & returnValue, unsigned __int64 _lockObject, size32_t valueLength, const void * value, unsigned expire)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRSet(ctx, keyPtr->getOptions(), keyPtr->getKey(), valueLength, value, expire, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRSet(ctx, lockObject->getOptions(), lockObject->getKey(), valueLength, value, expire, lockObject->getChannel(), lockObject->getDatabase());
     returnLength = valueLength;
     memcpy(&returnValue, value, returnLength);
 }
-ECL_REDIS_API void ECL_REDIS_CALL LockingRSetUtf8(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 _keyPtr, size32_t valueLength, const char * value, unsigned expire)
+ECL_REDIS_API void ECL_REDIS_CALL LockingRSetUtf8(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 _lockObject, size32_t valueLength, const char * value, unsigned expire)
 {
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRSet(ctx, keyPtr->getOptions(), keyPtr->getKey(), rtlUtf8Size(valueLength, value), value, expire, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRSet(ctx, lockObject->getOptions(), lockObject->getKey(), rtlUtf8Size(valueLength, value), value, expire, lockObject->getChannel(), lockObject->getDatabase());
     returnLength = valueLength;
     memcpy(&returnValue, value, returnLength);
 }
 //-------------------------------------GET----------------------------------------
-ECL_REDIS_API bool ECL_REDIS_CALL LockingRGetBool(ICodeContext * ctx, unsigned __int64 _keyPtr)
+ECL_REDIS_API bool ECL_REDIS_CALL LockingRGetBool(ICodeContext * ctx, unsigned __int64 _lockObject)
 {
     bool value;
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRGet(ctx, keyPtr->getOptions(), keyPtr->getKey(), value, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRGet(ctx, lockObject->getOptions(), lockObject->getKey(), value, lockObject->getChannel(), lockObject->getDatabase());
     return value;
 }
-ECL_REDIS_API double ECL_REDIS_CALL LockingRGetDouble(ICodeContext * ctx, unsigned __int64 _keyPtr)
+ECL_REDIS_API double ECL_REDIS_CALL LockingRGetDouble(ICodeContext * ctx, unsigned __int64 _lockObject)
 {
     double value;
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRGet(ctx, keyPtr->getOptions(), keyPtr->getKey(), value, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRGet(ctx, lockObject->getOptions(), lockObject->getKey(), value, lockObject->getChannel(), lockObject->getDatabase());
     return value;
 }
-ECL_REDIS_API signed __int64 ECL_REDIS_CALL LockingRGetInt8(ICodeContext * ctx, unsigned __int64 _keyPtr)
+ECL_REDIS_API signed __int64 ECL_REDIS_CALL LockingRGetInt8(ICodeContext * ctx, unsigned __int64 _lockObject)
 {
     signed __int64 value;
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRGet(ctx, keyPtr->getOptions(), keyPtr->getKey(), value, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRGet(ctx, lockObject->getOptions(), lockObject->getKey(), value, lockObject->getChannel(), lockObject->getDatabase());
     return value;
 }
-ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL LockingRGetUint8(ICodeContext * ctx, unsigned __int64 _keyPtr)
+ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL LockingRGetUint8(ICodeContext * ctx, unsigned __int64 _lockObject)
 {
     unsigned __int64 value;
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRGet(ctx, keyPtr->getOptions(), keyPtr->getKey(), value, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRGet(ctx, lockObject->getOptions(), lockObject->getKey(), value, lockObject->getChannel(), lockObject->getDatabase());
     return value;
 }
-ECL_REDIS_API void ECL_REDIS_CALL LockingRGetStr(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 _keyPtr)
+ECL_REDIS_API void ECL_REDIS_CALL LockingRGetStr(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 _lockObject)
 {
     size_t _returnLength;
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRGet(ctx, keyPtr->getOptions(), keyPtr->getKey(), _returnLength, returnValue, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRGet(ctx, lockObject->getOptions(), lockObject->getKey(), _returnLength, returnValue, lockObject->getChannel(), lockObject->getDatabase());
     returnLength = static_cast<size32_t>(_returnLength);
 }
-ECL_REDIS_API void ECL_REDIS_CALL LockingRGetUChar(ICodeContext * ctx, size32_t & returnLength, UChar * & returnValue,  unsigned __int64 _keyPtr)
+ECL_REDIS_API void ECL_REDIS_CALL LockingRGetUChar(ICodeContext * ctx, size32_t & returnLength, UChar * & returnValue,  unsigned __int64 _lockObject)
 {
     size_t returnSize = 0;
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRGet(ctx, keyPtr->getOptions(), keyPtr->getKey(), returnSize, returnValue, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRGet(ctx, lockObject->getOptions(), lockObject->getKey(), returnSize, returnValue, lockObject->getChannel(), lockObject->getDatabase());
     returnLength = static_cast<size32_t>(returnSize/sizeof(UChar));
 }
-ECL_REDIS_API void ECL_REDIS_CALL LockingRGetUtf8(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 _keyPtr)
+ECL_REDIS_API void ECL_REDIS_CALL LockingRGetUtf8(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 _lockObject)
 {
     size_t returnSize = 0;
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRGet(ctx, keyPtr->getOptions(), keyPtr->getKey(), returnSize, returnValue, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRGet(ctx, lockObject->getOptions(), lockObject->getKey(), returnSize, returnValue, lockObject->getChannel(), lockObject->getDatabase());
     returnLength = static_cast<size32_t>(rtlUtf8Length(returnSize, returnValue));
 }
-ECL_REDIS_API void ECL_REDIS_CALL LockingRGetData(ICodeContext * ctx, size32_t & returnLength, void * & returnValue, unsigned __int64 _keyPtr)
+ECL_REDIS_API void ECL_REDIS_CALL LockingRGetData(ICodeContext * ctx, size32_t & returnLength, void * & returnValue, unsigned __int64 _lockObject)
 {
     size_t _returnLength = 0;
-    KeyLock * keyPtr = (KeyLock*)_keyPtr;
-    AsyncRGet(ctx, keyPtr->getOptions(), keyPtr->getKey(), _returnLength, returnValue, keyPtr->getChannel(), keyPtr->getDatabase());
+    KeyLock * lockObject = (KeyLock*)_lockObject;
+    AsyncRGet(ctx, lockObject->getOptions(), lockObject->getKey(), _returnLength, returnValue, lockObject->getChannel(), lockObject->getDatabase());
     returnLength = static_cast<size32_t>(_returnLength);
 }
 }//close namespace
