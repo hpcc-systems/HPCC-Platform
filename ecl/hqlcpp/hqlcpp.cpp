@@ -1607,7 +1607,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.finalizeAllRows, "finalizeAllRows", false),
         DebugOption(options.maxLocalRowSize , "maxLocalRowSize", MAX_LOCAL_ROW_SIZE),
         DebugOption(options.optimizeGraph,"optimizeGraph", true),
-        DebugOption(options.orderDiskFunnel,"orderDiskFunnel", true),
+        DebugOption(options.orderDiskFunnel,"orderDiskFunnel", false),
         DebugOption(options.alwaysAllowAllNodes,"alwaysAllowAllNodes", false),
         DebugOption(options.slidingJoins,"slidingJoins", false),
         DebugOption(options.foldOptimized,"foldOptimized", false),
