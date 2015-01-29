@@ -256,6 +256,11 @@
                     </listitem>
                   </varlistentry>
                 </variablelist></para>
+
+              <para>Choose the VM Image file for the VMware player. The
+              <emphasis>filename</emphasis>-<emphasis
+              role="bold">vmx</emphasis>.ova file is appropriate for the
+              VMware player.</para>
             </listitem>
 
             <listitem>
@@ -519,6 +524,10 @@
                     </listitem>
                   </varlistentry>
                 </variablelist></para>
+
+              <para>Choose the VM Image file for VirtualBox. The
+              <emphasis>filename</emphasis>.ova file is appropriate for the
+              VirtualBox.</para>
             </listitem>
 
             <listitem>
