@@ -286,7 +286,6 @@ define([
                     lang.mixin(request, {
                         sourceIP: item.DropZone.NetAddress,
                         sourcePath: item.fullPath,
-                        sourceRowTag: item.targetRowTag,
                         destLogicalName: request.namePrefix + item.targetName
                     });
                     doSpray(request, item);
