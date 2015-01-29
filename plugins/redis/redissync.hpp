@@ -25,7 +25,8 @@ namespace RedisPlugin
 class SyncConnection : public Connection
 {
 public :
-    SyncConnection(ICodeContext * ctx, const char * _options, unsigned __int64 database);
+    SyncConnection(ICodeContext * ctx, const char * options, unsigned __int64 database);
+    SyncConnection(ICodeContext * ctx, RedisServer * _server, unsigned __int64 database);
     ~SyncConnection()
     {
         if (context)
@@ -45,10 +46,10 @@ public :
     void del(ICodeContext * ctx, const char * key);
     void clear(ICodeContext * ctx, unsigned when);
     unsigned __int64 dbSize(ICodeContext * ctx);
-    bool exist(ICodeContext * ctx, const char * key);
+    bool exists(ICodeContext * ctx, const char * key);
 
 protected :
-    virtual void selectDB(ICodeContext * ctx);
+    virtual void selectDB(ICodeContext * ctx, unsigned __int64 _database);
     virtual void assertOnError(const redisReply * reply, const char * _msg);
     virtual void assertConnection();
     virtual void logServerStats(ICodeContext * ctx);

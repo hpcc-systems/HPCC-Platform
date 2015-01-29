@@ -25,39 +25,50 @@ static CriticalSection crit;
 
 static Owned<SyncConnection> cachedConnection;
 
-SyncConnection::SyncConnection(ICodeContext * ctx, const char * _options, unsigned __int64 _database) : Connection(ctx, _options, _database)
+SyncConnection::SyncConnection(ICodeContext * ctx, const char * _options, unsigned __int64 _database) : Connection(ctx, _options)
 {
-   context = redisConnectWithTimeout(master.str(), port, REDIS_TIMEOUT);
+   context = redisConnectWithTimeout(server->getIp(), server->getPort(), REDIS_TIMEOUT);
    assertConnection();
    redisSetTimeout(context, REDIS_TIMEOUT);
-   database = _database;
-   selectDB(ctx);
+   selectDB(ctx, _database);
    init(ctx);
 }
-
-SyncConnection * SyncConnection::createConnection(ICodeContext * ctx, const char * options, unsigned __int64 database)
+SyncConnection::SyncConnection(ICodeContext * ctx, RedisServer * _server, unsigned __int64 _database) : Connection(ctx, _server)
+{
+   context = redisConnectWithTimeout(server->getIp(), server->getPort(), REDIS_TIMEOUT);
+   assertConnection();
+   redisSetTimeout(context, REDIS_TIMEOUT);
+   selectDB(ctx, _database);
+   init(ctx);
+}
+SyncConnection * SyncConnection::createConnection(ICodeContext * ctx, const char * options, unsigned __int64 _database)
 {
     CriticalBlock block(crit);
     if (!cachedConnection)
     {
-        cachedConnection.setown(new SyncConnection(ctx, options, database));
+        cachedConnection.setown(new SyncConnection(ctx, options, _database));
         return LINK(cachedConnection);
     }
 
-    if (cachedConnection->isSameConnection(ctx, options, database))
+    //Parse now to use if identical rather than parsing to compare and then again in SyncConnection constructor
+    Owned<RedisServer> requestedServer = new RedisServer(ctx, options);
+    if (cachedConnection->isSameConnection(ctx, requestedServer.get()))
+    {
+        cachedConnection->selectDB(ctx, _database);
         return LINK(cachedConnection);
+    }
 
-    cachedConnection.setown(new SyncConnection(ctx, options, database));
+    cachedConnection.setown(new SyncConnection(ctx, requestedServer.getClear(), _database));
     return LINK(cachedConnection);
 }
-void SyncConnection::selectDB(ICodeContext * ctx)
+void SyncConnection::selectDB(ICodeContext * ctx, unsigned __int64 _database)
 {
-    //database is switched only on connection creation allowing for the following condition to redis default
-    if (database == 0)
+    if (database == _database)
         return;
+    database = _database;
     VStringBuffer cmd("SELECT %llu", database);
     OwnedReply reply = createReply(redisCommand(context, cmd.str()));
-    assertOnError(reply->query(), "'SELECT' request failed");
+    assertOnError(reply->query(), "'SELECT' request failed ");
 }
 void SyncConnection::logServerStats(ICodeContext * ctx)
 {
@@ -103,7 +114,7 @@ void SyncConnection::assertConnection()
         rtlFail(0, "Redis Plugin: 'redisConnect' failed - no error available.");
     else if (context->err)
     {
-        VStringBuffer msg("Redis Plugin: Connection failed - %s for %s:%u", context->errstr, master.str(), port);
+        VStringBuffer msg("Redis Plugin: Connection failed - %s for %s:%u", context->errstr, ip(), port());
         rtlFail(0, msg.str());
     }
 }
@@ -130,10 +141,10 @@ void SyncConnection::expire(ICodeContext * ctx, const char * key, unsigned _expi
     OwnedReply reply = createReply(redisCommand(context, "DEL %b %u", key, strlen(key), _expire));
     assertOnError(reply->query(), "'Expire' request failed - ");
 }
-bool SyncConnection::exist(ICodeContext * ctx, const char * key)
+bool SyncConnection::exists(ICodeContext * ctx, const char * key)
 {
     OwnedReply reply = createReply(redisCommand(context, "EXISTS %b", key, strlen(key)));
-    assertOnError(reply->query(), "'Exist' request failed - ");
+    assertOnError(reply->query(), "'Exists' request failed - ");
     return (reply->query()->integer != 0);
 }
 unsigned __int64 SyncConnection::dbSize(ICodeContext * ctx)
@@ -244,7 +255,7 @@ ECL_REDIS_API void ECL_REDIS_CALL RClear(ICodeContext * ctx, const char * option
 ECL_REDIS_API bool ECL_REDIS_CALL RExist(ICodeContext * ctx, const char * options, const char * key, unsigned __int64 database)
 {
     Owned<SyncConnection> master = SyncConnection::createConnection(ctx, options, database);
-    return master->exist(ctx, key);
+    return master->exists(ctx, key);
 }
 ECL_REDIS_API void ECL_REDIS_CALL RDel(ICodeContext * ctx, const char * options, const char * key, unsigned __int64 database)
 {

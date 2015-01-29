@@ -52,17 +52,41 @@ static const unsigned unitExpire = 86400;//1 day (secs)
 
 StringBuffer & appendExpire(StringBuffer & buffer, unsigned expire);
 
+class RedisServer : public CInterface
+{
+public :
+    RedisServer() : port(0) { }
+    RedisServer(ICodeContext * ctx, const char * _options)
+    {
+         options.set(_options);
+         parseOptions(ctx, _options);
+    }
+    bool isSame(ICodeContext * ctx, const RedisServer * otherServer) const
+    {
+        return stricmp(ip.str(), otherServer->ip.str()) == 0 && port == otherServer->port;
+    }
+    const char * getIp() { return ip.str(); }
+    int getPort() { return port; }
+    void parseOptions(ICodeContext * ctx, const char * _options);
+
+private :
+    StringAttr options;
+    StringAttr ip;
+    int port;
+};
 class Connection : public CInterface
 {
 public :
-    Connection(ICodeContext * ctx, const char * _options, unsigned __int64 _database);
+    Connection(ICodeContext * ctx, const char * _options);
+    Connection(ICodeContext * ctx, RedisServer * _server);
+
     virtual void clear(ICodeContext * ctx, unsigned when) { };
-    bool isSameConnection(ICodeContext * ctx, const char * _options, unsigned __int64 _database) const;
-    const char * getMaster() const { return master.str(); }
-    int getPort() const { return port; }
+    bool isSameConnection(ICodeContext * ctx, const RedisServer * _server) const;
+    const char * ip() const { return server->getIp(); }
+    int port() const { return server->getPort(); }
 
 protected :
-    virtual void selectDB(ICodeContext * ctx) { }
+    virtual void selectDB(ICodeContext * ctx, unsigned __int64 _database) { }
     virtual void assertOnError(const redisReply * reply, const char * _msg) { }
     virtual void assertConnection() { }
     virtual void logServerStats(ICodeContext * ctx) { }
@@ -76,9 +100,7 @@ protected :
     void setPoolSettings();
 
 protected :
-    StringAttr options;
-    StringAttr master;
-    int port;
+    Owned<RedisServer> server;
     unsigned __int64 database;
     bool alreadyInitialized;
 };
@@ -103,8 +125,6 @@ private :
 };
 Reply * createReply(void * _reply);
 #define OwnedReply Owned<RedisPlugin::Reply>
-
-void parseOptions(ICodeContext * ctx, const char * options, StringAttr & master, int & port);
 
 }//close namespace
 

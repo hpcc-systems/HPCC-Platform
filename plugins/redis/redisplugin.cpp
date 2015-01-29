@@ -72,25 +72,9 @@ const char * Reply::typeToStr() const
 static CriticalSection crit;
 static Owned<Connection> cachedConnection;
 
-Connection * createConnection(ICodeContext * ctx, const char * options, unsigned __int64 _database)
-{
-    CriticalBlock block(crit);
-    if (!cachedConnection)
-    {
-        cachedConnection.setown(new Connection(ctx, options, _database));
-        return LINK(cachedConnection);
-    }
-
-    if (cachedConnection->isSameConnection(ctx, options, _database))
-        return LINK(cachedConnection);
-
-    cachedConnection.setown(new Connection(ctx, options, _database));
-    return LINK(cachedConnection);
-}
-
 ECL_REDIS_API void setPluginContext(IPluginContext * ctx) { parentCtx = ctx; }
 
-void parseOptions(ICodeContext * ctx, const char * _options, StringAttr & master, int & port)
+void RedisServer::parseOptions(ICodeContext * ctx, const char * _options)
 {
     StringArray optionStrings;
     optionStrings.appendList(_options, " ");
@@ -104,7 +88,7 @@ void parseOptions(ICodeContext * ctx, const char * _options, StringAttr & master
             splitPort.appendList(opt, ":");
             if (splitPort.ordinality()==2)
             {
-                master.set(splitPort.item(0));
+                ip.set(splitPort.item(0));
                 port = atoi(splitPort.item(1));
                 return;
             }
@@ -115,31 +99,24 @@ void parseOptions(ICodeContext * ctx, const char * _options, StringAttr & master
             rtlFail(0, err.str());
         }
     }
-    master.set("localhost");
+    ip.set("localhost");
     port = 6379;
     if (!ctx)
         return;
-    VStringBuffer msg("Redis Plugin: WARNING - using default server (%s:%d)", master.str(), port);
+    VStringBuffer msg("Redis Plugin: WARNING - using default server (%s:%d)", ip.str(), port);
     ctx->logString(msg.str());
 }
-Connection::Connection(ICodeContext * ctx, const char * _options, unsigned __int64 _database)
+Connection::Connection(ICodeContext * ctx, const char * _options) : alreadyInitialized(false), database(0)
 {
-    alreadyInitialized = false;
-    options.set(_options);
-    database = _database;
-    parseOptions(ctx, _options, master, port);
-    selectDB(ctx);
+    server.set(new RedisServer(ctx, _options));
 }
-bool Connection::isSameConnection(ICodeContext * ctx, const char * _options, unsigned __int64 _database) const
+Connection::Connection(ICodeContext * ctx, RedisServer * _server) : alreadyInitialized(false), database(0)
 {
-    if (!_options || database != _database)
-        return false;
-
-    StringAttr newMaster;
-    int newPort = 0;
-    parseOptions(ctx, _options, newMaster, newPort);
-
-    return stricmp(master.get(), newMaster.get()) == 0 && port == newPort;
+    server.setown(_server);
+}
+bool Connection::isSameConnection(ICodeContext * ctx, const RedisServer * requestedServer) const
+{
+    return server->isSame(ctx, requestedServer);
 }
 void * Connection::cpy(const char * src, size_t size)
 {
@@ -156,7 +133,6 @@ void Connection::init(ICodeContext * ctx)
 {
     logServerStats(ctx);
 }
-
 }//close namespace
 
 
