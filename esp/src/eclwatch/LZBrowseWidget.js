@@ -420,19 +420,19 @@ define([
 
             this.initLandingZonesGrid();
             this.sprayFixedDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             this.sprayDelimitedDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             this.sprayXmlDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             this.sprayVariableDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             this.sprayBlobDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             var context = this;
             this.dropZoneTargetSelect.init({
