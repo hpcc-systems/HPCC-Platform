@@ -6927,12 +6927,12 @@ public:
                     case '{':
                         state=objAttributes;
                         readNext();
-                        beginNode("__root__", curOffset, elementTypeObject);
+                        beginNode("__object__", curOffset, elementTypeObject);
                         break;
                     case '[':
                         state=valueStart;
                         readNext();
-                        beginNode("__root__", curOffset, elementTypeArray);
+                        beginNode("__array__", curOffset, elementTypeArray);
                         break;
                     default:
                         expecting("{ or [");

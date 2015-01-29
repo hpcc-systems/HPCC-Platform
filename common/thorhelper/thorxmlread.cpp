@@ -1617,14 +1617,15 @@ class CXMLParse : public CInterface, implements IXMLParse
         Owned<COffsetNodeCreator> nodeCreator;
         void *utf8Translator;
         unsigned level;
-        bool contentRequired;
         unsigned lastMatchKeptLevel;
         IPropertyTree *lastMatchKeptNode, *lastMatchKeptNodeParent;
+        bool contentRequired;
+        bool isJson;
 
     public:
         IMPLEMENT_IINTERFACE;
 
-        CXMLMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : xpath(_xpath, ignoreNameSpaces), iXMLSelect(&_iXMLSelect), contentRequired(_contentRequired)
+        CXMLMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces, bool _isJson) : xpath(_xpath, ignoreNameSpaces), iXMLSelect(&_iXMLSelect), contentRequired(_contentRequired), isJson(_isJson)
         {
             lastMatchKeptLevel = 0;
             lastMatchKeptNode = lastMatchKeptNodeParent = NULL;
@@ -1653,9 +1654,22 @@ class CXMLParse : public CInterface, implements IXMLParse
         void setMarkingStream(CMarkReadBase &_marking) { marking.set(&_marking); }
         CXPath &queryXPath() { return xpath; }
 
-// IPTreeMaker
+        bool checkSkipJsonNode(const char *tag)
+        {
+            if (!isJson || stack.ordinality()) //json root level only
+                return false;
+            if (streq(tag, "__array__")) //xpath starts after root array
+                return true;
+            if (streq(tag, "__object__") && xpath.queryDepth()) //empty xpath matches start object, otherwise skip, xpath starts immediately after
+                return true;
+            return false;
+        }
+
+        // IPTreeMaker
         virtual void beginNode(const char *tag, offset_t startOffset)
         {
+            if (checkSkipJsonNode(tag))
+                return;
             if (lastMatchKeptNode && level == lastMatchKeptLevel)
             {
                 // NB: could be passed to match objects for removal by match object,
@@ -1666,6 +1680,7 @@ class CXMLParse : public CInterface, implements IXMLParse
                     maker->reset();
                 lastMatchKeptNode = NULL;
             }
+
             bool res = false;
             CParseStackInfo *stackInfo;
             if (freeParseInfo.ordinality())
@@ -1731,11 +1746,13 @@ class CXMLParse : public CInterface, implements IXMLParse
         }
         virtual void newAttribute(const char *tag, const char *value)
         {
-            if (stack.tos().keep)
+            if (stack.ordinality() && stack.tos().keep)
                 maker->newAttribute(tag, value);
         }
         virtual void beginNodeContent(const char *tag)
         {
+            if (checkSkipJsonNode(tag))
+                return;
             // Can optimize qualifiers here that contain only attribute tests.
             bool &keep = stack.tos().keep;
             if (keep)
@@ -1750,6 +1767,8 @@ class CXMLParse : public CInterface, implements IXMLParse
         }
         virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
         {
+            if (checkSkipJsonNode(tag))
+                return;
             --level;
             CParseStackInfo &stackInfo = stack.tos();
             bool keep = stackInfo.keep;
@@ -1916,7 +1935,7 @@ public:
     {
         xmlReader = NULL;
         bool ignoreNameSpaces = 0 != ((unsigned)xmlOptions & (unsigned)ptr_ignoreNameSpaces);
-        iXMLMaker = new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces);
+        iXMLMaker = new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces, isJson);
         iXMLMaker->init();
     }
 
