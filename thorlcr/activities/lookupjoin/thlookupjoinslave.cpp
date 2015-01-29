@@ -721,6 +721,16 @@ protected:
         bool stopped;
         SimpleInterThreadQueueOf<CSendItem, true> blockQueue;
         Owned<IException> exception;
+
+        void clearQueue()
+        {
+            loop
+            {
+                Owned<CSendItem> sendItem = blockQueue.dequeueNow();
+                if (NULL == sendItem)
+                    break;
+            }
+        }
     public:
         CRowProcessor(CInMemJoinBase &_owner) : threaded("CRowProcessor", this), owner(_owner)
         {
@@ -730,17 +740,13 @@ protected:
         ~CRowProcessor()
         {
             blockQueue.stop();
-            loop
-            {
-                Owned<CSendItem> sendItem = blockQueue.dequeueNow();
-                if (NULL == sendItem)
-                    break;
-            }
+            clearQueue();
             wait();
         }
         void start()
         {
             stopped = false;
+            clearQueue();
             exception.clear();
             threaded.start();
         }
