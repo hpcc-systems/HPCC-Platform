@@ -1214,7 +1214,8 @@ void ESDLcompiler::Process()
     write_esxdl();
 
     fclose(yyin);
-    close(esxdlo);
+	if (gOutfile > 0)
+		close (gOutfile);
 
     yyCleanupESDLGlobals();
     yylex_destroy();
