@@ -381,6 +381,21 @@
                 </variablelist></para>
             </listitem>
           </orderedlist></para>
+
+        <sect3>
+          <title>Guest Additions</title>
+
+          <para>The HPCC VM Images include Guest Additions. Guest Additions
+          are device drivers and system applications that optimize the guest
+          operating system for better performance and usability. If you would
+          like to use your mouse pointer, and/or other desktop tools with your
+          virtual machine, start the X windows display after you log into to
+          your virtual machine. </para>
+
+          <para>Log in with the credentials provided. (user: hpccdemo,
+          password: hpccdemo) At the command prompt enter: <emphasis
+          role="bold">startx</emphasis>.</para>
+        </sect3>
       </sect2>
     </sect1>
 
@@ -702,6 +717,21 @@
                 </variablelist></para>
             </listitem>
           </orderedlist></para>
+
+        <sect3>
+          <title>Guest Additions</title>
+
+          <para>The HPCC VM Images include Guest Additions. Guest Additions
+          are device drivers and system applications that optimize the guest
+          operating system for better performance and usability. If you would
+          like to use your mouse pointer, and/or other desktop tools with your
+          virtual machine, start the X windows display after you log into to
+          your virtual machine.</para>
+
+          <para>Log in with the credentials provided. (user: hpccdemo,
+          password: hpccdemo) At the command prompt enter: <emphasis
+          role="bold">startx</emphasis>.</para>
+        </sect3>
       </sect2>
     </sect1>
   </chapter>
