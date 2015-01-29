@@ -55,6 +55,7 @@ include_directories (
          ./../../system/mp 
          ./../../system/include 
          ./../../system/jlib 
+         ./../../system/security/securesocket
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DREMOTE_EXPORTS )
@@ -65,5 +66,6 @@ install ( TARGETS remote RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${L
 target_link_libraries ( remote 
     jlib 
     mp
+    securesocket
     ${URIPARSER_LIBRARIES}
     )

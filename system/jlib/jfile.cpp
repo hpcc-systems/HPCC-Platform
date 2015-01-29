@@ -4411,7 +4411,7 @@ StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
 
 bool RemoteFilename::isLocal() const
 {
-    if (ep.port&&(ep.port!=DAFILESRV_PORT))
+    if (ep.port&&(ep.port!=DAFILESRV_PORT && ep.port!=SECURE_DAFILESRV_PORT))
         return false;  // treat non-dafilesrv port as remote
     return ep.isLocal() || ep.isNull();
 }

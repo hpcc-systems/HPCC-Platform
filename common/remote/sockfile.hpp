@@ -32,7 +32,7 @@
 interface IRemoteFileServer : public IInterface
 {
 public:
-    virtual void run(SocketEndpoint &listenep) = 0;
+    virtual void run(SocketEndpoint &listenep, bool useSSL = false) = 0;
     virtual void stop() = 0;
     virtual unsigned idleTime() = 0; // in ms
 };

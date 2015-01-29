@@ -312,6 +312,11 @@ extern jlib_decl bool getConfigurationDirectory(const IPropertyTree *dirtree, //
                                                 const char *instance, 
                                                 StringBuffer &dirout);
 
+extern jlib_decl bool querySecuritySettings(bool *          _useSSL,
+                                            unsigned short *_port,
+                                            const char * *  _certificate,
+                                            const char * *  _privateKey);
+
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
 
