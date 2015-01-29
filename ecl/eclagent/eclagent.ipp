@@ -443,7 +443,7 @@ public:
     void setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkunit, bool _resolveFilesLocally, bool _writeResultsToStdout, outputFmts _outputFmt, IUserDescriptor *_standAloneUDesc);
     inline bool needToLockWorkunit() { return !isStandAloneExe; }           //If standalone exe then either no dali, or a unique remote workunit.
 
-    virtual void setResultInt(const char * stepname, unsigned sequence, __int64);
+    virtual void setResultInt(const char * stepname, unsigned sequence, __int64, unsigned size);
     virtual void setResultReal(const char * stepname, unsigned sequence, double);
     virtual void setResultBool(const char * stepname, unsigned sequence, bool);
     virtual void setResultString(const char * stepname, unsigned sequence, int len, const char *);
@@ -451,7 +451,7 @@ public:
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend);
     virtual void setResultRaw(const char * stepname, unsigned sequence, int len, const void *);
     virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer);
-    virtual void setResultUInt(const char * stepname, unsigned sequence, unsigned __int64);
+    virtual void setResultUInt(const char * stepname, unsigned sequence, unsigned __int64, unsigned size);
     virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str);
     virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val);
     virtual void setResultVarString(const char * stepname, unsigned sequence, const char *);

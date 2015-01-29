@@ -449,12 +449,12 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual void setResultBool(const char *name, unsigned sequence, bool value) { ctx->setResultBool(name, sequence, value); }
         virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultData(name, sequence, len, data); }
         virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { ctx->setResultDecimal(stepname, sequence, len, precision, isSigned, val); }
-        virtual void setResultInt(const char *name, unsigned sequence, __int64 value) { ctx->setResultInt(name, sequence, value); }
+        virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { ctx->setResultInt(name, sequence, value, size); }
         virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultRaw(name, sequence, len, data); }
         virtual void setResultReal(const char * stepname, unsigned sequence, double value) { ctx->setResultReal(stepname, sequence, value); }
         virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { ctx->setResultSet(name, sequence, isAll, len, data, transformer); }
         virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { ctx->setResultString(name, sequence, len, str); }
-        virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value) { ctx->setResultUInt(name, sequence, value); }
+        virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { ctx->setResultUInt(name, sequence, value, size); }
         virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { ctx->setResultUnicode(name, sequence, len, str); }
         virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { ctx->setResultVarString(name, sequence, value); }
         virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { ctx->setResultVarUnicode(name, sequence, value); }

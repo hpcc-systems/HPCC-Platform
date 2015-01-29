@@ -1126,6 +1126,17 @@ void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence
     }
 }
 
+void FlushingStringBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    s.append(value);
+}
+void FlushingStringBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    s.append(value);
+}
+
 void FlushingStringBuffer::incrementRowCount()
 {
     CriticalBlock b(crit);
@@ -1190,6 +1201,25 @@ void FlushingJsonBuffer::startScalar(const char *resultName, unsigned sequence)
         tail.set("}]}");
     }
 }
+
+void FlushingJsonBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    if (size < 7) //JavaScript only supports 53 significant bits
+        s.append(value);
+    else
+        s.append('"').append(value).append('"');
+}
+
+void FlushingJsonBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    if (size < 6) //JavaScript doesn't support unsigned, and only supports 53 significant bits
+        s.append(value);
+    else
+        s.append('"').append(value).append('"');
+}
+
 //=====================================================================================================
 
 ClusterWriteHandler::ClusterWriteHandler(char const * _logicalName, char const * _activityType)
