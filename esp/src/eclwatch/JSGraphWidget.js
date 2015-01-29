@@ -201,6 +201,8 @@ define([
                         if (!subgraph.__widget) {
                             subgraph.__widget = new Shape()
                                 .shape("rect")
+                                .width(0)
+                                .height(0)
                             ;
                             subgraph.__widget.__hpcc_globalID = subgraph.__hpcc_id;
                         }
