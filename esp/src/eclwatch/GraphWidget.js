@@ -20,7 +20,6 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/_base/Deferred",
-    "dojo/aspect",
     "dojo/has",
     "dojo/dom",
     "dojo/dom-construct",
@@ -36,6 +35,7 @@ define([
     "dijit/layout/ContentPane",
 
     "hpcc/_Widget",
+    "hpcc/ESPUtil",
 
     "dojo/text!../templates/GraphWidget.html",
 
@@ -44,9 +44,9 @@ define([
     "dijit/form/Button",
     "dijit/form/NumberSpinner"
     
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
             registry, BorderContainer, ContentPane,
-            _Widget,
+            _Widget, ESPUtil,
             template) {
 
     var GraphStore = declare("GraphStore", [Memory], {
@@ -1033,40 +1033,19 @@ define([
             },
 
             watchStyleChange: function () {
-                //  Prevent control from being "hidden" as it gets destroyed on Chrome/FF/(Maybe IE11?)
-                var watchList = [];
-                var context = this;
-                var domNode = this.domNode;
-
-                //  There are many places that may cause the plugin to be hidden, the possible places are calculated by walking the hierarchy upwards. 
-                while (domNode) {
-                    if (domNode.id) {
-                        watchList[domNode.id] = false;
-                    }
-                    domNode = domNode.parentElement;
-                }
-
-                //  Hijack the dojo style class replacement call and monitor for elements in our watchList. 
-                aspect.around(domClass, "replace", function (origFunc) {
-                    return function (node, addStyle, removeStyle) {
-                        if (node.firstChild && (node.firstChild.id in watchList)) {
-                            if (addStyle == "dijitHidden") {
-                                watchList[node.firstChild.id] = true;
-                                dojo.style(node, "width", "1px");
-                                dojo.style(node, "height", "1px");
-                                dojo.style(node.firstChild, "width", "1px");
-                                dojo.style(node.firstChild, "height", "1px");
-                                return;
-                            } else if (addStyle == "dijitVisible" && watchList[node.firstChild.id] == true) {
-                                watchList[node.firstChild.id] = false;
-                                dojo.style(node, "width", "100%");
-                                dojo.style(node, "height", "100%");
-                                dojo.style(node.firstChild, "width", "100%");
-                                dojo.style(node.firstChild, "height", "100%");
-                                return;
-                            }
-                        }
-                        return origFunc(node, addStyle, removeStyle);
+                ESPUtil.MonitorVisibility(this, function (visibility, node) {
+                    if (visibility) {
+                        dojo.style(node, "width", "100%");
+                        dojo.style(node, "height", "100%");
+                        dojo.style(node.firstChild, "width", "100%");
+                        dojo.style(node.firstChild, "height", "100%");
+                        return true;
+                    } else {
+                        dojo.style(node, "width", "1px");
+                        dojo.style(node, "height", "1px");
+                        dojo.style(node.firstChild, "width", "1px");
+                        dojo.style(node.firstChild, "height", "1px");
+                        return true;
                     }
                 });
             },

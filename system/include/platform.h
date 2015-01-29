@@ -291,7 +291,6 @@ typedef int socklen_t;
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>

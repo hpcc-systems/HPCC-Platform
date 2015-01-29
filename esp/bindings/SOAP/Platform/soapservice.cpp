@@ -47,6 +47,7 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
     if(ctx == NULL)
         return 0;
 
+    int returnValue = 0;
     bool authenticated = !ctx->toBeAuthenticated();
     for (int i = 0; i < num; i++)
     {
@@ -101,30 +102,31 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
                         authenticated = false;
                     }
                     if(!authenticated)
-                    {           
-                        StringBuffer peerStr;
-                        ctx->getPeer(peerStr);
-                        DBGLOG("User authentication failed for soap request from %s", peerStr.str());
-                        return SOAP_AUTHENTICATION_ERROR;
-                    }
-                    return 0;
+                        returnValue = SOAP_AUTHENTICATION_ERROR;
+                    break;
                 }
             }
         }
     }
 
+    if (returnValue == 0)
+    {
+        if (authenticated)
+            return 0;
+        returnValue = SOAP_AUTHENTICATION_REQUIRED;
+    }
+
     StringBuffer peerStr;
     ctx->getPeer(peerStr);
     const char* userId = ctx->queryUserId();
-    DBGLOG("SOAP request from %s@%s", (userId&&*userId)?userId:"unknown", (peerStr.length()>0)?peerStr.str():"unknown");
+    VStringBuffer msg("SOAP request from %s@%s.", (userId&&*userId)?userId:"unknown", (peerStr.length()>0)?peerStr.str():"unknown");
+    if (returnValue == SOAP_AUTHENTICATION_ERROR)
+        msg.append(" User authentication failed");
+    else
+        msg.append(" User authentication required");
+    DBGLOG("%s", msg.str());
 
-    if(!authenticated)
-    {
-        DBGLOG("User authentication required");
-        return SOAP_AUTHENTICATION_REQUIRED;
-    }
-
-    return 0;
+    return returnValue;
 }
 
 int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
@@ -195,6 +197,10 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
         }
     }
 
+    StringBuffer peerStr;
+    ctx->getPeer(peerStr);
+    const char* userId = ctx->queryUserId();
+
     CBody* req_body = req_envelope->get_body();
     Owned<CRpcResponse> rpc_response;
     rpc_response.setown(new CRpcResponse);
@@ -209,16 +215,19 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
     } catch (XmlPullParserException& e) {
         response.set_status(SOAP_CLIENT_ERROR);
         response.set_err(e.getMessage().c_str());
-        DBGLOG("parsing xml error: %s. Offending XML: [%s]", e.getMessage().c_str(), requeststr.str());
+        DBGLOG("SOAP request from %s@%s. Parsing xml error: %s. Offending XML: [%s]", (userId&&*userId)?userId:"unknown",
+            (peerStr.length()>0)?peerStr.str():"unknown", e.getMessage().c_str(), requeststr.str());
         return 0;
     } catch (...) {
         response.set_status(SOAP_CLIENT_ERROR);
         response.set_err("Unknown error when parsing soap body XML");
-        ERRLOG("unknown error when parsing: %s", requeststr.str());
+        ERRLOG("SOAP request from %s@%s. Unknown error when parsing: %s",  (userId&&*userId)?userId:"unknown",
+            (peerStr.length()>0)?peerStr.str():"unknown", requeststr.str());
         return 0;
     }
 
-    DBGLOG("SOAP method <%s>", rpc_call->get_name());
+    DBGLOG("SOAP method <%s> from %s@%s.", rpc_call->get_name(),  (userId&&*userId)?userId:"unknown",
+        (peerStr.length()>0)?peerStr.str():"unknown");
 
     // call the rpc and set the response
     if(m_soapbinding != NULL)

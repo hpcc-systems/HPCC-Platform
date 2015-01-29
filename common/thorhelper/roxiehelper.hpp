@@ -179,6 +179,8 @@ public:
     virtual void *getPayload(size32_t &length);
     virtual void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
     virtual void startScalar(const char *resultName, unsigned sequence);
+    virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size);
+    virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size);
     virtual void incrementRowCount();
 };
 
@@ -195,6 +197,8 @@ public:
     void encodeData(const void *data, unsigned len);
     void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
     void startScalar(const char *resultName, unsigned sequence);
+    virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size);
+    virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size);
 };
 
 inline const char *getFormatName(TextMarkupFormat fmt)

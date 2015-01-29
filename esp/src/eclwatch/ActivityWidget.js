@@ -193,6 +193,11 @@ define([
             });
 
             this._refreshActionState();
+            ESPUtil.MonitorVisibility(this.gridTab, function (visibility) {
+                if (visibility) {
+                    context.refreshGrid();
+                }
+            });
         },
 
         createGrid: function (domID) {

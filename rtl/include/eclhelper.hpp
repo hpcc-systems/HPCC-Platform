@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      156
-#define MIN_ACTIVITY_INTERFACE_VERSION  156             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      157
+#define MIN_ACTIVITY_INTERFACE_VERSION  157             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -161,8 +161,8 @@ public:
     virtual void outputString(unsigned len, const char *field, const char *fieldname) = 0;
     virtual void outputBool(bool field, const char *fieldname) = 0;
     virtual void outputData(unsigned len, const void *field, const char *fieldname) = 0;
-    virtual void outputInt(__int64 field, const char *fieldname) = 0;
-    virtual void outputUInt(unsigned __int64 field, const char *fieldname) = 0;
+    virtual void outputInt(__int64 field, unsigned size, const char *fieldname) = 0;
+    virtual void outputUInt(unsigned __int64 field, unsigned size, const char *fieldname) = 0;
     virtual void outputReal(double field, const char *fieldname) = 0;
     virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) = 0;
     virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) = 0;
@@ -569,12 +569,12 @@ interface ICodeContext : public IResourceContext
     virtual void setResultBool(const char *name, unsigned sequence, bool value) = 0;
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) = 0;
     virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0; 
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 value) = 0;
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) = 0;
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) = 0;
     virtual void setResultReal(const char * stepname, unsigned sequence, double value) = 0;
     virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) = 0;
     virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) = 0;
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value) = 0;
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) = 0;
     virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) = 0;
     virtual void setResultVarString(const char * name, unsigned sequence, const char * value) = 0;
     virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) = 0;

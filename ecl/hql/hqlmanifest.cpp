@@ -200,8 +200,10 @@ void ResourceManifest::addToArchive(IPropertyTree *archive)
 
     StringBuffer xml;
     toXML(manifest, xml);
-    additionalFiles->setProp("Manifest", xml.str());
-    additionalFiles->setProp("Manifest/@originalFilename", absFilename.str());
+
+    IPropertyTree *manifest = additionalFiles->addPropTree("Manifest", createPTree("Manifest", ipt_none));
+    manifest->setProp("@originalFilename", absFilename.str());
+    manifest->setProp(NULL, xml.str());
 }
 
 void addManifestResourcesToArchive(IPropertyTree *archive, const char *filename)

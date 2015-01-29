@@ -40,9 +40,8 @@
 //#define VERIFY_RESOURCING
 //#define SPOT_UNCONDITIONAL_CONDITIONS
 
-#define DEFAULT_LARGEMEM_BUFFER_SIZE (0x58000000) // ~ 1.4GB
 #define DEFAULT_MAX_SOCKETS 2000 // configurable by setting max_sockets in .ini
-#define DEFAULT_TOTAL_MEMORY ((1024*1024*1800)-DEFAULT_LARGEMEM_BUFFER_SIZE)
+#define DEFAULT_TOTAL_MEMORY ((1024*1024*1800))
 #define FIXED_CLUSTER_SIZE 400
 #define MEM_Const_Minimal (1*1024*1024)
 #define DEFAULT_MAX_ACTIVITIES  100
@@ -64,7 +63,7 @@ MODULE_EXIT()
 
 static void setHashResources(IHqlExpression * expr, CResources & resources, const CResourceOptions & options)
 {
-    unsigned memneeded = MEM_Const_Minimal+resources.clusterSize*4*DISTRIBUTE_SINGLE_BUFFER_SIZE+DISTRIBUTE_PULL_BUFFER_SIZE;
+    unsigned memneeded = MEM_Const_Minimal+DISTRIBUTE_RESMEM(resources.clusterSize);
     resources.set(RESslavememory, memneeded).set(REShashdist, 1);
 }
 
