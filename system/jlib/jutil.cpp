@@ -2306,8 +2306,11 @@ jlib_decl bool querySecuritySettings(bool *          _useSSL,
 #endif
                 Owned<IProperties> conf = createProperties(configFileSpec.str(), true);
                 useSSL = conf->getPropBool("dfsUseSSL", false);
-                certificate.set(conf->queryProp("dfsSSLCertFile"));
-                privateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
+                if (useSSL)
+                {
+                    certificate.set(conf->queryProp("dfsSSLCertFile"));
+                    privateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
+                }
                 retrieved = true;
             }
             catch (IException *e)

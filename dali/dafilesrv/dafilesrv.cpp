@@ -550,7 +550,7 @@ int main(int argc,char **argv)
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Running");
                 server.setown(createRemoteFileServer());
                 try {
-                    server->run(listenep);
+                    server->run(listenep, useSSL);
                 }
                 catch (IException *e) {
                     EXCLOG(e,DAFS_SERVICE_NAME);

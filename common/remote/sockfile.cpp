@@ -4436,14 +4436,18 @@ public:
             if (!clientCertificate.certificate)
                 throw createDafsException(DAFSERR_connection_failed,"SSL Certificate information not found in environment.conf");
             if (listenep.port <= 0)
+            {
+                assertex(FALSE);
                 listenep.port = configepPort;
-
+            }
             //Create unsecure socket to reject non-ssl client requests
-            StringBuffer ip;
-            IpAddress ipAddr;
-            acceptsock->getPeerAddress(ipAddr);
-            ipAddr.getIpText(ip);
-            rejectsock.setown(ISocket::create_ip(DAFILESRV_PORT, ip.str()));
+            if (listenep.isNull())
+                rejectsock.setown(ISocket::create(DAFILESRV_PORT));
+            else {
+                StringBuffer ips;
+                listenep.getIpText(ips);
+                rejectsock.setown(ISocket::create_ip(DAFILESRV_PORT,ips.str()));
+            }
         }
 #ifdef _DEBUG
         StringBuffer sb;

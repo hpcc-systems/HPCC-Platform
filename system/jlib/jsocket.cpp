@@ -6116,7 +6116,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
         StringBuffer dbgSB("wait_multiple() ready socket(s) :");
 #endif
         //Build up list of socks which are ready for accept read/write without blocking
-        for (aindex_t idx = 0; res && socks.length(); idx++)
+        for (aindex_t idx = 0; res && idx < socks.length(); idx++)
         {
             if (FD_ISSET(socks.item(idx), &fds))
             {
