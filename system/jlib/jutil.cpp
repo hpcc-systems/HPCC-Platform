@@ -48,6 +48,8 @@
 #include "build-config.h"
 #endif
 
+#include "portlist.h"
+
 static SpinLock * cvtLock;
 
 #ifdef _WIN32
@@ -2278,6 +2280,65 @@ IPropertyTree *getHPCCEnvironment(const char *configFileName)
         }
     }
     return NULL;
+}
+
+jlib_decl bool querySecuritySettings(bool *          _useSSL,
+                                     unsigned short *_port,
+                                     const char * *  _certificate,
+                                     const char * *  _privateKey)
+{
+    static CriticalSection securitySettingsCrit;
+    static bool useSSL = false;
+    static StringAttr certificate;
+    static StringAttr privateKey;
+    static bool retrieved = false;
+
+    if (!retrieved)
+    {
+        CriticalBlock b(securitySettingsCrit);
+        if (!retrieved)
+        {
+            try
+            {
+                StringBuffer configFileSpec;
+#ifndef _WIN32
+                configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
+#endif
+                Owned<IProperties> conf = createProperties(configFileSpec.str(), true);
+                useSSL = conf->getPropBool("dfsUseSSL", false);
+                if (useSSL)
+                {
+                    certificate.set(conf->queryProp("dfsSSLCertFile"));
+                    privateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
+                }
+                retrieved = true;
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "Error processing environment.conf\n");
+                throwUnexpected();
+            }
+        }
+    }
+    if (retrieved)
+    {
+        if (_useSSL)
+            *_useSSL = useSSL;
+        if (_port)
+            *_port = useSSL ? SECURE_DAFILESRV_PORT : DAFILESRV_PORT;
+        if (_certificate)
+            *_certificate = certificate.get();
+        if (_privateKey)
+            *_privateKey = privateKey.get();
+    }
+    else
+    {
+        if (_useSSL)
+            *_useSSL = false;
+        if (_port)
+            *_port = DAFILESRV_PORT;
+    }
+    return retrieved;
 }
 
 static IPropertyTree *getOSSdirTree()

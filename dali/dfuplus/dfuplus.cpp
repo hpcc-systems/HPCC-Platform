@@ -32,6 +32,20 @@
 #include "rmtfile.hpp"
 #include "sockfile.hpp"
 
+
+static class CSecuritySettings
+{
+    bool useSSL;
+    unsigned short daliServixPort;
+public:
+    CSecuritySettings()
+    {
+        querySecuritySettings(&useSSL, &daliServixPort, NULL, NULL);
+    }
+
+    unsigned short queryDaliServixPort() { return daliServixPort; }
+} securitySettings;
+
 class CDafsThread: public Thread
 {
     Owned<IRemoteFileServer> server;
@@ -43,7 +57,7 @@ public:
         : listenep(_listenep)
     {
         if (listenep.port==0)
-            listenep.port = DAFILESRV_PORT;
+            listenep.port = securitySettings.queryDaliServixPort();
         StringBuffer eps;
         if (listenep.isNull())
             eps.append(listenep.port);
@@ -96,7 +110,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
     thr->start();
     StringBuffer eps;
     if (listenep.isNull())
-        progress("Started local Dali file server on port %d\n", listenep.port?listenep.port:DAFILESRV_PORT);
+        progress("Started local Dali file server on port %d\n", listenep.port?listenep.port:securitySettings.queryDaliServixPort());
     else
         progress("Started local Dali file server on %s\n", listenep.getUrlStr(eps).str());
     if (timeout==0) {
@@ -118,9 +132,9 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
 bool CDfuPlusHelper::checkLocalDaFileSvr(const char *eps,SocketEndpoint &epout)
 {
     if (!eps||!*eps)
-        epout.setLocalHost(DAFILESRV_PORT);
+        epout.setLocalHost(securitySettings.queryDaliServixPort());
     else {
-        epout.set(eps,DAFILESRV_PORT);
+        epout.set(eps,securitySettings.queryDaliServixPort());
         if (!epout.isLocal())
             return false;
     }

@@ -57,6 +57,8 @@
 #define MP_START_PORT                   7101 // Default range for MP ports
 #define MP_END_PORT                     7500
 
+#define SECURE_DAFILESRV_PORT           7600 // aka daliservix
+
 //ESP SERVICES
 //INSECURE
 #define WS_ECL_DEFAULT_PORT             8002
