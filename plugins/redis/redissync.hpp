@@ -61,7 +61,7 @@ protected :
 
 extern "C++"
 {
-namespace Sync {
+namespace RedisPlugin {
     //--------------------------SET----------------------------------------
     ECL_REDIS_API void ECL_REDIS_CALL SyncRSetBool (ICodeContext * _ctx, const char * options, const char * key, bool value, unsigned __int64 database, unsigned expire);
     ECL_REDIS_API void ECL_REDIS_CALL SyncRSetInt  (ICodeContext * _ctx, const char * options, const char * key, signed __int64 value, unsigned __int64 database, unsigned expire);

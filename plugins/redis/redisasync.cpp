@@ -29,8 +29,7 @@
 
 #include "hiredis/async.h"
 
-namespace RedisPlugin
-{
+namespace RedisPlugin {
 static CriticalSection crit;
 static const char * REDIS_LOCK_PREFIX = "redis_ecl_lock";// needs to be a large random value uniquely individual per client
 static const unsigned REDIS_LOCK_EXPIRE = 60; //(secs)
@@ -71,10 +70,10 @@ KeyLock::~KeyLock()
     redisContext * context = redisConnectWithTimeout(master, port, REDIS_TIMEOUT);
     CriticalBlock block(crit);
     OwnedReply reply = RedisPlugin::createReply(redisCommand(context, "GET %b", key.str(), strlen(key.str())));
-    const char * channel2 = reply->query()->str;
+    const char * channelFound = reply->query()->str;
 
-    if (strcmp(channel, channel2) == 0)
-        OwnedReply reply = RedisPlugin::createReply(redisCommand(context, "DEL %b", key.str(), strlen(key.str())));
+    if (strcmp(channel, channelFound) == 0)
+        redisCommand(context, "DEL %b", key.str(), strlen(key.str()));
 
     if (context)
         redisFree(context);
@@ -152,7 +151,6 @@ protected :
 class SubContainer : public AsyncConnection
 {
 public :
-    SubContainer(ICodeContext * ctx, const char * options, const char * _channel, unsigned __int64 _database);
     SubContainer(ICodeContext * ctx, const char * options, const char * _channel, redisCallbackFn * _callback, unsigned __int64 _database);
     ~SubContainer()
     {
@@ -192,14 +190,14 @@ protected :
 class SubscriptionThread : implements IThreaded, implements IInterface, public SubContainer
 {
 public :
-    SubscriptionThread(ICodeContext * ctx, const char * options, const char * channel, unsigned __int64 _database) : SubContainer(ctx, options, channel, _database), thread("SubscriptionThread", (IThreaded*)this)
+    SubscriptionThread(ICodeContext * ctx, const char * options, const char * channel, unsigned __int64 _database) : SubContainer(ctx, options, channel, NULL, _database), thread("SubscriptionThread", (IThreaded*)this)
     {
         evLoop = NULL;
     }
     virtual ~SubscriptionThread()
     {
         stopEvLoop();
-        wait(TIMEOUT);//give stopEvLoop time to complete
+        wait(TIMEOUT);//stopEvLoop() is an async operation in stopping any current read/write listening. We need to wait for this before closing this thread.
         thread.stopped.signal();
         thread.join();
     }
@@ -224,17 +222,15 @@ private :
     CThreaded  thread;
     struct ev_loop * evLoop;
 };
-SubContainer::SubContainer(ICodeContext * ctx, const char * options, const char * _channel, unsigned __int64 _database) : AsyncConnection(ctx, options, _database)
-{
-    channel.set(_channel);
-    callback = subCB;
-}
 SubContainer::SubContainer(ICodeContext * ctx, const char * options, const char * _channel, redisCallbackFn * _callback, unsigned __int64 _database) : AsyncConnection(ctx, options,_database )
 {
     channel.set(_channel);
-    callback = _callback;
+    if (_callback)
+        callback = _callback;
+    else
+        callback = subCB;
 }
-AsyncConnection::AsyncConnection(ICodeContext * ctx, const char * _options, unsigned __int64 _database) : Connection(ctx, _options, _database)
+AsyncConnection::AsyncConnection(ICodeContext * ctx, const char * _options, unsigned __int64 _database) : Connection(ctx, _options, _database), context(NULL)
 {
     createAndAssertConnection(ctx);
     //could log server stats here, however async connections are not cached and therefore book keeping of only doing so for new servers may not be worth it.
@@ -244,7 +240,7 @@ void AsyncConnection::selectDb(ICodeContext * ctx)
     if (database == 0)
         return;
     attachLibev();
-    VStringBuffer cmd("SELECT %llu", database);
+    VStringBuffer cmd("SELECT " I64F, database);
     assertRedisErr(redisAsyncCommand(context, selectCB, NULL, cmd.str()), "SELECT (lock) buffer write error");
     handleLoop(EV_DEFAULT_ EV_TIMEOUT);
 }
@@ -260,7 +256,6 @@ AsyncConnection::~AsyncConnection()
 }
 void AsyncConnection::createAndAssertConnection(ICodeContext * ctx)
 {
-    context = NULL;
     context = redisAsyncConnect(master.str(), port);
     assertConnection();
     context->data = (void*)this;

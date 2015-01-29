@@ -18,34 +18,34 @@ pub/sub nature of redis based around a locking mechanism on keys.
 A full list of redis commands can be found at http://redis.io/commands of which the following are directly
 wrapped in the sync module only:
 
-BOOLEAN Exists(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0)
-FlushDB(CONST VARSTRING options, UNSIGNED database = 0)
-Del(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0)
-Persist(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0)
-Expire(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED4 expire, UNSIGNED database = 0)
-INTEGER DBSize(CONST VARSTRING options, UNSIGNED database = 0)
+BOOLEAN Exists(VARSTRING options, VARSTRING key, UNSIGNED database = 0)
+FlushDB(VARSTRING options, UNSIGNED database = 0)
+Del(VARSTRING options, VARSTRING key, UNSIGNED database = 0)
+Persist(VARSTRING options, VARSTRING key, UNSIGNED database = 0)
+Expire(VARSTRING options, VARSTRING key, UNSIGNED4 expire, UNSIGNED database = 0)
+INTEGER DBSize(VARSTRING options, UNSIGNED database = 0)
 
 The redis command 'INFO ALL' is called once per instance of server:port combination and is written to the log
 file (sync only). Only sync connections to a single redis server:port are cached internally, changes in db are
 handled internally by the redis command 'SELECT DB'.
 
 The core SET functions have the prototype pattern (e.g.)
-SetString(CONST VARSTRING options, CONST VARSTRING key, CONST STRING value, UNSIGNED database = 0,  UNSIGNED4 expire = 0 /*days*/)
+SetString(VARSTRING options, VARSTRING key, STRING value, UNSIGNED database = 0,  UNSIGNED4 expire = 0 /*days*/)
 The core GET functions have the prototype pattern (e.g.)
-STRING GetString(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0)
+STRING GetString(VARSTRING options, VARSTRING key, UNSIGNED database = 0)
 'options' is the redis server ip:port in the format '--SERVER=<ip>:<port>'. This defaults to localhost:6379 if
 omitted.
 
 This pattern differs in the 'locking' module taking the following forms:
 
-STRING SetString(UNSIGNED8 keyPtr, CONST STRING value, UNSIGNED4 expire = 0)
+STRING SetString(UNSIGNED8 keyPtr, STRING value, UNSIGNED4 expire = 0)
 STRING GetString(UNSIGNED8 keyPtr)
 
-Note that SET also returns a value. This is the vaue just set and not a wrapper for the redis command
+Note that SET also returns a value. This is the value just set and not a wrapper for the redis command
 'GETSET'. See the section on locks.
 
 Within the sync and async modules, SETs overwrite their key values. The respective GETs (other than for
-STRINGs) will fail upon reuqest for a non-existent key. If you're not sure use EXISTS first (certain
+STRINGs) will fail upon request for a non-existent key. If you're not sure use EXISTS first (certain
 precaution has to be taken when using multiple plugin calls within ECL, regarding their actual execution
 timing. Remember ECL is declarative and may decide to hoist your calls.) GetString will return an empty
 STRING upon a cache miss.
@@ -57,7 +57,7 @@ The locking module was designed with a particular use in mind. This concerns the
 ECL clients/threads wish to read the same key, at the same time, from the redis server and encounter an
 non-existent key (cache miss). It is thus desirable to be able to then SET this missing key however, only
 once and by one client/thread. This is such as to prevent redundant evaluation/retrieval of the new value
-within this race condition. The core of this design is to have one instant (the first/race-winner), 'lock'
+within this race condition. The core of this design is to have one instance (the first/race-winner), 'lock'
 the key and then evaluate/retrieve the new value. The others clients/threads (race-losers) subscribe to
 the locked key and wait for the winner to set the new value and publish the fact that it has done so.
 This is done using the redis pub/sub paradigm. Note - in this implementation all publishes contain as
@@ -74,7 +74,7 @@ given server:port and database creates a unique channel that is independent of p
 Since redis does not implicitly support locks, it is this 'channel', itself, that represents the notion of a
 lock within this plugin library. These channels/locks are a particular string prefixed by the string
 'redis_ecl_lock'. When locked the key's value contains this channel/lock string. This is so lock acknowledging
-GETs can subscribe to the key via the correct channel, being the  locked keys vaue itself.
+GETs can subscribe to the key via the correct channel, being the locked keys value itself.
 
 Again, since redis does not implicitly support locks, such locking mechanisms as the above are not
 enforced/asserted by the server. They have to be honoured/acknowledged by the client instead.
@@ -98,7 +98,7 @@ calls can seriously hinder this capability due to their runtime execution nature
 Thus, to use the locking module two options are possible:
 
 UNSIGNED lock := locking.GetLockObject(options, key, database);
-STRING x := locking.GetString(lockObject);
+STRING x := locking.GetString(lock);
 IF( LENGTH(x=0), locking.SetString(lockObject, newValue), x);
 
 for STRINGs only or for everything else (INTEGER example used here):
@@ -117,7 +117,7 @@ The winner only enters locking.SetString(lockObject, newValue) where it sets and
 /**********************/
 (WIP)
 apt-get install redis-server #includes redis-cli
-apt-get insatll libhiredis-dev
+apt-get install libhiredis-dev
 apt-get install libev-dev
 
 To watch the transactions live, open redis-cli and enter 'MONITOR' into the prompt.

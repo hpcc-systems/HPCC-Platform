@@ -22,6 +22,7 @@
 
 extern "C++"
 {
+namespace RedisPlugin {
     //------------------------ASYNC--GET----------------------------------------
     ECL_REDIS_API bool             ECL_REDIS_CALL AsncRGetBool  (ICodeContext * _ctx, const char * options, const char * key, unsigned __int64 database);
     ECL_REDIS_API signed __int64   ECL_REDIS_CALL AsncRGetInt8  (ICodeContext * _ctx, const char * options, const char * key, unsigned __int64 database);
@@ -61,5 +62,6 @@ extern "C++"
     ECL_REDIS_API void             ECL_REDIS_CALL LockingRSetStr  (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, unsigned __int64 lockObject, size32_t valueLength, const char * value, unsigned expire);
     ECL_REDIS_API void             ECL_REDIS_CALL LockingRSetUChar(ICodeContext * _ctx, size32_t & returnLength, UChar * & returnValue, unsigned __int64 lockObject, size32_t valueLength, const UChar * value, unsigned expire);
     ECL_REDIS_API void             ECL_REDIS_CALL LockingRSetData (ICodeContext * _ctx, size32_t & returnLength, void * & returnValue, unsigned __int64 lockObject, size32_t valueLength, const void * value, unsigned expire);
+}
 }
 #endif
