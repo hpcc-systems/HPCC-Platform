@@ -37,12 +37,13 @@
 #define ROXIEMM_MEMORY_POOL_EXHAUSTED     ROXIEMM_ERROR_START+1
 #define ROXIEMM_INVALID_MEMORY_ALIGNMENT  ROXIEMM_ERROR_START+2
 #define ROXIEMM_HEAP_ERROR                ROXIEMM_ERROR_START+3
+#define ROXIEMM_TOO_MUCH_MEMORY           ROXIEMM_ERROR_START+4
 
 
 #ifdef __64BIT__
-#define HEAP_ALIGNMENT_SIZE I64C(0x100000u)                     // 1 mb heaplets - may be too big?
+#define HEAP_ALIGNMENT_SIZE I64C(0x40000u)                      // 256kb heaplets
 #else
-#define HEAP_ALIGNMENT_SIZE 0x100000                            // 1 mb heaplets - may be too big?
+#define HEAP_ALIGNMENT_SIZE 0x40000                             // 256kb heaplets
 #endif
 #define HEAP_ALIGNMENT_MASK ((~(HEAP_ALIGNMENT_SIZE)) + 1)
 #define ACTIVITY_MASK   0x00ffffff                              // must be > HEAP_ALIGNMENT_SIZE
