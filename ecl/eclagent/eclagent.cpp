@@ -773,13 +773,13 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
         outputSerializer->close(sequence, false);
 }
 
-void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val)
+void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, unsigned size)
 {
     LOG(MCsetresult, unknownJob, "setResultInt(%s,%d,%"I64F"d)", nullText(name), sequence, val);
     Owned<IWUResult> r = updateResult(name, sequence);
     if (r)
     {
-        r->setResultInt(val);   
+        r->setResultInt(val);
         r->setResultStatus(ResultStatusCalculated);
     }
     else
@@ -796,13 +796,13 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val)
     }
 }
 
-void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __int64 val)
+void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __int64 val, unsigned size)
 {
     LOG(MCsetresult, unknownJob, "setResultUInt(%s,%d,%"I64F"u)", nullText(name), sequence, val);
     Owned<IWUResult> r = updateResult(name, sequence);
     if (r)
     {
-        r->setResultUInt(val);  
+        r->setResultUInt(val);
         r->setResultStatus(ResultStatusCalculated);
     }
     else
@@ -3720,14 +3720,14 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
     {
         output->outputBeginNested("att", false);
         output->outputCString(name, "@name");
-        output->outputInt(value, "@value");
+        output->outputInt(value, 0, "@value");
         output->outputEndNested("att");
     }
 
     void rowToXML(IXmlWriter *output, const void *row, unsigned sequence, unsigned rowCount, bool skipped, bool limited, bool eof, bool eog) const
     {
         output->outputBeginNested("Row", true);
-        output->outputInt(sequence, "@seq");
+        output->outputInt(sequence, 0, "@seq");
         if (skipped)
             output->outputBool(true, "@skip");
         if (limited)
@@ -3738,9 +3738,9 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
             output->outputBool(true, "@eog");
         if (row)
         {
-            output->outputInt(rowCount, "@count");
+            output->outputInt(rowCount, 0, "@count");
             IOutputMetaData *meta = queryOutputMeta();
-            output->outputInt(meta->getRecordSize(row), "@size");
+            output->outputInt(meta->getRecordSize(row), 0, "@size");
             meta->toXML((const byte *) row, *output);
         }
         output->outputEndNested("Row");
@@ -3878,8 +3878,8 @@ public:
                         else
                         {
                             output->outputBeginNested("Row", true);
-                            output->outputInt(rowData->querySequence(), "@sequence");
-                            output->outputInt(rowData->queryRowCount(), "@count");
+                            output->outputInt(rowData->querySequence(), 0, "@sequence");
+                            output->outputInt(rowData->queryRowCount(), 0, "@count");
                             output->outputEndNested("Row");
                         }
                     }

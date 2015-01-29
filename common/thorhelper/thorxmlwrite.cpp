@@ -136,7 +136,7 @@ void CommonXmlWriter::outputData(unsigned len, const void *field, const char *fi
     }
 }
 
-void CommonXmlWriter::outputInt(__int64 field, const char *fieldname)
+void CommonXmlWriter::outputInt(__int64 field, unsigned size, const char *fieldname)
 {
     if (checkForAttribute(fieldname))
         outputXmlAttrInt(field, fieldname+1, out);
@@ -150,7 +150,7 @@ void CommonXmlWriter::outputInt(__int64 field, const char *fieldname)
     }
 }
 
-void CommonXmlWriter::outputUInt(unsigned __int64 field, const char *fieldname)
+void CommonXmlWriter::outputUInt(unsigned __int64 field, unsigned size, const char *fieldname)
 {
     if (checkForAttribute(fieldname))
         outputXmlAttrUInt(field, fieldname+1, out);
@@ -486,16 +486,31 @@ void CommonJsonWriter::outputData(unsigned len, const void *field, const char *f
     appendJSONDataValue(out, checkItemName(fieldname), len, field);
 }
 
-void CommonJsonWriter::outputInt(__int64 field, const char *fieldname)
+void CommonJsonWriter::outputInt(__int64 field, unsigned size, const char *fieldname)
 {
-    checkDelimit();
-    appendJSONValue(out, checkItemName(fieldname), field);
+    if (size < 7)
+    {
+        checkDelimit();
+        appendJSONValue(out, checkItemName(fieldname), field);
+    }
+    else
+    {
+        appendJSONNameOrDelimit(out, checkItemName(fieldname));
+        out.append('"').append(field).append('"');
+    }
 }
-
-void CommonJsonWriter::outputUInt(unsigned __int64 field, const char *fieldname)
+void CommonJsonWriter::outputUInt(unsigned __int64 field, unsigned size, const char *fieldname)
 {
-    checkDelimit();
-    appendJSONValue(out, checkItemName(fieldname), field);
+    if (size < 6)
+    {
+        checkDelimit();
+        appendJSONValue(out, checkItemName(fieldname), field);
+    }
+    else
+    {
+        appendJSONNameOrDelimit(out, checkItemName(fieldname));
+        out.append('"').append(field).append('"');
+    }
 }
 
 void CommonJsonWriter::outputReal(double field, const char *fieldname)
@@ -849,7 +864,7 @@ void CommonEncodedXmlWriter::outputData(unsigned len, const void *field, const c
     }
 }
 
-void CommonEncodedXmlWriter::outputInt(__int64 field, const char *fieldname)
+void CommonEncodedXmlWriter::outputInt(__int64 field, unsigned size, const char *fieldname)
 {
     if (checkForAttribute(fieldname))
         outputXmlAttrInt(field, fieldname+1, out);
@@ -863,7 +878,7 @@ void CommonEncodedXmlWriter::outputInt(__int64 field, const char *fieldname)
     }
 }
 
-void CommonEncodedXmlWriter::outputUInt(unsigned __int64 field, const char *fieldname)
+void CommonEncodedXmlWriter::outputUInt(unsigned __int64 field, unsigned size, const char *fieldname)
 {
     if (checkForAttribute(fieldname))
         outputXmlAttrUInt(field, fieldname+1, out);
@@ -1058,13 +1073,13 @@ void SimpleOutputWriter::outputData(unsigned len, const void *field, const char 
     outputXmlData(len, field, NULL, out);
 }
 
-void SimpleOutputWriter::outputInt(__int64 field, const char *)
+void SimpleOutputWriter::outputInt(__int64 field, unsigned size, const char *)
 {
     outputFieldSeparator();
     outputXmlInt(field, NULL, out);
 }
 
-void SimpleOutputWriter::outputUInt(unsigned __int64 field, const char *)
+void SimpleOutputWriter::outputUInt(unsigned __int64 field, unsigned size, const char *)
 {
     outputFieldSeparator();
     outputXmlUInt(field, NULL, out);

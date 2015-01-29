@@ -866,12 +866,12 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultDecimal");
     }
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 result)
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 result, unsigned size)
     {
         Owned<IWUResult> r = updateResult(name, sequence);
         if (r)
         {
-            r->setResultInt(result);    
+            r->setResultInt(result);
             r->setResultStatus(ResultStatusCalculated);
         }
         else
@@ -944,12 +944,12 @@ public:
         else
             throw MakeStringException(TE_UnexpectedParameters, "Unexpected parameters to setResultVarString");
     }
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 result)
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 result, unsigned size)
     {
         Owned<IWUResult> r = updateResult(name, sequence);
         if (r)
         {
-            r->setResultUInt(result);   
+            r->setResultUInt(result);
             r->setResultStatus(ResultStatusCalculated);
         }
         else

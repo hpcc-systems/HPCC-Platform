@@ -1564,26 +1564,26 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
         {
             __int64 value = getIntFromInt(type, cur, isMappedIndexField(columnIndex));
             if (type.isSigned())
-                writer.outputInt((__int64) value, name);
+                writer.outputInt((__int64) value, type.getSize(), name);
             else
-                writer.outputUInt((unsigned __int64) value, name);
+                writer.outputUInt((unsigned __int64) value, type.getSize(), name);
             break;
         }
     case type_swapint:
         {
             __int64 value = getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
             if (type.isSigned())
-                writer.outputInt((__int64) value, name);
+                writer.outputInt((__int64) value, type.getSize(), name);
             else
-                writer.outputUInt((unsigned __int64) value, name);
+                writer.outputUInt((unsigned __int64) value, type.getSize(), name);
             break;
         }
     case type_packedint:
         {
             if (type.isSigned())
-                writer.outputInt(rtlGetPackedSigned(cur), name);
+                writer.outputInt(rtlGetPackedSigned(cur), type.getSize(), name);
             else
-                writer.outputUInt(rtlGetPackedUnsigned(cur), name);
+                writer.outputUInt(rtlGetPackedUnsigned(cur), type.getSize(), name);
             break;
         }
     case type_decimal:
@@ -3309,11 +3309,11 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
 
             writer.outputBeginNested(getSeverityTagname(severity, flags), false);
             if (code)
-                writer.outputUInt(code, "Code");
+                writer.outputUInt(code, 0, "Code");
             if (filename.length())
                 writer.outputCString(filename.str(), "Filename");
             if (lineno)
-                writer.outputUInt(lineno, "Line");
+                writer.outputUInt(lineno, 0, "Line");
 
             writer.outputCString(src.str(), "Source");
             writer.outputCString(msg.str(), "Message");

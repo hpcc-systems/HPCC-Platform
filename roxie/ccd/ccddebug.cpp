@@ -509,14 +509,14 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
     {
         output->outputBeginNested("att", false);
         output->outputCString(name, "@name");
-        output->outputInt(value, "@value");
+        output->outputInt(value, 0, "@value");
         output->outputEndNested("att");
     }
 
     void rowToXML(IXmlWriter *output, const void *row, unsigned sequence, unsigned rowCount, bool skipped, bool limited, bool eof, bool eog) const
     {
         output->outputBeginNested("Row", true);
-        output->outputInt(sequence, "@seq");
+        output->outputInt(sequence, 0, "@seq");
         if (skipped)
             output->outputBool(true, "@skip");
         if (limited)
@@ -527,9 +527,9 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
             output->outputBool(true, "@eog");
         if (row)
         {
-            output->outputInt(rowCount, "@count");
+            output->outputInt(rowCount, 0, "@count");
             IOutputMetaData *meta = queryOutputMeta();
-            output->outputInt(meta->getRecordSize(row), "@size");
+            output->outputInt(meta->getRecordSize(row), 0, "@size");
             meta->toXML((const byte *) row, *output);
         }
         output->outputEndNested("Row");
@@ -675,8 +675,8 @@ public:
                         else
                         {
                             output->outputBeginNested("Row", true);
-                            output->outputInt(rowData->querySequence(), "@sequence");
-                            output->outputInt(rowData->queryRowCount(), "@count");
+                            output->outputInt(rowData->querySequence(), 0, "@sequence");
+                            output->outputInt(rowData->queryRowCount(), 0, "@count");
                             output->outputEndNested("Row");
                         }
                     }
@@ -1270,7 +1270,7 @@ public:
             output->outputBeginNested("Result", true);
             IActivityDebugContext *edge = manager->lookupActivityByEdgeId(id);
             if (edge)
-                output->outputInt(edge->queryProxyId(), "@proxyId");
+                output->outputInt(edge->queryProxyId(), 0, "@proxyId");
             output->outputEndNested("Result");
         }
         else

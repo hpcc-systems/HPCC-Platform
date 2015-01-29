@@ -272,9 +272,9 @@ public:
     {
         ctx->setResultDecimal(stepname, sequence, len, precision, isSigned, val);
     }
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 value)
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size)
     {
-        ctx->setResultInt(name, sequence, value);
+        ctx->setResultInt(name, sequence, value, size);
     }
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data)
     {
@@ -292,9 +292,9 @@ public:
     {
         ctx->setResultString(name, sequence, len, str);
     }
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value)
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size)
     {
-        ctx->setResultUInt(name, sequence, value);
+        ctx->setResultUInt(name, sequence, value, size);
     }
     virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str)
     {

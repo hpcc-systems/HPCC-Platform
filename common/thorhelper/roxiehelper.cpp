@@ -1126,6 +1126,17 @@ void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence
     }
 }
 
+void FlushingStringBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    s.appendf("%"I64F"d", value);
+}
+void FlushingStringBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    s.appendf("%"I64F"u", value);
+}
+
 void FlushingStringBuffer::incrementRowCount()
 {
     CriticalBlock b(crit);
@@ -1190,6 +1201,25 @@ void FlushingJsonBuffer::startScalar(const char *resultName, unsigned sequence)
         tail.set("}]}");
     }
 }
+
+void FlushingJsonBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    if (size < 7)
+        s.appendf("%"I64F"d", value);
+    else
+        s.append('"').appendf("%"I64F"d", value).append('"');
+}
+
+void FlushingJsonBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    if (size < 7)
+        s.appendf("%"I64F"u", value);
+    else
+        s.append('"').appendf("%"I64F"u", value).append('"');
+}
+
 //=====================================================================================================
 
 ClusterWriteHandler::ClusterWriteHandler(char const * _logicalName, char const * _activityType)

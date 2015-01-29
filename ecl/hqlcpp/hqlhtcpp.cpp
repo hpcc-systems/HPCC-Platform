@@ -5108,6 +5108,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
     IIdAtom * func = NULL;
     CHqlBoundExpr valueToSave;
     LinkedHqlExpr castValue = value;
+    LinkedHqlExpr size;
     switch(retType)
     {
     case type_int:
@@ -5116,6 +5117,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
             bool isSigned = schemaType->isSigned();
             func = isSigned ? setResultIntId : setResultUIntId;
             schemaType.setown(makeIntType(8, isSigned));
+            size.setown(getSizetConstant(schemaType->getSize()));
             break;
         }
     case type_boolean:  func = setResultBoolId; break;
@@ -5240,6 +5242,8 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
             s.clear().append("&").append(helper);
             args.append(*createQuoted(s, makeBoolType()));
         }
+        else if (func == setResultIntId || func == setResultUIntId)
+            args.append(*getSizetConstant(schemaType->getSize()));
 
         buildFunctionCall(ctx, func, args);
     }
@@ -10883,6 +10887,7 @@ void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * 
 {
     ITypeInfo * type = selected->queryType()->queryPromotedType();
     LinkedHqlExpr value = selected;
+    LinkedHqlExpr size;
     IIdAtom * func;
     switch (type->getTypeCode())
     {
@@ -10913,6 +10918,7 @@ void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * 
     case type_swapint:
     case type_packedint:
     case type_bitfield:
+        size.setown(createConstant((__int64)type->getSize()));
         if (type->isSigned())
             func = outputXmlIntId;
         else
@@ -10929,6 +10935,8 @@ void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * 
     HqlExprArray args;
     args.append(*createVariable("out", makeBoolType()));
     args.append(*value.getLink());
+    if (size)
+        args.append(*LINK(size));
     if (name)
         args.append(*LINK(name));
     else
