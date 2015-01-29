@@ -20,7 +20,6 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
-    "dojo/dom-class",
     "dojo/dom-form",
     "dojo/date",
     "dojo/on",
@@ -57,7 +56,7 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on, topic,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, date, on, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 selector,
                 _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -256,6 +255,12 @@ define([
 
             topic.subscribe("hpcc/ecl_wu_created", function (topic) {
                 context.refreshGrid();
+            });
+
+            ESPUtil.MonitorVisibility(this.workunitsTab, function (visibility) {
+                if (visibility) {
+                    context.refreshGrid();
+                }
             });
         },
 

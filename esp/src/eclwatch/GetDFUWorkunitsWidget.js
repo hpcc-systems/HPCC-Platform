@@ -206,6 +206,11 @@ define([
             topic.subscribe("hpcc/dfu_wu_created", function (topic) {
                 context.refreshGrid();
             });
+            ESPUtil.MonitorVisibility(this.workunitsTab, function (visibility) {
+                if (visibility) {
+                    context.refreshGrid();
+                }
+            });
         },
 
         initTab: function () {
