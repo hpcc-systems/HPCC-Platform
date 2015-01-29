@@ -23,6 +23,7 @@ import os
 import traceback
 import re
 import tempfile
+import xml.etree.ElementTree as ET
 
 from ...util.util import isPositiveIntNum, getConfig
 
@@ -61,6 +62,7 @@ class ECLFile:
         self.baseEcl = os.path.basename(ecl)
         self.basename = os.path.splitext(self.baseEcl)[0]
         self.baseXml = self.basename + '.xml'
+        self.baseQueryXml = self.basename+'.queryxml'
         self.ecl = self.baseEcl
         self.xml_e = self.baseXml
         self.xml_r = self.baseXml
@@ -83,7 +85,13 @@ class ECLFile:
             self.forcePublish=self.args.publish
 
         self.optX =[]
-        self.optXHash={}
+
+        # The final set of stored variables are the union of queryxml, config and CLI
+        # The values in the queryxml file is the lowest precedence
+        # the relevant value in config file Params array it the middle and
+        # -X in the CLI is the highest.
+        self.optXHash=self.checkQueryxmlFile()
+
         self.config = getConfig()
         try:
             # Process definitions of stored input value(s) from config
@@ -132,6 +140,22 @@ class ECLFile:
 
         self.mergeHashToStrArray(self.optFHash,  self.optF)
         pass
+
+    def checkQueryxmlFile(self):
+        retHash = {}
+        path = os.path.join(self.dir_ec, self.baseQueryXml)
+        logging.debug("%3d. checkQueryxmlFile() checks path:'%s' ",  self.taskId,  path )
+        if os.path.isfile(path):
+            # we have defaults for stored variables in xml file.
+            tree = ET.parse(path)
+            root = tree.getroot()
+            for child in root:
+                key = '-X'+child.tag
+                val = child.text
+                retHash[key] = val
+            pass
+        logging.debug("%3d. checkQueryxmlFile() returns with %s stored parameter(s) ",  self.taskId,  len(retHash) )
+        return retHash
 
     def processKeyValPairs(self,  optArr,  optHash):
         for optStr in optArr:
