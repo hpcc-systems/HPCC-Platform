@@ -1452,7 +1452,7 @@ protected:
         {
             // This only needs to be done once, no rows will be added after collated
             clearedRows += clearNonLocalRows(rhs, 0);
-            rhs.compact(0); // don't try to shrink (involving reallocate) row array, need to avoid any allocation at this point.
+            rhs.compact();
             rhsCompacted = true;
         }
         else
@@ -1723,7 +1723,7 @@ protected:
                         clearNonLocalRows(rows, flushedRowMarkers.item(a));
 
                         ActPrintLog("Compacting rhsNodeRows[%d], has %"RIPF"d rows", a, rows.numCommitted());
-                        rows.compact(SPILL_PRIORITY_LOW);
+                        rows.compact();
 
                         rowidx_t c = rows.numCommitted();
                         if (c > largestRowCount)

@@ -428,7 +428,7 @@ const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num, unsigned maxS
 
 rowidx_t CThorExpandingRowArray::getNewSize(rowidx_t requiredRows)
 {
-    rowidx_t newSize = requiredRows;
+    rowidx_t newSize = maxRows;
     //This condition must be <= at least 1/scaling factor below otherwise you'll get an infinite loop.
     if (newSize <= 4)
         newSize = requiredRows;
@@ -445,25 +445,43 @@ rowidx_t CThorExpandingRowArray::getNewSize(rowidx_t requiredRows)
     return newSize;
 }
 
-bool CThorExpandingRowArray::resizeRowTable(void **oldRows, memsize_t newCapacity, bool copy, roxiemem::IRowResizeCallback &callback, unsigned maxSpillCost)
+bool CThorExpandingRowArray::resizeRowTable(void **&_rows, rowidx_t requiredRows, bool copy, unsigned maxSpillCost, memsize_t &capacity, const char *errMsg)
 {
+    //Only the writer is allowed to reallocate rows (otherwise append can't be optimized), so rows is valid outside the lock
+
+    // NB: only resize alters row capacity, so no locking required to protect getRowsCapacity()
+    memsize_t copySize;
+    if (requiredRows > maxRows)
+    {
+        capacity = ((memsize_t)getNewSize(requiredRows)) * sizeof(void *);
+        copySize = copy&&_rows?RoxieRowCapacity(_rows):0;
+    }
+    else
+    {
+        capacity = ((memsize_t)requiredRows) * sizeof(void *);
+        copySize = copy?capacity:0;
+    }
+
+    CResizeRowCallback callback(_rows, capacity, queryLock());
     try
     {
-        if (oldRows)
-            rowManager->resizeRow(oldRows, copy?RoxieRowCapacity(oldRows):0, newCapacity, activity.queryContainer().queryId(), maxSpillCost, callback);
+        if (_rows)
+            rowManager->resizeRow(_rows, copySize, capacity, activity.queryContainer().queryId(), maxSpillCost, callback);
         else
         {
-            void **newRows = (void **)rowManager->allocate(newCapacity, activity.queryContainer().queryId(), maxSpillCost);
+            void **newRows = (void **)rowManager->allocate(capacity, activity.queryContainer().queryId(), maxSpillCost);
             callback.atomicUpdate(RoxieRowCapacity(newRows), newRows);
         }
     }
-    catch (IException * e)
+    catch (IException *e)
     {
         //Pathological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
         unsigned code = e->errorCode();
         if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
         {
             e->Release();
+            if (throwOnOom)
+                throw MakeActivityException(&activity, 0, "Out of memory, resizing %s, had %"RIPF"d, trying to allocate %"RIPF"d elements", errMsg, ordinality(), requiredRows);
             return false;
         }
         throw;
@@ -520,24 +538,6 @@ inline const void *CThorExpandingRowArray::_allocateRowTable(rowidx_t num, unsig
     }
 }
 
-inline bool CThorExpandingRowArray::doResize(void **&_rows, rowidx_t requiredRows, bool copy, unsigned maxSpillCost, memsize_t &capacity, const char *errMsg)
-{
-    //Only the writer is allowed to reallocate rows (otherwise append can't be optimized), so rows is valid outside the lock
-
-    // NB: only resize alters row capacity, so no locking required to protect getRowsCapacity()
-    rowidx_t currentMaxRows = getRowsCapacity();
-    capacity = ((memsize_t)getNewSize(requiredRows)) * sizeof(void *);
-
-    CResizeRowCallback callback(_rows, capacity, queryLock());
-    if (!resizeRowTable(_rows, capacity, copy, callback, maxSpillCost)) // callback will reset capacity
-    {
-        if (throwOnOom)
-            throw MakeActivityException(&activity, 0, "Out of memory, resizing %s, had %"RIPF"d, trying to allocate %"RIPF"d elements", errMsg, ordinality(), requiredRows);
-        return false;
-    }
-    return true;
-}
-
 inline bool CThorExpandingRowArray::_resize(rowidx_t requiredRows, unsigned maxSpillCost)
 {
     //Only the writer is allowed to reallocate rows (otherwise append can't be optimized), so rows is valid outside the lock
@@ -554,24 +554,29 @@ inline bool CThorExpandingRowArray::_resize(rowidx_t requiredRows, unsigned maxS
     }
 
     // NB: only resize alters row capacity, so no locking required to protect getRowsCapacity()
-    memsize_t capacity = rows ? RoxieRowCapacity(rows) : 0;
+    memsize_t capacity;
     rowidx_t currentMaxRows = getRowsCapacity();
-    if (currentMaxRows > requiredRows) // shrink
+    if (currentMaxRows == requiredRows)
+        capacity = rows ? RoxieRowCapacity(rows) : 0;
+    else
     {
-        if (numRows > requiredRows)
+        if (currentMaxRows > requiredRows) // shrink
         {
-            for (rowidx_t i = requiredRows; i < numRows; i++)
-                ReleaseThorRow(rows[i]);
-            numRows -= (numRows-requiredRows);
+            if (numRows > requiredRows)
+            {
+                for (rowidx_t i = requiredRows; i < numRows; i++)
+                    ReleaseThorRow(rows[i]);
+                numRows = requiredRows;
+            }
         }
-        doResize((void **&)rows, requiredRows, true, maxSpillCost, capacity, "row array");
+        if (!resizeRowTable((void **&)rows, requiredRows, true, maxSpillCost, capacity, "row array"))
+            return false;
     }
-    else if (currentMaxRows < requiredRows) // expand, check, because may have expanded previously, but failed to allocate stableTable and set new maxRows
-        doResize((void**&)rows, requiredRows, true, maxSpillCost, capacity, "row array");
     if (stableSort_earlyAlloc == stableSort)
     {
         memsize_t dummy;
-        doResize(stableTable, requiredRows, false, maxSpillCost, dummy, "stable row array");
+        if (!resizeRowTable(stableTable, requiredRows, false, maxSpillCost, dummy, "stable row array"))
+            return false;
         // NB: If allocation of stableTable fails, 'rows' has expanded, but maxRows has not
         // this means, that on a subsequent resize() call, it will only need to [attempt] to resize the stable ptr array.
         // (see comment if (currentMaxRows < requiredRows) check above
@@ -643,7 +648,7 @@ void CThorExpandingRowArray::clearRows()
     numRows = 0;
 }
 
-void CThorExpandingRowArray::compact(unsigned maxSpillCost)
+void CThorExpandingRowArray::compact()
 {
     const void **freeFinger = rows;
     const void **filledFinger = NULL;
@@ -665,14 +670,12 @@ void CThorExpandingRowArray::compact(unsigned maxSpillCost)
     memsize_t numEmptiedPages = rowManager->compactRows(numRows, rows);
 
 #ifdef _DEBUG
-    ActPrintLog(&activity, "CThorExpandingRowArray::compact(): compactRows freed %"I64F"d pages", (unsigned __int64)numEmptiedPages);
+    ActPrintLog(&activity, "CThorExpandingRowArray::compact(): compactRows freed %" I64F "d pages", (unsigned __int64)numEmptiedPages);
 #endif
 
-    if (maxSpillCost)
-    {
-        if (!resize(numRows, maxSpillCost) && throwOnOom)
-            throw MakeActivityException(&activity, ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Out of memory trying to compact row pointer array");
-    }
+    // NB: As always shrinking, it will never reallocate, default maxSpillCost will not be used by roxiemem.
+    if (!resize(numRows) && throwOnOom)
+        throw MakeActivityException(&activity, ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Out of memory trying to compact row pointer array");
 }
 
 void CThorExpandingRowArray::kill()
@@ -1212,11 +1215,11 @@ void CThorSpillableRowArray::clearRows()
     commitRows = 0;
 }
 
-void CThorSpillableRowArray::compact(unsigned maxSpillCost)
+void CThorSpillableRowArray::compact()
 {
     CThorArrayLockBlock block(*this);
     assertex(0 == firstRow && numRows == commitRows);
-    CThorExpandingRowArray::compact(maxSpillCost);
+    CThorExpandingRowArray::compact();
     commitRows = numRows;
 }
 

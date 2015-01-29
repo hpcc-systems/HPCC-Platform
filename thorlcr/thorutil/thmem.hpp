@@ -261,7 +261,7 @@ class graph_decl CThorExpandingRowArray : public CSimpleInterface
         virtual void unlock() const {  }
     } dummyLock;
 
-    inline bool doResize(void **&_rows, rowidx_t requiredRows, bool copy, unsigned maxSpillCost, memsize_t &newCapacity, const char *errMsg);
+    bool resizeRowTable(void **&_rows, rowidx_t requiredRows, bool copy, unsigned maxSpillCost, memsize_t &newCapacity, const char *errMsg);
     bool _resize(rowidx_t requiredRows, unsigned maxSpillCost);
     const void *_allocateRowTable(rowidx_t num, unsigned maxSpillCost);
 
@@ -287,7 +287,6 @@ protected:
     const void *allocateRowTable(rowidx_t num);
     const void *allocateRowTable(rowidx_t num, unsigned maxSpillCost);
     rowidx_t getNewSize(rowidx_t requiredRows);
-    bool resizeRowTable(void **oldRows, memsize_t newCapacity, bool copy, roxiemem::IRowResizeCallback &callback, unsigned maxSpillCost);
     void serialize(IRowSerializerTarget &out);
     void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);
     inline rowidx_t getRowsCapacity() const { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
@@ -386,7 +385,7 @@ public:
     void deserializeExpand(size32_t sz, const void *data);
     bool resize(rowidx_t requiredRows);
     bool resize(rowidx_t requiredRows, unsigned maxSpillCost);
-    void compact(unsigned maxSpillCost);
+    void compact();
     virtual IThorArrayLock &queryLock() { return dummyLock; }
 
 friend class CThorSpillableRowArray;
@@ -420,7 +419,7 @@ public:
     inline void setDefaultMaxSpillCost(unsigned defaultMaxSpillCost) { CThorExpandingRowArray::setDefaultMaxSpillCost(defaultMaxSpillCost); }
     inline unsigned queryDefaultMaxSpillCost() const { return CThorExpandingRowArray::queryDefaultMaxSpillCost(); }
     void kill();
-    void compact(unsigned maxSpillCost);
+    void compact();
     void flush();
     inline bool isFlushed() const { return numRows == numCommitted(); }
     inline bool append(const void *row) __attribute__((warn_unused_result))
