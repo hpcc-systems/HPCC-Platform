@@ -215,6 +215,7 @@ public:
     FILE * errout;
     Owned<IPropertyTree> srcArchive;
     Owned<IPropertyTree> generatedMeta;
+    Owned<IPropertyTree> globalDependTree;
     bool legacyImport;
     bool legacyWhen;
     bool fromArchive;
@@ -332,12 +333,14 @@ protected:
     StringBuffer cclogFilename;
     StringAttr optLogfile;
     StringAttr optIniFilename;
-    StringAttr optManifestFilename;
     StringAttr optOutputDirectory;
     StringAttr optOutputFilename;
     StringAttr optQueryRepositoryReference;
     StringAttr optComponentName;
     FILE * batchLog;
+
+    StringAttr optManifestFilename;
+    StringArray resourceManifestFiles;
 
     IFileArray inputFiles;
     StringArray inputFileNames;
@@ -494,6 +497,8 @@ void EclCC::loadManifestOptions()
 {
     if (!optManifestFilename)
         return;
+    resourceManifestFiles.append(optManifestFilename);
+
     Owned<IPropertyTree> mf = createPTreeFromXMLFile(optManifestFilename);
     IPropertyTree *ecl = mf->queryPropTree("ecl");
     if (ecl)
@@ -714,6 +719,26 @@ void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * pr
 
 //=========================================================================================
 
+void gatherResourceManifestFilenames(EclCompileInstance & instance, StringArray &filenames)
+{
+    IPropertyTree *tree = (instance.archive) ? instance.archive.get() : instance.globalDependTree.get();
+    if (!tree)
+        return;
+    Owned<IPropertyTreeIterator> iter = tree->getElements((instance.archive) ? "Module/Attribute" : "Attribute");
+    ForEach(*iter)
+    {
+        StringBuffer filename(iter->query().queryProp("@sourcePath"));
+        if (filename.length())
+        {
+            getFullFileName(filename, true).append(".manifest");
+            if (filenames.contains(filename))
+                continue;
+            if (checkFileExists(filename))
+                filenames.append(filename);
+        }
+    }
+}
+
 void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver & errorProcessor, const char * outputFile)
 {
     StringBuffer processName(outputFile);
@@ -732,8 +757,9 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 if (!optShared)
                     wu->setDebugValueInt("standAloneExe", 1, true);
                 EclGenerateTarget target = optWorkUnit ? EclGenerateNone : (optNoCompile ? EclGenerateCpp : optShared ? EclGenerateDll : EclGenerateExe);
-                if (optManifestFilename)
-                    generator->addManifest(optManifestFilename);
+                gatherResourceManifestFilenames(instance, resourceManifestFiles);
+                ForEachItemIn(i, resourceManifestFiles)
+                    generator->addManifest(resourceManifestFiles.item(i));
                 if (instance.srcArchive)
                 {
                     generator->addManifestFromArchive(instance.srcArchive);
@@ -1067,6 +1093,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(instance.dataServer, instance.archive);
+        if (!instance.archive)
+            parseCtx.globalDependTree.setown(createPTree(ipt_none)); //to locate associated manifests, keep separate from user specified MetaOptions
         if (optGenerateMeta || optIncludeMeta)
         {
             HqlParseContext::MetaOptions options;
@@ -1171,6 +1199,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
             if (optIncludeMeta || optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getMetaTree());
+
+            if (parseCtx.globalDependTree)
+                instance.globalDependTree.set(parseCtx.globalDependTree);
 
             if (optEvaluateResult && !errorProcessor.errCount() && instance.query)
                 evaluateResult(instance);
@@ -1599,8 +1630,9 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                 option->setProp("@value", valueStr.str());
                 instance.archive->addPropTree("Option", option.getClear());
             }
-            if (optManifestFilename)
-                addManifestResourcesToArchive(instance.archive, optManifestFilename);
+            gatherResourceManifestFilenames(instance, resourceManifestFiles);
+            ForEachItemIn(i, resourceManifestFiles)
+                addManifestResourcesToArchive(instance.archive, resourceManifestFiles.item(i));
 
             outputXmlToOutputFile(instance, instance.archive);
         }
