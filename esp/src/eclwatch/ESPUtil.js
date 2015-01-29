@@ -19,9 +19,11 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
+    "dojo/dom-class",
     "dojo/Stateful",
     "dojo/query",
     "dojo/json",
+    "dojo/aspect",
 
     "dijit/registry",
     "dijit/Tooltip",
@@ -35,7 +37,7 @@ define([
     "dgrid/extensions/ColumnReorder",
     "dgrid/extensions/DijitRegistry",
     "dgrid/extensions/Pagination"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Stateful, query, json,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, Stateful, query, json, aspect,
     registry, Tooltip,
     Grid, OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, ColumnReorder, DijitRegistry, Pagination) {
 
@@ -281,6 +283,53 @@ define([
             }
             baseClass.push(GridHelper);
             return declare(baseClass, params);
+        },
+
+        MonitorVisibility: function (widget, callback) {
+            //  There are many places that may cause the widget to be hidden, the possible places are calculated by walking the DOM hierarchy upwards. 
+            var watchList = {};
+            var domNode = widget.domNode;
+            while (domNode) {
+                if (domNode.id) {
+                    watchList[domNode.id] = false;
+                }
+                domNode = domNode.parentElement;
+            }
+
+            function isHidden() {
+                for (key in watchList) {
+                    if (watchList[key] === true) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            //  Hijack the dojo style class replacement call and monitor for elements in our watchList. 
+            aspect.around(domClass, "replace", function (origFunc) {
+                return function (node, addStyle, removeStyle) {
+                    if (node.firstChild && (node.firstChild.id in watchList)) {
+                        if (addStyle === "dijitHidden" || addStyle === "hpccHidden") {
+                            if (!isHidden()) {
+                                if (callback(false, node)) {
+                                    addStyle = "hpccHidden";
+                                    removeStyle = "hpccVisible";
+                                }
+                            }
+                            watchList[node.firstChild.id] = true;
+                        } else if ((addStyle === "dijitVisible" || addStyle === "hpccVisible") && watchList[node.firstChild.id] === true) {
+                            watchList[node.firstChild.id] = false;
+                            if (!isHidden()) {
+                                if (callback(true, node)) {
+                                    addStyle = "hpccVisible";
+                                    removeStyle = "hpccHidden";
+                                }
+                            }
+                        }
+                    }
+                    return origFunc(node, addStyle, removeStyle);
+                }
+            });
         }
     };
 });
