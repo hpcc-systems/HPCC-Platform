@@ -9,6 +9,7 @@ var profile = (function(){
             "hpcc/viz/map/us.json": true,
             "hpcc/viz/map/us_counties.json": true,
             "hpcc/viz/DojoD3": true,
+            "hpcc/viz/DojoD32DChart": true,
             "hpcc/viz/DojoD3BarChart": true,
             "hpcc/viz/DojoD3Choropleth": true,
             "hpcc/viz/DojoD3Choropleth": true,
