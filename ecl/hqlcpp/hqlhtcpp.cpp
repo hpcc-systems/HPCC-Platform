@@ -10918,7 +10918,7 @@ void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * 
     case type_swapint:
     case type_packedint:
     case type_bitfield:
-        size.setown(createConstant((__int64)type->getSize()));
+        size.setown(getSizetConstant(type->getSize()));
         if (type->isSigned())
             func = outputXmlIntId;
         else

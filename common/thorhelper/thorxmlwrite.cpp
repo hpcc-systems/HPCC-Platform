@@ -488,7 +488,7 @@ void CommonJsonWriter::outputData(unsigned len, const void *field, const char *f
 
 void CommonJsonWriter::outputInt(__int64 field, unsigned size, const char *fieldname)
 {
-    if (size < 7)
+    if (size < 7) //JavaScript only supports 53 significant bits
     {
         checkDelimit();
         appendJSONValue(out, checkItemName(fieldname), field);
@@ -501,7 +501,7 @@ void CommonJsonWriter::outputInt(__int64 field, unsigned size, const char *field
 }
 void CommonJsonWriter::outputUInt(unsigned __int64 field, unsigned size, const char *fieldname)
 {
-    if (size < 6)
+    if (size < 6) //JavaScript doesn't support unsigned, and only supports 53 significant bits
     {
         checkDelimit();
         appendJSONValue(out, checkItemName(fieldname), field);

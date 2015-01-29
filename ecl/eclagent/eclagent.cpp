@@ -2653,9 +2653,9 @@ void EclAgent::updatePersist(IRemoteConnection *persistLock, const char * logica
     eclName.append(lfn).append("$eclcrc");
     whenName.append(lfn).append("$when");
 
-    setResultInt(crcName,ResultSequencePersist,allCRC);
-    setResultInt(eclName,ResultSequencePersist,eclCRC);
-    setResultInt(whenName,ResultSequencePersist,time(NULL));
+    setResultInt(crcName,ResultSequencePersist,allCRC,sizeof(int));
+    setResultInt(eclName,ResultSequencePersist,eclCRC,sizeof(int));
+    setResultInt(whenName,ResultSequencePersist,time(NULL),sizeof(int));
 
     reportProgress("Convert persist write lock to read lock");
     changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);

@@ -3309,11 +3309,11 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
 
             writer.outputBeginNested(getSeverityTagname(severity, flags), false);
             if (code)
-                writer.outputUInt(code, 0, "Code");
+                writer.outputUInt(code, sizeof(unsigned), "Code");
             if (filename.length())
                 writer.outputCString(filename.str(), "Filename");
             if (lineno)
-                writer.outputUInt(lineno, 0, "Line");
+                writer.outputUInt(lineno, sizeof(unsigned), "Line");
 
             writer.outputCString(src.str(), "Source");
             writer.outputCString(msg.str(), "Message");

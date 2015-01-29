@@ -1129,12 +1129,12 @@ void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence
 void FlushingStringBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
 {
     startScalar(resultName, sequence);
-    s.appendf("%"I64F"d", value);
+    s.append(value);
 }
 void FlushingStringBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
 {
     startScalar(resultName, sequence);
-    s.appendf("%"I64F"u", value);
+    s.append(value);
 }
 
 void FlushingStringBuffer::incrementRowCount()
@@ -1205,19 +1205,19 @@ void FlushingJsonBuffer::startScalar(const char *resultName, unsigned sequence)
 void FlushingJsonBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
 {
     startScalar(resultName, sequence);
-    if (size < 7)
-        s.appendf("%"I64F"d", value);
+    if (size < 7) //JavaScript only supports 53 significant bits
+        s.append(value);
     else
-        s.append('"').appendf("%"I64F"d", value).append('"');
+        s.append('"').append(value).append('"');
 }
 
 void FlushingJsonBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
 {
     startScalar(resultName, sequence);
-    if (size < 7)
-        s.appendf("%"I64F"u", value);
+    if (size < 6) //JavaScript doesn't support unsigned, and only supports 53 significant bits
+        s.append(value);
     else
-        s.append('"').appendf("%"I64F"u", value).append('"');
+        s.append('"').append(value).append('"');
 }
 
 //=====================================================================================================

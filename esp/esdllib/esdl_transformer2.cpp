@@ -397,13 +397,13 @@ void Esdl2Base::output_content(Esdl2TransformerContext &ctx, const char * conten
                     case ESDLT_INT16:
                     case ESDLT_INT32:
                     case ESDLT_INT64:
-                        ctx.writer->outputInt(atoi(content), 0, tagname);
+                        ctx.writer->outputInt(atoi(content), sizeof(int), tagname);
                         break;
                     case ESDLT_UINT8:
                     case ESDLT_UINT16:
                     case ESDLT_UINT32:
                     case ESDLT_UINT64:
-                        ctx.writer->outputUInt(atoi(content), 0, tagname);
+                        ctx.writer->outputUInt(atoi(content), sizeof(unsigned), tagname);
                         break;
                     case ESDLT_BYTE:
                     case ESDLT_UBYTE:

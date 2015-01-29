@@ -179,7 +179,7 @@ public:
             {
                 output->outputBeginNested("edge", true);
                 output->outputCString((const char *) edges.query().getKey(), "@edgeId");
-                output->outputUInt(edge->queryCount(), 0, "@count");
+                output->outputUInt(edge->queryCount(), sizeof(unsigned), "@count");
                 output->outputEndNested("edge");
             }
             if (reset)
@@ -332,7 +332,7 @@ private:
         return r->getResultInt();
     }
 
-    void setResultInt(const char * name, unsigned sequence, unsigned __int64 value, unsigned size=0)
+    void setResultInt(const char * name, unsigned sequence, unsigned __int64 value, unsigned size)
     {
         WorkunitUpdate w(&workunit->lock());
         w->setResultInt(name, sequence, value);
@@ -512,9 +512,9 @@ private:
         eclName.append(lfn).append("$eclcrc");
         whenName.append(lfn).append("$when");
 
-        setResultInt(crcName, ResultSequencePersist, allCRC);
-        setResultInt(eclName, ResultSequencePersist, eclCRC);
-        setResultInt(whenName, ResultSequencePersist, time(NULL));
+        setResultInt(crcName, ResultSequencePersist, allCRC, sizeof(int));
+        setResultInt(eclName, ResultSequencePersist, eclCRC, sizeof(int));
+        setResultInt(whenName, ResultSequencePersist, time(NULL), sizeof(int));
 
         logctx.CTXLOG("Convert persist write lock to read lock");
         changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
@@ -3279,7 +3279,7 @@ public:
         }
     }
 
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size=0)
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size)
     {
         if (isSpecialResultSequence(sequence))
         {
