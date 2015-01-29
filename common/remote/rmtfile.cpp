@@ -33,10 +33,23 @@
 
 //#define TEST_DAFILESRV_FOR_UNIX_PATHS     // probably not needed
 
+static class CSecuritySettings
+{
+    bool useSSL;
+    unsigned short daliServixPort;
+public:
+    CSecuritySettings()
+    {
+        querySecuritySettings(&useSSL, &daliServixPort, NULL, NULL);
+    }
+
+    unsigned short queryDaliServixPort() { return daliServixPort; }
+} securitySettings;
+
 
 unsigned short getDaliServixPort()
 {
-    return DAFILESRV_PORT;
+    return securitySettings.queryDaliServixPort();
 }
 
 
@@ -209,7 +222,7 @@ public:
         SocketEndpoint ep = filename.queryEndpoint();
         bool noport = (ep.port==0);
         setDafsEndpointPort(ep);
-        if (!filename.isLocal()||(ep.port!=DAFILESRV_PORT)) // assume standard port is running on local machine
+        if (!filename.isLocal()||(ep.port!=DAFILESRV_PORT && ep.port!=SECURE_DAFILESRV_PORT)) // assume standard port is running on local machine
         {
 #ifdef __linux__
 #ifndef USE_SAMBA

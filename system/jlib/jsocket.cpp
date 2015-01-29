@@ -372,7 +372,7 @@ protected:
     SOCKETMODE      sockmode;
     IpAddress       targetip;
     SocketEndpoint  returnep;   // set by set_return_addr
-    
+
     MCASTREQ    *   mcastreq;
     size32_t        nextblocksize;
     unsigned        blockflags;
@@ -6065,4 +6065,97 @@ public:
 ISocketConnectWait *nonBlockingConnect(SocketEndpoint &ep,unsigned connecttimeoutms)
 {
     return new CSocketConnectWait(ep,connecttimeoutms);
+}
+
+
+
+int wait_multiple(bool isRead,               //IN   true if wait read, false it wait write
+                  UnsignedArray &socks,      //IN   sockets to be checked for readiness
+                  unsigned timeoutMS,        //IN   timeout
+                  UnsignedArray &readySocks) //OUT  sockets ready
+{
+    aindex_t numSocks = socks.length();
+    if (numSocks == 0)
+        THROWJSOCKEXCEPTION2(JSOCKERR_bad_address);
+
+    SOCKET maxSocket = 0;
+    T_FD_SET fds;
+    XFD_ZERO(&fds);
+
+    //Add each SOCKET in array to T_FD_SET
+#ifdef _DEBUG
+    StringBuffer dbgSB("wait_multiple() on sockets :");
+#endif
+    for (aindex_t idx = 0; idx < numSocks; idx++)
+    {
+#ifdef _DEBUG
+        dbgSB.appendf(" %d",socks.item(idx));
+#endif
+        maxSocket = socks.item(idx) > maxSocket ? socks.item(idx) : maxSocket;
+        FD_SET((unsigned)socks.item(idx), &fds);
+    }
+#ifdef _DEBUG
+    DBGLOG("%s",dbgSB.str());
+#endif
+
+    //Check socket states
+    int res;
+    if (timeoutMS == WAIT_FOREVER)
+        res = ::select( maxSocket + 1, isRead ? (fd_set *)&fds : NULL, isRead ? NULL : (fd_set *)&fds, NULL, NULL );
+    else
+    {
+        struct timeval tv;
+        tv.tv_sec = timeoutMS / 1000;
+        tv.tv_usec = (timeoutMS % 1000)*1000;
+        res = ::select( maxSocket + 1,  isRead ? (fd_set *)&fds : NULL, isRead ? NULL : (fd_set *)&fds, NULL, &tv );
+    }
+
+    if (res != SOCKET_ERROR)
+    {
+#ifdef _DEBUG
+        StringBuffer dbgSB("wait_multiple() ready socket(s) :");
+#endif
+        //Build up list of socks which are ready for accept read/write without blocking
+        for (aindex_t idx = 0; res && idx < socks.length(); idx++)
+        {
+            if (FD_ISSET(socks.item(idx), &fds))
+            {
+#ifdef _DEBUG
+                dbgSB.appendf(" %d",socks.item(idx));
+#endif
+                readySocks.append(socks.item(idx));
+                if (readySocks.length() == res)
+                    break;
+            }
+        }
+#ifdef _DEBUG
+        if (res)
+            DBGLOG("%s",dbgSB.str());
+#endif
+    }
+    else
+    {
+        int err = ERRNO();
+        if (err != EINTRCALL)
+        {
+            throw MakeStringException(-1,"wait_multiple::select error %d", err);
+        }
+    }
+    return res;
+}
+
+//Given a list of sockets, wait until any one or more are ready to be read (wont block)
+//returns 0 if timeout, number of waiting sockets otherwise
+int wait_read_multiple(UnsignedArray &socks,        //IN   sockets to be checked for readiness
+                       unsigned timeoutMS,          //IN   timeout
+                       UnsignedArray &readySocks)   //OUT  sockets ready to be read
+{
+    return wait_multiple(true, socks, timeoutMS, readySocks);
+}
+
+int wait_write_multiple(UnsignedArray &socks,       //IN   sockets to be checked for readiness
+                       unsigned timeoutMS,          //IN   timeout
+                       UnsignedArray &readySocks)   //OUT  sockets ready to be written
+{
+    return wait_multiple(false, socks, timeoutMS, readySocks);
 }

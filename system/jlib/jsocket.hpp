@@ -603,5 +603,14 @@ extern jlib_decl StringBuffer lookupHostName(const IpAddress &ip,StringBuffer &r
 extern jlib_decl bool isInterfaceIp(const IpAddress &ip, const char *ifname);
 extern jlib_decl bool getInterfaceIp(IpAddress &ip, const char *ifname);
 
+//Given a list of server sockets, wait until any one or more are ready to be read/written (wont block)
+//return array of ready sockets
+extern jlib_decl int wait_read_multiple(UnsignedArray  &socks,      //IN   sockets to be checked for read readiness
+                                        unsigned timeoutMS,         //IN   timeout
+                                        UnsignedArray  &readySocks);//OUT  sockets ready to be read
+extern jlib_decl int wait_write_multiple(UnsignedArray  &socks,     //IN   sockets to be checked for write readiness
+                                        unsigned timeoutMS,         //IN   timeout
+                                        UnsignedArray  &readySocks);//OUT  sockets ready to be written
+
 #endif
 
