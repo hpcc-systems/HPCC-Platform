@@ -134,6 +134,8 @@ EXPORT DG_indexFile      := INDEX(DG_NormalIndexFile, indexName);
 indexName := IF(useTranslation, __nameof__(DG_TransIndexFileEvens), __nameof__(DG_NormalIndexFileEvens));
 EXPORT DG_indexFileEvens := INDEX(DG_NormalIndexFileEvens, indexName);
 
+EXPORT DG_KeyedIndexFile      := INDEX(DG_FlatFile, { DG_firstname, DG_lastname, DG_Prange}, { filepos }, DG_IndexOut+'KEYED_INDEX');
+
 EXPORT DG_CSVFile   := DATASET(DG_FileOut+'CSV',DG_OutRec,CSV);
 EXPORT DG_XMLFile   := DATASET(DG_FileOut+'XML',DG_OutRec,XML);
 
