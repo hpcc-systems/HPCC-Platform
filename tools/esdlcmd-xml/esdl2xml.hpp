@@ -72,7 +72,7 @@ public:
                 for (ii=hc.includes;ii;ii=ii->next)
                 {
                    subfile.setf("%s%s.ecm", srcDir.str(), ii->pathstr.str());
-                   transform(subfile, outdir, out);
+                   transform(subfile, outdir, out, outputIncludes);
                 }
             }
         }
