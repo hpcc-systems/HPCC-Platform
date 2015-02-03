@@ -390,6 +390,15 @@ createRuntime() {
     ulimit -l unlimited
 }
 
+# cleanup all standard files made during runtime
+cleanupRuntimeEnvironment() {
+    unlock ${lock}/${compName}/${compName}.lock
+    removePid ${pid}/${compName}_init.pid
+    removePid ${pid}/${compName}.pid
+    removePid ${pid}/init_${compName}.pid
+}
+
+
 start_dafilesrv() {
    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
    if [ $? -ne 0 ];then
@@ -397,8 +406,7 @@ start_dafilesrv() {
       if [ ${DEBUG} != "NO_DEBUG" ]; then
         log_failure_msg "Pid or lock file exists, but process is not running"
       fi
-      removePid ${PIDPATH}
-      unlock ${LOCKPATH}
+      cleanupRuntimeEnvironment
 
       noStatusCheck=1
       /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
@@ -433,10 +441,7 @@ startCmd() {
       RCSTART=$?
       if [ ${RCSTART} -gt 1 ];then
         # take care of failure message in check_status function
-        cleanup_component
-        removePid ${PIDPATH}
-        removePid ${COMPPIDPATH}
-        unlock ${LOCKPATH}
+        cleanupRuntimeEnvironment
       fi
       if [ ${RCSTART} -eq 0 ]; then
         #Since component is already started but current script is failed till returning 0
@@ -517,9 +522,7 @@ stop_component() {
           log_success_msg "Already stopped"
        fi
        cleanup_component
-       removePid ${PIDPATH}
-       removePid ${COMPPIDPATH}
-       unlock ${LOCKPATH}
+       cleanupRuntimeEnvironment
        return 0
     fi
 
@@ -546,8 +549,7 @@ stop_component() {
                    if [ $__flagPid -eq 1 ];then
                         checkPidExist ${PIDPATH}
                         if [ $__pidExists -ne 1 ];then
-                            removePid ${PIDPATH}
-                            unlock ${LOCKPATH}
+                            cleanupRuntimeEnvironment
                             log_success_msg
                             RCSTOP=0
                             break 2
@@ -559,8 +561,7 @@ stop_component() {
             sleep 1
        done
     else
-        removePid ${PIDPATH}
-        unlock ${LOCKPATH}
+        cleanupRuntimeEnvironment
         log_success_msg
         RCSTOP=0
     fi
@@ -619,9 +620,7 @@ restart_component() {
          /etc/init.d/dafilesrv stop 2>/dev/null
        else
            echo "Component $compName was not running. Will start it now for you ...."
-           removePid ${PIDPATH}
-           removePid ${COMPPIDPATH}
-           unlock ${LOCKPATH}
+           cleanupRuntimeEnvironment
        fi
          /etc/init.d/dafilesrv start 2>/dev/null
     else
@@ -629,9 +628,7 @@ restart_component() {
        RCRESTART=$?
        if [ $RCRESTART -ne 0 ];then
            echo "Component $compName was not running. Will start it now for you ...."
-           removePid ${PIDPATH}
-           removePid ${COMPPIDPATH}
-           unlock ${LOCKPATH}
+           cleanupRuntimeEnvironment
        else
            stop_component ${compName}
        fi
