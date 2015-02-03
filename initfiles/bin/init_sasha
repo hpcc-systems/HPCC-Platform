@@ -49,7 +49,7 @@ killed() {
             kill -9 $pid
         fi
     fi
-    kill_process ${SENTINEL} ${PID_NAME} 3
+    kill_process ${PID_NAME} 3 ${SENTINEL}
     exit 255
 }
 

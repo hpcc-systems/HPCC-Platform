@@ -23,30 +23,39 @@
 ###<REPLACE>###
 
 function kill_process () {
-    SENTINEL=$1
-    PID=$2
-    TIMEOUT=$3
-    if [ -e $SENTINEL ]; then
-        rm -f $SENTINEL
+    PID=$1
+    TIMEOUT=$2
+    if [[ $# -eq 3 ]]; then
+      SENTINEL=$3
+      [[ -e $SENTINEL ]] && rm -f $SENTINEL
     fi
-    if [ -e $PID ]; then
+    if [[ -e $PID ]]; then
         pidwait_fn $PID $TIMEOUT
     fi
 }
 
 function pidwait_fn () {
     PID=$1
-    WATCH_PID=`cat $PID`
+    WATCH_PID=$( cat $PID )
     TIMEOUT=$(($2*1000))
+    COMM=$( ps -p $WATCH_PID -o command= )
     kill $WATCH_PID
-    while [ -d /proc/$WATCH_PID -a $TIMEOUT -gt 0 ]; do
-            sleep 0.2
-            TIMEOUT=$(($TIMEOUT-200))
+    while [[ -d /proc/$WATCH_PID ]] && [[ $TIMEOUT -gt 0 ]]; do
+      sleep 0.2
+      TIMEOUT=$(($TIMEOUT-200))
     done
-    if [ $TIMEOUT -le 0 ]; then
-            kill -9 $WATCH_PID
+    COMM_CHECK=$( ps -p $WATCH_PID -o command= )
+    if [[ $TIMEOUT -le 0 ]] && [[ $COMM == $COMM_CHECK ]]; then
+      kill -9 $WATCH_PID &>/dev/null
+      sleep 1
+      kill -0 $WATCH_PID &>/dev/null
+      # if still alive
+      if [[ $? -eq 0 ]]; then
+        return 1
+      fi
     fi
     rm -f $PID
+    return 0
 }
 
 platform='unknown'
