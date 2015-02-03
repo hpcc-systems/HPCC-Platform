@@ -23,19 +23,13 @@
 
 DEBUG=${DEBUG:-NO_DEBUG}
 
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+
 createConf ()
 {
     awk -f ${reg_path}/regex.awk -v NEW_ENVFILE=$1 -v NEW_PORT=$2 -v NEW_CONFFILE=$3< ${path}${configs}/configmgr/esp.xml >${runtime}/${compName}/esp.xml
 }
 
-removePidfiles ()
-{
-    rm -rf ${runtime}/${compName}.pid
-    rm -rf ${lock}/${compName}/${compName}.lock
-    rm -rf ${pid}/${compName}_init.pid
-    rm -rf ${pid}/${compName}.pid
-    rm -rf ${pid}/init_${compName}.pid
-}
 
 cleanup ()
 {
@@ -46,7 +40,7 @@ cleanup ()
     eval $stopcmd
     sleep 2
     killall -9 configesp >/dev/null 2>&1
-    removePidfiles
+    cleanupRuntimeEnvironment
     exit
 }
 
