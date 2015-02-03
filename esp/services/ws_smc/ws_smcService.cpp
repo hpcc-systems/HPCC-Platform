@@ -27,7 +27,7 @@
 
 #include "dalienv.hpp"
 #include "WUWrapper.hpp"
-#include "dfuwu.hpp"
+//#include "dfuwu.hpp"
 #include "exception_util.hpp"
 
 #include "roxiecontrol.hpp"
@@ -118,6 +118,11 @@ static int sortTargetClustersBySizeAscending(IInterface * const *L, IInterface *
     return left->getClusterSize() - right->getClusterSize();
 }
 
+const char *getStatusServerTypeName(WsSMCStatusServerType type)
+{
+    return (type < WsSMCSSTterm) ? WsSMCStatusServerTypeNames[type] : NULL;
+}
+
 void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     if (!daliClientActive())
@@ -155,6 +160,74 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
         CWUWrapper wu(wuid);
         setActiveWorkunit(wu, wuid, location, index, 0.0, true);
     }
+
+    CActiveWorkunitWrapper(const char* wuid, IPropertyTree* envRoot, CWsSMCStatusServer* server, unsigned index=0)
+        : CActiveWorkunit("","")
+    {
+        CWUWrapper wu(wuid);
+
+        const char* location = NULL;
+        const char *queueName = NULL;
+        const char *clusterName = wu->queryClusterName();
+        const char* serverInstance = server->instanceName.str();
+        if (clusterName && *clusterName)
+        {
+            IConstWUClusterInfo* cluster = getTargetClusterInfo(clusterName);
+            if (cluster)
+            {
+                SCMStringBuffer queueName;
+                ClusterType clusterType = cluster->getPlatform();
+                if (clusterType == ThorLCRCluster)
+                    cluster->getThorQueue(queueName);
+                else
+                    cluster->getAgentQueue(queueName);
+                setQueueName(queueName.str());
+                if (server->type == WsSMCSSTECLagent)
+                {
+                    setClusterQueueName(queueName.str());
+                    if (clusterType == ThorLCRCluster)
+                        setClusterType(CLUSTER_TYPE_THOR);
+                    else if (clusterType == RoxieCluster)
+                        setClusterType(CLUSTER_TYPE_ROXIE);
+                    else
+                        setClusterType(CLUSTER_TYPE_HTHOR);
+                }
+            }
+            setTargetClusterName(clusterName);
+            if (serverInstance && !strieq(clusterName, serverInstance))
+                location = serverInstance;
+        }
+        setActiveWorkunit(wu, wuid, location, index, 0.0, true);
+    }
+/*
+    CActiveWorkunitWrapper(const char* wuid, IPropertyTree* envRoot, const char* serverInstance, StringBuffer& clusterName, unsigned index=0)
+        : CActiveWorkunit("","")
+    {
+        CWUWrapper wu(wuid);
+
+        const char* location = NULL;
+        const char *queueName = NULL;
+        clusterName.set(wu->queryClusterName());
+        if (clusterName.length())
+        {
+            IConstWUClusterInfo* cluster = getTargetClusterInfo(clusterName.str());
+            if (cluster)
+            {
+                SCMStringBuffer queueName;
+                ClusterType clusterType = cluster->getPlatform();
+                if (clusterType == ThorLCRCluster)
+                    cluster->getThorQueue(queueName);
+                else
+                    cluster->getAgentQueue(queueName);
+                setQueueName(queueName.str());
+                setClusterQueueName(queueName.str());
+            }
+            setTargetClusterName(clusterName.str());
+            if (serverInstance && !strieq(clusterName.str(), serverInstance))
+                location = serverInstance;
+        }
+        setActiveWorkunit(wu, wuid, location, index, 0.0, true);
+    }*/
 
     CActiveWorkunitWrapper(const char* wuid,const char* owner, const char* jobname, const char* state, const char* priority): CActiveWorkunit("","")
     {
@@ -355,11 +428,6 @@ bool CActivityInfo::readJobQueue(const char* queueName, StringArray& wuids, Stri
             wuids.append(wuid);
     }
     return true;
-}
-
-const char *CActivityInfo::getStatusServerTypeName(WsSMCStatusServerType type)
-{
-    return (type < WsSMCSSTterm) ? WsSMCStatusServerTypeNames[type] : NULL;
 }
 
 bool CActivityInfo::findQueueInStatusServer(IPropertyTree* serverStatusRoot, const char* serverName, const char* queueName)
@@ -2254,3 +2322,774 @@ void CWsSMCEx::setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspAc
     }
 }
 
+bool CWsSMCEx::onGetActivity(IEspContext &context, IEspGetActivityRequest &req, IEspGetActivityResponse& resp)
+{
+    context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, true);
+
+    try
+    {
+        const char* build_ver = getBuildVersion();
+        resp.setBuild(build_ver);
+
+        Owned<CActivityInfoNew> activityInfo = getActivityInfoNew(context);
+        setActivityResponseNew(context, activityInfo, req, resp);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+//Same as CWsSMCEx::getActivityInfo
+CActivityInfoNew* CWsSMCEx::getActivityInfoNew(IEspContext &context)
+{
+    CriticalBlock b(getActivityCritNew);
+
+    if (activityInfoCacheNew && activityInfoCacheNew->isCachedActivityInfoValid(activityInfoCacheSeconds))
+        return activityInfoCacheNew.getLink();
+
+    DBGLOG("CWsSMCEx::getActivityInfoNew - rebuild cached information");
+    {
+        EspTimeSection timer("createActivityInfoNew");
+        activityInfoCacheNew.setown(new CActivityInfoNew());
+        activityInfoCacheNew->createActivityInfo(context);
+    }
+
+    return activityInfoCacheNew.getLink();
+}
+
+void CWsSMCEx::setStatusServer(IEspContext &context, CWsSMCStatusServer& smcStatusServer, IEspStatusServer* statusServer)
+{
+    /*ESPStruct StatusServer
+    {
+        string ServerName;
+        string ServerType;
+        string Status;//Need this
+        string StatusDetails;//Need this
+        string NetworkAddress;
+        int Port;
+        ESParray<string> QueueNames;
+        ESParray<ESPstruct ActiveWorkunit> RunningWorkunits;
+
+    }*/
+    statusServer->setServerName(smcStatusServer.instanceName.str());
+    statusServer->setServerType(getStatusServerTypeName(smcStatusServer.type));
+    statusServer->setStartTime(smcStatusServer.started);
+    statusServer->setNetworkAddress(smcStatusServer.node);
+    statusServer->setPort(smcStatusServer.mpport);
+    if (smcStatusServer.queueNames.ordinality())
+        statusServer->setQueueNames(smcStatusServer.queueNames);
+    if (smcStatusServer.wus.ordinality())
+        statusServer->setRunningWorkunits(smcStatusServer.wus);
+}
+
+void CWsSMCEx::setStatusServers(IEspContext &context, const CIArrayOf<CWsSMCStatusServer>& smcStatusServers, IArrayOf<IEspStatusServer>& statusServers)
+{
+    ForEachItemIn(i, smcStatusServers)
+    {
+        Owned<IEspStatusServer> statusServer = new CStatusServer("", "");
+        setStatusServer(context, smcStatusServers.item(i), statusServer);
+        statusServers.append(*statusServer.getClear());
+    }
+}
+
+void CWsSMCEx::setActivityResponseNew(IEspContext &context, CActivityInfoNew* activityInfo, IEspGetActivityRequest &req, IEspGetActivityResponse& resp)
+{
+    /*IArrayOf<IEspTargetClusterNew> thorClusters;
+    IArrayOf<IEspTargetClusterNew> hthorClusters;
+    IArrayOf<IEspTargetClusterNew> roxieClusters;
+
+    setESPTargetClustersNew(context, activityInfo->queryThorTargetClusters(), thorClusters);
+    setESPTargetClustersNew(context, activityInfo->queryRoxieTargetClusters(), roxieClusters);
+    setESPTargetClustersNew(context, activityInfo->queryHThorTargetClusters(), hthorClusters);
+
+    //sortTargetClusters(thorClusters, sortBy, descending);
+    //sortTargetClusters(roxieClusters, sortBy, descending);
+
+    resp.setThorClusterList(thorClusters);
+    resp.setRoxieClusterList(roxieClusters);
+    resp.setHThorClusterList(hthorClusters);*/
+
+    IArrayOf<IEspStatusServer> statusServers;
+    setStatusServers(context, activityInfo->statusServers, statusServers);
+    resp.setStatusServers(statusServers);
+
+    ///resp.setServerJobQueues(activityInfo->queryServerJobQueues());
+
+    ///resp.setDFUJobs(activityInfo->queryDFURecoveryJobs());
+    ///addWUsToResponse(context, activityInfo->queryActiveWUs(), resp);
+    if (activityInfo->runningWUs.length())
+        resp.setRunningWUs(activityInfo->runningWUs);
+    if (activityInfo->queuedWUs.length())
+        resp.setQueuedWUs(activityInfo->queuedWUs);
+    if (activityInfo->thorClusters.length())
+        resp.setThorClusters(activityInfo->thorClusters);
+    if (activityInfo->hThorClusters.length())
+        resp.setHThorClusters(activityInfo->hThorClusters);
+    return;
+}
+
+void CWsSMCEx::setESPTargetClustersNew(IEspContext& context, const CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetClusterNew>& respTargetClusters)
+{
+    ForEachItemIn(i, targetClusters)
+    {
+        Owned<IEspTargetClusterNew> respTargetCluster = new CTargetClusterNew("", "");
+        setESPTargetClusterNew(context, targetClusters.item(i), respTargetCluster);
+        respTargetClusters.append(*respTargetCluster.getClear());
+    }
+}
+
+void CWsSMCEx::setESPTargetClusterNew(IEspContext &context, const CWsSMCTargetCluster& targetCluster, IEspTargetClusterNew* espTargetCluster)
+{
+    espTargetCluster->setClusterName(targetCluster.clusterName.get());
+    espTargetCluster->setClusterSize(targetCluster.clusterSize);
+    espTargetCluster->setClusterType(targetCluster.clusterType);
+    espTargetCluster->setQueueName(targetCluster.queueName.get());
+    espTargetCluster->setQueueStatus(targetCluster.queueStatus.get());
+    setClusterStatusNew(context, targetCluster, espTargetCluster);
+    setClusterWUs(context, targetCluster, espTargetCluster);
+}
+
+void CWsSMCEx::setClusterStatusNew(IEspContext& context, const CWsSMCTargetCluster& targetCluster, IEspTargetClusterNew* returnCluster)
+{
+    ClusterStatusType queueStatusType = RunningNormal;
+    StringBuffer queueStatusDetails;
+    getClusterQueueStatus(targetCluster, queueStatusType, queueStatusDetails);
+
+    returnCluster->setClusterStatus(queueStatusType);
+    //Set 'Warning' which may be displayed beside cluster name
+    if (queueStatusType == QueueRunningNotFound)
+        returnCluster->setWarning("Cluster not attached");
+    else if (queueStatusType == QueuePausedOrStoppedNotFound)
+        returnCluster->setWarning("Queue paused or stopped - Cluster not attached");
+    else if (queueStatusType != RunningNormal)
+        returnCluster->setWarning("Queue paused or stopped");
+    //Set 'StatusDetails' which may be displayed when a mouse is moved over cluster icon
+    if (queueStatusDetails.length())
+        returnCluster->setStatusDetails(queueStatusDetails.str());
+}
+
+void CWsSMCEx::setClusterWUs(IEspContext& context, const CWsSMCTargetCluster& targetCluster, IEspTargetClusterNew* returnCluster)
+{
+    IArrayOf<IEspActiveWorkunit> runningWUs, queuedWUs;
+    setWUs(context, targetCluster.runningWUs, runningWUs);
+    setWUs(context, targetCluster.queuedWUs, queuedWUs);
+    if (runningWUs.ordinality())
+        returnCluster->setRunningWorkunits(runningWUs);
+    if (queuedWUs.ordinality())
+        returnCluster->setQueuedWorkunits(queuedWUs);
+}
+
+void CWsSMCEx::setWUs(IEspContext &context, const IArrayOf<IEspActiveWorkunit>& aws, IArrayOf<IEspActiveWorkunit>& awsReturned)
+{
+    const char* user = context.queryUserId();
+    ForEachItemIn(i, aws)
+    {
+        IEspActiveWorkunit& wu = aws.item(i);
+        const char* wuid = wu.getWuid();
+        if (wuid[0] == 'D')//DFU WU
+        {
+            awsReturned.append(*LINK(&wu));
+            continue;
+        }
+        try
+        {
+            //if no access, throw an exception and go to the 'catch' section.
+            const char* owner = wu.getOwner();
+            context.validateFeatureAccess((!owner || !*owner || (user && streq(user, owner))) ? OWN_WU_ACCESS : OTHERS_WU_ACCESS, SecAccess_Read, true);
+
+            awsReturned.append(*LINK(&wu));
+            continue;
+        }
+        catch (IException *e)
+        {   //if the wu cannot be opened for some reason, the openWorkUnit() inside the CActiveWorkunitWrapper() may throw an exception.
+            //We do not want the exception stops this process of retrieving/showing all active WUs. And that WU should still be displayed
+            //with the exception.
+            StringBuffer msg;
+            Owned<IEspActiveWorkunit> cw = new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal");
+            cw->setStateID(WUStateUnknown);
+            cw->setServer(wu.getServer());
+            cw->setQueueName(wu.getQueueName());
+            const char* instanceName = wu.getInstance();
+            const char* targetClusterName = wu.getTargetClusterName();
+            if (instanceName && *instanceName)
+                cw->setInstance(instanceName); // JCSMORE In thor case at least, if queued it is unknown which instance it will run on..
+            if (targetClusterName && *targetClusterName)
+                cw->setTargetClusterName(targetClusterName);
+            awsReturned.append(*cw.getClear());
+
+            e->Release();
+        }
+    }
+    return;
+}
+
+//Same as CActivityInfo::isCachedActivityInfoValid()
+bool CActivityInfoNew::isCachedActivityInfoValid(unsigned timeOutSeconds)
+{
+    CDateTime timeNow;
+    timeNow.setNow();
+    return timeNow.getSimple() <= timeCached.getSimple() + timeOutSeconds;;
+}
+
+void CActivityInfoNew::parseQueueNames(const char* queue, StringArray& queueNames)
+{
+    if (!queue || !*queue)
+        return;
+
+    StringArray qlist;
+    qlist.appendListUniq(queue, ",");
+    ForEachItemIn(q, qlist)
+    {
+        const char* queueName = qlist.item(q);
+        if (queueName && *queueName)
+            queueNames.append(queueName);
+    }
+}
+
+void CActivityInfoNew::createActiveWorkUnit(IEspContext& context, Owned<IEspActiveWorkunit>& ownedWU,
+    const char* wuid, IPropertyTree* envRoot, CWsSMCStatusServer* server)
+{
+    try
+    {
+        ownedWU.setown(new CActiveWorkunitWrapper(wuid, envRoot, server));
+    }
+    catch (IException *e)
+    {   //if the wu cannot be opened for some reason, the openWorkUnit() inside the CActiveWorkunitWrapper() may throw an exception.
+        //We do not want the exception stops this process of retrieving/showing all active WUs. And that WU should still be displayed
+        //with the exception.
+        StringBuffer msg;
+        ownedWU.setown(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
+        ownedWU->setStateID(WUStateUnknown);
+        e->Release();
+    }
+
+    ownedWU->setServer(getStatusServerTypeName(server->type));
+    if (server->instanceName.length())
+        ownedWU->setInstance(server->instanceName.str()); // JCSMORE In thor case at least, if queued it is unknown which instance it will run on..
+}
+
+void CActivityInfoNew::readWUsInStatusServer(IEspContext& context, const char* wuid, IPropertyTree* envRoot,
+    IPropertyTree& serverStatusNode, CWsSMCStatusServer* server)
+{
+    /*CWsSMCTargetCluster* targetCluster;
+    if (statusServerType == WsSMCSSTRoxieCluster)
+        targetCluster = findWUClusterInfo(wuid, isECLAgent, roxieTargetClusters, thorTargetClusters, hthorTargetClusters);
+    else if (statusServerType == WsSMCSSTHThorCluster)
+        targetCluster = findWUClusterInfo(wuid, isECLAgent, hthorTargetClusters, thorTargetClusters, roxieTargetClusters);
+    else
+        targetCluster = findWUClusterInfo(wuid, isECLAgent, thorTargetClusters, roxieTargetClusters, hthorTargetClusters);
+    if (!targetCluster)
+        continue;*/
+
+//    const char* serverName = getStatusServerTypeName(server->type);
+    Owned<IEspActiveWorkunit> wu;
+    createActiveWorkUnit(context, wu, wuid, envRoot, server);
+
+    /*const char *cluster = serverStatusNode.queryProp("Cluster");
+    StringBuffer queueName;
+    if (cluster) // backward compat check.
+        getClusterThorQueueName(queueName, cluster);
+    else
+        queueName.append(serverQueueName);*/
+
+    if (server->type != WsSMCSSTECLagent)
+    {
+        if (wu->getStateID() == WUStateRunning) //'aborting' may be another possible status
+        {
+            int sgDuration = serverStatusNode.getPropInt("@sg_duration", -1);
+            int subgraph = serverStatusNode.getPropInt("@subgraph", -1);
+            if (subgraph > -1 && sgDuration > -1)
+            {
+                const char* graph = serverStatusNode.queryProp("@graph");
+                VStringBuffer durationStr("%d min", sgDuration);
+                VStringBuffer subgraphStr("%d", subgraph);
+
+                wu->setGraphName(graph);
+                wu->setDuration(durationStr.str());
+                wu->setGID(subgraphStr.str());
+            }
+
+            if (serverStatusNode.getPropInt("@memoryBlocked ", 0) != 0)
+                wu->setMemoryBlocked(1);
+        }
+    }
+    else
+    {
+        if (wu->getStateID() != WUStateRunning)
+        {
+            const char *extra = wu->getExtra();
+            if (wu->getStateID() != WUStateBlocked || !extra || !*extra)  // Blocked on persist treated as running here
+            {
+                server->wus.append(*wu.getClear());
+                return;
+            }
+        }
+
+        //Should this be set only if wu->getStateID() == WUStateRunning?
+        if (serverStatusNode.getPropInt("@memoryBlocked ", 0) != 0)
+            wu->setMemoryBlocked(1);
+    }
+
+    server->wus.append(*wu.getClear());
+}
+#if 0
+void CActivityInfoNew::addRunningWUToCluster(IEspContext& context, Owned<IEspActiveWorkunit> wu, const char* clusterName)
+{
+    ForEachItemIn(i, statusServers)
+    {
+        CWsSMCStatusServer& statusServer = statusServers.item(i);
+        if (strieq(clusterName, statusServer.instanceName.str()))
+        {
+            //TODO: check wus already added
+            statusServer.wus.append(*wu.getClear());
+            break;
+        }
+    }
+}
+
+void CActivityInfoNew::readWUsInECLAgent(IEspContext& context, IPropertyTree* envRoot, IPropertyTree* serverStatusRoot)
+{
+    Owned<IPropertyTreeIterator> it(serverStatusRoot->getElements("Server[@name=\"ECLagent\"]"));
+    ForEach(*it)
+    {
+        IPropertyTree& serverStatusNode = it->query();
+        /*Owned<CWsSMCStatusServer> server = new CWsSMCStatusServer();
+        server->type = type;
+        server->name.set(serverName);
+        serverStatusNode.getProp("@started", server->started);
+        serverStatusNode.getProp("@node", server->node);
+        server->mpport = serverStatusNode.getPropInt("@mpport", 0);
+        if ((type == WsSMCSSTThorLCRCluster) || (type == WsSMCSSTRoxieCluster) || (type == WsSMCSSTHThorCluster))
+            serverStatusNode.getProp("@cluster", server->instanceName);
+        else
+            server->instanceName.setf("%s on %s", serverName, serverStatusNode.queryProp("@node"));*/
+
+        VStringBuffer instanceName("ECLagent on %s", serverStatusNode.queryProp("@node"));
+        Owned<IPropertyTreeIterator> wuids(serverStatusNode.getElements("WorkUnit"));
+        ForEach(*wuids)
+        {
+            const char* wuid=wuids->query().queryProp(NULL);
+            if (!wuid || !*wuid)
+                continue;
+
+            StringBuffer clusterName;
+            Owned<IEspActiveWorkunit> wu;
+
+            try
+            {
+                wu.setown(new CActiveWorkunitWrapper(wuid, envRoot, instanceName.str(), clusterName));
+            }
+            catch (IException *e)
+            {   //if the wu cannot be opened for some reason, the openWorkUnit() inside the CActiveWorkunitWrapper() may throw an exception.
+                //We do not want the exception stops this process of retrieving/showing all active WUs. And that WU should still be displayed
+                //with the exception.
+                StringBuffer msg;
+                wu.setown(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
+                wu->setStateID(WUStateUnknown);
+                e->Release();
+            }
+
+            wu->setInstance(instanceName.str());
+            wu->setServer("ECLagent");
+            wu->setClusterType(CLUSTER_TYPE_HTHOR);
+
+            if (wu->getStateID() != WUStateRunning)
+            {
+                const char *extra = wu->getExtra();
+                if (wu->getStateID() != WUStateBlocked || !extra || !*extra)  // Blocked on persist treated as running here
+                {
+                    addRunningWUToCluster(context, wu.getClear(), clusterName.str());
+                    continue;
+                }
+            }
+
+            //Should this be set only if wu->getStateID() == WUStateRunning?
+            if (serverStatusNode.getPropInt("@memoryBlocked ", 0) != 0)
+                wu->setMemoryBlocked(1);
+            addRunningWUToCluster(context, wu.getClear(), clusterName.str());
+        }
+    }
+    return;
+}
+#endif
+
+void CActivityInfoNew::readDFUWUDetails(IDFUWorkUnitFactory* wuFactory, const char* wuid,
+    const char* queueName, bool running, CWsSMCStatusServer* server)
+{
+    StringBuffer jname, uname, state, error;
+    if (running)
+        state.set("running");
+    else
+        state.set("queued");
+
+    try
+    {
+        Owned<IConstDFUWorkUnit> dfuwu = wuFactory->openWorkUnit(wuid, false);
+        dfuwu->getUser(uname);
+        dfuwu->getJobName(jname);
+    }
+    catch (IException *e)
+    {
+        e->errorMessage(error);
+        state.appendf(" (%s)", error.str());
+        e->Release();
+    }
+
+    Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(wuid, uname.str(), jname.str(), state.str(), "normal"));
+    wu->setServer(STATUS_SERVER_DFUSERVER);
+    wu->setInstance(server->name);
+    wu->setQueueName(queueName);
+    server->wus.append(*wu.getClear());
+}
+
+void CActivityInfoNew::readStatusDFUServerQueue(IEspContext& context, IPropertyTree& serverStatusNode, CWsSMCStatusServer* server)
+{
+    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+    Owned<IPropertyTreeIterator> iter = serverStatusNode.getElements("Queue");
+    ForEach(*iter)
+    {
+        IPropertyTree& queueTree = iter->query();
+        const char* queueName = queueTree.queryProp("@name");
+        if (!queueName || !*queueName)
+            continue;
+
+        server->queueNames.append(queueName);
+        Owned<IPropertyTreeIterator> iterj = queueTree.getElements("Job");
+        ForEach(*iterj)
+        {
+            const char *wuid = iterj->query().queryProp("@wuid");
+            if (wuid && *wuid && (*wuid!='!')) // filter escapes -- see queuedJobs() in dfuwu.cpp
+                readDFUWUDetails(factory, wuid, queueName, true, server);
+        }
+    }
+}
+
+void CActivityInfoNew::readStatusServersByType(IEspContext& context, WsSMCStatusServerType type,
+    IPropertyTree* envRoot, IPropertyTree* serverStatusRoot)
+{
+    const char* serverName = getStatusServerTypeName(type);
+    VStringBuffer path("Server[@name=\"%s\"]", serverName);
+    Owned<IPropertyTreeIterator> it(serverStatusRoot->getElements(path.str()));
+    ForEach(*it)
+    {
+        IPropertyTree& serverStatusNode = it->query();
+        Owned<CWsSMCStatusServer> server = new CWsSMCStatusServer();
+        server->type = type;
+        server->name.set(serverName);
+        serverStatusNode.getProp("@started", server->started);
+        serverStatusNode.getProp("@node", server->node);
+        server->mpport = serverStatusNode.getPropInt("@mpport", 0);
+        if ((type == WsSMCSSTThorLCRCluster) || (type == WsSMCSSTRoxieCluster) || (type == WsSMCSSTHThorCluster))
+            serverStatusNode.getProp("@cluster", server->instanceName);
+        else
+            server->instanceName.setf("%s on %s", serverName, serverStatusNode.queryProp("@node"));
+
+        if (type == WsSMCSSTDFUServer)
+            readStatusDFUServerQueue(context, serverStatusNode, server);
+        else
+        {
+            if (type != WsSMCSSTECLagent)
+                parseQueueNames(serverStatusNode.queryProp("@queue"), server->queueNames);
+
+            //readTargetClusterRunningWUs(context, serverStatusNode, serverName, targetCluster);
+            Owned<IPropertyTreeIterator> wuids(serverStatusNode.getElements("WorkUnit"));
+            ForEach(*wuids)
+            {
+                const char* wuid=wuids->query().queryProp(NULL);
+                if (wuid && *wuid)
+                    readWUsInStatusServer(context, wuid, envRoot, serverStatusNode, server);
+            }
+        }
+
+        statusServers.append(*server.getClear());
+    }
+    return;
+}
+
+void CActivityInfoNew::readStatusServers(IEspContext& context, IPropertyTree* envRoot, IPropertyTree* serverStatusRoot)
+{
+    readStatusServersByType(context, WsSMCSSTThorLCRCluster, envRoot, serverStatusRoot);
+    readStatusServersByType(context, WsSMCSSTRoxieCluster, envRoot, serverStatusRoot);
+    readStatusServersByType(context, WsSMCSSTHThorCluster, envRoot, serverStatusRoot);
+    readStatusServersByType(context, WsSMCSSTECLagent, envRoot, serverStatusRoot);
+    readStatusServersByType(context, WsSMCSSTECLServer, envRoot, serverStatusRoot);
+    readStatusServersByType(context, WsSMCSSTECLCCServer, envRoot, serverStatusRoot);
+    readStatusServersByType(context, WsSMCSSTDFUServer, envRoot, serverStatusRoot);
+    //readWUsInECLAgent(context, envRoot, serverStatusRoot);
+}
+
+//Same as CActivityInfo::createActivityInfo except for ///
+void CActivityInfoNew::createActivityInfo(IEspContext& context)
+{
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
+
+    CConstWUClusterInfoArray clusters;
+    Owned<IPropertyTree> envRoot= &env->getPTree();
+    getEnvironmentClusterInfo(envRoot, clusters);
+
+    try
+    {
+        jobQueueSnapshot.setown(createJQSnapshot());
+    }
+    catch(IException* e)
+    {
+        EXCLOG(e, "CActivityInfoNew::createActivityInfo");
+        e->Release();
+    }
+
+    Owned<IRemoteConnection> connStatusServers = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
+    if (!connStatusServers)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_STATUS_INFO, "Failed to get status server information.");
+
+    IPropertyTree* serverStatusRoot = connStatusServers->queryRoot();
+
+    //readTargetClusterInfo(context, clusters, serverStatusRoot);
+    readStatusServers(context, envRoot, serverStatusRoot);
+    ///readActiveWUsAndQueuedWUs(context, envRoot, serverStatusRoot);
+    //readJobQueueInfo();
+
+    timeCached.setNow();
+}
+
+//Same as CActivityInfo::readTargetClusterInfo()
+void CActivityInfoNew::readTargetClusterInfo(IEspContext& context, CConstWUClusterInfoArray& clusters, IPropertyTree* serverStatusRoot)
+{
+    ForEachItemIn(c, clusters)
+    {
+        IConstWUClusterInfo &cluster = clusters.item(c);
+        Owned<CWsSMCTargetCluster> targetCluster = new CWsSMCTargetCluster();
+        readTargetClusterInfo(context, cluster, serverStatusRoot, targetCluster);
+        if (cluster.getPlatform() == ThorLCRCluster)
+            thorTargetClusters.append(*targetCluster.getClear());
+        else if (cluster.getPlatform() == RoxieCluster)
+            roxieTargetClusters.append(*targetCluster.getClear());
+        else
+            hthorTargetClusters.append(*targetCluster.getClear());
+    }
+}
+
+//Same as CActivityInfo::readTargetClusterInfo()
+void CActivityInfoNew::readTargetClusterInfo(IEspContext& context, IConstWUClusterInfo& cluster, IPropertyTree* serverStatusRoot, CWsSMCTargetCluster* targetCluster)
+{
+    SCMStringBuffer clusterName;
+    cluster.getName(clusterName);
+    targetCluster->clusterName.set(clusterName.str());
+    targetCluster->clusterType = cluster.getPlatform();
+    targetCluster->clusterSize = cluster.getSize();
+    cluster.getServerQueue(targetCluster->serverQueue.queueName);
+    cluster.getAgentQueue(targetCluster->agentQueue.queueName);
+
+    StringBuffer statusServerName;
+    CWsSMCQueue* smcQueue = NULL;
+    if (targetCluster->clusterType == ThorLCRCluster)
+    {
+        statusServerName.set(getStatusServerTypeName(WsSMCSSTThorLCRCluster));
+        smcQueue = &targetCluster->clusterQueue;
+        cluster.getThorQueue(smcQueue->queueName);
+        thorClusters.append(clusterName.str());
+    }
+    else if (targetCluster->clusterType == RoxieCluster)
+    {
+        statusServerName.set(getStatusServerTypeName(WsSMCSSTRoxieCluster));
+        smcQueue = &targetCluster->agentQueue;
+    }
+    else
+    {
+        statusServerName.set(getStatusServerTypeName(WsSMCSSTHThorCluster));
+        smcQueue = &targetCluster->agentQueue;
+        hThorClusters.append(clusterName.str());
+    }
+
+    targetCluster->statusServerName.set(statusServerName.str());
+    targetCluster->queueName.set(smcQueue->queueName.str());
+
+    bool validQueue = readTargetClusterJobQueue(smcQueue->queueName.str(), targetCluster->queuedWUIDs, smcQueue->queueState, smcQueue->queueStateDetails);
+    if (validQueue && smcQueue->queueState.length())
+        targetCluster->queueStatus.set(smcQueue->queueState.str());
+
+    if (serverStatusRoot)
+    {
+        smcQueue->foundQueueInStatusServer = findQueueInStatusServer(context, serverStatusRoot, statusServerName.str(), targetCluster);
+        if (!smcQueue->foundQueueInStatusServer)
+            targetCluster->clusterStatusDetails.appendf("Cluster %s not attached; ", clusterName.str());
+    }
+    /*if (targetCluster->clusterType == ThorLCRCluster)
+        readWUsInTargetClusterJobQueueNew(context, targetCluster, smcQueue, targetCluster->clusterName.str());
+    else
+        readWUsInTargetClusterJobQueueNew(context, targetCluster, smcQueue, smcQueue->queueName.str());*/
+}
+
+//Same as CActivityInfo::readJobQueue()
+bool CActivityInfoNew::readTargetClusterJobQueue(const char* queueName, StringArray& wuids, StringBuffer& state, StringBuffer& stateDetails)
+{
+    if (!queueName || !*queueName)
+        return false;
+
+    if (!jobQueueSnapshot)
+    {
+        WARNLOG("CActivityInfo::readJobQueue: jobQueueSnapshot not found.");
+        return false;
+    }
+
+    Owned<IJobQueueConst> jobQueue = jobQueueSnapshot->getJobQueue(queueName);
+    if (!jobQueue)
+    {
+        WARNLOG("CActivityInfo::readJobQueue: failed to get info for job queue %s", queueName);
+        return false;
+    }
+
+    CJobQueueContents queuedJobs;
+    jobQueue->copyItemsAndState(queuedJobs, state, stateDetails);
+
+    Owned<IJobQueueIterator> iter = queuedJobs.getIterator();
+    ForEach(*iter)
+    {
+        const char* wuid = iter->query().queryWUID();
+        if (wuid && *wuid)
+            wuids.append(wuid);
+    }
+    return true;
+}
+
+//Modified from CActivityInfo::findQueueInStatusServer()
+bool CActivityInfoNew::findQueueInStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, const char* serverName, CWsSMCTargetCluster* targetCluster)
+{
+    const char* queueName = targetCluster->queueName.get();
+    VStringBuffer path("Server[@name=\"%s\"]", serverName);
+    Owned<IPropertyTreeIterator> it(serverStatusRoot->getElements(path.str()));
+    ForEach(*it)
+    {
+        IPropertyTree& serverStatusNode = it->query();
+        const char* queue = serverStatusNode.queryProp("@queue");
+        if (!queue || !*queue)
+            continue;
+
+        StringArray qlist;
+        qlist.appendListUniq(queue, ",");
+        ForEachItemIn(q, qlist)
+        {
+            if (strieq(qlist.item(q), queueName))
+            {
+                readTargetClusterRunningWUs(context, serverStatusNode, serverName, targetCluster);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void CActivityInfoNew::readTargetClusterRunningWUs(IEspContext& context, IPropertyTree& serverStatusNode, const char* serverName, CWsSMCTargetCluster* targetCluster)
+{
+    StringBuffer serverInstance;
+    if ((targetCluster->clusterType == ThorLCRCluster) || (targetCluster->clusterType == RoxieCluster))
+        serverStatusNode.getProp("@cluster", serverInstance);
+    else
+        serverInstance.appendf("%s on %s", serverName, serverStatusNode.queryProp("@node"));
+
+    Owned<IPropertyTreeIterator> wuids(serverStatusNode.getElements("WorkUnit"));
+    ForEach(*wuids)
+    {
+        const char* wuid=wuids->query().queryProp(NULL);
+        if (!wuid || !*wuid)
+            continue;
+
+        /*CWsSMCTargetCluster* targetCluster;
+        if (statusServerType == WsSMCSSTRoxieCluster)
+            targetCluster = findWUClusterInfo(wuid, isECLAgent, roxieTargetClusters, thorTargetClusters, hthorTargetClusters);
+        else if (statusServerType == WsSMCSSTHThorCluster)
+            targetCluster = findWUClusterInfo(wuid, isECLAgent, hthorTargetClusters, thorTargetClusters, roxieTargetClusters);
+        else
+            targetCluster = findWUClusterInfo(wuid, isECLAgent, thorTargetClusters, roxieTargetClusters, hthorTargetClusters);
+        if (!targetCluster)
+            continue;*/
+        runningWUs.append(wuid);
+
+        const char* targetClusterName = targetCluster->clusterName.get();
+        CWsSMCQueue* jobQueue;
+        if (targetCluster->clusterType == ThorLCRCluster)
+            jobQueue = &targetCluster->clusterQueue;
+        else
+            jobQueue = &targetCluster->agentQueue;
+
+        Owned<IEspActiveWorkunit> wu;
+        const char *cluster = serverStatusNode.queryProp("Cluster");
+        StringBuffer queueName;
+        if (cluster) // backward compat check.
+            getClusterThorQueueName(queueName, cluster);
+        else
+            queueName.append(targetCluster->queueName.get());
+
+        createActiveWorkUnit(context, wu, wuid, !strieq(targetClusterName, serverInstance.str()) ? serverInstance.str() : NULL, 0, serverName,
+            queueName, serverInstance.str(), targetClusterName, false);
+
+        if (wu->getStateID() == WUStateRunning) //'aborting' may be another possible status
+        {
+            int sgDuration = serverStatusNode.getPropInt("@sg_duration", -1);
+            int subgraph = serverStatusNode.getPropInt("@subgraph", -1);
+            if (subgraph > -1 && sgDuration > -1)
+            {
+                const char* graph = serverStatusNode.queryProp("@graph");
+                VStringBuffer durationStr("%d min", sgDuration);
+                VStringBuffer subgraphStr("%d", subgraph);
+
+                wu->setGraphName(graph);
+                wu->setDuration(durationStr.str());
+                wu->setGID(subgraphStr.str());
+            }
+
+            if (serverStatusNode.getPropInt("@memoryBlocked ", 0) != 0)
+                wu->setMemoryBlocked(1);
+        }
+
+        targetCluster->runningWUs.append(*wu.getClear());
+        jobQueue->countRunningJobs++;
+    }
+}
+
+void CActivityInfoNew::readWUsInTargetClusterJobQueueNew(IEspContext& context, CWsSMCTargetCluster* targetCluster, CWsSMCQueue* jobQueue, const char* queueName)
+{
+    ForEachItemIn(i, targetCluster->queuedWUIDs)
+    {
+        const char* wuid = targetCluster->queuedWUIDs.item(i);
+        if (!wuid || !*wuid)
+            continue;
+
+        Owned<IEspActiveWorkunit> wu;
+        createActiveWorkUnit(context, wu, wuid, jobQueue->queueName.str(), ++jobQueue->countQueuedJobs, targetCluster->statusServerName.str(),
+            queueName, NULL, targetCluster->clusterName.get(), false);
+        targetCluster->queuedWUs.append(*wu.getClear());
+    }
+}
+
+void CActivityInfoNew::createActiveWorkUnit(IEspContext& context, Owned<IEspActiveWorkunit>& ownedWU, const char* wuid, const char* location,
+    unsigned index, const char* serverName, const char* queueName, const char* instanceName, const char* targetClusterName, bool useContext)
+{
+    try
+    {
+        if (useContext)
+            ownedWU.setown(new CActiveWorkunitWrapper(context, wuid, location, index));
+        else
+            ownedWU.setown(new CActiveWorkunitWrapper(wuid, location, index));
+    }
+    catch (IException *e)
+    {   //if the wu cannot be opened for some reason, the openWorkUnit() inside the CActiveWorkunitWrapper() may throw an exception.
+        //We do not want the exception stops this process of retrieving/showing all active WUs. And that WU should still be displayed
+        //with the exception.
+        StringBuffer msg;
+        ownedWU.setown(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
+        ownedWU->setStateID(WUStateUnknown);
+        e->Release();
+    }
+
+    ownedWU->setServer(serverName);
+    if (instanceName && *instanceName)
+        ownedWU->setInstance(instanceName); // JCSMORE In thor case at least, if queued it is unknown which instance it will run on..
+    if (targetClusterName && *targetClusterName)
+        ownedWU->setTargetClusterName(targetClusterName);
+}
