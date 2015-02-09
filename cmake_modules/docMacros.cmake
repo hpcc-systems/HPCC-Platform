@@ -100,31 +100,33 @@ MACRO(DOCBOOK_TO_PDF _xsl _file _name)
 ENDMACRO(DOCBOOK_TO_PDF targetname_suffix srcfile outfile targetdir deps_list)
 
 MACRO(DOCBOOK_TO_HTML _xsl_file _xml_file _out_dir)
-    set(_html_zip "doc_generate_html_zip")
-    set(_html_files "_generate_html_files")
+    IF(MAKE_DOCS)
+       set(_html_zip "doc_generate_html_zip")
+       set(_html_files "_generate_html_files")
 
-    STRING(REGEX REPLACE "(.+)/([^/]+)$" "\\1" _out_dir1 "${_out_dir}")
-    STRING(REGEX REPLACE ".+/([^/]+)$" "\\1" _out_dir2 "${_out_dir}")
-    SET(_zip_file ${_out_dir2}-${version}-${stagever}.zip)
-    ADD_CUSTOM_COMMAND(
-        COMMAND mkdir -p ${_out_dir}
-        COMMAND cp ${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css ${_out_dir}/
-        OUTPUT ${_out_dir}/eclipsehelp.css
-        )
-    ADD_CUSTOM_TARGET(${_html_files}
-        COMMAND xsltproc --nonet --xinclude ${_xsl_file} ${_xml_file}
-        WORKING_DIRECTORY ${_out_dir}
-        DEPENDS docbook-expand ${_out_dir}/eclipsehelp.css ${HELP_DEPENDENCIES}
-        SOURCES ${_xsl_file}
-        )
-    SET(HELP_DEPENDENCIES)
-    ADD_CUSTOM_COMMAND(
-        COMMAND zip -r ${_zip_file} ${_out_dir2}
-        WORKING_DIRECTORY ${_out_dir1}
-        OUTPUT ${_zip_file}
-        )
-    ADD_CUSTOM_TARGET(${_html_zip} ALL DEPENDS ${_html_files} ${_zip_file})
-    set_property(GLOBAL APPEND PROPERTY DOC_TARGETS ${_html_zip})
+       STRING(REGEX REPLACE "(.+)/([^/]+)$" "\\1" _out_dir1 "${_out_dir}")
+       STRING(REGEX REPLACE ".+/([^/]+)$" "\\1" _out_dir2 "${_out_dir}")
+       SET(_zip_file ${_out_dir2}-${version}-${stagever}.zip)
+       ADD_CUSTOM_COMMAND(
+           COMMAND mkdir -p ${_out_dir}
+           COMMAND cp ${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css ${_out_dir}/
+           OUTPUT ${_out_dir}/eclipsehelp.css
+           )
+       ADD_CUSTOM_TARGET(${_html_files}
+           COMMAND xsltproc --nonet --xinclude ${_xsl_file} ${_xml_file}
+           WORKING_DIRECTORY ${_out_dir}
+           DEPENDS docbook-expand ${_out_dir}/eclipsehelp.css ${HELP_DEPENDENCIES}
+           SOURCES ${_xsl_file}
+           )
+       SET(HELP_DEPENDENCIES)
+       ADD_CUSTOM_COMMAND(
+           COMMAND zip -r ${_zip_file} ${_out_dir2}
+           WORKING_DIRECTORY ${_out_dir1}
+           OUTPUT ${_zip_file}
+           )
+       ADD_CUSTOM_TARGET(${_html_zip} ALL DEPENDS ${_html_files} ${_zip_file})
+       set_property(GLOBAL APPEND PROPERTY DOC_TARGETS ${_html_zip})
+    ENDIF(MAKE_DOCS)
 ENDMACRO(DOCBOOK_TO_HTML)
 
 MACRO(FILE_LIST_GENERATOR outxml filename linkname description)
