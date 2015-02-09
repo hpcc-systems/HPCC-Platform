@@ -97,7 +97,7 @@ public :
     void getVoidPtrLenPair(ICodeContext * ctx, const char * partitionKey, const char * key, size_t & valueLength, void * & value, eclDataType eclType);
 
     void clear(ICodeContext * ctx, unsigned when);
-    bool exist(ICodeContext * ctx, const char * key, const char * partitionKey);
+    bool exists(ICodeContext * ctx, const char * key, const char * partitionKey);
     eclDataType getKeyType(const char * key, const char * partitionKey);
 
     bool isSameConnection(const char * _options) const;
@@ -442,7 +442,7 @@ void MemCachedPlugin::MCached::clear(ICodeContext * ctx, unsigned when)
     assertOnError(memcached_flush(connection, (time_t)(when)), "'Clear' request failed - ");
 }
 
-bool MemCachedPlugin::MCached::exist(ICodeContext * ctx, const char * key, const char * partitionKey)
+bool MemCachedPlugin::MCached::exists(ICodeContext * ctx, const char * key, const char * partitionKey)
 {
 #if (LIBMEMCACHED_VERSION_HEX<0x53000)
     throw makeStringException(0, "memcached_exist not supported in this version of libmemcached");
@@ -458,7 +458,7 @@ bool MemCachedPlugin::MCached::exist(ICodeContext * ctx, const char * key, const
         return false;
     else
     {
-        assertOnError(rc, "'Exist' request failed - ");
+        assertOnError(rc, "'Exists' request failed - ");
         return true;
     }
 #endif
@@ -594,10 +594,10 @@ ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MClear(ICodeContext * ctx, const char 
     OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
     serverPool->clear(ctx, 0);
 }
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MExist(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MExists(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
 {
     OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
-    return serverPool->exist(ctx, key, partitionKey);
+    return serverPool->exists(ctx, key, partitionKey);
 }
 ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
 {

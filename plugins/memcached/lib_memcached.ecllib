@@ -34,7 +34,7 @@ export memcached := SERVICE : plugin('memcached')
   REAL GetReal(CONST VARSTRING options, CONST VARSTRING key, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MGetDouble';
   DATA GetData(CONST VARSTRING options, CONST VARSTRING key, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MGetData';
 
-  BOOLEAN Exist(CONST VARSTRING options, CONST VARSTRING key, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MExist';
+  BOOLEAN Exists(CONST VARSTRING options, CONST VARSTRING key, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MExists';
   CONST VARSTRING KeyType(CONST VARSTRING options, CONST VARSTRING key, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MKeyType'; //NOTE: calls get
   Clear(CONST VARSTRING options) : cpp,action,context,entrypoint='MClear';
 END;
