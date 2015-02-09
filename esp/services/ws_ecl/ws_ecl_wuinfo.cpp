@@ -133,7 +133,7 @@ int orderParts(IInterface * const * pLeft, IInterface * const * pRight)
     bool hasLeftSeq = left->hasProp("@sequence");
     if (hasRightSeq && hasLeftSeq)
         return left->getPropInt("@sequence") - right->getPropInt("@sequence");
-    if (hasRightSeq);
+    if (hasRightSeq)
         return -1;
     if (hasLeftSeq)
         return 1;
