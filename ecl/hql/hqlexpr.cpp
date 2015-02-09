@@ -5812,7 +5812,7 @@ void CHqlField::onCreateField()
     case type_groupedtable:
         typeExpr = queryRecord();
 #ifdef _DEBUG
-        if (!hasAttribute(_linkCounted_Atom))
+        if (typeExpr && !hasAttribute(_linkCounted_Atom))
         {
             OwnedHqlExpr unadornedRecord = getUnadornedRecordOrField(typeExpr->queryRecord());
             assertex(!recordRequiresLinkCount(unadornedRecord));
