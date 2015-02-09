@@ -919,6 +919,7 @@ enum ThorActivityKind
     TAKunknowndenormalizegroup2,
     TAKunknowndenormalizegroup3,
     TAKlastdenormalizegroup,
+    TAKxxxx,
 
     TAKlast
 };
@@ -1057,6 +1058,7 @@ enum ActivityInterfaceEnum
     TAIsubsortextra_1,
     TAIdictionaryworkunitwritearg_1,
     TAIdictionaryresultwritearg_1,
+    TAIxxxx_1,
 
 //Should remain as last of all meaningful tags, but before aliases
     TAImax,
@@ -1316,6 +1318,21 @@ struct IHThorSelectNArg : public IHThorArg
     virtual size32_t createDefault(ARowBuilder & rowBuilder) = 0;
 };
 
+enum
+{
+    TXFfirst            = 0x0001,      // default flags is zero
+    TXFlast             = 0x0002,
+    TXFsorted           = 0x0004,
+    TXFlocalsorted      = 0x0008,
+};
+
+struct IHThorXXXXArg : public IHThorArg
+{
+    virtual unsigned getFlags() = 0;
+    virtual double getSkew() = 0;
+    virtual ICompare * queryCompare() = 0;
+    virtual unsigned getNumDivisions() = 0;
+};
 
 struct IHThorCombineArg : public IHThorArg
 {

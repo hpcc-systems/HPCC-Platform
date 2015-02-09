@@ -353,6 +353,7 @@ extern HQL_API IAtom * scanAtom;
 extern HQL_API IAtom * scanAllAtom;
 extern HQL_API IAtom * scopeAtom;
 extern HQL_API IAtom * scopeCheckingAtom;
+extern HQL_API IAtom * scoreAtom;
 extern HQL_API IAtom * sectionAtom;
 extern HQL_API IAtom * _selectorSequence_Atom;
 extern HQL_API IAtom * selfAtom;

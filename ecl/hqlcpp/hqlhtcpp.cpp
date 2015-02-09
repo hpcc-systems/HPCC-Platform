@@ -6507,6 +6507,9 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_map:
                 result = doBuildActivityCase(ctx, expr, isRoot);
                 break;
+            case no_xxxx:
+                result = doBuildActivityXXXX(ctx, expr, isRoot);
+                break;
             case no_chooseds:
             case no_choose:
                 result = doBuildActivityChoose(ctx, expr, isRoot);
@@ -16391,6 +16394,44 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
     if (!streq(flags.str(), "|TAFconstant"))
         instance->classctx.addQuotedF("virtual unsigned getAlgorithmFlags() { return %s; }", flags.str()+1);
+
+    buildInstanceSuffix(instance);
+
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+    return instance->getBoundActivity();
+}
+
+ABoundActivity * HqlCppTranslator::doBuildActivityXXXX(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * number = expr->queryChild(1);
+    IHqlExpression * sortlist = expr->queryChild(2);
+    IHqlExpression * transform = expr->queryChild(3);
+
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKxxxx, expr, "XXXX");
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+
+    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
+
+    buildCompareClass(instance->nestedctx, "compare", sortlist, DatasetReference(dataset));
+
+    doBuildUnsignedFunction(instance->startctx, "getNumDivisions", number);
+
+    IHqlExpression * skew = queryAttributeChild(expr, skewAtom, 0);
+    if (skew)
+        doBuildFunction(instance->startctx, doubleType, "getSkew", skew);
+
+    StringBuffer flags;
+    if (expr->hasAttribute(firstAtom))
+        flags.append("|TXFfirst");
+    if (expr->hasAttribute(lastAtom))
+        flags.append("|TXFlast");
+
+    if (flags.length())
+        instance->classctx.addQuotedF("virtual unsigned getFlags() { return %s; }", flags.str()+1);
 
     buildInstanceSuffix(instance);
 

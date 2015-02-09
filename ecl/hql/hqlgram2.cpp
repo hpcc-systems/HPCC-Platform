@@ -10531,6 +10531,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case RULE: msg.append("RULE"); break;
     case SAMPLE: msg.append("SAMPLE"); break;
     case SCAN: msg.append("SCAN"); break;
+    case SCORE: msg.append("SCORE"); break;
     case SECTION: msg.append("SECTION"); break;
     case SELF: msg.append("SELF"); break;
     case SEPARATOR: msg.append("SEPARATOR"); break;

@@ -8180,6 +8180,89 @@ IRoxieServerActivityFactory *createRoxieServerSortActivityFactory(unsigned _id, 
 
 //=====================================================================================================
 
+class CRoxieServerXXXXActivity : public CRoxieServerActivity
+{
+protected:
+    IHThorXXXXArg &helper;
+    ICompare *compare;
+    unsigned xxxxFlags;
+    double skew;
+    unsigned numDivisions;
+    bool calculated;
+    unsigned idx;
+    bool eof;
+
+public:
+    CRoxieServerXXXXActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _flags)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorXXXXArg &)basehelper), flags(_flags)
+    {
+        compare = helper.queryCompare();
+        skew = 0.0;
+        numDivisions = 0;
+        calculated = false;
+        eof = false;
+        idx = 0;
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        skew = helper.getSkew();
+        numDivisions = helper.getNumDivisions();
+        calculated = false;
+        eof = false;
+        idx = 0;
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+    }
+
+    virtual const void * nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        if (eof)
+            return NULL;
+        if (!calculated)
+        {
+            while input->nextInGroup()
+                read into array;
+            sort array;
+            throw away all but the percentile points;
+        }
+        if (array.isItem(idx))
+        {
+            processed++;
+            return transformed(array[idx++]);
+        }
+        else
+        {
+            eof = true;
+            return NULL;
+        }
+};
+
+class CRoxieServerXXXXActivityFactory : public CRoxieServerActivityFactory
+{
+    unsigned flags;
+
+public:
+    CRoxieServerXXXXActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+        Owned<IHThorXXXXArg> xxxxHelper = (IHThorXXXXArg *) helperFactory();
+        flags = xxxxHelper->getFlags();
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerXXXXActivity(this, _probeManager, flags);
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerXXXXActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerXXXXActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+
+//=====================================================================================================
+
 class CRoxieServerSortedActivity : public CRoxieServerActivity
 {
     IHThorSortedArg &helper;

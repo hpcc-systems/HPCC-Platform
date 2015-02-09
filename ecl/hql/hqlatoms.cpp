@@ -349,6 +349,7 @@ IAtom * scanAtom;
 IAtom * scanAllAtom;
 IAtom * scopeAtom;
 IAtom * scopeCheckingAtom;
+IAtom * scoreAtom;
 IAtom * sectionAtom;
 IAtom * _selectors_Atom;
 IAtom * _selectorSequence_Atom;
@@ -770,6 +771,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(scanAll);
     MAKEATOM(scope);
     MAKEATOM(scopeChecking);
+    MAKEATOM(score);
     MAKEATOM(section);
     MAKESYSATOM(selectors);
     MAKESYSATOM(selectorSequence);

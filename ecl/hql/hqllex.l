@@ -873,6 +873,7 @@ ROWDIFF             { RETURNSYM(ROWDIFF); }
 RULE                { RETURNSYM(RULE); }
 SAMPLE              { RETURNSYM(SAMPLE); }
 SCAN                { RETURNSYM(SCAN); }
+SCORE               { RETURNSYM(SCORE); }
 SECTION             { RETURNSYM(SECTION); }
 SELF                { RETURNSYM(SELF); }
 SEPARATOR           { RETURNSYM(SEPARATOR); }

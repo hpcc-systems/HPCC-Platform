@@ -729,6 +729,8 @@ protected:
             return createRoxieServerWorkUnitReadActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKxmlparse:
             return createRoxieServerXmlParseActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKxxxx:
+            return createRoxieServerXXXXActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKregroup:
             return createRoxieServerRegroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcombine:

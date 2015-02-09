@@ -347,6 +347,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_soapcall_ds:
     case no_newsoapcall:
     case no_newsoapcall_ds:
+    case no_xxxx:
     case no_nonempty:
     case no_filtergroup:
     case no_limit:
@@ -2804,6 +2805,27 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                 info.limitMin(choosenLimit);
         }
         break;
+    case no_xxxx:
+        {
+            __int64 limit = getIntValue(expr->queryChild(1), 0);
+            if ((limit != 0) && !isGrouped(expr) && !isLocalActivity(expr))
+            {
+                if (expr->hasAttribute(firstAtom))
+                    limit++;
+                if (expr->hasAttribute(lastAtom))
+                    limit++;
+
+                IHqlExpression * transform = queryNewColumnProvider(expr);
+                if (transformContainsSkip(transform))
+                    info.setRange(0,limit);
+                else
+                    info.setN(limit);
+            }
+            else
+                info.setUnknown(RCMfew);
+        }
+        break;
+
     case no_topn:
         {
             retrieveRowInformation(info, ds);

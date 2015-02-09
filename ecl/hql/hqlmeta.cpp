@@ -2527,6 +2527,8 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
     case no_newsoapcall_ds:
         meta.preserveGrouping(dataset);
         break;
+    case no_xxxx:
+        ImplementMe;
     case no_parse:
     case no_xmlparse:
         {
@@ -3057,6 +3059,10 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
         break;
     case no_newsoapcall:
         recordArg = 4;
+        break;
+    case no_xxxx:
+        recordArg = 3;
+        nowGrouped = isGrouped(datasetType);
         break;
     case no_soapcall_ds:
         recordArg = 4;
