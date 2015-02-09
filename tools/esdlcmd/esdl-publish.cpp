@@ -665,14 +665,14 @@ public:
 
         Owned<IClientListESDLDefinitionsResponse> resp = esdlConfigClient->ListESDLDefinitions(req);
 
-
         if (resp->getExceptions().ordinality()>0)
         {
             EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
             return 1;
         }
 
-        IArrayOf<IConstESDLDefinition> defs = resp->getDefinitions();
+        IArrayOf<IConstESDLDefinition> & defs = resp->getDefinitions();
+
         if (defs.length() > 0)
             fprintf(stdout, "\nESDL Definitions found:\n");
 
@@ -733,14 +733,14 @@ public:
 
         Owned<IClientListESDLBindingsResponse> resp = esdlConfigClient->ListESDLBindings(req);
 
-
         if (resp->getExceptions().ordinality()>0)
         {
             EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
             return 1;
         }
 
-        IArrayOf<IConstESDLBinding> binds = resp->getBindings();
+        IArrayOf<IConstESDLBinding> & binds = resp->getBindings();
+
         if (binds.length() > 0)
             fprintf(stdout, "\nESDL Bindings found:\n");
 
