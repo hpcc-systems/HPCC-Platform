@@ -81,6 +81,7 @@ define({root:
     Debug: "Debug",
     DEF: "DEF",
     Delete: "Delete",
+    Deleted: "Deleted",
     DeleteSelectedFiles: "Delete Selected Files?",
     DeleteSelectedGroups: "Delete selected group(s)?",
     DeleteSelectedPermissions: "Delete selected permission(s)?",
