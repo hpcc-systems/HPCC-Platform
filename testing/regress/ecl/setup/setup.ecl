@@ -88,7 +88,8 @@ SEQUENTIAL(
     PARALLEL(buildindex(Files.DG_NormalIndexFile,overwrite),
              buildindex(Files.DG_NormalIndexFileEvens,overwrite),
              buildindex(Files.DG_TransIndexFile,overwrite),
-             buildindex(Files.DG_TransIndexFileEvens,overwrite))
+             buildindex(Files.DG_TransIndexFileEvens,overwrite),
+             buildindex(Files.DG_KeyedIndexFile,overwrite))
     );
 
     fileServices.AddFileRelationship( __nameof__(Files.DG_FlatFile), __nameof__(Files.DG_NormalIndexFile), '', '', 'view', '1:1', false);
