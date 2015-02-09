@@ -24,9 +24,10 @@ instancedir=$6
 deploydir=$7
 hpcc_compname=$8
 hpcc_setenv=$9
-logredirect=${10}
+export logfile="${logpth}/${hpcc_compname}/${10}"
 
-source ${hpcc_setenv}
+source "$hpcc_setenv"
+source "$(dirname $hpcc_setenv)/../etc/init.d/hpcc_common"
 
 slavename=thorslave_${hpcc_compname}
 
@@ -34,6 +35,7 @@ stop_slaves()
 {
     killall -0 $slavename > /dev/null 2>&1
     if [[ $? -eq 0 ]];then
+        log "killing slaves"
         killall -9 $slavename > /dev/null 2>&1
     fi
     rm -f $PID/${slavename}_*.pid > /dev/null 2>&1
@@ -41,6 +43,7 @@ stop_slaves()
 
 start_slaves()
 {
+
     # insuring dafilesrv is running on the machine as it is a prerequisite
     sudo /etc/init.d/dafilesrv status > /dev/null 2>&1
     if [[ $? -ne 0 ]];then
@@ -52,26 +55,25 @@ start_slaves()
 
     # insuring parent directory structure is setup properly
     mkdir -p $instancedir
-    mkdir -p $(dirname $logredirect)
-    exec >>$logredirect 2>&1
+    mkdir -p $(dirname $logfile)
 
     cd $instancedir
 
-    echo "$(date) Dependency dafilesrv is running"
+    log "dependency dafilesrv started"
 
     ulimit -Sc hard > /dev/null 2>&1
-    [[ $? -ne 0 ]] && echo "$(date) Failed to set ulimit for core file size"
+    [[ $? -ne 0 ]] && log "Failed to set ulimit for core file size"
     ulimit -Sn hard > /dev/null 2>&1
-    [[ $? -ne 0 ]] && echo "$(date) Failed to set ulimit for number of file descriptors open"
+    [[ $? -ne 0 ]] && log "Failed to set ulimit for number of file descriptors open"
 
-    echo "$(date) slave(${ip}) init"
-    echo "$(date) slave(s) starting"
+    log "slave(${ip}) init"
+    log "slave(s) starting"
 
     # create symlink for easier identification of slaves by compName
     ln -s -f $deploydir/thorslave_lcr ${slavename}
 
     # sync to current master thorgroup
-    echo "$(date) rsync -e ssh -o StrictHostKeyChecking=no ${master}:${instancedir}/thorgroup ${instancedir}/thorgroup.slave"
+    log "rsync -e ssh -o StrictHostKeyChecking=no ${master}:${instancedir}/thorgroup ${instancedir}/thorgroup.slave"
     rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
 
     let "slavenum = 1";
@@ -82,13 +84,13 @@ start_slaves()
             if [[ "$slaveport" = "" ]]; then
                 slaveport=$THORSLAVEPORT
             fi
-            echo "$(date) $slavename  master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth"
-            ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth 2>/dev/null 1>/dev/null &
+            log "$slavename  master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
+            ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
             slavepid=$!
             if [[ "$slavepid" -eq "0" ]]; then
-                echo "$(date) failed to start"
+                log "failed to start"
             else
-                echo "$(date) slave pid $slavepid started"
+                log "slave pid $slavepid started"
                 PID_NAME="$PID/${slavename}_${slavenum}.pid"
                 echo $slavepid > $PID_NAME
             fi
@@ -99,7 +101,7 @@ start_slaves()
 
 print_usage()
 {
-  echo usage: cmd ip master masterport logdir workingdir deploydir hpcc_compname hpcc_setenv logredirect
+  log "usage: cmd ip master masterport logdir workingdir deploydir hpcc_compname hpcc_setenv logredirect"
 }
 
 ##  Main

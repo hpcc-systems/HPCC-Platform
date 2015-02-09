@@ -18,28 +18,38 @@
 PATH_PRE=$(type -path hpcc_setenv)
 source ${PATH_PRE}
 PID_NAME="$PID/$(basename $PWD).pid"
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+
+component=$(basename $PWD)
+export logfile="${LOG_DIR}/${component}/init_${component}_$(date +%Y_%m_%d_%H_%M_%S).log"
 
 export SENTINEL="esp.sentinel"
+log "Removing $SENTINEL"
 rm -f ${SENTINEL}
 
 SNMPID=$$
 
-killed() {
+killed()
+{
     kill_process ${PID_NAME} esp 15 ${SENTINEL}
     exit 255
 }
 
 trap "killed" SIGINT SIGTERM SIGKILL
+log "Calling esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &"
 esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
+log "Removing $PID_NAME"
 rm $PID_NAME
 while [[ -e ${SENTINEL} ]]; do
     sleep 5
     if [[ -e ${SENTINEL} ]]; then
+        log "Calling esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &"
         esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
+        log "Removing $PID_NAME"
         rm $PID_NAME
     fi
 done
