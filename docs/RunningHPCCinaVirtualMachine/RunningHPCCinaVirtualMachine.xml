@@ -1578,7 +1578,7 @@ OUTPUT(ValidWords)
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>RT-CLICK on the <emphasis role="bold">MyFIles</emphasis>
+                <para>Right-click on the <emphasis role="bold">MyFiles</emphasis>
                 folder in the Repository<emphasis role="bold"></emphasis>
                 window, and select <emphasis role="bold">Insert
                 Folder</emphasis> from the pop-up menu.</para>
@@ -1616,7 +1616,7 @@ OUTPUT(ValidWords)
               </listitem>
 
               <listitem>
-                <para>RT-CLICK on the <emphasis role="bold">Anagram
+                <para>Right-click on the <emphasis role="bold">Anagram
                 </emphasis>Folder, and select <emphasis role="bold">Insert
                 File</emphasis> from the pop-up menu.</para>
               </listitem>
