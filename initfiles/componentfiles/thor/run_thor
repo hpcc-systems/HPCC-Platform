@@ -74,6 +74,7 @@ while [ 1 ]; do
         echo master exited with errorcode = $errcode
         if [ ! -e $SENTINEL ]; then
             echo $SENTINEL 'has been removed (1) - script stopping'
+            $deploydir/stop_thor $deploydir
             exit 0
         fi
 
