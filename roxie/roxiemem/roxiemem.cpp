@@ -2614,7 +2614,7 @@ void Heaplet::verifySpaceList()
 {
     if (atomic_read(&nextSpace) == 0)
     {
-        ERRLOG("%p@%u: Verify failed: %p %u", heap, (unsigned)GetCurrentThreadId(), this, isFull());
+        ERRLOG("%p@%" I64F "u: Verify failed: %p %u", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull());
     }
 }
 
@@ -2622,7 +2622,7 @@ void ChunkedHeaplet::verifySpaceList()
 {
     if (atomic_read(&nextSpace) == 0)
     {
-        ERRLOG("%p@%u: Verify failed: %p %u %x %x", heap, (unsigned)GetCurrentThreadId(), this, isFull(), atomic_read(&freeBase), atomic_read(&r_blocks));
+        ERRLOG("%p@%" I64F "u: Verify failed: %p %u %x %x", heap, (unsigned __int64)GetCurrentThreadId(), this, isFull(), atomic_read(&freeBase), atomic_read(&r_blocks));
     }
 }
 
