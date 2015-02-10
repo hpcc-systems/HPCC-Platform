@@ -63,9 +63,9 @@
                                 <label class="Prompt" for="${id}Owner">${i18n.Owner}:</label>
                                 <div id="${id}Owner"></div>
                             </li>
-                            <li>
+                            <li id="scopeOptional" class="hidden">
                                 <label class="Prompt" for="${id}Scope">${i18n.Scope}:</label>
-                                <div id="${id}Scope"></div>
+                                <div><input id="${id}Scope" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox"/></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="${id}Jobname">${i18n.JobName}:</label>
