@@ -1388,14 +1388,20 @@ private:
         else
             assertex(false);
 
-        request.append("Host: ").append(url.host).append(":").append(url.port).append("\r\n");//http 1.1
         if (master->wscType == STsoap)
         {
+            request.append("Host: ").append(url.host).append(":").append(url.port).append("\r\n");//http 1.1
             request.append(CONTENT_LENGTH).append(xmlWriter.length()).append("\r\n\r\n");
             request.append(xmlWriter.str());//add SOAP xml content
         }
         else
+        {
+            request.append("Host: ").append(url.host);//http 1.1
+            if (url.port != 80) //default port?
+                request.append(":").append(url.port);
+            request.append("\r\n");//http 1.1
             request.append("\r\n");//httpcall
+        }
 
         if (soapTraceLevel > 6 || master->logXML)
             master->logctx.CTXLOG("%s: request(%s)", master->wscCallTypeText(), request.str());
