@@ -353,7 +353,7 @@ bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsig
                         }
                     }
                 }
-           }
+            }
         }
 
         globalLock->close(false);
@@ -393,7 +393,8 @@ IPropertyTree * CWsESDLConfigEx::getEspProcessRegistry(const char * espprocname,
     if ((!espbindingport || !*espbindingport) && (!servicename || !*servicename))
            return NULL;
 
-    Owned<IRemoteConnection> globalLock = querySDS().connect("/Environment/Software/EspProcess/", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']", espprocname);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
 
     if (!globalLock)
         throw MakeStringException(-1, "Unable to connect to ESDL Service configuration information in dali %s", ESDL_DEFS_ROOT_PATH);
@@ -403,11 +404,10 @@ IPropertyTree * CWsESDLConfigEx::getEspProcessRegistry(const char * espprocname,
 
     globalLock->close(false);
 
-    VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']/EspBinding", espprocname);
     if (espbindingport && *espbindingport)
-        xpath.appendf("[@port='%s']", espbindingport);
+        xpath.appendf("/EspBinding[@port='%s']", espbindingport);
     else
-        xpath.appendf("[@service='%s']", servicename);
+        xpath.appendf("/EspBinding[@service='%s']", servicename);
 
     //Only lock the branch for the target we're interested in.
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ , SDS_LOCK_TIMEOUT);

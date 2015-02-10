@@ -141,6 +141,7 @@ define([
             var protectedCheckbox = registry.byId(this.id + "Protected");
             var context = this;
             this.wu.update({
+                Scope: dom.byId(context.id + "Scope").value,
                 Description: dom.byId(context.id + "Description").value,
                 Jobname: dom.byId(context.id + "Jobname").value,
                 Protected: protectedCheckbox.get("value")
@@ -432,6 +433,9 @@ define([
                 this.refreshActionState();
             } else if (name === "hasCompleted") {
                 this.checkIfComplete();
+            } else if (name === "Scope" && newValue) {
+                domClass.remove("scopeOptional", "hidden");
+                domClass.add("scopeOptional", "show");
             }
             if (name === "changedCount" && newValue > 0) {
                 var getInt = function (item) {

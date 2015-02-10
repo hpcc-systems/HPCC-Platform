@@ -1296,6 +1296,8 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
             sortOrder[0] = (WUQuerySortField) (WUQSFwarnTimeLimit | WUQSFnumeric);
         else if (strieq(sortBy, "Priority"))
             sortOrder[0] = (WUQuerySortField) (WUQSFpriority | WUQSFnumeric);
+        else if (strieq(sortBy, "QuerySetId"))
+            sortOrder[0] = WUQSFQuerySet;
         else
             sortOrder[0] = WUQSFId;
 

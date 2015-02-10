@@ -27,6 +27,8 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 
 //--- end of version configuration ---
 
+#onwarning (4126, ignore);
+
 import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
 
@@ -34,6 +36,5 @@ Files := setup.Files(multiPart, useLocal, useTranslation);
 //Stepped global joins unsupported, see issue HPCC-8148
 //skip type==thorlcr TBD
 
-#onwarning (4126, ignore);
 // should be equivalent to OUTPUT(SORT(Files.DG_IndexFile(DG_firstname = 'DAVID'), DG_Prange));
-OUTPUT(STEPPED(Files.DG_IndexFile(KEYED(DG_firstname = 'DAVID')), DG_Prange));
+OUTPUT(STEPPED(Files.DG_KeyedIndexFile(KEYED(DG_firstname = 'DAVID')), DG_Prange));

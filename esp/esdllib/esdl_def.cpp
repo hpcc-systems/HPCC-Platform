@@ -1988,7 +1988,7 @@ void EsdlDefinition::addDefinitionFromXML(const StringBuffer & xmlDef, const cha
     }
 
     VStringBuffer esdlDefId("%s.%d", esdlDefName, ver);
-    addDefinitionFromXML(xmlDef, xmlDef.str());
+    addDefinitionFromXML(xmlDef, esdlDefName);
 }
 
 EsdlDefObject::EsdlDefObject(StartTag &tag, EsdlDefinition *esdl)

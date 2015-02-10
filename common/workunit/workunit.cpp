@@ -1982,7 +1982,7 @@ mapEnums querySortFields[] =
    { WUQSFwarnTimeLimitHi, "@warnTimeLimit" },
    { WUQSFpriority, "@priority" },
    { WUQSFpriorityHi, "@priority" },
-   { WUQSFQuerySet, "../@id" },
+   { WUQSFQuerySet, "@querySetId" },
    { WUQSFActivited, "@activated" },
    { WUQSFSuspendedByUser, "@suspended" },
    { WUQSFLibrary, "Library"},

@@ -11910,6 +11910,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             throwError1(HQLERR_JoinXTooComplex, name.str());
         }
     }
+    if (isAllJoin)
+        isLightweight = false;
 
     Owned<ABoundActivity> boundDataset1 = buildCachedActivity(ctx, dataset1);
     Owned<ABoundActivity> boundDataset2;
@@ -12021,7 +12023,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         instance->graphLabel.set(graphLabel.str());
     }
 
-    instance->setLocal(isLocalJoin);
+    instance->setLocal(isLocalJoin && !insideChildQuery(ctx));
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);

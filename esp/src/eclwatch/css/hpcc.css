@@ -1033,12 +1033,12 @@ margin-left:-20px;
     fill: white;
 }
 
-.claro .graph_Graph .graphVertex > .common_Shape {
+.claro .graph_Graph .graphVertex > .common_Shape .common_Shape {
     stroke: black;
     fill: none;
 }
 
-.claro .graph_Graph .graphVertex > .common_Shape.selected {
+.claro .graph_Graph .graphVertex > .common_Shape.selected .common_Shape {
     stroke: #1f77b4;
 }
 

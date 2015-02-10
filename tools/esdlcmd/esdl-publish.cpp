@@ -92,13 +92,13 @@ public:
             return true;
         if (iter.matchFlag(optWSProcAddress, ESDL_OPT_SERVICE_SERVER) || iter.matchFlag(optWSProcAddress, ESDL_OPTION_SERVICE_SERVER))
             return true;
+        if (iter.matchFlag(optWSProcPort, ESDL_OPTION_SERVICE_PORT) || iter.matchFlag(optWSProcPort, ESDL_OPT_SERVICE_PORT))
+            return true;
         if (iter.matchFlag(optVersionStr, ESDLOPT_VERSION))
             return true;
         if (iter.matchFlag(optUser, ESDL_OPT_SERVICE_USER) || iter.matchFlag(optUser, ESDL_OPTION_SERVICE_USER))
             return true;
         if (iter.matchFlag(optPass, ESDL_OPT_SERVICE_PASS) || iter.matchFlag(optPass, ESDL_OPTION_SERVICE_PASS))
-            return true;
-        if (iter.matchFlag(optWSProcPort, ESDL_OPTION_SERVICE_PORT) || iter.matchFlag(optWSProcPort, ESDL_OPT_SERVICE_PORT))
             return true;
         if (iter.matchFlag(optOverWrite, ESDL_OPTION_OVERWRITE) )
             return true;
@@ -108,30 +108,11 @@ public:
 
     virtual bool finalizeOptions(IProperties *globals)
     {
-        if (!optVersionStr.isEmpty())
-        {
-            optVersion = atof( optVersionStr.get() );
-            if( optVersion <= 0 )
-            {
-                throw MakeStringException( 0, "Version option must be followed by a real number > 0" );
-            }
-        }
-        else
-        {
-            fprintf(stderr, "\nWARNING: ESDL Version not specified.\n");
-        }
-
-        if (optSource.isEmpty())
-            throw MakeStringException( 0, "Source ESDL XML definition file must be provided" );
-
-        if (optService.isEmpty())
-            throw MakeStringException( 0, "Name of ESDL based service must be provided" );
-
         if (optWSProcAddress.isEmpty())
-            throw MakeStringException( 0, "Server address of ESDL process server must be provided" );
+            throw MakeStringException( 0, "Server address of WsESDLConfig process server must be provided" );
 
         if (optWSProcPort.isEmpty())
-            throw MakeStringException( 0, "Port on which ESDL process is listening must be provided" );
+            throw MakeStringException( 0, "Port on which WsESDLConfig is listening must be provided" );
 
         return true;
     }
@@ -258,13 +239,7 @@ public:
         if (optESDLService.isEmpty())
             throw MakeStringException( 0, "Name of ESDL based service must be provided" );
 
-        if (optWSProcAddress.isEmpty())
-            throw MakeStringException( 0, "Server address of ESDL process server must be provided" );
-
-        if (optWSProcPort.isEmpty())
-            throw MakeStringException( 0, "Port on which ESDL process is listening must be provided" );
-
-        return true;
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
 };
 
@@ -437,13 +412,7 @@ public:
             isdigit(*portorname) ? optTargetPort.set(portorname) : optService.set(portorname);
         }
 
-        if (optWSProcAddress.isEmpty())
-            throw MakeStringException( 0, "Server address of ESDL process server must be provided" );
-
-        if (optWSProcPort.isEmpty())
-            throw MakeStringException( 0, "Port on which ESDL process is listening must be provided" );
-
-        return true;
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
 };
 
@@ -560,7 +529,7 @@ public:
         if (optEspBinding.isEmpty())
             throw MakeStringException( 0, "Target ESP Binding must be provided!" );
 
-        return true;
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
 };
 
@@ -680,7 +649,7 @@ public:
         else
             throw MakeStringException( 0, "ESDL service definition version must be provided!" );
 
-        return true;
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
 };
 
@@ -696,14 +665,14 @@ public:
 
         Owned<IClientListESDLDefinitionsResponse> resp = esdlConfigClient->ListESDLDefinitions(req);
 
-
         if (resp->getExceptions().ordinality()>0)
         {
             EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
             return 1;
         }
 
-        IArrayOf<IConstESDLDefinition> defs = resp->getDefinitions();
+        IArrayOf<IConstESDLDefinition> & defs = resp->getDefinitions();
+
         if (defs.length() > 0)
             fprintf(stdout, "\nESDL Definitions found:\n");
 
@@ -748,7 +717,7 @@ public:
 
     bool finalizeOptions(IProperties *globals)
     {
-        return true;
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
 };
 
@@ -764,14 +733,14 @@ public:
 
         Owned<IClientListESDLBindingsResponse> resp = esdlConfigClient->ListESDLBindings(req);
 
-
         if (resp->getExceptions().ordinality()>0)
         {
             EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
             return 1;
         }
 
-        IArrayOf<IConstESDLBinding> binds = resp->getBindings();
+        IArrayOf<IConstESDLBinding> & binds = resp->getBindings();
+
         if (binds.length() > 0)
             fprintf(stdout, "\nESDL Bindings found:\n");
 
@@ -817,7 +786,7 @@ public:
 
     bool finalizeOptions(IProperties *globals)
     {
-        return true;
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
 };
 
@@ -978,19 +947,13 @@ public:
         if (optService.isEmpty())
             throw MakeStringException( 0, "Name of ESDL based service must be provided" );
 
-        if (optWSProcAddress.isEmpty())
-            throw MakeStringException( 0, "Server address of ESDL process server must be provided" );
-
-        if (optWSProcPort.isEmpty())
-            throw MakeStringException( 0, "Port on which ESDL process is listening must be provided" );
-
         if (optMethod.isEmpty())
             throw MakeStringException( 0, "Name of ESDL based method must be provided" );
 
         if (optBindingName.isEmpty())
             throw MakeStringException( 0, "Name of ESP binding must be provided" );
 
-        return true;
+        return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
 };
 
@@ -1052,16 +1015,10 @@ class EsdlGetCmd : public EsdlPublishCmdCommon
 
         bool finalizeOptions(IProperties *globals)
         {
-            if (optWSProcAddress.isEmpty())
-                throw MakeStringException( 0, "Server address of WsESDLConfig server must be provided" );
-
-            if (optWSProcPort.isEmpty())
-                throw MakeStringException( 0, "Port on which WsESDLConfig is listening must be provided" );
-
             if (optId.isEmpty())
                 throw MakeStringException( 0, "ESDL ID must be provided" );
 
-            return true;
+            return EsdlPublishCmdCommon::finalizeOptions(globals);
         }
 };
 
