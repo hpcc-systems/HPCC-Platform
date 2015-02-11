@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-real scoreFunc(real a, real b) := 1;
+real scoreFunc(real a, real b) := 1;  // defines the prototype for the function argument
 
 real scoreIt(scoreFunc func, real a, real b) := DEFINE
     

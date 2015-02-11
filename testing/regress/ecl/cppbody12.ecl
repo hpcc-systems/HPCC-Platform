@@ -17,15 +17,10 @@
 
 real storedval := 1 : stored('s');
 
-real scoreFunc(real a, real b) := 1;
-real scoreFunc2(real a, real b) := BEGINC++ 
-#option context 
-ENDC++;
+real scoreFunc(real a, real b) := 1;   // defines the prototype for the function argument
 
 real scoreIt(scoreFunc func, real a, real b) := BEGINC++
-    #option context
     return func(ctx,a-1.0,b-1.0) * func(ctx,a+1.0,b+1.0);
-    
 ENDC++;
     
 real doSum(real a, real b) := DEFINE (a + b + storedval);

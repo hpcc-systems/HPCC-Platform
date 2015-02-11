@@ -5806,7 +5806,6 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
 
     if (isDependentOnParameter(expr))
     {
-        EclIR::dbglogIR(1, queryLocationIndependent(expr));
         StringBuffer s;
         getStoredDescription(s, info.sequence, info.originalLabel, true);
         translator.reportWarning(CategoryMistake, SeverityUnknown, queryActiveLocation(expr), HQLWRN_WorkflowDependParameter, HQLWRN_WorkflowDependParameter_Text, s.str());
