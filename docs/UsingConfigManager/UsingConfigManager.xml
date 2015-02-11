@@ -1536,7 +1536,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <listitem>
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
               right-click on the table on the right hand side, choose <emphasis
-              role="bold">Add Instances</emphasis></para>
+              role="bold">Add Instances...</emphasis></para>
             </listitem>
 
             <listitem>
