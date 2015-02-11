@@ -2060,10 +2060,7 @@ esdl_decl IEsdlDefinition *createNewEsdlDefinition(const char *esdl_ns)
     if (esdl_ns && *esdl_ns)
         return createEsdlDefinition(esdl_ns);
     else
-    {
-        IEsdlDefinition *tns = new EsdlDefinition();
-        return LINK<IEsdlDefinition>(tns);
-    }
+        return new EsdlDefinition();
 }
 
 esdl_decl IEsdlDefinition *queryEsdlDefinition(const char *esdl_ns)
