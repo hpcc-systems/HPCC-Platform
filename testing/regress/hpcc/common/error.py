@@ -33,6 +33,7 @@ ERROR = {
     "6001": "HPCC System doesn't run!",
     "6002": "OS error when try to call ecl command!",
     "6003": "Parameter error when try to call ecl command!",
+    "6004": "Can't connect to remote HPCC System!",
 }
 
 
