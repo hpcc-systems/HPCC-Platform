@@ -1607,8 +1607,9 @@ class CXMLParse : public CInterface, implements IXMLParse
     PTreeReaderOptions xmlOptions;
     bool step, contentRequired, isJson;
 
-    class CXMLMaker : public CInterface, implements IPTreeMaker
+    class CMakerBase : public CInterface, implements IPTreeMaker
     {
+    protected:
         CXPath xpath;
         IXMLSelect *iXMLSelect;   // NOTE - not linked - creates circular links
         CICopyArrayOf<CParseStackInfo> stack, freeParseInfo;
@@ -1617,22 +1618,21 @@ class CXMLParse : public CInterface, implements IXMLParse
         Owned<COffsetNodeCreator> nodeCreator;
         void *utf8Translator;
         unsigned level;
+        bool contentRequired;
         unsigned lastMatchKeptLevel;
         IPropertyTree *lastMatchKeptNode, *lastMatchKeptNodeParent;
-        bool contentRequired;
-        bool isJson;
 
     public:
         IMPLEMENT_IINTERFACE;
 
-        CXMLMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces, bool _isJson) : xpath(_xpath, ignoreNameSpaces), iXMLSelect(&_iXMLSelect), contentRequired(_contentRequired), isJson(_isJson)
+        CMakerBase(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : xpath(_xpath, ignoreNameSpaces), iXMLSelect(&_iXMLSelect), contentRequired(_contentRequired)
         {
             lastMatchKeptLevel = 0;
             lastMatchKeptNode = lastMatchKeptNodeParent = NULL;
             maker = NULL;
             utf8Translator = NULL;
         }
-        ~CXMLMaker()
+        ~CMakerBase()
         {
             ForEachItemIn(i, stack)
                 delete &stack.item(i);
@@ -1654,22 +1654,9 @@ class CXMLParse : public CInterface, implements IXMLParse
         void setMarkingStream(CMarkReadBase &_marking) { marking.set(&_marking); }
         CXPath &queryXPath() { return xpath; }
 
-        bool checkSkipJsonNode(const char *tag)
-        {
-            if (!isJson || stack.ordinality()) //json root level only
-                return false;
-            if (streq(tag, "__array__")) //xpath starts after root array
-                return true;
-            if (streq(tag, "__object__") && xpath.queryDepth()) //empty xpath matches start object, otherwise skip, xpath starts immediately after
-                return true;
-            return false;
-        }
-
-        // IPTreeMaker
+// IPTreeMaker
         virtual void beginNode(const char *tag, offset_t startOffset)
         {
-            if (checkSkipJsonNode(tag))
-                return;
             if (lastMatchKeptNode && level == lastMatchKeptLevel)
             {
                 // NB: could be passed to match objects for removal by match object,
@@ -1680,7 +1667,6 @@ class CXMLParse : public CInterface, implements IXMLParse
                     maker->reset();
                 lastMatchKeptNode = NULL;
             }
-
             bool res = false;
             CParseStackInfo *stackInfo;
             if (freeParseInfo.ordinality())
@@ -1751,8 +1737,6 @@ class CXMLParse : public CInterface, implements IXMLParse
         }
         virtual void beginNodeContent(const char *tag)
         {
-            if (checkSkipJsonNode(tag))
-                return;
             // Can optimize qualifiers here that contain only attribute tests.
             bool &keep = stack.tos().keep;
             if (keep)
@@ -1767,8 +1751,6 @@ class CXMLParse : public CInterface, implements IXMLParse
         }
         virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
         {
-            if (checkSkipJsonNode(tag))
-                return;
             --level;
             CParseStackInfo &stackInfo = stack.tos();
             bool keep = stackInfo.keep;
@@ -1917,6 +1899,49 @@ class CXMLParse : public CInterface, implements IXMLParse
         }
     } *iXMLMaker;
 
+    class CXMLMaker : public CMakerBase
+    {
+    public:
+        CXMLMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : CMakerBase(_xpath, _iXMLSelect, _contentRequired, ignoreNameSpaces)
+        {
+        }
+    };
+
+    class CJSONMaker : public CMakerBase
+    {
+    public:
+        CJSONMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : CMakerBase(_xpath, _iXMLSelect, _contentRequired, ignoreNameSpaces)
+        {
+        }
+
+        bool checkSkipRoot(const char *tag)
+        {
+            if (stack.ordinality()) //root level only
+                return false;
+            if (streq(tag, "__array__")) //xpath starts after root array
+                return true;
+            if (streq(tag, "__object__") && xpath.queryDepth()) //empty xpath matches start object, otherwise skip, xpath starts immediately after
+                return true;
+            return false;
+        }
+
+        virtual void beginNode(const char *tag, offset_t startOffset)
+        {
+            if (!checkSkipRoot(tag))
+                CMakerBase::beginNode(tag, startOffset);
+        }
+        virtual void beginNodeContent(const char *tag)
+        {
+            if (!checkSkipRoot(tag))
+                CMakerBase::beginNodeContent(tag);
+        }
+        virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
+        {
+            if (!checkSkipRoot(tag))
+                CMakerBase::endNode(tag, length, value, binary, endOffset);
+        }
+    };
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1931,11 +1956,17 @@ public:
         ::Release(iXMLMaker);
         ::Release(xmlReader);
     }
+    CMakerBase *createMaker()
+    {
+        bool ignoreNameSpaces = 0 != ((unsigned)xmlOptions & (unsigned)ptr_ignoreNameSpaces);
+        if (isJson)
+            return new CJSONMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces);
+        return new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces);
+    }
     void init()
     {
         xmlReader = NULL;
-        bool ignoreNameSpaces = 0 != ((unsigned)xmlOptions & (unsigned)ptr_ignoreNameSpaces);
-        iXMLMaker = new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces, isJson);
+        iXMLMaker = createMaker();
         iXMLMaker->init();
     }
 
