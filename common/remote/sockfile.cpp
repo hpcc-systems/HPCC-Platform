@@ -175,13 +175,20 @@ static unsigned maxConnectTime = 0;
 static unsigned maxReceiveTime = 0;
 
 //Security and default port attributes
-#define PORT_UNKNOWN -1
-static unsigned short configepPort = PORT_UNKNOWN;
-static struct _ClientCertificate
+static class _securitySettings
 {
-    const char * certificate;
-    const char * privateKey;
-} clientCertificate;
+public:
+    bool            useSSL;
+    unsigned short  daFileSrvPort;
+    const char *    certificate;
+    const char *    privateKey;
+
+    _securitySettings()
+    {
+        querySecuritySettings(&useSSL, &daFileSrvPort, &certificate, &privateKey);
+    }
+} securitySettings;
+
 
 static CriticalSection              secureContextCrit;
 static Owned<ISecureSocketContext>  secureContext;
@@ -192,8 +199,8 @@ static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
         CriticalBlock b(secureContextCrit);
         if (!secureContext)
         {
-            if (clientCertificate.certificate)
-                secureContext.setown(createSecureSocketContextEx(clientCertificate.certificate,clientCertificate.privateKey, NULL, type));
+            if (securitySettings.certificate)
+                secureContext.setown(createSecureSocketContextEx(securitySettings.certificate,securitySettings.privateKey, NULL, type));
             else
                 secureContext.setown(createSecureSocketContext(type));
         }
@@ -433,9 +440,7 @@ void setDafsEndpointPort(SocketEndpoint &ep)
     }
     if (ep.port==0)
     {
-        if (configepPort == (unsigned short)PORT_UNKNOWN)
-            querySecuritySettings(NULL, &configepPort, &clientCertificate.certificate, &clientCertificate.privateKey);
-        ep.port = configepPort;
+        ep.port = securitySettings.daFileSrvPort;
     }
 }
 
@@ -1163,21 +1168,28 @@ protected: friend class CRemoteFileIO;
                 }
             }
             if (!socket) {
+                bool tryNonSecure = true;
                 if (useSSL) {
                     try {
                         connectSocket(tep);//first try secure connect
+                        tryNonSecure = false;
                     }
-                    catch(...) {
+                    catch (IException *e) {
+
+                        StringBuffer s;
+                        e->errorMessage(s);
+                        e->Release();
+                        WARNLOG("Secure connect failed, retrying on legacy port (%s)",s.str());
+
                         useSSL = false;
-                        tep.port = DAFILESRV_PORT;
-                        PROGLOG("Secure connect failed, retrying on legacy port");
-                        connectSocket(tep);
+                        tep.port = DAFILESRV_PORT;//retry on nonsecure port
+                        tryNonSecure = true;
                     }
                 }
-                else
+
+                if (tryNonSecure)
                     connectSocket(tep);
             }
-
         }
 
         unsigned errCode;
@@ -1317,8 +1329,7 @@ public:
         : filename(_filename)
     {
         ep = _ep;
-        //Determine whether or not client should use SSL
-        querySecuritySettings(&useSSL, &configepPort, &clientCertificate.certificate, &clientCertificate.privateKey);
+        useSSL = securitySettings.useSSL;
     }
 
 
@@ -3023,7 +3034,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
     int                 lasthandle;
     CriticalSection     sect;
     Owned<ISocket>      acceptsock;
-    Owned<ISocket>      rejectsock;
+    Owned<ISocket>      rejectsock;//used to immediately reject nonsecure connection requests when in secure mode
     Owned<ISocketSelectHandler> selecthandler;
     Owned<IThreadPool>  threads;    // for commands
     bool stopping;
@@ -4432,18 +4443,18 @@ public:
             acceptsock.setown(ISocket::create_ip(listenep.port,ips.str()));
         }
         if (useSSL) {
-            querySecuritySettings(&useSSL, &configepPort, &clientCertificate.certificate, &clientCertificate.privateKey);
-            if (!clientCertificate.certificate)
+            if (!securitySettings.certificate)
                 throw createDafsException(DAFSERR_connection_failed,"SSL Certificate information not found in environment.conf");
             if (listenep.port <= 0)
             {
-                assertex(FALSE);
-                listenep.port = configepPort;
+                assertex(FALSE);//should never get here
+                listenep.port = securitySettings.daFileSrvPort;
             }
             //Create unsecure socket to reject non-ssl client requests
             if (listenep.isNull())
                 rejectsock.setown(ISocket::create(DAFILESRV_PORT));
-            else {
+            else
+            {
                 StringBuffer ips;
                 listenep.getIpText(ips);
                 rejectsock.setown(ISocket::create_ip(DAFILESRV_PORT,ips.str()));
@@ -4457,7 +4468,8 @@ public:
         selecthandler->start();
 
         UnsignedArray readSocks;
-        if (useSSL) {
+        if (useSSL)
+        {
             readSocks.append(acceptsock->OShandle());
             readSocks.append(rejectsock->OShandle());
         }
