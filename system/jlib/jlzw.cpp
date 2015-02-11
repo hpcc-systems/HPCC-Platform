@@ -1803,6 +1803,7 @@ class CCompressedFile : public CInterface, implements ICompressedFileIO
     MemoryAttr prevrowbuf; 
     bool checkcrc;
     bool setcrc;
+    bool writeException;
     Owned<ICompressor> compressor;
     Owned<IExpander> expander;
 
@@ -1869,27 +1870,36 @@ class CCompressedFile : public CInterface, implements ICompressedFileIO
 
     void flush()
     {   
-        curblocknum++;
-        indexbuf.append((unsigned __int64) trailer.expandedSize-overflow.length());
-        offset_t p = ((offset_t)curblocknum)*((offset_t)trailer.blockSize);
-        if (trailer.recordSize==0) {
-            compressor->close();
-            compblklen = compressor->buflen();
+        try
+        {
+            curblocknum++;
+            indexbuf.append((unsigned __int64) trailer.expandedSize-overflow.length());
+            offset_t p = ((offset_t)curblocknum)*((offset_t)trailer.blockSize);
+            if (trailer.recordSize==0) {
+                compressor->close();
+                compblklen = compressor->buflen();
+            }
+            if (compblklen) {
+                if (p>trailer.indexPos) { // fill gap
+                    MemoryAttr fill;
+                    size32_t fl = (size32_t)(p-trailer.indexPos);
+                    memset(fill.allocate(fl),0xff,fl);
+                    checkedwrite(trailer.indexPos,fl,fill.get());
+                }
+                checkedwrite(p,compblklen,compblkptr);
+                p += compblklen;
+                compblklen = 0;
+            }
+            trailer.indexPos = p;
+            if (trailer.recordSize==0) {
+                compressor->open(compblkptr, trailer.blockSize);
+            }
         }
-        if (compblklen) {
-            if (p>trailer.indexPos) { // fill gap
-                MemoryAttr fill;
-                size32_t fl = (size32_t)(p-trailer.indexPos);
-                memset(fill.allocate(fl),0xff,fl);
-                checkedwrite(trailer.indexPos,fl,fill.get());
-            }   
-            checkedwrite(p,compblklen,compblkptr);
-            p += compblklen;
-            compblklen = 0;
-        }
-        trailer.indexPos = p; 
-        if (trailer.recordSize==0) {
-            compressor->open(compblkptr, trailer.blockSize);
+        catch (IException *e)
+        {
+            writeException = true;
+            EXCLOG(e, "CCompressedFile::flush");
+            throw;
         }
     }
 
@@ -1986,6 +1996,7 @@ public:
         compressor.set(_compressor);
         expander.set(_expander);
         setcrc = _setcrc;
+        writeException = false;
         memcpy(&trailer,&_trailer,sizeof(trailer));
         mode = _mode;
         curblockpos = 0;
@@ -2043,7 +2054,8 @@ public:
     }
     virtual ~CCompressedFile()
     {
-        close();
+        if (!writeException)
+            close();
     }
 
     virtual offset_t size()                                             

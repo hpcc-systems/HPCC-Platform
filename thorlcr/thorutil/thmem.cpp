@@ -1235,31 +1235,41 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
         nextCBI = nextCB->queryRecordNumber();
     }
     Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags);
-    const void **rows = getBlock(n);
-    for (rowidx_t i=0; i < n; i++)
+    rowidx_t i=0;
+    try
     {
-        const void *row = rows[i];
-        assertex(row || allowNulls);
-        if (i == nextCBI)
+        const void **rows = getBlock(n);
+        while (i<n)
         {
-            writer->flush();
-            do
+            const void *row = rows[i];
+            assertex(row || allowNulls);
+            if (i == nextCBI)
             {
-                nextCB->filePosition(writer->getPosition());
-                if (cbCopy.ordinality())
+                writer->flush();
+                do
                 {
-                    nextCB = &cbCopy.pop();
-                    nextCBI = nextCB->queryRecordNumber();
+                    nextCB->filePosition(writer->getPosition());
+                    if (cbCopy.ordinality())
+                    {
+                        nextCB = &cbCopy.pop();
+                        nextCBI = nextCB->queryRecordNumber();
+                    }
+                    else
+                        nextCBI = RCIDXMAX; // indicating no more
                 }
-                else
-                    nextCBI = RCIDXMAX; // indicating no more
+                while (i == nextCBI); // loop as may be >1 IWritePosCallback at same pos
             }
-            while (i == nextCBI); // loop as may be >1 IWritePosCallback at same pos
+            rows[i++] = NULL;
+            writer->putRow(row);
         }
-        writer->putRow(row);
-        rows[i] = NULL;
+        writer->flush();
     }
-    writer->flush();
+    catch (IException *e)
+    {
+        EXCLOG(e, "CThorSpillableRowArray::save");
+        firstRow += i; // ensure released rows are noted.
+        throw;
+    }
     firstRow += n;
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
@@ -1414,10 +1424,9 @@ protected:
         tempPrefix.appendf("spill_%d", activity.queryActivityId());
         GetTempName(tempName, tempPrefix.str(), true);
         Owned<IFile> iFile = createIFile(tempName.str());
-        spillFiles.append(new CFileOwner(iFile.getLink()));
         VStringBuffer spillPrefixStr("RowCollector(%d)", spillPriority);
         spillableRows.save(*iFile, activity.getOptBool(THOROPT_COMPRESS_SPILLS, true), spillPrefixStr.str()); // saves committed rows
-
+        spillFiles.append(new CFileOwner(iFile.getLink()));
         ++overflowCount;
 
         return true;
