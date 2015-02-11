@@ -16,9 +16,7 @@
 ############################################################################## */
 
 
-
-
-export checkReals(real pi, string version) := FUNCTION
+checkReals(real pi, string version) := FUNCTION
  
     r1 := round(pi/0.1)*0.1;
     r2 := round(pi*10)/10;
