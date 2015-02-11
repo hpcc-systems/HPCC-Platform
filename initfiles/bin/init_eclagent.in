@@ -37,7 +37,7 @@ killed (){
 
 trap "killed" SIGINT SIGTERM SIGKILL
 
-ulimit -c unlimited
+
 agentexec 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait

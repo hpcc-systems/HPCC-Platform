@@ -28,8 +28,8 @@ echo $$ > $INIT_PID_NAME
 export SENTINEL="saserver.sentinel"
 rm -f ${SENTINEL}
 
-ulimit -c unlimited
-ulimit -n 8192
+
+
 
 which_pidof
 
