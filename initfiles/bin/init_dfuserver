@@ -25,9 +25,9 @@ echo $$ > $INIT_PID_NAME
 export SENTINEL="dfuserver.sentinel"
 rm -f ${SENTINEL}
 
-ulimit -c unlimited
-ulimit -n 8192
-ulimit -s 512
+
+
+
 
 killed() {
     dfuserver stop=1

@@ -60,6 +60,16 @@ EXPORT TestEditDistanceWithinRadius := MODULE
     EXPORT Test24b := ASSERT(NOT Uni.EditDistanceWithinRadius(alpha,manyDigits+U'123456',254), CONST);
     EXPORT Test25a := ASSERT(Uni.EditDistanceWithinRadius(U'123456789',U'987654321',8), CONST);
     EXPORT Test25b := ASSERT(NOT Uni.EditDistanceWithinRadius(U'123456789',U'987654321',7), CONST);
+    EXPORT Test26a := ASSERT(Uni.EditDistanceWithinRadius(U'AVILÉS',U'AVILES',1), CONST);
+    EXPORT Test26b := ASSERT(Uni.EditDistanceWithinRadius(U'MOMBRU',U'MOMBRÚ',1), CONST);
+    EXPORT Test26c := ASSERT(Uni.EditDistanceWithinRadius(U'BLVAREZ',U'ÁLVAREZ',1), CONST);
+    // when character's encoding is from 0x00ffff - 0x10ffff range: 0x1D306 ; Description=TETRAGRAM FOR CENTER (Tai Xuan Jing Symbols)
+    // UTF-16 representation is xD834,xDF06 (2 16-bit surrogates)
+    EXPORT Test27a := ASSERT(Uni.EditDistanceWithinRadius(U'\uD834\uDF06XXX',U'XXXX',1), CONST);
+    // NFC (normalized form composed) for accented characters uses multiple 16-bit code units
+    // for example: Ḍ̛ is encoded as 0x1E0C,0x031B, and Ḍ̛̇ as 0x1E0C,0x031B,0x0307
+    // These are the cases where the fast function version (ToDo) does not work correctly, but this one does
+    EXPORT Test27b := ASSERT(Uni.EditDistanceWithinRadius(U'\u1E0C\u031BDDD',U'DDDD',1), CONST);
   END;
 
 END;

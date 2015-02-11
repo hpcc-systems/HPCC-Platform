@@ -5973,7 +5973,10 @@ void HqlGram::report(IError* error)
             if (associateWarnings)
                 pendingWarnings.append(*LINK(error));
             else
-                errorHandler->report(error);
+            {
+                Owned<IError> mappedError = mapError(error);
+                errorHandler->report(mappedError);
+            }
         }
         else
         {

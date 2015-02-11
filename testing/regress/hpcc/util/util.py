@@ -25,6 +25,7 @@ import subprocess
 
 from ..common.error import Error
 from ..common.shell import Shell
+from ..common.config import Config
 
 def isPositiveIntNum(string):
     for i in range(0,  len(string)):
@@ -180,44 +181,79 @@ def checkClusters(clusters,  targetSet):
 
     return  targetClusters
 
-def checkHpccStatus():
-    status='OK'
-    try:
-        myProc = subprocess.Popen(["ecl --version"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
-        result = myProc.stdout.read() + myProc.stderr.read()
-        results = result.split('\n')
-        for line in results:
-            if 'not found' in line:
-                err = Error("6000")
-                logging.error("%s. %s:'%s'" % (1,  err,  line))
-                raise  err
-                break
+def isLocalIP(ip):
+    retVal=False
+    if '127.0.0.1' == ip:
+        retVal = True
+    elif ip == getRealIPAddress():
+        retVal = True
 
-        myProc = subprocess.Popen("ecl getname --wuid 'W*'",  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
-        result  = myProc.stdout.read() + myProc.stderr.read()
-        results = result.split('\n')
-        for line in results:
-            if "Error connecting" in line:
-                err = Error("6001")
-                logging.error("%s. %s:'%s'" % (1,  err,  line))
-                raise (err)
-                break
+    return retVal
 
-            if "command not found" in line:
-                err = Error("6002")
-                logging.error("%s. %s:'%s'" % (1,  err,  line))
-                raise (err)
-                break
+def checkHpccStatus(targets):
+    # Check HPCC Systems status on all local/remote target
+    isLocal = False
+    isLocalChecked = False
+    isIpChecked={}
+    config = getConfig()
+    for target in targets:
+        ip = config.IpAddress[target]
 
-    except  OSError:
-        err = Error("6002")
-        logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
-        raise Error(err)
+        if not ip in isIpChecked:
+            isIpChecked[ip] = False
 
-    except ValueError:
-        err = Error("6003")
-        logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
-        raise Error(err)
+        isLocal = isLocalIP(ip)
+        if isIpChecked[ip] or (isLocal and isLocalChecked):
+            continue
 
-    finally:
-        pass
+        try:
+            if isLocal:
+                # There is no remote version (yet)
+                myProc = subprocess.Popen(["ecl --version"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+                result = myProc.stdout.read() + myProc.stderr.read()
+                results = result.split('\n')
+                for line in results:
+                    if 'not found' in line:
+                        err = Error("6000")
+                        logging.error("%s. %s:'%s'" % (1,  err,  line))
+                        raise  err
+                        break
+
+            myProc = subprocess.Popen("ecl getname --wuid 'W*' --limit=5 --server="+ip,  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+            result  = myProc.stdout.read() + myProc.stderr.read()
+            results = result.split('\n')
+            for line in results:
+                if "Error connecting" in line:
+                    if isLocal:
+                        err = Error("6001")
+                        logging.error("%s. %s:'%s local %s target!'" % (1,  err,  line,  target))
+                        raise (err)
+                    else:
+                        err = Error("6004")
+                        logging.error("%s. %s:'%s remote %s target!'" % (1,  err,  line,  target))
+                        raise (err)
+                    break
+
+                if "command not found" in line:
+                    err = Error("6002")
+                    logging.error("%s. %s:'%s'" % (1,  err,  line))
+                    raise (err)
+                    break
+
+            if isLocal:
+                isLocalChecked = True
+
+            isIpChecked[ip] = True
+
+        except  OSError:
+            err = Error("6002")
+            logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+            raise Error(err)
+
+        except ValueError:
+            err = Error("6003")
+            logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+            raise Error(err)
+
+        finally:
+            pass

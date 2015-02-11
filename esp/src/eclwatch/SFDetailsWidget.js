@@ -204,6 +204,9 @@ define([
                 },
                 store: this.subfilesStore
             }, this.id + "SubfilesGrid");
+            this.subfilesGrid.onSelectionChanged(function (event) {
+                context.refreshActionState();
+            });
             this.subfilesGrid.startup();
         },
 
@@ -256,6 +259,11 @@ define([
                 domClass.remove(this.id + "StateIdImage");
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
             }
+        },
+
+        refreshActionState: function () {
+            var selection = this.subfilesGrid.getSelected();
+            registry.byId(this.id + "Remove").set("disabled", !selection.length);
         }
     });
 });

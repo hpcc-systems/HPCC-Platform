@@ -61,7 +61,7 @@ extern "C++"
     ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetUChar (ICodeContext * _ctx, size32_t & valueLength, UChar * & returnValue, const char * options, const char * key, const char * partitionKey);
     ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetData  (ICodeContext * _ctx,size32_t & returnLength, void * & returnValue, const char * options, const char * key, const char * partitionKey);
     //--------------------------------AUXILLARIES---------------------------
-    ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MExist  (ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
+    ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MExists (ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
     ECL_MEMCACHED_API const char *     ECL_MEMCACHED_CALL MKeyType(ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
     ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MClear  (ICodeContext * _ctx, const char * options);
 }

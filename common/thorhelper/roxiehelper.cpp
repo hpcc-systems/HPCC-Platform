@@ -1214,7 +1214,7 @@ void FlushingJsonBuffer::setScalarInt(const char *resultName, unsigned sequence,
 void FlushingJsonBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
 {
     startScalar(resultName, sequence);
-    if (size < 6) //JavaScript doesn't support unsigned, and only supports 53 significant bits
+    if (size < 7) //JavaScript doesn't support unsigned, and only supports 53 significant bits
         s.append(value);
     else
         s.append('"').append(value).append('"');

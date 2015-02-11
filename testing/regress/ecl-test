@@ -28,8 +28,9 @@ import glob
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath, checkClusters, checkHpccStatus
+from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress, parentPath, checkClusters, checkHpccStatus
 from hpcc.common.error import Error
+from hpcc.common.config import Config
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -113,11 +114,6 @@ class RegressMain:
                 self.regress.runSuite(cluster, self.regress.suites[cluster])
 
     def main(self):
-        try:
-            checkHpccStatus()
-        except Error as e:
-            exit(e.getErrorCode());
-
         prog = "ecl-test"
         description = 'HPCC Platform Regression suite'
         pythonVer = getVersionNumbers()
@@ -199,6 +195,49 @@ class RegressMain:
                                 action='store_true')
 
         self.args = parser.parse_args()
+
+        # Process config parameter
+        self.config = Config(self.args.config).configObj
+        setConfig(self.config)
+
+        # Process target parameter
+        self.targetClusters = []
+        if 'target' in self.args:
+            if '' == self.args.target:
+                # Target not specified, use default from config
+                try:
+                    if self.args.func == 'setup':
+                        defaultTargets = self.config.defaultSetupClusters
+                        targetSet='defaultSetupClusters'
+                    else:
+                        defaultTargets = self.config.defaultTargetClusters
+                        targetSet='defaultTargetClusters'
+
+                    self.targetClusters = checkClusters(defaultTargets, targetSet)
+
+                except AttributeError:
+                    # It seems there is no defaultSetupClusters|defaultTargetClusters array in the config file
+                    # use the first one of cluster list in config file
+                    self.targetClusters.append(self.config.Clusters[0])
+            elif 'all' == self.args.target:
+                for cluster in self.config.Clusters:
+                    self.targetClusters.append(str(cluster))
+            else:
+                if ',' in self.args.target:
+                    # target is a list, process it
+                    targets = self.args.target.split(',')
+                    self.targetClusters = checkClusters(targets, 'target')
+                elif self.args.target in self.config.Clusters:
+                    self.targetClusters.append(self.args.target)
+                else:
+                    logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
+                    raise Error("4000")
+
+        try:
+            checkHpccStatus(self.targetClusters)
+        except Error as e:
+            exit(e.getErrorCode());
+
         try:
             self.regress = None
             if self.args.X[0]== "5000":
@@ -221,38 +260,6 @@ class RegressMain:
 
             self.regress = Regression(self.args)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
-
-            self.targetClusters = []
-            if 'target' in self.args:
-                if '' == self.args.target:
-                    # Target not specified, use default from config
-                    try:
-                        if self.args.func == 'setup':
-                            defaultTargets = self.regress.config.defaultSetupClusters
-                            targetSet='defaultSetupClusters'
-                        else:
-                            defaultTargets = self.regress.config.defaultTargetClusters
-                            targetSet='defaultTargetClusters'
-
-                        self.targetClusters = checkClusters(defaultTargets, targetSet)
-
-                    except AttributeError:
-                        # It seems there is no defaultSetupClusters|defaultTargetClusters array in the config file
-                        # use the first one of cluster list in config file
-                        self.targetClusters.append(self.regress.config.Clusters[0])
-                elif 'all' == self.args.target:
-                    for cluster in self.regress.config.Clusters:
-                        self.targetClusters.append(str(cluster))
-                else:
-                    if ',' in self.args.target:
-                        # target is a list, process it
-                        targets = self.args.target.split(',')
-                        self.targetClusters = checkClusters(targets, 'target')
-                    elif self.args.target in self.regress.config.Clusters:
-                        self.targetClusters.append(self.args.target)
-                    else:
-                        logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
-                        raise Error("4000")
 
             if self.args.func == 'list':
                 self.listClusters()

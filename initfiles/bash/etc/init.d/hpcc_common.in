@@ -380,14 +380,6 @@ createRuntime() {
     chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
     dir.getByName mirror
     chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
-
-    # setting up ulimit for thor and other component which needs it.
-    ulimit -n 32768
-    ulimit -c unlimited
-    # for rtprio in Roxie
-    ulimit -Hr 4
-    # to enable, must also increase vm.nr_hugepages and/or vm.nr_overcommit_hugepages
-    ulimit -l unlimited
 }
 
 start_dafilesrv() {
@@ -402,8 +394,6 @@ start_dafilesrv() {
 
       noStatusCheck=1
       /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
-      ulimit -n 32768
-      ulimit -c unlimited
       startCmd ${compName} ${noStatusCheck}
       return $?
    else
@@ -444,6 +434,30 @@ startCmd() {
         return ${RCSTART}
       fi
     fi
+
+    limits=(
+      MIN_Hn_nofile="32768"
+      MIN_Hc_core="unlimited"
+      MIN_Hu_nproc="8192"
+      MIN_Hr_rtprio="4"
+      MIN_Hl_memlock="unlimited" )
+
+    i=0
+    for element in "${limits[@]}"; do
+      flag="-${element:4:2}"
+      value=${element##*"="}
+
+      default_value=$( ulimit $flag )
+      if [[ "$value" != "unlimited" ]] && ([[ "$default_value" == "unlimited" ]] || [[ "$default_value" -gt "$value" ]]); then
+        _temp=${element%%"="*}
+        _temp="${_temp}=${default_value}"
+        limits[i]=$_temp
+      fi
+      flag="-${element:5:1}"
+      ulimit $flag ${limits[i]##*"="}
+      i=$((i+1))
+    done
+
 
     UMASK_ARG=""
     if [ -n "${umask}" ]; then

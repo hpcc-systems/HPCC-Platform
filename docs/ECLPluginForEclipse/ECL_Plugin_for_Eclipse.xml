@@ -593,10 +593,10 @@
 
         <orderedlist>
           <listitem>
-            <para>Expand your project (hello_world), then rt-click on
+            <para>Expand your project (hello_world), then right-click on
             hello.ecl, and select <emphasis role="bold">Run As</emphasis>
             <emphasis role="bold">&gt;&gt;</emphasis> <emphasis
-            role="bold">Run Configurations…</emphasis></para>
+            role="bold">Run Configurations...</emphasis></para>
 
             <para><graphic fileref="images/EPI011.jpg" scale="80" /></para>
           </listitem>

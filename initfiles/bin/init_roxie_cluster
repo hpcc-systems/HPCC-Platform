@@ -15,8 +15,6 @@
 #    limitations under the License.
 ################################################################################
 
-ulimit -c unlimited
-
 . ./roxievars
 
 killed () {

@@ -15,47 +15,47 @@
     limitations under the License.
 ############################################################################## */
 
-IMPORT * FROM lib_memcached.memcached;
+IMPORT memcached FROM lib_memcached;
 
 STRING servers := '--SERVER=127.0.0.1:11211';
-Clear(servers);
+memcached.Clear(servers);
 
-SetBoolean(servers, 'b', TRUE);
-GetBoolean(servers, 'b');
+memcached.SetBoolean(servers, 'b', TRUE);
+memcached.GetBoolean(servers, 'b');
 
 REAL pi := 3.14159265359;
-SetReal(servers, 'pi', pi);
-GetReal(servers, 'pi');
+memcached.SetReal(servers, 'pi', pi);
+memcached.GetReal(servers, 'pi');
 
 INTEGER i := 123456789;
-SetInteger(servers, 'i', i);
-GetInteger(servers, 'i');
+memcached.SetInteger(servers, 'i', i);
+memcached.GetInteger(servers, 'i');
 
 UNSIGNED u := 7;
-SetUnsigned(servers, 'u', u);
-GetUnsigned(servers, 'u');
+memcached.SetUnsigned(servers, 'u', u);
+memcached.GetUnsigned(servers, 'u');
 
 STRING str  := 'supercalifragilisticexpialidocious';
-SetString(servers, 'str', str);
-GetString(servers, 'str');
+memcached.SetString(servers, 'str', str);
+memcached.GetString(servers, 'str');
 
 UNICODE uni := U'אבגדהוזחטיךכלםמןנסעףפץצקרשת';
-SetUnicode(servers, 'uni', uni);
-GetUnicode(servers, 'uni');
+memcached.SetUnicode(servers, 'uni', uni);
+memcached.GetUnicode(servers, 'uni');
 
 UTF8 utf := U'אבגדהוזחטיךכלםמןנסעףפץצקרשת';
-SetUtf8(servers, 'utf8', utf);
-GetUtf8(servers, 'utf8');
+memcached.SetUtf8(servers, 'utf8', utf);
+memcached.GetUtf8(servers, 'utf8');
 
 DATA mydata := x'd790d791d792d793d794d795d796d798d799d79ad79bd79cd79dd79dd79ed79fd7a0d7a1d7a2d7a3d7a4d7a5d7a6d7a7d7a8d7a9d7aa';
-SetData(servers, 'data', mydata);
-GetData(servers,'data');
+memcached.SetData(servers, 'data', mydata);
+memcached.GetData(servers,'data');
 
-Exist(servers, 'utf8');
-KeyType(servers,'utf8');
+memcached.Exists(servers, 'utf8');
+memcached.KeyType(servers,'utf8');
 
 //The following test some exceptions
-GetInteger(servers, 'pi');
-Clear(servers);
-Exist(servers, 'utf8');
-KeyType(servers,'utf8');
+memcached.GetInteger(servers, 'pi');
+memcached.Clear(servers);
+memcached.Exists(servers, 'utf8');
+memcached.KeyType(servers,'utf8');
