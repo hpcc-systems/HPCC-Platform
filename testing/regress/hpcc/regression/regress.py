@@ -32,7 +32,7 @@ from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
 from ..util.ecl.command import ECLcmd
 from ..util.expandcheck import ExpandCheck
-from ..util.util import setConfig,  queryWuid,  abortWorkunit, getVersionNumbers
+from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers
 
 
 class Regression:
@@ -48,8 +48,7 @@ class Regression:
 
     def __init__(self, args):
         self.args = args
-        self.config = Config(args.config).configObj
-        setConfig(self.config)
+        self.config = getConfig()
         self.suites = {}
         self.log = Logger(args.loglevel)
         if args.timeout == '0':
