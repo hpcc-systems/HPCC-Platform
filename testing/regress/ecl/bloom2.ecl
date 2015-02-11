@@ -1,6 +1,6 @@
 //A general purpose module that can be shared by all bloom implementations.
 
-export bloomFilter(UNSIGNED DECIMAL6_3 falsePositiveProbability,
+bloomFilter(UNSIGNED DECIMAL6_3 falsePositiveProbability,
                    UNSIGNED INTEGER8 cardinality,
                    unsigned integer4 forceNumHashes = 0,
                    unsigned integer4 forceNumBits = 0
@@ -112,7 +112,7 @@ export bloomFilter(UNSIGNED DECIMAL6_3 falsePositiveProbability,
 
 END;      
 
-export buildBloomFilter(UNSIGNED DECIMAL6_3 fpProb,
+buildBloomFilter(UNSIGNED DECIMAL6_3 fpProb,
                         UNSIGNED INTEGER8 cardinality, 
                         VIRTUAL DATASET ds, <?> ANY keyfields) := MODULE
     
@@ -138,10 +138,9 @@ export buildBloomFilter(UNSIGNED DECIMAL6_3 fpProb,
 
 END; // module
 
-shared testrec := 
-  RECORD
+testrec := RECORD
     STRING20 name;
-  END;
+END;
 
 testdata := DATASET([{'Richard'}], testrec);
 theFilter := buildBloomFilter(0.3, 100, testdata, testdata.name);
