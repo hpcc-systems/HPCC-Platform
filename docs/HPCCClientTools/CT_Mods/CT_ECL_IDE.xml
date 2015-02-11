@@ -942,7 +942,7 @@
           as optional addons. And, you can create your own and add them to a
           system.</para>
 
-          <para>A RT-CLICK on the folders in the Repository Toolbox gives you
+          <para>A right-click on the folders in the Repository Toolbox gives you
           an option of <emphasis role="bold">Locate File in
           Explorer</emphasis> which will then open that folder in a new
           explorer window.</para>
@@ -1166,7 +1166,7 @@
           <para>This toolbox displays Logical files for the environment to
           which you are connected. Logical files are are organized into
           “folders” by scope in which they were created and displayed in a
-          tree format. Expand any branch to see the files within it. RT-CLICK
+          tree format. Expand any branch to see the files within it. Right-click
           to copy the label of the file to paste into your code.</para>
 
           <para></para>
@@ -1274,7 +1274,7 @@
                     <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
                     <entry>You can copy the error message text using the
-                    RT-CLICK pop up menu option.</entry>
+                    right-click pop up menu option.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -2081,7 +2081,7 @@
         <sect3>
           <title>Workunit Pop-up Menu</title>
 
-          <para>RT-CLICK on any Workunit for a Pop-up menu containing:</para>
+          <para>Right-click on any Workunit for a Pop-up menu containing:</para>
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -2214,7 +2214,7 @@
         <sect3>
           <title>Repository Pop-up Menu</title>
 
-          <para>RT-CLICK in the <emphasis role="bold">Repository Window
+          <para>Right-click in the <emphasis role="bold">Repository Window
           </emphasis>for a Pop-up menu containing options which are available
           depending on whether you have a folder or ECL file selected.</para>
 
@@ -2353,7 +2353,7 @@
         <sect3>
           <title>Results Pop-up Menu</title>
 
-          <para>RT-CLICK on Results Pop-up menu containing:</para>
+          <para>Right-click on Results Pop-up menu containing:</para>
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -2674,7 +2674,7 @@ ENDMACRO;
         <para>Using CTRL+MOUSEWHEEL will grow or shrink the font size used in
         the window.</para>
 
-        <para>There is also a RT-CLICK pop-up menu with the all the options
+        <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
 
         <sect3 role="brk">
@@ -2745,7 +2745,7 @@ ENDMACRO;
         <para>Using CTRL+MOUSEWHEEL will grow or shrink the font size used in
         the window.</para>
 
-        <para>There is also a RT-CLICK pop-up menu with the all the options
+        <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
       </sect2>
 
@@ -2770,7 +2770,7 @@ ENDMACRO;
           </listitem>
 
           <listitem>
-            <para>Use Ribbon bar buttons or RT-CLICK popup menu Cut, Copy,
+            <para>Use Ribbon bar buttons or right-click the popup menu. Cut, Copy,
             Paste, or Delete to remove or add cells, rows, columns to what is
             displayed. This does not change the actual result, only the
             display.</para>
