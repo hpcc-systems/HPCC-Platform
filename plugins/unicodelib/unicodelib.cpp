@@ -278,6 +278,75 @@ inline unsigned char min3(unsigned char a, unsigned char b, unsigned char c)
 }
 
 #define DISTANCE_ON_ERROR 999
+class UPCList // User perceived character list
+{
+private:
+    UnicodeString ustring_;
+    uint32_t* next_;
+    uint32_t  length_;
+    uint32_t  capacity_;
+    bool invalid_;
+    void doCreateUPCList(BreakIterator& cbi) {
+        UErrorCode status = U_ZERO_ERROR;
+        if (!capacity_) {
+             capacity_ = ustring_.length();
+         }
+        next_ = new uint32_t[capacity_+1]; // the number of characters is always less or equal to the string length
+        unsigned index=0;
+        cbi.setText(ustring_);
+        next_[index] = cbi.first();
+        for (int32_t end = cbi.next(); end != BreakIterator::DONE && length_ < capacity_; end = cbi.next())
+        {
+            length_++;
+            next_[++index]=end;
+        }
+        if (U_FAILURE(status)) { length_ = 0; capacity_ = 0; invalid_ = true; }
+    }
+
+public:
+    UPCList(BreakIterator& cbi, const UnicodeString & source, uint32_t capacity=0)
+        : length_(0), capacity_(capacity),ustring_(source), invalid_(false)
+    {
+        doCreateUPCList(cbi);
+    }
+
+    ~UPCList()
+    {
+        delete[] next_;
+    }
+
+    uint32_t charOffset(uint32_t index) const
+    {
+        return (index < length_ )? next_[index]:0;
+    }
+
+    uint32_t charLength(uint32_t index) const
+    {
+        return (index < length_ )? next_[index+1]-next_[index]:0;
+    }
+
+    bool equal(uint32_t index, const UPCList& srcText, uint32_t srcIndex) const
+    {
+        uint32_t lLen = charLength(index);
+        uint32_t rLen = srcText.charLength(srcIndex);
+        if ( lLen != rLen )
+            return false;
+        UChar lChar,rChar;
+        for (unsigned i=0; i < lLen; i++)
+        {
+            lChar = ustring_[charOffset(index)+i];
+            rChar = srcText.getString()[srcText.charOffset(srcIndex)+i];
+            if (lChar != rChar)
+                return false;
+        }
+        return true;
+    }
+    const UnicodeString& getString() const {return ustring_;}
+    uint32_t length() const { return length_;}
+    uint32_t capacity() const {return capacity_;}
+    inline bool isInvalid() const { return invalid_; }
+};
+
 class CEList
 {
 private:
@@ -511,6 +580,121 @@ unsigned unicodeEditDistanceV3(UnicodeString & left, UnicodeString & right, unsi
     return da[mask(leftLen-1)][rightLen-1];
 }
 
+//This function is based on the unicodeEditDistanceV3 to pickup optimizations;
+// It replaces RuleBasedCollator with the CharacterIterator
+unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsigned radius, BreakIterator& bi)
+{
+    if (radius >= 255)
+        return 255;
+
+    doTrimRight(left);
+    doTrimRight(right);
+
+    unsigned leftLen = left.length();
+    unsigned rightLen = right.length();
+
+    unsigned minED = (leftLen < rightLen)? rightLen - leftLen: leftLen - rightLen;
+    if (minED > radius)
+        return minED;
+
+    if (leftLen > 255)
+        leftLen = 255;
+
+    if (rightLen > 255)
+        rightLen = 255;
+
+    //Checking for leading common substrings actually slows the function down.
+    if (leftLen == 0)
+        return rightLen;
+
+    if (rightLen == 0)
+        return leftLen;
+
+    UPCList leftCs(bi, left, leftLen);
+    UPCList rightCs(bi, right, rightLen);
+    if (leftCs.isInvalid() || rightCs.isInvalid())
+        return false;
+
+    leftLen = leftCs.length();
+    rightLen = rightCs.length();
+
+    /*
+    This function applies two optimizations over the function above.
+    a) Adding a character (next row) can at most decrease the edit distance by 1, so short circuit when
+       we there is no possibility of getting within the distance.
+    b) We only need to evaluate the matrix da[i-radius..i+radius][j-radius..j+radius]
+       not taking into account values outside that range [can use max value to prevent access]
+    */
+
+    //Optimize the storage requirements by
+    //i) Only storing two stripes
+    //ii) Calculate, but don't store the row comparing against the null string
+    unsigned char da[2][256];
+    uint32_t rI_0 = 0;
+    uint32_t lI_0 = 0;
+    bool matched_l0 = false;
+    for (unsigned char j = 0; j < rightLen; j++)
+    {
+        if (leftCs.equal(lI_0, rightCs, rI_0+j)) matched_l0 = true;
+        da[0][j] = (matched_l0) ? j : j+1;
+    }
+
+    bool matched_r0 = leftCs.equal(lI_0, rightCs, rI_0);
+    for (unsigned char i = 1; i < leftLen; i++)
+    {
+        uint32_t lI_i = i;
+        if (leftCs.equal(lI_i, rightCs, rI_0))
+            matched_r0 = true;
+
+        byte da_i_0 = matched_r0 ? i : i+1;
+        da[mask(i)][0] = da_i_0;
+        byte da_i_prevj = da_i_0;
+        unsigned low = i-radius;
+        unsigned high = i+radius;
+        unsigned first = (i > radius) ? low : 1;
+        unsigned last = (high >= rightLen) ? rightLen : high +1;
+
+        for (unsigned j = first; j < last; j++)
+        {
+            uint32_t rI_j = j;
+            unsigned char next = da[mask(i-1)][j-1];
+            if (!leftCs.equal(lI_i, rightCs, rI_j))
+            {
+                if (j != low)
+                {
+                    if (next > da_i_prevj)
+                        next = da_i_prevj;
+                }
+                if (j != high)
+                {
+                    byte da_previ_j = da[mask(i-1)][j];
+                    if (next > da_previ_j)
+                        next = da_previ_j;
+                }
+                next++;
+            }
+            da[mask(i)][j] = next;
+            da_i_prevj = next;
+        }
+
+        // bail out early if ed can't possibly be <= radius
+        // Only considering a strip down the middle of the matrix, so the maximum the score can ever be adjusted is 2xradius
+        unsigned max_valid_score = 3*radius;
+
+        // But maximum is also 1 for every difference in string length - comes in to play when close to the end.
+        //In 32bit goes slower for radius=1 I suspect because running out of registers.  Retest in 64bit.
+        if (radius > 1)
+        {
+            unsigned max_distance = radius + (leftLen - (i+1)) + (rightLen - last);
+            if (max_valid_score > max_distance)
+                max_valid_score = max_distance;
+        }
+        if (da_i_prevj > max_valid_score)
+            return da_i_prevj;
+    }
+
+    return da[mask(leftLen-1)][rightLen-1];
+}
 
 UnicodeString getNthWord(RuleBasedBreakIterator& bi, UnicodeString const & source, unsigned n)
 {
@@ -556,6 +740,55 @@ unsigned doCountWords(RuleBasedBreakIterator& bi, UnicodeString const & source)
     return count; 
 }
 
+static BreakIterator * createCharacterBreakIterator(const char * localename)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    Locale locale(localename);
+    BreakIterator * cbi = (BreakIterator *)BreakIterator::createCharacterInstance(locale, status);
+    if (U_FAILURE(status))
+    {
+        delete cbi;
+        return NULL;
+    }
+    return cbi;
+}
+class CBILocale
+{
+public:
+    CBILocale(char const * _locale) : locale(_locale)
+    {
+        cbi = createCharacterBreakIterator(locale);
+    }
+    ~CBILocale()
+    {
+        delete cbi;
+    }
+    BreakIterator * queryCharacterBreakIterator() const { return cbi; }
+private:
+    StringAttr locale;
+    BreakIterator * cbi;
+};
+
+typedef MapStringTo<CBILocale, char const *> MapStrToCBI;
+static MapStrToCBI * localeCBiMap;
+static CriticalSection localeCBiCrit;
+
+static BreakIterator * queryCharacterBreakIterator(const char * localename)
+{
+    if (!localename) localename = "";
+    CriticalBlock b(localeCBiCrit);
+    if (!localeCBiMap)
+        localeCBiMap = new MapStrToCBI;
+    CBILocale * loc = localeCBiMap->getValue(localename);
+    if(!loc)
+    {
+        const char * normalizedlocale = localename;
+        localeCBiMap->setValue(localename, normalizedlocale);
+        loc = localeCBiMap->getValue(localename);
+    }
+    return loc->queryCharacterBreakIterator();
+}
+
 static RuleBasedCollator * createRBCollator(const char * localename)
 {
     UErrorCode status = U_ZERO_ERROR;
@@ -591,16 +824,6 @@ typedef MapStringTo<RBCLocale, char const *> MapStrToRBC;
 static MapStrToRBC * localeMap;
 static CriticalSection localeCrit;
 
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    return true;
-}
-MODULE_EXIT()
-{
-    delete localeMap;
-    localeMap = NULL;
-}
-
 static RuleBasedCollator * queryRBCollator(const char * localename)
 {
     if (!localename) localename = "";
@@ -616,6 +839,18 @@ static RuleBasedCollator * queryRBCollator(const char * localename)
         loc = localeMap->getValue(localename);
     }
     return loc->queryCollator();
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    delete localeMap;
+    localeMap = NULL;
+     delete localeCBiMap;
+    localeCBiMap = NULL;
 }
 
 }//namespace
@@ -1105,14 +1340,14 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned lef
 
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEditDistanceWithinRadius(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, unsigned radius, char const * localename)
 {
-    RuleBasedCollator* rbc = queryRBCollator(localename);
-    if (!rbc)
+    BreakIterator* bi = queryCharacterBreakIterator(localename);
+    if (!bi)
         return false;
 
-    UnicodeString uLeft(left, leftLen);
-    UnicodeString uRight(right, rightLen);
+    UnicodeString uLeft(false, left, leftLen); // Readonly-aliasing UChar* constructor.
+    UnicodeString uRight(false, right, rightLen);
 
-    unsigned distance = nsUnicodelib::unicodeEditDistanceV3(uLeft, uRight, radius, *rbc);
+    unsigned distance = nsUnicodelib::unicodeEditDistanceV4(uLeft, uRight, radius, *bi);
     return distance <= radius;
 }
 
