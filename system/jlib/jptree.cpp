@@ -5500,7 +5500,10 @@ static void writeJSONValueToStream(IIOStream &out, const char *val, bool &delimi
     if (hidden)
         writeCharsNToStream(out, '*', strlen(val));
     else
-        writeStringToStream(out, val);
+    {
+        StringBuffer s;
+        writeStringToStream(out, encodeJSON(s, val));
+    }
     writeCharToStream(out, '"');
 }
 
