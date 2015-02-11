@@ -2055,7 +2055,14 @@ public:
     virtual ~CCompressedFile()
     {
         if (!writeException)
-            close();
+        {
+            try { close(); }
+            catch (IException *e)
+            {
+                EXCLOG(e, "~CCompressedFile");
+                e->Release();
+            }
+        }
     }
 
     virtual offset_t size()                                             

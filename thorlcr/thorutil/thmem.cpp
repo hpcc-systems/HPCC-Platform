@@ -1260,7 +1260,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
                 while (i == nextCBI); // loop as may be >1 IWritePosCallback at same pos
             }
             rows[i++] = NULL;
-            writer->putRow(row);
+            writer->putRow(row); // NB: putRow takes ownership/should avoid leaking if fails
         }
         writer->flush();
     }
