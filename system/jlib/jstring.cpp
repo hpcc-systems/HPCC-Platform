@@ -2003,6 +2003,9 @@ inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch, unsigned &
             s.append('\\');
             s.append(next);
             break;
+        case '\0':
+            s.append("\\u0000");
+            break;
         default:
             if (next >= ' ' && next < 128)
                 s.append(next);
