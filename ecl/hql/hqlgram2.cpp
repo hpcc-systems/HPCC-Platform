@@ -152,6 +152,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
     setAttributes(DISTRIBUTE, MERGE_ATTR, PARTITION_ATTR, 0);
     setAttributes(HEADING, FORMAT_ATTR, 0);
+    setAttributes(STORED, FORMAT_ATTR, 0);
+
     alreadyAssignedNestedTag = createAttribute(_alreadyAssignedNestedTag_Atom);
     return true;
 }
@@ -10507,7 +10509,6 @@ static void getTokenText(StringBuffer & msg, int token)
     case FIRST: msg.append("FIRST"); break;
     case TOK_FIXED: msg.append("FIXED"); break;
     case FLAT: msg.append("FLAT"); break;
-    case FORMAT: msg.append("FORMAT"); break;
     case FORMAT_ATTR: msg.append("FORMAT"); break;
     case FORWARD: msg.append("FORWARD"); break;
     case FROM: msg.append("FROM"); break;

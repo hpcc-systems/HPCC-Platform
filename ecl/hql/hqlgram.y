@@ -102,6 +102,11 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
 /* remember to add any new tokens to the error reporter and lexer too! */
 /* If they clash with other #defines etc then use TOK_ as a prefix */
 
+// NB: Very occassionally the same keyword in the source (e.g., MERGE, PARTITION may return a different token
+// (MERGE_ATTR, PARTITION_ATTR) depending on the context it is used in.  This is because there would be a s/r
+// error, so the _ATTR form is only allowed in the situations where the attibute is valid - enabled by a
+// call to enableAttributes() from a production in the grammar.
+
   ABS
   ACOS
   AFTER
@@ -212,10 +217,9 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   FIRST
   TOK_FIXED
   FLAT
-  FROM
-  FORMAT
   FORMAT_ATTR
   FORWARD
+  FROM
   FROMJSON
   FROMUNICODE
   FROMXML
@@ -1612,15 +1616,15 @@ failure
                             parser->normalizeExpression($5, type_string, true);
                             $$.setExpr(createValueF(no_persist, makeVoidType(), $3.getExpr(), $5.getExpr(), $6.getExpr(), NULL), $1);
                         }
-    | STORED '(' expression ',' fewMany optStoredFieldFormat ')'
+    | STORED '(' startStoredAttrs expression ',' fewMany optStoredFieldFormat ')'
                         {
-                            parser->normalizeStoredNameExpression($3);
-                            $$.setExpr(createValue(no_stored, makeVoidType(), $3.getExpr(), $5.getExpr(), $6.getExpr()), $1);
+                            parser->normalizeStoredNameExpression($4);
+                            $$.setExpr(createValue(no_stored, makeVoidType(), $4.getExpr(), $6.getExpr(), $7.getExpr()), $1);
                         }
-    | STORED '(' expression optStoredFieldFormat ')'
+    | STORED '(' startStoredAttrs expression optStoredFieldFormat ')'
                         {
-                            parser->normalizeStoredNameExpression($3);
-                            $$.setExpr(createValue(no_stored, makeVoidType(), $3.getExpr(), $4.getExpr()), $1);
+                            parser->normalizeStoredNameExpression($4);
+                            $$.setExpr(createValue(no_stored, makeVoidType(), $4.getExpr(), $5.getExpr()), $1);
                         }
     | CHECKPOINT '(' constExpression ')'
                         {
@@ -1732,7 +1736,7 @@ optStoredFieldFormat
     :                   {
                             $$.setNullExpr();
                         }
-    | ',' FORMAT '(' hintList ')'
+    | ',' FORMAT_ATTR '(' hintList ')'
                         {
                             HqlExprArray args;
                             $4.unwindCommaList(args);
@@ -12386,6 +12390,7 @@ featureModifiers
 
 startDistributeAttrs :  { parser->enableAttributes(DISTRIBUTE); $$.clear(); } ;
 startHeadingAttrs:      { parser->enableAttributes(HEADING); $$.clear(); } ;
+startStoredAttrs:       { parser->enableAttributes(STORED); $$.clear(); } ;
 
 
 //================================== end of syntax section ==========================
