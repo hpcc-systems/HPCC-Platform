@@ -416,7 +416,7 @@ void CMasterActivity::main()
     }
     catch (CATCHALL)
     {
-        Owned<IException> e = MakeThorFatal(NULL, TE_MasterProcessError, "FATAL: Unknown master process exception kind=%s, id=%"ACTPF"d", activityKindStr(container.getKind()), container.queryId());
+        Owned<IException> e = MakeThorFatal(NULL, TE_MasterProcessError, "FATAL: Unknown master process exception kind=%s, id=%" ACTPF "d", activityKindStr(container.getKind()), container.queryId());
         ActPrintLog(e, "In CMasterActivity::main");
         fireException(e);
     }
@@ -2699,7 +2699,7 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
                 CGraphBase *parentGraph = element->queryOwner().queryOwner(); // i.e. am I in a childgraph
                 if (!parentGraph)
                 {
-                    GraphPrintLog("Activity id=%"ACTPF"d not created in master and not a child query activity", activityId);
+                    GraphPrintLog("Activity id=%" ACTPF "d not created in master and not a child query activity", activityId);
                     return false; // don't know if or how this could happen, but all bets off with packet if did.
                 }
                 Owned<IException> e;
@@ -2717,7 +2717,7 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
                 }
                 if (!activity || e.get())
                 {
-                    GraphPrintLog("Activity id=%"ACTPF"d failed to created child query activity ready for progress", activityId);
+                    GraphPrintLog("Activity id=%" ACTPF "d failed to created child query activity ready for progress", activityId);
                     return false;
                 }
             }
@@ -2726,7 +2726,7 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
         }
         else
         {
-            GraphPrintLog("Failed to find activity, during progress deserialization, id=%"ACTPF"d", activityId);
+            GraphPrintLog("Failed to find activity, during progress deserialization, id=%" ACTPF "d", activityId);
             return false; // don't know if or how this could happen, but all bets off with packet if did.
         }
     }

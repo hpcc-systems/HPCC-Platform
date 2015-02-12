@@ -418,7 +418,7 @@ double getCycleToNanoScale()
 
 void display_time(const char *title, cycle_t diff)
 {
-    DBGLOG("Time taken for %s: %"I64F"d cycles (%"I64F"dM) = %"I64F"d msec", title, diff, diff/1000000, cycle_to_nanosec(diff)/1000000);
+    DBGLOG("Time taken for %s: %" I64F "d cycles (%" I64F "dM) = %" I64F "d msec", title, diff, diff/1000000, cycle_to_nanosec(diff)/1000000);
 }
 
 TimeSection::TimeSection(const char * _title) : title(_title)
@@ -926,7 +926,7 @@ memsize_t getMapInfo(const char *type)
         if (strstr(ln, typeStr.str()))
         {
             unsigned __int64 addrLow, addrHigh;
-            if (2 == sscanf(ln, "%16"I64F"x-%16"I64F"x", &addrLow, &addrHigh))
+            if (2 == sscanf(ln, "%16" I64F "x-%16" I64F "x", &addrLow, &addrHigh))
             {
                 ret = (memsize_t)(addrHigh-addrLow);
                 break;
@@ -1105,11 +1105,11 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 
 
     unsigned sum = (unsigned)((arena+mmapmem)/1024); 
-    out.appendf("MU=%3u%% MAL=%"I64F"d MMP=%"I64F"d SBK=%"I64F"d TOT=%uK RAM=%uK SWP=%uK", 
+    out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK", 
         muval, total, mmapmem, sbrkmem, (unsigned)(proctot/1024), mu, su);
 #ifdef _USE_MALLOC_HOOK
     if (totalMem) 
-        out.appendf(" TM=%"I64F"d",totalMem);
+        out.appendf(" TM=%" I64F "d",totalMem);
 #endif
     memused = mu+su;
     memtot = mt+st;
@@ -2167,7 +2167,7 @@ public:
                 hook->extraLogging(str);
 #ifdef _USE_MALLOC_HOOK
             if (totalMem)
-                str.appendf(" TM=%"I64F"d",totalMem);
+                str.appendf(" TM=%" I64F "d",totalMem);
 #endif
 
 #endif
@@ -2217,8 +2217,8 @@ public:
             str.appendf("IW=%10u ",(unsigned)(ioc.WriteTransferCount/1024));
             str.appendf("IO=%10u ",(unsigned)(ioc.OtherTransferCount/1024));
 
-            str.appendf("KT=%16"I64F"u ",kut.KernelTime);
-            str.appendf("UT=%16"I64F"u ",kut.UserTime);
+            str.appendf("KT=%16" I64F "u ",kut.KernelTime);
+            str.appendf("UT=%16" I64F "u ",kut.UserTime);
         }
 
 #else
@@ -2617,9 +2617,9 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
                 const char *path = ln;
                 if (printbody) {
                     if (useprintf)
-                        printf("%08"I64F"x,%08"I64F"x,%"I64F"d,%08"I64F"x,%s,%s\n",start,end,(offset_t)(end-start),offset,perms,path);
+                        printf("%08" I64F "x,%08" I64F "x,%" I64F "d,%08" I64F "x,%s,%s\n",start,end,(offset_t)(end-start),offset,perms,path);
                     else
-                        PROGLOG("%08"I64F"x,%08"I64F"x,%"I64F"d,%08"I64F"x,%s,%s",start,end,(offset_t)(end-start),offset,perms,path);
+                        PROGLOG("%08" I64F "x,%08" I64F "x,%" I64F "d,%08" I64F "x,%s,%s",start,end,(offset_t)(end-start),offset,perms,path);
                 }
                 SegTypes t = segtype_data;
                 if (strcmp(perms,"---p")==0)
@@ -2671,21 +2671,21 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
         if (lnout==NULL)
             lnout = &tln;
 
-        lnout->appendf("%"I64F"u,"    // total
+        lnout->appendf("%" I64F "u,"    // total
                "%u,"             // n
-               "%"I64F"u,"    // largest
-               "%"I64F"u,"    // total
-               "%"I64F"u,"    // total
+               "%" I64F "u,"    // largest
+               "%" I64F "u,"    // total
+               "%" I64F "u,"    // total
                "%u,"          // n
-               "%"I64F"u,"   // total
+               "%" I64F "u,"   // total
                "%u,"          // n
-               "%"I64F"u,"    // largest
-               "%"I64F"u,"    // total
-               "%"I64F"u,"    // total
-               "%"I64F"u,"    // largest
-               "%"I64F"u,"    // total
-               "%"I64F"u,"    // total
-               "%"I64F"u"    // largest
+               "%" I64F "u,"    // largest
+               "%" I64F "u,"    // total
+               "%" I64F "u,"    // total
+               "%" I64F "u,"    // largest
+               "%" I64F "u,"    // total
+               "%" I64F "u,"    // total
+               "%" I64F "u"    // largest
                ,
             recs[segtype_free].total,
             recs[segtype_free].n,
@@ -3057,7 +3057,7 @@ void printAllocationSummary()
 
         PROGLOG("%s(%d) %d:%d {%ld} = %d", display->szFileName ? display->szFileName : "<unknown>", display->nLine, display->nDataSize, counts[i2], display->lRequest, display->nDataSize * counts[i2]);
     }
-    PROGLOG("Ungrouped: %d  Total %"I64F"d", counts[maxUnique], totalAllocated);
+    PROGLOG("Ungrouped: %d  Total %" I64F "d", counts[maxUnique], totalAllocated);
 
     PROGLOG("Summary by location");
     for (unsigned iSummary2 = 0; iSummary2 < numUnique; )
@@ -3175,7 +3175,7 @@ void * jlib_malloc_hook (size_t size, const void *caller)
         if (totalMem>hwmTotalMem) {
             if (hwmTotalMem/(100*0x100000)!=totalMem/(100*0x100000)) {
                 PrintStackReport();
-                PROGLOG("TOTALMEM(%"I64F"d): malloc %u",totalMem,(unsigned)size);
+                PROGLOG("TOTALMEM(%" I64F "d): malloc %u",totalMem,(unsigned)size);
             }
             hwmTotalMem = totalMem;
         }
@@ -3223,7 +3223,7 @@ void *jlib_realloc_hook (void *ptr, size_t size, const void *caller)
     if (totalMem>hwmTotalMem) {
         if (hwmTotalMem/(100*0x100000)!=totalMem/(100*0x100000)) {
             PrintStackReport();
-            PROGLOG("TOTALMEM(%"I64F"d): realloc %u %u",totalMem,(unsigned)oldsz,(unsigned)size);
+            PROGLOG("TOTALMEM(%" I64F "d): realloc %u %u",totalMem,(unsigned)oldsz,(unsigned)size);
         }
         hwmTotalMem = totalMem;
     }

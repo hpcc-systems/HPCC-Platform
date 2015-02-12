@@ -1552,7 +1552,7 @@ public:
            }
            else if(!strcmp(attr.queryProp(tempPath.str()), "$hthorcluster"))
            {
-              tempPath.clear().append(XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY"/"XML_TAG_CLUSTER);
+              tempPath.clear().append(XML_TAG_SOFTWARE "/" XML_TAG_TOPOLOGY "/" XML_TAG_CLUSTER);
               Owned<IPropertyTreeIterator> iterClusters = m_pEnv->getElements(tempPath.str());
               ForEach (*iterClusters)
               {
@@ -1763,7 +1763,7 @@ public:
               {
                 IPropertyTree* pHard = m_pEnv->queryPropTree(tempPath.str());
                 if(pHard)
-                  wizDefVal.clear().append(pHard->queryProp("./"XML_ATTR_NETADDRESS)).append(":").append(defaultPort);
+                  wizDefVal.clear().append(pHard->queryProp("./" XML_ATTR_NETADDRESS)).append(":").append(defaultPort);
               }
            }
          }
@@ -1972,8 +1972,8 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     addItem(jsStrBuf, pEnv, XML_TAG_DOMAIN,  TAG_SNMPSECSTRING, "", 0, 1, "", 5);
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_NAME, "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_NETADDRESS, "", 0, 1, "", 1);
-    addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_DOMAIN, "", 0, 1, XML_TAG_HARDWARE"/"XML_TAG_DOMAIN, 4);
-    addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_COMPUTERTYPE, "", 0, 1, XML_TAG_HARDWARE"/"XML_TAG_COMPUTERTYPE, 4);
+    addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_DOMAIN, "", 0, 1, XML_TAG_HARDWARE "/" XML_TAG_DOMAIN, 4);
+    addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_COMPUTERTYPE, "", 0, 1, XML_TAG_HARDWARE "/" XML_TAG_COMPUTERTYPE, 4);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,  TAG_NAME, "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_SUBNET,       "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_DIRECTORY,       "", 0, 1, "", 1);
@@ -2991,7 +2991,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    String str(startIP);
    iprange.append("-").append(endIP + str.lastIndexOf('.') + 1);
    range.ipsetrange(iprange.str());
-   StringBuffer sNode("<"XML_TAG_HARDWARE">"), sName, sIP;
+   StringBuffer sNode("<" XML_TAG_HARDWARE ">"), sName, sIP;
    int count = (e >> 24) - (s >> 24) + 1;
    nCount = count;
    
@@ -3012,7 +3012,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
      }
 
      sName.clear().appendf("%s%03d%03d", prefix, (x >> 16) & 0xFF, (x >> 24) & 0xFF);
-     sNode.appendf("<"XML_TAG_COMPUTER" %s=\"%s\" %s=\"%s\" %s/>",
+     sNode.appendf("<" XML_TAG_COMPUTER " %s=\"%s\" %s=\"%s\" %s/>",
                       &XML_ATTR_NAME[1], getUniqueName(pEnv, sName, XML_TAG_COMPUTER, XML_TAG_HARDWARE),
                       &XML_ATTR_NETADDRESS[1], sIP.str(),
                       attr.str());
@@ -3021,7 +3021,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    
    if (sNode.length() > 10)
    {
-    sNode.append("</"XML_TAG_HARDWARE">");
+    sNode.append("</" XML_TAG_HARDWARE ">");
     IPropertyTree* pTree = createPTreeFromXMLString(sNode);
     return pTree;
    }
@@ -3516,7 +3516,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
           {
             if(ipAssigned.length())
             {
-              Owned<IPropertyTreeIterator> espSerIter = pCompTree->getElements("./"XML_TAG_ESPBINDING);
+              Owned<IPropertyTreeIterator> espSerIter = pCompTree->getElements("./" XML_TAG_ESPBINDING);
               ForEach(*espSerIter)
               {
                 IPropertyTree* pEspBinding = &espSerIter->query();
@@ -3598,7 +3598,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
                  computerName.clear().append(pServer->queryProp(XML_ATTR_COMPUTER));
                  if(computerName.length())
                  {
-                   xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]", XML_TAG_COMPUTER, XML_ATTR_NAME, computerName.str()); 
+                   xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]", XML_TAG_COMPUTER, XML_ATTR_NAME, computerName.str());
                    IPropertyTree* pHardware = pEnvRoot->queryPropTree(xpath.str());
                    if(pHardware)
                      ipAssigned.append(pHardware->queryProp(XML_ATTR_NETADDRESS)).append(",");

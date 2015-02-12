@@ -2458,7 +2458,7 @@ public:
                 EXCLOG(e,"CRemoteFileIO::write");
                 if (++tries>3)
                     throw;
-                WARNLOG("Retrying write(%"I64F"d,%d) of %s (%d)",pos,len,parent->queryLocalName(),tries);
+                WARNLOG("Retrying write(%" I64F "d,%d) of %s (%d)",pos,len,parent->queryLocalName(),tries);
                 Owned<IException> exc = e;
                 if (!reopen())
                     throw exc.getClear();
@@ -3597,7 +3597,7 @@ public:
             return false;
         }
         if (TF_TRACE)
-            PROGLOG("read file,  handle = %d, pos = %"I64F"d, toread = %d, read = %d",handle,pos,len,numRead);
+            PROGLOG("read file,  handle = %d, pos = %" I64F "d, toread = %d, read = %d",handle,pos,len,numRead);
         {
             reply.setLength(posOfLength + sizeof(numRead) + numRead);
             reply.writeEndianDirect(posOfLength,sizeof(numRead),&numRead);
@@ -3616,7 +3616,7 @@ public:
         __int64 size = fileio->size();
         reply.append((unsigned)RFEnoerror).append(size);
         if (TF_TRACE)
-            PROGLOG("size file,  handle = %d, size = %"I64F"d",handle,size);
+            PROGLOG("size file,  handle = %d, size = %" I64F "d",handle,size);
         return true;
     }
 
@@ -3627,7 +3627,7 @@ public:
         msg.read(handle).read(size);
         IFileIO *fileio;
         if (TF_TRACE)
-            PROGLOG("set size file,  handle = %d, size = %"I64F"d",handle,size);
+            PROGLOG("set size file,  handle = %d, size = %" I64F "d",handle,size);
         if (!checkFileIOHandle(reply, handle, fileio))
             return false;
         fileio->setSize(size);
@@ -3824,7 +3824,7 @@ public:
             Owned<IFile> file = createIFile(srcname.get());
             __int64 written = fileio->appendFile(file,pos,len);
             if (TF_TRACE)
-                PROGLOG("append file,  handle = %d, file=%s, pos = %"I64F"d len = %"I64F"d written = %"I64F"d",handle,srcname.get(),pos,len,written);
+                PROGLOG("append file,  handle = %d, file=%s, pos = %" I64F "d len = %" I64F "d written = %" I64F "d",handle,srcname.get(),pos,len,written);
             reply.append((unsigned)RFEnoerror).append(written);
             return true;
         }

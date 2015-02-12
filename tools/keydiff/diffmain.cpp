@@ -43,7 +43,7 @@ class KeyDiffProgressCallback : public CInterface, public IKeyDiffProgressCallba
 {
 public:
     IMPLEMENT_IINTERFACE;
-    virtual void handle(offset_t bytesRead) { PROGLOG("Read %"I64F"d bytes from old index", bytesRead); }
+    virtual void handle(offset_t bytesRead) { PROGLOG("Read %" I64F "d bytes from old index", bytesRead); }
 };
 
 void version(bool isHelp)

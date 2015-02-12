@@ -535,7 +535,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             offset_t outputOffset = out->tell();
             offset_t inputOffset = input->tell();
             if (totalLengthToRead)
-                LOG(MCdebugProgress, unknownJob, "Progress: %d%% done. [%"I64F"u]", (unsigned)(totalLengthRead*100/totalLengthToRead), (unsigned __int64)totalLengthRead);
+                LOG(MCdebugProgress, unknownJob, "Progress: %d%% done. [%" I64F "u]", (unsigned)(totalLengthRead*100/totalLengthToRead), (unsigned __int64)totalLengthRead);
 
             curProgress.status = (gotLength == 0) ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
             curProgress.inputLength = input->tell()-startInputOffset;
@@ -669,7 +669,7 @@ void TransferServer::transferChunk(unsigned chunkIndex)
     PartitionPoint & curPartition = partition.item(chunkIndex);
     OutputProgress & curProgress = progress.item(chunkIndex);
 
-    LOG(MCdebugProgress, unknownJob, "Begin to transfer chunk %d: Start at length %"I64F"d", chunkIndex, curProgress.inputLength);
+    LOG(MCdebugProgress, unknownJob, "Begin to transfer chunk %d: Start at length %" I64F "d", chunkIndex, curProgress.inputLength);
     const unsigned __int64 startOutOffset = out->tell();
     if (startOutOffset != curPartition.outputOffset+curProgress.outputLength)
         throwError4(DFTERR_OutputOffsetMismatch, out->tell(), curPartition.outputOffset+curProgress.outputLength, "start", chunkIndex);
@@ -754,7 +754,7 @@ bool TransferServer::pull()
             unsigned __int64 progressOffset = curOutputOffset + curProgress.outputLength;
             if (progressOffset > size)
             {
-                LOG(MCwarning, unknownJob, "Recovery information seems to be invalid (%"I64F"d %"I64F"d) start copying from the beginning",
+                LOG(MCwarning, unknownJob, "Recovery information seems to be invalid (%" I64F "d %" I64F "d) start copying from the beginning",
                          size, progressOffset);
                 //reset any remaining partitions...
                 for (i = start; i < numPartitions; i++)
@@ -849,7 +849,7 @@ processedProgress:
                     char null = 0;
                     offset_t lastOffset = lastChunk.outputOffset+lastChunk.outputLength;
                     outio->write(lastOffset-sizeof(null),sizeof(null),&null);
-                    LOG(MCdebugProgress, unknownJob, "Extend length of target file to %"I64F"d", lastOffset);
+                    LOG(MCdebugProgress, unknownJob, "Extend length of target file to %" I64F "d", lastOffset);
                 }
             }
 

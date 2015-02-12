@@ -2418,11 +2418,11 @@ void EsdlBindingImpl::CESDLBindingSubscription::notify(SubscriptionId id, const 
 
     if (id != sub_id)
     {
-        DBGLOG("ESDL Binding %s.%s (Dali subscription (%"I64F"d)) received notification for unrecognized dali subscription id: (%"I64F"d)", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) sub_id, (__int64) id);
+        DBGLOG("ESDL Binding %s.%s (Dali subscription (%" I64F "d)) received notification for unrecognized dali subscription id: (%" I64F "d)", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) sub_id, (__int64) id);
         return;
     }
 
-    DBGLOG("ESDL binding change reported to %s.%s binding: (%"I64F"d) of %s - flags = %d", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) id, xpath, flags);
+    DBGLOG("ESDL binding change reported to %s.%s binding: (%" I64F "d) of %s - flags = %d", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) id, xpath, flags);
 
     StringBuffer parentElementXPath;
     //path is reported with sibbling number annotation ie /ESDL/Bindings/Binding[2]/...
@@ -2473,11 +2473,11 @@ void EsdlBindingImpl::CESDLDefinitionSubscription::notify(SubscriptionId id, con
 
     if (id != sub_id)
     {
-        DBGLOG("ESDL Binding %s.%s (Dali subscription (%"I64F"d)) received notification for unrecognized dali subscription id: (%"I64F"d)", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) sub_id, (__int64) id);
+        DBGLOG("ESDL Binding %s.%s (Dali subscription (%" I64F "d)) received notification for unrecognized dali subscription id: (%" I64F "d)", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) sub_id, (__int64) id);
         return;
     }
 
-    DBGLOG("ESDL definition change reported to %s.%s binding: (%"I64F"d) of %s - flags = %d", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) id, xpath, flags);
+    DBGLOG("ESDL definition change reported to %s.%s binding: (%" I64F "d) of %s - flags = %d", thisBinding->m_processName.get(), thisBinding->m_bindingName.get(), (__int64) id, xpath, flags);
 
     StringBuffer parentElementXPath;
     //path is reported with sibbling number annotation ie /ESDL/Definitions/Definition[2]/...

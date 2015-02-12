@@ -118,7 +118,7 @@ public:
             if (ret)
             {
                 UdpPacketHeader *pktHdr = (UdpPacketHeader*) ret->data;
-                DBGLOG("UdpCollator: PackageSequencer::next returns ruid="RUIDF" id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuffer=%p this=%p", 
+                DBGLOG("UdpCollator: PackageSequencer::next returns ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuffer=%p this=%p", 
                         pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex, ret, this);
             }
             else
@@ -135,7 +135,7 @@ public:
 
         if (checkTraceLevel(TRACE_MSGPACK, 5))
         {
-            DBGLOG("UdpCollator: PackageSequencer::insert ruid="RUIDF" id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuffer=%p this=%p", 
+            DBGLOG("UdpCollator: PackageSequencer::insert ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuffer=%p this=%p", 
                     pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex, dataBuff, this);
         }
 
@@ -331,7 +331,7 @@ public:
             if (checkTraceLevel(TRACE_MSGPACK, 4))
             {
                 StringBuffer s;
-                DBGLOG("UdpCollator: CMessageUnpackCursor::getNext(%u) pos=%u pktLength=%u metaLen=%u ruid="RUIDF" id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuff=%p this=%p", 
+                DBGLOG("UdpCollator: CMessageUnpackCursor::getNext(%u) pos=%u pktLength=%u metaLen=%u ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuff=%p this=%p", 
                     length, current_pos, pktHdr->length, pktHdr->metalength,
                     pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, 
                     pktHdr->nodeIndex, dataBuff, this);
@@ -475,7 +475,7 @@ public:
     CMessageCollator(IRowManager *_rowMgr, unsigned _ruid) : rowMgr(_rowMgr), ruid(_ruid)
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
-            DBGLOG("UdpCollator: CMessageCollator::CMessageCollator rowMgr=%p this=%p ruid="RUIDF"", _rowMgr, this, ruid);
+            DBGLOG("UdpCollator: CMessageCollator::CMessageCollator rowMgr=%p this=%p ruid=" RUIDF "", _rowMgr, this, ruid);
         memLimitExceeded = false;
         activity = false; // w/o it there is a race condition
         totalBytesReceived = 0;
@@ -484,7 +484,7 @@ public:
     virtual ~CMessageCollator() 
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
-            DBGLOG("UdpCollator: CMessageCollator::~CMessageCollator ruid="RUIDF", this=%p", ruid, this);
+            DBGLOG("UdpCollator: CMessageCollator::~CMessageCollator ruid=" RUIDF ", this=%p", ruid, this);
         while (!queue.empty())
         {
             PackageSequencer *pkSqncr = queue.front();
@@ -508,7 +508,7 @@ public:
         UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
         if (checkTraceLevel(TRACE_MSGPACK, 4))
         {
-            DBGLOG("UdpCollator: CMessageCollator::add_package memLimitEx=%d ruid="RUIDF" id=0x%.8X mseq=%u pkseq=0x%.8X node=%u udpSequence=%u rowMgr=%p this=%p", 
+            DBGLOG("UdpCollator: CMessageCollator::add_package memLimitEx=%d ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u udpSequence=%u rowMgr=%p this=%p", 
                 memLimitExceeded, pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex, pktHdr->udpSequence, (void*)rowMgr, this);
         }
 

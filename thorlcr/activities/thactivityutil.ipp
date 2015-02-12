@@ -99,7 +99,7 @@ protected:
 #endif
         count |= THORDATALINK_STOPPED;
 #ifdef _TESTING
-        ActPrintLog(owner, "ITDL output %d stopped, count was %"RCPF"d", outputId, getDataLinkCount());
+        ActPrintLog(owner, "ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
 #endif
     }
 

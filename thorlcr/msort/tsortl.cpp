@@ -284,7 +284,7 @@ IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &n
 #ifdef _FULL_TRACE
     StringBuffer s;
     nodeaddr.getUrlStr(s);
-    PROGLOG("ConnectMergeRead(%d,%s,%x,%"RCPF"d,%"RCPF"u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
+    PROGLOG("ConnectMergeRead(%d,%s,%x,%" RCPF "d,%" RCPF "u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
 #endif
     hdr.winrev();
     socket->write(&hdr,sizeof(hdr));
@@ -302,7 +302,7 @@ ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32
 #ifdef _FULL_TRACE
     char name[100];
     int port = socket->peer_name(name,sizeof(name));
-    PROGLOG("ConnectMergeWrite(%d,%s:%d,%x,%"RCPF"d,%"RCPF"u)",hdr.id,name,port,(unsigned)(memsize_t)socket,startrec,numrecs);
+    PROGLOG("ConnectMergeWrite(%d,%s:%d,%x,%" RCPF "d,%" RCPF "u)",hdr.id,name,port,(unsigned)(memsize_t)socket,startrec,numrecs);
 #endif
     return new CSocketRowWriter(hdr.id,rowif,socket,bufsize);
 }

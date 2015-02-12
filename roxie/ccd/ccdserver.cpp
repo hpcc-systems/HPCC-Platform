@@ -7613,7 +7613,7 @@ protected:
         {
             unsigned __int64 seq = (memsize_t)this ^ get_cycles_now();
             StringBuffer spillBasename;
-            spillBasename.append(tempDirectory).append(PATHSEPCHAR).appendf("spill_sort_%"I64F"u", seq);
+            spillBasename.append(tempDirectory).append(PATHSEPCHAR).appendf("spill_sort_%" I64F "u", seq);
             Owned<IRowLinkCounter> linker = new RoxieRowLinkCounter();
             Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(rowMeta, activityId, ctx->queryCodeContext());
             diskMerger.setown(createDiskMerger(rowInterfaces, linker, spillBasename));

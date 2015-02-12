@@ -269,7 +269,7 @@ public:
     StringBuffer &getDetails(StringBuffer &buf)
     {
         StringBuffer ep;
-        return buf.appendf("%16"I64F"X: %s, role=%s",CSessionState::id,node->endpoint().getUrlStr(ep).str(),queryRoleName(role));
+        return buf.appendf("%16" I64F "X: %s, role=%s",CSessionState::id,node->endpoint().getUrlStr(ep).str(),queryRoleName(role));
     }
     void addSessionIds(CProcessSessionState &other, bool prevOnly)
     {
@@ -296,7 +296,7 @@ public:
     void removeOldSessionId(SessionId id)
     {
         if (previousSessionIds.zap(id))
-            PROGLOG("Removed old sessionId (%"I64F"x) from current process state", id);
+            PROGLOG("Removed old sessionId (%" I64F "x) from current process state", id);
     }
 };
 
@@ -797,12 +797,12 @@ public:
         Semaphore sem;
         void closed(SessionId id)
         {
-            //PROGLOG("Session closed %"I64F"x",id);
+            //PROGLOG("Session closed %" I64F "x",id);
             sem.signal();
         }
         void aborted(SessionId id)
         {
-            //PROGLOG("Session aborted %"I64F"x",id);
+            //PROGLOG("Session aborted %" I64F "x",id);
             sem.signal();
         }
     };
@@ -1308,7 +1308,7 @@ public:
     void addProcessSession(SessionId id,INode *client,DaliClientRole role)
     {
         StringBuffer str;
-        PROGLOG("Session starting %"I64F"x (%s) : role=%s",id,client->endpoint().getUrlStr(str).str(),queryRoleName(role));
+        PROGLOG("Session starting %" I64F "x (%s) : role=%s",id,client->endpoint().getUrlStr(str).str(),queryRoleName(role));
         CHECKEDCRITICALBLOCK(sessmanagersect,60000);
         CProcessSessionState *s = new CProcessSessionState(id,client,role);
         while (!sessionstates.add(s)) // takes ownership
@@ -1326,7 +1326,7 @@ public:
             dbgassertex(previousState); // Must be there, it's reason add() failed
             SessionId oldSessionId = previousState->getId();
             s->addSessionIds(*previousState, false); // merges sessions from previous process state into new one that replaces it
-            WARNLOG("Dali session manager: registerClient process session already registered, old (%"I64F"x) replaced", oldSessionId);
+            WARNLOG("Dali session manager: registerClient process session already registered, old (%" I64F "x) replaced", oldSessionId);
             processlookup.remove(previousState, this);
         }
     }
@@ -1639,7 +1639,7 @@ protected:
         MemoryBuffer mb;
         bool abort=true;
         mb.append(abort);
-        ERRLOG("Session Manager - adding unknown session ID %"I64F"x", nstub->getSessionId());
+        ERRLOG("Session Manager - adding unknown session ID %" I64F "x", nstub->getSessionId());
         subs->notify(mb); 
         delete nstub;
         return;
@@ -1653,7 +1653,7 @@ protected:
 
     void stopSession(SessionId id, bool abort)
     {
-        PROGLOG("Session stopping %"I64F"x %s",id,abort?"aborted":"ok");
+        PROGLOG("Session stopping %" I64F "x %s",id,abort?"aborted":"ok");
         CHECKEDCRITICALBLOCK(sessmanagersect,60000);
         // do in multiple stages as may remove one or more sub sessions
         loop
@@ -1698,7 +1698,7 @@ protected:
                     SessionId prevId = cState->dequeuePreviousSessionId();
                     if (prevId)
                     {
-                        PROGLOG("Session (%"I64F"x) in stopSession, detected %d pending previous states, reinstating session (%"I64F"x) as current", id, cState->previousSessionIdCount(), prevId);
+                        PROGLOG("Session (%" I64F "x) in stopSession, detected %d pending previous states, reinstating session (%" I64F "x) as current", id, cState->previousSessionIdCount(), prevId);
                         CSessionState *prevSessionState = sessionstates.query(prevId);
                         dbgassertex(prevSessionState); // must be there
                         CProcessSessionState *prevProcessState = QUERYINTERFACE(prevSessionState, CProcessSessionState);
@@ -1721,13 +1721,13 @@ protected:
                     if (processlookup.remove(pState, this))
                     {
                         // Don't think possible to be here, if not current must have replaced afaics
-                        PROGLOG("Session (%"I64F"x) in stopSession, old process session removed", id);
+                        PROGLOG("Session (%" I64F "x) in stopSession, old process session removed", id);
                     }
                     else
-                        PROGLOG("Session (%"I64F"x) in stopSession, old process session was already removed", id); // because replaced
+                        PROGLOG("Session (%" I64F "x) in stopSession, old process session was already removed", id); // because replaced
                     if (cState)
                     {
-                        PROGLOG("Session (%"I64F"x) was replaced, ensuring removed from new process state", id);
+                        PROGLOG("Session (%" I64F "x) was replaced, ensuring removed from new process state", id);
                         cState->removeOldSessionId(id); // If already replaced, then must ensure no longer tracked by new
                     }
                 }
@@ -1757,7 +1757,7 @@ protected:
             idtostop = s->dequeuePreviousSessionId();
             if (idtostop)
             {
-                PROGLOG("Previous sessionId (%"I64F"x) for %s was replaced by (%"I64F"x), stopping old session now", idtostop, clientStr.str(), s->getId());
+                PROGLOG("Previous sessionId (%" I64F "x) for %s was replaced by (%" I64F "x), stopping old session now", idtostop, clientStr.str(), s->getId());
                 unsigned c = s->previousSessionIdCount();
                 if (c) // very unlikely, but could be >1, trace for info.
                     PROGLOG("%d old sessions pending closure", c);

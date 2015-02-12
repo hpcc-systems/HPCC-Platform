@@ -213,12 +213,12 @@ public:
                 ForEachItemIn(g, activeGraphs) if (activeGraphs.item(g).queryGraphId() == graphId) graph = (CMasterGraph *)&activeGraphs.item(g);
                 if (!graph)
                 {
-                    LOG(MCdebugProgress, unknownJob, "heartbeat received from unknown graph %"GIDPF"d", graphId);
+                    LOG(MCdebugProgress, unknownJob, "heartbeat received from unknown graph %" GIDPF "d", graphId);
                     break;
                 }
                 if (!graph->deserializeStats(node, uncompressedMb))
                 {
-                    LOG(MCdebugProgress, unknownJob, "heartbeat error in graph %"GIDPF"d", graphId);
+                    LOG(MCdebugProgress, unknownJob, "heartbeat error in graph %" GIDPF "d", graphId);
                     break;
                 }
             }

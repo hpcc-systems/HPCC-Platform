@@ -224,7 +224,7 @@ public:
                 for (i=0;i<n;i++) {
                     double r = ((double)sizes[i]-(double)avg)/(double)avg;
                     if ((r>=maxskew)||(-r>maxskew)) {
-                        throw MakeActivityException(this, TE_DistributeFailedSkewExceeded, "DISTRIBUTE maximum skew exceeded (node %d has %"I64F"d, average is %"I64F"d)",i+1,sizes[i],avg);
+                        throw MakeActivityException(this, TE_DistributeFailedSkewExceeded, "DISTRIBUTE maximum skew exceeded (node %d has %" I64F "d, average is %" I64F "d)",i+1,sizes[i],avg);
                     }               
                 }
             }

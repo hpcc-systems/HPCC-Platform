@@ -165,7 +165,7 @@ public:
     {
         CriticalBlock block(arsect);
         while (allReceived<torecv) {
-            PROGLOG("Waiting for Receiver (%"I64F"d remaining)",torecv-allReceived);
+            PROGLOG("Waiting for Receiver (%" I64F "d remaining)",torecv-allReceived);
             CriticalUnblock unblock(arsect);
             Sleep(1000);
         }
@@ -267,7 +267,7 @@ public:
         {
             CriticalBlock block(arsect);
             double totalRate = (((double)allReceived)/1048576.0)/((lastReceived-start)/1000.0);
-            DBGLOG("Node %d All Received %"I64F"d bytes, rate = %.2f MB/s", myIndex, allReceived, totalRate);
+            DBGLOG("Node %d All Received %" I64F "d bytes, rate = %.2f MB/s", myIndex, allReceived, totalRate);
         }
         rcvMgr->detachCollator(collator);
         delete [] received;
@@ -331,7 +331,7 @@ void testNxN()
             {
                 unsigned now = msTick();
                 if (now-last>10000) {
-                    DBGLOG("Sent %"I64F"d bytes total, rate = %.2f MB/s", sentTotal, (((double)sentTotal)/1048576.0)/((now-start)/1000.0));
+                    DBGLOG("Sent %" I64F "d bytes total, rate = %.2f MB/s", sentTotal, (((double)sentTotal)/1048576.0)/((now-start)/1000.0));
                     last = now;
                 }
                 packers[dest]->flush(true);
@@ -354,7 +354,7 @@ void testNxN()
             if (packers[i])
                 packers[i]->flush(true);
         }
-        DBGLOG("Node %d All Sent %"I64F"d bytes total, rate = %.2f MB/s", myIndex, sentTotal, (((double)sentTotal)/1048576.0)/((msTick()-start)/1000.0));
+        DBGLOG("Node %d All Sent %" I64F "d bytes total, rate = %.2f MB/s", myIndex, sentTotal, (((double)sentTotal)/1048576.0)/((msTick()-start)/1000.0));
         while (!sendMgr->allDone())
         {
             DBGLOG("Node %d waiting for queued data to be flushed", myIndex);

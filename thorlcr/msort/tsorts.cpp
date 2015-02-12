@@ -232,8 +232,8 @@ public:
             idxFileIO.clear();
         }
         if (overflowed)
-            WARNLOG("Overflowed by %"I64F"d", overflowsize);
-        ActPrintLog(&activity, "Local Overflow Merge done: overflow file '%s', size = %"I64F"d", dataFile->queryFilename(), dataFile->size());
+            WARNLOG("Overflowed by %" I64F "d", overflowsize);
+        ActPrintLog(&activity, "Local Overflow Merge done: overflow file '%s', size = %" I64F "d", dataFile->queryFilename(), dataFile->size());
         return end;
     }
     IRowStream *getStream(offset_t startOffset, rowcount_t max)
@@ -436,7 +436,7 @@ public:
     }
     IRowStream *sort(CThorExpandingRowArray &localRows, rowcount_t globalTotal, ICompare &iCompare, bool isStable, rowcount_t &rowCount)
     {
-        PrintLog("Minisort started: %s, totalrows=%"RIPF"d", partNo?"seconday node":"primary node", localRows.ordinality());
+        PrintLog("Minisort started: %s, totalrows=%" RIPF "d", partNo?"seconday node":"primary node", localRows.ordinality());
         size32_t blksize = 0x100000;
 
         // JCSMORE - at the moment, the localsort set is already sorted
@@ -519,7 +519,7 @@ public:
             collector->transferRowsOut(globalRows); // will sort in process
 
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort got %d rows %"I64F"d bytes", globalRows.ordinality(),(unsigned __int64)(globalRows.getMemUsage()));
+            ActPrintLog(&activity, "MiniSort got %d rows %" I64F "d bytes", globalRows.ordinality(),(unsigned __int64)(globalRows.getMemUsage()));
 #endif
             UnsignedArray points;
             globalRows.partition(iCompare, numNodes, points);
@@ -707,7 +707,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     void AdjustOverflow(rowcount_t &apos, const void *key, byte cmpfn)
     {
 #ifdef TRACE_PARTITION_OVERFLOW
-        ActPrintLog(activity, "AdjustOverflow: in (%"RCPF"d)",apos);
+        ActPrintLog(activity, "AdjustOverflow: in (%" RCPF "d)",apos);
         TraceKey(" ",(byte *)key);
 #endif
         rowcount_t pos = (apos+1)*(rowcount_t)overflowinterval;
@@ -719,7 +719,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
         {
             OwnedConstThorRow row = intercept->getRow(pos-1);
 #ifdef TRACE_PARTITION_OVERFLOW
-            ActPrintLog(activity, "Compare to (%"RCPF"d)",pos-1);
+            ActPrintLog(activity, "Compare to (%" RCPF "d)",pos-1);
             TraceKey(" ",(const byte *)row.get());
 #endif
             if (queryCmpFn(cmpfn)->docompare(key, row)>0)
@@ -729,7 +729,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
         intercept->closeFiles();
         apos = pos;
 #ifdef TRACE_PARTITION_OVERFLOW
-        ActPrintLog(activity, "AdjustOverflow: out (%"RCPF"d)",apos);
+        ActPrintLog(activity, "AdjustOverflow: out (%" RCPF "d)",apos);
 #endif
     }
 public:
@@ -946,7 +946,7 @@ public:
         ActPrintLog(activity, "OverflowAdjustMap: interval = %d",overflowinterval);
         ActPrintLog(activity, "In: ");
         for (i=0;i<mapsize;i++)
-            ActPrintLog(activity, "%"RCPF"d ",overflowmap[i]);
+            ActPrintLog(activity, "%" RCPF "d ",overflowmap[i]);
 #endif
         CThorExpandingRowArray keys(*activity, useaux?auxrowif:rowif, true);
         keys.deserialize(keybufsize, keybuf);
@@ -956,7 +956,7 @@ public:
 #ifdef TRACE_PARTITION_OVERFLOW
         ActPrintLog(activity, "Out: ");
         for (i=0;i<mapsize;i++)
-            ActPrintLog(activity, "%"RCPF"u ",overflowmap[i]);
+            ActPrintLog(activity, "%" RCPF "u ",overflowmap[i]);
 #endif
     }
     virtual rowcount_t OverflowAdjustMapStop(unsigned mapsize, rowcount_t * map)
@@ -1234,7 +1234,7 @@ public:
                 overflowinterval = 1;
                 grandtotalsize = inMemUsage;
             }
-            ActPrintLog(activity, "Sort done: rows sorted = %"RCPF"d, bytes sorted = %"I64F"d, overflowed to disk %d time%c", grandtotal, grandtotalsize, numOverflows, (numOverflows==1)?' ':'s');
+            ActPrintLog(activity, "Sort done: rows sorted = %" RCPF "d, bytes sorted = %" I64F "d, overflowed to disk %d time%c", grandtotal, grandtotalsize, numOverflows, (numOverflows==1)?' ':'s');
         }
         ActPrintLog(activity, "Gather finished %s",abort?"ABORTED":"");
         gatherdone = true;

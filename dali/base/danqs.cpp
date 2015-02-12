@@ -767,7 +767,7 @@ public:
         {
             char const * branch = transactionIsGet ? "TransactionalGet" : "TransactionalPut";
             StringBuffer path;
-            path.appendf("%s[@id=\"%"I64F"d\"]", branch, transactionId);
+            path.appendf("%s[@id=\"%" I64F "d\"]", branch, transactionId);
             add = root->queryPropTree(path.str());
             if(!add)
             {
@@ -935,8 +935,8 @@ public:
             IPropertyTree & q = iter->query();
             StringBuffer getPath;
             StringBuffer putPath;
-            getPath.appendf("TransactionalGet[@id=\"%"I64F"d\"]", transactionId);
-            putPath.appendf("TransactionalPut[@id=\"%"I64F"d\"]", transactionId);
+            getPath.appendf("TransactionalGet[@id=\"%" I64F "d\"]", transactionId);
+            putPath.appendf("TransactionalPut[@id=\"%" I64F "d\"]", transactionId);
             IPropertyTree * xferBranch;
             IPropertyTree * removeBranch;
             if(rollback)

@@ -45,7 +45,7 @@ static CriticalSection SDScrit;
 #define CHECK_CONNECTED(XSTR)                                                                                        \
     if (!connected)                                                                                                   \
     {                                                                                                               \
-        LOG(MCerror, unknownJob, XSTR": Closed connection (xpath=%s, sessionId=%"I64F"d)", xpath.get(), sessionId);       \
+        LOG(MCerror, unknownJob, XSTR": Closed connection (xpath=%s, sessionId=%" I64F "d)", xpath.get(), sessionId);       \
         return;                                                                                                     \
     }
 
@@ -526,7 +526,7 @@ IPropertyTreeIterator *CRemoteConnection::doGetElements(CClientRemoteTree *tree,
 IPropertyTreeIterator *CRemoteConnection::getElements(const char *xpath, IPTIteratorCodes flags)
 {
     if (!serverIterAvailable)
-        throw MakeSDSException(SDSExcpt_VersionMismatch, "Server-side getElements not supported by server versions prior to "SDS_SVER_MIN_GETXPATHS_CONNECT);
+        throw MakeSDSException(SDSExcpt_VersionMismatch, "Server-side getElements not supported by server versions prior to " SDS_SVER_MIN_GETXPATHS_CONNECT);
     flags |= iptiter_remote;
     return root->getElements(xpath, flags);
 }
@@ -1693,10 +1693,10 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
 {
     CDaliVersion serverVersionNeeded(MIN_MCONNECT_SVER);
     if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
-        throw MakeSDSException(SDSExcpt_VersionMismatch, "Multiple connect not supported by server versions prior to "MIN_MCONNECT_SVER);
+        throw MakeSDSException(SDSExcpt_VersionMismatch, "Multiple connect not supported by server versions prior to " MIN_MCONNECT_SVER);
 
     if (0 == id || id != myProcessSession())
-        throw MakeSDSException(SDSExcpt_InvalidSessionId, ", in multi connect, sessionid=%"I64F"x", id);
+        throw MakeSDSException(SDSExcpt_InvalidSessionId, ", in multi connect, sessionid=%" I64F "x", id);
 
     CMessageBuffer mb;
     mb.append((unsigned)DAMP_SDSCMD_MCONNECT | lazyExtFlag);
@@ -1752,7 +1752,7 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
 IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, unsigned mode, unsigned timeout)
 {
     if (0 == id || id != myProcessSession())
-        throw MakeSDSException(SDSExcpt_InvalidSessionId, ", connecting to %s, sessionid=%"I64F"x", xpath, id);
+        throw MakeSDSException(SDSExcpt_InvalidSessionId, ", connecting to %s, sessionid=%" I64F "x", xpath, id);
 
     CMessageBuffer mb;
     mb.append((int)DAMP_SDSCMD_CONNECT | lazyExtFlag);

@@ -2825,7 +2825,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         unsigned seq = req.getSequence();
         bool inclXsd = !req.getSuppressXmlSchema();
 
-        VStringBuffer filter("start=%"I64F"d;count=%d", start, count);
+        VStringBuffer filter("start=%" I64F "d;count=%d", start, count);
         addToQueryString(filter, "clusterName", req.getCluster(), ';');
         addToQueryString(filter, "logicalName", req.getLogicalName(), ';');
         if (wuid && *wuid)
@@ -4100,7 +4100,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         nameStr.append("ZAPReport_").append(req.getWuid()).append('_').append(userName.str());
 
         //create a folder for WU ZAP files
-        const char* zipFolder = "tempzipfiles"PATHSEPSTR;
+        const char* zipFolder = "tempzipfiles" PATHSEPSTR;
         folderToZIP.append(zipFolder).append(nameStr.str());
         Owned<IFile> zipDir = createIFile(folderToZIP.str());
         if (!zipDir->exists())

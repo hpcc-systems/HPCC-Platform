@@ -59,7 +59,7 @@ void printCompDetails(const char *fname,IFileIO *baseio,ICompressedFileIO *cmpio
         case COMPRESS_METHOD_FASTLZ:  method = "FASTLZ"; break;
         }
     }
-    printf("%s: is %s compressed, size= %"I64F"d, expanded= %"I64F"d",fname,method,baseio->size(),flzstrm?flzstrm->size():cmpio->size());
+    printf("%s: is %s compressed, size= %" I64F "d, expanded= %" I64F "d",fname,method,baseio->size(),flzstrm?flzstrm->size():cmpio->size());
     if (!flzstrm&&cmpio->recordSize())
         printf(", record size = %d",cmpio->recordSize());
     printf("\n");
@@ -97,9 +97,9 @@ static void printStats(offset_t filesize,unsigned start,unsigned startu)
     if (!elapsedu)
         elapsedu = 1;
     if (elapsed<1000)
-        printf("%"I64F"d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsedu)*1000000,formatTimeU(elapsedu,tmp));
+        printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsedu)*1000000,formatTimeU(elapsedu,tmp));
     else
-        printf("%"I64F"d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsed)*1000,formatTime(elapsed*1000,tmp));
+        printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsed)*1000,formatTime(elapsed*1000,tmp));
 }
 
 int copyExpanded(const char *from, const char *to, bool stats)
@@ -117,7 +117,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
         printCompDetails(from,srcio,cmpio,flzstrm);
     else {
         ret = 1;
-        printf("%s is not compressed, size= %"I64F"d\n",from,srcio->size());
+        printf("%s is not compressed, size= %" I64F "d\n",from,srcio->size());
     }
     if (!to||!*to)
         return ret;

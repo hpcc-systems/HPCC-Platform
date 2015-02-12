@@ -147,7 +147,7 @@ int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* respon
     //response->setContentType(soapFault->get_content_type());
     response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
     response->setContent(soapFault->get_text());
-    DBGLOG("Sending SOAP Fault(%"I64F"d): %s", response->getContentLength(), response->queryContent());
+    DBGLOG("Sending SOAP Fault(%" I64F "d): %s", response->getContentLength(), response->queryContent());
     {
         EspTimeSection sendtime("send fault [CHttpSoapBinding::onSoapRequest]");
         response->send();
@@ -226,7 +226,7 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
     response->setContentType(soapresponse->get_content_type());
     response->setContent(soapresponse->get_text());
     
-    DBGLOG("Sending SOAP Response(%"I64F"d)", response->getContentLength());
+    DBGLOG("Sending SOAP Response(%" I64F "d)", response->getContentLength());
     {
         EspTimeSection sendtime("send response [CHttpSoapBinding::HandleSoapRequest]");
         response->send();

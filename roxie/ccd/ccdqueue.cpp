@@ -169,7 +169,7 @@ size32_t channelWrite(unsigned channel, void const* buf, size32_t size)
 StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
 {
     const IpAddress &serverIP = getNodeAddress(serverIdx);
-    ret.appendf("uid="RUIDF" activityId=", uid);
+    ret.appendf("uid=" RUIDF " activityId=", uid);
     switch(activityId & ~ROXIE_PRIORITY_MASK)
     {
     case ROXIE_UNLOAD: ret.append("ROXIE_UNLOAD"); break;
@@ -196,7 +196,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
         case ROXIE_LOW_PRIORITY: ret.append("LOW"); break;
         default: ret.append("???"); break;
     }
-    ret.appendf(" queryHash=%"I64F"x ch=%u seq=%d cont=%d server=", queryHash, channel, overflowSequence, continueSequence);
+    ret.appendf(" queryHash=%" I64F "x ch=%u seq=%d cont=%d server=", queryHash, channel, overflowSequence, continueSequence);
     serverIP.getIpText(ret);
     if (retries) 
     {

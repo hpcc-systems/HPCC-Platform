@@ -263,7 +263,7 @@ void checkFiles(const char *fn)
         }
         virtual void add(const char *s,__int64 v)
         {
-            printf("%s=%"I64F"d\n",s,v);
+            printf("%s=%" I64F "d\n",s,v);
         }
         virtual void add(const char *s,const char* v)
         {
@@ -271,7 +271,7 @@ void checkFiles(const char *fn)
         }
         virtual void add(unsigned n,const char *s,__int64 v)
         {
-            printf("%s[%d]=%"I64F"d\n",s,n,v);
+            printf("%s[%d]=%" I64F "d\n",s,n,v);
         }
         virtual void add(unsigned n,const char *s,const char* v)
         {
@@ -852,7 +852,7 @@ public:
         }
         piter.clear();
         fiter.clear();
-        logctx.CTXLOG("DFile iterate done     - %d parts, %d rows, CRC sum %"I64F"d",np,totrows,crctot);
+        logctx.CTXLOG("DFile iterate done     - %d parts, %d rows, CRC sum %" I64F "d",np,totrows,crctot);
         Owned<IDistributedSuperFile> sfile;
         sfile.setown(dir.createSuperFile("daregress::superfile1",user,true,false));
         for (i = 0;i<100;i++) {
@@ -881,7 +881,7 @@ public:
             totrows += (unsigned)(piter->query().getFileSize(false,false)/srs);
         }
         piter.clear();
-        logctx.CTXLOG("Superfile iterate done - %d parts, %d rows, CRC sum %"I64F"d",np,totrows,crctot);
+        logctx.CTXLOG("Superfile iterate done - %d parts, %d rows, CRC sum %" I64F "d",np,totrows,crctot);
         ASSERT(crctot==savcrc && "SuperFile does not match sub files");
         unsigned tr = (unsigned)(sfile->getFileSize(false,false)/srs);
         ASSERT(totrows==tr && "Superfile size does not match part sum");
@@ -1098,7 +1098,7 @@ public:
         ForEachItemIn(i2, a)
             a.item(i2).join();
         ASSERT(subchangenum==1000 && "Not all notifications received");
-        logctx.CTXLOG("%d subscription notifications, check sum = %"I64F"d",subchangenum,subchangetotal);
+        logctx.CTXLOG("%d subscription notifications, check sum = %" I64F "d",subchangenum,subchangetotal);
     }
 
     class CNodeSubCommitThread : public CInterface, implements IThreaded

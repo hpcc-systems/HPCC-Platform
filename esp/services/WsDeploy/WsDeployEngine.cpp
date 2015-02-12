@@ -550,7 +550,7 @@ void CWsDeployEngine::printStatus(IDeployTask* task)
     return;
 
   StringBuffer xpath;
-  xpath.appendf("Task[@id='%"I64F"d']", (__int64)task);
+  xpath.appendf("Task[@id='%" I64F "d']", (__int64)task);
   IPropertyTree* pTask = pTasks->queryPropTree(xpath.str());
 
   if (!pTask)

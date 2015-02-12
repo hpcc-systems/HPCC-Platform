@@ -78,7 +78,7 @@ void nodeStats(int fd,offset_t ofs,unsigned &leaves,unsigned &nonleaves)
     _lseeki64(fd, ofs, SEEK_SET);
     NodeHdr hdr;
     if (_read(fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
-        printf("ERROR: Could not read node at %"I64F"x", ofs);
+        printf("ERROR: Could not read node at %" I64F "x", ofs);
         return;
     }
     if (hdr.leafFlag) 
@@ -131,7 +131,7 @@ void printFileCache(const char *fname, unsigned &globtot, unsigned &globfs, bool
                 if (page_index!=e+1) {
                     tot += (e-s+1);
                     if (verbose)
-                        printf("  0x%"I64F"x-0x%"I64F"x = %"I64F"d\n",pagetoofs(s),pagetoofs(e+1)-1,pagetoofs(e-s+1));
+                        printf("  0x%" I64F "x-0x%" I64F "x = %" I64F "d\n",pagetoofs(s),pagetoofs(e+1)-1,pagetoofs(e-s+1));
                     s = page_index;
                 }
             }
@@ -142,13 +142,13 @@ void printFileCache(const char *fname, unsigned &globtot, unsigned &globfs, bool
     }
     if (e!=-1) {
         if (verbose)
-            printf("  0x%"I64F"x-0x%"I64F"x = %"I64F"d\n",pagetoofs(s),pagetoofs(e+1)-1,pagetoofs(e-s+1));
+            printf("  0x%" I64F "x-0x%" I64F "x = %" I64F "d\n",pagetoofs(s),pagetoofs(e+1)-1,pagetoofs(e-s+1));
         tot += (e-s+1);
     }
     if (onlykey)
-        printf("  Cached %"I64F"d of %"I64F"d = %0.2f%  NonLeaves: %u, Leaves: %u\n",pagetoofs(tot),pagetoofs(fs),(double)tot*100.0/(double)fs,nonleaves,leaves);
+        printf("  Cached %" I64F "d of %" I64F "d = %0.2f%  NonLeaves: %u, Leaves: %u\n",pagetoofs(tot),pagetoofs(fs),(double)tot*100.0/(double)fs,nonleaves,leaves);
     else
-        printf("  Cached %"I64F"d of %"I64F"d = %0.2f%\n",pagetoofs(tot),pagetoofs(fs),(double)tot*100.0/(double)fs);
+        printf("  Cached %" I64F "d of %" I64F "d = %0.2f%\n",pagetoofs(tot),pagetoofs(fs),(double)tot*100.0/(double)fs);
     free(mincore_vec);
     munmap(file_mmap, file_stat.st_size);
     close(fd);
@@ -194,9 +194,9 @@ void printPidCachedFiles(int pid,bool verbose,bool onlykey)
     }
     closedir(handle);
     if (onlykey)
-        printf("Total cached %"I64F"d of %"I64F"d = %0.2f%  NonLeaves: %u, Leaves: %u\n",pagetoofs(tot),pagetoofs(fs),(double)tot*100.0/(double)fs,nonleaves,leaves);
+        printf("Total cached %" I64F "d of %" I64F "d = %0.2f%  NonLeaves: %u, Leaves: %u\n",pagetoofs(tot),pagetoofs(fs),(double)tot*100.0/(double)fs,nonleaves,leaves);
     else
-        printf("Total cached %"I64F"d of %"I64F"d = %0.2f%\n",pagetoofs(tot),pagetoofs(fs),(double)tot*100.0/(double)fs);
+        printf("Total cached %" I64F "d of %" I64F "d = %0.2f%\n",pagetoofs(tot),pagetoofs(fs),(double)tot*100.0/(double)fs);
 }
 
 int main(int argc, const char *argv[])
