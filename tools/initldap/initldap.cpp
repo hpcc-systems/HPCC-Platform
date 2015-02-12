@@ -63,7 +63,9 @@ bool initLDAP(IPropertyTree * ldapProps)
     fprintf(stdout, "\nEnter the '%s' LDAP Admin User name on '%s'...",serverType.get(),ldapAddress.str());
     do
     {
-        fgets(buff, sizeof(buff), stdin);
+        char * line = fgets(buff, sizeof(buff), stdin);
+        if (!line)
+            return false;
     }
     while (buff[0] == (char)'\n');
 
@@ -72,7 +74,10 @@ bool initLDAP(IPropertyTree * ldapProps)
     StringAttr ldapUser(buff);
 
     fprintf(stdout, "Enter the LDAP Admin user '%s' password...",ldapUser.get());
-    fgets(buff, sizeof(buff), stdin);
+    char * line = fgets(buff, sizeof(buff), stdin);
+    if (!line)
+        return false;
+
     if (buff[strlen(buff)-1] == '\n')
         buff[strlen(buff)-1] = (char)NULL;
     StringAttr ldapPwd(buff);

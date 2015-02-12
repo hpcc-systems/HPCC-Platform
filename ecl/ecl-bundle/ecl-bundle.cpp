@@ -281,7 +281,8 @@ StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
     // If the bundle name looks like a url, fetch it somewhere temporary first...
     if (isUrl(bundleName))
     {
-        // Put it into a temp directory - we need the filename to be right
+        //Put it into a temp directory - we need the filename to be right
+        //I don't think there is any way to disable the following warning....
         const char *tmp = tmpnam(NULL);
         recursiveCreateDirectory(tmp);
         deleteOnCloseDown.append(tmp);
