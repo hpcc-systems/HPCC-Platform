@@ -1732,7 +1732,7 @@ class CXMLParse : public CInterface, implements IXMLParse
         }
         virtual void newAttribute(const char *tag, const char *value)
         {
-            if (stack.ordinality() && stack.tos().keep)
+            if (stack.tos().keep)
                 maker->newAttribute(tag, value);
         }
         virtual void beginNodeContent(const char *tag)
@@ -1929,6 +1929,11 @@ class CXMLParse : public CInterface, implements IXMLParse
         {
             if (!checkSkipRoot(tag))
                 CMakerBase::beginNode(tag, startOffset);
+        }
+        virtual void newAttribute(const char *tag, const char *value)
+        {
+            if (stack.ordinality() && stack.tos().keep)
+                maker->newAttribute(tag, value);
         }
         virtual void beginNodeContent(const char *tag)
         {
