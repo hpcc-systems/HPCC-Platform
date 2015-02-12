@@ -771,7 +771,7 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg,
         if (!m_bndCfg)
             DBGLOG("ESDL Binding: Warning could not fetch ESDL bind information for this ESP Binding %s", binding);
 
-        m_esdl.setown(createEsdlDefinition());
+        m_esdl.setown(createNewEsdlDefinition());
         m_xsdgen.setown(createEsdlDefinitionHelper());
     }
     catch(IException* e)
