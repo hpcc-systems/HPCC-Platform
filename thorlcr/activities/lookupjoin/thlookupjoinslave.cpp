@@ -1722,7 +1722,7 @@ protected:
                         CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
                         clearNonLocalRows(rows, flushedRowMarkers.item(a));
 
-                        ActPrintLog("Compacting rhsNodeRows[%d], has %"RIPF"d rows", a, rows.numCommitted());
+                        ActPrintLog("Compacting rhsNodeRows[%d], has %" RIPF "d rows", a, rows.numCommitted());
                         rows.compact();
 
                         rowidx_t c = rows.numCommitted();
@@ -2517,7 +2517,7 @@ protected:
                 rhsTotalCount = rightMeta.totalRowsMax;
                 if (rhsTotalCount > RIMAX)
                     throw MakeActivityException(this, 0, "Too many rows on RHS for ALL join: %" RCPF "d", rhsTotalCount);
-                rhs.ensure((rowidx_t)rhsTotalCount);
+                rhs.resize((rowidx_t)rhsTotalCount);
             }
             while (!abortSoon)
             {

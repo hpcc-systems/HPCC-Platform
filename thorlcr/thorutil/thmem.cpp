@@ -481,7 +481,7 @@ bool CThorExpandingRowArray::resizeRowTable(void **&_rows, rowidx_t requiredRows
         {
             e->Release();
             if (throwOnOom)
-                throw MakeActivityException(&activity, 0, "Out of memory, resizing %s, had %"RIPF"d, trying to allocate %"RIPF"d elements", errMsg, ordinality(), requiredRows);
+                throw MakeActivityException(&activity, 0, "Out of memory, resizing %s, had %" RIPF "d, trying to allocate %" RIPF "d elements", errMsg, ordinality(), requiredRows);
             return false;
         }
         throw;
