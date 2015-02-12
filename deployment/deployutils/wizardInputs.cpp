@@ -472,11 +472,11 @@ IPropertyTree* CWizardInputs::createEnvironment()
   }
 
   Owned<IPropertyTree> pProgramTree = createPTreeFromIPT(m_buildSetTree);
-  pNewEnvTree->addPropTree( XML_TAG_PROGRAMS , createPTreeFromIPT(pProgramTree->queryPropTree("./" XML_TAG_PROGRAMS )));
+  pNewEnvTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pProgramTree->queryPropTree("./" XML_TAG_PROGRAMS)));
 
-  Owned<IPropertyTree> pCompTree = createPTree( XML_TAG_HARDWARE );
+  Owned<IPropertyTree> pCompTree = createPTree(XML_TAG_HARDWARE);
   generateHardwareHeaders(pNewEnvTree, sbTemp, false, pCompTree);
-  pCompTree->removeProp( XML_TAG_COMPUTER );
+  pCompTree->removeProp(XML_TAG_COMPUTER);
   xpath.clear().appendf("./%s/%s", XML_TAG_COMPUTERTYPE, XML_ATTR_MEMORY);
   pCompTree->removeProp(xpath.str());
   xpath.clear().appendf("./%s/%s", XML_TAG_COMPUTERTYPE, XML_ATTR_NICSPEED);
@@ -510,11 +510,11 @@ IPropertyTree* CWizardInputs::createEnvironment()
 
   for(unsigned i = 0; i < m_ipaddressSupport.ordinality(); i++)
   {
-    IPropertyTree* pComputer = pCompTree->addPropTree( XML_TAG_COMPUTER ,createPTree());
+    IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
     ipaddr.ipset(m_ipaddressSupport.item(i));
     ipaddr.getNetAddress(sizeof(x),&x);
     name.clear().appendf("node%03d%03d", (x >> 16) & 0xFF, (x >> 24) & 0xFF);
-    getUniqueName(pCompTree, name,  XML_TAG_COMPUTER , "");
+    getUniqueName(pCompTree, name, XML_TAG_COMPUTER, "");
     pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
@@ -523,18 +523,18 @@ IPropertyTree* CWizardInputs::createEnvironment()
 
   for(unsigned i = 0; i < m_ipaddress.ordinality(); i++)
   {
-    IPropertyTree* pComputer = pCompTree->addPropTree( XML_TAG_COMPUTER ,createPTree());
+    IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
     ipaddr.ipset(m_ipaddress.item(i));
     ipaddr.getNetAddress(sizeof(x),&x);
     name.clear().appendf("node%03d%03d", (x >> 16) & 0xFF, (x >> 24) & 0xFF);
-    getUniqueName(pCompTree, name,  XML_TAG_COMPUTER , "");
+    getUniqueName(pCompTree, name, XML_TAG_COMPUTER, "");
     pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
     pComputer->addProp(XML_ATTR_NETADDRESS, m_ipaddress.item(i));
   }
 
-  pNewEnvTree->addPropTree( XML_TAG_HARDWARE , createPTreeFromIPT(pCompTree));
+  pNewEnvTree->addPropTree(XML_TAG_HARDWARE, createPTreeFromIPT(pCompTree));
   //Before we generate software tree check for dependencies of component for do_not_generate ,roxie, thor
   checkForDependencies();
   generateSoftwareTree(pNewEnvTree);
@@ -585,12 +585,12 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
     }
 
     const char* firstComp = "esp";
-    xpath.clear().appendf("./%s/%s/%s/[@name=\"%s\"]",  XML_TAG_PROGRAMS ,  XML_TAG_BUILD , XML_TAG_BUILDSET, firstComp);
+    xpath.clear().appendf("./%s/%s/%s/[@name=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, firstComp);
     IPropertyTree* pEspBuildSet = m_buildSetTree->queryPropTree(xpath.str());
     if (pEspBuildSet)
       addComponentToSoftware(pNewEnvTree, pEspBuildSet);
 
-    xpath.clear().appendf("./%s/%s/%s",  XML_TAG_PROGRAMS ,  XML_TAG_BUILD , XML_TAG_BUILDSET);
+    xpath.clear().appendf("./%s/%s/%s", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET);
     Owned<IPropertyTreeIterator> buildSetInsts = m_buildSetTree->getElements(xpath.str());
 
     ForEach(*buildSetInsts)
@@ -611,7 +611,7 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
 void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer attrName, const char* processName, const char* buildSetName, const char* instName)
 {
   StringBuffer sb, sbl, compName, xpath, nodeName;
-  xpath.clear().appendf("./%s/%s[%s=\"%s\"]",  XML_TAG_HARDWARE ,  XML_TAG_COMPUTER , XML_ATTR_NETADDRESS, attrName.str());
+  xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, attrName.str());
   IPropertyTree* pHardTemp = pNewEnvTree->queryPropTree(xpath.str());
   if(pHardTemp)
     nodeName.clear().append(pHardTemp->queryProp("./" XML_ATTR_NAME));//NodeName
@@ -638,8 +638,8 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer a
 void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
 {
   StringBuffer xpath, tempName, value;
-  Owned<IPropertyTree> pBuildTree = createPTreeFromIPT(pNewEnvTree->queryPropTree("./" XML_TAG_PROGRAMS ));
-  xpath.clear().appendf("./%s/%s/",  XML_TAG_BUILD , XML_TAG_BUILDSET);
+  Owned<IPropertyTree> pBuildTree = createPTreeFromIPT(pNewEnvTree->queryPropTree("./" XML_TAG_PROGRAMS));
+  xpath.clear().appendf("./%s/%s/", XML_TAG_BUILD, XML_TAG_BUILDSET);
   Owned<IPropertyTreeIterator> buildSetInsts = pBuildTree->getElements(xpath.str());
 
   ForEach(*buildSetInsts)
@@ -828,7 +828,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
       xmlForRoxieServers.append("<Instances>");
       ForEachItemIn(i, ipAssignedToComp)
       {
-        xpath.clear().appendf("./%s/%s/[%s=\"%s\"]",  XML_TAG_HARDWARE ,  XML_TAG_COMPUTER , XML_ATTR_NETADDRESS, ipAssignedToComp.item(i));
+        xpath.clear().appendf("./%s/%s/[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, ipAssignedToComp.item(i));
         IPropertyTree* pHardTemp = pNewEnvTree->queryPropTree(xpath.str());
         if(pHardTemp){
          xmlForRoxiePorts.appendf("<Component name=\"%s\" />", pHardTemp->queryProp("./@name"));
@@ -860,7 +860,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
       if(!ipAssignedToComp.empty())
         masterIP.clear().append(ipAssignedToComp.item(0));
     
-      xpath.clear().appendf("./%s/%s[%s=\"%s\"]",  XML_TAG_HARDWARE ,  XML_TAG_COMPUTER , XML_ATTR_NETADDRESS, masterIP.str());
+      xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, masterIP.str());
       IPropertyTree* pHardTemp = pNewEnvTree->queryPropTree(xpath.str());
       if(pHardTemp)
         xml.clear().appendf("<ThorData type=\"Master\" name=\"%s\" validateComputers=\"false\" skipExisting=\"false\" > <Computer name=\"%s\" /></ThorData>", compName.str(), pHardTemp->queryProp("./@name"));
@@ -872,7 +872,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
 
       for( ; numOfNodes < ipAssignedToComp.ordinality() ; numOfNodes++)
       {
-        xpath.clear().appendf("./%s/%s[%s=\"%s\"]",  XML_TAG_HARDWARE ,  XML_TAG_COMPUTER , XML_ATTR_NETADDRESS, ipAssignedToComp.item(numOfNodes));
+        xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, ipAssignedToComp.item(numOfNodes));
         IPropertyTree* pHardTemp = pNewEnvTree->queryPropTree(xpath.str());
         if(pHardTemp)
           xml.appendf("<Computer name=\"%s\" />", pHardTemp->queryProp("./@name"));
@@ -892,7 +892,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
    {
      IPropertyTree* pEspProcess = &espProcessIter->query();
      compName.clear().append(pEspProcess->queryProp(XML_ATTR_NAME));
-     xpath.clear().appendf("./%s/%s/%s[@processName=\"%s\"]",  XML_TAG_PROGRAMS ,  XML_TAG_BUILD , XML_TAG_BUILDSET, XML_TAG_ESPSERVICE);
+     xpath.clear().appendf("./%s/%s/%s[@processName=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_TAG_ESPSERVICE);
      Owned<IPropertyTreeIterator> espServiceIter = pNewEnvTree->getElements(xpath.str());
        
      ForEach (*espServiceIter)
@@ -1014,7 +1014,7 @@ IPropertyTree* CWizardInputs::createTopologyForComp(IPropertyTree* pNewEnvTree, 
             for(unsigned i = 0 ; i < clusterCompEle->ordinality() ; i++)
             {
               const char* eachClusterElem = clusterCompEle->item(i);
-              xpath.clear().appendf("./%s/%s/%s[%s=\"%s\"]",  XML_TAG_PROGRAMS ,  XML_TAG_BUILD , XML_TAG_BUILDSET, XML_ATTR_NAME, eachClusterElem);
+              xpath.clear().appendf("./%s/%s/%s[%s=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_ATTR_NAME, eachClusterElem);
               IPropertyTree* pBuildset = pNewEnvTree->queryPropTree(xpath.str());
               if(pBuildset)
               {
@@ -1044,7 +1044,7 @@ void CWizardInputs::checkForDependencies()
   
   if(m_buildSetTree)
   {
-    xpath.clear().appendf("./%s/%s/%s",  XML_TAG_PROGRAMS ,  XML_TAG_BUILD , XML_TAG_BUILDSET);
+    xpath.clear().appendf("./%s/%s/%s", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET);
     Owned<IPropertyTreeIterator> buildSetInsts = m_buildSetTree->getElements(xpath.str());
     ForEach(*buildSetInsts)
     {

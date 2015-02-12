@@ -183,7 +183,7 @@ void expandRange(IPropertyTree* pComputers)
 
         for(unsigned i = 0 ; i < ipList.ordinality(); i++)
         {
-          IPropertyTree* pElem = pComputers->addPropTree( XML_TAG_COMPUTER ,createPTree());
+          IPropertyTree* pElem = pComputers->addPropTree(XML_TAG_COMPUTER,createPTree());
           pElem->addProp(XML_ATTR_NETADDRESS,ipList.item(i));
         }
 
@@ -943,7 +943,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
   const char* xmlArg = req.getXmlArgs();
   Owned<IPropertyTree> pEnvRoot = &m_Environment->getPTree();
   IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree(XML_TAG_SOFTWARE);
-  IPropertyTree* pEnvHardware = pEnvRoot->queryPropTree( XML_TAG_HARDWARE );
+  IPropertyTree* pEnvHardware = pEnvRoot->queryPropTree(XML_TAG_HARDWARE);
 
   Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
   IPropertyTree* pSoftwareFolder = pSrcTree->queryPropTree("Setting[@category='Software']");
@@ -1838,17 +1838,17 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         //update references
         if (!strcmp(pszAttrName, "name"))
         {
-          if (!strcmp(pszSubType,  XML_TAG_COMPUTER ))
+          if (!strcmp(pszSubType, XML_TAG_COMPUTER))
           {
             UpdateRefAttributes(pEnvRoot, XML_TAG_SOFTWARE"//*", XML_ATTR_COMPUTER, pszOldValue, pszNewValue);
             UpdateRefAttributes(pEnvRoot, XML_TAG_SOFTWARE "/" XML_TAG_DALISERVERPROCESS, XML_ATTR_BACKUPCOMPUTER, pszOldValue, pszNewValue);
           }
           else if (!strcmp(pszSubType, XML_TAG_DOMAIN))
-            UpdateRefAttributes(pEnvRoot,  XML_TAG_HARDWARE "/" XML_TAG_COMPUTER , XML_ATTR_DOMAIN, pszOldValue, pszNewValue);
+            UpdateRefAttributes(pEnvRoot, XML_TAG_HARDWARE "/" XML_TAG_COMPUTER, XML_ATTR_DOMAIN, pszOldValue, pszNewValue);
           else if (!strcmp(pszSubType, XML_TAG_SWITCH))
-            UpdateRefAttributes(pEnvRoot,  XML_TAG_HARDWARE "/" XML_TAG_COMPUTER , XML_ATTR_SWITCH, pszOldValue, pszNewValue);
+            UpdateRefAttributes(pEnvRoot, XML_TAG_HARDWARE "/" XML_TAG_COMPUTER, XML_ATTR_SWITCH, pszOldValue, pszNewValue);
           else if (!strcmp(pszSubType, XML_TAG_COMPUTERTYPE))
-            UpdateRefAttributes(pEnvRoot,  XML_TAG_HARDWARE "/" XML_TAG_COMPUTER , XML_ATTR_COMPUTERTYPE, pszOldValue, pszNewValue);
+            UpdateRefAttributes(pEnvRoot, XML_TAG_HARDWARE "/" XML_TAG_COMPUTER, XML_ATTR_COMPUTERTYPE, pszOldValue, pszNewValue);
         }
         else if (!strcmp(pszAttrName, "netAddress"))
         {
@@ -2524,8 +2524,8 @@ bool CWsDeployFileInfo::getValue(IEspContext &context, IEspGetValueRequest &req,
       String str(szPath);
       Owned<IPropertyTreeIterator> iter; 
       if (str.startsWith(XML_TAG_SOFTWARE) || 
-        str.startsWith( XML_TAG_HARDWARE ) || 
-        str.startsWith( XML_TAG_PROGRAMS ))
+        str.startsWith(XML_TAG_HARDWARE) ||
+        str.startsWith(XML_TAG_PROGRAMS))
         iter.setown(pEnvRoot->getElements(szPath));
       else
         iter.setown(pNode->getElements(szPath));
@@ -2601,7 +2601,7 @@ bool CWsDeployFileInfo::getValue(IEspContext &context, IEspGetValueRequest &req,
   }
   else if(pszQueryType && !strcmp(pszQueryType, "DomainsAndComputerTypes"))
   {
-    xpath.clear().append( XML_TAG_HARDWARE "/" XML_TAG_DOMAIN);
+    xpath.clear().append(XML_TAG_HARDWARE "/" XML_TAG_DOMAIN);
     sbMultiple.append("<Domains>");
     bool flag = false;
     Owned<IPropertyTreeIterator> pDomains = pEnvRoot->getElements(xpath.str());
@@ -2618,7 +2618,7 @@ bool CWsDeployFileInfo::getValue(IEspContext &context, IEspGetValueRequest &req,
 
     flag = false;
 
-    xpath.clear().append( XML_TAG_HARDWARE "/" XML_TAG_COMPUTERTYPE);
+    xpath.clear().append(XML_TAG_HARDWARE "/" XML_TAG_COMPUTERTYPE);
     sbMultiple.append("<ComputerTypes>");
     Owned<IPropertyTreeIterator> pCTypes = pEnvRoot->getElements(xpath.str());
     ForEach(*pCTypes)
@@ -3371,7 +3371,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
   }
   else if (pHardwareFolder)
   {
-    IPropertyTree* pEnvHardware = pEnvRoot->queryPropTree( XML_TAG_HARDWARE );
+    IPropertyTree* pEnvHardware = pEnvRoot->queryPropTree(XML_TAG_HARDWARE);
     
     generateHardwareHeaders(pEnvRoot, sbDefn);
     resp.setCompDefn(sbDefn.str());
@@ -3392,9 +3392,9 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
     //add any missing parameters
     Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
     StringBuffer sbTemp;
-    Owned<IPropertyTree> pNewCompTree = createPTree( XML_TAG_HARDWARE );
+    Owned<IPropertyTree> pNewCompTree = createPTree(XML_TAG_HARDWARE);
     generateHardwareHeaders(pEnvRoot, sbTemp, false, pNewCompTree);
-    const char* pElemNames[] = { XML_TAG_COMPUTER };
+    const char* pElemNames[] = {XML_TAG_COMPUTER};
     bool modified = false;
 
     for (int i = 0; i < sizeof(pElemNames)/sizeof(char*); i++)
@@ -3425,12 +3425,12 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       toXML(pSrcTree, xml, false);
     }
 
-    resp.setComponent( XML_TAG_HARDWARE );
+    resp.setComponent(XML_TAG_HARDWARE);
     resp.setXmlArgs( xml.str() );
   }
   else if (pBuildFolder)
   {
-    IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree( XML_TAG_PROGRAMS );
+    IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree(XML_TAG_PROGRAMS);
 
     generateBuildHeaders(pEnvRoot, true, sbDefn, false);
     resp.setCompDefn(sbDefn.str());
@@ -3438,7 +3438,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
     StringBuffer xml;
     toXML(pEnvPrograms, xml, false);
     xml.replaceString(" url="," path=");
-    resp.setComponent( XML_TAG_PROGRAMS );
+    resp.setComponent(XML_TAG_PROGRAMS);
     resp.setXmlArgs( xml.str() );
   }
   else if (pBuildSet)
@@ -3446,7 +3446,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
     generateBuildHeaders(pEnvRoot, false, sbDefn, false);
     resp.setCompDefn(sbDefn.str());
 
-    IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree( XML_TAG_PROGRAMS );
+    IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree(XML_TAG_PROGRAMS);
     Owned<IPropertyTreeIterator> iter = pParamTree->getElements(XML_TAG_BUILDSET);
     ForEach (*iter)
     {
@@ -3672,7 +3672,7 @@ bool CWsDeployFileInfo::getBuildSetInfo(IEspContext &context, IEspGetBuildSetInf
 
   if (pBuildSet)
   {
-    IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree( XML_TAG_PROGRAMS );
+    IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree(XML_TAG_PROGRAMS);
     Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_BUILDSET);
 
     ForEach (*iter)
@@ -3727,7 +3727,7 @@ bool CWsDeployFileInfo::importBuild(IEspContext &context, IEspImportBuildRequest
 
   const char* xmlArg = req.getBuildSets();
   IPropertyTree* buildSets = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<BuildSets/>");
-  IPropertyTree* buildNode = createPTree( XML_TAG_BUILD );
+  IPropertyTree* buildNode = createPTree(XML_TAG_BUILD);
   const char* buildName = buildSets->queryProp(XML_ATTR_NAME);
   const char* buildUrl = buildSets->queryProp("@path");
   buildNode->setProp(XML_ATTR_NAME, buildName);
@@ -3773,12 +3773,12 @@ bool CWsDeployFileInfo::importBuild(IEspContext &context, IEspImportBuildRequest
   }
 
   Owned<IPropertyTree> pEnvRoot = &m_Environment->getPTree();
-  IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree( XML_TAG_PROGRAMS );
+  IPropertyTree* pEnvPrograms = pEnvRoot->queryPropTree(XML_TAG_PROGRAMS);
 
   if (!pEnvPrograms)
-    pEnvPrograms = pEnvRoot->addPropTree( XML_TAG_PROGRAMS , createPTree() );
+    pEnvPrograms = pEnvRoot->addPropTree(XML_TAG_PROGRAMS, createPTree() );
 
-  pEnvPrograms->addPropTree( XML_TAG_BUILD , buildNode);
+  pEnvPrograms->addPropTree(XML_TAG_BUILD, buildNode);
   resp.setStatus("true");
 
   return true;
@@ -4183,7 +4183,7 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
 bool CWsDeployFileInfo::addCopyToPropTree(IPropertyTree* pPropTree, IPropertyTree* pDupTree, const char* tag_name)
 {
   StringBuffer strTag;
-  strTag.clear().appendf("%s/%s",  XML_TAG_HARDWARE , tag_name);
+  strTag.clear().appendf("%s/%s", XML_TAG_HARDWARE, tag_name);
 
   return pPropTree->addPropTree(strTag.str(), pDupTree) != NULL;
 }
@@ -4193,7 +4193,7 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
   StringBuffer xpath;
   StringBuffer xpath3;
   StringBuffer filePath;
-  xpath.clear().appendf("%s",  XML_TAG_HARDWARE );
+  xpath.clear().appendf("%s", XML_TAG_HARDWARE);
 
   Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
   Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements("*");
@@ -4219,7 +4219,7 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
     const char* tag_name = pComp.queryName();
 
     StringBuffer xpath2;
-    xpath2.appendf("./%s/%s[%s = \"%s\"]",  XML_TAG_HARDWARE , tag_name, XML_ATTR_NAME, name);
+    xpath2.appendf("./%s/%s[%s = \"%s\"]", XML_TAG_HARDWARE, tag_name, XML_ATTR_NAME, name);
 
     if (pEnvRoot2->queryPropTree(xpath2.str()) != NULL) // check if target configuration has same named element
     {
@@ -4759,17 +4759,17 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
   if (!strcmp(operation, "New"))
   {
     StringBuffer sbTemp;
-    IPropertyTree* pCompTree = createPTree( XML_TAG_HARDWARE );
+    IPropertyTree* pCompTree = createPTree(XML_TAG_HARDWARE);
     generateHardwareHeaders(pEnvRoot, sbTemp, false, pCompTree, true);
 
     StringBuffer sbNewName(type);
     xpath.clear().appendf("%s", type);
 
-    getUniqueName(pEnvRoot, sbNewName, xpath.str(),  XML_TAG_HARDWARE );
+    getUniqueName(pEnvRoot, sbNewName, xpath.str(), XML_TAG_HARDWARE);
     xpath.clear().append(type).append("/").append(XML_ATTR_NAME);
     pCompTree->setProp(xpath.str(), sbNewName);
 
-    pEnvRoot->queryPropTree( XML_TAG_HARDWARE )->addPropTree(type, pCompTree->queryPropTree(type));
+    pEnvRoot->queryPropTree(XML_TAG_HARDWARE)->addPropTree(type, pCompTree->queryPropTree(type));
 
     resp.setCompName(sbNewName.str());
     resp.setStatus("true");
@@ -4798,7 +4798,7 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
 
     if (pComps)
     {
-      mergePTree(pEnvRoot->queryPropTree( XML_TAG_HARDWARE ), pComps);
+      mergePTree(pEnvRoot->queryPropTree(XML_TAG_HARDWARE), pComps);
       resp.setCompName(pComps->queryPropTree("Computer[1]")->queryProp(XML_ATTR_NAME));
     }
 
@@ -4814,14 +4814,14 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
       IPropertyTree* pComp = &iterComputers->query();
 
       const char* name = pComp->queryProp(XML_ATTR_NAME);
-      if (!strcmp(type,  XML_TAG_COMPUTER ))
+      if (!strcmp(type, XML_TAG_COMPUTER))
         xpath.clear().appendf(XML_TAG_SOFTWARE"//[" XML_ATTR_COMPUTER "=\"%s\"]", name);
       else if (!strcmp(type, XML_TAG_COMPUTERTYPE))
-        xpath.clear().appendf( XML_TAG_HARDWARE "//[" XML_ATTR_COMPUTERTYPE "=\"%s\"]", name);
+        xpath.clear().appendf(XML_TAG_HARDWARE "//[" XML_ATTR_COMPUTERTYPE "=\"%s\"]", name);
       else if (!strcmp(type, XML_TAG_DOMAIN))
-        xpath.clear().appendf( XML_TAG_HARDWARE "//[" XML_ATTR_DOMAIN "=\"%s\"]", name);
+        xpath.clear().appendf(XML_TAG_HARDWARE "//[" XML_ATTR_DOMAIN "=\"%s\"]", name);
       else if (!strcmp(type, XML_TAG_SWITCH))
-        xpath.clear().appendf( XML_TAG_HARDWARE "//[" XML_ATTR_SWITCH "=\"%s\"]", name);
+        xpath.clear().appendf(XML_TAG_HARDWARE "//[" XML_ATTR_SWITCH "=\"%s\"]", name);
 
       Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements(xpath.str());
 
@@ -4846,14 +4846,14 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
       throw MakeStringException(-1, "Cannot delete %s with name %s as it is being referenced by components: %s.", type, refName.str(), refs.str());
     else
     {
-      if (m_bCloud && !strcmp(type,  XML_TAG_COMPUTER ))
+      if (m_bCloud && !strcmp(type, XML_TAG_COMPUTER))
       {
         StringBuffer sb, sbMsg;
         sb.append("<Computers>");
         ForEach (*iterComputers)
         {
           IPropertyTree* pComp = &iterComputers->query();
-          xpath.clear().appendf( XML_TAG_HARDWARE "/%s[" XML_ATTR_NAME "=\"%s\"]", type, pComp->queryProp(XML_ATTR_NAME));
+          xpath.clear().appendf(XML_TAG_HARDWARE "/%s[" XML_ATTR_NAME "=\"%s\"]", type, pComp->queryProp(XML_ATTR_NAME));
           IPropertyTree* pTree = pEnvRoot->queryPropTree(xpath.str());
           sb.appendf("<Computer netAddress='%s'/>", pTree->queryProp(XML_ATTR_NETADDRESS));
         }
@@ -4869,9 +4869,9 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
       ForEach (*iterComputers)
       {
         IPropertyTree* pComp = &iterComputers->query();
-        xpath.clear().appendf( XML_TAG_HARDWARE "/%s[" XML_ATTR_NAME "=\"%s\"]", type, pComp->queryProp(XML_ATTR_NAME));
+        xpath.clear().appendf(XML_TAG_HARDWARE "/%s[" XML_ATTR_NAME "=\"%s\"]", type, pComp->queryProp(XML_ATTR_NAME));
         IPropertyTree* pTree = pEnvRoot->queryPropTree(xpath.str());
-        pEnvRoot->queryPropTree( XML_TAG_HARDWARE )->removeTree(pTree);
+        pEnvRoot->queryPropTree(XML_TAG_HARDWARE)->removeTree(pTree);
       }
        
       resp.setStatus("true");
@@ -5916,10 +5916,10 @@ void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployRe
       ForEach (*iter)
       {
         IPropertyTree* pComputer = &iter->query();
-        xpath.clear().appendf( XML_TAG_COMPUTER "[" XML_ATTR_NETADDRESS "='%s']", pComputer->queryProp(XML_ATTR_NETADDRESS));
+        xpath.clear().appendf(XML_TAG_COMPUTER "[" XML_ATTR_NETADDRESS "='%s']", pComputer->queryProp(XML_ATTR_NETADDRESS));
 
         if (!m_lockedNodesBeforeEnv->queryPropTree(xpath.str()))
-          lockComputers->addPropTree( XML_TAG_COMPUTER , createPTreeFromIPT(pComputer));
+          lockComputers->addPropTree(XML_TAG_COMPUTER, createPTreeFromIPT(pComputer));
       }
     }
 
@@ -5931,10 +5931,10 @@ void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployRe
       ForEach (*iter)
       {
         IPropertyTree* pComputer = &iter->query();
-        xpath.clear().appendf( XML_TAG_COMPUTER "[" XML_ATTR_NETADDRESS "='%s']", pComputer->queryProp(XML_ATTR_NETADDRESS));
+        xpath.clear().appendf(XML_TAG_COMPUTER "[" XML_ATTR_NETADDRESS "='%s']", pComputer->queryProp(XML_ATTR_NETADDRESS));
 
         if (!pComputers->queryPropTree(xpath.str()))
-          unlockComputers->addPropTree( XML_TAG_COMPUTER , createPTreeFromIPT(pComputer));
+          unlockComputers->addPropTree(XML_TAG_COMPUTER, createPTreeFromIPT(pComputer));
       }
     }
 
@@ -5955,7 +5955,7 @@ void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployRe
       ForEach (*iter)
       {
         IPropertyTree* pComputer = &iter->query();
-        xpath.clear().appendf( XML_TAG_COMPUTER "[" XML_ATTR_NETADDRESS "='%s']", pComputer->queryProp(XML_ATTR_NETADDRESS));
+        xpath.clear().appendf(XML_TAG_COMPUTER "[" XML_ATTR_NETADDRESS "='%s']", pComputer->queryProp(XML_ATTR_NETADDRESS));
 
         IPropertyTree* pDelComputer = m_lockedNodesBeforeEnv->queryPropTree(xpath.str());
         m_lockedNodesBeforeEnv->removeTree(pDelComputer);
@@ -6040,7 +6040,7 @@ void CWsDeployFileInfo::checkForRefresh(IEspContext &context, IConstWsDeployReqI
 IPropertyTree* CWsDeployFileInfo::queryComputersForCloud()
 {
   Owned<IPropertyTree> pEnvTree = m_Environment?&m_Environment->getPTree():&m_constEnvRdOnly->getPTree();
-  return pEnvTree->queryPropTree( XML_TAG_HARDWARE );
+  return pEnvTree->queryPropTree(XML_TAG_HARDWARE);
 }
 
 void CCloudTaskThread::main()
@@ -6269,7 +6269,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
         try
         {
           Owned<IPropertyTree> pDefBldSet = m_pService->m_pConfigHelper->getBuildSetTree(); //createPTreeFromXMLFile( m_pService->m_pConfigHelper->getBuildSetFilePath() );
-          pNewTree->addPropTree( XML_TAG_PROGRAMS , createPTreeFromIPT(pDefBldSet->queryPropTree("./Programs")));
+          pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pDefBldSet->queryPropTree("./Programs")));
           pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTreeFromIPT(pDefBldSet->queryPropTree("./Software")));
         }
         catch(IException* e)
@@ -6283,10 +6283,10 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
       pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTree());
       pNewTree->addPropTree("./Software/Directories", createPTreeFromXMLString(DEFAULT_DIRECTORIES));
     }
-    pNewTree->addPropTree( XML_TAG_HARDWARE , createPTree());
+    pNewTree->addPropTree(XML_TAG_HARDWARE, createPTree());
 
-    if (!pNewTree->queryPropTree( XML_TAG_PROGRAMS ))
-      pNewTree->addPropTree( XML_TAG_PROGRAMS , createPTree());
+    if (!pNewTree->queryPropTree(XML_TAG_PROGRAMS))
+      pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTree());
 
     toXML(pNewTree, s.clear());
     sbxml.clear().append(s);
@@ -7339,7 +7339,7 @@ bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, cons
       if (autoadd)
       {
         StringBuffer sb, sbl, compName, nodeName;
-        xpath.clear().appendf("./%s/%s[%s=\"%s\"]",  XML_TAG_HARDWARE ,  XML_TAG_COMPUTER ,
+        xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER,
           XML_ATTR_NETADDRESS, ip);
         IPropertyTree* computer = pEnvRoot->queryPropTree(xpath.str());
 

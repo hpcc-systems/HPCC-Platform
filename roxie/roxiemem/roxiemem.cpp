@@ -2252,7 +2252,7 @@ public:
     unsigned releasePage(Heaplet * finger)
     {
         if (memTraceLevel >= 3)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%"I64F"u rowMgr=%p",
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%" I64F "u rowMgr=%p",
                     finger, finger->sizeInPages(), (unsigned __int64) finger->_capacity(), this);
 
         removeHeaplet(finger);

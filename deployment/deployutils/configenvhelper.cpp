@@ -65,7 +65,7 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
         {
             IPropertyTree* pComp = &iterComputers->query();
             const char* pszCompName = pComp->queryProp(XML_ATTR_NAME);
-            xpath.clear().appendf( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "/[" XML_ATTR_NAME "='%s']", pszCompName);
+            xpath.clear().appendf(XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "/[" XML_ATTR_NAME "='%s']", pszCompName);
             IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
 
             if (pComputer)
@@ -442,7 +442,7 @@ IPropertyTree* CConfigEnvHelper::lookupComputerByName(const char* szName) const
 {
   if (!szName || !*szName) return NULL;
 
-  Owned<IPropertyTreeIterator> iter = m_pRoot->getElements( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER );
+  Owned<IPropertyTreeIterator> iter = m_pRoot->getElements(XML_TAG_HARDWARE "/" XML_TAG_COMPUTER);
   for (iter->first(); iter->isValid(); iter->next())
   {
     const char* szValue = iter->query().queryProp(XML_ATTR_NAME);
@@ -816,7 +816,7 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
         {
             IPropertyTree* pComp = &iterComputers->query();
             const char* pszCompName = pComp->queryProp(XML_ATTR_NAME);
-            xpath.clear().appendf( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "/[" XML_ATTR_NAME "='%s']", pszCompName);
+            xpath.clear().appendf(XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "/[" XML_ATTR_NAME "='%s']", pszCompName);
             IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
             
             if (pComputer)
@@ -1043,7 +1043,7 @@ bool CConfigEnvHelper::CheckTopologyComputerUse(IPropertyTree* pComputerNode, IP
         {
             IPropertyTree* pTree = &iter->query();
             const char* pszComputer = pTree->queryProp(XML_ATTR_COMPUTER);
-            xpath.clear().appendf( XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "[" XML_ATTR_NAME "='%s']", pszComputer);
+            xpath.clear().appendf(XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "[" XML_ATTR_NAME "='%s']", pszComputer);
             IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
             const char* szNetAddress1 = pComputer?pComputer->queryProp(XML_ATTR_NETADDRESS):NULL;
             if (szNetAddress1 && strcmp(szNetAddress1, szNetAddress)==0)
