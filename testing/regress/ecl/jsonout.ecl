@@ -59,14 +59,14 @@ namesTable := dataset([
         ], personRecord);
 
 output(namesTable,,'REGRESS::TEMP::output_object_namedArray.json',overwrite, json);
-readObjectNamedArray := dataset(DYNAMIC('REGRESS::TEMP::output_object_namedArray.json'), personRecord, json('*/Row'));
+readObjectNamedArray := dataset(DYNAMIC('REGRESS::TEMP::output_object_namedArray.json'), personRecord, json('Row'));
 output(readObjectNamedArray, named('ObjectNamedArray'));
 
 output(namesTable,,'REGRESS::TEMP::output_array.json',overwrite, json('', heading('[', ']')));
-readArrayOfRows := dataset(DYNAMIC('REGRESS::TEMP::output_array.json'), personRecord, json('*/*'));
+readArrayOfRows := dataset(DYNAMIC('REGRESS::TEMP::output_array.json'), personRecord, json(''));
 output(readArrayOfRows, named('ArrayOfRows'));
 
 output(namesTable,,'REGRESS::TEMP::output_noroot.json',overwrite, json('', heading('','')));
-readNoRootRows := dataset(DYNAMIC('REGRESS::TEMP::output_noroot.json'), personRecord, json('*', NOROOT));
+readNoRootRows := dataset(DYNAMIC('REGRESS::TEMP::output_noroot.json'), personRecord, json('', NOROOT));
 output(readNoRootRows, named('noRootRows'));
 
