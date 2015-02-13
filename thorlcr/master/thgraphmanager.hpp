@@ -24,7 +24,10 @@ CSDSServerStatus &queryServerStatus();
 CSDSServerStatus &openThorServerStatus();
 void closeThorServerStatus();
 void thorMain(ILogMsgHandler *logHandler);
-void abortThor(IException *e=NULL, bool abortCurrentJob=true);
+
+enum ThorExitCodes { TEC_Clean, TEC_CtrlC, TEC_Idle, TEC_Watchdog, TEC_SlaveInit, TEC_Swap, TEC_DaliDown };
+
+void abortThor(IException *e, unsigned errCode, bool abortCurrentJob=true);
 void setExitCode(int code);
 int queryExitCode();
 
