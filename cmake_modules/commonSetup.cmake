@@ -83,6 +83,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_JNI "Enable Java JNI support" ON)
   option(USE_RINSIDE "Enable R support" ON)
   option(USE_MEMCACHED "Enable Memcached support" ON)
+  option(USE_REDIS "Enable Redis support" ON)
 
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 

@@ -1,0 +1,87 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the License);
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an AS IS BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+
+export sync := SERVICE : plugin('redis'), namespace('RedisPlugin')
+  SetUnicode(CONST VARSTRING options, CONST VARSTRING key, CONST UNICODE value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='SyncRSetUChar';
+  SetString(CONST VARSTRING options, CONST VARSTRING key, CONST STRING value, UNSIGNED database = 0,  UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='SyncRSetStr';
+  SetUtf8(CONST VARSTRING options, CONST VARSTRING key, CONST UTF8 value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='SyncRSetUtf8';
+  SetBoolean(CONST VARSTRING options, CONST VARSTRING key, BOOLEAN value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='SyncRSetBool';
+  SetReal(CONST VARSTRING options, CONST VARSTRING key, REAL value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='SyncRSetReal';
+  SetInteger(CONST VARSTRING options, CONST VARSTRING key, INTEGER value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='SyncRSetInt';
+  SetUnsigned(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='SyncRSetUInt';
+  SetData(CONST VARSTRING options, CONST VARSTRING key, CONST DATA value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='SyncRSetData';
+
+  INTEGER8 GetInteger(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='SyncRGetInt8';
+  UNSIGNED8 GetUnsigned(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='SyncRGetUint8';
+  STRING GetString(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='SyncRGetStr';
+  UNICODE GetUnicode(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='SyncRGetUChar';
+  UTF8 GetUtf8(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='SyncRGetUtf8';
+  BOOLEAN GetBoolean(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='SyncRGetBool';
+  REAL GetReal(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='SyncRGetDouble';
+  DATA GetData(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='SyncRGetData';
+
+  BOOLEAN Exists(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='RExist';
+  FlushDB(CONST VARSTRING options, UNSIGNED database = 0) : cpp,once,context,entrypoint='RClear';
+  Del(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='RDel';
+  Persist(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='RPersist';
+  Expire(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED4 expire, UNSIGNED database = 0) : cpp,once,context,entrypoint='RExpire';
+  INTEGER DBSize(CONST VARSTRING options, UNSIGNED database = 0) : cpp,action,context,entrypoint='RDBSize';
+END;
+
+export async := SERVICE : plugin('redis'), namespace('RedisPlugin')
+  SetUnicode(CONST VARSTRING options, CONST VARSTRING key, CONST UNICODE value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='AsyncRSetUChar';
+  SetString(CONST VARSTRING options, CONST VARSTRING key, CONST STRING value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='AsyncRSetStr';
+  SetUtf8(CONST VARSTRING options, CONST VARSTRING key, CONST UTF8 value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='AsyncRSetUtf8';
+  SetBoolean(CONST VARSTRING options, CONST VARSTRING key, BOOLEAN value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='AsyncRSetBool';
+  SetReal(CONST VARSTRING options, CONST VARSTRING key, REAL value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='AsyncRSetReal';
+  SetInteger(CONST VARSTRING options, CONST VARSTRING key, INTEGER value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='AsyncRSetInt';
+  SetUnsigned(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='AsyncRSetUInt';
+  SetData(CONST VARSTRING options, CONST VARSTRING key, CONST DATA value, UNSIGNED database = 0, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='AsyncRSetData';
+
+  INTEGER8 GetInteger(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='AsyncRGetInt8';
+  UNSIGNED8 GetUnsigned(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='AsyncRGetUint8';
+  STRING GetString(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='AsyncRGetStr';
+  UNICODE GetUnicode(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='AsyncRGetUChar';
+  UTF8 GetUtf8(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='AsyncRGetUtf8';
+  BOOLEAN GetBoolean(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='AsyncRGetBool';
+  REAL GetReal(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='AsyncRGetDouble';
+  DATA GetData(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='AsyncRGetData';
+END;
+
+export locking := SERVICE : plugin('redis'), namespace('RedisPlugin')
+  UNSIGNED8 GetLockObject(CONST VARSTRING options, CONST VARSTRING key, UNSIGNED database = 0) : cpp,once,context,entrypoint='RGetLockObject';
+  BOOLEAN MissThenLock(UNSIGNED8 keyPtr) : cpp,action,context,entrypoint='RMissThenLock';
+
+  UNICODE SetUnicode(UNSIGNED8 keyPtr, CONST UNICODE value, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='LockingRSetUChar';
+  STRING SetString(UNSIGNED8 keyPtr, CONST STRING value, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='LockingRSetStr';
+  UTF8 SetUtf8(UNSIGNED8 keyPtr, CONST UTF8 value, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='LockingRSetUtf8';
+  BOOLEAN SetBoolean(UNSIGNED8 keyPtr, BOOLEAN value, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='LockingRSetBool';
+  REAL SetReal(UNSIGNED8 keyPtr, REAL value, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='LockingRSetReal';
+  INTEGER SetInteger(UNSIGNED8 keyPtr, INTEGER value, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='LockingRSetInt';
+  UNSIGNED SetUnsigned(UNSIGNED8 keyPtr, UNSIGNED value, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='LockingRSetUInt';
+  DATA SetData(UNSIGNED8 keyPtr, CONST DATA value, UNSIGNED4 expire = 0) : cpp,once,context,entrypoint='LockingRSetData';
+
+  INTEGER8 GetInteger(UNSIGNED8 keyPtr) : cpp,once,context,entrypoint='LockingRGetInt8';
+  UNSIGNED8 GetUnsigned(UNSIGNED8 keyPtr) : cpp,once,context,entrypoint='LockingRGetUint8';
+  STRING GetString(UNSIGNED8 keyPtr) : cpp,once,context,entrypoint='LockingRGetStr';
+  UNICODE GetUnicode(UNSIGNED8 keyPtr) : cpp,once,context,entrypoint='LockingRGetUChar';
+  UTF8 GetUtf8(UNSIGNED8 keyPtr) : cpp,once,context,entrypoint='LockingRGetUtf8';
+  BOOLEAN GetBoolean(UNSIGNED8 keyPtr) : cpp,once,context,entrypoint='LockingRGetBool';
+  REAL GetReal(UNSIGNED8 keyPtr) : cpp,once,context,entrypoint='LockingRGetDouble';
+  DATA GetData(UNSIGNED8 keyPtr) : cpp,once,context,entrypoint='LockingRGetData';
+END;
