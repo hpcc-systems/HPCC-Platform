@@ -138,7 +138,7 @@ void CDiskPartHandlerBase::open()
         }
     }
 
-    ActPrintLog(&activity, "%s[part=%d]: Base offset to %"I64F"d", kindStr, which, fileBaseOffset);
+    ActPrintLog(&activity, "%s[part=%d]: Base offset to %" I64F "d", kindStr, which, fileBaseOffset);
 
     if (compressed)
     {
@@ -301,7 +301,7 @@ void CDiskWriteSlaveActivityBase::open()
             rowcount_t prevRows;
             msg.read(prevRows);
             msg.read(tempExternalName); // reuse temp filename, last node will rename
-            ActPrintLog("Previous write row count = %"RCPF"d", prevRows);
+            ActPrintLog("Previous write row count = %" RCPF "d", prevRows);
         }
     }
     else
@@ -388,7 +388,7 @@ void CDiskWriteSlaveActivityBase::close()
         if (!rfsQueryParallel && dlfn.isExternal() && !lastNode())
         {
             rowcount_t rows = processed & THORDATALINK_COUNT_MASK;
-            ActPrintLog("External write done, signalling next (row count = %"RCPF"d)", rows);
+            ActPrintLog("External write done, signalling next (row count = %" RCPF "d)", rows);
             CMessageBuffer msg;
             msg.append(rows);
             msg.append(tempExternalName);
@@ -535,7 +535,7 @@ void CDiskWriteSlaveActivityBase::process()
         throw;
     }
     unsigned crc = compress?~0:fileCRC.get();
-    ActPrintLog("Wrote %"RCPF"d records%s", processed & THORDATALINK_COUNT_MASK, calcFileCrc?StringBuffer(", crc=0x").appendf("%X", crc).str() : "");
+    ActPrintLog("Wrote %" RCPF "d records%s", processed & THORDATALINK_COUNT_MASK, calcFileCrc?StringBuffer(", crc=0x").appendf("%X", crc).str() : "");
 }
 
 void CDiskWriteSlaveActivityBase::endProcess()

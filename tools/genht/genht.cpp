@@ -115,7 +115,7 @@ void process(const char *fname)
     MemoryBuffer mb;
     UnsignedArray matches;
     UnsignedArray values;
-    FILE *inFile = fopen(fname, "r"TEXT_TRANS);
+    FILE *inFile = fopen(fname, "r" TEXT_TRANS);
     if (!inFile) {
         printf("ERROR: Cannot open '%s'\n",fname);
         exit(1);

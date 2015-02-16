@@ -334,9 +334,9 @@ MODULE_EXIT()
 #ifdef GATHER_LINK_STATS
 static void showStats()
 {
-    printf("Links = %"I64F"d(%"I64F"d) releases = %"I64F"d(%"I64F"d)\n", numLinks, numTransformerLinks, numReleases, numTransformerReleases);
-    printf("Create Links = %"I64F"d releases = %"I64F"d\n", numCreateLinks, numCreateReleases);
-    printf("setExtra = %"I64F"d setExtraSame = %"I64F"d setExtraUnlinked = %"I64F"d\n", numSetExtra, numSetExtraSame, numSetExtraUnlinked);
+    printf("Links = %" I64F "d(%" I64F "d) releases = %" I64F "d(%" I64F "d)\n", numLinks, numTransformerLinks, numReleases, numTransformerReleases);
+    printf("Create Links = %" I64F "d releases = %" I64F "d\n", numCreateLinks, numCreateReleases);
+    printf("setExtra = %" I64F "d setExtraSame = %" I64F "d setExtraUnlinked = %" I64F "d\n", numSetExtra, numSetExtraSame, numSetExtraUnlinked);
     printf("numLocks = %d nestedLocks = %d maxNested=%d nestedLockExtra = %d\n", numLocks, numNestedLocks, maxNestedLocks, numNestedExtra);
 }
 

@@ -77,9 +77,9 @@ public:
     virtual void reportValues(StringBuffer &out)
     {
         if (counts[0])
-            out.appendf(" <Value count=\"%"I64F"d\">false</Value>\n", counts[0]);
+            out.appendf(" <Value count=\"%" I64F "d\">false</Value>\n", counts[0]);
         if (counts[1])
-            out.appendf(" <Value count=\"%"I64F"d\">true</Value>\n", counts[1]);
+            out.appendf(" <Value count=\"%" I64F "d\">true</Value>\n", counts[1]);
     }
     virtual void noteValue(bool val)
     {
@@ -129,7 +129,7 @@ public:
         for (unsigned i = 0; i < 256; i++)
             if (counts[i])
             {
-                out.appendf(" <Value count=\"%"I64F"d\">", counts[i]);
+                out.appendf(" <Value count=\"%" I64F "d\">", counts[i]);
                 reportValue(out, i);
                 out.append("</Value>\n");
             }
@@ -234,7 +234,7 @@ public:
         ForEach(iter)
         {
             FixedMapper & cur = (FixedMapper &) iter.get();
-            out.appendf(" <Value count=\"%"I64F"d\">", cur.count);
+            out.appendf(" <Value count=\"%" I64F "d\">", cur.count);
             reportValue(out, cur);
             out.append("</Value>\n");
         }

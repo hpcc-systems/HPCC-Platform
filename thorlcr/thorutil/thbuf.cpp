@@ -927,7 +927,7 @@ protected:
                 {
                     if (output.readWaitSem.wait(60000))
                         break; // NB: will also be signal if aborting
-                    ActPrintLog(activity, "output %d @ row # %"RCPF"d, has been blocked for %d minute(s)", output.queryOutput(), rowsRead, ++mins);
+                    ActPrintLog(activity, "output %d @ row # %" RCPF "d, has been blocked for %d minute(s)", output.queryOutput(), rowsRead, ++mins);
                 }
             }
             if (isEof(rowsRead))
@@ -1284,12 +1284,12 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
                     Owned<Chunk> chunk = new Chunk(nextChunk->offset, required);
                     decFreeChunk(nextChunk, required);
 #ifdef TRACE_WRITEAHEAD
-                    ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %"I64F"d, size=%d, but took required=%d", nextChunk->offset, nextChunk->size+required, required);
+                    ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %" I64F "d, size=%d, but took required=%d", nextChunk->offset, nextChunk->size+required, required);
 #endif
                     return chunk.getClear();
                 }
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %"I64F"d, size=%d", nextChunk->offset, nextChunk->size);
+                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %" I64F "d, size=%d", nextChunk->offset, nextChunk->size);
 #endif
                 freeChunksSized.remove(nextPos);
                 freeChunks.zap(*nextChunk);
@@ -1297,7 +1297,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
             }
         }
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLog(activity, "getOutOffset: got new upper offset # = %"I64F"d", highOffset);
+        ActPrintLog(activity, "getOutOffset: got new upper offset # = %" I64F "d", highOffset);
 #endif
         Chunk *chunk = new Chunk(highOffset, required);
         if (iDiskUsage)
@@ -1380,7 +1380,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
                 addFreeChunk(freeChunk);
         }
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Added chunk, offset %"I64F"d size=%d to freeChunks", freeChunk->offset, freeChunk->size);
+        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Added chunk, offset %" I64F "d size=%d to freeChunks", freeChunk->offset, freeChunk->size);
 #endif
     }
     virtual CRowSet *readRows(unsigned output, unsigned whichChunk)
@@ -1478,7 +1478,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
             chunk.setown(getOutOffset(len)); // will find space for 'len', might be bigger if from free list
             spillFileIO->write(chunk->offset, len, mb.toByteArray());
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Flushed chunk = %d (savedChunks pos=%d), writeOffset = %"I64F"d, writeSize = %d", inMemRows->queryChunk(), savedChunks.ordinality(), chunk->offset, len);
+            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Flushed chunk = %d (savedChunks pos=%d), writeOffset = %" I64F "d, writeSize = %d", inMemRows->queryChunk(), savedChunks.ordinality(), chunk->offset, len);
 #endif
         }
 
@@ -1515,7 +1515,7 @@ public:
             Owned<Chunk> chunk = savedChunks.dequeue();
             if (!chunk) break;
         }
-        PROGLOG("CSharedWriteAheadDisk: highOffset=%"I64F"d", highOffset);
+        PROGLOG("CSharedWriteAheadDisk: highOffset=%" I64F "d", highOffset);
     }
     virtual void reset()
     {

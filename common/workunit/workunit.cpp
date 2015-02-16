@@ -3848,7 +3848,7 @@ void CLocalWorkUnit::checkAgentRunning(WUState & state)
                     state = WUStateFailed;
                 else
                     return;
-                WARNLOG("checkAgentRunning terminated: %"I64F"d state = %d",(__int64)agent,(int)state);
+                WARNLOG("checkAgentRunning terminated: %" I64F "d state = %d",(__int64)agent,(int)state);
                 Owned<IWorkUnit> w = &lock();
                 w->setState(state);
                 Owned<IWUException> e = w->createException();
@@ -9206,7 +9206,7 @@ static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compil
                             default:
                                 return ret;
                         }
-                        WARNLOG("_waitForWorkUnit terminated: %"I64F"d state = %d",(__int64)agent,(int)ret);
+                        WARNLOG("_waitForWorkUnit terminated: %" I64F "d state = %d",(__int64)agent,(int)ret);
                         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                         Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
                         wu->setState(ret);

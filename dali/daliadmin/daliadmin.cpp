@@ -1196,7 +1196,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
                 root->removeTree(sub);
             }
             else if (sub->getPropInt64("@recordCount")||sub->getPropInt64("@size"))
-                ERRLOG("FAIL Empty Superfile %s contains non-empty Attr sz=%"I64F"d rc=%"I64F"d",lname.get(),sub->getPropInt64("@recordCount"),sub->getPropInt64("@size"));
+                ERRLOG("FAIL Empty Superfile %s contains non-empty Attr sz=%" I64F "d rc=%" I64F "d",lname.get(),sub->getPropInt64("@recordCount"),sub->getPropInt64("@size"));
 
         }
     }
@@ -1435,18 +1435,18 @@ static void dfscompratio (const char *lname, IUserDescriptor *user)
         if (size==(offset_t)-1)
             out.appendf("size not known");
         else if (compressed) {
-            out.appendf("expanded size %"I64F"d, ",size);
+            out.appendf("expanded size %" I64F "d, ",size);
             offset_t csize = getCompressedSize(file);
             if (csize==(offset_t)-1)
                 out.append("compressed size unknown");
             else {
-                out.appendf("compressed size %"I64F"d",csize);
+                out.appendf("compressed size %" I64F "d",csize);
                 if (csize)
                     out.appendf(", Ratio %.2f:1 (%%%d)",(float)size/csize,(unsigned)(csize*100/size));
             }
         }
         else
-            out.appendf("not compressed, size %"I64F"d",size);
+            out.appendf("not compressed, size %" I64F "d",size);
     }
     else
         out.appendf("File %s not found",lname);
@@ -2177,7 +2177,7 @@ class CXMLSizesParser : public CInterface
                 CTreeItem &match = arr.item(m);
                 StringBuffer xpath;
                 match.getXPath(xpath);
-                printf("xpath=%s, size=%"I64F"d\n", xpath.str(), match.size());
+                printf("xpath=%s, size=%" I64F "d\n", xpath.str(), match.size());
             }
         }
         void printResultTree()
@@ -2195,7 +2195,7 @@ class CXMLSizesParser : public CInterface
                     if (adjusted)
                         res.append(" (rest)");
                     res.padTo(40);
-                    res.appendf(" %10"I64F"d(%5.2f%%)",sz,((float)sz*100.0)/(float)totalSize);
+                    res.appendf(" %10" I64F "d(%5.2f%%)",sz,((float)sz*100.0)/(float)totalSize);
                     printf("%s\n",res.str());
                 }
             }
@@ -2405,10 +2405,10 @@ static void unlock(const char *pattern)
         mb.read(success);
         StringBuffer connectionInfo;
         if (!success)
-            PROGLOG("Lock %"I64F"x not found",connectionId);
+            PROGLOG("Lock %" I64F "x not found",connectionId);
         else {
             mb.read(connectionInfo);
-            PROGLOG("Lock %"I64F"x successfully removed: %s", connectionId, connectionInfo.str());
+            PROGLOG("Lock %" I64F "x successfully removed: %s", connectionId, connectionInfo.str());
         }
     }
 }

@@ -130,7 +130,7 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             out.append("sid=unknown ");
         else
-            out.appendf("sid=%"I64F"u ", sysInfo.querySessionID());
+            out.appendf("sid=%" I64F "u ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -143,14 +143,14 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("job=unknown ");
         else
-            out.appendf("job=%"I64F"u ", jobInfo.queryJobID());
+            out.appendf("job=%" I64F "u ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             out.append("usr=unknown ");
         else
-            out.appendf("usr=%"I64F"u ", jobInfo.queryUserID());
+            out.appendf("usr=%" I64F "u ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         out.appendf("cmp=%u ", component);
@@ -296,7 +296,7 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             out.append("      unknown        ");
         else
-            out.appendf("%20"I64F"u ", sysInfo.querySessionID());
+            out.appendf("%20" I64F "u ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -309,14 +309,14 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("unknown ");
         else
-            out.appendf("%7"I64F"u ", jobInfo.queryJobID());
+            out.appendf("%7" I64F "u ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             out.append("unknown ");
         else
-            out.appendf("%7"I64F"u ", jobInfo.queryUserID());
+            out.appendf("%7" I64F "u ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         out.appendf("%6u ", component);
@@ -410,7 +410,7 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "sid=unknown ");
         else
-            fprintf(handle, "sid=%"I64F"u ", sysInfo.querySessionID());
+            fprintf(handle, "sid=%" I64F "u ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -423,14 +423,14 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "job=unknown ");
         else
-            fprintf(handle, "job=%"I64F"u ", jobInfo.queryJobID());
+            fprintf(handle, "job=%" I64F "u ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "usr=unknown ");
         else
-            fprintf(handle, "usr=%"I64F"u ", jobInfo.queryUserID());
+            fprintf(handle, "usr=%" I64F "u ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         fprintf(handle, "cmp=%u ", component);
@@ -491,7 +491,7 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "SessionID=\"unknown\" ");
         else
-            fprintf(handle, "SessionID=\"%"I64F"u\" ", sysInfo.querySessionID());
+            fprintf(handle, "SessionID=\"%" I64F "u\" ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -507,14 +507,14 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "JobID=\"unknown\" ");
         else
-            fprintf(handle, "JobID=\"%"I64F"u\" ", jobInfo.queryJobID());
+            fprintf(handle, "JobID=\"%" I64F "u\" ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "UserID=\"unknown\" ");
         else
-            fprintf(handle, "UserID=\"%"I64F"u\" ", jobInfo.queryUserID());
+            fprintf(handle, "UserID=\"%" I64F "u\" ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         fprintf(handle, "Component=\"%6u\" ", component);
@@ -570,7 +570,7 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "       unknown       ");
         else
-            fprintf(handle, "%20"I64F"u ", sysInfo.querySessionID());
+            fprintf(handle, "%20" I64F "u ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -584,14 +584,14 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "unknown ");
         else
-            fprintf(handle, "%7"I64F"u ", jobInfo.queryJobID());
+            fprintf(handle, "%7" I64F "u ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "unknown ");
         else
-            fprintf(handle, "%7"I64F"u ", jobInfo.queryUserID());
+            fprintf(handle, "%7" I64F "u ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         fprintf(handle, "%6u ", component);

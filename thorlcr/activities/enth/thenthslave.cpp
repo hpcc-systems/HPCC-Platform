@@ -62,8 +62,8 @@ protected:
         else
             abortSoon = true;
 #if THOR_TRACE_LEVEL >= 5
-        ActPrintLog("ENTH: init - Numerator = %"RCPF"d, Denominator = %"RCPF"d", numerator, denominator);   
-        ActPrintLog("%s: Initial value of counter %"RCPF"d", actStr.str(), counter);
+        ActPrintLog("ENTH: init - Numerator = %" RCPF "d, Denominator = %" RCPF "d", numerator, denominator);   
+        ActPrintLog("%s: Initial value of counter %" RCPF "d", actStr.str(), counter);
 #endif
     }
 
@@ -100,7 +100,7 @@ public:
             if (info.totalRowsMin == info.totalRowsMax)
             {
                 localRecCount = (rowcount_t)info.totalRowsMax;
-                ActPrintLog("%s: row count pre-known to be %"RCPF"d", actStr.str(), localRecCount);
+                ActPrintLog("%s: row count pre-known to be %" RCPF "d", actStr.str(), localRecCount);
             }
             else
             {
@@ -273,7 +273,7 @@ public:
     {
         if (!haveLocalCount())
         {
-            ActPrintLog("maximum row count %"RCPF"d", localRecCount);
+            ActPrintLog("maximum row count %" RCPF "d", localRecCount);
             prevRecCountSem.wait();
             if (abortSoon)
                 return;

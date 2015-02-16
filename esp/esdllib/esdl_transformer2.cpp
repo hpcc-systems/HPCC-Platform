@@ -1753,7 +1753,10 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
     StartTag stag;
     int depth=1;
 
-    IEsdlDefinition *esdl = queryEsdlDefinition();
+    IEsdlDefinition *esdl = m_def.get();
+
+    if (!esdl)
+        throw MakeStringExceptionDirect(-1, "ESDL transformer error: could not access ESDL definition object");
 
     const char *restype = mthdef.queryResponseType();
     if (!restype)

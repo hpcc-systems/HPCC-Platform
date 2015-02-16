@@ -63,7 +63,7 @@ public:
 #ifdef _TRACE
         char url[100];
         targetep.getUrlStr(url,sizeof(url));
-        PrintLog("SORT Merge READ: Stream(%u) %s, pos=%"RCPF"d len=%"RCPF"u",streamno,url,startrec,numrecs);
+        PrintLog("SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
 #endif
         SocketEndpoint mergeep = targetep;
         mergeep.port+=SOCKETSERVERINC; 
@@ -163,7 +163,7 @@ public:
         char name[64];
         int port = socket->peer_name(name,sizeof(name));
         url.append(name).append(':').append(port);
-        PrintLog("SORT Merge WRITE: start %s, pos=%"RCPF"d, len=%"RCPF"d",url.str(),poscount,numrecs);
+        PrintLog("SORT Merge WRITE: start %s, pos=%" RCPF "d, len=%" RCPF "d",url.str(),poscount,numrecs);
 #endif
         rowcount_t pos=poscount;
         try
@@ -468,7 +468,7 @@ public:
                 respos += vMAPL(j,i)-vMAPL(j,i-1);      // note we are adding up all of the lower as we want start
 
         rowcount_t totalrows = resnum;
-        PrintLog("Output start = %"RCPF"d, num = %"RCPF"u",respos,resnum);
+        PrintLog("Output start = %" RCPF "d, num = %" RCPF "u",respos,resnum);
 
         IArrayOf<IRowStream> readers;
         IException *exc = NULL;
@@ -483,7 +483,7 @@ public:
                 {
                     if (i==partno)
                     {
-                        PrintLog("SORT Merge READ: Stream(%u) local, pos=%"RCPF"u len=%"RCPF"u",i,sstart,snum);
+                        PrintLog("SORT Merge READ: Stream(%u) local, pos=%" RCPF "u len=%" RCPF "u",i,sstart,snum);
                         readers.append(*slave.createMergeInputStream(sstart,snum));
                     }
                     else

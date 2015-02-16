@@ -113,8 +113,8 @@ int main(int argc, const char **argv)
         if (!optRaw)
         {
             printf("Key '%s'\nkeySize=%d NumParts=%x, Top=%d\n", keyName, key_size, index->numParts(), index->isTopLevelKey());
-            printf("File size = %"I64F"d, nodes = %"I64F"d\n", in->size(), in->size() / nodeSize - 1);
-            printf("rootoffset=%"I64F"d[%"I64F"d]\n", header->getRootFPos(), header->getRootFPos()/nodeSize);
+            printf("File size = %" I64F "d, nodes = %" I64F "d\n", in->size(), in->size() / nodeSize - 1);
+            printf("rootoffset=%" I64F "d[%" I64F "d]\n", header->getRootFPos(), header->getRootFPos()/nodeSize);
         }
         char *buffer = (char*)alloca(key_size);
 
@@ -168,10 +168,10 @@ int main(int argc, const char **argv)
                 {
                     for (unsigned i = 0; i < size; i++)
                         printf("%02x", ((unsigned char) buffer[i]) & 0xff);
-                    printf("  :%"I64F"u:%012"I64F"x\n", seq, pos);
+                    printf("  :%" I64F "u:%012" I64F "x\n", seq, pos);
                 }
                 else
-                    printf("%.*s  :%"I64F"u:%012"I64F"x\n", size, buffer, seq, pos);
+                    printf("%.*s  :%" I64F "u:%012" I64F "x\n", size, buffer, seq, pos);
                 if (backwards)
                     ok = cursor->prev(buffer);
                 else

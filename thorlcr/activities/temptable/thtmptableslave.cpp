@@ -66,8 +66,8 @@ public:
             __uint64 nodeid = container.queryCodeContext()->getNodeNum();
             startRow = (nodeid * numRows) / nodes;
             maxRow = ((nodeid + 1) * numRows) / nodes;
-            ActPrintLog("InlineSLAVE: numRows = %"I64F"d, nodes = %"I64F
-                        "d, nodeid = %"I64F"d, start = %"I64F"d, max = %"I64F"d",
+            ActPrintLog("InlineSLAVE: numRows = %" I64F "d, nodes = %" I64F
+                        "d, nodeid = %" I64F "d, start = %" I64F "d, max = %" I64F "d",
                         numRows, nodes, nodeid, startRow, maxRow);
         }
         else

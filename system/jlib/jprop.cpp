@@ -160,7 +160,7 @@ public:
     }
     void loadFile(const char *filename)
     {
-        FILE *inFile = fopen(filename, "r"TEXT_TRANS);
+        FILE *inFile = fopen(filename, "r" TEXT_TRANS);
         if (inFile)
         {
             StringBuffer sbuff; 
@@ -262,7 +262,7 @@ public:
     }
     virtual void saveFile(const char *filename)
     {
-        FILE *outFile = fopen(filename, "w"TEXT_TRANS);
+        FILE *outFile = fopen(filename, "w" TEXT_TRANS);
         if (outFile)
         {
             HashIterator it(properties);

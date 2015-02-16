@@ -69,13 +69,13 @@ void checkMultiThorMemoryThreshold(bool inc)
         memsize_t used = 0; // JCSMORE - might work via callback in new scheme
         if (MTlocked) {
             if (used<MTthreshold/2) {
-                DBGLOG("Multi Thor threshold lock released: %"I64F"d",(offset_t)used);
+                DBGLOG("Multi Thor threshold lock released: %" I64F "d",(offset_t)used);
                 MTlocked = false;
                 MTthresholdnotify->give(used);
             }
         }
         else if (used>MTthreshold) {
-            DBGLOG("Multi Thor threshold  exceeded: %"I64F"d",(offset_t)used);
+            DBGLOG("Multi Thor threshold  exceeded: %" I64F "d",(offset_t)used);
             if (!MTthresholdnotify->take(used)) {
                 throw createOutOfMemException(-9,
                     1024,  // dummy value
@@ -560,7 +560,7 @@ inline bool CThorExpandingRowArray::_ensure(rowidx_t requiredRows, unsigned maxS
         if (!resizeRowTable((void **)rows, capacity, true, callback, maxSpillCost)) // callback will reset capacity
         {
             if (throwOnOom)
-                throw MakeActivityException(&activity, 0, "Out of memory, allocating row array, had %"RIPF"d, trying to allocate %"RIPF"d elements", ordinality(), requiredRows);
+                throw MakeActivityException(&activity, 0, "Out of memory, allocating row array, had %" RIPF "d, trying to allocate %" RIPF "d elements", ordinality(), requiredRows);
             return false;
         }
     }
@@ -571,7 +571,7 @@ inline bool CThorExpandingRowArray::_ensure(rowidx_t requiredRows, unsigned maxS
         if (!resizeRowTable(stableTable, capacity, false, callback, maxSpillCost))
         {
             if (throwOnOom)
-                throw MakeActivityException(&activity, 0, "Out of memory, resizing stable row array, trying to allocate %"RIPF"d elements", currentMaxRows);
+                throw MakeActivityException(&activity, 0, "Out of memory, resizing stable row array, trying to allocate %" RIPF "d elements", currentMaxRows);
             return false;
         }
         // NB: If allocation of stableTable fails, 'rows' has expanded, but maxRows has not
@@ -1226,7 +1226,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %"RIPF"d rows", tracingPrefix, n);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %" RIPF "d rows", tracingPrefix, n);
 
     if (useCompression)
         assertex(0 == writeCallbacks.ordinality()); // incompatible
@@ -1288,7 +1288,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
     firstRow += n;
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, bytes = %"I64F"d", tracingPrefix, (__int64)bytesWritten);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, bytes = %" I64F "d", tracingPrefix, (__int64)bytesWritten);
     return n;
 }
 
@@ -1438,7 +1438,7 @@ protected:
         StringBuffer tempPrefix, tempName;
         if (iCompare)
         {
-            ActPrintLog(&activity, "Sorting %"RIPF"d rows", spillableRows.numCommitted());
+            ActPrintLog(&activity, "Sorting %" RIPF "d rows", spillableRows.numCommitted());
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
             ActPrintLog(&activity, "Sort took: %f", ((float)timer.elapsedMs())/1000);

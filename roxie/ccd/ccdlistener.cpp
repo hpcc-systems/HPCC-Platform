@@ -1258,7 +1258,8 @@ public:
         catch (IException *E)
         {
             reportException(wu, E, *logctx);
-            throw E;
+            daliHelper->noteWorkunitRunning(wuid.get(), false);
+            throw;
         }
 #ifndef _DEBUG
         catch(...)

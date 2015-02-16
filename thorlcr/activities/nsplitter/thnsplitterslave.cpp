@@ -382,7 +382,7 @@ public:
             catch (IException *e) { writeAheadException.setown(e); }
             if (!row || writeAheadException.get())
             {
-                ActPrintLog("Splitter activity, hit end of input @ rec = %"RCPF"d", recsReady);
+                ActPrintLog("Splitter activity, hit end of input @ rec = %" RCPF "d", recsReady);
                 eofHit = true;
                 smartBuf->flush(); // signals no more rows will be written.
                 break;

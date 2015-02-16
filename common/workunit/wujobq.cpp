@@ -1667,7 +1667,7 @@ public:
                 item = qd.root->queryPropTree(path.str());
                 if (!item)
                     break;
-//              PROGLOG("WUJOBQ: Removing %s as session %"I64F"x not active",item->queryProp("@wuid"),item->getPropInt64("@session"));
+//              PROGLOG("WUJOBQ: Removing %s as session %" I64F "x not active",item->queryProp("@wuid"),item->getPropInt64("@session"));
                 removeItem(qd,item,false);
             }
             else

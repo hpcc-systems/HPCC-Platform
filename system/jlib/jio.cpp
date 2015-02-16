@@ -803,7 +803,7 @@ ElevatorScanner::ElevatorScanner(int _file, size32_t _recordSize) : Thread("Elev
 
 ElevatorScanner::~ElevatorScanner()
 {
-    PrintLog("Elevator scanner statistics: %"I64F"d reads (%"I64F"d bytes), %d scans", reads, reads*recordSize, scans);
+    PrintLog("Elevator scanner statistics: %" I64F "d reads (%" I64F "d bytes), %d scans", reads, reads*recordSize, scans);
 }
 
 void ElevatorScanner::beforeDispose()

@@ -488,7 +488,7 @@ class CSendManager : public CInterface, implements ISendManager
             totalSize = 0;
 
             if (udpTraceLevel >= 40) 
-                DBGLOG("UdpSender: CMessagePacker::CMessagePacker - ruid="RUIDF" id=0x%.8x mseq=%u node=%u queue=%d", ruid, msgId, _msgSeq, destNodeIndex, _queue);
+                DBGLOG("UdpSender: CMessagePacker::CMessagePacker - ruid=" RUIDF " id=0x%.8x mseq=%u node=%u queue=%d", ruid, msgId, _msgSeq, destNodeIndex, _queue);
             
         }
 
@@ -500,7 +500,7 @@ class CSendManager : public CInterface, implements ISendManager
             
             if (udpTraceLevel >= 40) 
             {
-                DBGLOG("UdpSender: CMessagePacker::~CMessagePacker - ruid="RUIDF" id=0x%.8x mseq=%u pktSeq=%x node=%u",
+                DBGLOG("UdpSender: CMessagePacker::~CMessagePacker - ruid=" RUIDF " id=0x%.8x mseq=%u pktSeq=%x node=%u",
                     package_header.ruid, package_header.msgId, package_header.msgSeq, package_header.pktSeq, destNodeIndex);
             }
         }
@@ -630,7 +630,7 @@ class CSendManager : public CInterface, implements ISendManager
             {
                 if (package_header.length==991)
                     DBGLOG("NEarly");
-                DBGLOG("UdpSender: CMessagePacker::put_package Qed packet - ruid="RUIDF" id=0x%.8X mseq=%u pkseq=0x%.8X len=%u node=%u queue=%d",
+                DBGLOG("UdpSender: CMessagePacker::put_package Qed packet - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X len=%u node=%u queue=%d",
                     package_header.ruid, package_header.msgId, package_header.msgSeq,
                     package_header.pktSeq, package_header.length, destNodeIndex, queue_number);
             }

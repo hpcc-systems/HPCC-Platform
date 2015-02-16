@@ -1829,7 +1829,7 @@ void EclCompileInstance::logStats()
         memsize_t peakVm, peakResident;
         getPeakMemUsage(peakVm, peakResident);
         //Stats: added as a prefix so it is easy to grep, and a comma so can be read as a csv list.
-        DBGLOG("Stats:,parse,%u,generate,%u,peakmem,%u,xml,%"I64F"u,cpp,%"I64F"u",
+        DBGLOG("Stats:,parse,%u,generate,%u,peakmem,%u,xml,%" I64F "u,cpp,%" I64F "u",
                 stats.parseTime, stats.generateTime, (unsigned)(peakResident / 0x100000),
                 (unsigned __int64)stats.xmlSize, (unsigned __int64)stats.cppSize);
     }

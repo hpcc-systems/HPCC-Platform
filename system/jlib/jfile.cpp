@@ -1566,7 +1566,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         virtual size32_t read(offset_t pos, size32_t len, void * data)
         {
             if (pos>sz)
-                throw MakeStringException(-1, "CMemoryBufferIO: read beyond end of buffer pos=%"I64F"d, len=%d, buffer length=%d", pos, len, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: read beyond end of buffer pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
             if (pos+len > sz)
                 len = (size32_t)(sz-pos);
             memcpy(data, (byte *)buffer+pos, len);
@@ -1578,7 +1578,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         {
             assertex(!readOnly);
             if (pos+len>sz)
-                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, writing beyond buffer, pos=%"I64F"d, len=%d, buffer length=%d", pos, len, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, writing beyond buffer, pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
             memcpy((byte *)buffer+pos, data, len);
             return len;
         }
@@ -1587,7 +1587,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         virtual void setSize(offset_t size)
         {
             if (size > mb.length())
-                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size %"I64F"d beyond end of buffer, buffer length=%d", size, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size %" I64F "d beyond end of buffer, buffer length=%d", size, mb.length());
             mb.setLength((size32_t)size);
         }
 
@@ -1647,7 +1647,7 @@ class jlib_decl CSequentialFileIO : public CFileIO
     void checkPos(const char *fn,offset_t _pos)
     {
         if (_pos!=pos)
-            throw MakeStringException(-1, "CSequentialFileIO %s out of sequence (%"I64F"d,%"I64F"d)",fn,pos,_pos);
+            throw MakeStringException(-1, "CSequentialFileIO %s out of sequence (%" I64F "d,%" I64F "d)",fn,pos,_pos);
     }
 
 public:
@@ -1699,7 +1699,7 @@ public:
         if (ret==(size32_t)-1)
         {
             PrintStackReport();
-            ERRLOG("errno(%d): %"I64F"d %u",errno,pos,len);
+            ERRLOG("errno(%d): %" I64F "d %u",errno,pos,len);
             throw makeErrnoException(errno, "CFileIO::write");
         }
         if (ret<len)
@@ -5444,7 +5444,7 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
         filename.append("uniq");
     if (!ext || !*ext)
         ext = "tmp";
-    filename.appendf("_%"I64F"x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
+    filename.appendf("_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
     OwnedIFile iFile = createIFile(filename.str());
     IFileIO *iFileIO = NULL;
     unsigned attempts = 5; // max attempts
@@ -5462,7 +5462,7 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
         if (0 == --attempts)
             break;
         t += getRandom();
-        filename.clear().appendf("uniq_%"I64F"x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
+        filename.clear().appendf("uniq_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
         iFile.setown(createIFile(filename.str()));
     }
     return NULL;
@@ -5801,7 +5801,7 @@ class CIoSerialStream: public CSerialStreamBase
     virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
     {
         if (lastpos!=pos)
-            throw MakeStringException(-1,"CIoSerialStream: non-sequential read (%"I64F"d,%"I64F"d)",lastpos,pos);
+            throw MakeStringException(-1,"CIoSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
         size32_t rd = io->read(max_size,ptr);
         lastpos = pos+rd;
         return rd;
@@ -5833,7 +5833,7 @@ class CSocketSerialStream: public CSerialStreamBase
     virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
     {
         if (lastpos!=pos)
-            throw MakeStringException(-1,"CSocketSerialStream: non-sequential read (%"I64F"d,%"I64F"d)",lastpos,pos);
+            throw MakeStringException(-1,"CSocketSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
         size32_t size_read;
         socket->readtms(ptr, 0, max_size, size_read, timeout); 
         lastpos = pos+size_read;
@@ -5865,7 +5865,7 @@ class CSimpleReadSerialStream: public CSerialStreamBase
     virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
     {
         if (lastpos!=pos)
-            throw MakeStringException(-1,"CSimpleReadSerialStream: non-sequential read (%"I64F"d,%"I64F"d)",lastpos,pos);
+            throw MakeStringException(-1,"CSimpleReadSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
         size32_t rd = input->read(max_size, ptr);
         lastpos += rd;
         return rd;

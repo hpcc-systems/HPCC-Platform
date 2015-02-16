@@ -74,7 +74,7 @@ void HttpStat::printStat(FILE* ofile)
         {
             fprintf(ofile, "Slowest round trip(millisecond):  %d\n", slowest);
             fprintf(ofile, "Fastest round trip(millisecond):  %d\n", fastest);
-            fprintf(ofile, "Average round trip(millisecond):  %"I64F"d\n", totaltime/numrequests);
+            fprintf(ofile, "Average round trip(millisecond):  %" I64F "d\n", totaltime/numrequests);
         }
 
         if(http_tracelevel >= 5 && ofile==stdout && isatty(1))
@@ -1173,7 +1173,7 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
     int duration = end - start;
 
     if(http_tracelevel >= 5)
-        fprintf(m_logfile, "Roundtrip Time (milli-second): %d, Bytes Sent: %d, Bytes Received: %"I64F"d\n", duration, sent, total_len);
+        fprintf(m_logfile, "Roundtrip Time (milli-second): %d, Bytes Sent: %d, Bytes Received: %" I64F "d\n", duration, sent, total_len);
 
     if(stat)
     {

@@ -240,7 +240,7 @@ public:
         StringArray clusters;
         file->getClusterNames(clusters);
         StringBuffer outs;
-        outs.appendf(",FileAccess,Thor,%s,%s,%s,%s,%s,%s,%"I64F"d,%d",
+        outs.appendf(",FileAccess,Thor,%s,%s,%s,%s,%s,%s,%" I64F "d,%d",
                         extended?"EXTEND":"READ",
                         globals->queryProp("@nodeGroup"),
                         job.queryUser(),
@@ -385,7 +385,7 @@ public:
                 {
                     ForEachItemIn(c, clusters)
                     {
-                        LOG(daliAuditLogCat,",FileAccess,Thor,DELETED,%s,%s,%s,%s,%s,%"I64F"d,%s",
+                        LOG(daliAuditLogCat,",FileAccess,Thor,DELETED,%s,%s,%s,%s,%s,%" I64F "d,%s",
                                         globals->queryProp("@name"),
                                         userStr.str(),
                                         logicalName,
@@ -573,7 +573,7 @@ public:
         {
             StringBuffer clusterName;
             fileDesc.getClusterGroupName(c, clusterName, &queryNamedGroupStore());
-            LOG(daliAuditLogCat,",FileAccess,Thor,CREATED,%s,%s,%s,%s,%s,%"I64F"d,%s",
+            LOG(daliAuditLogCat,",FileAccess,Thor,CREATED,%s,%s,%s,%s,%s,%" I64F "d,%s",
                             globals->queryProp("@nodeGroup"),
                             job.queryUser(),
                             file->queryLogicalName(),

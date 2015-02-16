@@ -369,8 +369,8 @@ int main( int argc, char *argv[]  )
             ULARGE_INTEGER free;
             if (GetDiskFreeSpaceEx("c:\\",&userfree,&total,&free)&&total.QuadPart) {
                 unsigned pc = (unsigned)(free.QuadPart*100/total.QuadPart);
-                LOG(MCdebugProgress, thorJob, "Total disk space = %"I64F"d k", total.QuadPart/1000);
-                LOG(MCdebugProgress, thorJob, "Free  disk space = %"I64F"d k", free.QuadPart/1000);
+                LOG(MCdebugProgress, thorJob, "Total disk space = %" I64F "d k", total.QuadPart/1000);
+                LOG(MCdebugProgress, thorJob, "Free  disk space = %" I64F "d k", free.QuadPart/1000);
                 LOG(MCdebugProgress, thorJob, "%d%% disk free\n",pc);
             }
 #endif
@@ -403,7 +403,7 @@ int main( int argc, char *argv[]  )
                 if (lgname.length()) {
                     Owned<ILargeMemLimitNotify> notify = createMultiThorResourceMutex(lgname.str());
                     setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
-                    PROGLOG("Multi-Thor resource limit for %s set to %"I64F"d",lgname.str(),(__int64)multiThorMemoryThreshold);
+                    PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",lgname.str(),(__int64)multiThorMemoryThreshold);
                 }   
                 else
                     multiThorMemoryThreshold = 0;
