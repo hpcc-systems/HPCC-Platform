@@ -771,7 +771,10 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
                 {
-                    Owned<ICppCompiler> compiler = createCompiler(processName.toCharArray());
+                    Owned<ICppCompiler> compiler = createCompiler(processName.str());
+                    StringBuffer mainName(processName);
+                    mainName.append(".cpp");
+                    compiler->addSourceFile(mainName);
                     compiler->setSaveTemps(optSaveTemps);
 
                     bool compileOk = true;
@@ -1704,8 +1707,9 @@ bool EclCC::generatePrecompiledHeader()
         ERRLOG("Cannot find eclinclude4.hpp");
         return false;
     }
-    Owned<ICppCompiler> compiler = createCompiler("eclinclude4.hpp", foundPath, NULL);
+    Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, NULL);
     compiler->setDebug(true);  // a precompiled header with debug can be used for no-debug, but not vice versa
+    compiler->addSourceFile("eclinclude4.hpp");
     compiler->setPrecompileHeader(true);
     if (compiler->compile())
     {

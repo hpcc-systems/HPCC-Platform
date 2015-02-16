@@ -407,7 +407,7 @@ void ResourceManager::flushAsText(const char *filename)
     fclose(f);
 }
 
-void ResourceManager::flush(const char *filename, bool flushText, bool target64bit)
+bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool flushText, bool target64bit)
 {
     finalize();
 
@@ -415,12 +415,15 @@ void ResourceManager::flush(const char *filename, bool flushText, bool target64b
     // or that we want to access without having to run the dll/so
     // In linux there is no .res concept but we can achieve the same effect by generating an object file with a specially-named section 
     // bintils tools can be used to extract the data externally (internally we just have a named symbol for it)
+    // Alternatively we can generate an assembler file to create the equivalent object file, if binutils is not available
+    bool isObjectFile = true;
 #ifdef _WIN32
+    filename.append(basename).append(".res");
     int h = _open(filename, _O_WRONLY|_O_CREAT|_O_TRUNC|_O_BINARY|_O_SEQUENTIAL, _S_IREAD | _S_IWRITE | _S_IEXEC);
     
     //assertex(h != HFILE_ERROR);
     if (h == HFILE_ERROR) // error can not be ignored!
-        throwError1(HQLERR_ResourceCreateFailed, filename);
+        throwError1(HQLERR_ResourceCreateFailed, filename.str());
 
     totalbytes = 0;
     putbytes(h, "\x00\x00\x00\x00\x20\x00\x00\x00\xff\xff\x00\x00\xff\xff\x00\x00"
@@ -458,6 +461,7 @@ void ResourceManager::flush(const char *filename, bool flushText, bool target64b
     }
     _close(h);
 #elif defined(_USE_BINUTILS)
+    filename.append(basename).append(".res.o");
     asymbol **syms = NULL;
     bfd *file = NULL;
     StringArray names;  // need to make sure that the strings we use in symbol table have appropriate lifetime 
@@ -522,17 +526,42 @@ void ResourceManager::flush(const char *filename, bool flushText, bool target64b
         E->Release();
         //translate the assert exceptions into something else...
         StringBuffer msg;
-        msg.appendf("%s: %s", filename, bfd_errmsg(bfd_get_error()));
+        msg.appendf("%s: %s", filename.str(), bfd_errmsg(bfd_get_error()));
         delete syms;
         if (file)
             bfd_close_all_done(file); // allow bfd to clean up memory
         throwError1(HQLERR_ResourceCreateFailed, msg.str());
     }
 #else
-    UNIMPLEMENTED;
+    isObjectFile = false;
+    filename.append(basename).append(".res.s");
+    FILE *f = fopen(filename, "wt");
+    if (!f)
+        throwError1(HQLERR_ResourceCreateFailed, filename.str());
+    ForEachItemIn(idx, resources)
+    {
+        ResourceItem &s = (ResourceItem &) resources.item(idx);
+        const char *type = s.type.str();
+        unsigned id = s.id;
+        VStringBuffer binfile("%s_%s_%u.bin", filename.str(), type, id);
+        fprintf(f, " .section __TEXT,%s_%u\n", type, id);
+        fprintf(f, " .global _%s_%u_txt_start\n", type, id);  // For some reason apple needs a leading underbar and linux does not
+        fprintf(f, "_%s_%u_txt_start:\n", type, id);
+        fprintf(f, " .incbin \"%s\"\n", binfile.str());
+        FILE *bin = fopen(binfile, "wb");
+        if (!bin)
+        {
+            fclose(f);
+            throwError1(HQLERR_ResourceCreateFailed, binfile.str());
+        }
+        fwrite(s.data.get(), 1, s.data.length(), bin);
+        fclose(bin);
+    }
+    fclose(f);
 #endif
     if (flushText)
         flushAsText(filename);
+    return isObjectFile;
 }
 
 

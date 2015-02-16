@@ -129,6 +129,8 @@ public:
 
     virtual HqlStmts * ensureSection(IAtom * section);
     virtual const char * queryLibrary(unsigned idx);
+    virtual const char * queryObjectFile(unsigned idx);
+    virtual const char * querySourceFile(unsigned idx);
     virtual HqlStmts * querySection(IAtom * section);
     virtual void flushHints();
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback);
@@ -141,6 +143,8 @@ public:
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
     void useLibrary(const char * libname);
+    void useObjectFile(const char * objname);
+    void useSourceFile(const char * srcname);
     unsigned addStringResource(unsigned len, const char * body);
     void addHint(const char * hintXml, ICodegenContextCallback * ctxCallback);
 
@@ -155,6 +159,8 @@ public:
     CIArray             sections;
     IArray               helpers;
     StringAttrArray     modules;
+    StringAttrArray     objectFiles;
+    StringAttrArray     sourceFiles;
     StringAttrArray     includes;
     CIArray             extra;
     ResourceManager     resources;

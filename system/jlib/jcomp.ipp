@@ -35,6 +35,7 @@ public:
     virtual void addLinkOption(const char * option);
     virtual void addInclude(const char * includePath);
     virtual void addSourceFile(const char * filename);
+    virtual void addObjectFile(const char * filename);
     virtual bool compile();
     virtual void extractErrors(IArrayOf<IError> & errors);
     virtual void setDebug(bool _debug);
@@ -71,6 +72,7 @@ protected:
     StringArray     allSources;
     StringArray     logFiles;
     StringAttr      ccLogPath;
+    StringAttr      coreName;
     unsigned        targetCompiler;
     unsigned        maxCompileThreads;
     bool            onlyCompile;

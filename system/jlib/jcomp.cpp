@@ -82,17 +82,24 @@ static const char * COMPILE_ONLY[] = { "/c", "-c" };
 
 static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1" };
 static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." , "" };
-static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC -pipe -O0" };
+static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0" };
 
-static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
-static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -Wl,-E -fPIC -pipe -O0" };
 
-static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC -pipe -O0" };
+static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC  -O0" };
 
 static const char * CC_OPTION_PRECOMPILEHEADER[] = { "", " -x c++-header" };
 
+#ifdef __APPLE__
+static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
+static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -fPIC -pipe -O0 -Wl,-export_dynamic -v" };
+static const char * DLL_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-shared -L. -fPIC -pipe -O0" };
+static const char * EXE_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-L. -fPIC -pipe -O0 -Wl,-export_dynamic -v" };
+#else
+static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
+static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -Wl,-E -fPIC -pipe -O0" };
 static const char * DLL_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-shared -L. -fPIC -pipe -O0" };
 static const char * EXE_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-L. -Wl,-E -fPIC -pipe -O0" };
+#endif
 
 static const char * LINK_TARGET[] = { " /out:", " -o " };
 static const char * DEFAULT_CC_LOCATION[] = { ".", "." };
@@ -239,9 +246,7 @@ static void setDirectoryPrefix(StringAttr & target, const char * source)
 
 CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose)
 {
-#define CORE_NAME allSources.item(0)
-    if (_coreName)
-        addSourceFile(_coreName);
+    coreName.set(_coreName);
     targetCompiler = _targetCompiler;
     createDLL = true;
 #ifdef _DEBUG
@@ -350,7 +355,13 @@ void CppCompiler::addLinkOption(const char * option)
 
 void CppCompiler::addSourceFile(const char * filename)
 {
+    DBGLOG("addSourceFile %s", filename);
     allSources.append(filename);
+}
+
+void CppCompiler::addObjectFile(const char * filename)
+{
+    linkerLibraries.append(" ").append(filename);
 }
 
 void CppCompiler::writeLogFile(const char* filepath, StringBuffer& log)
@@ -467,8 +478,6 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
         addPathSepChar(cmdline);
     }
     cmdline.append(filename);
-    if (!precompileHeader)
-        cmdline.append(".cpp");
     cmdline.append("\" ");
     expandCompileOptions(cmdline);
 
@@ -655,7 +664,7 @@ bool CppCompiler::doLink()
     cmdline.append(linkerLibraries);
 
     StringBuffer outName;
-    outName.append(createDLL ? SharedObjectPrefix : NULL).append(CORE_NAME).append(createDLL ? SharedObjectExtension : ProcessExtension);
+    outName.append(createDLL ? SharedObjectPrefix : NULL).append(coreName).append(createDLL ? SharedObjectExtension : ProcessExtension);
     cmdline.append(LINK_TARGET[targetCompiler]).append("\"").append(targetDir).append(outName).append("\"");
 
     StringBuffer temp;
@@ -667,7 +676,7 @@ bool CppCompiler::doLink()
     DWORD runcode = 0;
     if (verbose)
         PrintLog("%s", expanded.toCharArray());
-    StringBuffer logFile = StringBuffer(CORE_NAME).append("_link.log.tmp");
+    StringBuffer logFile = StringBuffer(coreName).append("_link.log.tmp");
     logFiles.append(logFile);
     bool ret = invoke_program(expanded.toCharArray(), runcode, true, logFile) && (runcode == 0);
     linkFailed = !ret;
@@ -703,20 +712,28 @@ StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filen
 
 void CppCompiler::removeTemporaries()
 {
+    DBGLOG("Remove temporaries");
     switch (targetCompiler)
     {
     case Vs6CppCompiler:
     case GccCppCompiler:
         {
             StringBuffer temp;
-            remove(temp.clear().append(targetDir).append(CORE_NAME).append(".exp").str());
-            remove(getObjectName(temp.clear(), CORE_NAME).str());
-            remove(temp.clear().append(targetDir).append(CORE_NAME).append(".lib").str());
+            remove(temp.clear().append(targetDir).append(coreName).append(".exp").str());
+            remove(getObjectName(temp.clear(), coreName).str());
+            remove(temp.clear().append(targetDir).append(coreName).append(".lib").str());
 #ifdef _WIN32
-            remove(temp.clear().append(targetDir).append(CORE_NAME).append(".res.lib").str());
+            remove(temp.clear().append(targetDir).append(coreName).append(".res").str());
+#elif defined (_USE_BINUTILS)
+            remove(temp.clear().append(targetDir).append(coreName).append(".res.o").str());
 #else
-            remove(temp.clear().append(targetDir).append(CORE_NAME).append(".res.o.lib").str());
-            remove(temp.clear().append(targetDir).append("lib").append(CORE_NAME).append(".res.o.so").str());
+            temp.clear().append(coreName).append(".res.s*");
+            DBGLOG("Remove %s%s",targetDir.str(), temp.str());
+            Owned<IDirectoryIterator> resTemps = createDirectoryIterator(targetDir, temp.str());
+            ForEach(*resTemps)
+            {
+                remove(resTemps->getName(temp.clear().append(targetDir)).str());
+            }
 #endif
             break;
         }
