@@ -729,7 +729,7 @@ public:
 
     static void updateAffinity()
     {
-#ifndef _WIN32
+#ifdef CPU_ZERO
         if (sched_getaffinity(0, sizeof(cpu_set_t), &cpuMask))
         {
             if (traceLevel)
@@ -836,7 +836,7 @@ public:
 
     void setThreadAffinity(int numCores)
     {
-#ifndef _WIN32
+#ifdef CPU_ZERO
         // Note - strictly speaking not threadsafe but any race conditions are (a) unlikely and (b) harmless
         if (cpuCores)
         {
@@ -887,7 +887,7 @@ protected:
     CriticalSection activeCrit;
     friend class ActiveQueryLimiter;
 
-#ifndef _WIN32
+#ifdef CPU_ZERO
     static cpu_set_t cpuMask;
     static unsigned cpuCores;
     static unsigned lastCore;
@@ -909,7 +909,7 @@ private:
     CIArrayOf<AccessTableEntry> accessTable;
 };
 
-#ifndef _WIN32
+#ifdef CPU_ZERO
 cpu_set_t RoxieListener::cpuMask;
 unsigned RoxieListener::cpuCores;
 unsigned RoxieListener::lastCore;
@@ -919,7 +919,7 @@ extern void updateAffinity(unsigned __int64 affinity)
 {
     if (affinity)  // 0 means use the value already set for this process
     {
-#ifdef _WIN32
+#ifndef CPU_ZERO
         throw makeStringException(ROXIE_INTERNAL_ERROR, "Setting Roxie affinity is not supported on this operating system");
 #else
         cpu_set_t cpus;
