@@ -54,7 +54,7 @@ if (USE_PYTHON)
     HPCC_ADD_LIBRARY( pyembed SHARED ${SRCS} )
     if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
       message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-    else()
+    elif(NOT APPLE)
       set_target_properties( pyembed PROPERTIES NO_SONAME 1 )
     endif()
 
