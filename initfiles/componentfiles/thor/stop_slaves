@@ -20,9 +20,6 @@ hpcc_setenv=$2
 
 source ${hpcc_setenv}
 
-echo compName=${compName}
-echo PID=${PID}
-
 slavename=thorslave_${compName}
 
 killall -0 $slavename &> /dev/null
