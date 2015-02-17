@@ -1317,7 +1317,7 @@ void Esdl2Response::process(Esdl2TransformerContext &ctx, const char *out_name, 
 
                     if (ctx.schemaLocation.length() > 0 )
                     {
-                        ctx.writer->outputXmlns("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+                        ctx.writer->outputXmlns("xsi", "http://www.w3.org/2001/XMLSchema-instance");
                         ctx.writer->outputXmlns("xsi:schemaLocation", ctx.schemaLocation.str());
                     }
 
@@ -1789,7 +1789,7 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
     {
         while((dataset = gotoNextHPCCDataset(*xpp, stag)) != NULL)
         {
-            if (strieq(dataset, resdsname))
+            /*if (strieq(dataset, resdsname))
             {
                 Esdl2TransformerContext tctx(*this, writer, *xpp, ctx.getClientVersion(), ctx.queryRequestParameters(), EsdlResponseMode, 0, ns,schema_location);
                 tctx.flags = flags | ESDL_TRANS_ROW_IN;
@@ -1817,7 +1817,30 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
                 {
                     Esdl2Response *resp = dynamic_cast<Esdl2Response *>(root);
                     if (resp)
-                        resp->processChildNamedResponse(tctx, restype);
+                        resp->process(tctx, restype);//resp->processChildNamedResponse(tctx, restype);
+                }
+            }*/
+            if ( strieq(dataset, resdsname)
+                ||(subresdsname && strieq(dataset, subresdsname)) //Only allow correctly named dataset?
+                || stricmp(dataset, "FinalResults")==0
+                || stricmp(dataset, "Results")==0
+               )
+            {
+                Esdl2TransformerContext tctx(*this, writer, *xpp, ctx.getClientVersion(), ctx.queryRequestParameters(), EsdlResponseMode, 0, ns,schema_location);
+                tctx.flags = flags | ESDL_TRANS_ROW_IN;
+                tctx.skip_root = !(flags & ESDL_TRANS_OUTPUT_ROOT);
+                tctx.root_type.set(restype);
+                Esdl2Base* root = queryType(restype);
+                if (root)
+                {
+                    Esdl2Response *resp = dynamic_cast<Esdl2Response *>(root);
+                    if (resp)
+                    {
+                        if (subresdsname)
+                            resp->processChildNamedResponse(tctx, restype);
+                        else
+                            resp->process(tctx, restype);
+                    }
                 }
             }
             else if (strnicmp(dataset, "VendorGatewayRecords", 20)==0)
