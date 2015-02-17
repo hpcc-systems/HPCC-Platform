@@ -57,6 +57,20 @@ ESPStruct TargetCluster
     int ClusterStatus;
 };
 
+ESPStruct TargetClusterNew
+{
+    string ClusterName;
+    string QueueName;
+    string QueueStatus;
+    string StatusDetails;
+    string Warning;
+    int ClusterType;
+    int ClusterSize;
+    int ClusterStatus;
+    ESParray<ESPstruct ActiveWorkunit> RunningWorkunits; //new
+    ESParray<ESPstruct ActiveWorkunit> QueuedWorkunits; //new
+};
+
 ESPStruct ThorCluster
 {
     string ClusterName;
@@ -118,6 +132,19 @@ ESPstruct [nil_remove] StatusServerInfo
     ESParray<ESPstruct ActiveWorkunit> Workunits;
 };
 
+ESPStruct [nil_remove] StatusServer
+{
+    string ServerName;
+    string ServerType;
+    string Status;//Need this
+    string StatusDetails;//Need this
+    string StartTime;
+    string NetworkAddress;
+    int Port;
+    ESParray<string> QueueNames;
+    ESParray<ESPstruct ActiveWorkunit> RunningWorkunits;
+};
+
 ESPrequest [nil_remove] ActivityRequest
 {
     string ChatURL;
@@ -155,6 +182,28 @@ ESPresponse [exceptions_inline] ActivityResponse
     [min_ver("1.12")] bool SuperUser(false);
     [min_ver("1.12")] string AccessRight;
     [min_ver("1.14")] ESParray<ESPstruct ServerJobQueue> ServerJobQueues;
+};
+
+ESPrequest [nil_remove] GetActivityRequest
+{
+    string DeleteMe;
+};
+
+ESPresponse [nil_remove, exceptions_inline] GetActivityResponse
+{
+    string Build;
+    ///ESParray<ESPstruct ThorCluster> ThorClusters;
+    ESParray<ESPstruct TargetClusterNew> ThorClusterList;
+    ESParray<ESPstruct TargetClusterNew> RoxieClusterList;
+    ESParray<ESPstruct TargetClusterNew> HThorClusterList;
+    ///ESParray<ESPstruct DFUJob> DFUJobs;
+    ///ESParray<ESPstruct ActiveWorkunit> Running;
+    ESParray<ESPstruct StatusServer> StatusServers; //servers under status excluding clusters
+    //add Queues
+    ESParray<string> ThorClusters; //Test should be removed
+    ESParray<string> HThorClusters; //Test should be removed
+    ESParray<string> RunningWUs; //Test should be removed
+    ESParray<string> queuedWUs; //Test should be removed
 };
 
 ESPrequest SMCIndexRequest
@@ -361,6 +410,7 @@ ESPservice [noforms, version("1.19"), default_client_version("1.19"), exceptions
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
+    ESPmethod GetActivity(GetActivityRequest, GetActivityResponse);
 
     ESPmethod ClearQueue(SMCQueueRequest, SMCQueueResponse);
     ESPmethod PauseQueue(SMCQueueRequest, SMCQueueResponse);
