@@ -35,6 +35,18 @@ typedef enum
     FFTrecfmvb, FFTrecfmv, FFTvariablebigendian,
     FFTlast
  } FileFormatType;
+
+static const char * FileFormatTypeStr[] =
+{       "FFTunknown",
+        "FFTfixed", "FFTvariable", "FFTblocked",
+        "FFTcsv",
+        "FFTutf",                             // any format, default to utf-8n
+        "FFTutf8", "FFTutf8n",
+        "FFTutf16", "FFTutf16be", "FFTutf16le",
+        "FFTutf32", "FFTutf32be", "FFTutf32le",
+        "FFTrecfmvb", "FFTrecfmv", "FFTvariablebigendian",
+        "FFTlast"
+};
 enum { FTactionpull, FTactionpush, FTactionpartition, FTactiondirectory, FTactionsize, FTactionpcopy };
 
 
@@ -59,6 +71,7 @@ public:
     void set(const FileFormat & src);
     bool hasQuote() const                           { return (quote == NULL) || (*quote != '\0'); }
     bool hasQuotedTerminator() const                { return quotedTerminator; }
+    const char * getFileFormatTypeString() const        { return FileFormatTypeStr[type]; }
 
 public:
     FileFormatType      type;
