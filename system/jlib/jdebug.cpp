@@ -47,7 +47,10 @@
 #include <sys/klog.h>
 #include <dirent.h>
 #endif
-
+#ifdef __APPLE__
+ #include <sys/param.h>
+ #include <sys/mount.h>
+#endif
 
 //===========================================================================
 #ifdef _DEBUG
@@ -1122,7 +1125,7 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 
 void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 & inUse)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
     struct statfs stfs;
     if(statfs(path, &stfs) < 0)
     {
@@ -1143,9 +1146,8 @@ void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 
             inUse = total - (unsigned __int64)stfs.f_bfree * st.st_blksize;
         }
     }
-#endif
-#if defined (__FreeBSD__) || defined (__APPLE__)
-    UNIMPLEMENTED;
+#else
+    total = inUse = 0;
 #endif
 }
 

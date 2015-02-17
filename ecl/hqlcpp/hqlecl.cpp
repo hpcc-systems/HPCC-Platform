@@ -115,6 +115,7 @@ protected:
     unsigned defaultMaxCompileThreads;
     StringArray sourceFiles;
     StringArray libraries;
+    StringArray objects;
     offset_t totalGeneratedSize;
     bool checkForLocalFileUploads;
     bool noOutput;
@@ -151,9 +152,28 @@ void HqlDllGenerator::addLibrariesToCompiler()
         const char * lib = code->queryLibrary(idx);
         if (!lib)
             break;
-
         PrintLog("Adding library: %s", lib);
         addLibrary(lib);
+        idx++;
+    }
+    idx=0;
+    loop
+    {
+        const char * obj = code->queryObjectFile(idx);
+        if (!obj)
+            break;
+        PrintLog("Adding object file: %s", obj);
+        objects.append(obj);
+        idx++;
+    }
+    idx=0;
+    loop
+    {
+        const char * src = code->querySourceFile(idx);
+        if (!src)
+            break;
+        PrintLog("Adding source file: %s", src);
+        sourceFiles.append(src);
         idx++;
     }
 }
@@ -490,7 +510,7 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
             expandCode(CHILD_MODULE_TEMPLATE, fullext, code, true, i+1, translator.queryOptions().targetCompiler);
 
             StringBuffer fullname;
-            fullname.append(wuname).append("_").append(i+1);
+            fullname.append(wuname).append("_").append(i+1).append(".cpp");
             sourceFiles.append(fullname);
         }
     }
@@ -535,6 +555,8 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
 
     ForEachItemIn(idx, libraries)
         compiler->addLibrary(libraries.item(idx));
+    ForEachItemIn(idx2, objects)
+        compiler->addObjectFile(objects.item(idx2));
 
     StringBuffer options;
     StringBufferAdaptor linkOptionAdaptor(options);
@@ -577,8 +599,7 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
         remove(temp.clear().append(wuname).append(".hpp").str());
         ForEachItemIn(i, sourceFiles)
         {
-            temp.clear().append(sourceFiles.item(i)).append(".cpp");
-            remove(temp.str());
+            remove(sourceFiles.item(i));
         }
     }
     return ok;
@@ -586,14 +607,8 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
 
 void HqlDllGenerator::flushResources()
 {
-    StringBuffer resname(wuname);
-#ifdef _WIN32
-    resname.append(".res");
-#else
-    resname.append(".res.o");
-#endif
     if (code)
-        code->flushResources(resname.str(), ctxCallback);
+        code->flushResources(wuname, ctxCallback);
 }
 
 

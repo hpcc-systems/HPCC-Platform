@@ -35,14 +35,21 @@ if (USE_CASSANDRA)
     # until then, we build the required libraries from source
 
     # Build libuv, required by the cassandra driver but not available on all distros
-    add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/libuv.so
-                       COMMAND make builddir_name=${PROJECT_BINARY_DIR}
-                       COMMAND mv ${PROJECT_BINARY_DIR}/libuv.so ${PROJECT_BINARY_DIR}/libuv.so.0.10
-                       COMMAND ln -s ${PROJECT_BINARY_DIR}/libuv.so.0.10 ${PROJECT_BINARY_DIR}/libuv.so
-                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/libuv)
-    add_custom_target ( libuv ALL DEPENDS ${PROJECT_BINARY_DIR}/libuv.so )
-
-    set(LIBUV_LIBRARY ${PROJECT_BINARY_DIR}/libuv.so)
+    if (APPLE)
+      add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/libuv.dylib
+                         COMMAND make builddir_name=${PROJECT_BINARY_DIR}
+                         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/libuv)
+      add_custom_target ( libuv ALL DEPENDS ${PROJECT_BINARY_DIR}/libuv.dylib )
+      set(LIBUV_LIBRARY ${PROJECT_BINARY_DIR}/libuv.dylib)
+    else()
+      add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/libuv.so
+                         COMMAND make builddir_name=${PROJECT_BINARY_DIR}
+                         COMMAND mv ${PROJECT_BINARY_DIR}/libuv.so ${PROJECT_BINARY_DIR}/libuv.so.0.10
+                         COMMAND ln -s ${PROJECT_BINARY_DIR}/libuv.so.0.10 ${PROJECT_BINARY_DIR}/libuv.so
+                         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/libuv)
+      add_custom_target ( libuv ALL DEPENDS ${PROJECT_BINARY_DIR}/libuv.so )
+      set(LIBUV_LIBRARY ${PROJECT_BINARY_DIR}/libuv.so)
+    endif()
     set(LIBUV_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/libuv/include/)
 
     # Build the Cassandra cpp driver, only presently available as source
@@ -57,12 +64,11 @@ if (USE_CASSANDRA)
     option(CASS_BUILD_STATIC "Build static library" OFF)
     option(CASS_BUILD_EXAMPLES "Build examples" OFF)
     set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS FALSE)
-    SET (_SAVE_Boost_FOUND "${Boost_FOUND}")  # Working around a bug in the cassandra cmake file
-    UNSET(Boost_FOUND)
+    SET (_SAVE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral") # Work around cassandra build error
     add_subdirectory (cpp-driver ${PROJECT_BINARY_DIR}/cassandra)
     add_dependencies( cassandra libuv )
-
-    SET (Boost_FOUND "${_SAVE_Boost_FOUND}")
+    SET (CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
 
     set(SRCS cassandraembed.cpp)
 
@@ -97,7 +103,11 @@ if (USE_CASSANDRA)
     # include them in our rpm
     # Note that the cassandra driver CMake file already includes the relevant install commands
 
-    install ( FILES ${PROJECT_BINARY_DIR}/libuv.so.0.10 DESTINATION ${LIB_DIR} COMPONENT Runtime )
+    if (APPLE)
+      install ( FILES ${PROJECT_BINARY_DIR}/libuv.dylib DESTINATION ${LIB_DIR} COMPONENT Runtime )
+    else()
+      install ( FILES ${PROJECT_BINARY_DIR}/libuv.so.0.10 DESTINATION ${LIB_DIR} COMPONENT Runtime )
+    endif()
 
     target_link_libraries ( cassandraembed
         cassandra

@@ -25,6 +25,10 @@
 #include "eclrtl.hpp"
 #ifdef _USE_BINUTILS
 #include "bfd.h"
+#elif defined(__APPLE__)
+#include <mach-o/getsect.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #endif
 
 #include "thorplugin.hpp"
@@ -195,7 +199,10 @@ bool HelperDll::getResource(size32_t & len, const void * & data, const char * ty
     symName.append(type).append("_").append(id).append("_txt_start");
     data = (const void *) getEntry(symName.str());
     if (!data)
+    {
+        printf("Failed to locate symbol %s", symName.str());
         return false;
+    }
     byte bom;
     byte version;
     bool compressed;
@@ -269,8 +276,41 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
         bfd_close (file);
    }
    return data.length() != 0;
+#elif defined(__APPLE__)
+    unsigned long len = 0;
+    struct stat stat_buf;
+    VStringBuffer sectname("%s_%u", type, id);
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1 || fstat(fd, &stat_buf) == -1)
+    {
+        DBGLOG("Failed to load library %s: %d", filename, errno);
+        return false;
+    }
+    __uint64 size = stat_buf.st_size;
+    byte *start_addr = (byte *) mmap(0, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
+    if (start_addr == MAP_FAILED)
+    {
+        DBGLOG("Failed to load library %s: %d", filename, errno);
+    }
+    else
+    {
+        // The first bytes are the Mach-O header
+        struct mach_header_64 *mh = (struct mach_header_64 *) start_addr;
+        if (mh->magic != MH_MAGIC_64)
+        {
+            DBGLOG("Failed to load library %s: Does not appear to be a Mach-O 64-bit binary", filename);
+        }
+        else
+        {
+            unsigned char *data2 = getsectiondata(mh, "__TEXT", sectname.str(), &len);
+            data.append(len, data2);
+        }
+        munmap(start_addr, size);
+    }
+    close(fd);
+    return len != 0;
 #else
-   UNIMPLEMENTED;
+    UNIMPLEMENTED;
 #endif
 }
 

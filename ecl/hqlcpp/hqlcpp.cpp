@@ -1135,6 +1135,20 @@ const char * HqlCppInstance::queryLibrary(unsigned idx)
     return NULL;
 }
 
+const char * HqlCppInstance::queryObjectFile(unsigned idx)
+{
+    if (objectFiles.isItem(idx))
+        return objectFiles.item(idx).text;
+    return NULL;
+}
+
+const char * HqlCppInstance::querySourceFile(unsigned idx)
+{
+    if (sourceFiles.isItem(idx))
+        return sourceFiles.item(idx).text;
+    return NULL;
+}
+
 HqlStmts * HqlCppInstance::querySection(IAtom * section)
 {
     ForEachItemIn(idx, sections)
@@ -1240,6 +1254,16 @@ void HqlCppInstance::useLibrary(const char * libname)
     insertUniqueString(modules, libname);
 }
 
+void HqlCppInstance::useObjectFile(const char * objname)
+{
+    insertUniqueString(objectFiles, objname);
+}
+
+void HqlCppInstance::useSourceFile(const char * srcname)
+{
+    insertUniqueString(sourceFiles, srcname);
+}
+
 void HqlCppInstance::addHint(const char * hintXml, ICodegenContextCallback * ctxCallback)
 {
     if (!hintFile)
@@ -1307,27 +1331,24 @@ void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallbac
     {
         bool flushText = workunit->getDebugValueBool("flushResourceAsText", false);
 
-        StringBuffer path, trailing;
-        splitFilename(filename, &path, &path, &trailing, &trailing);
-
-        StringBuffer ln;
-        ln.append(path).append(SharedObjectPrefix).append(trailing).append(LibraryExtension);
 #ifdef __64BIT__
-        // ARMFIX: Map all the uses of this property and make sure
-        // they're not used to mean x86_64 (it shouldn't, though)
         bool target64bit = workunit->getDebugValueBool("target64bit", true);
 #else
         bool target64bit = workunit->getDebugValueBool("target64bit", false);
 #endif
-        resources.flush(ln.str(), flushText, target64bit);
+        StringBuffer resname;
+        bool isObjectFile = resources.flush(resname, filename, flushText, target64bit);
 
         StringBuffer resTextName;
-        if (flushText && resources.queryWriteText(resTextName, ln))
+        if (flushText && resources.queryWriteText(resTextName, resname))
         {
             Owned<IWUQuery> query = workunit->updateQuery();
             associateLocalFile(query, FileTypeHintXml, resTextName, "Workunit resource text", 0);
         }
-        useLibrary(filename);
+        if (isObjectFile)
+            useObjectFile(resname);
+        else
+            useSourceFile(resname);
     }
 }
 
