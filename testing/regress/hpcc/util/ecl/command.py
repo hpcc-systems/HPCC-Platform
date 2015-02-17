@@ -131,7 +131,8 @@ class ECLcmd(Shell):
                     eclfile.diff = 'Error'
             else:
                 if queryWuid(eclfile.getJobname(), eclfile.getTaskId())['state'] == 'aborted':
-                    eclfile.diff = eclfile.ecl+'\n\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
+                    eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
+                    eclfile.diff += '\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
                     test = False
                 elif eclfile.getIgnoreResult():
                     logging.debug("%3d. Ignore result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEcl())
@@ -142,7 +143,8 @@ class ECLcmd(Shell):
                         #output generation disabled with //nooutput tag
                         eclfile.diff = '-'
                     else:
-                        eclfile.diff = 'Output of '+eclfile.ecl +' test is:\n'+ data
+                        eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
+                        eclfile.diff += data
                     test = True
                 else:
                     test = eclfile.testResults()
