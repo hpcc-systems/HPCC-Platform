@@ -138,7 +138,7 @@ checkPidExist() {
 #       1: Stopped Healthy
 #       2: Running w/ no sentinel file
 #       3: Stopped except sentinel orphaned
-#       4: Unhealthy, details in debug mode
+#       4: not yet in up state, details in debug mode
 check_status() {
     PIDFILEPATH=$1
     LOCKFILEPATH=$2
@@ -155,6 +155,8 @@ check_status() {
     local initRunning=$__pidExists
     checkPidExist $COMPPIDFILEPATH
     local compRunning=$__pidExists
+    checkSentinelFile
+    local sentinelFlag=$?
 
     # check if running and healthy
     if [ $pidfilepathExists -eq 1 ] && [ $comppidfilepathExists -eq 1 ] && [ $componentLocked -eq 1 ] && [ $initRunning -eq 1 ] && [ $compRunning -eq 1 ]; then
@@ -162,15 +164,14 @@ check_status() {
         echo "everything is up except sentinel"
       fi
       if [ ${SENTINELFILECHK} -eq 1 ]; then
-        checkSentinelFile
-        if [ $? -eq 0 ]; then
+        if [ ${sentinelFlag} -eq 0 ]; then
           if [ ${DEBUG} != "NO_DEBUG" ]; then
             echo "Sentinel is now up"
           fi
           return 0
         else
           if [ ${DEBUG} != "NO_DEBUG" ]; then
-            echo "Sentinel is currently down"
+            echo "Sentinel not yet located, process currently unhealthy"
           fi
           return 2
         fi
@@ -180,8 +181,7 @@ check_status() {
     # check if shutdown and healthy
     elif [ $pidfilepathExists -eq 0 ] && [ $comppidfilepathExists -eq 0 ] && [ $componentLocked -eq 0 ] && [ $initRunning -eq 0 ] && [ $compRunning -eq 0 ]; then
       if [ ${SENTINELFILECHK} -eq 1 ]; then
-        checkSentinelFile
-        if [ $? -eq 0 ]; then
+        if [ ${sentinelFlag} -eq 0 ]; then
           if [ ${DEBUG} != "NO_DEBUG" ]; then
             echo "Sentinel is up but orphaned"
           fi
