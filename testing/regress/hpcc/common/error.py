@@ -49,4 +49,4 @@ class Error(Exception):
         return "Error (%s): %s " % (self.code, ERROR[self.code])
         
     def getErrorCode(self):
-        return self.code
+        return int(self.code)

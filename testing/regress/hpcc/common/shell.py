@@ -60,6 +60,7 @@ class Shell:
             exception = CalledProcessError(
                 process.returncode, repr(args))
             exception.output = ''.join(filter(None, [stdout, stderr]))
+            logging.debug("exception.output:'%s'",  exception.output)
             raise Error('1001', err=repr(exception.output))
         return stdout
 
