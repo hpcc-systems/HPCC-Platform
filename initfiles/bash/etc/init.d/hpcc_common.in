@@ -442,7 +442,7 @@ startCmd() {
       MIN_Hr_rtprio="4"
       MIN_Hl_memlock="unlimited" )
 
-    i=0
+    local i=0
     for element in "${limits[@]}"; do
       flag="-${element:4:2}"
       value=${element##*"="}
