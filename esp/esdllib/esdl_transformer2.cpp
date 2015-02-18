@@ -1789,37 +1789,6 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
     {
         while((dataset = gotoNextHPCCDataset(*xpp, stag)) != NULL)
         {
-            /*if (strieq(dataset, resdsname))
-            {
-                Esdl2TransformerContext tctx(*this, writer, *xpp, ctx.getClientVersion(), ctx.queryRequestParameters(), EsdlResponseMode, 0, ns,schema_location);
-                tctx.flags = flags | ESDL_TRANS_ROW_IN;
-                tctx.skip_root = !(flags & ESDL_TRANS_OUTPUT_ROOT);
-                tctx.root_type.set(restype);
-                Esdl2Base* root = queryType(restype);
-                if (root)
-                {
-                    Esdl2Response *resp = dynamic_cast<Esdl2Response *>(root);
-                    if (resp)
-                        resp->process(tctx, restype);
-                }
-            }
-            else if ((subresdsname && strieq(dataset, subresdsname)) //Only allow correctly named dataset?
-                     || stricmp(dataset, "FinalResults")==0
-                     || stricmp(dataset, "Results")==0
-                     )
-            {
-                Esdl2TransformerContext tctx(*this, writer, *xpp, ctx.getClientVersion(), ctx.queryRequestParameters(), EsdlResponseMode, 0, ns,schema_location);
-                tctx.flags = flags | ESDL_TRANS_ROW_IN;
-                tctx.skip_root = !(flags & ESDL_TRANS_OUTPUT_ROOT);
-                tctx.root_type.set(restype);
-                Esdl2Base* root = queryType(restype);
-                if (root)
-                {
-                    Esdl2Response *resp = dynamic_cast<Esdl2Response *>(root);
-                    if (resp)
-                        resp->process(tctx, restype);//resp->processChildNamedResponse(tctx, restype);
-                }
-            }*/
             if ( strieq(dataset, resdsname)
                 ||(subresdsname && strieq(dataset, subresdsname)) //Only allow correctly named dataset?
                 || stricmp(dataset, "FinalResults")==0
