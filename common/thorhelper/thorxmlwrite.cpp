@@ -246,10 +246,7 @@ void CommonXmlWriter::outputXmlns(const char *name, const char *uri)
 {
     StringBuffer fieldname;
     if (!streq(name, "xmlns"))
-    {
-        if (!strchr(name, ':'))
             fieldname.append("xmlns:");
-    }
     outputXmlAttrUtf8(rtlUtf8Length(strlen(uri), uri), uri, fieldname.append(name), out);
 }
 

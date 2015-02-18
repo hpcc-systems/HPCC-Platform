@@ -1318,7 +1318,7 @@ void Esdl2Response::process(Esdl2TransformerContext &ctx, const char *out_name, 
                     if (ctx.schemaLocation.length() > 0 )
                     {
                         ctx.writer->outputXmlns("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-                        ctx.writer->outputXmlns("xsi:schemaLocation", ctx.schemaLocation.str());
+                        ctx.writer->outputCString(ctx.schemaLocation.str(), "@xsi:schemaLocation");
                     }
 
                     ctx.do_output_ns=false;
