@@ -490,17 +490,31 @@ startCmd() {
     fi
     eval $startcmd
 
+
     local WAITTIME=120
     local RCSTART=0
+    local COMPONENT_HAS_STARTED=0
+    local SENTINEL_CHECK=1
+
+    if [ ${compType} = "dafilesrv" ]; then
+      SENTINEL_CHECK=0
+    fi
 
     while [ ${WAITTIME} -gt 0 ]
     do
         WAITTIME=`expr ${WAITTIME} - 1`
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
         RCSTART=$?
         if [ ${RCSTART} -eq 0 ]; then
           log_success_msg
           return 0;
+        elif [ ${RCSTART} -eq 2 ]; then
+          COMPONENT_HAS_STARTED=1
+        else
+          if [ ${COMPONENT_HAS_STARTED} -eq 1 ]; then
+            log_failure_msg "${compName} failed to start cleanly"
+            return 0;
+          fi
         fi
         sleep 1
     done
