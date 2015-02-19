@@ -245,19 +245,4 @@ END;</programlisting>
     tested it on hThor, except the new service will appear under your Roxie in
     the tree list.</para>
   </sect2>
-
-  <sect2 id="Restrictions">
-    <title>Restrictions</title>
-
-    <para>Roxie queries may <emphasis role="underline">not</emphasis> contain
-    any code that would write a file to disk, such as:</para>
-
-    <para>OUTPUT actions that write to disk files</para>
-
-    <para>BUILD (or BUILDINDEX) actions</para>
-
-    <para>PERSISTed attributes</para>
-
-    <para></para>
-  </sect2>
 </sect1>
