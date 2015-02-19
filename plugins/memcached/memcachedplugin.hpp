@@ -43,26 +43,26 @@ extern "C"
 extern "C++"
 {
     //--------------------------SET----------------------------------------
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * options, const char * key, bool value, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * options, const char * key, signed __int64 value, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * options, const char * key, unsigned __int64 value, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * options, const char * key, double value, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * _ctx, const char * options, const char * key, size32_t valueLength, const char * value, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * options, const char * key, size32_t valueLength, const char * value, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * options, const char * key, size32_t valueLength, const UChar * value, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetData(ICodeContext * _ctx, const char * options, const char * key, size32_t valueLength, const void * value, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, bool value, const char * options, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, signed __int64 value, const char * options, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, unsigned __int64 value, const char * options, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, double value, const char * options, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * _ctx, const char * key, size32_t valueLength, const char * value, const char * options, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, size32_t valueLength, const char * value, const char * options, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, size32_t valueLength, const UChar * value, const char * options, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetData(ICodeContext * _ctx, const char * key, size32_t valueLength, const void * value, const char * options, const char * partitionKey, unsigned expire);
     //--------------------------GET----------------------------------------
-    ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MGetBool  (ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API signed __int64   ECL_MEMCACHED_CALL MGetInt8  (ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API unsigned __int64 ECL_MEMCACHED_CALL MGetUint8 (ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API double           ECL_MEMCACHED_CALL MGetDouble(ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetUtf8  (ICodeContext * _ctx, size32_t & valueLength, char * & returnValue, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetStr   (ICodeContext * _ctx, size32_t & valueLength, char * & returnValue, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetUChar (ICodeContext * _ctx, size32_t & valueLength, UChar * & returnValue, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetData  (ICodeContext * _ctx,size32_t & returnLength, void * & returnValue, const char * options, const char * key, const char * partitionKey);
+    ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MGetBool  (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
+    ECL_MEMCACHED_API signed __int64   ECL_MEMCACHED_CALL MGetInt8  (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
+    ECL_MEMCACHED_API unsigned __int64 ECL_MEMCACHED_CALL MGetUint8 (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
+    ECL_MEMCACHED_API double           ECL_MEMCACHED_CALL MGetDouble(ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
+    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetUtf8  (ICodeContext * _ctx, size32_t & valueLength, char * & returnValue, const char * key, const char * options, const char * partitionKey);
+    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetStr   (ICodeContext * _ctx, size32_t & valueLength, char * & returnValue, const char * key, const char * options, const char * partitionKey);
+    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetUChar (ICodeContext * _ctx, size32_t & valueLength, UChar * & returnValue, const char * key, const char * options, const char * partitionKey);
+    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MGetData  (ICodeContext * _ctx,size32_t & returnLength, void * & returnValue, const char * key, const char * options, const char * partitionKey);
     //--------------------------------AUXILLARIES---------------------------
-    ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MExists (ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
-    ECL_MEMCACHED_API const char *     ECL_MEMCACHED_CALL MKeyType(ICodeContext * _ctx, const char * options, const char * key, const char * partitionKey);
+    ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MExists (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
+    ECL_MEMCACHED_API const char *     ECL_MEMCACHED_CALL MKeyType(ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
     ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MClear  (ICodeContext * _ctx, const char * options);
 }
 #endif
