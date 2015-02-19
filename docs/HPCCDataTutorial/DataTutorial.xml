@@ -549,7 +549,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Rt-Click on the <emphasis role="bold">My Files</emphasis>
+          <para>Right-click on the <emphasis role="bold">My Files</emphasis>
           folder in the Repository window, and select <emphasis
           role="bold">Insert Folder</emphasis> from the pop-up menu.</para>
 
@@ -589,7 +589,7 @@
         </listitem>
 
         <listitem>
-          <para>Rt-Click on the <emphasis
+          <para>Right-click on the <emphasis
           role="bold">Tutorial</emphasis><emphasis
           role="bold">YourName</emphasis>Folder, and select <emphasis
           role="bold">Insert File</emphasis> from the pop-up menu.</para>
@@ -687,7 +687,7 @@ END;    </programlisting> <figure>
 
         <orderedlist>
           <listitem>
-            <para>Rt-Click on the <emphasis
+            <para>Right-click on the <emphasis
             role="bold">Tutorial</emphasis><emphasis role="bold">YourName
             </emphasis>Folder, and select <emphasis role="bold">Insert
             File</emphasis> from the pop-up menu.</para>
@@ -848,7 +848,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
         <orderedlist>
           <listitem>
-            <para>Rt-Click on the <emphasis
+            <para>Right-click on the <emphasis
             role="bold">Tutorial</emphasis><emphasis role="bold">YourName
             </emphasis>Folder, and select Insert File from the pop-up
             menu.</para>

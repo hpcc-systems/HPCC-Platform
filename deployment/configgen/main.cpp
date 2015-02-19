@@ -47,11 +47,11 @@ void usage()
   puts("          configgencomplist.xml. If not specified, the following ");
   puts("          defaults are used. ");
   puts("          For win32, 'c:\\trunk\\initfiles\\componentfiles\\configxml'");
-  puts("          For Linux, '"COMPONENTFILES_DIR"/configxml/'");
+  puts("          For Linux, '" COMPONENTFILES_DIR "/configxml/'");
   puts("   -od <output directory>: The output directory for the generated files.");
   puts("          If not specified, the following defaults are used. ");
   puts("          For win32, '.'");
-  puts("          For Linux, '"CONFIG_DIR"'");
+  puts("          For Linux, '" CONFIG_DIR "'");
   puts("   -ldapconfig : Generates a .ldaprc file and puts it in the specified");
   puts("          output directory. If output directory is not specified,");
   puts("          default output directory is used as mentioned in -od option");
@@ -325,7 +325,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
     }
 
     StringBuffer out;
-    xPath.clear().append(XML_TAG_SOFTWARE"/"XML_TAG_LDAPSERVERPROCESS);
+    xPath.clear().append(XML_TAG_SOFTWARE "/" XML_TAG_LDAPSERVERPROCESS);
     Owned<IPropertyTreeIterator> ldaps = pEnv->getElements(xPath.str());
     Owned<IPropertyTree> pSelComps(createPTree("SelectedComponents"));
     bool flag = false;
@@ -415,7 +415,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
 
     //Lookup and output all LDAPServer components
     StringBuffer out;
-    xPath.clear().append(XML_TAG_SOFTWARE"/"XML_TAG_LDAPSERVERPROCESS);
+    xPath.clear().append(XML_TAG_SOFTWARE "/" XML_TAG_LDAPSERVERPROCESS);
     Owned<IPropertyTreeIterator> ldaps = pEnv->getElements(xPath.str());
 
     ForEach(*ldaps)
@@ -536,7 +536,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   else if (listESPServices == true)
   {
       StringBuffer out;
-      Owned<IPropertyTreeIterator> espProcesses = pEnv->getElements(XML_TAG_SOFTWARE"/"XML_TAG_ESPPROCESS);
+      Owned<IPropertyTreeIterator> espProcesses = pEnv->getElements(XML_TAG_SOFTWARE "/" XML_TAG_ESPPROCESS);
 
       ForEach(*espProcesses)
       {
@@ -604,7 +604,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       const char* name = pComputer->queryProp(XML_ATTR_NAME);
       bool isNonHPCCNode = true;
 
-      xpath.clear().appendf(XML_TAG_SOFTWARE"/*[//"XML_ATTR_COMPUTER"='%s']", name);
+      xpath.clear().appendf(XML_TAG_SOFTWARE "/*[//" XML_ATTR_COMPUTER "='%s']", name);
       Owned<IPropertyTreeIterator> it = pEnv->getElements(xpath.str());
 
       ForEach(*it)

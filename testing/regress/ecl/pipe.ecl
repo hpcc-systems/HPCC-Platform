@@ -18,7 +18,7 @@
 import lib_stringlib;
 import std.str;
 
-export mdstring(string del) := TYPE  
+mdstring(string del) := TYPE
   export integer physicallength(string s) := lib_stringlib.StringLib.StringUnboundedUnsafeFind(s,del)+length(del)-1;
   export string load(string s) := s[1..lib_stringlib.StringLib.StringUnboundedUnsafeFind(s,del)-1];
   export string store(string s) := s + del;

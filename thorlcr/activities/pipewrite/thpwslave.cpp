@@ -139,7 +139,7 @@ public:
             throw;
         }
         close();
-        ActPrintLog("Wrote %"RCPF"d records", processed & THORDATALINK_COUNT_MASK);
+        ActPrintLog("Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
     }
     void endProcess()
     {

@@ -179,7 +179,7 @@ void noteError(offset_t offset, const char *format, ...)
     va_start(arg, format);
     fprintf(stderr, "%s: ", curFileName);
     if (offset)
-        fprintf(stderr, "%"I64F"x: ", offset);
+        fprintf(stderr, "%" I64F "x: ", offset);
     vfprintf(stderr, format, arg);
     va_end(arg);
     errors++;
@@ -328,7 +328,7 @@ void checkLevel(int f, KeyHdr &h, unsigned &level, offset_t firstnode)
         thisnode = nodeHdr.rightSib;
         free(nodeData);
     }
-    printf("%d nodes containing %"I64F"d records expanding to %"I64F"d bytes (average %.2f per node, maximum %"I64F"d, max expand %d) at level %d\n", nodecount, reccount, totalExpandSize, (float) reccount/nodecount, maxcount, maxExpandSize, level);
+    printf("%d nodes containing %" I64F "d records expanding to %" I64F "d bytes (average %.2f per node, maximum %" I64F "d, max expand %d) at level %d\n", nodecount, reccount, totalExpandSize, (float) reccount/nodecount, maxcount, maxExpandSize, level);
     level++;
 }
 

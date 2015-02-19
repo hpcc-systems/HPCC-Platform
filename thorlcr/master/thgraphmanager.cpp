@@ -867,7 +867,7 @@ void thorMain(ILogMsgHandler *logHandler)
             if (ngname.length()) {
                 notify.setown(createMultiThorResourceMutex(ngname.str(),serverStatus));
                 setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
-                PROGLOG("Multi-Thor resource limit for %s set to %"I64F"d",ngname.str(),(__int64)multiThorMemoryThreshold);
+                PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",ngname.str(),(__int64)multiThorMemoryThreshold);
             }   
             else
                 multiThorMemoryThreshold = 0;

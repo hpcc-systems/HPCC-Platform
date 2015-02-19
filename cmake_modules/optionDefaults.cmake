@@ -1,10 +1,11 @@
 
 if ( NOT PREFIX )
 if ( WIN32 )
-    if ("$ENV{ProgramFiles(x86)}" STREQUAL "")
+    set( prog86key "ProgramFiles(x86)" )
+    if ("$ENV{${prog86key}}" STREQUAL "")
         set( PREFIX "$ENV{ProgramFiles}" )
     else()
-        set( PREFIX "$ENV{ProgramFiles(x86)}" )
+        set( PREFIX "$ENV{${prog86key}}" )
     endif()
     string(REGEX REPLACE "\\\\" "/" PREFIX ${PREFIX})    
 else (WIN32)

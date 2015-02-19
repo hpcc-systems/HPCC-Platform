@@ -469,7 +469,7 @@ public:
                 close(*partDesc, partCrc, isLocal && !buildTlk && 1 == node);
                 doStopInput();
 
-                ActPrintLog("INDEXWRITE: Wrote %"RCPF"d records", processed & THORDATALINK_COUNT_MASK);
+                ActPrintLog("INDEXWRITE: Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
 
                 if (buildTlk)
                 {
@@ -671,7 +671,7 @@ public:
         if (!sizeSignalled)
         {
             sizeSignalled = true;
-            ActPrintLog("finished input %"RCPF"d", finalcount);
+            ActPrintLog("finished input %" RCPF "d", finalcount);
         }
     }
 

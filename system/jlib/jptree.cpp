@@ -5500,7 +5500,10 @@ static void writeJSONValueToStream(IIOStream &out, const char *val, bool &delimi
     if (hidden)
         writeCharsNToStream(out, '*', strlen(val));
     else
-        writeStringToStream(out, val);
+    {
+        StringBuffer s;
+        writeStringToStream(out, encodeJSON(s, val));
+    }
     writeCharToStream(out, '"');
 }
 
@@ -6927,12 +6930,12 @@ public:
                     case '{':
                         state=objAttributes;
                         readNext();
-                        beginNode("__root__", curOffset, elementTypeObject);
+                        beginNode("__object__", curOffset, elementTypeObject);
                         break;
                     case '[':
                         state=valueStart;
                         readNext();
-                        beginNode("__root__", curOffset, elementTypeArray);
+                        beginNode("__array__", curOffset, elementTypeArray);
                         break;
                     default:
                         expecting("{ or [");

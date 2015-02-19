@@ -81,7 +81,7 @@ public:
 class DALIFT_API CSimpleFixedPartitioner : public CSimplePartitioner
 {
 public:
-    CSimpleFixedPartitioner(unsigned _recordSize, bool _noTranslation) { recordSize = _recordSize; noTranslation = _noTranslation; }
+    CSimpleFixedPartitioner(unsigned _recordSize, bool _noTranslation);
 
     virtual void setPartitionRange(offset_t _totalSize, offset_t _thisOffset, offset_t _thisSize, unsigned _thisHeaderSize, unsigned _numParts);
 
@@ -268,11 +268,7 @@ protected:
 class DALIFT_API CCsvQuickPartitioner : public CCsvPartitioner
 {
 public:
-    CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation) 
-        : CCsvPartitioner(_format)
-    {
-        noTranslation = _noTranslation;
-    }
+    CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor);
@@ -324,7 +320,7 @@ protected:
 class DALIFT_API CUtfQuickPartitioner : public CUtfPartitioner
 {
 public:
-    CUtfQuickPartitioner(const FileFormat & _format, bool _noTranslation) : CUtfPartitioner(_format) { noTranslation = _noTranslation; }
+    CUtfQuickPartitioner(const FileFormat & _format, bool _noTranslation);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor);
@@ -403,7 +399,7 @@ protected:
 class DALIFT_API CXmlQuickPartitioner : public CXmlPartitioner
 {
 public:
-    CXmlQuickPartitioner(const FileFormat & _format, bool _noTranslation) : CXmlPartitioner(_format) { noTranslation = _noTranslation; }
+    CXmlQuickPartitioner(const FileFormat & _format, bool _noTranslation);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor);

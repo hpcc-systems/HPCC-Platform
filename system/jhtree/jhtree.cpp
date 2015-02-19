@@ -1380,9 +1380,9 @@ CJHTreeNode *CMemKeyIndex::loadNode(offset_t pos)
     atomic_inc(&nodesLoaded);
     if (pos + keyHdr->getNodeSize() > io->fileSize())
     {
-        IException *E = MakeStringException(errno, "Error reading node at position %"I64F"x past EOF", pos); 
+        IException *E = MakeStringException(errno, "Error reading node at position %" I64F "x past EOF", pos); 
         StringBuffer m;
-        m.appendf("In key %s, position 0x%"I64F"x", name.get(), pos);
+        m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
         EXCLOG(E, m.str());
         throw E;
     }
@@ -1410,9 +1410,9 @@ CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos)
     MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     if (io->read(pos, nodeSize, nodeData) != nodeSize)
     {
-        IException *E = MakeStringException(errno, "Error %d reading node at position %"I64F"x", errno, pos); 
+        IException *E = MakeStringException(errno, "Error %d reading node at position %" I64F "x", errno, pos); 
         StringBuffer m;
-        m.appendf("In key %s, position 0x%"I64F"x", name.get(), pos);
+        m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
         EXCLOG(E, m.str());
         throw E;
     }
@@ -1454,13 +1454,13 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
     catch (IException *E)
     {
         StringBuffer m;
-        m.appendf("In key %s, position 0x%"I64F"x", name.get(), pos);
+        m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
         EXCLOG(E, m.str());
         throw;
     }
     catch (...)
     {
-        DBGLOG("Unknown exception in key %s, position 0x%"I64F"x", name.get(), pos);
+        DBGLOG("Unknown exception in key %s, position 0x%" I64F "x", name.get(), pos);
         throw;
     }
 }
@@ -1489,7 +1489,7 @@ CJHTreeNode *CKeyIndex::getNode(offset_t offset, IContextLogger *ctx)
 void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool raw)
 {
     if (!raw)
-        fprintf(out, "Node dump: fpos(%"I64F"d) leaf(%d)\n", node->getFpos(), node->isLeaf());
+        fprintf(out, "Node dump: fpos(%" I64F "d) leaf(%d)\n", node->getFpos(), node->isLeaf());
     if (rowCount==0 || rowCount > node->getNumKeys())
         rowCount = node->getNumKeys();
     for (unsigned int i=0; i<rowCount; i++)
@@ -1505,7 +1505,7 @@ void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool 
             offset_t pos = node->getFPosAt(i);
             StringBuffer s;
             appendURL(&s, dst, length, true);
-            fprintf(out, "keyVal %d [%"I64F"d] = %s\n", i, pos, s.toCharArray());
+            fprintf(out, "keyVal %d [%" I64F "d] = %s\n", i, pos, s.toCharArray());
         }
     }
     if (!raw)

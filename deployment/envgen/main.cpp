@@ -19,7 +19,7 @@
 #include "deployutils.hpp"
 #include "build-config.h"
 
-#define ENVGEN_PATH_TO_ESP_CONFIG INSTALL_DIR""CONFIG_DIR"/configmgr/esp.xml"
+#define ENVGEN_PATH_TO_ESP_CONFIG INSTALL_DIR "" CONFIG_DIR "/configmgr/esp.xml"
 #define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml/"
 #define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
 
@@ -283,7 +283,7 @@ int main(int argc, char** argv)
           if (buildset && *buildset)
           {
             StringBuffer xpath(XML_TAG_SOFTWARE"/");
-            xpath.appendf("*["XML_ATTR_BUILDSET"='%s']", buildset);
+            xpath.appendf("*[" XML_ATTR_BUILDSET "='%s']", buildset);
             Owned<IPropertyTreeIterator> iter = pEnvTree->getElements(xpath.str());
 
             ForEach (*iter)
@@ -307,7 +307,7 @@ int main(int argc, char** argv)
       StringBuffer env;
       StringBuffer thisip;
       queryHostIP().getIpText(thisip);
-      env.appendf("<"XML_HEADER">\n<!-- Generated with envgen on ip %s -->\n", thisip.str());
+      env.appendf("<" XML_HEADER ">\n<!-- Generated with envgen on ip %s -->\n", thisip.str());
       env.append(envXml);
       
       Owned<IEnvironmentFactory> factory = getEnvironmentFactory();

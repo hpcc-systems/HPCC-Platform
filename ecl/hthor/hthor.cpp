@@ -72,7 +72,7 @@ IRowManager * queryRowManager()
 
 void throwOOMException(size_t size, char const * label)
 {
-    throw MakeStringException(0, "Out of Memory in hthor: trying to allocate %"I64F"u bytes for %s", (unsigned __int64) size, label);
+    throw MakeStringException(0, "Out of Memory in hthor: trying to allocate %" I64F "u bytes for %s", (unsigned __int64) size, label);
 }
 
 void * checked_malloc(size_t size, char const * label)
@@ -295,7 +295,7 @@ private:
     virtual void getTempFilename(StringAttr & out) const
     {
         StringBuffer buff;
-        agent.getTempfileBase(buff).appendf(".cluster_write_%p.%"I64F"d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
+        agent.getTempfileBase(buff).appendf(".cluster_write_%p.%" I64F "d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
         out.set(buff.str());
     }
 };
@@ -8586,7 +8586,7 @@ const void *CHThorDiskCountActivity::nextInGroup()
         {
             unsigned __int64 size = ldFile->getFileSize();
             if (size % fixedDiskRecordSize)
-                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, fixedDiskRecordSize);
+                throw MakeStringException(0, "Physical file %s has size %" I64F "d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, fixedDiskRecordSize);
             totalCount = size / fixedDiskRecordSize;
         }
     }

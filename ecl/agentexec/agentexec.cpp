@@ -220,7 +220,7 @@ int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
     if (success)
     { 
         if (runcode != 0)
-            PROGLOG("Process failed during execution: %s error(%"I64F"i)", cmdLine.str(), (unsigned __int64) runcode);
+            PROGLOG("Process failed during execution: %s error(%" I64F "i)", cmdLine.str(), (unsigned __int64) runcode);
         else
             PROGLOG("Execution started");
     }

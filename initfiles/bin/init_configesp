@@ -26,8 +26,8 @@ echo $$ > $INIT_PID_NAME
 export SENTINEL="configesp.sentinel"
 rm -f ${SENTINEL}
 
-ulimit -c unlimited
-ulimit -n 8192
+
+
 SNMPID=$$
 
 killed() {

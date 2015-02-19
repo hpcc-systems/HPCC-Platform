@@ -638,7 +638,7 @@ class CFuseDaliDFS: public CFuseBase
     {
         offset_t pos = _pos;
         size32_t sz = _sz;
-        PROGLOG("fuse_read(%s,,%d,%"I64F"d,)",path,sz,pos);
+        PROGLOG("fuse_read(%s,,%d,%" I64F "d,)",path,sz,pos);
         int ret = 0;
         try {
             unsigned h = (unsigned)info->fh;
@@ -661,7 +661,7 @@ class CFuseDaliDFS: public CFuseBase
                 IDistributedFilePart &part = file->queryPart(pn);
                 offset_t psz = part.getFileSize(true,false);
                 size32_t toread = (psz-pos-base<(offset_t)sz)?((size32_t)(psz-pos-base)):sz;
-                PROGLOG("reading %d from part %d size %"I64F"d pos = %"I64F"d base=%"I64F"d",toread,pn,psz,pos,base);
+                PROGLOG("reading %d from part %d size %" I64F "d pos = %" I64F "d base=%" I64F "d",toread,pn,psz,pos,base);
                 RemoteFilename rfn;
                 part.getFilename(rfn,0);
                 Owned<IFile> partfile = createIFile(rfn);
@@ -706,7 +706,7 @@ class CFuseDaliDFS: public CFuseBase
                         srcio.setown(cmpio.getClear());
                 }
                 size32_t szrd = srcio->read(pos-base,toread,dst);
-                PROGLOG("Read %s offset %"I64F"d len %d returned %d",partfile->queryFilename(),pos-base,toread,szrd);
+                PROGLOG("Read %s offset %" I64F "d len %d returned %d",partfile->queryFilename(),pos-base,toread,szrd);
                 sz -= szrd;
                 dst += szrd;
                 ret += szrd;

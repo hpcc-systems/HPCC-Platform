@@ -22,12 +22,12 @@ import lib_workunitservices;
 
 #option('slaveDaliClient', true);
 
-export Display := 
+Display :=
     SERVICE
         unsigned4 echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlDisplay';
     END;
 
-fibRecord := 
+fibRecord :=
             RECORD
 integer         fib1 := 1;
 integer         fib2 := 1;

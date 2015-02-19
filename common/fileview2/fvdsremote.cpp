@@ -408,7 +408,7 @@ void RemoteDataSourceServer::doCmdCreateWorkunit(MemoryBuffer & in, MemoryBuffer
     in.read(sequence);
     in.read(name);
 
-    DBGLOG("RemoteFileView:CreateWorkunit('%s',%d,'%s') by[%s:%"I64F"d", wuid.get(), sequence, name ? name.get() : "", username.get(), session);
+    DBGLOG("RemoteFileView:CreateWorkunit('%s',%d,'%s') by[%s:%" I64F "d", wuid.get(), sequence, name ? name.get() : "", username.get(), session);
     Owned<IConstWUResult> wuResult = resolveResult(wuid, sequence, name);
     Owned<IFvDataSource> ds = createDataSource(wuResult, wuid, username, password);
     unique_id_t id = addDataSource(session, ds);
@@ -419,7 +419,7 @@ void RemoteDataSourceServer::doCmdCreateWorkunit(MemoryBuffer & in, MemoryBuffer
     ds->queryMetaData()->serialize(out);
     out.append(ds->isIndex());
 
-    DBGLOG("RemoteFileView:CreateWorkunit returns %"I64F"d", id);
+    DBGLOG("RemoteFileView:CreateWorkunit returns %" I64F "d", id);
 }
 
 void RemoteDataSourceServer::doCmdCreateFile(MemoryBuffer & in, MemoryBuffer & out)
@@ -431,7 +431,7 @@ void RemoteDataSourceServer::doCmdCreateFile(MemoryBuffer & in, MemoryBuffer & o
     in.read(username).read(password);
     in.read(logicalName);
 
-    DBGLOG("RemoteFileView:CreateFile('%s') by[%s:%"I64F"d", logicalName.get(), username.get(), session);
+    DBGLOG("RemoteFileView:CreateFile('%s') by[%s:%" I64F "d", logicalName.get(), username.get(), session);
     Owned<IFvDataSource> ds = createFileDataSource(logicalName, cluster, username, password);
     unique_id_t id = addDataSource(session, ds);
 
@@ -441,7 +441,7 @@ void RemoteDataSourceServer::doCmdCreateFile(MemoryBuffer & in, MemoryBuffer & o
     ds->queryMetaData()->serialize(out);
     out.append(ds->isIndex());
 
-    DBGLOG("RemoteFileView:CreateFile returns %"I64F"d", id);
+    DBGLOG("RemoteFileView:CreateFile returns %" I64F "d", id);
 }
 
 void RemoteDataSourceServer::doCmdDestroy(MemoryBuffer & in, MemoryBuffer & out)
@@ -449,7 +449,7 @@ void RemoteDataSourceServer::doCmdDestroy(MemoryBuffer & in, MemoryBuffer & out)
     unique_id_t id;
     in.read(id);
 
-    DBGLOG("RemoteFileView:Destroy(%"I64F"d)", id);
+    DBGLOG("RemoteFileView:Destroy(%" I64F "d)", id);
     CriticalBlock block(cs);
     ForEachItemIn(idx, entries)
     {
@@ -503,7 +503,7 @@ void RemoteDataSourceServer::removeSession(SessionId id)
         RemoteDataEntry & cur = entries.item(idx);
         if (cur.session == id)
         {
-            DBGLOG("RemoteFileView:Instance Died %"I64F"d", cur.id);
+            DBGLOG("RemoteFileView:Instance Died %" I64F "d", cur.id);
             entries.remove(idx);
         }
     }

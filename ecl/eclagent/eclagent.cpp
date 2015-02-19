@@ -775,7 +775,7 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
 
 void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, unsigned size)
 {
-    LOG(MCsetresult, unknownJob, "setResultInt(%s,%d,%"I64F"d)", nullText(name), sequence, val);
+    LOG(MCsetresult, unknownJob, "setResultInt(%s,%d,%" I64F "d)", nullText(name), sequence, val);
     Owned<IWUResult> r = updateResult(name, sequence);
     if (r)
     {
@@ -788,7 +788,7 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, u
     {
         if (outputFmt == ofSTD)
         {
-            outputSerializer->printf(sequence, "%"I64F"d", val);
+            outputSerializer->printf(sequence, "%" I64F "d", val);
             outputSerializer->close(sequence, true);
         }
         else
@@ -798,7 +798,7 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, u
 
 void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __int64 val, unsigned size)
 {
-    LOG(MCsetresult, unknownJob, "setResultUInt(%s,%d,%"I64F"u)", nullText(name), sequence, val);
+    LOG(MCsetresult, unknownJob, "setResultUInt(%s,%d,%" I64F "u)", nullText(name), sequence, val);
     Owned<IWUResult> r = updateResult(name, sequence);
     if (r)
     {
@@ -811,7 +811,7 @@ void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __in
     {
         if (outputFmt == ofSTD)
         {
-            outputSerializer->printf(sequence, "%"I64F"u", val);
+            outputSerializer->printf(sequence, "%" I64F "u", val);
             outputSerializer->close(sequence, true);
         }
         else
@@ -2435,13 +2435,13 @@ static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __i
     CDateTime dt;
     file->getModificationTime(dt);
     unsigned __int64 modifiedTime = dt.getSimple();
-    PrintLog("getDatasetHash adding crc %"I64F"u for file %s", modifiedTime, filename);
+    PrintLog("getDatasetHash adding crc %" I64F "u for file %s", modifiedTime, filename);
     return rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
 }
 
 unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __int64 crc)
 {
-    PrintLog("getDatasetHash initial crc %"I64F"x", crc);
+    PrintLog("getDatasetHash initial crc %" I64F "x", crc);
 
     StringBuffer fullname;
     expandLogicalName(fullname, logicalName);
@@ -2481,7 +2481,7 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
     else
         PrintLog("getDatasetHash did not find file %s", fullname.str());
 
-    PrintLog("getDatasetHash final crc %"I64F"x", crc);
+    PrintLog("getDatasetHash final crc %" I64F "x", crc);
     return crc;
 }
 

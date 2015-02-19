@@ -472,7 +472,7 @@ IPropertyTree* CWizardInputs::createEnvironment()
   }
 
   Owned<IPropertyTree> pProgramTree = createPTreeFromIPT(m_buildSetTree);
-  pNewEnvTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pProgramTree->queryPropTree("./"XML_TAG_PROGRAMS)));
+  pNewEnvTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pProgramTree->queryPropTree("./" XML_TAG_PROGRAMS)));
 
   Owned<IPropertyTree> pCompTree = createPTree(XML_TAG_HARDWARE);
   generateHardwareHeaders(pNewEnvTree, sbTemp, false, pCompTree);
@@ -575,7 +575,7 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
       }
     }
 
-    pNewEnvTree->addPropTree(XML_TAG_SOFTWARE,createPTreeFromIPT(m_buildSetTree->queryPropTree("./"XML_TAG_SOFTWARE)));
+    pNewEnvTree->addPropTree(XML_TAG_SOFTWARE,createPTreeFromIPT(m_buildSetTree->queryPropTree("./" XML_TAG_SOFTWARE)));
     xpath.clear().appendf("%s/%s/%s[%s='%s']/LocalEnvConfFile", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, m_service.str());
     const char* tmp = m_cfg->queryProp(xpath.str());
     if (tmp && *tmp)
@@ -614,7 +614,7 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer a
   xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, attrName.str());
   IPropertyTree* pHardTemp = pNewEnvTree->queryPropTree(xpath.str());
   if(pHardTemp)
-    nodeName.clear().append(pHardTemp->queryProp("./"XML_ATTR_NAME));//NodeName
+    nodeName.clear().append(pHardTemp->queryProp("./" XML_ATTR_NAME));//NodeName
 
   xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, processName, XML_ATTR_BUILDSET, buildSetName);
   
@@ -638,7 +638,7 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, StringBuffer a
 void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
 {
   StringBuffer xpath, tempName, value;
-  Owned<IPropertyTree> pBuildTree = createPTreeFromIPT(pNewEnvTree->queryPropTree("./"XML_TAG_PROGRAMS));
+  Owned<IPropertyTree> pBuildTree = createPTreeFromIPT(pNewEnvTree->queryPropTree("./" XML_TAG_PROGRAMS));
   xpath.clear().appendf("./%s/%s/", XML_TAG_BUILD, XML_TAG_BUILDSET);
   Owned<IPropertyTreeIterator> buildSetInsts = pBuildTree->getElements(xpath.str());
 
@@ -651,7 +651,7 @@ void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
     const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
     if(processName && *processName && buildSetName && * buildSetName && xsdFileName && *xsdFileName)
     {
-      Owned<IPropertyTree> pSchema = loadSchema(pBuildTree->queryPropTree("./"XML_TAG_BUILD"[1]"), pBuildSet, buildSetPath, NULL);
+      Owned<IPropertyTree> pSchema = loadSchema(pBuildTree->queryPropTree("./" XML_TAG_BUILD "[1]"), pBuildSet, buildSetPath, NULL);
 
       Owned<IPropertyTree> pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, buildSetName, m_cfg, m_service.str(), true, true, this);
       xpath.clear().appendf("./%s/%s/[%s=\"%s\"]", XML_TAG_SOFTWARE, processName, XML_ATTR_BUILDSET, buildSetName);
@@ -886,7 +886,7 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
 void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
 {
    StringBuffer xpath, sbDefn, xmlArg, compName, sbNewName;
-   Owned<IPropertyTreeIterator> espProcessIter = pNewEnvTree->getElements("./"XML_TAG_SOFTWARE"/"XML_TAG_ESPPROCESS);
+   Owned<IPropertyTreeIterator> espProcessIter = pNewEnvTree->getElements("./" XML_TAG_SOFTWARE "/" XML_TAG_ESPPROCESS);
         
    ForEach(*espProcessIter)
    {
@@ -967,8 +967,8 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
 void CWizardInputs::addTopology(IPropertyTree* pNewEnvTree)
 {
   StringBuffer xpath;
-  if(!pNewEnvTree->hasProp("./"XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY))
-    pNewEnvTree->addPropTree("./"XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY, createPTree());
+  if(!pNewEnvTree->hasProp("./" XML_TAG_SOFTWARE "/" XML_TAG_TOPOLOGY))
+    pNewEnvTree->addPropTree("./" XML_TAG_SOFTWARE "/" XML_TAG_TOPOLOGY, createPTree());
  
   HashIterator sIter(m_compForTopology);
   for(sIter.first();sIter.isValid();sIter.next())
@@ -976,7 +976,7 @@ void CWizardInputs::addTopology(IPropertyTree* pNewEnvTree)
     IMapping &cur = sIter.query();
     IPropertyTree* pCluster = createTopologyForComp(pNewEnvTree,(const char *) cur.getKey());
     if(pCluster)
-       pNewEnvTree->addPropTree("./"XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY"/Cluster", pCluster);
+       pNewEnvTree->addPropTree("./" XML_TAG_SOFTWARE "/" XML_TAG_TOPOLOGY "/Cluster", pCluster);
   }
 }
 
@@ -1134,7 +1134,7 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
   const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
   const char* xsdFileName = pBuildSet->queryProp(XML_ATTR_SCHEMA);
   const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
-  StringBuffer deployable = pBuildSet->queryProp("@"TAG_DEPLOYABLE);
+  StringBuffer deployable = pBuildSet->queryProp("@" TAG_DEPLOYABLE);
   unsigned numOfIpNeeded = 1;
 
   if (m_doNotGenComp.find(buildSetName) != NotFound )
@@ -1142,7 +1142,7 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
 
   if (processName && *processName && buildSetName && * buildSetName && xsdFileName && *xsdFileName)
   {
-    Owned<IPropertyTree> pSchema = loadSchema(m_buildSetTree->queryPropTree("./"XML_TAG_PROGRAMS"/"XML_TAG_BUILD"[1]"), pBuildSet, buildSetPath, NULL);
+    Owned<IPropertyTree> pSchema = loadSchema(m_buildSetTree->queryPropTree("./" XML_TAG_PROGRAMS "/" XML_TAG_BUILD "[1]"), pBuildSet, buildSetPath, NULL);
     IPropertyTree* pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, buildSetName, m_cfg, m_service.str(), false);
 
     sbNewName.clear();

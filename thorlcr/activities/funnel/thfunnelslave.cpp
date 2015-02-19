@@ -118,7 +118,7 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
                 funnel.fireException(e);
                 e->Release();
             }
-            ActPrintLog(&funnel.activity.queryContainer(), "%s: Read %"I64F"d records", idStr.get(), readThisInput);
+            ActPrintLog(&funnel.activity.queryContainer(), "%s: Read %" I64F "d records", idStr.get(), readThisInput);
         }
     };
 
@@ -352,7 +352,7 @@ public:
                 try { startInput(input); }
                 catch (CATCHALL)
                 {
-                    ActPrintLog("FUNNEL(%"ACTPF"d): Error staring input %d", container.queryId(), i);
+                    ActPrintLog("FUNNEL(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                     throw;
                 }
                 if (!current) current = input;
@@ -395,7 +395,7 @@ public:
             eog[currentMarker] = true;
             loop
             {
-                ActPrintLog("FUNNEL: Read %"RCPF"d records from input %d", readThisInput, currentMarker);
+                ActPrintLog("FUNNEL: Read %" RCPF "d records from input %d", readThisInput, currentMarker);
                 if (currentMarker + 1 < inputs.ordinality())
                 {
                     readThisInput = 0;
@@ -449,7 +449,7 @@ public:
             }
             loop
             {
-                ActPrintLog("FUNNEL: Read %"RCPF"d records from input %d", readThisInput, currentMarker);
+                ActPrintLog("FUNNEL: Read %" RCPF "d records from input %d", readThisInput, currentMarker);
                 if (currentMarker + 1 < inputs.ordinality())
                 {
                     readThisInput = 0;
@@ -526,7 +526,7 @@ public:
             try { startInput(input); }
             catch (CATCHALL)
             {
-                ActPrintLog("COMBINE(%"ACTPF"d): Error staring input %d", container.queryId(), i);
+                ActPrintLog("COMBINE(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                 throw;
             }
         }
@@ -629,7 +629,7 @@ public:
             try { startInput(input); }
             catch (CATCHALL)
             {
-                ActPrintLog("REGROUP(%"ACTPF"d): Error staring input %d", container.queryId(), i);
+                ActPrintLog("REGROUP(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                 throw;
             }
         }
@@ -747,7 +747,7 @@ public:
             try { startInput(input); }
             catch (CATCHALL)
             {
-                ActPrintLog("NONEMPTY(%"ACTPF"d): Error staring input %d", container.queryId(), i);
+                ActPrintLog("NONEMPTY(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                 throw;
             }
         }

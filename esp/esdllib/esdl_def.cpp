@@ -1793,7 +1793,6 @@ public:
         //DBGLOG("Loading Struct %s", struct_tag.getValue("name"));
         EsdlDefStruct *obj= new EsdlDefStruct(tag, def, tid);
         IEsdlDefObject*iobj = dynamic_cast<IEsdlDefObject*>(obj);
-        const char *objname = obj->queryName();
 
         def->objs.setValue(obj->queryName(), iobj);
         obj->load(def, xpp, tag);
@@ -2050,7 +2049,6 @@ esdl_decl IEsdlDefinition *createEsdlDefinition(const char *esdl_ns)
         }
         else
             return LINK<IEsdlDefinition>(*ptns);
-
     }
     else if (!default_ns)
         default_ns.setown(new EsdlDefinition());
@@ -2062,10 +2060,7 @@ esdl_decl IEsdlDefinition *createNewEsdlDefinition(const char *esdl_ns)
     if (esdl_ns && *esdl_ns)
         return createEsdlDefinition(esdl_ns);
     else
-    {
-        IEsdlDefinition *tns = new EsdlDefinition();
-        return LINK<IEsdlDefinition>(tns);
-    }
+        return new EsdlDefinition();
 }
 
 esdl_decl IEsdlDefinition *queryEsdlDefinition(const char *esdl_ns)

@@ -1411,7 +1411,7 @@ StringBuffer & CRuntimeStatisticCollection::toXML(StringBuffer &str) const
         {
             StatisticKind kind = getKind(iStat);
             const char * name = queryStatisticName(kind);
-            str.appendf("<%s>%"I64F"d</%s>", name, value, name);
+            str.appendf("<%s>%" I64F "d</%s>", name, value, name);
         }
     }
     return str;

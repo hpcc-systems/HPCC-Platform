@@ -231,7 +231,7 @@ void CDiskRecordPartHandler::open()
             {
                 offset_t lsize = partDesc->queryProperties().getPropInt64("@size");
                 if (0 != lsize % fixedSize)
-                    throw MakeActivityException(&activity, TE_BadFileLength, "Fixed length file %s [DFS size=%"I64F"d] is not a multiple of fixed record size : %d", filename.get(), lsize, fixedSize);
+                    throw MakeActivityException(&activity, TE_BadFileLength, "Fixed length file %s [DFS size=%" I64F "d] is not a multiple of fixed record size : %d", filename.get(), lsize, fixedSize);
             }
         }
     }
@@ -443,9 +443,9 @@ public:
         }
         info = cachedMetaInfo;
         if (info.totalRowsMin==info.totalRowsMax)
-            ActPrintLog("DISKREAD: Number of rows to read: %"I64F"d", info.totalRowsMin);
+            ActPrintLog("DISKREAD: Number of rows to read: %" I64F "d", info.totalRowsMin);
         else
-            ActPrintLog("DISKREAD: Number of rows to read: %"I64F"d (min), %"I64F"d (max)", info.totalRowsMin, info.totalRowsMax);
+            ActPrintLog("DISKREAD: Number of rows to read: %" I64F "d (min), %" I64F "d (max)", info.totalRowsMin, info.totalRowsMax);
     }
     virtual void start()
     {

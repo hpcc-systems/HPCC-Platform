@@ -33,6 +33,7 @@ ERROR = {
     "6001": "HPCC System is not running!",
     "6002": "OS error when try to call ecl command!",
     "6003": "Parameter error when try to call ecl command!",
+    "6004": "Can't connect to remote HPCC System!",
 }
 
 
@@ -48,4 +49,4 @@ class Error(Exception):
         return "Error (%s): %s " % (self.code, ERROR[self.code])
         
     def getErrorCode(self):
-        return self.code
+        return int(self.code)

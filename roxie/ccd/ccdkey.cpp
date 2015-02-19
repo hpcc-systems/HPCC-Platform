@@ -377,7 +377,7 @@ public:
         {
             size32_t size = recordSize->getFixedSize();
             if (length % size)
-                throw MakeStringException(ROXIE_FILE_ERROR, "File size %"I64F"u is not a multiple of fixed record size %u", length, size);
+                throw MakeStringException(ROXIE_FILE_ERROR, "File size %" I64F "u is not a multiple of fixed record size %u", length, size);
             //MORE: This could silently wrap
             maxPtrs += length / size;
         }
@@ -1168,7 +1168,7 @@ public:
                         offset_t size = file->size();
                         baseMap.addFragment(fileEnd, size, idx-1, base, 0);
                         if (traceLevel > 6)
-                            DBGLOG("File fragment %d size %"I64F"d", idx, size);
+                            DBGLOG("File fragment %d size %" I64F "d", idx, size);
                         totalSize += size; // MORE - check for overflow here
                     }
                 }
@@ -1178,7 +1178,7 @@ public:
         if (preload && !loadedIntoMemory) // loaded but NOT originally seen as preload, lets try to generate keys...
         {
             if (traceLevel > 2)
-                DBGLOG("Loading in-memory file, size %"I64F"d", totalSize);
+                DBGLOG("Loading in-memory file, size %" I64F "d", totalSize);
             // MORE - 32-bit systems could wrap here if totalSize > 2^32
             fileEnd = fileStart = (char *) malloc(totalSize);
             if (!fileStart)

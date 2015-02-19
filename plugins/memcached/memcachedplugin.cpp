@@ -97,7 +97,7 @@ public :
     void getVoidPtrLenPair(ICodeContext * ctx, const char * partitionKey, const char * key, size_t & valueLength, void * & value, eclDataType eclType);
 
     void clear(ICodeContext * ctx, unsigned when);
-    bool exist(ICodeContext * ctx, const char * key, const char * partitionKey);
+    bool exists(ICodeContext * ctx, const char * key, const char * partitionKey);
     eclDataType getKeyType(const char * key, const char * partitionKey);
 
     bool isSameConnection(const char * _options) const;
@@ -442,7 +442,7 @@ void MemCachedPlugin::MCached::clear(ICodeContext * ctx, unsigned when)
     assertOnError(memcached_flush(connection, (time_t)(when)), "'Clear' request failed - ");
 }
 
-bool MemCachedPlugin::MCached::exist(ICodeContext * ctx, const char * key, const char * partitionKey)
+bool MemCachedPlugin::MCached::exists(ICodeContext * ctx, const char * key, const char * partitionKey)
 {
 #if (LIBMEMCACHED_VERSION_HEX<0x53000)
     throw makeStringException(0, "memcached_exist not supported in this version of libmemcached");
@@ -458,7 +458,7 @@ bool MemCachedPlugin::MCached::exist(ICodeContext * ctx, const char * key, const
         return false;
     else
     {
-        assertOnError(rc, "'Exist' request failed - ");
+        assertOnError(rc, "'Exists' request failed - ");
         return true;
     }
 #endif
@@ -594,12 +594,12 @@ ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MClear(ICodeContext * ctx, const char 
     OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
     serverPool->clear(ctx, 0);
 }
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MExist(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MExists(ICodeContext * ctx, const char * key, const char * options, const char * partitionKey)
 {
     OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
-    return serverPool->exist(ctx, key, partitionKey);
+    return serverPool->exists(ctx, key, partitionKey);
 }
-ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * ctx, const char * key, const char * options, const char * partitionKey)
 {
     OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
     const char * keyType = enumToStr(serverPool->getKeyType(key, partitionKey));
@@ -607,82 +607,82 @@ ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * ctx, c
 }
 //-----------------------------------SET------------------------------------------
 //NOTE: These were all overloaded by 'value' type, however; this caused problems since ecl implicitly casts and doesn't type check.
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * options, const char * key, size32_t valueLength, const char * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * key, size32_t valueLength, const char * value, const char * options, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     MemCachedPlugin::MSet(ctx, options, partitionKey, key, valueLength, value, expire, MemCachedPlugin::ECL_STRING);
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * options, const char * key, size32_t valueLength, const UChar * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * key, size32_t valueLength, const UChar * value, const char * options, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     MemCachedPlugin::MSet(ctx, options, partitionKey, key, (valueLength)*sizeof(UChar), value, expire, MemCachedPlugin::ECL_UNICODE);
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * options, const char * key, signed __int64 value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * key, signed __int64 value, const char * options, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     MemCachedPlugin::MSet(ctx, options, partitionKey, key, value, expire, MemCachedPlugin::ECL_INTEGER);
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * options, const char * key, unsigned __int64 value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * key, unsigned __int64 value, const char * options, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     MemCachedPlugin::MSet(ctx, options, partitionKey, key, value, expire, MemCachedPlugin::ECL_UNSIGNED);
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * options, const char * key, double value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * key, double value, const char * options, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     MemCachedPlugin::MSet(ctx, options, partitionKey, key, value, expire, MemCachedPlugin::ECL_REAL);
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * options, const char * key, bool value, const char * partitionKey, unsigned expire)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet(ICodeContext * ctx, const char * key, bool value, const char * options, const char * partitionKey, unsigned expire)
 {
     MemCachedPlugin::MSet(ctx, options, partitionKey, key, value, expire, MemCachedPlugin::ECL_BOOLEAN);
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetData(ICodeContext * ctx, const char * options, const char * key, size32_t valueLength, const void * value, const char * partitionKey, unsigned expire)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetData(ICodeContext * ctx, const char * key, size32_t valueLength, const void * value, const char * options, const char * partitionKey, unsigned expire)
 {
     MemCachedPlugin::MSet(ctx, options, partitionKey, key, valueLength, value, expire, MemCachedPlugin::ECL_DATA);
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * ctx, const char * options, const char * key, size32_t valueLength, const char * value, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * ctx, const char * key, size32_t valueLength, const char * value, const char * options, const char * partitionKey, unsigned expire /* = 0 (ECL default)*/)
 {
     MemCachedPlugin::MSet(ctx, options, partitionKey, key, rtlUtf8Size(valueLength, value), value, expire, MemCachedPlugin::ECL_UTF8);
 }
 //-------------------------------------GET----------------------------------------
-ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MGetBool(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API bool ECL_MEMCACHED_CALL MGetBool(ICodeContext * ctx, const char * key, const char * options, const char * partitionKey)
 {
     bool value;
     MemCachedPlugin::MGet(ctx, options, partitionKey, key, value, MemCachedPlugin::ECL_BOOLEAN);
     return value;
 }
-ECL_MEMCACHED_API double ECL_MEMCACHED_CALL MGetDouble(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API double ECL_MEMCACHED_CALL MGetDouble(ICodeContext * ctx, const char * key, const char * options, const char * partitionKey)
 {
     double value;
     MemCachedPlugin::MGet(ctx, options, partitionKey, key, value, MemCachedPlugin::ECL_REAL);
     return value;
 }
-ECL_MEMCACHED_API signed __int64 ECL_MEMCACHED_CALL MGetInt8(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API signed __int64 ECL_MEMCACHED_CALL MGetInt8(ICodeContext * ctx, const char * key, const char * options, const char * partitionKey)
 {
     signed __int64 value;
     MemCachedPlugin::MGet(ctx, options, partitionKey, key, value, MemCachedPlugin::ECL_INTEGER);
     return value;
 }
-ECL_MEMCACHED_API unsigned __int64 ECL_MEMCACHED_CALL MGetUint8(ICodeContext * ctx, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API unsigned __int64 ECL_MEMCACHED_CALL MGetUint8(ICodeContext * ctx, const char * key, const char * options, const char * partitionKey)
 {
     unsigned __int64 value;
     MemCachedPlugin::MGet(ctx, options, partitionKey, key, value, MemCachedPlugin::ECL_UNSIGNED);
     return value;
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetStr(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetStr(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, const char * key, const char * options, const char * partitionKey)
 {
     size_t _returnLength;
     MemCachedPlugin::MGet(ctx, options, partitionKey, key, _returnLength, returnValue, MemCachedPlugin::ECL_STRING);
     returnLength = static_cast<size32_t>(_returnLength);
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetUChar(ICodeContext * ctx, size32_t & returnLength, UChar * & returnValue,  const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetUChar(ICodeContext * ctx, size32_t & returnLength, UChar * & returnValue,  const char * key, const char * options, const char * partitionKey)
 {
     size_t _returnSize;
     MemCachedPlugin::MGet(ctx, options, partitionKey, key, _returnSize, returnValue, MemCachedPlugin::ECL_UNICODE);
     returnLength = static_cast<size32_t>(_returnSize/sizeof(UChar));
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetUtf8(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetUtf8(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, const char * key, const char * options, const char * partitionKey)
 {
     size_t returnSize;
     MemCachedPlugin::MGet(ctx, options, partitionKey, key, returnSize, returnValue, MemCachedPlugin::ECL_UTF8);
     returnLength = static_cast<size32_t>(rtlUtf8Length(returnSize, returnValue));
 }
-ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetData(ICodeContext * ctx, size32_t & returnLength, void * & returnValue, const char * options, const char * key, const char * partitionKey)
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetData(ICodeContext * ctx, size32_t & returnLength, void * & returnValue, const char * key, const char * options, const char * partitionKey)
 {
     size_t _returnLength;
     MemCachedPlugin::MGetVoidPtrLenPair(ctx, options, partitionKey, key, _returnLength, returnValue, MemCachedPlugin::ECL_DATA);

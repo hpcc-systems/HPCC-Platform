@@ -92,6 +92,7 @@ ESPStruct [nil_remove] GroupNode
 {
     string Name;
     string ClusterType;
+    bool ReplicateOutputs;
 };
 
 ESPStruct DFUException

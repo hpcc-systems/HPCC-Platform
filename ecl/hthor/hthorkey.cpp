@@ -1837,7 +1837,7 @@ public:
                     else
                         expectedSize = props.getPropInt64("@size", -1);
                     if(thissize != expectedSize && expectedSize != -1)
-                        throw MakeStringException(0, "File size mismatch: file %s was supposed to be %"I64F"d bytes but appears to be %"I64F"d bytes", ifile->queryFilename(), expectedSize, thissize); 
+                        throw MakeStringException(0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", ifile->queryFilename(), expectedSize, thissize); 
                     if(blockcompressed)
                         rawFile.setown(createCompressedFileReader(ifile,eexp));
                     else
@@ -2018,7 +2018,7 @@ public:
     {
         PARTHANDLER * part = binsearch(rp, parts, numParts, this);
         if(!part)
-            throw MakeStringException(1002, "FETCH: file position %"I64F"d out of range", rp);
+            throw MakeStringException(1002, "FETCH: file position %" I64F "d out of range", rp);
         part->addRow(new REQUEST(left, rp, seq));
     }
 

@@ -961,7 +961,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                 {
                     const void *result = bsearch(&fpos, owner.fPosToNodeMap, owner.filePartTotal, sizeof(FPosTableEntry), slaveLookup);
                     if (!result)
-                        throw MakeThorException(TE_FetchOutOfRange, "FETCH: Offset not found in offset table; fpos=%"I64F"d", fpos);
+                        throw MakeThorException(TE_FetchOutOfRange, "FETCH: Offset not found in offset table; fpos=%" I64F "d", fpos);
                     dstNode = ((FPosTableEntry *)result)->index;
                 }
             }
@@ -1980,7 +1980,7 @@ public:
                 for (c=0; c<filePartTotal; c++)
                 {
                     FPosTableEntry &e = fPosToNodeMap[c];
-                    ActPrintLog("Table[%d] : base=%"I64F"d, top=%"I64F"d, slave=%d", c, e.base, e.top, e.index);
+                    ActPrintLog("Table[%d] : base=%" I64F "d, top=%" I64F "d, slave=%d", c, e.base, e.top, e.index);
                 }
                 unsigned i=0;
                 for(; i<dataParts.ordinality(); i++)

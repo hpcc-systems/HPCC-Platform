@@ -418,7 +418,7 @@ public:
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
             if (!activeNode->add(pos, keyData, recsize, sequence))
-                throw MakeStringException(0, "Key row too large to fit within a key node (uncompressed size=%d, variable=%s, pos=%"I64F"d)", recsize, keyHdr->isVariable()?"true":"false", pos);
+                throw MakeStringException(0, "Key row too large to fit within a key node (uncompressed size=%d, variable=%s, pos=%" I64F "d)", recsize, keyHdr->isVariable()?"true":"false", pos);
         }
         sequence++;
     }

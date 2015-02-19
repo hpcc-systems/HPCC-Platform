@@ -261,7 +261,7 @@ public:
                         {
                             *lf = 0;
                             pythonLibrary = dlopen((char *)fullName, RTLD_NOW|RTLD_GLOBAL);
-//                            DBGLOG("dlopen %s returns %"I64F"x", fullName, (__uint64) pythonLibrary);
+//                            DBGLOG("dlopen %s returns %" I64F "x", fullName, (__uint64) pythonLibrary);
                             break;
                         }
                     }
@@ -414,6 +414,45 @@ protected:
     OwnedPyObject compiledScripts; // dictionary of previously compiled scripts
     CriticalSection lock;
 } globalState;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    // Make sure we are never unloaded (as Python may crash if we are)
+    // we do this by doing a dynamic load of the pyembed library
+#ifdef _WIN32
+    ::GetModuleFileName((HINSTANCE)&__ImageBase, helperLibraryName, _MAX_PATH);
+    if (strstr(path, "pyembed"))
+    {
+        HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
+        DBGLOG("LoadSharedObject returned %p", h);
+    }
+#else
+    FILE *diskfp = fopen("/proc/self/maps", "r");
+    if (diskfp)
+    {
+        char ln[_MAX_PATH];
+        while (fgets(ln, sizeof(ln), diskfp))
+        {
+            if (strstr(ln, "libpyembed"))
+            {
+                const char *fullName = strchr(ln, '/');
+                if (fullName)
+                {
+                    char *tail = (char *) strstr(fullName, SharedObjectExtension);
+                    if (tail)
+                    {
+                        tail[strlen(SharedObjectExtension)] = 0;
+                        HINSTANCE h = LoadSharedObject(fullName, false, false);
+                        break;
+                    }
+                }
+            }
+        }
+        fclose(diskfp);
+    }
+#endif
+    return true;
+}
 
 PyObject *PythonThreadContext::getNamedTupleType(const RtlTypeInfo *type)
 {

@@ -201,7 +201,7 @@ public:
     virtual bool startAsync() { return true; }
     virtual void onInputFinished(rowcount_t count)
     {
-        ActPrintLog("JOIN: %s input finished, %"RCPF"d rows read", rightpartition?"LHS":"RHS", count);
+        ActPrintLog("JOIN: %s input finished, %" RCPF "d rows read", rightpartition?"LHS":"RHS", count);
     }
 
     void doDataLinkStart()

@@ -56,13 +56,15 @@ class ECLCC(Shell):
 
         if result.startswith( 'Error()'):
             retVal = False
-            ecl.diff += ecl.getEcl() + '\n  eclcc returns with:\n\t'
+            ecl.diff += ("%3d. Test: %s\n") % (ecl.getTaskId(), ecl.getBaseEclRealName())
+            ecl.diff += '  eclcc returns with:\n\t'
             try:
                 lines = repr(self.makeArchiveError).replace('\\n',  '\n\t').splitlines(True)
                 for line in lines:
-                    if  "Error" in line:
+                    lowerLine = line.lower()
+                    if  (": error " in lowerLine) or (": warning " in lowerLine):
                         ecl.diff += line.replace("'",  "")
-                    if "): error " in  line:
+                    if ("): error " in  line) or ("): warning " in lowerLine):
                         ecl.diff += line.replace("\\'", "'")
                 #ecl.diff += repr(self.makeArchiveError).replace('\\n',  '\n\t')
             except Exception as ex:

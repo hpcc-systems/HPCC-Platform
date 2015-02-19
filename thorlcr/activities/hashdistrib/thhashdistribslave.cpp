@@ -830,7 +830,7 @@ protected:
             owner.ActPrintLog("HDIST: calling closeWrite()");
             closeWrite();
 
-            owner.ActPrintLog("HDIST: Send loop %s %"RCPF"d rows sent", exception.get()?"aborted":"finished", totalSent);
+            owner.ActPrintLog("HDIST: Send loop %s %" RCPF "d rows sent", exception.get()?"aborted":"finished", totalSent);
         }
         void abort()
         {
@@ -2194,7 +2194,7 @@ public:
         }
         CMessageBuffer mb;
         mb.append(sz);
-        ActPrintLog(activity, "REDISTRIBUTE sending size %"I64F"d to master",sz);
+        ActPrintLog(activity, "REDISTRIBUTE sending size %" I64F "d to master",sz);
         if (!activity->queryContainer().queryJob().queryJobComm().send(mb, (rank_t)0, statstag)) {
             ActPrintLog(activity, "REDISTRIBUTE send to master failed");
             throw MakeStringException(-1, "REDISTRIBUTE send to master failed");
@@ -2271,16 +2271,16 @@ public:
         }
         for (i=0;i<n;i++) {
 #ifdef _DEBUG
-            ActPrintLog(activity, "after Node %d has %"I64F"d",i, insz[i]);
+            ActPrintLog(activity, "after Node %d has %" I64F "d",i, insz[i]);
 #endif
         }
         tot = 0;
         for (i=0;i<n;i++) {
             if (sizes[i]) {
                 if (i==self)
-                    ActPrintLog(activity, "Keep %"I64F"d local",sizes[i]);
+                    ActPrintLog(activity, "Keep %" I64F "d local",sizes[i]);
                 else
-                    ActPrintLog(activity, "Redistribute %"I64F"d to %d",sizes[i],i);
+                    ActPrintLog(activity, "Redistribute %" I64F "d to %d",sizes[i],i);
             }
             tot += sizes[i];
         }
@@ -3823,7 +3823,7 @@ RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBas
     distributor->disconnect(true);
     distributor->join();
 
-    activity.ActPrintLog("HASHAGGREGATE: Read %"RCPF"d records to build hash table", readCount);
+    activity.ActPrintLog("HASHAGGREGATE: Read %" RCPF "d records to build hash table", readCount);
     StringBuffer str("HASHAGGREGATE: After distribution merge contains ");
     activity.ActPrintLog("%s", str.append(globalAggTable->elementCount()).append("entries").str());
     return globalAggTable.getClear();

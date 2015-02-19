@@ -32,10 +32,6 @@ if [ $# -lt 9 ]; then
   exit 1
 fi
 
-# this must match jsocket hard limit
-export handlelimit=32768
-
-
 # insuring parent directory structure is setup properly
 sudo /etc/init.d/dafilesrv status &>/dev/null
 if [ $? -ne 0 ];then
@@ -72,8 +68,8 @@ done
 trap "rm -f $lckfile" exit
 echo $$ > $lckfile
 
-ulimit -c unlimited
-ulimit -n $handlelimit
+
+
 
 echo "`date` slave(s) starting"
 
