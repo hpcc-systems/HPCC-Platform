@@ -4,7 +4,7 @@
 IMPORT $;
 
 OutRec1 := $.DeclareData.Layout_Person;
-RoxieIP := 'http://192.168.11.130:8002/WsEcl/soap/query/myroxie/roxieoverview1.1';
+RoxieIP := 'http://127.0.0.1:8002/WsEcl/soap/query/roxie/roxieoverview1.1';
 svc     := 'RoxieOverview1.1';
 
 //recordset in, recordset out

@@ -24,7 +24,7 @@
     <programlisting>IMPORT $;
 
 OutRec1 := $.DeclareData.Layout_Person;
-RoxieIP := 'http://192.168.11.130:8002/WsEcl/soap/query/myroxie/roxieoverview1.1';
+RoxieIP := 'http://192.168.11.130:8002/WsEcl/soap/query/roxie/roxieoverview1.1';
 svc     := 'RoxieOverview1.1';
      
 InputRec := RECORD
@@ -57,7 +57,7 @@ OUTPUT(ManyRec1);</programlisting>
     <programlisting>IMPORT $;
 
 OutRec1 := $.DeclareData.Layout_Person;
-RoxieIP := 'http://192.168.11.130:8002/WsEcl/soap/query/myroxie/roxieoverview1.1';
+RoxieIP := 'http://192.168.11.130:8002/WsEcl/soap/query/roxie/roxieoverview1.1';
 svc     := 'RoxieOverview1.1';
 //recordset in, recordset out
 InRec := RECORD
@@ -259,7 +259,7 @@ END;</programlisting>
     like this (the only difference would be the IP and port you target for the
     query (contained in Soapcall4.ECL)):</para>
 
-    <programlisting>RoxieIP := 'http://192.168.11.130:8002/WsEcl/soap/query/myroxie/soapcall3.1'; //Roxie
+    <programlisting>RoxieIP := 'http://192.168.11.130:8002/WsEcl/soap/query/roxie/soapcall3.1'; //Roxie
 svc     := 'soapcall3.1';
 
 InRec := RECORD
