@@ -2,8 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ssl4esp">
-  <title><emphasis role="bold">Configuring ESP Server to use HTTPS
-  (SSL)</emphasis></title>
+  <title>Configuring ESP Server to use HTTPS (SSL)</title>
 
   <para>The HPCC Enterprise Services Platform server (ESP) supports Secure
   Sockets Layer (SSL), a protocol used to send and receive private data or

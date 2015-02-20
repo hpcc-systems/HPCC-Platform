@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Unity_Launcher">
-  <title><emphasis role="bold">Unity Launcher Icon</emphasis></title>
+  <title>Unity Launcher Icon</title>
 
   <para>The HPCC platform supports an Ubuntu Unity Launcher icon.</para>
 
