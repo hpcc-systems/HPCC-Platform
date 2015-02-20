@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,14 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-/* Proxy plugin definition for dmetaphone library version DMETAPHONE 1.1.05 */
+/* Proxy plugin definition for (EE only) metaphone3 library */
 
-export MetaphoneLib := SERVICE : plugin('dmetaphone')
-  string DMetaphone1(const string src) : c,pure,entrypoint='mpDMetaphone1';
-  string DMetaphone2(const string src) : c,pure,entrypoint='mpDMetaphone2';
-  string DMetaphoneBoth(const string src) : c,pure,entrypoint='mpDMetaphoneBoth';
-  string20 DMetaphone1_20(const string src) : c,pure,entrypoint='mpDMetaphone1_20', hole;
-  string20 DMetaphone2_20(const string src) : c,pure,entrypoint='mpDMetaphone2_20', hole;
-  string40 DMetaphoneBoth_40(const string src) : c,pure,entrypoint='mpDMetaphoneBoth_40', hole;
+export Metaphone3Lib := SERVICE : plugin('metaphone3')
+  string Metaphone3(const string src, boolean encodeVowels=true, boolean encodeExact=true, unsigned4 maxLength=0) : c,pure,entrypoint='m3DMetaphone1';
+  string Metaphone3Alt(const string src, boolean encodeVowels=true, boolean encodeExact=true, unsigned4 maxLength=0) : c,pure,entrypoint='m3DMetaphone2';
+  string Metaphone3Both(const string src, boolean encodeVowels=true, boolean encodeExact=true, unsigned4 maxLength=0) : c,pure,entrypoint='m3DMetaphoneBoth';
 END;
 
