@@ -13,8 +13,8 @@
 
     <para>HPCC systems maintains security in a number of ways. HPCC Systems
     can be configured to manage users' security rights by pointing either at
-    Microsoft’s Active Directory on a Windows system, or an OpenLDAP-based
-    software on Linux systems.</para>
+    Microsoft’s Active Directory on a Windows system, or a 389Directory Server
+    on Linux systems.</para>
 
     <para>Using the Permissions interface in ECL Watch, administrators can
     control access to features in ECL IDE, ECL Watch, ECL Plus, DFU Plus, and
@@ -460,7 +460,7 @@
                   <listitem>
                     <para>The name of the default Administrator group could
                     vary. For example, in Active Directory, it is
-                    "Administrators", in Open LDAP it is "Directory
+                    "Administrators", in LDAP it is "Directory
                     Administrators".</para>
                   </listitem>
                 </varlistentry>
