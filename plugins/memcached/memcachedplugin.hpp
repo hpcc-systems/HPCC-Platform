@@ -42,6 +42,7 @@ extern "C"
 //NB: LIBMEMCACHED_API already used by libmemcached
 extern "C++"
 {
+namespace MemCachedPlugin {
     //--------------------------SET----------------------------------------
     ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, bool value, const char * options, const char * partitionKey, unsigned expire);
     ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, signed __int64 value, const char * options, const char * partitionKey, unsigned expire);
@@ -64,5 +65,6 @@ extern "C++"
     ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MExists (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
     ECL_MEMCACHED_API const char *     ECL_MEMCACHED_CALL MKeyType(ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
     ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MClear  (ICodeContext * _ctx, const char * options);
+}//close namespace
 }
 #endif
