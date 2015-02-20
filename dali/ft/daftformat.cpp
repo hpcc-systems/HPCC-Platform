@@ -1579,6 +1579,8 @@ offset_t XmlSplitter::getFooterLength(BufferedDirectReader & reader, offset_t si
 
 CJsonInputPartitioner::CJsonInputPartitioner(const FileFormat & _format)
 {
+    LOG(MCdebugProgressDetail, unknownJob, "CJsonInputPartitioner::CJsonInputPartitioner(format.type :'%s', unitSize:%d)", _format.getFileFormatTypeString(), _format.getUnitSize());
+
     format.set(_format);
     CriticalBlock block(openfilecachesect);
     if (!openfilecache)

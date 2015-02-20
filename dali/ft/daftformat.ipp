@@ -20,7 +20,7 @@
 
 #include "filecopy.hpp"
 #include "ftbase.ipp"
-#include "daft.hpp"
+#include "daftmc.hpp"
 #include "daftformat.hpp"
 #include "rmtpass.hpp"
 #include "jptree.hpp"
@@ -363,6 +363,8 @@ public:
 
     JsonSplitter(const FileFormat & format, IFileIOStream &stream) : headerLength(0), pathPos(0), tangent(0), rowDepth(0), rowStart(0), rowEnd(0), footerLength(0), newRowSet(true)
     {
+        LOG(MCdebugProgressDetail, unknownJob, "JsonSplitter::JsonSplitter(format.type :'%s', rowPath:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
+
         size = stream.size();
         const char *rowPath = format.rowTag;
         while (*rowPath=='/')
