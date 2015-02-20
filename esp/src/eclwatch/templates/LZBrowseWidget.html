@@ -145,6 +145,46 @@
                             </div>
                         </div>
                     </div>
+                    <div id="${id}SprayJsonDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.JSON}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}SprayJsonForm" style="width: 530px;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Target}</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}SprayJsonDestinationSelect" title="${i18n.Group}:" style="width: 95%;" name="destGroup" data-dojo-type="TargetSelectWidget" />
+                                        <input title="${i18n.NamePrefix}:" style="width: 95%;" name="namePrefix" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                    <div id="${id}SprayJsonGrid" data-dojo-type="SelectionGridWidget">
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Options}</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <select id="${id}jsonsourceFormat" title="${i18n.Format}:" name="sourceFormat" colspan="2" data-dojo-type="dijit.form.Select">
+                                            <option value="2">UTF-8</option>
+                                            <option value="3">UTF-8N</option>
+                                            <option value="4">UTF-16</option>
+                                            <option value="5">UTF-16LE</option>
+                                            <option value="6">UTF-16BE</option>
+                                            <option value="7">UTF-32</option>
+                                            <option value="8">UTF-32LE</option>
+                                            <option value="9">UTF-32BE</option>
+                                        </select>
+                                        <input id="${id}SprayJsonMaxRecordLength" title="${i18n.MaxRecordLength}:" value="8192" style="width: 95%;" name="sourceMaxRecordSize" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button data-dojo-attach-event="onClick:_onSprayJson" data-dojo-type="dijit.form.Button">${i18n.Spray}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div id="${id}SprayVariableDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Variable}</span>
                         <div data-dojo-type="dijit.TooltipDialog">

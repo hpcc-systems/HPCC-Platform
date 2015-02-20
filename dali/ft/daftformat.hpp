@@ -33,11 +33,12 @@
 struct PartitionCursor
 {
 public:
-    PartitionCursor(offset_t _inputOffset)  { inputOffset = nextInputOffset = _inputOffset; outputOffset = 0; }
+    PartitionCursor(offset_t _inputOffset)  { inputOffset = nextInputOffset = _inputOffset; outputOffset = 0; trimLength = 0; }
     
     offset_t        inputOffset;
     offset_t        nextInputOffset;
     offset_t        outputOffset;
+    offset_t        trimLength;
 };
 
 struct TransformCursor
