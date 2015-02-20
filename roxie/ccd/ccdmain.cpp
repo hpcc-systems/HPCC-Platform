@@ -356,7 +356,7 @@ static void roxie_common_usage(const char * progName)
     printf("\t--daliServers=[host1,...]\t: List of Dali servers to use\n");
     printf("\t--tracelevel=[integer]\t: Amount of information to dump on logs\n");
     printf("\t--stdlog=[boolean]\t: Standard log format (based on tracelevel)\n");
-    printf("\t--logfile=[format]\t: Outputs to logfile, rather than stdout\n");
+    printf("\t--logfile\t: Outputs to logfile, rather than stdout\n");
     printf("\t--help|-h\t: This message\n");
     printf("\n");
 }
