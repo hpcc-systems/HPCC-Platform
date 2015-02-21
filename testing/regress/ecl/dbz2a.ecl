@@ -18,6 +18,7 @@
 //nothor
 //nothorlcr
 //noroxie
+//fail
 
 //Test division by zero - default action to return 0
 #option ('divideByZero', 'fail'); 

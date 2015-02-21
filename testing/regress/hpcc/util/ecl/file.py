@@ -231,10 +231,10 @@ class ECLFile:
         return realName
 
     def getWuid(self):
-        return self.wuid
+        return self.wuid.strip()
 
     def setWuid(self,  wuid):
-        self.wuid = wuid
+        self.wuid = wuid.strip()
 
     def addResults(self, results, wuid):
         filename = self.getResults()
@@ -337,6 +337,15 @@ class ECLFile:
             if retVal:
                 break
         logging.debug("%3d. testInClass() returns with: %s",  self.taskId,  retVal)
+        return retVal
+
+    def testFail(self):
+        # Standard string has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = b'//fail'
+        logging.debug("%3d. testFail(ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+        retVal = self.__checkTag(tag)
+        logging.debug("%3d. testFail() returns with: %s",  self.taskId,  retVal)
         return retVal
 
     # Test (and read all) //version tag in the ECL file
