@@ -137,6 +137,9 @@ class ECLcmd(Shell):
                 elif eclfile.getIgnoreResult():
                     logging.debug("%3d. Ignore result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEcl())
                     test = True
+                elif eclfile.testFail():
+                    logging.debug("%3d. Fail is the expected result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEcl())
+                    test = True
                 elif eclfile.testNoKey():
                     # keyfile comparaison disabled with //nokey tag
                     if eclfile.testNoOutput():
