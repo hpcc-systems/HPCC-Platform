@@ -20,6 +20,7 @@
 #include "eclrtl.hpp"
 #include "jexcept.hpp"
 #include "jstring.hpp"
+#include "jthread.hpp"
 #include <libmemcached/memcached.hpp>
 #include <libmemcached/util.h>
 
@@ -40,7 +41,6 @@ ECL_MEMCACHED_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 }
 
 namespace MemCachedPlugin {
-IPluginContext * parentCtx = NULL;
 static const unsigned unitExpire = 86400;//1 day (secs)
 
 enum eclDataType {
@@ -125,26 +125,50 @@ private :
     unsigned typeMismatchCount;
 };
 
-#define OwnedMCached Owned<MemCachedPlugin::MCached>
+typedef Owned<MCached> OwnedMCached;
 
-#define MAX_TYPEMISMATCHCOUNT 10
+static const unsigned MAX_TYPEMISMATCHCOUNT = 10;
 
-static CriticalSection crit;
-static OwnedMCached cachedConnection;
+static __thread MCached * cachedConnection;
+static __thread ThreadTermFunc threadHookChain;
 
+//The following class is here to ensure destruction of the cachedConnection within the main thread
+//as this is not handled by the thread hook mechanism.
+static class mainThreadCachedConnection
+{
+public :
+    mainThreadCachedConnection() { }
+    ~mainThreadCachedConnection()
+    {
+        if (cachedConnection)
+            cachedConnection->Release();
+    }
+} mainThread;
+
+static void releaseContext()
+{
+    if (cachedConnection)
+        cachedConnection->Release();
+    if (threadHookChain)
+    {
+        (*threadHookChain)();
+        threadHookChain = NULL;
+    }
+}
 MCached * createConnection(ICodeContext * ctx, const char * options)
 {
-    CriticalBlock block(crit);
     if (!cachedConnection)
     {
-        cachedConnection.setown(new MemCachedPlugin::MCached(ctx, options));
+        cachedConnection = new MemCachedPlugin::MCached(ctx, options);
+        threadHookChain = addThreadTermFunc(releaseContext);
         return LINK(cachedConnection);
     }
 
     if (cachedConnection->isSameConnection(options))
         return LINK(cachedConnection);
 
-    cachedConnection.setown(new MemCachedPlugin::MCached(ctx, options));
+    cachedConnection->Release();
+    cachedConnection = new MemCachedPlugin::MCached(ctx, options);
     return LINK(cachedConnection);
 }
 
@@ -176,7 +200,6 @@ void MGetVoidPtrLenPair(ICodeContext * ctx, const char * options, const char * p
     OwnedMCached serverPool = createConnection(ctx, options);
     serverPool->getVoidPtrLenPair(ctx, partitionKey, key, returnLength, returnValue, eclType);
 }
-}//close namespace
 
 //----------------------------------SET----------------------------------------
 template<class type> void MemCachedPlugin::MCached::set(ICodeContext * ctx, const char * partitionKey, const char * key, type value, unsigned expire, eclDataType eclType)
@@ -262,8 +285,6 @@ void MemCachedPlugin::MCached::getVoidPtrLenPair(ICodeContext * ctx, const char 
     returnLength = (size32_t)(returnValueLength);
     returnValue = reinterpret_cast<void*>(cpy(value, returnLength));
 }
-
-ECL_MEMCACHED_API void setPluginContext(IPluginContext * ctx) { MemCachedPlugin::parentCtx = ctx; }
 
 MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _options)
 {
@@ -688,3 +709,4 @@ ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MGetData(ICodeContext * ctx, size32_t 
     MemCachedPlugin::MGetVoidPtrLenPair(ctx, options, partitionKey, key, _returnLength, returnValue, MemCachedPlugin::ECL_DATA);
     returnLength = static_cast<size32_t>(_returnLength);
 }
+}//close namespace
