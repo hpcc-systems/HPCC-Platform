@@ -11,7 +11,7 @@
   <sect2 id="User_Security_Intro">
     <title>Introduction</title>
 
-    <para>HPCC systems maintains security in a number of ways. HPCC Systems
+    <para>HPCC systems<superscript>®</superscript> maintains security in a number of ways. HPCC Systems<superscript>®</superscript>
     can be configured to manage users' security rights by pointing either at
     Microsoftâ€™s Active Directory on a Windows system, or a 389Directory Server
     on Linux systems.</para>

@@ -2,11 +2,11 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>Running the HPCC Systems Thor Platform within Amazon Web
+  <title>Running the HPCC Systems<superscript>®</superscript> Thor Platform within Amazon Web
   Services</title>
 
   <bookinfo>
-    <title>Running the HPCC Systems Thor Platform within AWS</title>
+    <title>Running the HPCC Systems<superscript>®</superscript> Thor Platform within AWS</title>
 
     <mediaobject>
       <imageobject>
@@ -31,7 +31,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Amazon Web Services, AWS, Amazon EC2, EC2, Amazon Elastic Compute
@@ -59,7 +59,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -74,12 +74,12 @@
   <chapter>
     <title>Introduction</title>
 
-    <para>This guide provides details and guidance in running an HPCC Systems
+    <para>This guide provides details and guidance in running an HPCC Systems<superscript>®</superscript>
     Thor cluster inside an Amazon Web Services (AWS) Elastic Cloud
     (EC2).</para>
 
     <para>This allows you to <emphasis role="bold">instantiate</emphasis> and
-    run HPCC Systems Thor clusters of different sizes on the fly.</para>
+    run HPCC Systems<superscript>®</superscript> Thor clusters of different sizes on the fly.</para>
 
     <para>This is useful for:</para>
 
@@ -97,12 +97,12 @@
       </listitem>
 
       <listitem>
-        <para>Leveraging the HPCC Systems Thor platform without incurring cost
+        <para>Leveraging the HPCC Systems<superscript>®</superscript> Thor platform without incurring cost
         of hardware and administration</para>
       </listitem>
 
       <listitem>
-        <para>Create and use an HPCC Systems Thor cluster immediately without
+        <para>Create and use an HPCC Systems<superscript>®</superscript> Thor cluster immediately without
         purchasing and installing new hardware</para>
       </listitem>
     </itemizedlist>
@@ -121,9 +121,9 @@
 
     <para>We are working with Amazon to improve the set up processes.
     <emphasis role="bold">In the near future, we will have a guide to show how
-    to run an HPCC Systems Thor cluster in an Amazon Elastic Map Reduce (EMR)
+    to run an HPCC Systems<superscript>®</superscript> Thor cluster in an Amazon Elastic Map Reduce (EMR)
     environment.</emphasis> We expect that method to be easier to set up and
-    operate. In addition, HPCC Systems is working on its own Enterprise Cloud
+    operate. In addition, HPCC Systems<superscript>®</superscript> is working on its own Enterprise Cloud
     offering, but it is not yet ready to be announced.</para>
 
     <sect1>
@@ -234,7 +234,7 @@
           </tgroup>
         </informaltable></para>
 
-      <para>This section provides simple steps to run an HPCC Systems Thor
+      <para>This section provides simple steps to run an HPCC Systems<superscript>®</superscript> Thor
       cluster inside Amazon Web Services (AWS) Elastic Cloud (EC2). It assumes
       you know how to use AWS, how to connect to EC2 instances, how to use
       Linux bash commands, and how to use ssh from your particular computer to
@@ -443,7 +443,7 @@
         </listitem>
 
         <listitem>
-          <para>Configuring Your HPCC Systems Thor Cluster</para>
+          <para>Configuring Your HPCC Systems<superscript>®</superscript> Thor Cluster</para>
 
           <orderedlist>
             <listitem>
@@ -546,7 +546,7 @@
           <orderedlist continuation="continues" inheritnum="inherit">
             <listitem override="11">
               <para>If you are using an Instance Store AMI, as recommended,
-              you must tell the HPCC Systems Thor Platform where your instance
+              you must tell the HPCC Systems<superscript>®</superscript> Thor Platform where your instance
               storage is located. In the Configuration Manager browser
               window:</para>
 
@@ -1255,7 +1255,7 @@
       <title>Launch Ubuntu 10.04 AMI Instances</title>
 
       <para>In this section, you will launch a set of Ubuntu 10.04 machines to
-      use for your HPCC Systems Thor platform.</para>
+      use for your HPCC Systems<superscript>®</superscript> Thor platform.</para>
 
       <sect2>
         <title>Launch Ubuntu 10.04 AMIs</title>
@@ -1742,9 +1742,9 @@
     </sect1>
 
     <sect1>
-      <title>Configure your HPCC Systems Thor Cluster</title>
+      <title>Configure your HPCC Systems<superscript>®</superscript> Thor Cluster</title>
 
-      <para>At this point, your nodes are running and the HPCC Systems
+      <para>At this point, your nodes are running and the HPCC Systems<superscript>®</superscript>
       platform packages and all dependencies are installed. In this section,
       you will use the HPCC’s Configuration Manager to configure your HPCC
       Systems Thor platform.</para>
@@ -1949,7 +1949,7 @@
             <?dbfo keep-together="always"?>
 
             <para>If you are using an Instance Store AMI, as recommended, you
-            must tell the HPCC Systems Thor Platform where your instance
+            must tell the HPCC Systems<superscript>®</superscript> Thor Platform where your instance
             storage is located. In the Configuration Manager browser
             window:</para>
 
@@ -2100,7 +2100,7 @@
     <para></para>
 
     <sect1 id="ECL-on-a-single-node-system" role="nobrk">
-      <title>Running ECL on your HPCC Systems Thor cluster</title>
+      <title>Running ECL on your HPCC Systems<superscript>®</superscript> Thor cluster</title>
 
       <para>After your platform is running, and you can now create and run
       some ECL<footnote>
@@ -2380,7 +2380,7 @@
     <title>More ECL Examples</title>
 
     <para>This section contains additional ECL examples you can use on your
-    HPCC Systems Thor platform. You can run these on a single-node system or a
+    HPCC Systems<superscript>®</superscript> Thor platform. You can run these on a single-node system or a
     larger multi-node cluster.</para>
 
     <sect1 role="nobrk">
@@ -2394,7 +2394,7 @@
           <listitem>
             <para>Open the ECL IDE (<emphasis role="bold">Start</emphasis>
             &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
-            <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE )
+            <emphasis role="bold">HPCC Systems<superscript>®</superscript></emphasis> &gt;&gt; ECL IDE )
             and login to your HPCC.</para>
           </listitem>
 
@@ -2844,7 +2844,7 @@ OUTPUT(ValidWords)
     <title>Data Handling</title>
 
     <para>This section explains data handling in an AWS configuration. More
-    information about Data Handling in an HPCC Systems platform are available
+    information about Data Handling in an HPCC Systems<superscript>®</superscript> platform are available
     in the <emphasis>Data Handling</emphasis> manual.</para>
 
     <sect1 role="nobrk">
@@ -3001,7 +3001,7 @@ s3cmd --configure
         <para>You can despray a file from Thor to your landing zone, then copy
         to an S3 bucket to for persistent storage. Later, you can copy files
         from the S3 bucket to a landing zone and spray the file to a Thor
-        cluster. More information about Data Handling in an HPCC Systems
+        cluster. More information about Data Handling in an HPCC Systems<superscript>®</superscript>
         platform are available in the <emphasis>Data Handling</emphasis>
         manual.</para>
 
@@ -3046,7 +3046,7 @@ s3cmd --configure
 
       <para>If you need to save your data, you must to despray it first and
       save it off of your cluster before shutting down. More information about
-      Data Handling in an HPCC Systems platform are available in the
+      Data Handling in an HPCC Systems<superscript>®</superscript> platform are available in the
       <emphasis>Data Handling</emphasis> manual.</para>
 
       <para>To terminate your cluster, open up the AWS Management Console,
@@ -3099,7 +3099,7 @@ s3cmd --configure
         </listitem>
       </itemizedlist></para>
 
-    <para>The HPCC Systems Portal ( <ulink
+    <para>The HPCC Systems<superscript>®</superscript> Portal ( <ulink
     url="http://hpccsystems.com">HPCCSystems.com</ulink> ) is also a valuable
     resource for more information including:</para>
 
@@ -3257,7 +3257,7 @@ s3cmd --configure
           </question>
 
           <answer>
-            <para>Peer support is available in the Forums on the HPCC Systems
+            <para>Peer support is available in the Forums on the HPCC Systems<superscript>®</superscript>
             Portal.</para>
           </answer>
         </qandaentry>
@@ -3268,7 +3268,7 @@ s3cmd --configure
           </question>
 
           <answer>
-            <para>Visit the HPCC Systems Portal at <ulink
+            <para>Visit the HPCC Systems<superscript>®</superscript> Portal at <ulink
             url="http://hpccsystems.com">http://hpccsystems.com</ulink>. On
             this site, you will find white papers, code examples, videos, and
             forums where you can ask questions or read questions posted by

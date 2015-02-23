@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -50,7 +50,7 @@
 
     <!--The include statement pulls in the date_ver from version.xml-->
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <!--corpname never prints-->
 
@@ -70,7 +70,7 @@
     <title>Introduction</title>
 
     <para>Eclipse is an alternative Integrated Development Environment (IDE)
-    which can be used with the HPCC Systems Platform. Eclipse is open-source,
+    which can be used with the HPCC Systems<superscript>®</superscript> Platform. Eclipse is open-source,
     and multi-platform. It can be used instead of the ECL IDE to write and
     execute queries into data on an HPCC cluster .</para>
 
@@ -754,7 +754,7 @@
           Bacon</emphasis> example</para>
         </listitem>
       </itemizedlist>To discuss this plug-in or get help using it, visit the
-    forum on the HPCC System's portal at:</para>
+    forum on the HPCC Systems<superscript>®</superscript> portal at:</para>
 
     <para><ulink
     url="http://hpccsystems.com/bb/viewforum.php?f=33&amp;sid=adddbd537294bf32e2c46c1d7d16134e">http://hpccsystems.com/bb/viewforum.php?f=33&amp;sid=adddbd537294bf32e2c46c1d7d16134e</ulink></para>
