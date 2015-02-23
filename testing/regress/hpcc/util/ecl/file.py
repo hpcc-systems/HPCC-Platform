@@ -41,6 +41,7 @@ class ECLFile:
     wuid = None
     elapsTime = 0
     jobname = ''
+    aborted = False
     abortReason = ''
     taskId = -1
     ignoreResult=False
@@ -69,6 +70,7 @@ class ECLFile:
         self.xml_a = 'archive_' + self.baseXml
         self.jobname = self.basename
         self.diff = ''
+        self.aborted = False
         self.abortReason =''
         self.tags={}
         self.tempFile=None
@@ -446,6 +448,10 @@ class ECLFile:
 
     def setAborReason(self,  reason):
         self.abortReason = reason
+        self.aborted = True
+
+    def isAborted(self):
+        return self.aborted
 
     def getAbortReason(self):
         return self.abortReason

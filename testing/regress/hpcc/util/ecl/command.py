@@ -114,8 +114,8 @@ class ECLcmd(Shell):
             logging.error("------" + err + "------")
             raise err
         finally:
+            res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
             if wuid ==  'N/A':
-                res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
                 logging.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
                 wuid = res['wuid']
                 if res['result'] != "OK":
@@ -130,7 +130,7 @@ class ECLcmd(Shell):
                     test = False
                     eclfile.diff = 'Error'
             else:
-                if queryWuid(eclfile.getJobname(), eclfile.getTaskId())['state'] == 'aborted':
+                if (res['state'] == 'aborted') or eclfile.isAborted():
                     eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                     eclfile.diff += '\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
                     test = False

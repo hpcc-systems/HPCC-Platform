@@ -81,10 +81,10 @@ class RegressMain:
                 if len(eclfiles) :
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
                     self.regress.bootstrap(cluster, self.args,  eclfiles)
-                    if  self.args.pq:
-                        self.regress.runSuiteP(cluster, self.regress.suites[cluster])
-                    else:
+                    if (self.args.pq in (0, 1)) or (len(eclfiles) == 1):
                         self.regress.runSuite(cluster, self.regress.suites[cluster])
+                    else:
+                        self.regress.runSuiteP(cluster, self.regress.suites[cluster])
                 else:
                     logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  self.args.target))
                     raise Error("4001")
