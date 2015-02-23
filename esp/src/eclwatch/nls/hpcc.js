@@ -402,6 +402,7 @@ define({root:
     RetainSuperfileStructure: "Retain Superfile Structure",
     RetypePassword: "Retype Password",
     Rows: "Rows",
+    RowPath: "Row Path",
     RowTag: "Row Tag",
     RoxieCluster: "Roxie Cluster",
     Sample: "Sample",

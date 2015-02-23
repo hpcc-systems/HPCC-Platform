@@ -6587,12 +6587,12 @@ public:
                     readChild(tagName.str(), true);
                     break;
                 case '{':  //treat unnamed objects like we're in a noroot array
-                    readObject("__item__");
+                    readObject("__object__");
                     break;
                 case '[':  //treat unnamed arrays like we're in a noroot array
-                    iEvent->beginNode("__item__", curOffset);
+                    iEvent->beginNode("__array__", curOffset);
                     readArray("__item__");
-                    iEvent->endNode("__item__", 0, "", false, curOffset);
+                    iEvent->endNode("__array__", 0, "", false, curOffset);
                     break;
                 default:
                     expecting("{[ or \"");
@@ -6775,11 +6775,11 @@ public:
         }
     }
 
-    inline const char *arrayItemName()
+    inline const char *arrayItemName(const char *defaultName)
     {
         if (stack.ordinality()>1)
             return stateInfo->wnsTag;
-        return "__item__";
+        return defaultName;
     }
 
     bool arrayItem(offset_t offset)
@@ -6797,18 +6797,18 @@ public:
         case '{':
             state=objAttributes;
             readNext();
-            beginNode(arrayItemName(), offset, elementTypeObject);
+            beginNode(arrayItemName("__object__"), offset, elementTypeObject);
             break;
         case '[':
             state=valueStart;
             readNext();
-            beginNode(arrayItemName(), offset, elementTypeArray, true);
+            beginNode(arrayItemName("__array__"), offset, elementTypeArray, true);
             break;
         default:
             state=valueStart;
             ptElementType type = readValue(value.clear());
             readNext();
-            beginNode(arrayItemName(), offset, type, true);
+            beginNode(arrayItemName("__item__"), offset, type, true);
             stateInfo->tagText.swapWith(value);
             break;
         }

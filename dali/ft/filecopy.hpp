@@ -72,6 +72,8 @@ public:
     bool hasQuote() const                           { return (quote == NULL) || (*quote != '\0'); }
     bool hasQuotedTerminator() const                { return quotedTerminator; }
     const char * getFileFormatTypeString() const        { return FileFormatTypeStr[type]; }
+    bool hasJsonMarkup() const {return (rowTag.length() && *rowTag.get()=='/');} //need to add a more explicit markup indicator
+    bool hasXmlMarkup() const {return (rowTag.length() && *rowTag.get()!='/');}
 
 public:
     FileFormatType      type;
