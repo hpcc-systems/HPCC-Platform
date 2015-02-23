@@ -705,10 +705,9 @@ FILTERED            { RETURNSYM(FILTERED); }
 FIRST               { RETURNSYM(FIRST); }
 FIXED               { RETURNSYM(TOK_FIXED); }
 FLAT                { RETURNSYM(FLAT); }
-FORMAT              { RETURNSYM(FORMAT); }
-FROM                { RETURNSYM(FROM); }
-FORMAT              { RETURNSYM(FORMAT_ATTR); }
+FORMAT              { RETURNSYM(FORMAT_ATTR); }             // Dynamically enabled based on the context
 FORWARD             { RETURNSYM(FORWARD); }
+FROM                { RETURNSYM(FROM); }
 FROMUNICODE         { RETURNSYM(FROMUNICODE); }
 FROMJSON            { RETURNSYM(FROMJSON); }
 FROMXML             { RETURNSYM(FROMXML); }
@@ -785,7 +784,7 @@ MAX                 { RETURNSYM(MAX); }
 MAXCOUNT            { RETURNSYM(MAXCOUNT); }
 MAXLENGTH           { RETURNSYM(MAXLENGTH); }
 MAXSIZE             { RETURNSYM(MAXSIZE); }
-MERGE               { RETURNSYM(MERGE); }
+MERGE               { RETURNSYM(MERGE); }                   // May be dynamically converted to MERGE_ATTR
 MERGEJOIN           { RETURNSYM(MERGEJOIN); }
 MIN                 { RETURNSYM(MIN); }
 MODULE              { RETURNHARD(MODULE); }
@@ -831,7 +830,7 @@ __OWNED__           { RETURNSYM(__OWNED__); }
 PACKED              { RETURNSYM(PACKED); }
 PARALLEL            { RETURNSYM(PARALLEL); }
 PARSE               { RETURNSYM(PARSE); }
-PARTITION           { RETURNSYM(PARTITION); }
+PARTITION           { RETURNSYM(PARTITION); }               // May be dynamically converted to PARTITION_ATTR
 PATTERN             { RETURNSYM(TOK_PATTERN); }
 PENALTY             { RETURNSYM(PENALTY); }
 PERSIST             { RETURNSYM(PERSIST); }
