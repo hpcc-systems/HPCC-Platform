@@ -1572,22 +1572,24 @@ unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 r
     }
 }
 
-//In a separate module to stop optimizer removing the surrounding catch.
-void doStackProbe()
-{
-    byte local;
-    const volatile byte * x = (const byte *)&local;
 //The whole point of this function is to force memory to be accessed on the stack to avoid page faults.
 //Therefore disable the gcc warning.
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wuninitialized"
 #endif
+
+//In a separate module to stop optimizer removing the surrounding catch.
+void doStackProbe()
+{
+    byte local;
+    const volatile byte * x = (const byte *)&local;
     byte forceload = x[-4096];
+}
+
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
-}
 
 #ifdef _WIN32
 
