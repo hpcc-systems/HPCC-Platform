@@ -5804,6 +5804,13 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         }
     }
 
+    if (isDependentOnParameter(expr))
+    {
+        StringBuffer s;
+        getStoredDescription(s, info.sequence, info.originalLabel, true);
+        translator.reportWarning(CategoryMistake, SeverityUnknown, queryActiveLocation(expr), HQLWRN_WorkflowDependParameter, HQLWRN_WorkflowDependParameter_Text, s.str());
+    }
+
     OwnedHqlExpr setValue;
     OwnedHqlExpr getValue;
     bool done = false;
@@ -6047,7 +6054,9 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
 
     WorkflowItem * item = new WorkflowItem(namedFuncDef);
     workflowOut->append(*item);
-    return createExternalFuncdefFromInternal(namedFuncDef);
+    OwnedHqlExpr external = createExternalFuncdefFromInternal(namedFuncDef);
+    copyDependencies(queryBodyExtra(namedFuncDef), queryBodyExtra(external));
+    return external.getClear();
 }
 
 IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * transformed)

@@ -15,26 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
+real storedval := 1 : stored('s');
 
-real scoreFunc(real a, real b) := 1;  // defines the prototype for the function argument
+real scoreFunc(real a, real b) := 1;   // defines the prototype for the function argument
 
-real scoreIt(scoreFunc func, real a, real b) := DEFINE
-    
-    func(a-1.0,b-1.0) * func(a+1.0,b+1.0);
-    
-real scoreIt2(scoreFunc func, real a, real b) := BEGINC++
-    
-    return func(ctx, a-1.0,b-1.0) * func(ctx, a+1.0,b+1.0);
-    
+real scoreIt(scoreFunc func, real a, real b) := BEGINC++
+    return func(ctx,a-1.0,b-1.0) * func(ctx,a+1.0,b+1.0);
 ENDC++;
     
-real doSum(real a, real b) := DEFINE (a + b);
-real doSub(real a, real b) := DEFINE (a - b);
-real doMul(real a, real b) := DEFINE (a * b);
+real doSum(real a, real b) := DEFINE (a + b + storedval);
 
-output(scoreIt(doSum, NOFOLD(10), 20));
-output(scoreIt(doSub, NOFOLD(10), 20));
-output(scoreIt(doMul, NOFOLD(10), 20));
-output(scoreIt2(doSum, 10, 20));
-output(scoreIt2(doSub, 10, 20));
-output(scoreIt2(doMul, 10, 20));
+ds := DATASET(100, transform({unsigned id}, SELF.id := COUNTER));
+s := SORT(ds, HASH(id));
+c := COUNT(NOFOLD(s));
+
+real doSum2(real a, real b) := DEFINE (a + b + c);
+
+output(scoreIt(doSum, 10, 20));
+output(scoreIt(doSum2, 100, 200));
+output(scoreIt(doSum2, 1, 3));

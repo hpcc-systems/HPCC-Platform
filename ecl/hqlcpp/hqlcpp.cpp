@@ -2008,6 +2008,8 @@ IHqlExpression * HqlCppTranslator::bindFunctionCall(IIdAtom * name, HqlExprArray
     OwnedHqlExpr function = needFunction(name);
     useFunction(function);
     assertex(function->getOperator() == no_funcdef);
+    IFunctionTypeExtra * funcTypeExtra = queryFunctionTypeExtra(function->queryType());
+    assertex(funcTypeExtra);
     IHqlExpression * body = function->queryChild(0);
 
     HqlExprArray bodyArgs;
@@ -2016,7 +2018,7 @@ IHqlExpression * HqlCppTranslator::bindFunctionCall(IIdAtom * name, HqlExprArray
     HqlExprArray funcArgs;
     funcArgs.append(*createValue(body->getOperator(), LINK(newType), bodyArgs));
     unwindChildren(funcArgs, function, 1);
-    ITypeInfo * funcType = makeFunctionType(LINK(newType), LINK(function->queryChild(1)), LINK(function->queryChild(2)));
+    ITypeInfo * funcType = makeFunctionType(LINK(newType), LINK(function->queryChild(1)), LINK(function->queryChild(2)), LINK(funcTypeExtra->queryAttributes()));
     OwnedHqlExpr newFunction = createValue(function->getOperator(), funcType, funcArgs);
     return bindFunctionCall(newFunction, args);
 }
@@ -5708,6 +5710,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             attrs.append(*LINK(params));
             if (defaults)
                 attrs.append(*LINK(defaults));
+            attrs.append(*createAttribute(contextAtom));
 
             ITypeInfo * returnType = type->queryChildType();
             OwnedHqlExpr externalExpr = createExternalReference(def->queryId(), LINK(returnType), attrs);
@@ -11870,8 +11873,11 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         funcctx.addQuotedCompound(proto);
         //MORE: Need to work out how to handle functions that require the context.
         //Need to create a class instead.
-        assertex(!outofline->hasAttribute(contextAtom));
-
+        if (functionBodyUsesContext(outofline))
+        {
+            funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+            funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
+        }
         OwnedHqlExpr newCode = replaceInlineParameters(funcdef, bodyCode);
         newCode.setown(foldHqlExpression(newCode));
         ITypeInfo * returnType = funcdef->queryType()->queryChildType();
