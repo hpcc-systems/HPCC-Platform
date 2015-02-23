@@ -126,6 +126,9 @@ class CRegistryServer : public CSimpleInterface
                 msg.read((int &)code);
                 if (rc_deregister != code)
                     throwUnexpected();
+                Owned<IException> e = deserializeException(msg);
+                if (e.get())
+                    EXCLOG(e, "Slave unregistered with exception");
                 registry.deregisterNode(sender);
             }
             running = false;
@@ -177,7 +180,7 @@ public:
         --slavesRegistered;
         if (watchdog)
             watchdog->removeSlave(ep);
-        abortThor(MakeThorOperatorException(TE_AbortException, "The machine %s and/or the slave was shutdown. Aborting Thor", url.str()));
+        abortThor(MakeThorOperatorException(TE_AbortException, "The machine %s and/or the slave was shutdown. Aborting Thor", url.str()), TEC_SlaveInit);
     }
     void registerNode(unsigned slave)
     {
@@ -409,7 +412,7 @@ bool ControlHandler()
             if (registry)
                 registry->stop();
         }
-        abortThor();
+        abortThor(NULL, TEC_CtrlC);
     }
     else
     {
