@@ -197,7 +197,7 @@ extern HQL_API IHqlExpression * createTransformForField(IHqlExpression * field, 
 extern HQL_API IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType);
 extern HQL_API bool splitResultValue(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * value);
 
-//Is this really dependent on a parameter - expr->isFullyBound() can give false positives.
+//Is 'expr' really dependent on a parameter - expr->isFullyBound() can give false negatives.
 extern HQL_API bool isDependentOnParameter(IHqlExpression * expr);
 
 inline void extendConditionOwn(SharedHqlExpr & cond, node_operator op, IHqlExpression * r)

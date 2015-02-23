@@ -1991,7 +1991,6 @@ IHqlExpression * HqlCppTranslator::bindFunctionCall(IIdAtom * name, HqlExprArray
     assertex(funcTypeExtra);
     IHqlExpression * body = function->queryChild(0);
 
-
     HqlExprArray bodyArgs;
     unwindChildren(bodyArgs, body);
 

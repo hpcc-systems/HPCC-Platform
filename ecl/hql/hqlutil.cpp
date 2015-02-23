@@ -2678,6 +2678,7 @@ protected:
 };
 
 
+//Is 'expr' really dependent on a parameter - expr->isFullyBound() can give false negatives.
 bool isDependentOnParameter(IHqlExpression * expr)
 {
     if (expr->isFullyBound())
