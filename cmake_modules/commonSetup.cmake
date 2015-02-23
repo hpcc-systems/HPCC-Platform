@@ -89,10 +89,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_JNI "Enable Java JNI support" ON)
   option(USE_RINSIDE "Enable R support" ON)
   option(USE_MEMCACHED "Enable Memcached support" ON)
+  option(USE_REDIS "Enable Redis support" ON)
 
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
-  if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE OR USE_SQLITE3 OR USE_MYSQL OR USE_CASSANDRA OR USE_MEMCACHED)
+  if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE OR USE_SQLITE3 OR USE_MYSQL OR USE_CASSANDRA OR USE_MEMCACHED OR USE_REDIS)
       set( WITH_PLUGINS ON )
   endif()
 
