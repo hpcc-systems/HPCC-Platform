@@ -45,8 +45,6 @@ extern "C"
 class StringBuffer;
 
 namespace RedisPlugin {
-static const unsigned unitExpire = 86400;//1 day (secs)
-
 #define setFailMsg "'Set' request failed - "
 #define getFailMsg "'Get<type>' request failed - "
 

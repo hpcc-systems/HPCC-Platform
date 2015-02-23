@@ -162,7 +162,7 @@ void SyncConnection::assertConnection()
 {
     if (!context)
         rtlFail(0, "Redis Plugin: 'redisConnect' failed - no error available.");
-    else if (context->err)
+    else if (context->err)//This check requires that context->err be reset after a non terminating error was encountered. However, the nature of context->err implies a runtime exception.
     {
         VStringBuffer msg("Redis Plugin: Connection failed - %s for %s:%u", context->errstr, ip(), port());
         rtlFail(0, msg.str());
@@ -320,7 +320,7 @@ ECL_REDIS_API void ECL_REDIS_CALL RPersist(ICodeContext * ctx, const char * key,
 ECL_REDIS_API void ECL_REDIS_CALL RExpire(ICodeContext * ctx, const char * key, const char * options, unsigned _expire, unsigned __int64 database, const char * pswd, unsigned __int64 timeout)
 {
     Owned<SyncConnection> master = SyncConnection::createConnection(ctx, options, database, pswd, timeout);
-    master->expire(ctx, key, _expire*unitExpire);
+    master->expire(ctx, key, _expire);
 }
 ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL RDBSize(ICodeContext * ctx, const char * options, unsigned __int64 database, const char * pswd, unsigned __int64 timeout)
 {

@@ -41,7 +41,7 @@ namespace RedisPlugin {
 StringBuffer & appendExpire(StringBuffer & buffer, unsigned expire)
 {
     if (expire > 0)
-        buffer.append(" EX ").append(expire*unitExpire);
+        buffer.append(" EX ").append(expire);
     return buffer;
 }
 

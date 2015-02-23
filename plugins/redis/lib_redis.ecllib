@@ -38,6 +38,7 @@ EXPORT sync := SERVICE : plugin('redis'), namespace('RedisPlugin')
   BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='RExist';
   FlushDB(CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RClear';
   Del(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RDel';
+  Delete(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RDel';
   Persist(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RPersist';
   Expire(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED4 expire, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,action,context,entrypoint='RExpire';
   INTEGER DBSize(CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', unsigned timeout = 1000000) : cpp,once,context,entrypoint='RDBSize';
@@ -65,6 +66,7 @@ EXPORT RedisSync    (CONST VARSTRING options, CONST VARSTRING password = '', uns
   EXPORT Exists(CONST VARSTRING key, UNSIGNED database = 0) := sync.Exists(key, options, database, password, timeout);
   EXPORT FlushDB(UNSIGNED database = 0) := sync.FlushDB(options, database, password, timeout);
   EXPORT Del(CONST VARSTRING key, UNSIGNED database = 0) := sync.Del(key, options, database, password, timeout);
+  EXPORT Delete(CONST VARSTRING key, UNSIGNED database = 0) := sync.Delete(key, options, database, password, timeout);
   EXPORT Persist(CONST VARSTRING key, UNSIGNED database = 0) := sync.Persist(key, options, database, password, timeout);
   EXPORT Expire(CONST VARSTRING key, UNSIGNED4 expire, UNSIGNED database = 0)  := sync.Expire(key, options, expire, database, password, timeout);
   EXPORT DBSize(UNSIGNED database = 0) := sync.DBSize(options, database, password, timeout);
