@@ -17,7 +17,7 @@
         <listitem>
           <para>This is only useful on a single-node system at this time.
           Future versions may operate in a different manner and support
-          multi-node HPCC systems.</para>
+          multi-node HPCC systems<superscript>®</superscript>.</para>
         </listitem>
       </varlistentry>
     </variablelist></para>
@@ -27,7 +27,7 @@
 
     <orderedlist numeration="arabic">
       <listitem>
-        <para>Use the search on Dash Home to find the HPCC Systems application
+        <para>Use the search on Dash Home to find the HPCC Systems<superscript>®</superscript> application
         icon.</para>
 
         <figure>
