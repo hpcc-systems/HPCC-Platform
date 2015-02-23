@@ -77,6 +77,11 @@ void SyncConnection::authenticate(ICodeContext * ctx, const char * pswd)
         assertOnError(reply->query(), "server authentication failed");
     }
 }
+void SyncConnection::resetContextErr()
+{
+    if (context)
+        context->err = REDIS_OK;
+}
 SyncConnection * SyncConnection::createConnection(ICodeContext * ctx, const char * options, unsigned __int64 _database, const char * pswd, unsigned __int64 _timeout)
 {
     if (!cachedConnection)
@@ -91,6 +96,7 @@ SyncConnection * SyncConnection::createConnection(ICodeContext * ctx, const char
     {
         //MORE: need to check that the connection has not expired (think hiredis REDIS_KEEPALIVE_INTERVAL is defaulted to 15s).
         //At present updateTimeout calls assertConnection.
+        cachedConnection->resetContextErr();//reset the context err to allow reuse when an error previously occurred.
         cachedConnection->updateTimeout(_timeout);
         cachedConnection->selectDB(ctx, _database);
         return LINK(cachedConnection);

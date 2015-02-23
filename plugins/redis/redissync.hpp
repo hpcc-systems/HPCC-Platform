@@ -52,6 +52,7 @@ protected :
     void connect(ICodeContext * ctx, unsigned __int64 _database, const char * pswd);
     void selectDB(ICodeContext * ctx, unsigned __int64 _database);
     void authenticate(ICodeContext * ctx, const char * pswd);
+    void resetContextErr();
 
     virtual void updateTimeout(unsigned __int64 _timeout);
     virtual void assertOnError(const redisReply * reply, const char * _msg);
