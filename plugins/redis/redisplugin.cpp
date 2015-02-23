@@ -83,7 +83,7 @@ void RedisServer::parseOptions(ICodeContext * ctx, const char * _options)
 }
 Connection::Connection(ICodeContext * ctx, const char * _options, const char * pswd, unsigned __int64 _timeout) : alreadyInitialized(false), database(0), timeout(_timeout)
 {
-    server.set(new RedisServer(ctx, _options, pswd));
+    server.setown(new RedisServer(ctx, _options, pswd));
 }
 Connection::Connection(ICodeContext * ctx, RedisServer * _server) : alreadyInitialized(false), database(0), timeout(0)
 {
