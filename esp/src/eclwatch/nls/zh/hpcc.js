@@ -84,6 +84,7 @@
     DeleteSelectedQueries: "删除所选择的查询程序?",
     DeleteSelectedUsers: "删除所选择的用户?",
     DeleteSelectedWorkunits: "删除所选择的工作单元?",
+    DeleteSuperfile2: "删除文件集",
     DeleteSuperfile: "删除文件集?",
     DeleteThisPackage: "删除文件包?",
     Delimited: "定界的",

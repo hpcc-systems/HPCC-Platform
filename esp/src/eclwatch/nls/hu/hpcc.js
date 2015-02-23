@@ -84,6 +84,7 @@ define(
     DeleteSelectedQueries: "Töröljük a kiválasztott lekérdezéseket?",
     DeleteSelectedUsers: "Törölni akarja a kijelölt felhasználó(ka)t?",
     DeleteSelectedWorkunits: "Törölni akarja a kiválasztott feladatokat?",
+    DeleteSuperfile2: "Szuper-fájl törlése",
     DeleteSuperfile: "Töröljük a Superfile-t?",
     DeleteThisPackage: "Törölni akarja ezt a csomagot?",
     Delimited: "Határolt",
