@@ -19,7 +19,7 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> </para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Please include <emphasis role="bold">Documentation
       Feedback</emphasis> in the subject line and reference the document name,
@@ -27,13 +27,13 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. </para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
       <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products and services may be trademarks or registered
-      trademarks of their respective companies. </para>
+      trademarks of their respective companies.</para>
 
       <para>All names and example data used in this manual are fictitious. Any
       similarity to actual persons, living or dead, is purely
@@ -800,6 +800,8 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
             <para><emphasis role="bold">Note: </emphasis>The modified portion
             is shown in <emphasis role="bold">bold</emphasis>.</para>
+
+            <para> </para>
           </listitem>
 
           <listitem>
@@ -837,7 +839,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
         </orderedlist>
       </sect2>
 
-      <sect2 id="Process_the_Data">
+      <sect2 id="Process_the_Data" role="brk">
         <title>Process the Data</title>
 
         <para>In this section, we will write code to convert the original data

@@ -536,9 +536,13 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
                 StringBuffer parameterText;
                 IFunctionTypeExtra * extra = queryFunctionTypeExtra(type);
                 IHqlExpression * args = static_cast<IHqlExpression *>(extra->queryParameters());
+                IHqlExpression * attrs = static_cast<IHqlExpression *>(extra->queryAttributes());
+                if (queryAttributeInList(contextAtom, attrs))
+                    parameterText.append("ICodeContext * ctx");
+
                 ForEachChild(i, args)
                 {
-                    if (i)
+                    if (parameterText.length())
                         parameterText.append(", ");
                     generateExprCpp(parameterText, args->queryChild(i));
                 }
@@ -656,7 +660,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
 
     bool firstParam = true;
     out.append('(');
-    if (body->hasAttribute(contextAtom))
+    if (functionBodyUsesContext(body))
     {
         out.append("ICodeContext * ctx");
         firstParam = false;
@@ -1170,7 +1174,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 else
                     out.append(funcdef->queryBody()->queryId()->str());
                 out.append('(');
-                if (props->hasAttribute(contextAtom))
+                if (functionBodyUsesContext(props))
                 {
                     out.append("ctx");
                     if (numArgs)

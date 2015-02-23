@@ -2891,7 +2891,7 @@ OUTPUT(ValidWords)
                 <row>
                   <entry>-t</entry>
 
-                  <entry>Target file or directory. </entry>
+                  <entry>Target file or directory.</entry>
                 </row>
 
                 <row>

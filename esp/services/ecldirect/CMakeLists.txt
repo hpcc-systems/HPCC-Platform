@@ -61,7 +61,6 @@ target_link_libraries ( EclDirect
          jlib
          xmllib 
          esphttp 
-         LdapSecurity
          mp 
          hrpc 
          remote 
@@ -78,4 +77,7 @@ target_link_libraries ( EclDirect
          fileview2 
          securesocket 
     )
+IF (USE_OPENLDAP)
+  target_link_libraries ( EclDirect LdapSecurity )
+ENDIF(USE_OPENLDAP)
 

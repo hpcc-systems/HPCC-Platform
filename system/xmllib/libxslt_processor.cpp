@@ -823,7 +823,7 @@ void globalLibXsltExtensionHandler(xmlXPathParserContextPtr ctxt, int nargs)
             msg.append(" without any arguments\n");
         else
             msg.append(" with too many arguments\n");
-        xsltGenericError(xsltGenericErrorContext, msg.str());
+        xsltGenericError(xsltGenericErrorContext, "%s", msg.str());
         ctxt->error = XPATH_INVALID_ARITY;
         return;
     }

@@ -2072,9 +2072,19 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         source->setMaxRecordSize(req.getSourceMaxRecordSize());
         source->setFormat((DFUfileformat)req.getSourceFormat());
 
-        // if rowTag specified, it means it's xml format, otherwise it's csv
-        const char* rowtag = req.getSourceRowTag();
-        if(rowtag != NULL && *rowtag != '\0')
+        StringBuffer rowtag;
+        if (req.getIsJSON())
+        {
+            const char *srcRowPath = req.getSourceRowPath();
+            if (!srcRowPath || *srcRowPath != '/')
+                rowtag.append("/");
+            rowtag.append(srcRowPath);
+        }
+        else
+            rowtag.append(req.getSourceRowTag());
+
+        // if rowTag specified, it means it's xml or json format, otherwise it's csv
+        if(rowtag.length())
         {
             source->setRowTag(rowtag);
             options->setKeepHeader(true);
@@ -3189,11 +3199,14 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
     return true;
 }
 
-void CFileSprayEx::appendGroupNode(IArrayOf<IEspGroupNode>& groupNodes, const char* nodeName, const char* clusterType)
+void CFileSprayEx::appendGroupNode(IArrayOf<IEspGroupNode>& groupNodes, const char* nodeName, const char* clusterType,
+    bool replicateOutputs)
 {
     Owned<IEspGroupNode> node = createGroupNode();
     node->setName(nodeName);
     node->setClusterType(clusterType);
+    if (replicateOutputs)
+        node->setReplicateOutputs(replicateOutputs);
     groupNodes.append(*node.getClear());
 }
 
@@ -3225,7 +3238,7 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
 
             bool* found = uniqueThorClusterGroupNames.getValue(thorClusterGroupName.str());
             if (!found || !*found)
-                appendGroupNode(sprayTargets, thorClusterGroupName.str(), "thor");
+                appendGroupNode(sprayTargets, thorClusterGroupName.str(), "thor", cluster.getPropBool("@replicateOutputs", false));
         }
 
         //Fetch all the group names for all the hthor instances
@@ -3254,7 +3267,7 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
                 if (ins>1)
                     gname.append('_').append(ins);
 
-                appendGroupNode(sprayTargets, gname.str(), "hthor");
+                appendGroupNode(sprayTargets, gname.str(), "hthor", false);
             }
         }
 

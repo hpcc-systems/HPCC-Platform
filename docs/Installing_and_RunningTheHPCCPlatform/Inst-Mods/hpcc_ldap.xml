@@ -413,6 +413,22 @@
             </listitem>
 
             <listitem>
+              <para>Choose the LDAP server type from the serverType attribute
+              drop box.</para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>NOTE:</term>
+
+                    <listitem>
+                      <para>Support for OpenLDAP has been deprecated. The
+                      option is included only for legacy purposes.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+
+            <listitem>
               <para>Click on the disk icon to save.</para>
             </listitem>
           </orderedlist></para>

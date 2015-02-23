@@ -594,6 +594,11 @@ The format of the output is the same as 'run', except there is a log, result and
     Optionally 'no<target>' exclusion info can add at the end of tag.
 //version <n1>=<v1>,<n2>=<v2>,...[,no<target>[,no<target>]]
 
+    This tag should use when a test case intentionally fails to handle it as pass.
+    If a test case intentionally fails then it should fail on all allowed platforms.
+//fail
+
+
 7. Key file handling:
 ---------------------
 

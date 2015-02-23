@@ -92,6 +92,7 @@ ESPStruct [nil_remove] GroupNode
 {
     string Name;
     string ClusterType;
+    bool ReplicateOutputs;
 };
 
 ESPStruct DFUException
@@ -366,6 +367,8 @@ ESPrequest [nil_remove] SprayVariable
     [min_ver("1.09")] bool recordStructurePresent(false);
 
     [min_ver("1.10")] bool quotedTerminator(true);
+    [min_ver("1.11")] string sourceRowPath;
+    [min_ver("1.11")] bool isJSON(false);
 };
 
 ESPresponse [exceptions_inline] 
@@ -626,7 +629,7 @@ ESPresponse [exceptions_inline, nil_remove] GetSprayTargetsResponse
 };
 
 ESPservice [
-    version("1.10"), default_client_version("1.10"),
+    version("1.11"), default_client_version("1.10"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;

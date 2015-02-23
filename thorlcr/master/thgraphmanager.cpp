@@ -189,7 +189,7 @@ public:
     virtual void main()
     {
         if (!sem.wait(timeout)) // feeling neglected, restarting..
-            abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000));
+            abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000), TEC_Idle, false);
     }
     void stop() { sem.signal(); }
 };
@@ -318,10 +318,9 @@ void CJobManager::run()
                 msg.read(cmd);
                 if (0 == stricmp("stop", cmd))
                 {
-                    setExitCode(0);
                     bool stopCurrentJob;
                     msg.read(stopCurrentJob);
-                    abortThor(NULL, stopCurrentJob);
+                    abortThor(NULL, TEC_Clean, stopCurrentJob);
                     break;
                 }
                 else
@@ -642,7 +641,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     //GH->JCS Should this be using getEnvironmentFactory()->openEnvironment()?
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, MEDIUMTIMEOUT);
     if (checkThorNodeSwap(globals->queryProp("@name"),e?wuid:NULL,(unsigned)-1))
-        abortThor(e,false);
+        abortThor(e, TEC_Swap, false);
 }
 
 bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp)
@@ -769,9 +768,9 @@ void setExitCode(int code) { exitCode = code; }
 int queryExitCode() { return exitCode; }
 
 static unsigned aborting = 99;
-void abortThor(IException *e, bool abortCurrentJob)
+void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
 {
-    if (-1 == queryExitCode()) setExitCode(1);
+    if (-1 == queryExitCode()) setExitCode(errCode);
     Owned<CJobManager> jM = ((CJobManager *)getJobManager());
     Owned<IException> _e;
     if (0 == aborting)
@@ -814,7 +813,7 @@ public:
             if (stopped) break;
             if (!verifyCovenConnection(pollDelay)) // use poll delay time for verify connection timeout
             {
-                abortThor(MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor"));
+                abortThor(MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor"), TEC_DaliDown);
                 break;
             }
         }

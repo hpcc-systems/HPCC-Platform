@@ -1947,17 +1947,18 @@ extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype)
     return commonUpType(new CGroupedTableTypeInfo(basetype));
 }
 
-extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * parameters, IInterface * defaults)
+extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * parameters, IInterface * defaults, IInterface * attrs)
 {
     assertex(basetype->getTypeCode() != type_function); // not just yet anyway
     if (!basetype || !parameters)
     {
-        basetype->Release();
-        parameters->Release();
-        defaults->Release();
+        ::Release(basetype);
+        ::Release(parameters);
+        ::Release(defaults);
+        ::Release(attrs);
         throwUnexpected();
     }
-    return commonUpType(new CFunctionTypeInfo(basetype, parameters, defaults));
+    return commonUpType(new CFunctionTypeInfo(basetype, parameters, defaults, attrs));
 }
 
 /* In basetype: linked. Return: linked */

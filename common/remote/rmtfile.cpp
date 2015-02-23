@@ -35,12 +35,11 @@
 
 static class CSecuritySettings
 {
-    bool useSSL;
     unsigned short daliServixPort;
 public:
     CSecuritySettings()
     {
-        querySecuritySettings(&useSSL, &daliServixPort, NULL, NULL);
+        querySecuritySettings(NULL, &daliServixPort, NULL, NULL);
     }
 
     unsigned short queryDaliServixPort() { return daliServixPort; }

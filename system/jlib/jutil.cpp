@@ -27,6 +27,7 @@
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jprop.hpp"
+#include "jerror.hpp"
 #ifdef _WIN32
 #include <mmsystem.h> // for timeGetTime 
 #include <float.h> //for _isnan and _fpclass
@@ -1571,6 +1572,13 @@ unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 r
     }
 }
 
+//The whole point of this function is to force memory to be accessed on the stack to avoid page faults.
+//Therefore disable the gcc warning.
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
+
 //In a separate module to stop optimizer removing the surrounding catch.
 void doStackProbe()
 {
@@ -1578,6 +1586,10 @@ void doStackProbe()
     const volatile byte * x = (const byte *)&local;
     byte forceload = x[-4096];
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 #ifdef _WIN32
 
@@ -1914,14 +1926,18 @@ public:
     {
         saveuid = geteuid();
         savegid = getegid();
-        setegid(gid);
-        seteuid(uid);
+        if (setegid(gid) == -1)
+            throw makeOsException(errno, "Failed to set effective group id");
+        if (seteuid(uid) == -1)
+            throw makeOsException(errno, "Failed to set effective user id");
     }
 
     void revert()
     {
-        seteuid(saveuid);
-        setegid(savegid);
+        if (seteuid(saveuid) == -1)
+            throw makeOsException(errno, "Failed to restore effective group id");
+        if (setegid(savegid) == -1)
+            throw makeOsException(errno, "Failed to restore effective user id");
     }
 
     const char *username()

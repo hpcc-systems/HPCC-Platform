@@ -144,7 +144,7 @@ void CMasterWatchdogBase::checkMachineStatus()
             StringBuffer epstr;
             mstate->ep.getUrlStr(epstr);
             if (mstate->markdead)
-                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost contact with Thor slave: %s (Process terminated or node down?)", epstr.str()));
+                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost contact with Thor slave: %s (Process terminated or node down?)", epstr.str()), TEC_Watchdog);
             else
             {
                 mstate->markdead = true;
@@ -208,7 +208,7 @@ void CMasterWatchdogBase::main()
                 const SocketEndpoint &ep = e->queryEndpoint();
                 StringBuffer epStr;
                 ep.getUrlStr(epStr);
-                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor slave: %s (Process terminated or node down?)", epStr.str()));
+                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor slave: %s (Process terminated or node down?)", epStr.str()), TEC_Watchdog);
             }
             if (stopped)
                 break;

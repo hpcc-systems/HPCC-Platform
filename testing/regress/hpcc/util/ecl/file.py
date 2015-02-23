@@ -41,6 +41,7 @@ class ECLFile:
     wuid = None
     elapsTime = 0
     jobname = ''
+    aborted = False
     abortReason = ''
     taskId = -1
     ignoreResult=False
@@ -69,6 +70,7 @@ class ECLFile:
         self.xml_a = 'archive_' + self.baseXml
         self.jobname = self.basename
         self.diff = ''
+        self.aborted = False
         self.abortReason =''
         self.tags={}
         self.tempFile=None
@@ -231,10 +233,10 @@ class ECLFile:
         return realName
 
     def getWuid(self):
-        return self.wuid
+        return self.wuid.strip()
 
     def setWuid(self,  wuid):
-        self.wuid = wuid
+        self.wuid = wuid.strip()
 
     def addResults(self, results, wuid):
         filename = self.getResults()
@@ -339,6 +341,15 @@ class ECLFile:
         logging.debug("%3d. testInClass() returns with: %s",  self.taskId,  retVal)
         return retVal
 
+    def testFail(self):
+        # Standard string has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = b'//fail'
+        logging.debug("%3d. testFail(ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+        retVal = self.__checkTag(tag)
+        logging.debug("%3d. testFail() returns with: %s",  self.taskId,  retVal)
+        return retVal
+
     # Test (and read all) //version tag in the ECL file
     def testVesion(self):
         if self.isVersions == False and not self.args.noversion:
@@ -437,6 +448,10 @@ class ECLFile:
 
     def setAborReason(self,  reason):
         self.abortReason = reason
+        self.aborted = True
+
+    def isAborted(self):
+        return self.aborted
 
     def getAbortReason(self):
         return self.abortReason

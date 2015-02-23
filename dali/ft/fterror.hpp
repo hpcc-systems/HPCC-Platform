@@ -79,6 +79,7 @@
 #define DFTERR_WrongRECFMvbBlockSize            8106
 #define DFTERR_WrongRECFMvRecordSize            8107
 #define DFTERR_WrongSplitRecordSize             8108
+#define DFTERR_CannotFindFirstJsonRecord        8109
 
 //Internal errors
 #define DFTERR_UnknownFormatType                8190

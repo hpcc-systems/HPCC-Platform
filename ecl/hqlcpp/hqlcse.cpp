@@ -106,6 +106,7 @@ bool canCreateTemporary(IHqlExpression * expr)
     case no_thisnode:
     case no_libraryscopeinstance:
     case no_loopbody:
+    case no_external:
         return false;
     }
     ITypeInfo * type = expr->queryType();
@@ -1222,6 +1223,8 @@ static bool canHoistInvariant(IHqlExpression * expr)
             return false;
     }
     if (!expr->isPure())
+        return false;
+    if (expr->isFunction())
         return false;
     switch (expr->getOperator())
     {

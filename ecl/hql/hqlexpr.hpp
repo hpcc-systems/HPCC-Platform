@@ -1806,6 +1806,7 @@ inline int boolToInt(bool x)                    { return x ? 1 : 0; }
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, IHqlExpression * value, IHqlExpression * parms, IHqlExpression * defaults, IHqlExpression * attrs);
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, HqlExprArray & args);
 extern HQL_API IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr);
+extern HQL_API bool functionBodyUsesContext(IHqlExpression * body);
 
 #define NO_AGGREGATE        \
          no_count:          \

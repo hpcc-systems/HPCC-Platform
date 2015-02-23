@@ -2734,7 +2734,8 @@ protected:
 
         f = open("test.buddy", _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
         val = 2;
-        write(f, &val, sizeof(int));
+        ssize_t numwritten = write(f, &val, sizeof(int));
+        CPPUNIT_ASSERT(numwritten == sizeof(int));
         close(f);
 
         // Reading it should still read 1...
@@ -2753,7 +2754,8 @@ protected:
         // And the data in the file should be 2
         f = open("test.local", _O_RDONLY);
         val = 0;
-        read(f, &val, sizeof(int));
+        ssize_t numread = read(f, &val, sizeof(int));
+        CPPUNIT_ASSERT(numread == sizeof(int));
         close(f);
         CPPUNIT_ASSERT(val==2);
 

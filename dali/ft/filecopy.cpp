@@ -1041,17 +1041,31 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
     }
 }
 
-
 void FileSprayer::calculateMany2OnePartition()
 {
     LOG(MCdebugProgressDetail, job, "Setting up many2one partition");
-
+    bool isJSON = srcFormat.hasJsonMarkup();
+    offset_t lastContentLength = 0;
     ForEachItemIn(idx, sources)
     {
         FilePartInfo & cur = sources.item(idx);
         RemoteFilename curFilename;
         curFilename.set(cur.filename);
         setCanAccessDirectly(curFilename);
+        if (isJSON)
+        {
+            offset_t contentLength = cur.size - cur.xmlHeaderLength - cur.xmlFooterLength;
+            if (contentLength)
+            {
+                if (lastContentLength)
+                {
+                    PartitionPoint &part = createLiteral(1, ",", (unsigned) -1);
+                    part.whichOutput = 0;
+                    partition.append(part);
+                }
+                lastContentLength = contentLength;
+            }
+        }
         partition.append(*new PartitionPoint(idx, 0, cur.headerSize, cur.size, cur.size));
     }
 }
@@ -1531,6 +1545,15 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
 void FileSprayer::locateXmlHeader(IFileIO * io, unsigned headerSize, offset_t & xmlHeaderLength, offset_t & xmlFooterLength)
 {
     Owned<IFileIOStream> in = createIOStream(io);
+
+    if (srcFormat.hasJsonMarkup())
+    {
+        JsonSplitter jsplitter(srcFormat, *in);
+        xmlHeaderLength = jsplitter.getHeaderLength();
+        xmlFooterLength = jsplitter.getFooterLength();
+        return;
+    }
+
     XmlSplitter splitter(srcFormat);
     BufferedDirectReader reader;
 
@@ -2763,7 +2786,7 @@ void FileSprayer::spray()
         insertHeaders();
     }
     addEmptyFilesToPartition();
-    
+
     derivePartitionExtra();
     if (partition.ordinality() < 1000)
         displayPartition();
