@@ -39,6 +39,35 @@ message() {
 MESSAGE_MARKER
 }
 
+canonicalize_path() {
+    # canonicalize path argument by removing trailing slashes
+    # for test -h and readlink to work properly
+    local dir=${1}
+    if [ -z "${dir}" ] ; then
+        echo "${dir}"
+        return 0
+    fi
+    echo "${dir}" | sed 's/\/*$//'
+    return 0
+}
+
+removedir() {
+    local dir=$(canonicalize_path ${1})
+    # echo "canonicalized dir = ${dir}"
+    if [ -z "${dir}" ] ; then
+        return 0
+    fi
+    if [ ! -d "${dir}" ] ; then
+        return 0
+    fi
+    if [ -h "${dir}" ] ; then
+        # echo "${dir} is a soft link"
+        find ${dir}/ -depth -mindepth 1 -exec rm -rf {} \;
+    else
+        # echo "${dir} is not a soft link"
+        rm -rf ${dir}
+    fi
+}
 
 force=0
 leaveenv=0
@@ -61,6 +90,13 @@ done
 
 
 set_environmentvars
+
+mklink=""
+lpath=$(canonicalize_path ${path})
+if [ -n "${lpath}" -a -h "${lpath}" ] ; then
+    mklink=$(readlink "${lpath}")
+    # echo "\"${lpath}\" is a soft-link to \"${mklink}\""
+fi
 
 if [ -e /etc/debian_version ]; then
     echo "Removing DEB"
@@ -88,24 +124,30 @@ elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
 fi
 
 echo "Removing Directory - ${path}"
-rm -rf ${path}
+removedir ${path}
+
+if [ -n "${mklink}" -a -n "${lpath}" ] ; then
+    # echo "recreating soft-link"
+    ln -s "${mklink}" "${lpath}"
+    removedir ${lpath}
+fi
 
 if [ $leaveenv -eq 0 ]; then
     echo "Removing Directory - ${configs}"
-    rm -rf ${configs}
+    removedir ${configs}
 fi
 
 echo "Removing Directory - ${lock}"
-rm -rf ${lock}
+removedir ${lock}
 
 echo "Removing Directory - ${log}"
-rm -rf ${log}
+removedir ${log}
 
 echo "Removing Directory - ${pid}"
-rm -rf ${pid}
+removedir ${pid}
 
 echo "Removing Directory - ${runtime}"
-rm -rf ${runtime}
+removedir ${runtime}
 
 echo "Removing user - ${user}"
 if [ -e /usr/sbin/userdel ]; then
