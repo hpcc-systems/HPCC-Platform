@@ -39,6 +39,36 @@ message() {
 MESSAGE_MARKER
 }
 
+removedir() {
+    dir=${1}
+    if [ -z ${dir} ] ; then
+        return 0
+    fi
+    lc=$((${#dir}-1))
+    lastchar=${dir:$lc:1}
+    until [ "${lastchar}" != "/" ] ; do
+        if [ -z ${dir} ] ; then
+            return 0
+        fi
+        lc=$((${#dir}-1))
+        lastchar=${dir:$lc:1}
+        if [ "${lastchar}" = "/" ] ; then
+          dir=${dir:0:(${#dir}-1)}
+        fi
+    done
+    if [ -z ${dir} ] ; then
+        return 0
+    fi
+    # echo "adjusted dir = ${dir}"
+    if [ ! -d ${dir} ] ; then
+        return 0
+    fi
+    if [ -h ${dir} ] ; then
+        find ${dir}/ -depth -mindepth 1 -exec rm -rf {} \;
+    else
+        rm -rf ${1}
+    fi
+}
 
 force=0
 leaveenv=0
@@ -88,24 +118,24 @@ elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
 fi
 
 echo "Removing Directory - ${path}"
-rm -rf ${path}
+removedir ${path}
 
 if [ $leaveenv -eq 0 ]; then
     echo "Removing Directory - ${configs}"
-    rm -rf ${configs}
+    removedir ${configs}
 fi
 
 echo "Removing Directory - ${lock}"
-rm -rf ${lock}
+removedir ${lock}
 
 echo "Removing Directory - ${log}"
-rm -rf ${log}
+removedir ${log}
 
 echo "Removing Directory - ${pid}"
-rm -rf ${pid}
+removedir ${pid}
 
 echo "Removing Directory - ${runtime}"
-rm -rf ${runtime}
+removedir ${runtime}
 
 echo "Removing user - ${user}"
 if [ -e /usr/sbin/userdel ]; then
