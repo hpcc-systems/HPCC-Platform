@@ -31,7 +31,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license. </para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Amazon Web Services, AWS, Amazon EC2, EC2, Amazon Elastic Compute
@@ -57,7 +57,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -77,7 +77,7 @@
     (AWS) Elastic Cloud (EC2) using the Instant Cloud for AWS page.</para>
 
     <para>This allows you to <emphasis role="bold">instantiate</emphasis> and
-    run HPCC Systems clusters of different sizes on the fly.</para>
+    run HPCC Systems<superscript>®</superscript> clusters of different sizes on the fly.</para>
 
     <para>This is useful for:</para>
 
@@ -95,12 +95,12 @@
       </listitem>
 
       <listitem>
-        <para>Leveraging the HPCC Systems platform without incurring cost of
+        <para>Leveraging the HPCC Systems<superscript>®</superscript> platform without incurring cost of
         hardware and administration</para>
       </listitem>
 
       <listitem>
-        <para>Create and use an HPCC Systems cluster immediately without
+        <para>Create and use an HPCC Systems<superscript>®</superscript> cluster immediately without
         purchasing and installing new hardware</para>
       </listitem>
     </itemizedlist>
@@ -120,9 +120,9 @@
 
     <para>We are working with Amazon to improve the set up processes.
     <emphasis role="bold">In the near future, we will have a guide to show how
-    to run an HPCC Systems cluster in an Amazon Elastic Map Reduce (EMR) type
+    to run an HPCC Systems<superscript>®</superscript> cluster in an Amazon Elastic Map Reduce (EMR) type
     environment.</emphasis> We expect that method to be more robust and easier
-    to set up and operate. In addition, HPCC Systems is working on its own
+    to set up and operate. In addition, HPCC Systems<superscript>®</superscript> is working on its own
     Enterprise Cloud offering, but it is not yet ready to be announced.</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
@@ -319,7 +319,7 @@
       <title>Launch a New HPCC Cluster</title>
 
       <para>In this section, you will launch a set of Ubuntu 12.04 machines to
-      use for your HPCC Systems Thor platform. The Instant Cloud page uses the
+      use for your HPCC Systems<superscript>®</superscript> Thor platform. The Instant Cloud page uses the
       input you specify to create your cluster for you.</para>
 
       <para>When you press the <emphasis role="bold">Launch Cluster
@@ -349,7 +349,7 @@
         </listitem>
 
         <listitem>
-          <para>Installs HPCC Systems platform packages.</para>
+          <para>Installs HPCC Systems<superscript>®</superscript> platform packages.</para>
         </listitem>
 
         <listitem>
@@ -458,7 +458,7 @@
 
         <para>If you need to save your data, you must to despray it first and
         save it off of your cluster before shutting down. More information
-        about Data Handling in an HPCC Systems platform are available in the
+        about Data Handling in an HPCC Systems<superscript>®</superscript> platform are available in the
         <emphasis>Data Handling</emphasis> manual. See the <link
         linkend="NextSteps">Next Steps</link> section for details on
         downloading other manuals.</para>
@@ -638,7 +638,7 @@
     <para></para>
 
     <sect1 id="ECL-on-a-single-node-system" role="nobrk">
-      <title>Running ECL on your HPCC Systems cluster</title>
+      <title>Running ECL on your HPCC Systems<superscript>®</superscript> cluster</title>
 
       <para>After your platform is running, and you can now create and run
       some ECL<footnote>
@@ -917,7 +917,7 @@
     <title>More ECL Examples</title>
 
     <para>This section contains additional ECL examples you can use on your
-    HPCC Systems Thor platform. You can run these on a single-node system or a
+    HPCC Systems<superscript>®</superscript> Thor platform. You can run these on a single-node system or a
     larger multi-node cluster.</para>
 
     <sect1 role="nobrk">
@@ -931,7 +931,7 @@
           <listitem>
             <para>Open the ECL IDE (<emphasis role="bold">Start</emphasis>
             &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
-            <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE )
+            <emphasis role="bold">HPCC Systems<superscript>®</superscript></emphasis> &gt;&gt; ECL IDE )
             and login to your HPCC.</para>
           </listitem>
 
@@ -1382,7 +1382,7 @@ OUTPUT(ValidWords)
     <title>Data Handling</title>
 
     <para>This section explains data handling in an AWS configuration. More
-    information about Data Handling in an HPCC Systems platform are available
+    information about Data Handling in an HPCC Systems<superscript>®</superscript> platform are available
     in the <emphasis>Data Handling</emphasis> manual.</para>
 
     <sect1 role="nobrk">
@@ -1480,7 +1480,7 @@ s3cmd --configure
         <para>You can despray a file from Thor to your landing zone, then copy
         to an S3 bucket to for persistent storage. Later, you can copy files
         from the S3 bucket to a landing zone and spray the file to a Thor
-        cluster. More information about Data Handling in an HPCC Systems
+        cluster. More information about Data Handling in an HPCC Systems<superscript>®</superscript>
         platform are available in the <emphasis>Data Handling</emphasis>
         manual.</para>
 
@@ -1540,7 +1540,7 @@ s3cmd --configure
         </listitem>
       </itemizedlist></para>
 
-    <para>The HPCC Systems Portal ( <ulink
+    <para>The HPCC Systems<superscript>®</superscript> Portal ( <ulink
     url="http://hpccsystems.com">HPCCSystems.com</ulink> ) is also a valuable
     resource for more information including:</para>
 

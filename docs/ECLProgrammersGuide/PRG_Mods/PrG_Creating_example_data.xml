@@ -7,7 +7,7 @@
   <sect2 id="Getting_Code_Files">
     <title>Getting Code Files</title>
   <para>All the example code for the <emphasis>Programmer's Guide</emphasis>
-  is available for download from the HPCC Systems website from the same page
+  is available for download from the HPCC Systems<superscript>®</superscript> website from the same page
   that the PDF is available (<ulink
   url="http://hpccsystems.com/download/docs/learning-ecl">click here</ulink>).
   To make this code available for use in the ECL IDE, you simply:</para>
