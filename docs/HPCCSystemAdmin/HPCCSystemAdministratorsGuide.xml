@@ -29,8 +29,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -61,7 +61,8 @@
   </bookinfo>
 
   <chapter>
-    <title>Introducing HPCC Systems<superscript>®</superscript> Administraton</title>
+    <title>Introducing HPCC Systems<superscript>®</superscript>
+    Administraton</title>
 
     <sect1 id="HPCC_SysAdminIntro" role="nobrk">
       <title>Introduction</title>
@@ -81,9 +82,9 @@
     <sect1 id="HPCC_Architectural_Overview">
       <title>Architectural Overview</title>
 
-      <para>An HPCC Systems<superscript>®</superscript> Platform consists of the following components:
-      Thor, Roxie, ESP Server, Dali, Sasha, DFU Server, and ECLCC Server. LDAP
-      security is optionally available.</para>
+      <para>An HPCC Systems<superscript>®</superscript> Platform consists of
+      the following components: Thor, Roxie, ESP Server, Dali, Sasha, DFU
+      Server, and ECLCC Server. LDAP security is optionally available.</para>
 
       <para><figure>
           <title>HPCC Architectural Diagram</title>
@@ -153,11 +154,12 @@
         <sect3>
           <title>ECL Agent</title>
 
-          <para>The ECL Agent can act as a single-node cluster. That is called
-          spawning an hThor cluster. hThor is used to process simple jobs that
-          would otherwise be an inefficient use of Thor. For simple tasks, the
-          ECL Agent will make a determination and perform the execution itself
-          by acting as an hThor cluster. <figure>
+          <para>The ECL Agent's primary function is to send the job to execute
+          on the appropriate cluster. The ECL Agent can act as a single-node
+          cluster. That is called spawning an hThor cluster. hThor is used to
+          process simple jobs that would otherwise be an inefficient use of
+          Thor. For simple tasks, the ECL Agent will make a determination and
+          perform the execution itself by acting as an hThor cluster. <figure>
               <title>Clusters</title>
 
               <mediaobject>
@@ -574,10 +576,10 @@
         <title>Back Up Considerations</title>
 
         <para>You probably already have some sort of a back up strategy in
-        place, by adding HPCC Systems<superscript>®</superscript> into your operating environment there
-        are some additional considerations to be aware of. The following
-        sections discuss back up considerations for the individual HPCC system
-        components.</para>
+        place, by adding HPCC Systems<superscript>®</superscript> into your
+        operating environment there are some additional considerations to be
+        aware of. The following sections discuss back up considerations for
+        the individual HPCC system components.</para>
 
         <sect3>
           <title>Dali</title>
@@ -650,10 +652,10 @@
           <title>Thor</title>
 
           <para>Thor, the data refinery, as one of the critical components of
-          HPCC Systems<superscript>®</superscript> needs to be backed up. Back up Thor by configuring
-          replication and setting up a nightly back up cron task. Back up Thor
-          on demand before and/or after any node swap or drive swap if you do
-          not have a RAID configured.</para>
+          HPCC Systems<superscript>®</superscript> needs to be backed up. Back
+          up Thor by configuring replication and setting up a nightly back up
+          cron task. Back up Thor on demand before and/or after any node swap
+          or drive swap if you do not have a RAID configured.</para>
 
           <para>A very important part of administering Thor is to check the
           logs to ensure the previous back ups completed successfully.</para>
@@ -1101,8 +1103,9 @@ lock=/var/lock/HPCCSystems</programlisting>
       <sect2>
         <title>Active Directory, and LDAP Commonality</title>
 
-        <para>There are a few relevant notable terms, that may need some
-        further explanation. <variablelist>
+        <para>There are components that are common to both Active Directory
+        and LDAP. There are a few relevant terms, that may need some further
+        explanation. <variablelist>
             <varlistentry>
               <term>filesBasedn</term>
 
@@ -1258,8 +1261,8 @@ lock=/var/lock/HPCCSystems</programlisting>
 
         <para>You can run multiple active instances of the ECLCC Server for
         redundancy. There is no need for a load balancer or VIP for this
-        either. Will routinely check for workunits. Should one fail, the
-        other(s) will continue to compile.</para>
+        either. Each instance will routinely check for workunits. Should one
+        fail, the other(s) will continue to compile.</para>
       </sect2>
 
       <sect2>
@@ -1318,10 +1321,6 @@ lock=/var/lock/HPCCSystems</programlisting>
         server. One primary, or active, and the other passive. No load
         balancer needed. If the active instance fails, then you can fail over
         to the passive.</para>
-
-        <para>Make sure you give significant resources to your key components.
-        Dali is RAM intensive. Eclagent and Eclserver are processor dependent.
-        Thor should have a minimum of 4GB RAM per node.</para>
       </sect2>
     </sect1>
 
@@ -1394,16 +1393,15 @@ lock=/var/lock/HPCCSystems</programlisting>
           <para>Thor has the ability to do a “Thor copy” which copies data
           from one cluster to another. You can also do this through ECL code.
           Additionally, you may decide you don’t want, or need to have a “hot”
-          DR Thor. In that case, the most common disasters [minor] (major
-          switch outage, total power down, multiple fiber cuts) cause only a
+          DR Thor. In that case, the most common minor disasters cause only a
           relatively brief, less than 1 day disaster. Since Thor is
           responsible for creating data updates it can take a day or a few to
           recover. The data just is not quite as fresh but as long as the
           Roxies are replicated the data is still flowing. In the case of a
-          major disaster (a major earthquake, or a tidal wave), the likelihood
-          of that occurring does not justify the cost of preventing against
-          it. It could also take between 7 to 14 days to recover by building
-          out a whole new Thor cluster.</para>
+          major disaster such as, a major earthquake, a tidal wave, extended
+          total power loss, multiple fiber cuts, where the systems will be out
+          for a day or more. The likelihood of that occurring may not justify
+          the costs of preventing against it. </para>
         </sect3>
 
         <sect3>
@@ -1501,8 +1499,9 @@ lock=/var/lock/HPCCSystems</programlisting>
       <title>HPCC Resources</title>
 
       <para>The resources link can be found under the Operations Icon link.
-      The resources link in ECL Watch provides a link to the HPCC Systems<superscript>®</superscript> web
-      portal. Visit the HPCC Systems<superscript>®</superscript> Web Portal at <ulink
+      The resources link in ECL Watch provides a link to the HPCC
+      Systems<superscript>®</superscript> web portal. Visit the HPCC
+      Systems<superscript>®</superscript> Web Portal at <ulink
       url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for
       software updates, plug-ins, support, documentation, and more. This is
       where you can find resources useful for running and maintaining HPCC on
