@@ -136,8 +136,9 @@ private:
     void getAttPath(const char* Path,StringBuffer& returnStr);
     bool ContainsProcessDefinition(IPropertyTree& node,const char* clusterName);
     const char* getNodeNameTag(const char* MachineType);
-   void fetchInstances(const char* ServiceType, IPropertyTree& service, IArrayOf<IEspTpMachine>& tpMachines);
-    
+    void fetchInstances(const char* ServiceType, IPropertyTree& service, IArrayOf<IEspTpMachine>& tpMachines);
+    bool checkGroupReplicateOutputs(const char* groupName, const char* kind);
+
 public:
     IMPLEMENT_IINTERFACE;
     CTpWrapper() {};
@@ -146,7 +147,7 @@ public:
     bool getClusterLCR(const char* clusterType, const char* clusterName);
     void getClusterProcessList(const char* ClusterType, IArrayOf<IEspTpCluster>& clusters, bool ignoreduplicatqueues=false, bool ignoreduplicategroups=false);
     void getHthorClusterList(IArrayOf<IEspTpCluster>& clusterList);
-    void getGroupList(IArrayOf<IEspTpGroup> &Groups);
+    void getGroupList(double espVersion, const char* kindReq, IArrayOf<IEspTpGroup> &Groups);
     void getCluster(const char* ClusterType,IPropertyTree& returnRoot);
     void getClusterMachineList(double clientVersion, const char* ClusterType,const char* ClusterPath, const char* ClusterDirectory, 
                                         IArrayOf<IEspTpMachine> &MachineList, bool& hasThorSpareProcess, const char* ClusterName = NULL);

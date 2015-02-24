@@ -1212,7 +1212,7 @@ bool CWsTopologyEx::onTpGroupQuery(IEspContext &context, IEspTpGroupQueryRequest
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Group Query. Permission denied.");
 
         IArrayOf<IEspTpGroup> Groups;
-        m_TpWrapper.getGroupList(Groups);
+        m_TpWrapper.getGroupList(context.getClientVersion(), req.getKind(), Groups);
         resp.setTpGroups(Groups);
     }
     catch(IException* e)
