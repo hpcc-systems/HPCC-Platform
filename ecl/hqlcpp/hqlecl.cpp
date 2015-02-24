@@ -500,6 +500,9 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
     unsigned numExtraFiles = translator.getNumExtraCppFiles();
     bool isMultiFile = translator.spanMultipleCppFiles() && (numExtraFiles != 0);
     expandCode(MAIN_MODULE_TEMPLATE, ".cpp", code, isMultiFile, 0, translator.queryOptions().targetCompiler);
+    StringBuffer fullname;
+    fullname.append(wuname).append(".cpp");
+    sourceFiles.append(fullname);
     if (isMultiFile)
     {
         expandCode(HEADER_TEMPLATE, ".hpp", code, true, 0, translator.queryOptions().targetCompiler);

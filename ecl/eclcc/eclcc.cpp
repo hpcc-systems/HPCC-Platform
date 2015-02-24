@@ -772,9 +772,6 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 if (generateOk && !optNoCompile)
                 {
                     Owned<ICppCompiler> compiler = createCompiler(processName.str());
-                    StringBuffer mainName(processName);
-                    mainName.append(".cpp");
-                    compiler->addSourceFile(mainName);
                     compiler->setSaveTemps(optSaveTemps);
 
                     bool compileOk = true;
