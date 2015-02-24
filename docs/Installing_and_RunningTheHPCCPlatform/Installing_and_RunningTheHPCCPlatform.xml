@@ -29,17 +29,15 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. A</para>
+      registered trademarks of their respective companies. All names and
+      example data used in this manual are fictitious. Any similarity to
+      actual persons, living or dead, is purely coincidental.</para>
 
-      <para>ll names and example data used in this manual are fictitious. Any
-      similarity to actual persons, living or dead, is purely
-      coincidental.</para>
-
-      <para></para>
+      <para> </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -48,7 +46,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -211,512 +209,9 @@
     </sect1>
   </chapter>
 
-  <chapter id="Hardware-and-Software-Requirements">
-    <title>Hardware and Software Requirements</title>
-
-    <para>The following section describes the various hardware and software
-    required in order to run the HPCC.</para>
-
-    <sect1 id="Switch" role="nobrk">
-      <title>Network Switch</title>
-
-      <para>A significant component of HPCC is the infrastructure it runs on,
-      specifically the switch.</para>
-
-      <sect2 id="Switch-Requirements">
-        <title>Switch requirements</title>
-
-        <itemizedlist spacing="compact">
-          <listitem>
-            <para>Sufficient number of ports to allow all nodes to be
-            connected directly to it;</para>
-          </listitem>
-
-          <listitem>
-            <para>IGMP v.2 support </para>
-          </listitem>
-
-          <listitem>
-            <para>IGMP snooping support</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><emphasis role="bold">Small:</emphasis> For a very small test
-        system, almost any gigabit switch will suffice. These are inexpensive
-        and readily available in six to 20-port models.</para>
-
-        <para><figure>
-            <title>1 GigE 8-port Switch</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="images/DHSMC8508T.jpg" vendor="hardwareSS" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-
-        <para><emphasis role="bold">Medium</emphasis>: For medium sized (10-48
-        node) systems, we recommend using a Force10 s25, s50, s55, or s60
-        switch</para>
-
-        <para><figure>
-            <title>Force10 S55 48-port Network Switch</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="images/s55.jpg"
-                           vendor="hardwareSS,force10SS" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-
-        <para><?hard-pagebreak ?><emphasis role="bold">Large</emphasis>: For
-        large (48-350 node) system, the Force10 c150 or c300 are good
-        choices.</para>
-
-        <para><figure>
-            <title>Force 10 c150</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="images/c150-lg.jpg"
-                           vendor="hardwareSS,force10SS" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-
-        <para><?hard-pagebreak ?><emphasis role="bold">Very Large</emphasis>:
-        For very large (more than 300 nodes) system, the Force10 e600 or e1200
-        are good choices.</para>
-
-        <para><figure>
-            <title>Force 10 e600 and e1200</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="images/Force10_ExaScaleE6001200.jpg"
-                           vendor="hardwareSS,force10SS" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-      </sect2>
-
-      <sect2 id="Switch-additional-recommend">
-        <title>Switch additional recommended features</title>
-
-        <para><itemizedlist mark="square" spacing="compact">
-            <listitem>
-              <para>Non-blocking backplane</para>
-            </listitem>
-
-            <listitem>
-              <para>Low latency (under 35usec)</para>
-            </listitem>
-
-            <listitem>
-              <para>Layer 3 switching</para>
-            </listitem>
-
-            <listitem>
-              <para>Managed and monitored (SNMP is a plus)</para>
-            </listitem>
-
-            <listitem>
-              <para>Port channel (port bundling) support</para>
-            </listitem>
-          </itemizedlist></para>
-      </sect2>
-    </sect1>
-
-    <sect1>
-      <title>Load Balancer</title>
-
-      <para>In order to take full advantage of a Roxie cluster, a load
-      balancer is required. Each Roxie Node is capable of receiving requests
-      and returning results. Therefore, a load balancer distributes the load
-      in an efficient manner to get the best performance and avoid a potential
-      bottleneck.</para>
-
-      <para>We recommend the Web Accelerator product line from F5 Networks.
-      See <ulink
-      url="http://www.f5.com/pdf/products/big-ip-webaccelerator-ds.pdf">http://www.f5.com/pdf/products/big-ip-webaccelerator-ds.pdf
-      </ulink> for more information<phrase></phrase>.</para>
-
-      <para><figure>
-          <title>F5 Load Balancers</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="images/IR-009a.jpg" vendor="hardwareSS,F5SS" />
-            </imageobject>
-          </mediaobject>
-        </figure></para>
-
-      <sect2>
-        <title>Load Balancer Requirements</title>
-
-        <sect3>
-          <title>Minimum requirements</title>
-
-          <para><itemizedlist spacing="compact">
-              <listitem>
-                <para>Throughput: 1Gbps Gigabit</para>
-              </listitem>
-
-              <listitem>
-                <para>Ethernet ports: 2</para>
-              </listitem>
-
-              <listitem>
-                <para>Balancing Strategy: Round Robin</para>
-              </listitem>
-            </itemizedlist></para>
-        </sect3>
-
-        <sect3>
-          <title>Standard requirements</title>
-
-          <para><itemizedlist spacing="compact">
-              <listitem>
-                <para>Throughput: 8Gbps</para>
-              </listitem>
-
-              <listitem>
-                <para>Gigabit Ethernet ports: 4</para>
-              </listitem>
-
-              <listitem>
-                <para>Balancing Strategy: Flexible (F5 iRules or
-                equivalent)</para>
-              </listitem>
-            </itemizedlist></para>
-        </sect3>
-
-        <sect3 role="brk">
-          <title>Recommended capabilities</title>
-
-          <para><itemizedlist spacing="compact">
-              <listitem>
-                <para>Ability to provide cyclic load rotation (not load
-                balancing).</para>
-              </listitem>
-
-              <listitem>
-                <para>Ability to forward SOAP/HTTP traffic</para>
-              </listitem>
-
-              <listitem>
-                <para>Ability to provide triangulation/n-path routing (traffic
-                incoming through the load balancer to the node, replies sent
-                out the via the switch).</para>
-              </listitem>
-
-              <listitem>
-                <para>Ability to treat a cluster of nodes as a single entity
-                (for load balancing clusters not nodes)</para>
-
-                <para>or</para>
-              </listitem>
-
-              <listitem>
-                <para>Ability to stack or tier the load balancers for multiple
-                levels if not.</para>
-              </listitem>
-            </itemizedlist></para>
-        </sect3>
-      </sect2>
-    </sect1>
-
-    <sect1 id="Nodes-Hardware">
-      <title>Nodes-Hardware</title>
-
-      <para>The HPCC can run as a single node system or a multi node
-      system.</para>
-
-      <para>These hardware recommendations are intended for a multi-node
-      production system. A test system can use less stringent specifications.
-      Also, while it is easier to manage a system where all nodes are
-      identical, this is not required. However, it is important to note that
-      your system will only run as fast as its slowest node.</para>
-
-      <sect2 id="Node-Min-requirements">
-        <title>Node minimum requirements</title>
-
-        <itemizedlist mark="square" spacing="compact">
-          <listitem>
-            <para>Pentium 4 or newer CPU</para>
-          </listitem>
-
-          <listitem>
-            <para>32-bit</para>
-          </listitem>
-
-          <listitem>
-            <para>1GB RAM per slave</para>
-
-            <para>(Note: If you configure more than 1 slave per node, memory
-            is shared. For example, if you want 2 slaves per node with each
-            having 4 GB of memory, the server would need 8 GB total.)</para>
-          </listitem>
-
-          <listitem>
-            <para>One Hard Drive (with sufficient free space to handle the
-            size of the data you plan to process) or Network Attached
-            Storage.</para>
-          </listitem>
-
-          <listitem>
-            <para>1 GigE network interface</para>
-          </listitem>
-        </itemizedlist>
-      </sect2>
-
-      <sect2 id="Node-recommended-specifications">
-        <title>Node recommended specifications</title>
-
-        <para><itemizedlist mark="square" spacing="compact">
-            <listitem>
-              <para>Nehalem Core i7 CPU</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit</para>
-            </listitem>
-
-            <listitem>
-              <para>4 GB RAM (or more) per slave</para>
-            </listitem>
-
-            <listitem>
-              <para>1 GigE network interface</para>
-            </listitem>
-
-            <listitem>
-              <para>PXE boot support in BIOS</para>
-
-              <para>PXE boot support is recommended so you can manage OS,
-              packages, and other settings when you have a large system</para>
-            </listitem>
-
-            <listitem>
-              <para>Optionally IPMI and KVM over IP support</para>
-
-              <para><emphasis role="bold">For Roxie nodes:</emphasis></para>
-            </listitem>
-
-            <listitem>
-              <para>Two 10K RPM (or faster) SAS Hard Drives</para>
-
-              <para>Typically, drive speed is the priority for Roxie
-              nodes</para>
-
-              <para><emphasis role="bold">For Thor nodes:</emphasis></para>
-            </listitem>
-
-            <listitem>
-              <para>Two 7200K RPM (or faster) SATA Hard Drives (Thor)</para>
-            </listitem>
-
-            <listitem>
-              <para>Optionally 3 or more hard drives can be configured in a
-              RAID 5 container for increased performance and
-              availability</para>
-
-              <para>Typically, drive capacity is the priority for Thor
-              nodes</para>
-            </listitem>
-          </itemizedlist></para>
-      </sect2>
-    </sect1>
-
-    <sect1 id="Nodes-Software">
-      <title>Nodes-Software</title>
-
-      <para>All nodes must have the identical operating systems. We recommend
-      all nodes have identical BIOS settings, and packages installed. This
-      significantly reduces variables when troubleshooting. It is easier to
-      manage a system where all nodes are identical, but this is not
-      required.</para>
-
-      <sect2 id="Operating-System-Requirements">
-        <title>Operating System Requirements</title>
-
-        <para>Binary packages are available for the following:</para>
-
-        <para><itemizedlist mark="square" spacing="compact">
-            <listitem>
-              <para>64-bit CentOS 5</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit CentOS 6</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit RedHat Enterprise 5</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit RedHat Enterprise 6</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit Ubuntu 12.04 (LTS)</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit Ubuntu 13.10</para>
-            </listitem>
-
-            <listitem>
-              <para>64-bit Ubuntu 14.04 (LTS)</para>
-            </listitem>
-          </itemizedlist></para>
-      </sect2>
-
-      <sect2 id="configuration-manager">
-        <title>Dependencies</title>
-
-        <para>Installing HPCC on your system depends on having required
-        component packages installed on the system. The required dependencies
-        can vary depending on your platform. In some cases the dependencies
-        are included in the installation packages. In other instances the
-        installation may fail, and the package management utility will prompt
-        you for the required packages. Installation of these packages can vary
-        depending on your platform. For details of the specific installation
-        commands for obtaining and installing these packages, see the commands
-        specific to your Operating System. <variablelist>
-            <varlistentry>
-              <term>Note:</term>
-
-              <listitem>
-                <para>For CentOS installations, the Fedora EPEL repository is
-                required.</para>
-              </listitem>
-            </varlistentry>
-          </variablelist></para>
-      </sect2>
-
-      <sect2 id="SSH_Keys" role="brk">
-        <title>SSH Keys</title>
-
-        <para>The HPCC components use ssh keys to authenticate each other.
-        This is required for communication between nodes. A script to generate
-        keys has been provided .You should run that script and distribute the
-        public and private keys to all nodes after you have installed the
-        packages on all nodes, but before you configure a multi-node
-        HPCC.</para>
-
-        <para><itemizedlist spacing="compact">
-            <listitem>
-              <para>As root (or sudo as shown below), generate a new key using
-              this command:</para>
-
-              <para><programlisting>sudo /opt/HPCCSystems/sbin/keygen.sh</programlisting></para>
-            </listitem>
-
-            <listitem>
-              <para>Distribute the keys to all nodes. From the <emphasis
-              role="bold">/home/hpcc/.ssh</emphasis> directory, copy these
-              three files to the same directory (<emphasis
-              role="bold">/home/hpcc/.ssh</emphasis>) on each node:</para>
-
-              <itemizedlist spacing="compact">
-                <listitem>
-                  <para><emphasis role="bold">id_rsa</emphasis></para>
-                </listitem>
-
-                <listitem>
-                  <para><emphasis role="bold">id_rsa.pub</emphasis></para>
-                </listitem>
-
-                <listitem>
-                  <para><emphasis
-                  role="bold">authorized_keys</emphasis></para>
-                </listitem>
-              </itemizedlist>
-
-              <para>Make sure that files retain permissions when they are
-              distributed. These keys need to be owned by the user "<emphasis
-              role="bold">hpcc</emphasis>".</para>
-            </listitem>
-          </itemizedlist></para>
-      </sect2>
-    </sect1>
-
-    <sect1 id="workstation-requirements">
-      <title>User Workstation Requirements</title>
-
-      <itemizedlist spacing="compact">
-        <listitem>
-          <para>Running the HPCC platform requires communication from your
-          user workstation with a browser to the HPCC. You will use it to
-          access ECL Watch—a Web-based interface to your HPCC system. ECL
-          Watch enables you to examine and manage many aspects of the HPCC and
-          allows you to see information about jobs you run, data files, and
-          system metrics.</para>
-
-          <para>Use one of the supported web browsers with Javascript
-          enabled.</para>
-
-          <itemizedlist spacing="compact">
-            <listitem>
-              <para>Internet Explorer® 8 (or later)</para>
-            </listitem>
-
-            <listitem>
-              <para>Firefox™ 3.0 (or later.)</para>
-
-              <!--***Add additional browsers when approved-->
-            </listitem>
-
-            <listitem>
-              <para>Google Chrome 10 (or later)</para>
-            </listitem>
-          </itemizedlist>
-
-          <para>If browser security is set to <emphasis
-          role="bold">High</emphasis>, you should add ECLWatch as a Trusted
-          Site to allow Javascript execution.</para>
-        </listitem>
-
-        <listitem>
-          <para>Install the ECL IDE</para>
-
-          <para>The ECL IDE (Integrated Development Environment) is the tool
-          used to create queries into your data and ECL files with which to
-          build your queries.</para>
-
-          <para>From the ECLWatch web page, download the Windows install set.
-          If the link is not visible, either follow the link to the HPCC
-          System's portal or install the Optional Packages.</para>
-
-          <para>You can reach this page using the following URL:</para>
-
-          <para>http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your
-          node's IP address.</para>
-
-          <para>The ECL IDE was designed to run on Windows machines. See the
-          appendix for instructions on running on Linux workstations using
-          Wine.</para>
-        </listitem>
-
-        <listitem>
-          <para>Microsoft VS 2008 C++ compiler (either Express or Professional
-          edition). This is needed if you are running Windows and want to
-          compile queries locally. This allows you to compile and run ECL code
-          on your Windows workstation.</para>
-        </listitem>
-
-        <listitem>
-          <para>GCC. This is needed if you are running under Linux and want to
-          compile queries locally on a standalone Linux machine, (although it
-          may already be available to you since it usually comes with the
-          operating system).</para>
-        </listitem>
-      </itemizedlist>
-    </sect1>
-  </chapter>
+  <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+              xpointer="Hardware-and-Software-Chapter"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter id="HPCC-installation-and-startup">
     <title>HPCC Installation and Startup</title>
@@ -767,7 +262,7 @@
         packages will fail to install if their dependencies are missing from
         the target system.</para>
 
-        <para>Packages are available from the HPCC Systems website: <ulink
+        <para>Packages are available from the HPCC Systems<superscript>®</superscript> website: <ulink
         url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink></para>
 
         <para>To install the package, follow the appropriate installation
@@ -1278,7 +773,7 @@
 
         <para>This section details reconfiguring a system to use multiple
         nodes. Before you start this section, you must have already downloaded
-        the correct packages for your distro from the HPCC Systems website:
+        the correct packages for your distro from the HPCC Systems<superscript>®</superscript> website:
         <ulink
         url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.</para>
 
@@ -1850,7 +1345,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <listitem>
             <para>Open the ECL IDE (Start <emphasis
             role="bold">&gt;&gt;</emphasis> All Programs <emphasis
-            role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
+            role="bold">&gt;&gt;</emphasis> HPCC Systems<superscript>®</superscript> <emphasis
             role="bold"> &gt;&gt;</emphasis> ECL IDE ) and login to your
             HPCC.</para>
           </listitem>
@@ -2547,7 +2042,7 @@ OUTPUT(ValidWords)
     role="bold">Start</emphasis> menu :</para>
 
     <para>Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
-    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
+    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems<superscript>®</superscript> <emphasis
     role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
     role="bold">&gt;&gt;</emphasis> Docs</para>
 
@@ -2573,7 +2068,7 @@ OUTPUT(ValidWords)
         </listitem>
       </itemizedlist></para>
 
-    <para>The HPCC Systems Portal is also a valuable resource for more
+    <para>The HPCC Systems<superscript>®</superscript> Portal is also a valuable resource for more
     information including:</para>
 
     <itemizedlist spacing="compact">
@@ -3372,8 +2867,9 @@ sudo /sbin/service hpcc-init -c esp start
           </listitem>
 
           <listitem>
-            <para>Start the HPCC Systems platform (restart if it is already
-            running) in order to read the new configuration.</para>
+            <para>Start the HPCC Systems<superscript>®</superscript> platform
+            (restart if it is already running) in order to read the new
+            configuration.</para>
 
             <para>For example :</para>
 
@@ -3394,9 +2890,9 @@ sudo /sbin/service hpcc-init -c esp start
 
             <para>Test the Java integration.</para>
 
-            <para>The HPCC Systems platform comes with a Java example class.
-            You can execute some Java code either in your ECL IDE or the ECL
-            Playground.</para>
+            <para>The HPCC Systems<superscript>®</superscript> platform comes
+            with a Java example class. You can execute some Java code either
+            in your ECL IDE or the ECL Playground.</para>
 
             <para>For example:</para>
 
@@ -3425,7 +2921,7 @@ add1(10);
       <sect2 id="Add_On_Javascript" role="brk">
         <title>JavaScript</title>
 
-        <para>To enable JavaScript support within the HPCC Systems
+        <para>To enable JavaScript support within the HPCC Systems<superscript>®</superscript>
         Platform:</para>
 
         <orderedlist>
@@ -3490,8 +2986,8 @@ add1(10);
       <sect2 id="Add_Python_support" role="brk">
         <title>Python</title>
 
-        <para>To enable Python support within the HPCC Systems
-        Platform:</para>
+        <para>To enable Python support within the HPCC
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
@@ -3548,7 +3044,7 @@ split_words('Once upon a time');
       <sect2 id="R" role="brk">
         <title>R</title>
 
-        <para>To enable R support within The HPCC Systems Platform:</para>
+        <para>To enable R support within The HPCC Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
