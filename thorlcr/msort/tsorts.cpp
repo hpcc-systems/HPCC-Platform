@@ -474,7 +474,7 @@ public:
         {
             collector->setup(&iCompare, isStable ? stableSort_earlyAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE); // must not spill
             collector->transferRowsIn(localRows);
-            collector->ensure((rowidx_t)globalTotal); // pre-expand row array for efficiency
+            collector->resize((rowidx_t)globalTotal); // pre-expand row array for efficiency
 
             // JCSMORE - very odd, threaded, but semaphores ensuring sequential writes, why?
             class casyncfor: public CAsyncFor
