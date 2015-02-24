@@ -29,7 +29,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -48,7 +48,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems</corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -2126,7 +2126,7 @@ OUTPUT(ValidWords)
           </listitem>
 
           <listitem>
-            <para>The HPCC Systems<superscript>®</superscript> Portal (<ulink
+            <para>The HPCC Systems Portal (<ulink
             url="http://hpccsystems.com">http://hpccsystems.com</ulink>) is
             another valuable resource for more information including:</para>
 
@@ -2182,7 +2182,7 @@ OUTPUT(ValidWords)
 
           <answer>
             <para>No. If you want to evaluate a multi-node system, you should
-            use the Community version available from the HPCC Systems<superscript>®</superscript> Portal
+            use the Community version available from the HPCC Systems Portal
             at <ulink
             url="http://hpccsystems.com">http://hpccsystems.com</ulink>.</para>
           </answer>
@@ -2313,7 +2313,7 @@ OUTPUT(ValidWords)
           </question>
 
           <answer>
-            <para>Visit the HPCC Systems<superscript>®</superscript> Portal at
+            <para>Visit the HPCC Systems Portal at
             http://HPCCsystems.com.</para>
           </answer>
         </qandaentry>

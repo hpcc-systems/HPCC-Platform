@@ -29,7 +29,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -48,7 +48,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems</corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -61,7 +61,7 @@
   </bookinfo>
 
   <chapter>
-    <title>Introducing HPCC Systems<superscript>®</superscript> Administraton</title>
+    <title>Introducing HPCC Systems Administraton</title>
 
     <sect1 id="HPCC_SysAdminIntro" role="nobrk">
       <title>Introduction</title>
@@ -81,7 +81,7 @@
     <sect1 id="HPCC_Architectural_Overview">
       <title>Architectural Overview</title>
 
-      <para>An HPCC Systems<superscript>®</superscript> Platform consists of the following components:
+      <para>An HPCC Systems Platform consists of the following components:
       Thor, Roxie, ESP Server, Dali, Sasha, DFU Server, and ECLCC Server. LDAP
       security is optionally available.</para>
 
@@ -417,13 +417,13 @@
       essential data. Devise a back up strategy to meet the needs of your
       organization. This section is not meant to replace your current back up
       strategy, instead this section supplements it by outlining special
-      considerations for HPCC Systems<superscript>®</superscript>.</para>
+      considerations for HPCC Systems.</para>
 
       <sect2>
         <title>Back Up Considerations</title>
 
         <para>You probably already have some sort of a back up strategy in
-        place, by adding HPCC Systems<superscript>®</superscript> into your operating environment there
+        place, by adding HPCC Systems into your operating environment there
         are some additional considerations to be aware of. The following
         sections discuss back up considerations for the individual HPCC system
         components.</para>
@@ -499,7 +499,7 @@
           <title>Thor</title>
 
           <para>Thor, the data refinery, as one of the critical components of
-          HPCC Systems<superscript>®</superscript> needs to be backed up. Back up Thor by configuring
+          HPCC Systems needs to be backed up. Back up Thor by configuring
           replication and setting up a nightly back up cron task. Back up Thor
           on demand before and/or after any node swap or drive swap if you do
           not have a RAID configured.</para>
@@ -825,7 +825,7 @@
 
       <para>The default envrionment.conf:</para>
 
-      <para><programlisting>## HPCC Systems<superscript>®</superscript> default environment configuration file 
+      <para><programlisting>## HPCC Systems default environment configuration file 
 
 [DEFAULT SETTINGS]
 configs=/etc/HPCCSystems
@@ -1456,8 +1456,8 @@ lock=/var/lock/HPCCSystems</programlisting>
       <title>HPCC Resources</title>
 
       <para>The resources link can be found under the Operations Icon link.
-      The resources link in ECL Watch provides a link to the HPCC Systems<superscript>®</superscript> web
-      portal. Visit the HPCC Systems<superscript>®</superscript> Web Portal at <ulink
+      The resources link in ECL Watch provides a link to the HPCC Systems web
+      portal. Visit the HPCC Systems Web Portal at <ulink
       url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for
       software updates, plug-ins, support, documentation, and more. This is
       where you can find resources useful for running and maintaining HPCC on

@@ -5,7 +5,7 @@
   <title>ECL Reference</title>
 
   <setinfo>
-    <corpauthor>HPCC Systems<superscript>®</superscript></corpauthor>
+    <corpauthor>HPCC Systems</corpauthor>
   </setinfo>
 
   <xi:include href="../ECLLanguageReference/ECLR-includer.xml" xpointer="element(/1)"

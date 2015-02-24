@@ -29,8 +29,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
-      of LexisNexis Risk Data Management Inc.</para>
+      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies. A</para>
@@ -48,7 +48,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems</corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -767,7 +767,7 @@
         packages will fail to install if their dependencies are missing from
         the target system.</para>
 
-        <para>Packages are available from the HPCC Systems<superscript>®</superscript> website: <ulink
+        <para>Packages are available from the HPCC Systems website: <ulink
         url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink></para>
 
         <para>To install the package, follow the appropriate installation
@@ -1278,7 +1278,7 @@
 
         <para>This section details reconfiguring a system to use multiple
         nodes. Before you start this section, you must have already downloaded
-        the correct packages for your distro from the HPCC Systems<superscript>®</superscript> website:
+        the correct packages for your distro from the HPCC Systems website:
         <ulink
         url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.</para>
 
@@ -1850,7 +1850,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <listitem>
             <para>Open the ECL IDE (Start <emphasis
             role="bold">&gt;&gt;</emphasis> All Programs <emphasis
-            role="bold">&gt;&gt;</emphasis> HPCC Systems<superscript>®</superscript> <emphasis
+            role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
             role="bold"> &gt;&gt;</emphasis> ECL IDE ) and login to your
             HPCC.</para>
           </listitem>
@@ -2547,7 +2547,7 @@ OUTPUT(ValidWords)
     role="bold">Start</emphasis> menu :</para>
 
     <para>Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
-    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems<superscript>®</superscript> <emphasis
+    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
     role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
     role="bold">&gt;&gt;</emphasis> Docs</para>
 
@@ -2573,7 +2573,7 @@ OUTPUT(ValidWords)
         </listitem>
       </itemizedlist></para>
 
-    <para>The HPCC Systems<superscript>®</superscript> Portal is also a valuable resource for more
+    <para>The HPCC Systems Portal is also a valuable resource for more
     information including:</para>
 
     <itemizedlist spacing="compact">
@@ -3372,7 +3372,7 @@ sudo /sbin/service hpcc-init -c esp start
           </listitem>
 
           <listitem>
-            <para>Start the HPCC Systems<superscript>®</superscript> platform (restart if it is already
+            <para>Start the HPCC Systems platform (restart if it is already
             running) in order to read the new configuration.</para>
 
             <para>For example :</para>
@@ -3394,7 +3394,7 @@ sudo /sbin/service hpcc-init -c esp start
 
             <para>Test the Java integration.</para>
 
-            <para>The HPCC Systems<superscript>®</superscript> platform comes with a Java example class.
+            <para>The HPCC Systems platform comes with a Java example class.
             You can execute some Java code either in your ECL IDE or the ECL
             Playground.</para>
 
@@ -3425,7 +3425,7 @@ add1(10);
       <sect2 id="Add_On_Javascript" role="brk">
         <title>JavaScript</title>
 
-        <para>To enable JavaScript support within the HPCC Systems<superscript>®</superscript>
+        <para>To enable JavaScript support within the HPCC Systems
         Platform:</para>
 
         <orderedlist>
@@ -3490,7 +3490,7 @@ add1(10);
       <sect2 id="Add_Python_support" role="brk">
         <title>Python</title>
 
-        <para>To enable Python support within the HPCC Systems<superscript>®</superscript>
+        <para>To enable Python support within the HPCC Systems
         Platform:</para>
 
         <orderedlist>
@@ -3548,7 +3548,7 @@ split_words('Once upon a time');
       <sect2 id="R" role="brk">
         <title>R</title>
 
-        <para>To enable R support within The HPCC Systems<superscript>®</superscript> Platform:</para>
+        <para>To enable R support within The HPCC Systems Platform:</para>
 
         <orderedlist>
           <listitem>
