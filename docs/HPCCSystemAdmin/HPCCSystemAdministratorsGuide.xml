@@ -236,7 +236,7 @@
           <para>When you submit workunits for execution on Thor, they are
           first converted to executable code by the ECLCC Server.</para>
 
-          <para>When you submit a Workunit to Roxie, code is compiled and
+          <para>When you submit a workunit to Roxie, code is compiled and
           later published to the Roxie cluster, where it is available to
           execute multiple times.</para>
 
@@ -284,8 +284,9 @@
               </listitem>
             </itemizedlist></para>
 
-          <para>Examples of protocols supported by the ESP Server framework
-          include: HTTP, HTTPS, SOAP, and JSON.</para>
+          <para>The ESP Server supports both XML and JSON Formats.</para>
+
+          <!--formerly : protocols - HTTP, HTTPS, SOAP, and JSON - -->
         </sect3>
 
         <sect3>
@@ -293,7 +294,7 @@
 
           <para>You can incorporate a Lightweight Directory Access Protocol
           (LDAP) server to work with Dali to enforce the security restrictions
-          for data, file, workunit scopes, and feature access.</para>
+          for file scopes, workunit scopes, and feature access.</para>
 
           <para>When LDAP is configured, you need to authenticate when
           accessing ECL Watch, WsECL, ECL IDE, or any other client tools.
@@ -330,16 +331,16 @@
           to create and execute queries into your data on an HPCC platform
           using Enterprise Control Language (ECL). Eclipse is open-source, and
           multi-platform and it can be used to interface with your data and
-          workunits on HPCC. The ECL plug-in for Eclipse is also open
-          source.</para>
+          workunits on HPCC. The ECL plug-in for Eclipse is also
+          open-source.</para>
         </sect3>
 
         <sect3>
           <title>ECL IDE</title>
 
-          <para>ECL IDE is a full-featured GUI for ECL development providing
-          access to the ECL repository and many of the ECL Watch capabilities.
-          ECL IDE uses various ESP services via SOAP.</para>
+          <para>ECL IDE is a full-featured GUI providing access to your ECL
+          code for ECL development. ECL IDE uses various ESP services via
+          SOAP.</para>
 
           <para>The ECL IDE provides access to ECL Definitions to build your
           queries. These definitions are created by coding an expression that
@@ -370,7 +371,7 @@
               </listitem>
 
               <listitem>
-                <para>See status of all system servers.</para>
+                <para>See the status of all system servers.</para>
               </listitem>
 
               <listitem>
@@ -394,6 +395,9 @@
           provide command line access to functionality provided by the ECL
           Watch web pages. They work by communicating with the corresponding
           ESP service via SOAP.</para>
+
+          <para>See the <emphasis>Client Tools </emphasis>Manual for more
+          details.</para>
         </sect3>
       </sect2>
     </sect1>
@@ -401,12 +405,159 @@
     <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->
   </chapter>
 
+  <chapter>
+    <title>Hardware and Software Requirements</title>
+
+    <para>This chapter consists of various Hardware and Software requirements
+    that HPCC works well on. HPCC is designed to run on commodity hardware,
+    which makes building and maintaining large scale (petabytes) clusters
+    economically feasible. When planning your cluster hardware, you will need
+    to balance a number of considerations.</para>
+
+    <para>This section provides some insight as to what sort of hardware and
+    infrastructure optimally HPCC works well on. This is not an exclusive
+    comprehensive set of instructions, nor a mandate on what hardware you must
+    have. Consider this as a guide to use when looking to implement or scale
+    your HPCC system. These suggestions should be taken into consideration for
+    your specific enterprise needs.</para>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+                xpointer="HW-Switch"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+                xpointer="HW-LoadBalancer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+                xpointer="Nodes-Hardware"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="System_sizings"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+                xpointer="Nodes-Software"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
+                xpointer="workstation-requirements"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+
+  <chapter>
+    <title>Hardware and Component Sizing</title>
+
+    <para>This section provides some insight as to what sort of hardware and
+    infrastructure optimally HPCC works well on. This is not an exclusive
+    comprehensive set of instructions, nor a mandate on what hardware you must
+    have. Consider this as a guide to use when looking to implement or scale
+    your HPCC system. These suggestions should be taken into consideration for
+    your specific enterprise needs.</para>
+
+    <para>HPCC is designed to run on commodity hardware, which makes building
+    and maintaining large scale (petabytes) clusters economically feasible.
+    When planning your cluster hardware, you will need to balance a number of
+    considerations, including fail-over domains and potential performance
+    issues. Hardware planning should include distributing HPCC across multiple
+    physical hosts, such as a cluster. Generally, one type of best practice is
+    to run HPCC processes of a particular type, for example Thor, Roxie, or
+    Dali, on a host configured specifically for that type of process.</para>
+
+    <sect1>
+      <title>Thor Hardware</title>
+
+      <para>Thor slave nodes require a proper balance of CPU, RAM, network,
+      and disk I/O in order to operate most efficiently. A single Thor slave
+      node works optimally when allocated 4 CPU cores, 8GB RAM, 1Gb/sec
+      network and 200MB/sec sequential read/write disk I/O.</para>
+
+      <para>Hardware architecture can provide higher value within a single
+      physical server. In such cases you can use multi-slave to configure your
+      larger physical servers to run multiple Thor slave nodes per physical
+      server.</para>
+
+      <para>It is important to note that HPCC by nature is a parallel
+      processing system and all Thor slave nodes will be exercising at
+      precisely the same time. So when allocating more than one HPCC Thor
+      slave per physical machine assure that each slave meets the recommended
+      requirements.</para>
+
+      <para>For instance, 1 physical server with 48 cores, 96GB RAM, 10Gb/sec
+      network and 2GB/sec sequential I/O would be capable of running ten (10)
+      HPCC Thor slaves at optimal efficiency. The order of optimization for
+      resource usage in a Thor slave node is disk I/O 60%, network 30%, and
+      CPU 10%. Any increase in sequential I/O will have the most impact on
+      speed, followed by improvements in network, followed by improvements in
+      CPU.</para>
+
+      <para>Network architecture is also an important consideration. HPCC Thor
+      nodes work optimally in a streamlined network architecture between all
+      Thor slave processes.</para>
+
+      <para>RAID is recommended and all RAID levels suitable for sequential
+      read/write operations and high availability are acceptable. For example,
+      RAID1, RAID10, RAID5 (preferred), and RAID6.</para>
+    </sect1>
+
+    <sect1>
+      <title>Roxie Hardware Configurations</title>
+
+      <para>HPCC Roxie processes require require a proper, yet different (from
+      Thor) balance of CPU, RAM, network, and disk I/O in order to ensure
+      efficient operations. A single HPCC Roxie node works optimally when
+      allocated 6 or more CPU cores, 24GB RAM, 1Gb/sec network backbone, and
+      400/sec 4k random read IOPS. </para>
+
+      <para>Each HPCC Roxie node is presented two hard drives, each capable of
+      200/sec 4k random seek IOPS. Hard drive recommendations for Roxie
+      efficiency are 15K SAS, or SSD. A good rule of thumb is the more random
+      read IOPS the better and faster your Roxie will perform.</para>
+
+      <para>Running multiple HPCC Roxie nodes on a single physical server is
+      not recommended, except in the cases of virtualization or
+      containers.</para>
+    </sect1>
+
+    <sect1>
+      <title>Dali and Sasha Hardware Configurations</title>
+
+      <para>HPCC Dali processes store cluster metadata in RAM. For optimal
+      efficiency, provide at least 48GB of RAM, 6 or more CPU cores, 1Gb/sec
+      network interface and a high availability disk for a single HPCC Dali.
+      HPCC's Dali processes are one of the few active/passive components.
+      Using standard “swinging disk” clustering is recommended for a high
+      availability setup. For a single HPCC Dali process, any suitable High
+      Availability (HA) RAID level is fine.</para>
+
+      <para>Sasha does not store any data. Sasha reads data from Dali then
+      processes it. Sasha does store archived workunits (WUs) on a disk.
+      Allocating a larger disk for Sasha reduces the amount of housekeeping
+      needed. Since Sasha assists Dali by performing housekeeping, it works
+      best when on its own node. You should avoid putting Sasha and Dali on
+      the same node.</para>
+    </sect1>
+
+    <sect1>
+      <title>Other HPCC Components</title>
+
+      <para>ECL Agent, ECLCC Server, DFU Server, the Thor master, and ECL
+      Watch are administrative processes which are used for supporting
+      components of the main clusters.</para>
+
+      <para>For maximum efficiency you should provide 24GB RAM, 6+ CPU cores,
+      1Gb/sec network and high availability disk(s). These components can be
+      made highly available in an active/active fashion.</para>
+    </sect1>
+  </chapter>
+
   <chapter id="Routine_Maintenance">
     <title>Routine Maintenance</title>
 
-    <para>There is some care required to ensure that your HPCC system keeps
-    operating optimally. The following sections address the routine
-    maintenance tasks for your HPCC system.</para>
+    <para>In order to ensure that your HPCC system keeps running optimally,
+    some care and maintenance is required. The following sections address
+    routine maintenance tasks for your HPCC system.</para>
 
     <!--***SYSTEM HEALTH CHECK UP***TO COME***-->
 
@@ -934,9 +1085,9 @@ lock=/var/lock/HPCCSystems</programlisting>
       servicing many, diverse applications has been less than optimal.</para>
 
       <para>HPCC makes setting up your Active Directory OU's relatively easy.
-      ESP creates all the OU's for you when it comes up, based on the settings
-      you defined in Configuration Manager. You can then start Dali/ESP and
-      use ECLWatch to add or modify users or groups.</para>
+      ESP creates all the OU's for you when it starts up, based on the
+      settings you defined in Configuration Manager. You can then start
+      Dali/ESP and use ECLWatch to add or modify users or groups.</para>
 
       <para>You can assign permissions to each user individually, however it
       is more manageable to assign these permissions to groups, and then add
@@ -1336,115 +1487,9 @@ lock=/var/lock/HPCCSystems</programlisting>
       </sect2>
     </sect1>
 
-    <sect1 id="Sample_sizings">
-      <title>System Sizings</title>
-
-      <para>This section provides some guidance in determining the sizing
-      requirements for an initial installation. The following are some
-      suggested sample configuration guides that can be helpful when planning
-      your system.</para>
-
-      <sect2>
-        <title>Sample Sizing for High Data volume (Typical)</title>
-
-        <para>The most typical scenario for HPCC is utilizing it with a high
-        volume of data. This suggested sample sizing would be appropriate for
-        a site with large volumes of data. A good policy is to set the Thor
-        size to 4 times the source data on your HPCC. Typically, Roxie would
-        be about ¼ the size of Thor. This is because the data is compressed
-        and the system does not hold any transient data in Roxie.</para>
-
-        <sect3>
-          <title>High Data Thor sizing considerations</title>
-
-          <para>Each Thor node can hold about 2.5 TB of data (MAX), so plan
-          for the number of Thor nodes accordingly for your data.</para>
-
-          <para>If possible, SAS drives for both Thor and Roxie as they almost
-          equal to SATA drives now. If not for both, get SAS drives at least
-          for your Roxie cluster.</para>
-
-          <para>Thor replicates data, typically configured for 2
-          copies.</para>
-        </sect3>
-
-        <sect3>
-          <title>High Data Roxie sizing considerations</title>
-
-          <para>Roxie keeps most of its data in memory, so you should allocate
-          plenty of memory for Roxie. Calculate the approximate size of your
-          data, and allocate appropriately. You should either increase the
-          number of nodes, or increase the amount of memory.</para>
-
-          <para>A good practice is to allocate a Dali for every Roxie
-          cluster.</para>
-
-          <para>Roxie+Dali needs to have a mirror. This is because, when you
-          need to update indexes, you update the mirror and make that primary
-          and bring the other one down. This is not really a necessity except
-          for high availability and performance requirements.</para>
-        </sect3>
-      </sect2>
-
-      <sect2>
-        <title>Sample Sizing for Heavy Processing on Low Data Volume</title>
-
-        <para>The following section provides some sample sizing for heavy
-        processing with approximately the amount of data indicated.</para>
-
-        <sect3>
-          <title>750 GB of Raw Data</title>
-
-          <para>Thor = 3 (slaves) + 2 (management) = 5 Nodes</para>
-
-          <para>Roxie = 3 (agents) + 1 (Dali) = 4 Nodes (This will mean that
-          the environment will be down during query deployment)</para>
-
-          <para>Spares = 2</para>
-
-          <para>Total = 13 nodes</para>
-        </sect3>
-
-        <sect3>
-          <title>1250 GB of Raw Data</title>
-
-          <para>Thor = 6 (slaves) + 2 (management) = 8 Nodes</para>
-
-          <para>Roxie = 4 (agents) + 1 (Dali) = 5 Nodes (This will mean that
-          the environment will be down during query deployment)</para>
-
-          <para>Spares = 2</para>
-
-          <para>Total = 17 nodes</para>
-        </sect3>
-
-        <sect3>
-          <title>2000 GB of Raw Data</title>
-
-          <para>Thor = 8 (slaves) + 3 (management) = 11 Nodes</para>
-
-          <para>Roxie = 4 (agents) + 1 (Dali) = 5 Nodes (This will mean that
-          the environment will be down during query deployment)</para>
-
-          <para>Spares = 2</para>
-
-          <para>Total = 20 nodes</para>
-        </sect3>
-
-        <sect3>
-          <title>3500 GB of Raw Data</title>
-
-          <para>Thor = 12 (slaves) + 5 (management) = 17 Nodes</para>
-
-          <para>Roxie = 6 (agents) + 1 (Dali) = 7 Nodes (This will mean that
-          the environment will be down during query deployment)</para>
-
-          <para>Spares = 2</para>
-
-          <para>Total = 28 nodes</para>
-        </sect3>
-      </sect2>
-    </sect1>
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+                xpointer="Sample_Sizings"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Resources">
@@ -1468,6 +1513,26 @@ lock=/var/lock/HPCCSystems</programlisting>
       url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
       This is the page where you can download Installation packages, virtual
       images, source code, documentation, and tutorials.</para>
+    </sect1>
+
+    <sect1>
+      <title>Additional Resources</title>
+
+      <para>Additional help for Learning ECL is also available. There are
+      online courses.</para>
+
+      <para><ulink
+      url="https://learn.lexisnexis.com/lexisnexis/resources/courses">https://learn.lexisnexis.com/lexisnexis/resources/courses
+      </ulink></para>
+
+      <para>There are training videos online.</para>
+
+      <para><ulink
+      url="https://learn.lexisnexis.com/lexisnexis/resources/courses/HPCC/Summit2014/NewECLWatch50Features/NewECLWatch50Features.html">Legacy
+      ECL Watch and New 5.0 ECL Watch</ulink></para>
+
+      <para>A quick summary of the differences in the interface, goes into
+      particular detail. Helpful for learning how to deploy Roxies.</para>
     </sect1>
   </chapter>
 </book>
