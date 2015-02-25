@@ -48,7 +48,7 @@ if (USE_V8)
     HPCC_ADD_LIBRARY( v8embed SHARED ${SRCS} )
     if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
       message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-    elif(NOT APPLE)
+    elseif(NOT APPLE)
       set_target_properties( v8embed PROPERTIES NO_SONAME 1 )
     endif()
 
