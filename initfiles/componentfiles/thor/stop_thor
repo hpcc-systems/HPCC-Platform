@@ -47,7 +47,7 @@ if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
     sleep 1
 fi
 
-kill_process ${MASTER_PID_NAME} 8
+kill_process ${MASTER_PID_NAME} thormaster_${comp_base} 8
 if [ $? -eq 1 ]; then
     echo "unable to kill ${THORNAME}, in zombie state"
 fi

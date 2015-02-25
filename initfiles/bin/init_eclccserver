@@ -28,7 +28,7 @@ rm -f ${SENTINEL}
 
 
 killed() {
-    kill_process ${PID_NAME} 3 ${SENTINEL}
+    kill_process ${PID_NAME} eclccserver 3 ${SENTINEL}
     exit 255
 }
 

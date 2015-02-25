@@ -23,29 +23,35 @@
 ###<REPLACE>###
 
 function kill_process () {
-    PID=$1
-    TIMEOUT=$2
-    if [[ $# -eq 3 ]]; then
-      SENTINEL=$3
+    local PID=$1
+    local PROCESS=$2
+    local TIMEOUT=$3
+    if [[ $# -eq 4 ]]; then
+      SENTINEL=$4
       [[ -e $SENTINEL ]] && rm -f $SENTINEL
     fi
     if [[ -e $PID ]]; then
-        pidwait_fn $PID $TIMEOUT
+        pidwait_fn $PID $PROCESS $TIMEOUT
     fi
 }
 
 function pidwait_fn () {
-    PID=$1
-    WATCH_PID=$( cat $PID )
-    TIMEOUT=$(($2*1000))
-    COMM=$( ps -p $WATCH_PID -o command= )
+    local PID=$1
+    local WATCH_PID=$( cat $PID )
+    local PROCESS=$2
+    local TIMEOUT=$(($3*1000))
+
+    if ps -p $WATCH_PID -o command= | grep -v "${PROCESS}" &>/dev/null ; then
+      exit 1
+    fi
+
     kill $WATCH_PID
     while [[ -d /proc/$WATCH_PID ]] && [[ $TIMEOUT -gt 0 ]]; do
       sleep 0.2
-      TIMEOUT=$(($TIMEOUT-200))
+      local TIMEOUT=$(($TIMEOUT-200))
     done
-    COMM_CHECK=$( ps -p $WATCH_PID -o command= )
-    if [[ $TIMEOUT -le 0 ]] && [[ $COMM == $COMM_CHECK ]]; then
+
+    if [[ $TIMEOUT -le 0 ]] && ps -p $WATCH_PID -o command= | grep "${PROCESS}" &>/dev/null ; then
       kill -9 $WATCH_PID &>/dev/null
       sleep 1
       kill -0 $WATCH_PID &>/dev/null
@@ -54,6 +60,7 @@ function pidwait_fn () {
         return 1
       fi
     fi
+
     rm -f $PID
     return 0
 }
