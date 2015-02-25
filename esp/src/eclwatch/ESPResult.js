@@ -158,43 +158,47 @@ define([
 
         rowToTable: function (cell, __row, node) {
             var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, node);
-            if (lang.exists("Row", cell)) {
-                cell = cell.Row;
-            }
             if (Object.prototype.toString.call(cell) === '[object Object]') {
-                //  Set of Scalar  ---
-                if (cell.Item && Object.prototype.toString.call(cell.Item) === '[object Array]') {
-                    for (var i = 0; i < cell.Item.length; ++i) {
-                        var tr = domConstruct.create("tr", null, table);
-                        domConstruct.create("td", { innerHTML: cell.Item[i] }, tr);
-                    }
+                //  Set of Scalar or "Row" ---
+                for (var key in cell) {
+                    this.rowToTable(cell[key], __row, node);
                 }
             } else if (Object.prototype.toString.call(cell) === '[object Array]') {
-                //  Child Dataset  ---
                 for (var i = 0; i < cell.length; ++i) {
-                    if (i == 0) {
+                    switch (Object.prototype.toString.call(cell[i])) {
+                    case "[object Boolean]":
+                    case "[object Number]":
+                    case "[object String]":
+                        //  Item in Scalar  ---
+                        var tr = domConstruct.create("tr", null, table);
+                        domConstruct.create("td", { innerHTML: cell[i] }, tr);
+                        break;
+                    default:
+                        //  Child Dataset  ---
+                        if (i === 0) {
+                            var tr = domConstruct.create("tr", null, table);
+                            for (var key in cell[i]) {
+                                var th = domConstruct.create("th", { innerHTML: entities.encode(key) }, tr);
+                            }
+                        }
                         var tr = domConstruct.create("tr", null, table);
                         for (var key in cell[i]) {
-                            var th = domConstruct.create("th", { innerHTML: entities.encode(key) }, tr);
-                        }
-                    }
-                    var tr = domConstruct.create("tr", null, table);
-                    for (var key in cell[i]) {
-                        if (cell[i][key]) {
-                            if (Object.prototype.toString.call(cell[i][key]) === '[object Object]' || Object.prototype.toString.call(cell[i][key]) === '[object Array]') {
-                                var td = domConstruct.create("td", null, tr);
-                                this.rowToTable(cell[i][key], cell[i], td);
-                            } else if (key.indexOf("__html", key.length - "__html".length) !== -1) {
-                                var td = domConstruct.create("td", { innerHTML : cell[i][key] }, tr);
-                            } else if (key.indexOf("__javascript", key.length - "__javascript".length) !== -1) {
-                                var td = domConstruct.create("td", null, tr);
-                                this.injectJavascript(cell[i][key], cell[i], td);
+                            if (cell[i][key]) {
+                                if (Object.prototype.toString.call(cell[i][key]) === '[object Object]' || Object.prototype.toString.call(cell[i][key]) === '[object Array]') {
+                                    var td = domConstruct.create("td", null, tr);
+                                    this.rowToTable(cell[i][key], cell[i], td);
+                                } else if (key.indexOf("__html", key.length - "__html".length) !== -1) {
+                                    var td = domConstruct.create("td", { innerHTML: cell[i][key] }, tr);
+                                } else if (key.indexOf("__javascript", key.length - "__javascript".length) !== -1) {
+                                    var td = domConstruct.create("td", null, tr);
+                                    this.injectJavascript(cell[i][key], cell[i], td);
+                                } else {
+                                    var val = cell[i][key];
+                                    var td = domConstruct.create("td", { innerHTML: Object.prototype.toString.call(val) === '[object String]' ? entities.encode(val) : val }, tr);
+                                }
                             } else {
-                                var val = cell[i][key];
-                                var td = domConstruct.create("td", { innerHTML: Object.prototype.toString.call(val) === '[object String]' ? entities.encode(val) : val }, tr);
+                                var td = domConstruct.create("td", { innerHTML: "" }, tr);
                             }
-                        } else {
-                            var td = domConstruct.create("td", { innerHTML: "" }, tr);
                         }
                     }
                 }
