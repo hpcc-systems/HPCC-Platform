@@ -733,6 +733,7 @@ struct HqlCppOptions
     bool                optimizeMax;
     bool                useResultsForChildSpills;
     bool                alwaysUseGraphResults;
+    bool                noConditionalLinks;
     bool                reportAssertFilenameTail;
 };
 
