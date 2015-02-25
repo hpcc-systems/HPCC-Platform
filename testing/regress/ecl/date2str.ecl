@@ -46,7 +46,7 @@ ASSERT(std.date.datetostring(20140824, '%G') = '2014', CONST);
 ASSERT(std.date.datetostring(20140824, '%g') = '14', CONST);
 
 // Test the %Y-%m-%d (the ISO 8601 date format)
-ASSERT(std.date.datetostring(20140824, '%F') = '2014-08-24', CONST);
+ASSERT(std.date.datetostring(20140824, '%Y-%m-%d') = '2014-08-24', CONST);
 
 // Test the day of the year as a decimal number (range 001 to 366)
 ASSERT(std.date.datetostring(20140824, '%j') = '236', CONST);

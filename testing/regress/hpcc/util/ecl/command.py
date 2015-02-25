@@ -115,6 +115,7 @@ class ECLcmd(Shell):
             raise err
         finally:
             res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
+            logging.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), wuid, state, data)
             if wuid ==  'N/A':
                 logging.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
                 wuid = res['wuid']
@@ -135,10 +136,10 @@ class ECLcmd(Shell):
                     eclfile.diff += '\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
                     test = False
                 elif eclfile.getIgnoreResult():
-                    logging.debug("%3d. Ignore result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEcl())
+                    logging.debug("%3d. Ignore result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
                     test = True
                 elif eclfile.testFail():
-                    logging.debug("%3d. Fail is the expected result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEcl())
+                    logging.debug("%3d. Fail is the expected result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
                     test = True
                 elif eclfile.testNoKey():
                     # keyfile comparaison disabled with //nokey tag
@@ -149,6 +150,10 @@ class ECLcmd(Shell):
                         eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                         eclfile.diff += data
                     test = True
+                elif (res['state'] == 'failed') and ('error' in data):
+                    eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
+                    eclfile.diff += data
+                    test = False
                 else:
                     test = eclfile.testResults()
             report.addResult(eclfile)

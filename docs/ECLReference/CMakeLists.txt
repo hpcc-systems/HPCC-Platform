@@ -18,7 +18,6 @@ GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
 
 SET(XSLTPROC_DEPENDENCIES)
 FOREACH(T ${Current_Targets})
-   MESSAGE("+++ ${T}")
    IF("${T}" MATCHES ".*ECLLanguageReference.*" OR
       "${T}" MATCHES ".*ECLProgrammersGuide.*" OR
       "${T}" MATCHES ".*ECLStandardLibraryReference.*")

@@ -12,7 +12,7 @@
       <primary>KEYDIFF function</primary>
     </indexterm>(</emphasis><emphasis> index1, index2, file
   </emphasis><emphasis role="bold"> [, OVERWRITE<indexterm>
-      <primary>OVERRIGHT</primary>
+      <primary>OVERWRITE</primary>
     </indexterm> ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
   EXPIRE<indexterm>
       <primary>EXPIRE</primary>

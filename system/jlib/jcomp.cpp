@@ -468,6 +468,9 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
         return false;
 
     StringBuffer cmdline;
+    StringBuffer basename;
+    splitFilename(filename, &basename, &basename, &basename, NULL);
+
     cmdline.append(CC_NAME[targetCompiler]);
     if (precompileHeader)
         cmdline.append(CC_OPTION_PRECOMPILEHEADER[targetCompiler]);
@@ -492,11 +495,11 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     {
         if (targetDir.get())
             cmdline.append(" /Fo").append("\"").append(targetDir).append("\"");
-        cmdline.append(" /Fd").append("\"").append(targetDir).append(createDLL ? SharedObjectPrefix : NULL).append(filename).append(".pdb").append("\"");//MORE: prefer create a single pdb file using coreName
+        cmdline.append(" /Fd").append("\"").append(targetDir).append(createDLL ? SharedObjectPrefix : NULL).append(basename).append(".pdb").append("\"");//MORE: prefer create a single pdb file using coreName
     }
     else
     {
-        cmdline.append(" -o ").append("\"").append(targetDir).append(filename).append('.');
+        cmdline.append(" -o ").append("\"").append(targetDir).append(basename).append('.');
         if (precompileHeader)
             cmdline.append(PCH_FILE_EXT[targetCompiler]);
         else
@@ -507,7 +510,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     StringBuffer expanded;
     expandRootDirectory(expanded, cmdline);
     StringBuffer logFile;
-    logFile.append(filename).append(".log.tmp");
+    logFile.append(basename).append(".log.tmp");
     logFiles.append(logFile);
 
     Owned<CCompilerThreadParam> parm;
@@ -658,7 +661,11 @@ bool CppCompiler::doLink()
     cmdline.append(stdLibs);
 
     ForEachItemIn(i0, allSources)
-        cmdline.append(" ").append("\"").append(targetDir).append(allSources.item(i0)).append(".").append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
+    {
+        StringBuffer objFilename;
+        getObjectName(objFilename, allSources.item(i0));
+        cmdline.append(" ").append("\"").append(objFilename).append("\"");
+    }
 
     cmdline.append(linkerOptions);
     cmdline.append(linkerLibraries);
@@ -706,7 +713,7 @@ void CppCompiler::expandRootDirectory(StringBuffer & expanded, StringBuffer & in
 StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filename)
 {
     out.append(targetDir);
-    splitFilename(filename, NULL, NULL, &out, &out);
+    splitFilename(filename, NULL, NULL, &out, NULL);
     return out.append(".").append(OBJECT_FILE_EXT[targetCompiler]);
 }
 

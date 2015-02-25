@@ -1,7 +1,7 @@
-//
+﻿//
 //  Example code - use without restriction.  
 //
-RoxieIP := 'http://192.168.11.130:8002/WsEcl/soap/query/myroxie/soapcall3.1';			//Roxie
+RoxieIP := 'http://127.0.0.1:8002/WsEcl/soap/query/roxie/soapcall3.1';			//Roxie
 svc     := 'soapcall3.1';
 
 InRec := RECORD

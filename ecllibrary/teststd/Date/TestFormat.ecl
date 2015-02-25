@@ -7,7 +7,7 @@ IMPORT Std.Date;
 EXPORT TestFormat := MODULE
 
   SHARED DateFormats := ['%d %b %Y', '%Y %b %d', '%Y%m%d', '%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y'];
-  SHARED TimeFormats := ['%H%M%S', '%T', '%R'];
+  SHARED TimeFormats := ['%H%M%S', '%H:%M:%S', '%H:%M'];
 
   EXPORT TestConstant := [
     ASSERT(Date.FromStringToDate('19700001', '%Y%m%d') = 0, CONST);
@@ -20,11 +20,9 @@ EXPORT TestFormat := MODULE
     ASSERT(Date.FromStringToDate('31 \t jAN 12', '%d %b %Y') = 120131, CONST);
     ASSERT(Date.FromStringToDate('1 \t De   2056', '%d %b %Y') = 0, CONST);
     ASSERT(Date.FromStringToDate('1December1', '%d%b%Y') = 00011201, CONST);
-    ASSERT(Date.FromStringToDate('1970-02-01', '%F') = 19700201, CONST);
+    ASSERT(Date.FromStringToDate('1970-02-01', '%Y-%m-%d') = 19700201, CONST);
 
     ASSERT(Date.FromStringToTime('12:34:56', '%H:%M:%S') = 123456, CONST);
-    ASSERT(Date.FromStringToTime('12:34:56', '%T') = 123456, CONST);
-    ASSERT(Date.FromStringToTime('12:34', '%R') = 123400, CONST);
 
     ASSERT(TRUE)
   ];
@@ -55,19 +53,19 @@ EXPORT TestFormat := MODULE
     ASSERT(Date.MatchTimeString('12:34:56',TimeFormats) = 123456);
     ASSERT(Date.MatchTimeString('12:34',TimeFormats) = 123400);
 
-    ASSERT(Date.DateToString(19990201,'%F') = '1999-02-01');
+    ASSERT(Date.DateToString(19990201,'%Y-%m-%d') = '1999-02-01');
 
-    ASSERT(Date.TimeToString(123456,'%T') = '12:34:56');
+    ASSERT(Date.TimeToString(123456,'%H:%M:%S') = '12:34:56');
 
-    ASSERT(Date.SecondsToString(917872496,'%FT%T') = '1999-02-01T12:34:56');
+    ASSERT(Date.SecondsToString(917872496,'%Y-%m-%dT%H:%M:%S') = '1999-02-01T12:34:56');
 
-    ASSERT(Date.ConvertDateFormat('1/12/2011','%m/%d/%Y','%F') = '2011-01-12');
+    ASSERT(Date.ConvertDateFormat('1/12/2011','%m/%d/%Y','%Y-%m-%d') = '2011-01-12');
 
-    ASSERT(Date.ConvertTimeFormat('123456','%H%M%S','%T') = '12:34:56');
+    ASSERT(Date.ConvertTimeFormat('123456','%H%M%S','%H:%M:%S') = '12:34:56');
 
-    ASSERT(Date.ConvertDateFormatMultiple('1/31/2011',DateFormats,'%F') = '2011-01-31');
+    ASSERT(Date.ConvertDateFormatMultiple('1/31/2011',DateFormats,'%Y-%m-%d') = '2011-01-31');
 
-    ASSERT(Date.ConvertTimeFormatMultiple('123456',TimeFormats,'%T') = '12:34:56');
+    ASSERT(Date.ConvertTimeFormatMultiple('123456',TimeFormats,'%H:%M:%S') = '12:34:56');
 
     ASSERT(TRUE)
   ];

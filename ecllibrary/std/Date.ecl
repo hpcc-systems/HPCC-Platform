@@ -613,8 +613,6 @@ EXPORT Seconds_t SecondsFromDateTimeRec(DateTime_rec datetime, BOOLEAN is_local_
     %y          year within century (00-99)
     %Y          Full year (yyyy)
     %j          Julian day (1-366)
-    %D          Same as %m/%d/%y
-    %F          Same as %Y-%m-%d
 
 Common date formats
     American    '%m/%d/%Y'  mm/dd/yyyy
@@ -656,8 +654,6 @@ EXPORT Date_t FromString(STRING date_text, VARSTRING format) :=
     %M          Minute (two digits)
     %S          Second (two digits)
     %t          Whitespace
-    %R          Same as %H:%M
-    %T          Same as %H:%M:%S
  */
 
 EXPORT Time_t FromStringToTime(STRING time_text, VARSTRING format) :=
@@ -701,12 +697,12 @@ EXPORT Time_t MatchTimeString(STRING time_text, SET OF VARSTRING formats) :=
  * @param format        The format template to use for the conversion;
  *                      see strftime() for appropriate values.  The maximum
  *                      length of the resulting string is 255 characters.
- *                      Optional; defaults to '%F' which is YYYY-MM-DD.
+ *                      Optional; defaults to '%Y-%m-%d' which is YYYY-MM-DD.
  * @return              Blank if date cannot be formatted, or the date in the
  *                      requested format.
  */
 
-EXPORT STRING DateToString(Date_t date, VARSTRING format = '%F') :=
+EXPORT STRING DateToString(Date_t date, VARSTRING format = '%Y-%m-%d') :=
     TimeLib.DateToString(date, format);
 
 
@@ -717,12 +713,12 @@ EXPORT STRING DateToString(Date_t date, VARSTRING format = '%F') :=
  * @param format        The format template to use for the conversion;
  *                      see strftime() for appropriate values.  The maximum
  *                      length of the resulting string is 255 characters.
- *                      Optional; defaults to '%T' which is HH:MM:SS.
+ *                      Optional; defaults to '%H:%M:%S' which is HH:MM:SS.
  * @return              Blank if the time cannot be formatted, or the time
  *                      in the requested format.
  */
 
-EXPORT STRING TimeToString(Time_t time, VARSTRING format = '%T') :=
+EXPORT STRING TimeToString(Time_t time, VARSTRING format = '%H:%M:%S') :=
     TimeLib.TimeToString(time, format);
 
 
@@ -733,11 +729,11 @@ EXPORT STRING TimeToString(Time_t time, VARSTRING format = '%T') :=
  * @param format        The format template to use for the conversion; see
  *                      strftime() for appropriate values.  The maximum length
  *                      of the resulting string is 255 characters.
- *                      Optional; defaults to '%FT%T' which is YYYY-MM-DDTHH:MM:SS.
+ *                      Optional; defaults to '%Y-%m-%dT%H:%M:%S' which is YYYY-MM-DDTHH:MM:SS.
  * @return              The converted seconds as a string.
  */
 
-EXPORT STRING SecondsToString(Seconds_t seconds, VARSTRING format = '%FT%T') :=
+EXPORT STRING SecondsToString(Seconds_t seconds, VARSTRING format = '%Y-%m-%dT%H:%M:%S') :=
     TimeLib.SecondsToString(seconds, format);
 
 

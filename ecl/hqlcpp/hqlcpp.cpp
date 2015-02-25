@@ -1750,6 +1750,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeMax,"optimizeMax",false),
         DebugOption(options.useResultsForChildSpills,"useResultsForChildSpills",false),
         DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
+        DebugOption(options.noConditionalLinks,"noConditionalLinks",false),
         DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
         DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
         DebugOption(options.keyedJoinPreservesOrder,"keyedJoinPreservesOrder",true),
