@@ -978,7 +978,7 @@
 
       <para>The default envrionment.conf:</para>
 
-      <para><programlisting>## HPCC Systems<superscript>®</superscript> default environment configuration file 
+      <para><programlisting>## HPCC Systems default environment configuration file 
 
 [DEFAULT SETTINGS]
 configs=/etc/HPCCSystems

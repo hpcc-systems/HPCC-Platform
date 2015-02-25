@@ -1345,7 +1345,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <listitem>
             <para>Open the ECL IDE (Start <emphasis
             role="bold">&gt;&gt;</emphasis> All Programs <emphasis
-            role="bold">&gt;&gt;</emphasis> HPCC Systems<superscript>®</superscript> <emphasis
+            role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
             role="bold"> &gt;&gt;</emphasis> ECL IDE ) and login to your
             HPCC.</para>
           </listitem>
@@ -2042,7 +2042,7 @@ OUTPUT(ValidWords)
     role="bold">Start</emphasis> menu :</para>
 
     <para>Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
-    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems<superscript>®</superscript> <emphasis
+    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
     role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
     role="bold">&gt;&gt;</emphasis> Docs</para>
 
