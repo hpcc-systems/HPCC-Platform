@@ -2161,12 +2161,18 @@ FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile(ICodeContext * ctx
     AuditMessage(ctx,"DeleteExternalFile",path);
 }
 
-FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext * ctx,const char *location,const char *path)
+FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext * ctx,const char *location,const char *_path)
 {
     SocketEndpoint ep(location);
     if (ep.isNull())
-        throw MakeStringException(-1,"fsCreateExternalDirectory: Cannot resolve location %s",location);
+        throw MakeStringException(-1, "fsCreateExternalDirectory: Cannot resolve location %s",location);
     CDfsLogicalFileName lfn;
+    StringBuffer path(_path);
+    if (0 == path.length())
+        throw MakeStringException(-1, "fsCreateExternalDirectory: empty directory");
+    // remove trailing path separator if present to make it look like a regular LFN after lfn.setExternal
+    if (isPathSepChar(path.charAt(path.length()-1)))
+        path.remove(path.length()-1, 1);
     lfn.setExternal(location,path);
     checkExternalFileRights(ctx,lfn,false,true);
     RemoteFilename rfn;
