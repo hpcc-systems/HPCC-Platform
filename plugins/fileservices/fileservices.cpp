@@ -1019,6 +1019,28 @@ ReplaceSuperFile(const varstring lsuperfn,const varstring lfn,const varstring by
 FinishSuperFileTransaction(boolean rollback=false);
 */
 
+class CImplicitSuperTransaction
+{
+    IDistributedFileTransaction *transaction;
+public:
+    CImplicitSuperTransaction(IDistributedFileTransaction *_transaction)
+    {
+        if (!_transaction->active()) // then created implicitly
+        {
+            transaction = _transaction;
+            transaction->start();
+        }
+        else
+            transaction = NULL;
+    }
+    ~CImplicitSuperTransaction()
+    {
+        if (transaction)
+            transaction->commit();
+    }
+};
+
+
 static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDistributedSuperFile> &file, bool throwerr, StringBuffer &lsfn, bool allowforeign, bool cacheFiles=false)
 {
     lsfn.clear();
@@ -1111,6 +1133,7 @@ FILESERVICES_API unsigned FILESERVICES_CALL fsGetSuperFileSubCount(ICodeContext 
     Owned<ISimpleSuperFileEnquiry> enq = getSimpleSuperFileEnquiry(ctx, lsuperfn);
     if (enq)
         return enq->numSubFiles();
+    CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
     lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true);
@@ -1128,6 +1151,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetSuperFileSubName(ICodeContext *c
             return CTXSTRDUP(parentCtx, "");
         return ret.detach();
     }
+    CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
     lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true);
@@ -1146,6 +1170,7 @@ FILESERVICES_API unsigned FILESERVICES_CALL fsFindSuperFileSubName(ICodeContext 
         unsigned n = enq->findSubName(lfn.str());
         return (n==NotFound)?0:n+1;
     }
+    CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
     lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true);
@@ -1178,27 +1203,6 @@ FILESERVICES_API void FILESERVICES_CALL fsAddSuperFile(IGlobalCodeContext *gctx,
     fslAddSuperFile(gctx->queryCodeContext(),lsuperfn,_lfn,atpos,addcontents,strict);
 }
 
-
-class CImplicitSuperTransaction
-{
-    IDistributedFileTransaction *transaction;
-public:
-    CImplicitSuperTransaction(IDistributedFileTransaction *_transaction)
-    {
-        if (!_transaction->active()) // then created implicitly
-        {
-            transaction = _transaction;
-            transaction->start();
-        }
-        else
-            transaction = NULL;
-    }
-    ~CImplicitSuperTransaction()
-    {
-        if (transaction)
-            transaction->commit();
-    }
-};
 
 FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const char *lsuperfn,const char *_lfn,unsigned atpos,bool addcontents, bool strict)
 {
@@ -1697,6 +1701,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSuperFileContents(ICodeContext *ctx, s
         }
     }
     else {
+        CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
         Owned<IDistributedSuperFile> file;
         StringBuffer lsfn;
         lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true);
