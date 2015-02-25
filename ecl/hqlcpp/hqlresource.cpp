@@ -1944,7 +1944,7 @@ EclResourcer::EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, Clust
     options.minimiseSpills = _translatorOptions.minimiseSpills;
     spillMultiCondition = _translatorOptions.spillMultiCondition;
     spotThroughAggregate = _translatorOptions.spotThroughAggregate && (targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster);
-    options.noConditionalLinks = (targetClusterType != HThorCluster);
+    options.noConditionalLinks = (targetClusterType == RoxieCluster) || ((targetClusterType != HThorCluster) && _translatorOptions.noConditionalLinks);
     options.hoistResourced = _translatorOptions.hoistResourced;
     options.alwaysUseGraphResults = _translatorOptions.alwaysUseGraphResults;
     options.useGraphResults = false;        // modified by later call
