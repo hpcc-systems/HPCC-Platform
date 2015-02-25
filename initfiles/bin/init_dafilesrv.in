@@ -41,7 +41,7 @@ export SENTINEL="dafilesrv.sentinel"
 rm -f ${SENTINEL}
 
 killed(){
-    kill_process ${PID_NAME} 3 ${SENTINEL}
+    kill_process ${PID_NAME} dafilesrv 3 ${SENTINEL}
     exit 255
 }
 
