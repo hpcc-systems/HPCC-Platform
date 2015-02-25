@@ -767,7 +767,8 @@
         packages will fail to install if their dependencies are missing from
         the target system.</para>
 
-        <para>Packages are available from the HPCC Systems<superscript>®</superscript> website: <ulink
+        <para>Packages are available from the HPCC
+        Systems<superscript>®</superscript> website: <ulink
         url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink></para>
 
         <para>To install the package, follow the appropriate installation
@@ -1278,8 +1279,8 @@
 
         <para>This section details reconfiguring a system to use multiple
         nodes. Before you start this section, you must have already downloaded
-        the correct packages for your distro from the HPCC Systems<superscript>®</superscript> website:
-        <ulink
+        the correct packages for your distro from the HPCC
+        Systems<superscript>®</superscript> website: <ulink
         url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.</para>
 
         <orderedlist>
@@ -1850,7 +1851,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <listitem>
             <para>Open the ECL IDE (Start <emphasis
             role="bold">&gt;&gt;</emphasis> All Programs <emphasis
-            role="bold">&gt;&gt;</emphasis> HPCC Systems<superscript>®</superscript> <emphasis
+            role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
             role="bold"> &gt;&gt;</emphasis> ECL IDE ) and login to your
             HPCC.</para>
           </listitem>
@@ -2547,7 +2548,7 @@ OUTPUT(ValidWords)
     role="bold">Start</emphasis> menu :</para>
 
     <para>Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
-    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems<superscript>®</superscript> <emphasis
+    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
     role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
     role="bold">&gt;&gt;</emphasis> Docs</para>
 
@@ -2573,8 +2574,8 @@ OUTPUT(ValidWords)
         </listitem>
       </itemizedlist></para>
 
-    <para>The HPCC Systems<superscript>®</superscript> Portal is also a valuable resource for more
-    information including:</para>
+    <para>The HPCC Systems<superscript>®</superscript> Portal is also a
+    valuable resource for more information including:</para>
 
     <itemizedlist spacing="compact">
       <listitem>
@@ -3372,8 +3373,9 @@ sudo /sbin/service hpcc-init -c esp start
           </listitem>
 
           <listitem>
-            <para>Start the HPCC Systems<superscript>®</superscript> platform (restart if it is already
-            running) in order to read the new configuration.</para>
+            <para>Start the HPCC Systems<superscript>®</superscript> platform
+            (restart if it is already running) in order to read the new
+            configuration.</para>
 
             <para>For example :</para>
 
@@ -3394,9 +3396,9 @@ sudo /sbin/service hpcc-init -c esp start
 
             <para>Test the Java integration.</para>
 
-            <para>The HPCC Systems<superscript>®</superscript> platform comes with a Java example class.
-            You can execute some Java code either in your ECL IDE or the ECL
-            Playground.</para>
+            <para>The HPCC Systems<superscript>®</superscript> platform comes
+            with a Java example class. You can execute some Java code either
+            in your ECL IDE or the ECL Playground.</para>
 
             <para>For example:</para>
 
@@ -3425,8 +3427,8 @@ add1(10);
       <sect2 id="Add_On_Javascript" role="brk">
         <title>JavaScript</title>
 
-        <para>To enable JavaScript support within the HPCC Systems<superscript>®</superscript>
-        Platform:</para>
+        <para>To enable JavaScript support within the HPCC
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
@@ -3490,8 +3492,8 @@ add1(10);
       <sect2 id="Add_Python_support" role="brk">
         <title>Python</title>
 
-        <para>To enable Python support within the HPCC Systems<superscript>®</superscript>
-        Platform:</para>
+        <para>To enable Python support within the HPCC
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
@@ -3548,7 +3550,8 @@ split_words('Once upon a time');
       <sect2 id="R" role="brk">
         <title>R</title>
 
-        <para>To enable R support within The HPCC Systems<superscript>®</superscript> Platform:</para>
+        <para>To enable R support within The HPCC
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>

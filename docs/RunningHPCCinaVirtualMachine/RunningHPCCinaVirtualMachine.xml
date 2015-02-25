@@ -29,8 +29,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para> </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -390,7 +390,7 @@
           operating system for better performance and usability. If you would
           like to use your mouse pointer, and/or other desktop tools with your
           virtual machine, start the X windows display after you log into to
-          your virtual machine. </para>
+          your virtual machine.</para>
 
           <para>Log in with the credentials provided. (user: hpccdemo,
           password: hpccdemo) At the command prompt enter: <emphasis
@@ -1578,10 +1578,11 @@ OUTPUT(ValidWords)
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Right-click on the <emphasis role="bold">MyFiles</emphasis>
-                folder in the Repository<emphasis role="bold"></emphasis>
-                window, and select <emphasis role="bold">Insert
-                Folder</emphasis> from the pop-up menu.</para>
+                <para>Right-click on the <emphasis
+                role="bold">MyFiles</emphasis> folder in the
+                Repository<emphasis role="bold"></emphasis> window, and select
+                <emphasis role="bold">Insert Folder</emphasis> from the pop-up
+                menu.</para>
 
                 <para><figure>
                     <title>Insert Folder</title>
@@ -2182,8 +2183,8 @@ OUTPUT(ValidWords)
 
           <answer>
             <para>No. If you want to evaluate a multi-node system, you should
-            use the Community version available from the HPCC Systems<superscript>®</superscript> Portal
-            at <ulink
+            use the Community version available from the HPCC
+            Systems<superscript>®</superscript> Portal at <ulink
             url="http://hpccsystems.com">http://hpccsystems.com</ulink>.</para>
           </answer>
         </qandaentry>

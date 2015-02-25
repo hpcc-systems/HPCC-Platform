@@ -38,7 +38,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>Â®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -65,7 +65,8 @@
       <para>This document briefly describes new ECL Watch functionality which
       will be available in HPCC 4.x.</para>
 
-      <para><figure>
+      <para>
+        <figure>
           <title>Tech Preview Link</title>
 
           <mediaobject>
@@ -73,7 +74,8 @@
               <imagedata fileref="images/ECTP001.jpg" vendor="eclwatchSS" />
             </imageobject>
           </mediaobject>
-        </figure></para>
+        </figure>
+      </para>
 
       <para>On the ECL Watch page, there are links in the Navigator panel
       under the <emphasis role="bold">Tech Preview</emphasis> heading. The

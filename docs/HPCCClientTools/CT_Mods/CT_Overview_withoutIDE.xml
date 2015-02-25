@@ -102,7 +102,8 @@
 
       <orderedlist>
         <listitem>
-          <para>From the HPCC Systems<superscript>®</superscript> download page, <ulink
+          <para>From the HPCC Systems<superscript>Â®</superscript> download
+          page, <ulink
           url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
 
           <para>Download the appropriate Client Tools for your Operating
@@ -158,8 +159,8 @@
           <para>Download the appropriate Client Tools for your Operating
           System and version.</para>
 
-          <para>Client tools can be found at the HPCC Systems<superscript>®</superscript> download
-          page:</para>
+          <para>Client tools can be found at the HPCC
+          Systems<superscript>Â®</superscript> download page:</para>
 
           <para><ulink
           url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
@@ -200,7 +201,7 @@
       the one you want to use last. Copy to a different folder or Rename the
       client tools found in /opt/HPCCSystems after installing the older
       version and before installing the newer version. This is to prevent the
-      newer client tools from overwriting the older one. </para>
+      newer client tools from overwriting the older one.</para>
 
       <para>To use the Client tools for the various version number(s)
       explicitly call the client tool you wish to use, or set up an alias to
@@ -222,8 +223,8 @@
 
       <para>Client tools for Windows installs in a directory such as:
       C:\Program Files (x86)\HPCCSystems\4.2.0\clientools where the number
-      (4.2.0 for example) corresponds to the version of the client tools.
-      </para>
+      (4.2.0 for example) corresponds to the version of the client
+      tools.</para>
 
       <para>The Windows installer will prompt you to delete the previous
       version during installation. If you want to keep both, decline the offer
