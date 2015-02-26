@@ -1367,6 +1367,8 @@ bool CTpWrapper::checkGroupReplicateOutputs(const char* groupName, const char* k
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> environment = factory->openEnvironment();
+    if (!environment)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
     Owned<IPropertyTree> root = &environment->getPTree();
     if (!root)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
