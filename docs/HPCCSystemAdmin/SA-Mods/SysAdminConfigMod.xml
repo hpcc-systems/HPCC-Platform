@@ -370,4 +370,279 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
     </sect1>
   </chapter>
+
+  <chapter id="Advance-SysAdmin-Topic-Chapter">
+    <title>Advanced Systems Administrator Topics</title>
+
+    <para>This chapter contains information about certain advanced HPCC
+    Systems<superscript>®</superscript> Administrators topics.</para>
+
+    <sect1 id="Admin-System-Topic">
+      <title>Admin System Topics</title>
+
+      <para>This is a System Administrative topic designed to provide some
+      insight as to an aspect of System Administration for you HPCC
+      System.</para>
+    </sect1>
+
+    <sect1 id="System_sizings">
+      <title>System Sizings</title>
+
+      <para>This section provides some guidance in determining the sizing
+      requirements for an initial installation of HPCC. The following are some
+      suggested configuration guides that can be helpful when planning your
+      system.</para>
+
+      <sect2 role="nobrk">
+        <title>Minimum Suggested Hardware</title>
+
+        <para>HPCC was designed to run on common commodity hardware, and could
+        function on even lesser hardware. The following list is the suggested
+        minimum hardware specifications. At the very minimum you should
+        consider the following hardware components for your HPCC system. These
+        guidelines were put together based on real world usage of mission
+        critical (uptime) with high volume data. <informaltable border="all"
+            colsep="1" rowsep="1">
+            <tgroup cols="3">
+              <colspec colwidth="94.50pt" />
+
+              <colspec colwidth="84.50pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Thor slave</emphasis></entry>
+
+                  <entry>Processor</entry>
+
+                  <entry>4 x 64-bit Intel Processor per</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>RAM</entry>
+
+                  <entry>8GB per daemon</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Storage</entry>
+
+                  <entry>RAID - 200MB/sec Sequential Read/Write per
+                  node</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Network</entry>
+
+                  <entry>1 Gb/sec bandwidth</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Roxie</emphasis></entry>
+
+                  <entry>Processor</entry>
+
+                  <entry>4 x 64-bit Intel Processor</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>RAM</entry>
+
+                  <entry>12GB per Roxie</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Storage</entry>
+
+                  <entry>400 IOPS &amp; 2 Volumes per (RAID optional)</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Network</entry>
+
+                  <entry>1 Gb/sec bandwidth</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Dali</emphasis></entry>
+
+                  <entry>Processor</entry>
+
+                  <entry>4 x 64-bit Intel Processor each</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>RAM</entry>
+
+                  <entry>24GB per Dali</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Storage</entry>
+
+                  <entry>RAID 1, 5, 6, 10 Volume 200GB</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Other</emphasis></entry>
+
+                  <entry>Processor</entry>
+
+                  <entry>4 x 64-bit Intel Processor</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>RAM</entry>
+
+                  <entry>12GB</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Storage</entry>
+
+                  <entry>RAID 1, 5, 6, 10 Volume 200GB</entry>
+                </row>
+
+                <row>
+                  <entry></entry>
+
+                  <entry>Network</entry>
+
+                  <entry>1 Gb/sec bandwidth</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Sample_Sizings">
+      <title>Sample Sizings</title>
+
+      <para>This section illustrates sample system sizings for various work
+      environments. Unlike system requirements, the following samples are
+      suggestions for setting up you system for various operating
+      conditions.</para>
+
+      <sect2 id="Sample-Size-HighDataVolume">
+        <title>Sample Sizing for High Data volume (Typical)</title>
+
+        <para>The most typical scenario for HPCC is utilizing it with a high
+        volume of data. This suggested sample sizing would be appropriate for
+        a site with large volumes of data. A good policy is to set the Thor
+        size to 4 times the source data on your HPCC. Typically, Roxie would
+        be about ¼ the size of Thor. This is because the data is compressed
+        and the system does not hold any transient data in Roxie.</para>
+
+        <sect3>
+          <title>High Data Thor sizing considerations</title>
+
+          <para>Each Thor node can hold about 2.5 TB of data (MAX), so plan
+          for the number of Thor nodes accordingly for your data.</para>
+
+          <para>If possible, SAS drives for both Thor and Roxie as they almost
+          equal to SATA drives now. If not for both, get SAS drives at least
+          for your Roxie cluster.</para>
+
+          <para>Thor replicates data and is typically configured for two
+          copies.</para>
+        </sect3>
+
+        <sect3>
+          <title>High Data Roxie sizing considerations</title>
+
+          <para>Roxie keeps most of its data in memory, so you should allocate
+          plenty of memory for Roxie. Calculate the approximate size of your
+          data, and allocate appropriately. You should either increase the
+          number of nodes, or increase the amount of memory.</para>
+
+          <para>A good practice is to allocate a Dali for every Roxie
+          cluster.</para>
+
+          <para>Roxie should have a mirror. This is useful, when you need to
+          update data. You update the mirror then make that primary and bring
+          the other one down. This is a good practice but not really a
+          necessity except in the case of high availability.</para>
+        </sect3>
+      </sect2>
+
+      <sect2>
+        <title>Sample Sizing for Heavy Processing on Low Data Volume</title>
+
+        <para>The following section provides some sample sizing for heavy
+        processing with approximately the amount of data indicated.</para>
+
+        <sect3>
+          <title>750 GB of Raw Data</title>
+
+          <para>Thor = 3 (slaves) + 2 (management) = 5 Nodes</para>
+
+          <para>Roxie = 3 (agents) + 1 (Dali) = 4 Nodes (This will mean that
+          the environment will be down during query deployment)</para>
+
+          <para>Spares = 2</para>
+
+          <para>Total = 13 nodes</para>
+        </sect3>
+
+        <sect3>
+          <title>1250 GB of Raw Data</title>
+
+          <para>Thor = 6 (slaves) + 2 (management) = 8 Nodes</para>
+
+          <para>Roxie = 4 (agents) + 1 (Dali) = 5 Nodes (This will mean that
+          the environment will be down during query deployment)</para>
+
+          <para>Spares = 2</para>
+
+          <para>Total = 17 nodes</para>
+        </sect3>
+
+        <sect3>
+          <title>2000 GB of Raw Data</title>
+
+          <para>Thor = 8 (slaves) + 3 (management) = 11 Nodes</para>
+
+          <para>Roxie = 4 (agents) + 1 (Dali) = 5 Nodes (This will mean that
+          the environment will be down during query deployment)</para>
+
+          <para>Spares = 2</para>
+
+          <para>Total = 20 nodes</para>
+        </sect3>
+
+        <sect3>
+          <title>3500 GB of Raw Data</title>
+
+          <para>Thor = 12 (slaves) + 5 (management) = 17 Nodes</para>
+
+          <para>Roxie = 6 (agents) + 1 (Dali) = 7 Nodes (This will mean that
+          the environment will be down during query deployment)</para>
+
+          <para>Spares = 2</para>
+
+          <para>Total = 28 nodes</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
 </book>
