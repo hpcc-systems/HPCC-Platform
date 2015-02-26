@@ -23,16 +23,16 @@
                     </li>
                     <li>
                         <label class="Prompt" for="${id}OldPassword">${i18n.OldPassword}:</label>
-                        <input name="oldPassword" type="password" data-dojo-type="dijit.form.ValidationTextBox" />
+                        <input name="oldPassword" type="password" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
                     </li>
                     <div name="newPassword" data-dojo-props="required: false" data-dojo-type="dojox.form.PasswordValidator">
                         <li>
                             <label class="Prompt" for="${id}NewPassword">${i18n.NewPassword}:</label>
-                            <input name="newPassword" type="password" pwtype="new" data-dojo-props="invalidMessage:'${i18n.PasswordsDoNotMatch}', placeHolder:'${i18n.MustContainUppercaseAndSymbol}'" data-dojo-type="dijit.form.ValidationTextBox" />
+                            <input name="newPassword" type="password" required="true" pwtype="new" data-dojo-props="invalidMessage:'${i18n.PasswordsDoNotMatch}', placeHolder:'${i18n.MustContainUppercaseAndSymbol}'" data-dojo-type="dijit.form.ValidationTextBox" />
                         </li>
                         <li>
                             <label class="Prompt" for="${id}VerifyPassword">${i18n.ConfirmPassword}:</label>
-                            <input name="newPasswordRetype" type="password" pwtype="verify" data-dojo-props="invalidMessage:'${i18n.PasswordsDoNotMatch}', placeHolder:'${i18n.MustContainUppercaseAndSymbol}'" data-dojo-type="dijit.form.ValidationTextBox" />
+                            <input name="newPasswordRetype" type="password" required="true" pwtype="verify" data-dojo-props="invalidMessage:'${i18n.PasswordsDoNotMatch}', placeHolder:'${i18n.MustContainUppercaseAndSymbol}'" data-dojo-type="dijit.form.ValidationTextBox" />
                         </li>
                     </div>
                     <li>
