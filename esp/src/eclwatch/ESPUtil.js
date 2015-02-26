@@ -24,6 +24,8 @@ define([
     "dojo/query",
     "dojo/json",
     "dojo/aspect",
+    "dojo/Evented",
+    "dojo/on",
 
     "dijit/registry",
     "dijit/Tooltip",
@@ -36,7 +38,7 @@ define([
     "dgrid/extensions/ColumnHider",
     "dgrid/extensions/DijitRegistry",
     "dgrid/extensions/Pagination"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, Stateful, query, json, aspect,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, Stateful, query, json, aspect, Evented, on,
     registry, Tooltip,
     Grid, OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, Pagination) {
 
@@ -238,9 +240,48 @@ define([
         }
     });
 
+    var IdleWatcher = dojo.declare([Evented], {
+        constructor: function(idleDuration) {
+            idleDuration = idleDuration || 30 * 1000;
+            this._idleDuration = idleDuration;
+        },
+
+        start: function(){
+            this.stop();
+            var context = this;
+            this._keydownHandle = on(document, "keydown", function (item, index, array) {
+                context.stop();
+                context.start();
+            });
+            this._mousedownHandle = on(document, "mousedown", function (item, index, array) {
+                context.stop();
+                context.start();
+            });
+            this._intervalHandle = setInterval(function () {
+                context.emit("idle", {});
+            }, this._idleDuration);
+        },
+
+        stop: function(){
+            if(this._intervalHandle){
+                clearInterval(this._intervalHandle);
+                delete this._intervalHandle;
+            }
+            if (this._mousedownHandle) {
+                this._mousedownHandle.remove();
+                delete this._mousedownHandle;
+            }
+            if (this._keydownHandle) {
+                this._keydownHandle.remove();
+                delete this._keydownHandle;
+            }
+        }
+    });
+
     return {
         Singleton: SingletonData,
         Monitor: Monitor,
+        IdleWatcher: IdleWatcher,
 
         FormHelper: declare(null, {
             getISOString: function (dateField, timeField) {

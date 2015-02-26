@@ -84,6 +84,18 @@ define([
         startup: function (args) {
             this.inherited(arguments);
             this.initContextMenu();
+            this._idleWatcher = new ESPUtil.IdleWatcher();
+            this._idleWatcher.start();
+            var context = this;
+            this._idleWatcherHandle = this._idleWatcher.on("idle", function () {
+                context._onRefresh();
+            });
+        },
+
+        destroy: function (args) {
+            this._idleWatcherHandle.remove();
+            this._idleWatcher.stop();
+            this.inherited(arguments);
         },
 
         getTitle: function () {
