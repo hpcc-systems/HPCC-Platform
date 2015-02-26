@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE part PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<set >
+<set>
   <title>ECL Reference</title>
 
   <setinfo>
-    <corpauthor>HPCC Systems</corpauthor>
+    <corpauthor>HPCC Systems<superscript>®</superscript></corpauthor>
   </setinfo>
 
-  <xi:include href="../ECLLanguageReference/ECLR-includer.xml" xpointer="element(/1)"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
-              
-  <xi:include href="../ECLStandardLibraryReference/SLR-includer.xml" xpointer="element(/1)"
+  <xi:include href="../ECLLanguageReference/ECLR-includer.xml"
+              xpointer="element(/1)"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <xi:include href="../ECLProgrammersGuide/PrGd-Includer.xml" xpointer="element(/1)"
+  <xi:include href="../ECLStandardLibraryReference/SLR-includer.xml"
+              xpointer="element(/1)"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-  
+
+  <xi:include href="../ECLProgrammersGuide/PrGd-Includer.xml"
+              xpointer="element(/1)"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 </set>

@@ -40,7 +40,7 @@
     <xi:include href="../../common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="../../common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -304,11 +304,11 @@ depending on where they wind up.-->
           Files tab. To view more detail about a logical file listed here,
           check the box next to the file, and then press the <emphasis
           role="bold">Open</emphasis> action button. You can also just double
-          click on the logical file you want to view. </para>
+          click on the logical file you want to view.</para>
 
           <para>Once open, you can select any of the tabs to see Summary,
-          Contents, ECL, DEF, XML, File Parts, Queries, or the Workunit.
-          </para>
+          Contents, ECL, DEF, XML, File Parts, Queries, or the
+          Workunit.</para>
 
           <figure>
             <title>Queries:Logical Files:Contents Tab</title>

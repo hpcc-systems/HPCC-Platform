@@ -5,9 +5,10 @@
   <title>Introduction</title>
 
   <para>The HDFS to HPCC Connector provides a means to import data from
-  Hadoop's HDFS into an HPCC Systems Thor platform. It also supports exporting
-  the data back to HDFS or exporting and merging it. This allows you to use an
-  HPCC cluster in conjunction with your Hadoop-based cluster.</para>
+  Hadoop's HDFS into an HPCC Systems<superscript>®</superscript> Thor
+  platform. It also supports exporting the data back to HDFS or exporting and
+  merging it. This allows you to use an HPCC cluster in conjunction with your
+  Hadoop-based cluster.</para>
 
   <para>The H2H Connector is an add-on to an HPCC Cluster and consists of
   server-side components and ECL Macros that invoke them.</para>
