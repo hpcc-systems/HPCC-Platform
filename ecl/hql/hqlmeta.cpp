@@ -3391,3 +3391,59 @@ extern HQL_API bool hasKnownSortGroupDistribution(IHqlExpression * expr, bool is
 {
     return queryMetaProperty(expr)->meta.hasKnownSortGroupDistribution(isLocal);
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//Mark all selectors that are fully included in the sort criteria. Err on the side of caution.
+void markValidSelectors(IHqlExpression * expr, IHqlExpression * dsSelector)
+{
+    switch (expr->getOperator())
+    {
+    case no_sortlist:
+        break;
+    case no_cast:
+    case no_implicitcast:
+        if (!castPreservesValue(expr))
+            return;
+        break;
+    case no_typetransfer:
+        //Special case the transfer to a variable length data type that is done for a dataset in an index build
+        //(it will always preserve the value of any argument)
+        {
+            ITypeInfo * type = expr->queryType();
+            if ((type->getTypeCode() != type_data) || !isUnknownSize(type))
+                return;
+            break;
+        }
+    case no_select:
+        {
+            bool isNew = false;
+            IHqlExpression * root = querySelectorDataset(expr, isNew);
+            if (!isNew && (root == dsSelector))
+                expr->setTransformExtra(expr);
+            return;
+        }
+    default:
+        return;
+    }
+
+    ForEachChild(i, expr)
+        markValidSelectors(expr->queryChild(i), dsSelector);
+}
+
+extern HQL_API bool allFieldsAreSorted(IHqlExpression * record, IHqlExpression * sortOrder, IHqlExpression * dsSelector)
+{
+    TransformMutexBlock block;
+
+    //First walk the sort order expression, tagging valid sorted selectors
+    markValidSelectors(sortOrder, dsSelector);
+
+    //Now expand all the selectors from the record, and check that they have been tagged
+    RecordSelectIterator iter(record, dsSelector);
+    ForEach(iter)
+    {
+        if (!iter.query()->queryTransformExtra())
+            return false;
+    }
+    return true;
+}
