@@ -5357,7 +5357,11 @@ IHqlExpression * EclResourcer::createResourced(IHqlExpression * expr, ResourceGr
         {
             if (!source->isAction())
             {
-                source = createDatasetF(no_split, source, createAttribute(balancedAtom), createUniqueId(), NULL);
+                if (source->isDataset())
+                    source = createDatasetF(no_split, source, createAttribute(balancedAtom), createUniqueId(), NULL);
+                else
+                    source = createRowF(no_split, source, createAttribute(balancedAtom), createUniqueId(), NULL);
+
                 ownerGraph->addSharedInput(expr->queryBody(), source);
             }
         }
