@@ -468,9 +468,6 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
         return false;
 
     StringBuffer cmdline;
-    StringBuffer basename;
-    splitFilename(filename, &basename, &basename, &basename, NULL);
-
     cmdline.append(CC_NAME[targetCompiler]);
     if (precompileHeader)
         cmdline.append(CC_OPTION_PRECOMPILEHEADER[targetCompiler]);
@@ -495,22 +492,25 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     {
         if (targetDir.get())
             cmdline.append(" /Fo").append("\"").append(targetDir).append("\"");
-        cmdline.append(" /Fd").append("\"").append(targetDir).append(createDLL ? SharedObjectPrefix : NULL).append(basename).append(".pdb").append("\"");//MORE: prefer create a single pdb file using coreName
+
+        StringBuffer basename;
+        splitFilename(filename, &basename, &basename, &basename, NULL);
+        cmdline.append(" /Fd").append("\"").append(targetDir).append(createDLL ? SharedObjectPrefix : NULL).append(filename).append(".pdb").append("\"");//MORE: prefer create a single pdb file using coreName
     }
     else
     {
-        cmdline.append(" -o ").append("\"").append(targetDir).append(basename).append('.');
+        cmdline.append(" -o ").append("\"");
         if (precompileHeader)
-            cmdline.append(PCH_FILE_EXT[targetCompiler]);
+            cmdline.append(targetDir).append(filename).append('.').append(PCH_FILE_EXT[targetCompiler]);
         else
-            cmdline.append(OBJECT_FILE_EXT[targetCompiler]);
+            getObjectName(cmdline, filename);
         cmdline.append("\"");
     }
     
     StringBuffer expanded;
     expandRootDirectory(expanded, cmdline);
     StringBuffer logFile;
-    logFile.append(basename).append(".log.tmp");
+    logFile.append(filename).append(".log.tmp");
     logFiles.append(logFile);
 
     Owned<CCompilerThreadParam> parm;
@@ -713,7 +713,10 @@ void CppCompiler::expandRootDirectory(StringBuffer & expanded, StringBuffer & in
 StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filename)
 {
     out.append(targetDir);
-    splitFilename(filename, NULL, NULL, &out, NULL);
+    if (targetCompiler == Vs6CppCompiler)
+        splitFilename(filename, NULL, NULL, &out, NULL);
+    else
+        splitFilename(filename, NULL, NULL, &out, &out);
     return out.append(".").append(OBJECT_FILE_EXT[targetCompiler]);
 }
 
