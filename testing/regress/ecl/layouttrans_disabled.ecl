@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//fail
+
 //class=error
 
 import ^ as root;
