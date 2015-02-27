@@ -23,19 +23,13 @@
 
 DEBUG=${DEBUG:-NO_DEBUG}
 
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+
 createConf ()
 {
     awk -f ${reg_path}/regex.awk -v NEW_ENVFILE=$1 -v NEW_PORT=$2 -v NEW_CONFFILE=$3< ${path}${configs}/configmgr/esp.xml >${runtime}/${compName}/esp.xml
 }
 
-removePidfiles ()
-{
-    rm -rf ${runtime}/${compName}.pid
-    rm -rf ${lock}/${compName}/${compName}.lock
-    rm -rf ${pid}/${compName}_init.pid
-    rm -rf ${pid}/${compName}.pid
-    rm -rf ${pid}/init_${compName}.pid
-}
 
 cleanup ()
 {
@@ -46,7 +40,7 @@ cleanup ()
     eval $stopcmd
     sleep 2
     killall -9 configesp >/dev/null 2>&1
-    removePidfiles
+    cleanupRuntimeEnvironment
     exit
 }
 
@@ -65,36 +59,13 @@ print_usage ()
     exit 0
 }
 
-source  ${INSTALL_DIR}/etc/init.d/lock.sh
-source  ${INSTALL_DIR}/etc/init.d/pid.sh
-source  ${INSTALL_DIR}/etc/init.d/hpcc_common
-source  ${INSTALL_DIR}/etc/init.d/init-functions
-source  ${INSTALL_DIR}/etc/init.d/export-path
-
-HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
-SECTION=${SECTION:-DEFAULT}
-cfg.parser ${HPCC_CONFIG}
-cfg.section.${SECTION}
-
-if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
-    echo "\$runtime=$runtime"
-    echo "\$path=$path"
-    echo "\$configs=$configs"
-    echo "\$configsbackup=$configsbackup"
-    echo "\$user=$user"
-    echo "\$lock=$lock"
-    echo "\$pid=$pid"
-    echo "\$log=$log"
-    echo "\$environment=$environment"
-    echo "\$interface=$interface"
-    echo "\$sourcedir=$sourcedir"
-    echo
-fi
+set_environmentvars
 
 exec_script_path=${path}/bin
 reg_path=${path}/sbin
 
 compName=configmgr
+compPath=${runtime}/${compName}
 
 is_root
 
@@ -106,18 +77,8 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${path}/lib
 export PATH=${PATH}:${runtime}/bin:${path}/sbin
 
 # Creating runtime environment for ConfigMgr
-mkdir -p ${pid}
-chown -R ${user}:${group} ${pid}
-mkdir -p ${lock}
-chown -R ${user}:${group} ${lock}
-mkdir -p ${runtime}/$compName
-chown -R ${user}:${group} ${runtime}/$compName
-mkdir -p ${log}/$compName
-chown -R ${user}:${group} ${log}/$compName
-mkdir -p ${lock}/$compName
-chown -R ${user}:${group} ${lock}/$compName
-mkdir -p ${pid}/$compName
-chown -R ${user}:${group} ${pid}/$compName
+createRuntime
+
 logFile=${log}/${compName}/${compName}.log
 
 initPidFile=${pid}/${compName}_init.pid
@@ -180,11 +141,7 @@ if [ ${RCSTAT} -eq 0 ]; then
     echo "Configmgr is already running with Pid $__pidValue"
     exit 0
 else
-    #component is not running, If pid/lock file exist remove them
-    if [ ${RCSTAT} -eq 1 ] || [ ${RCSTAT} -eq 2 ]
-    then
-         removePidfiles
-    fi
+    cleanupRuntimeEnvironment
 fi
 
 #-----------------------------------------------------------
@@ -199,11 +156,6 @@ eval ${startcmd}
 started=$?
 
 # Creating a Lock
-lockPath=${lock}/${compName}
-if [ ! -d $lockPath ]; then
-  mkdir -p $lockPath >> $logFile 2>&1
-fi
-chown -c $user:$group $lockPath >> /dev/null 2>&1
 lock $lockFile
 
 if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
