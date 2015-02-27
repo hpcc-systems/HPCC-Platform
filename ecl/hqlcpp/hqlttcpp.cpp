@@ -1778,6 +1778,21 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
                     appendComponent(cpts, invert, &concats.item(idxc));
             }
         }
+        else if (cur->getOperator() == no_trim)
+        {
+            //Strings are always compared as if they are trimmed (or padded with arbitrary spaces)
+            //=> sort by TRIM(string) can just sort by the string instead.  (Don't match LEFT/RIGHT versions.)
+            if (!cur->queryChild(1))
+            {
+                IHqlExpression * arg = cur->queryChild(0);
+                ITypeInfo * argType = arg->queryType();
+                if (cur->queryType()->getTypeCode() == argType->getTypeCode())
+                {
+                    expand = true;
+                    appendComponent(cpts, invert, arg);
+                }
+            }
+        }
         else
         {
 #if 0

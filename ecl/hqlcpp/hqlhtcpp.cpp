@@ -16391,6 +16391,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
         flags.append("|TAFunstable");
         method = unstable->queryChild(0);
     }
+    else
+    {
+        //If a dataset is sorted by all fields then it is impossible to determine if the original order
+        //was preserved - so mark the sort as potentially unstable (to reduce memory usage at runtime)
+        if (options.optimizeSortAllFields &&
+            allFieldsAreSorted(expr->queryRecord(), sortlist, dataset->queryNormalizedSelector(), options.optimizeSortAllFieldsStrict))
+        {
+            flags.append("|TAFunstable");
+        }
+    }
+
     if (spill)
         flags.append("|TAFspill");
     if (!method || method->isConstant())

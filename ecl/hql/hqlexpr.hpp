@@ -1538,6 +1538,7 @@ extern HQL_API unsigned getRepeatMin(IHqlExpression * expr);
 extern HQL_API bool isStandardRepeat(IHqlExpression * expr);
 extern HQL_API bool transformContainsCounter(IHqlExpression * transform, IHqlExpression * counter);
 extern HQL_API bool preservesValue(ITypeInfo * after, IHqlExpression * expr);
+extern HQL_API bool castPreservesValue(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getActiveTableSelector();
 extern HQL_API IHqlExpression * queryActiveTableSelector();
 extern HQL_API IHqlExpression * getSelf(IHqlExpression * ds);
