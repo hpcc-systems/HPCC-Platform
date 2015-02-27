@@ -151,7 +151,7 @@ define([
             }
             if (!this._watched[wu.__hpcc_id]) {
                 var context = this;
-                this._watched[wu.__hpcc_id] = wu.watch("changedCount", function (name, oldValue, newValue) {
+                this._watched[wu.__hpcc_id] = wu.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
                         //  If child changes force the parent to refresh...
                         context.updateData({

@@ -105,26 +105,6 @@ define([
         },
 
         //  Implementation  ---
-        parseBuildString: function (build) {
-            if (!build) {
-                return;
-            }
-            this.build = {};
-            this.build.orig = build;
-            this.build.prefix = "";
-            this.build.postfix = "";
-            var verArray = build.split("[");
-            if (verArray.length > 1) {
-                this.build.postfix = verArray[1].split("]")[0];
-            }
-            verArray = verArray[0].split("_");
-            if (verArray.length > 1) {
-                this.build.prefix = verArray[0];
-                verArray.splice(0, 1);
-            }
-            this.build.version = verArray.join("_");
-        },
-
         refreshBanner: function (activity) {
             if (this.showBanner !== activity.ShowBanner ||
                 this.bannerContent !== activity.BannerContent ||
@@ -231,7 +211,7 @@ define([
 
             this.activity = ESPActivity.Get();
             this.activity.watch("Build", function (name, oldValue, newValue) {
-                context.parseBuildString(newValue);
+                context.build = WsSMC.parseBuildString(newValue);
             });
             this.activity.watch("changedCount", function (name, oldValue, newValue) {
                 context.refreshBanner(context.activity);
