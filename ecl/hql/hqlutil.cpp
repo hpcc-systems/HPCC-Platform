@@ -5500,6 +5500,13 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                         attrs.setown(createComma(attrs.getClear(), createAttribute(onceAtom)));
                     else if (matchOption(start, lenBuffer, buffer, 6, "action"))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(actionAtom)));
+                    else if (matchOption(start, lenBuffer, buffer, 6, "source"))
+                    {
+                        stripQuotes(start, end, buffer);
+                        Owned<IValue> restOfLine = createUtf8Value(end-start, buffer+start, makeUtf8Type(UNKNOWN_LENGTH, NULL));
+                        OwnedHqlExpr arg = createConstant(restOfLine.getClear());
+                        attrs.setown(createComma(attrs.getClear(), createAttribute(sourceAtom, arg.getClear())));
+                    }
                     else if (matchOption(start, lenBuffer, buffer, 7, "library"))
                     {
                         stripQuotes(start, end, buffer);
