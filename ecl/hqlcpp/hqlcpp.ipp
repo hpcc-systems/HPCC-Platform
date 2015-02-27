@@ -745,6 +745,7 @@ struct HqlCppOptions
     bool                keyedJoinPreservesOrder;
     bool                expandSelectCreateRow;
     bool                optimizeSortAllFields;
+    bool                optimizeSortAllFieldsStrict;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

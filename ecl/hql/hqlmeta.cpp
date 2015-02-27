@@ -3394,7 +3394,8 @@ extern HQL_API bool hasKnownSortGroupDistribution(IHqlExpression * expr, bool is
 
 //---------------------------------------------------------------------------------------------------------------------
 
-//Mark all selectors that are fully included in the sort criteria. Err on the side of caution.
+//Mark all selectors that are fully included in the sort criteria. This may not catch all cases
+//but it is preferable to have false negatives than false positives.
 void markValidSelectors(IHqlExpression * expr, IHqlExpression * dsSelector)
 {
     switch (expr->getOperator())
@@ -3431,7 +3432,7 @@ void markValidSelectors(IHqlExpression * expr, IHqlExpression * dsSelector)
         markValidSelectors(expr->queryChild(i), dsSelector);
 }
 
-extern HQL_API bool allFieldsAreSorted(IHqlExpression * record, IHqlExpression * sortOrder, IHqlExpression * dsSelector)
+extern HQL_API bool allFieldsAreSorted(IHqlExpression * record, IHqlExpression * sortOrder, IHqlExpression * dsSelector, bool strict)
 {
     TransformMutexBlock block;
 
@@ -3442,8 +3443,21 @@ extern HQL_API bool allFieldsAreSorted(IHqlExpression * record, IHqlExpression *
     RecordSelectIterator iter(record, dsSelector);
     ForEach(iter)
     {
-        if (!iter.query()->queryTransformExtra())
+        IHqlExpression * select = iter.query();
+        if (!select->queryTransformExtra())
             return false;
+
+        if (strict && isUnknownSize(select->queryType()))
+        {
+            //Comparisons on strings (and unicode) ignore trailing spaces, so strictly speaking sorting by a variable
+            //length string field doesn't compare all the information from a field.
+            ITypeInfo * type = select->queryType();
+            if (type->getTypeCode() != type_data)
+            {
+                if (isStringType(type) || isUnicodeType(type))
+                    return false;
+            }
+        }
     }
     return true;
 }
