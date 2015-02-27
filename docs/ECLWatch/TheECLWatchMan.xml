@@ -29,8 +29,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para> </para>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -48,7 +48,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -236,7 +236,7 @@
       please see the ECL Language reference. A copy of which can be found
       online at <ulink
       url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
-      on the HPCC Systems web site.</para>
+      on the HPCC Systems<superscript>®</superscript> web site.</para>
 
       <!--***NOTE: Be sure to UPDATE these images when they find a home in ECLWATCH***-->
     </sect1>
@@ -713,10 +713,10 @@
       to help in the transition.</para>
 
       <para>The <emphasis role="bold">Additional Resources</emphasis> link
-      opens a tab to the HPCC Systems download page, where you can browse and
-      download additional HPCC resources: documentation, white papers,
-      training videos, wiki pages, the red book and other HPCC related source
-      code.</para>
+      opens a tab to the HPCC Systems<superscript>®</superscript> download
+      page, where you can browse and download additional HPCC resources:
+      documentation, white papers, training videos, wiki pages, the red book
+      and other HPCC related source code.</para>
 
       <para>The <emphasis role="bold">Release Notes</emphasis> link opens a
       tab with the relevant release notes for the version of HPCC that you are
@@ -843,17 +843,18 @@
     <title>Resources</title>
 
     <para>The resources link can be found under the Operations Icon link. The
-    resources link in ECL Watch provides a link to the HPCC Systems web
-    portal. Visit the HPCC Systems Web Portal at <ulink
+    resources link in ECL Watch provides a link to the HPCC
+    Systems<superscript>®</superscript> web portal. Visit the HPCC
+    Systems<superscript>®</superscript> Web Portal at <ulink
     url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for software
     updates, plug-ins, support, documentation, and more. This is where you can
     find resources useful for running and maintaining HPCC on the web
     portal.</para>
 
-    <para>You can also get to the resources link on the HPCC Systems web
-    portal page, by clicking on the <emphasis role="bold">Additional
-    Resources</emphasis> link found on the sub-menu of at the top right hand
-    side of navigation bar.</para>
+    <para>You can also get to the resources link on the HPCC
+    Systems<superscript>®</superscript> web portal page, by clicking on the
+    <emphasis role="bold">Additional Resources</emphasis> link found on the
+    sub-menu of at the top right hand side of navigation bar.</para>
 
     <para>ECL Watch provides a link to the HPCC portal's download page: <ulink
     url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
