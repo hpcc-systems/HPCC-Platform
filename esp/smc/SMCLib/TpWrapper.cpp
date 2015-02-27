@@ -1320,32 +1320,69 @@ void CTpWrapper::getHthorClusterList(IArrayOf<IEspTpCluster>& clusterList)
 }
 
 
-void CTpWrapper::getGroupList(IArrayOf<IEspTpGroup> &GroupList)
+void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<IEspTpGroup> &GroupList)
 {
     try
     {
         Owned<IRemoteConnection> conn = querySDS().connect("/Groups", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
         Owned<IPropertyTreeIterator> groups= conn->queryRoot()->getElements("Group");
-        if (groups->first()) {
-            do {
+        if (groups->first())
+        {
+            do
+            {
                 IPropertyTree &group = groups->query();
+                const char* kind = group.queryProp("@kind");
+                if (kindReq && *kindReq && !strieq(kindReq, kind))
+                    continue;
+
                 IEspTpGroup* pGroup = createTpGroup("","");
-                pGroup->setName(group.queryProp("@name"));
+                const char* name = group.queryProp("@name");
+                pGroup->setName(name);
+                if (espVersion >= 1.21)
+                {
+                    pGroup->setKind(kind);
+                    pGroup->setReplicateOutputs(checkGroupReplicateOutputs(name, kind));
+                }
                 GroupList.append(*pGroup);
-                
             } while (groups->next());
         }
     }
-    catch(IException* e){   
-      StringBuffer msg;
-      e->errorMessage(msg);
+    catch(IException* e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
         WARNLOG("%s", msg.str());
         e->Release();
     }
-    catch(...){
+    catch(...)
+    {
         WARNLOG("Unknown Exception caught within CTpWrapper::getGroupList");
     }
-    StringBuffer cluster;
+}
+
+bool CTpWrapper::checkGroupReplicateOutputs(const char* groupName, const char* kind)
+{
+    if (strieq(kind, "Roxie") || strieq(kind, "hthor"))
+        return false;
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> environment = factory->openEnvironment();
+    if (!environment)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
+    Owned<IPropertyTree> root = &environment->getPTree();
+    if (!root)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
+
+    Owned<IPropertyTreeIterator> it= root->getElements("Software/ThorCluster");
+    ForEach(*it)
+    {
+        StringBuffer thorClusterGroupName;
+        IPropertyTree& cluster = it->query();
+        getClusterGroupName(cluster, thorClusterGroupName);
+        if (thorClusterGroupName.length() && strieq(thorClusterGroupName.str(), groupName))
+            return cluster.getPropBool("@replicateOutputs", false);
+    }
+    return false;
 }
 
 void CTpWrapper::resolveGroupInfo(const char* groupName,StringBuffer& Cluster, StringBuffer& ClusterPrefix)
