@@ -174,6 +174,14 @@ define([
         }
     });
 
+    var LogFileStore = declare([ESPRequest.Store], {
+        service: "FileSpray",
+        action: "FileList",
+        responseQualifier: "FileListResponse.files.PhysicalFileStruct",
+        idProperty: ""
+    });
+
+
     return {
         States: {
             0: "unknown",

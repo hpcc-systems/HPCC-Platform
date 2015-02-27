@@ -129,6 +129,8 @@ extern HQL_API CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr);
 extern HQL_API bool hasSameSortGroupDistribution(IHqlExpression * expr, IHqlExpression * other);
 extern HQL_API bool hasKnownSortGroupDistribution(IHqlExpression * expr, bool isLocal);
 
+extern HQL_API bool allFieldsAreSorted(IHqlExpression * record, IHqlExpression * sortOrder, IHqlExpression * selector, bool strict);
+
 inline IHqlExpression * queryRemoveOmitted(IHqlExpression * expr)
 {
     if (expr &&  expr->isAttribute() && (expr->queryName() == _omitted_Atom))

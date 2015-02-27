@@ -121,7 +121,7 @@ define([
                         var packageMap = context.get(item.Id);
                         packageMap.updateData(item);
                         packageMaps.push(packageMap);
-                        context._watched[packageMap.Id] = packageMap.watch("changedCount", function (name, oldValue, newValue) {
+                        context._watched[packageMap.Id] = packageMap.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                             if (oldValue !== newValue) {
                                 context.notify(packageMap, packageMap.Id);
                             }

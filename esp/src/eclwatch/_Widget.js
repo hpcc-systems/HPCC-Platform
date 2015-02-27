@@ -210,7 +210,7 @@ define([
                 var ln = lines[i];
                 var single = Boolean(ln.match(/<.+\/>/)); // is this line a single tag? ex. <br />
                 var closing = Boolean(ln.match(/<\/.+>/)); // is this a closing tag? ex. </a>
-                var opening = Boolean(ln.match(/<[^!].*>/)); // is this even a tag (that's not <!something>)
+                var opening = Boolean(ln.match(/<[^!?].*>/)); // is this even a tag (that's not <!something>)
                 var type = single ? 'single' : closing ? 'closing' : opening ? 'opening' : 'other';
                 var fromTo = lastType + '->' + type;
                 lastType = type;

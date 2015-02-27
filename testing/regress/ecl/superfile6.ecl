@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//fail
+
 import Std.File AS FileServices;
 // Super File added to itself test
 

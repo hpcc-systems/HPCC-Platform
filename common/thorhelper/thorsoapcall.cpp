@@ -210,9 +210,13 @@ public:
                 path.append("/");
             }
         }
+        // While the code below would make some sense, there is code that relies on being able to use invalid IP addresses and catching the
+        // errors that result via ONFAIL.
+#if 0
         IpAddress ipaddr(host);
         if ( ipaddr.isNull())
             throw MakeStringException(-1, "Invalid IP address %s", host.str());
+#endif
     }
 };
 

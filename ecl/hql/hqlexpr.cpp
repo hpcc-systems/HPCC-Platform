@@ -14777,6 +14777,13 @@ bool preservesValue(ITypeInfo * after, IHqlExpression * expr)
     return (recastValue->compare(value) == 0);
 }
 
+bool castPreservesValue(IHqlExpression * expr)
+{
+    dbgassertex(isCast(expr));
+    return preservesValue(expr->queryType(), expr->queryChild(0));
+}
+
+
 static const unsigned UNLIMITED_REPEAT = (unsigned)-1;
 
 unsigned getRepeatMin(IHqlExpression * expr)

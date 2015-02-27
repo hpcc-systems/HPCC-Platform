@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//fail
+
 //The first time this workunit executes it gets an exception in a conditional workflow item.
 //If it is "recovered" the condition must be re-evaluated (otherwise the false branch is taken the
 //second time.

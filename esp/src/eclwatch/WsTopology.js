@@ -18,17 +18,104 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/_base/Deferred",
+    "dojo/store/Memory",
+    "dojo/store/Observable",
+    "dojo/store/util/QueryResults",
+    "dojo/Evented",
 
     "hpcc/ESPRequest"
-], function (declare, lang, arrayUtil, Deferred,
+], function (declare, lang, arrayUtil, Deferred, Memory, Observable, QueryResults, Evented,
     ESPRequest) {
-    return {
+
+    var TpLogFileStore = declare([Memory, Evented], {
+        constructor: function () {
+            this.idProperty = "__hpcc_id";
+        },
+
+        query: function (query, options) {
+            var deferredResults = new Deferred();
+            deferredResults.total = new Deferred();
+            if (!query.Name) {
+                deferredResults.resolve([]);
+                deferredResults.total.resolve(0);
+            } else {
+                var results = self.TpLogFile({
+                    request: lang.mixin({}, query, {
+                        PageNumber: options.start / options.count
+                    })
+                }).then(lang.hitch(this, function (response) {
+                    var data = [];
+                    if (lang.exists("TpLogFileResponse.LogData", response)) {
+                        this.lastPage = response.TpLogFileResponse.LogData;
+                        this.emit("pageLoaded", this.lastPage);
+                        arrayUtil.forEach(response.TpLogFileResponse.LogData.split("\n"), function (item, idx) {
+                            if (options.start === 0 || idx > 0) {
+                                //  Throw away first line as it will probably only be a partial line  ---
+                                function nextItem(itemParts) {
+                                    var part = "";
+                                    while (itemParts.length && part.trim() === "") {
+                                        part = itemParts[0]; itemParts.shift();
+                                    }
+                                    return part;
+                                }
+                                var itemParts = item.split(" ");
+                                var lineNo, date, time, pid, tid, details;
+                                if (itemParts.length) lineNo = nextItem(itemParts);
+                                if (itemParts.length) date = nextItem(itemParts);
+                                if (itemParts.length) time = nextItem(itemParts);
+                                if (itemParts.length) pid = nextItem(itemParts);
+                                if (itemParts.length) tid = nextItem(itemParts);
+                                if (itemParts.length) details = itemParts.join(" ");
+                                data.push({
+                                    __hpcc_id: response.TpLogFileResponse.PageNumber + "_" + idx,
+                                    lineNo: lineNo,
+                                    date: date,
+                                    time: time,
+                                    pid: pid,
+                                    tid: tid,
+                                    details: details
+                                });
+                            }
+                        }, this);
+                    }
+                    this.setData(data);
+                    if (lang.exists("TpLogFileResponse.TotalPages", response)) {
+                        deferredResults.total.resolve(response.TpLogFileResponse.TotalPages * options.count);
+                    } else {
+                        deferredResults.total.resolve(data.length);
+                    }
+                    return deferredResults.resolve(this.data);
+                }));
+            }
+            return QueryResults(deferredResults);
+        }
+    });
+
+    var TpLogFileStoreXXX = declare([ESPRequest.Store], {
+        service: "WsTopology",
+        action: "TpLogFile",
+        responseQualifier: "TpLogFileResponse.LogData",
+        responseTotalQualifier: "TpLogFileResponse.TotalPages",
+        idProperty: "Wuid",
+        startProperty: "PageStartFrom",
+        countProperty: "Count"
+    });
+
+    var self = {
         TpServiceQuery: function (params) {
             lang.mixin(params.request, {
                 Type: "ALLSERVICES"
             });
             return ESPRequest.send("WsTopology", "TpServiceQuery", params);
         },
+
+        TpClusterQuery: function (params) {
+            lang.mixin(params.request, {
+                Type: "ROOT"
+            });
+            return ESPRequest.send("WsTopology", "TpClusterQuery", params);
+        },
+
         GetESPServiceBaseURL: function (type) {
             var deferred = new Deferred();
             var context = this;
@@ -124,6 +211,21 @@ define([
         },
         TpGetServicePlugins: function (params) {
             return ESPRequest.send("WsTopology", "TpGetServicePlugins", params);
+        },
+        TpGetComponentFile: function (params) {
+            params.handleAs = "text";
+            if (params.request.CompType === "EclAgentProcess") {
+                params.request.CompType = "AgentExecProcess";
+            }
+            return ESPRequest.send("WsTopology", "TpGetComponentFile", params);
+        },
+        TpLogFile: function (params) {
+            return ESPRequest.send("WsTopology", "TpLogFile", params);
+        },
+        CreateTpLogFileStore: function () {
+            var store = new TpLogFileStore();
+            return Observable(store);
         }
     };
+    return self;
 });
