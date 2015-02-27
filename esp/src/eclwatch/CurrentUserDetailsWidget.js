@@ -66,6 +66,7 @@ define([
 
         //  Hitched actions  ---
         _onSave: function (event) {
+            var dialog = dijit.byId("stubUserDialog");
             if (this.userForm.validate()) {
                 var formInfo = domForm.toObject(this.id + "UserForm");
                 WsAccount.UpdateUser({
@@ -77,6 +78,7 @@ define([
                         newpass2: formInfo.newPassword
                     }
                 });
+                dialog.hide();
             }
         },
 
