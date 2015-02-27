@@ -27,8 +27,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para> HPCC Systems is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies. </para>
@@ -46,7 +46,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -61,8 +61,8 @@
   <chapter id="GangliaIntroduction">
     <title>Introduction</title>
 
-    <para>The HPCC systems platform supports graphical monitoring and
-    reporting components.</para>
+    <para>The HPCC Systems<superscript>®</superscript> platform supports
+    graphical monitoring and reporting components.</para>
 
     <para><emphasis role="bold">Ganglia:</emphasis></para>
 
@@ -266,8 +266,8 @@
           <para>To get the HPCC Monitoring components, find the appropriate
           package for your system.</para>
 
-          <para>Packages are available for download from the HPCC Systems
-          site:</para>
+          <para>Packages are available for download from the HPCC
+          Systems<superscript>®</superscript> site:</para>
 
           <para><ulink
           url="http://hpccsystems.com/download">hpccsystems.com/download</ulink></para>
@@ -355,8 +355,8 @@
         </listitem>
 
         <listitem>
-          <para>Install the HPCC Systems monitoring component on every
-          node.</para>
+          <para>Install the HPCC Systems<superscript>®</superscript>
+          monitoring component on every node.</para>
         </listitem>
 
         <listitem>
@@ -581,7 +581,7 @@
       <para>The HPCC Nagios package provides tools and utilities for
       generating Nagios configurations. These configurations check HPCC and
       perform some of the HPCC specific checks. HPCC Nagios installation is
-      provided on the HPCC Systems portal.</para>
+      provided on the HPCC Systems<superscript>®</superscript> portal.</para>
 
       <sect2 id="HPCC_Nagios_Installation">
         <title>HPCC Nagios Installation Package</title>
@@ -590,8 +590,9 @@
         Installation package. Download the installation package from the HPCC
         Systems portal.</para>
 
-        <para>The HPCC Systems web portal is where you can find HPCC
-        resources, downloads, plug-ins, as well as helpful information.</para>
+        <para>The HPCC Systems<superscript>®</superscript> web portal is where
+        you can find HPCC resources, downloads, plug-ins, as well as helpful
+        information.</para>
 
         <para><ulink
         url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/</ulink></para>
