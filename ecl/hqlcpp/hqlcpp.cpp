@@ -1242,7 +1242,7 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
     if (include.length())
         useInclude(include.str());
     if (source.length())
-        useSource(source);
+        useSourceFile(source);
     return true;
 }
 
@@ -7464,7 +7464,7 @@ void HqlCppTranslator::processCppBodyDirectives(IHqlExpression * expr)
                 StringBuffer sourceName;
                 getStringValue(sourceName, cur->queryChild(0));
                 if (sourceName.length())
-                    code->useSource(sourceName.str());
+                    code->useSourceFile(sourceName.str());
             }
         }
     }

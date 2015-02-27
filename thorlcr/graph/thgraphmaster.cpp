@@ -2765,6 +2765,7 @@ CThorStats::CThorStats(StatisticKind _kind) : kind(_kind)
 {
     unsigned c = queryClusterWidth();
     while (c--) counts.append(0);
+    reset();
 }
 
 void CThorStats::set(unsigned node, unsigned __int64 count)
@@ -2851,6 +2852,7 @@ CTimingInfo::CTimingInfo() : CThorStats(StTimeLocalExecute)
 
 ProgressInfo::ProgressInfo() : CThorStats(StNumRowsProcessed)
 {
+    startcount = stopcount = 0;
 }
 void ProgressInfo::processInfo() // reimplement as counts have special flags (i.e. stop/start)
 {

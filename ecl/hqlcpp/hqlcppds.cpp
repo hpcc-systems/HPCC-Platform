@@ -56,7 +56,12 @@
 void addGraphIdAttribute(ActivityInstance * instance, BuildCtx & ctx, IHqlExpression * graphId)
 {
     SubGraphInfo * match = matchActiveGraph(ctx, graphId);
-    assertex(match);
+    if (!match)
+    {
+        StringBuffer graphname;
+        graphname.append(graphId->queryChild(0)->querySequenceExtra());
+        throwError1(HQLERR_AccessUnavailableGraph, graphname.str());
+    }
     instance->addAttributeInt("_graphId", match->graphId);
 }
 
