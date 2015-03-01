@@ -56,6 +56,10 @@
 #define FPcsvTerminate      "@csvTerminate"
 #define FPcsvEscape         "@csvEscape"
 #define FProwTag            "@rowTag"
+#define FPkind              "@kind"
+#define FPheaderLength      "@headerLength"
+#define FPfooterLength      "@footerLength"
+
 
 
 //----------------------------------------------------------------------------
@@ -228,6 +232,7 @@ void FileFormat::deserialize(MemoryBuffer & in)
         ::deserialize(in, quote);
         ::deserialize(in, terminate);
         ::deserialize(in, rowTag);
+        updateMarkupType(rowTag, NULL); //neither kind nor markup currently serialized.  may add later
         break;
     }
 }
@@ -271,6 +276,34 @@ unsigned FileFormat::getUnitSize() const
     return 1;
 }
 
+bool rowLocationIsPath(const char *rowLocator)
+{
+    if (rowLocator && *rowLocator == '/')
+        return true;
+    return false;
+}
+
+void FileFormat::updateMarkupType(const char *rowLocator, const char *kind)
+{
+    if (kind)
+    {
+        if (strieq(kind, "xml"))
+            markup = FMTxml;
+        else if (strieq(kind, "json"))
+            markup = FMTjson;
+        else
+            markup = FMTunknown;
+    }
+    else if (rowLocator)
+    {
+        if (rowLocationIsPath(rowLocator))
+            markup = FMTjson;
+        else
+            markup = FMTxml;
+    }
+    else
+        markup = FMTunknown;
+}
 
 bool FileFormat::restore(IPropertyTree * props)
 {
@@ -329,6 +362,9 @@ bool FileFormat::restore(IPropertyTree * props)
         rowTag.set(props->queryProp(FProwTag));
         if (maxRecordSize == 0)
             throwError(DFTERR_MaxRecordSizeZero);
+        updateMarkupType(rowTag, props->queryProp(FPkind));
+        headerLength = (unsigned)props->getPropInt(FPheaderLength, -1);
+        footerLength = (unsigned)props->getPropInt(FPfooterLength, -1);
     }
     else if ((stricmp(format, "recfmvb")==0)||(stricmp(format, "recfm-vb")==0))
         type = FFTrecfmvb;
@@ -372,6 +408,12 @@ void FileFormat::save(IPropertyTree * props)
         if (terminate)      props->setProp(FPcsvTerminate, terminate);
         if (escape)         props->setProp(FPcsvEscape, escape);
         if (rowTag)         props->setProp(FProwTag, rowTag);
+        if (markup != FMTunknown)
+            props->setProp(FPkind, (markup==FMTjson) ? "json" : "xml");
+        if (headerLength!=(unsigned)-1)
+            props->setPropInt(FPheaderLength, headerLength);
+        if (footerLength!=(unsigned)-1)
+            props->setPropInt(FPfooterLength, footerLength);
         break;
     case FFTrecfmvb:
     case FFTrecfmv:
@@ -432,6 +474,9 @@ void FileFormat::set(const FileFormat & src)
     escape.set(src.escape);
     rowTag.set(src.rowTag);
     quotedTerminator = src.quotedTerminator;
+    markup = src.markup;
+    headerLength = src.headerLength;
+    footerLength = src.footerLength;
 }
 
 

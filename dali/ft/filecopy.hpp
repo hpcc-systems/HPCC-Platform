@@ -49,13 +49,28 @@ static const char * FileFormatTypeStr[] =
 };
 enum { FTactionpull, FTactionpush, FTactionpartition, FTactiondirectory, FTactionsize, FTactionpcopy };
 
+typedef enum
+{
+    FMTunknown,
+    FMTxml,
+    FMTjson,
+    FMTlast
+ } FileMarkupType;
+
+static const char * FileMarkupTypeStr[] =
+{
+    "FMTunknown",
+    "FMTxml",
+    "FMTjson",
+    "FMTlast"
+};
 
 #define EFX_BLOCK_SIZE          32768
 
 class DALIFT_API FileFormat
 {
 public:
-    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0)
+    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0) : headerLength((unsigned)-1), footerLength((unsigned)-1), markup(FMTunknown)
             { set(_type, _recordSize); maxRecordSize = 0; quotedTerminator = true;}
 
     void deserialize(MemoryBuffer & in);
@@ -72,8 +87,8 @@ public:
     bool hasQuote() const                           { return (quote == NULL) || (*quote != '\0'); }
     bool hasQuotedTerminator() const                { return quotedTerminator; }
     const char * getFileFormatTypeString() const        { return FileFormatTypeStr[type]; }
-    bool hasJsonMarkup() const {return (rowTag.length() && *rowTag.get()=='/');} //need to add a more explicit markup indicator
-    bool hasXmlMarkup() const {return (rowTag.length() && *rowTag.get()!='/');}
+    void updateMarkupType(const char *rowLocator, const char *kind);
+    const char *getPartSeparatorString(){return (markup==FMTjson) ? ",\n" : NULL;}
 
 public:
     FileFormatType      type;
@@ -85,7 +100,10 @@ public:
     StringAttr          escape;
     StringAttr          rowTag;
 
-    //This value isn't serialized/deserialized.
+    //These values aren't serialized/deserialized:
+    FileMarkupType      markup;
+    unsigned            headerLength;
+    unsigned            footerLength;
     bool                quotedTerminator;
 };
 UtfReader::UtfFormat getUtfFormatType(FileFormatType type);

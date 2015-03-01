@@ -1044,7 +1044,7 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
 void FileSprayer::calculateMany2OnePartition()
 {
     LOG(MCdebugProgressDetail, job, "Setting up many2one partition");
-    bool isJSON = srcFormat.hasJsonMarkup();
+    const char *partSeparator = srcFormat.getPartSeparatorString();
     offset_t lastContentLength = 0;
     ForEachItemIn(idx, sources)
     {
@@ -1052,14 +1052,14 @@ void FileSprayer::calculateMany2OnePartition()
         RemoteFilename curFilename;
         curFilename.set(cur.filename);
         setCanAccessDirectly(curFilename);
-        if (isJSON)
+        if (partSeparator)
         {
             offset_t contentLength = cur.size - cur.xmlHeaderLength - cur.xmlFooterLength;
             if (contentLength)
             {
                 if (lastContentLength)
                 {
-                    PartitionPoint &part = createLiteral(1, ",", (unsigned) -1);
+                    PartitionPoint &part = createLiteral(1, partSeparator, (unsigned) -1);
                     part.whichOutput = 0;
                     partition.append(part);
                 }
@@ -1501,7 +1501,13 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
         {
             try
             {
-                locateXmlHeader(io, cur.headerSize, cur.xmlHeaderLength, cur.xmlFooterLength);
+                if (srcFormat.headerLength == (unsigned)-1 || srcFormat.footerLength == (unsigned)-1)
+                    locateContentHeader(io, cur.headerSize, cur.xmlHeaderLength, cur.xmlFooterLength);
+                else
+                {
+                    cur.xmlHeaderLength = srcFormat.headerLength;
+                    cur.xmlFooterLength = srcFormat.footerLength;
+                }
                 cur.headerSize += (unsigned)cur.xmlHeaderLength;
                 cur.size -= (cur.xmlHeaderLength + cur.xmlFooterLength);
             }
@@ -1546,14 +1552,6 @@ void FileSprayer::locateXmlHeader(IFileIO * io, unsigned headerSize, offset_t & 
 {
     Owned<IFileIOStream> in = createIOStream(io);
 
-    if (srcFormat.hasJsonMarkup())
-    {
-        JsonSplitter jsplitter(srcFormat, *in);
-        xmlHeaderLength = jsplitter.getHeaderLength();
-        xmlFooterLength = jsplitter.getFooterLength();
-        return;
-    }
-
     XmlSplitter splitter(srcFormat);
     BufferedDirectReader reader;
 
@@ -1567,7 +1565,22 @@ void FileSprayer::locateXmlHeader(IFileIO * io, unsigned headerSize, offset_t & 
     xmlFooterLength = splitter.getFooterLength(reader, size);
 }
 
+void FileSprayer::locateJsonHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength)
+{
+    Owned<IFileIOStream> in = createIOStream(io);
 
+    JsonSplitter jsplitter(srcFormat, *in);
+    headerLength = jsplitter.getHeaderLength();
+    footerLength = jsplitter.getFooterLength();
+}
+
+void FileSprayer::locateContentHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength)
+{
+    if (srcFormat.markup == FMTjson)
+        locateJsonHeader(io, headerSize, headerLength, footerLength);
+    else
+        locateXmlHeader(io, headerSize, headerLength, footerLength);
+}
 
 void FileSprayer::derivePartitionExtra()
 {
