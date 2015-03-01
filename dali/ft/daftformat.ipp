@@ -361,7 +361,7 @@ class DALIFT_API JsonSplitter : public CInterface, implements IPTreeNotifyEvent
 public:
     IMPLEMENT_IINTERFACE;
 
-    JsonSplitter(const FileFormat & format, IFileIOStream &stream) : headerLength(0), pathPos(0), tangent(0), rowDepth(0), rowStart(0), rowEnd(0), footerLength(0), newRowSet(true)
+    JsonSplitter(const FileFormat & format, IFileIOStream &stream) : headerLength(0), pathPos(0), tangent(0), rowDepth(0), rowStart(0), rowEnd(0), footerLength(0), newRowSet(true), hasRootArray(false)
     {
         LOG(MCdebugProgressDetail, unknownJob, "JsonSplitter::JsonSplitter(format.type :'%s', rowPath:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
 
@@ -387,8 +387,11 @@ public:
         }
         if (!pathPos)
         {
-            if (streq(tag, "__array__")) //ignore root array
+            if (streq(tag, "__array__")) //ignore root array, except for knowing footer offset
+            {
+                hasRootArray = true;
                 return;
+            }
             if (!noPath && streq(tag, "__object__")) //paths start inside this object, with no path this starts a row
                 return;
         }
@@ -487,7 +490,10 @@ public:
         {
             while (reader->next());
             if (rowEnd)
-                footerLength = size + 1 - rowEnd;
+            {
+                footerLength = isRootless() ? 0 : 1; //account for parser using ] as offset unless rootless
+                footerLength = footerLength + size - rowEnd;
+            }
         }
         return footerLength;
     }
@@ -497,6 +503,8 @@ public:
             return 0;
         return rowStart - headerLength - 1;
     }
+
+    bool isRootless(){return (noPath && !hasRootArray);}
 
 public:
     Owned<IFileIOStream> inStream;
@@ -512,6 +520,7 @@ public:
     unsigned rowDepth;
     bool noPath;
     bool newRowSet;
+    bool hasRootArray;
 };
 
 class DALIFT_API CJsonInputPartitioner : public CPartitioner
@@ -533,7 +542,11 @@ protected:
         if (!json->rowStart)
             return;
         if (!json->newRowSet) //get rid of extra delimiter if we haven't closed and reopened in the meantime
+        {
             cursor.trimLength = json->rowStart - prevRowEnd;
+            if (cursor.trimLength && json->isRootless()) //compensate for difference in rootless offset
+                cursor.trimLength--;
+        }
         cursor.inputOffset = json->getRowOffset();
         if (json->findNextRow())
             cursor.nextInputOffset = json->getRowOffset();
