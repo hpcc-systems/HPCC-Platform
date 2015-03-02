@@ -2191,14 +2191,14 @@ IFormatProcessor * createFormatProcessor(const FileFormat & srcFormat, const Fil
             partitioner = new CCsvQuickPartitioner(srcFormat, sameFormats);
         break;
     case FFTutf8: case FFTutf8n: case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
-        if (srcFormat.hasXmlMarkup())
+        if (srcFormat.markup==FMTxml)
         {
             if (calcOutput && !sameFormats)
                 partitioner = new CXmlPartitioner(srcFormat);
             else
                 partitioner = new CXmlQuickPartitioner(srcFormat, sameFormats);
         }
-        else if (srcFormat.hasJsonMarkup())
+        else if (srcFormat.markup==FMTjson)
             partitioner = new CJsonPartitioner(srcFormat);
         else
         {
@@ -2255,9 +2255,9 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
                 return new CCsvQuickPartitioner(srcFormat, sameFormats);
             break;
         case FFTutf: case FFTutf8: case FFTutf8n: case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
-            if (srcFormat.hasXmlMarkup())
+            if (srcFormat.markup==FMTxml)
                 return new CXmlQuickPartitioner(srcFormat, sameFormats);
-            if (srcFormat.hasJsonMarkup())
+            if (srcFormat.markup==FMTjson)
                 return new CJsonPartitioner(srcFormat);
             if (srcFormat.hasQuote() && srcFormat.hasQuotedTerminator())
                 return new CUtfPartitioner(srcFormat);
@@ -2283,9 +2283,9 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
         case FFTcsv:
             return new CCsvQuickPartitioner(srcFormat, sameFormats);
         case FFTutf: case FFTutf8: case FFTutf8n: case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
-            if (srcFormat.hasXmlMarkup())
+            if (srcFormat.markup==FMTxml)
                 return new CXmlQuickPartitioner(srcFormat, sameFormats);
-            if (srcFormat.hasJsonMarkup())
+            if (srcFormat.markup==FMTjson)
                 return new CJsonPartitioner(srcFormat);
             return new CUtfQuickPartitioner(srcFormat, sameFormats);
         default:
