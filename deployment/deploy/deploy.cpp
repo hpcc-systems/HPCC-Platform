@@ -267,24 +267,7 @@ public:
             m_transform->transform( outputXml );
             m_transform->closeResultTarget();
             
-            const char* msg = m_transform->getMessages();
-            if (msg && *msg)
-            {
-                /*
-                //there may be multiple warnings messages bundled here so process each of them:
-                StringArray msgs;
-                DelimToStringArray(msg, msgs, "\n");
-                
-                ForEachItemIn(idx, msgs)
-                {
-                    msg = msgs.item(idx);
-                    if (msg && *msg)
-                    m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, msg);
-                }
-                */
-                m_sValidationErrors.append(msg);
-                m_nValidationErrors++;
-            }
+            m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, m_transform->getMessages());
 
             if (!m_nValidationErrors)//this may get filled in by the external function
                 valid = true;
