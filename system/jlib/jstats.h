@@ -286,8 +286,7 @@ interface IStatisticsFilter : public IInterface
 {
 public:
     virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind) const = 0;
-    //These are a bit arbitrary...
-    virtual bool queryMergeSources() const = 0;
+    virtual bool recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const = 0;
     virtual const char * queryScope() const = 0;
 
 };
@@ -345,6 +344,7 @@ public:
 
     bool match(const char * search) const;
     bool matchDepth(unsigned low, unsigned high) const;
+    bool recurseChildScopes(const char * curScope) const;
 
     const char * queryValue() const { return value ? value.get() : "*"; }
 
@@ -370,7 +370,7 @@ public:
     StatisticsFilter(StatisticCreatorType _creatorType, const char * _creator, StatisticScopeType _scopeType, const char * _scope, StatisticMeasure _measure, StatisticKind _kind);
 
     virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind) const;
-    virtual bool queryMergeSources() const { return mergeSources && scopeFilter.matchDepth(2,0); }
+    virtual bool recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const;
     virtual const char * queryScope() const { return scopeFilter.queryValue(); }
 
     void set(const char * _creatorTypeText, const char * _scopeTypeText, const char * _kindText);
@@ -387,7 +387,6 @@ public:
     void setKind(StatisticKind _kind);
     void setKind(const char * _kind);
     void setMeasure(StatisticMeasure _measure);
-    void setMergeSources(bool _value);      // set to false for legacy timing semantics
 
 protected:
     void init();
@@ -399,7 +398,6 @@ protected:
     StatisticKind kind;
     ScopedItemFilter creatorFilter;
     ScopedItemFilter scopeFilter;
-    bool mergeSources;
 };
 
 //---------------------------------------------------------------------------------------------------------------------

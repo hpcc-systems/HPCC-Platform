@@ -1526,6 +1526,16 @@ bool ScopedItemFilter::match(const char * search) const
 }
 
 
+bool ScopedItemFilter::recurseChildScopes(const char * curScope) const
+{
+    if (maxDepth == 0 || !curScope)
+        return true;
+
+    if (queryStatisticsDepth(curScope) >= maxDepth)
+        return false;
+    return true;
+}
+
 void ScopedItemFilter::set(const char * _value)
 {
     if (_value && *_value && !streq(_value, "*") )
@@ -1602,7 +1612,6 @@ StatisticsFilter::StatisticsFilter(StatisticCreatorType _creatorType, const char
 
 void StatisticsFilter::init()
 {
-    mergeSources = true;
     creatorType = SCTall;
     scopeType = SSTall;
     measure = SMeasureAll;
@@ -1625,6 +1634,12 @@ bool StatisticsFilter::matches(StatisticCreatorType curCreatorType, const char *
         return false;
     return true;
 }
+
+bool StatisticsFilter::recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const
+{
+    return scopeFilter.recurseChildScopes(curScope);
+}
+
 
 void StatisticsFilter::set(const char * creatorTypeText, const char * scopeTypeText, const char * kindText)
 {
@@ -1691,11 +1706,6 @@ void StatisticsFilter::setScopeType(StatisticScopeType _scopeType)
 void StatisticsFilter::setMeasure(StatisticMeasure _measure)
 {
     measure = _measure;
-}
-
-void StatisticsFilter::setMergeSources(bool _value)
-{
-    mergeSources = _value;
 }
 
 void StatisticsFilter::setKind(StatisticKind _kind)
