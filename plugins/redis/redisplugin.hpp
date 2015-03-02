@@ -45,9 +45,6 @@ extern "C"
 class StringBuffer;
 
 namespace RedisPlugin {
-#define setFailMsg "'Set' request failed - "
-#define getFailMsg "'Get<type>' request failed - "
-
 StringBuffer & appendExpire(StringBuffer & buffer, unsigned expire);
 
 class RedisServer : public CInterface
@@ -60,8 +57,9 @@ public :
         options.set(_options);
         parseOptions(ctx, _options);
     }
-    bool isSame(ICodeContext * ctx, unsigned hash) const
+    bool isSame(ICodeContext * ctx, const char * password) const
     {
+        unsigned hash = hashc((const unsigned char*)options.str(), options.length(), hashc((const unsigned char*)password, strlen(password), 0));
         return (serverIpPortPasswordHash == hash);
     }
     const char * getIp() { return ip.str(); }
@@ -78,11 +76,12 @@ class Connection : public CInterface
 {
 public :
     Connection(ICodeContext * ctx, const char * _options, const char * pswd, unsigned __int64 _timeout);
-    Connection(ICodeContext * ctx, RedisServer * _server);
+    Connection(ICodeContext * ctx, RedisServer * _server,  const char * pswd, unsigned __int64 _timeout);
 
-    bool isSameConnection(ICodeContext * ctx, unsigned hash) const;
     const char * ip() const { return server->getIp(); }
     int port() const { return server->getPort(); }
+    unsigned __int64 getTimeout() const { return timeout; }
+    bool isSameConnection(ICodeContext * ctx, const char * password) const;
 
 protected :
     virtual void assertOnError(const redisReply * reply, const char * _msg) { }
@@ -90,7 +89,6 @@ protected :
     virtual void logServerStats(ICodeContext * ctx) { }
     virtual void updateTimeout(unsigned __int64 _timeout) { }
 
-    const char * appendIfKeyNotFoundMsg(const redisReply * reply, const char * key, StringBuffer & target) const;
     void * allocateAndCopy(const char * src, size_t size);
     void init(ICodeContext * ctx);
 
@@ -104,9 +102,9 @@ protected :
 class Reply : public CInterface
 {
 public :
-    inline Reply() { reply = NULL; };
-    inline Reply(void * _reply) { reply = (redisReply*)_reply; }
-    inline Reply(redisReply * _reply) { reply = _reply; }
+    inline Reply() : reply(NULL) { };
+    inline Reply(void * _reply) : reply((redisReply*)_reply) { }
+    inline Reply(redisReply * _reply) : reply(_reply) { }
     inline ~Reply()
     {
         if (reply)
@@ -115,6 +113,12 @@ public :
 
     static Reply * createReply(void * _reply) { return new Reply(_reply); }
     inline const redisReply * query() const { return reply; }
+    void setClear(redisReply * _reply)
+    {
+        if (reply)
+            freeReplyObject(reply);
+        reply = _reply;
+    }
 
 private :
     redisReply * reply;

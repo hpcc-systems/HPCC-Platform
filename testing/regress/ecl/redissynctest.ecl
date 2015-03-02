@@ -24,8 +24,8 @@ sync.FlushDB(server, /*database*/, password);
 sync.SetBoolean('b', TRUE, server, /*database*/, /*expire*/, password);
 sync.GetBoolean('b', server, /*database*/, password);
 
-IMPORT redisSync FROM lib_redis;
-myRedis := redisSync(server, password);
+IMPORT redisServer FROM lib_redis;
+myRedis := redisServer(server, password);
 
 REAL pi := 3.14159265359;
 myRedis.SetReal('pi', pi);
@@ -39,7 +39,7 @@ INTEGER i := 123456789;
 myRedis.SetInteger('i', i);
 myRedis.GetInteger('i');
 
-myRedis2 := redisSync('--SERVER=127.0.0.1:6380', 'youarefoobared');
+myRedis2 := redisServer('--SERVER=127.0.0.1:6380', 'youarefoobared');
 
 myRedis2.SetReal('pi', pi2, 1);
 myRedis2.GetReal('pi', 1);
@@ -73,28 +73,65 @@ SEQUENTIAL(
     myRedis.Exists('uft8')
     );
 
-myRedis.Expire('str', 1); 
-myRedis.Persist('str');
+SEQUENTIAL(
+    myRedis.SetString('str2int', 'abcdefgh');//Hetrogenious calls will only result in an exception when the retrieved value does not fit into memory of the requested type.
+    myRedis.GetInteger('str2int');
+    );
+
+CSleep(INTEGER duration) := BEGINC++
+    sleep(duration);
+ENDC++;
+
+SEQUENTIAL(
+    myRedis.Exists('str'),
+    myRedis.Expire('str', , 1000000),/*\mu-s*/
+    CSleep(2),
+    myRedis.Exists('str'),
+
+    myRedis.SetString('str', str),
+    myRedis.Exists('str'),
+    myRedis.Expire('str', , 1000000),/*\mu-s*/
+    myRedis.Persist('str'),
+    CSleep(2),
+    myRedis.Exists('str')
+    );
 
 myRedis.GetInteger('pi');
 
-NOFOLD(myRedis.DBSize());
-NOFOLD(myRedis.DBSize(1));
-NOFOLD(myRedis.DBSize(2));
+SEQUENTIAL(
+    myRedis.SetString('Einnie', 'Woof', 0, 1000000),
+    myRedis.Exists('Einnie');
+    CSleep(2);
+    myRedis.Exists('Einnie');
+
+    myRedis.SetString('Einnie', 'Woof', 0),
+    myRedis.SetString('Einnie', 'Grrrr', 1),
+    myRedis.GetString('Einnie', 0),
+    myRedis.GetString('Einnie', 1),
+    myRedis.SetString('Einnie', 'Woof-Woof'),
+    myRedis.GetString('Einnie'),
+    );
+
+//myRedis.GetString('I Don\'t Exist');//Returns empty string.
+//myRedis.GetInteger('I Don\'t Exist');//Throws exception.
+
+myRedis.DBSize();
+myRedis.DBSize(1);
+myRedis.DBSize(2);
 
 SEQUENTIAL(
     myRedis.FlushDB(),
-    NOFOLD(myRedis.Exists('str'))
+    myRedis.Exists('str')
     );
 myRedis2.FlushDB();
 
 //The follwoing tests the multithreaded caching of the redis connections
 //SUM(NOFOLD(s1 + s2), a) uses two threads
-myRedis.FlushDB();
 INTEGER x := 2;
 INTEGER N := 100;
+myRedis.FlushDB();
 myRedis.SetInteger('i', x);
-s1 :=DATASET(N, TRANSFORM({ integer a }, SELF.a := NOFOLD(myRedis.GetInteger('i'))));
-s2 :=DATASET(N, TRANSFORM({ integer a }, SELF.a := NOFOLD(myRedis.GetInteger('i'))/2));
+s1 := DATASET(N, TRANSFORM({ integer a }, SELF.a := NOFOLD(myRedis.GetInteger('i'))));
+s2 := DATASET(N, TRANSFORM({ integer a }, SELF.a := NOFOLD(myRedis.GetInteger('i'))/2));
 SUM(NOFOLD(s1 + s2), a);//answer = (x+x/2)*N, in this case 3N.
 myRedis.FlushDB();

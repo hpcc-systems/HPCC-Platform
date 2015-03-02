@@ -20,50 +20,6 @@
 
 #include "redisplugin.hpp"
 
-namespace RedisPlugin
-{
-class SyncConnection : public Connection
-{
-public :
-    SyncConnection(ICodeContext * ctx, const char * options, unsigned __int64 database, const char * pswd, unsigned __int64 _timeout);
-    SyncConnection(ICodeContext * ctx, RedisServer * _server, unsigned __int64 database, const char * pswd);
-    ~SyncConnection()
-    {
-        if (context)
-            redisFree(context);
-    }
-    static SyncConnection * createConnection(ICodeContext * ctx, const char * options, unsigned __int64 database, const char * pswd, unsigned __int64 _timeout);
-
-    //set
-    template <class type> void set(ICodeContext * ctx, const char * key, type value, unsigned expire);
-    template <class type> void set(ICodeContext * ctx, const char * key, size32_t valueLength, const type * value, unsigned expire);
-    //get
-    template <class type> void get(ICodeContext * ctx, const char * key, type & value);
-    template <class type> void get(ICodeContext * ctx, const char * key, size_t & valueLength, type * & value);
-    void getVoidPtrLenPair(ICodeContext * ctx, const char * key, size_t & valueLength, void * & value);
-    void persist(ICodeContext * ctx, const char * key);
-    void expire(ICodeContext * ctx, const char * key, unsigned _expire);
-    void del(ICodeContext * ctx, const char * key);
-    void clear(ICodeContext * ctx);
-    unsigned __int64 dbSize(ICodeContext * ctx);
-    bool exists(ICodeContext * ctx, const char * key);
-
-protected :
-    void connect(ICodeContext * ctx, unsigned __int64 _database, const char * pswd);
-    void selectDB(ICodeContext * ctx, unsigned __int64 _database);
-    void authenticate(ICodeContext * ctx, const char * pswd);
-    void resetContextErr();
-
-    virtual void updateTimeout(unsigned __int64 _timeout);
-    virtual void assertOnError(const redisReply * reply, const char * _msg);
-    virtual void assertConnection();
-    virtual void logServerStats(ICodeContext * ctx);
-
-protected :
-    redisContext * context;
-};
-}//close namespace
-
 extern "C++"
 {
 namespace RedisPlugin {
@@ -93,6 +49,27 @@ namespace RedisPlugin {
     ECL_REDIS_API void             ECL_REDIS_CALL RPersist(ICodeContext * _ctx, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
     ECL_REDIS_API void             ECL_REDIS_CALL RExpire (ICodeContext * _ctx, const char * key, const char * options, unsigned expire, unsigned __int64 database, const char * pswd, unsigned timeout);
     ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL RDBSize (ICodeContext * _ctx, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+
+    //--------------------------SET----------------------------------------
+    ECL_REDIS_API bool             ECL_REDIS_CALL SyncLockRSetBool (ICodeContext * _ctx, const char * key, bool value, const char * options, unsigned __int64 database, unsigned expire, const char * pswd, unsigned timeout);
+    ECL_REDIS_API signed __int64   ECL_REDIS_CALL SyncLockRSetInt  (ICodeContext * _ctx, const char * key, signed __int64 value, const char * options, unsigned __int64 database, unsigned expire, const char * pswd, unsigned timeout);
+    ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL SyncLockRSetUInt (ICodeContext * _ctx, const char * key, unsigned __int64 value, const char * options, unsigned __int64 database, unsigned expire, const char * pswd, unsigned timeout);
+    ECL_REDIS_API double           ECL_REDIS_CALL SyncLockRSetReal (ICodeContext * _ctx, const char * key, double value, const char * options, unsigned __int64 database, unsigned expire, const char * pswd, unsigned timeout);
+    ECL_REDIS_API void             ECL_REDIS_CALL SyncLockRSetUtf8 (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * key, size32_t valueLength, const char * value, const char * options, unsigned __int64 database, unsigned expire, const char * pswd, unsigned timeout);
+    ECL_REDIS_API void             ECL_REDIS_CALL SyncLockRSetStr  (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * key, size32_t valueLength, const char * value, const char * options, unsigned __int64 database, unsigned expire, const char * pswd, unsigned timeout);
+    ECL_REDIS_API void             ECL_REDIS_CALL SyncLockRSetUChar(ICodeContext * _ctx, size32_t & returnLength, UChar * & returnValue, const char * key, size32_t valueLength, const UChar * value, const char * options, unsigned __int64 database, unsigned expire, const char * pswd, unsigned timeout);
+    ECL_REDIS_API void             ECL_REDIS_CALL SyncLockRSetData (ICodeContext * _ctx, size32_t & returnLength, void * & returnValue, const char * key, size32_t valueLength, const void * value, const char * options, unsigned __int64 database, unsigned expire, const char * pswd, unsigned timeout);
+    //--------------------------GET----------------------------------------
+    ECL_REDIS_API bool             ECL_REDIS_CALL SyncLockRGetBool  (ICodeContext * _ctx, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+    ECL_REDIS_API signed __int64   ECL_REDIS_CALL SyncLockRGetInt8  (ICodeContext * _ctx, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+    ECL_REDIS_API unsigned __int64 ECL_REDIS_CALL SyncLockRGetUint8 (ICodeContext * _ctx, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+    ECL_REDIS_API double           ECL_REDIS_CALL SyncLockRGetDouble(ICodeContext * _ctx, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+    ECL_REDIS_API void             ECL_REDIS_CALL SyncLockRGetUtf8  (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+    ECL_REDIS_API void             ECL_REDIS_CALL SyncLockRGetStr   (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+    ECL_REDIS_API void             ECL_REDIS_CALL SyncLockRGetUChar (ICodeContext * _ctx, size32_t & returnLength, UChar * & returnValue, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+    ECL_REDIS_API void             ECL_REDIS_CALL SyncLockRGetData  (ICodeContext * _ctx,size32_t & returnLength, void * & returnValue, const char * key, const char * options, unsigned __int64 database, const char * pswd, unsigned timeout);
+
+    ECL_REDIS_API bool ECL_REDIS_CALL SyncLockRMissThenLock(ICodeContext * _ctx, const char * key, const char * options, unsigned __int64 database, const char * password, unsigned __int64 timeout);
 }
 }
 #endif

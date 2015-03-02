@@ -41,7 +41,7 @@ namespace RedisPlugin {
 StringBuffer & appendExpire(StringBuffer & buffer, unsigned expire)
 {
     if (expire > 0)
-        buffer.append(" EX ").append(expire);
+        buffer.append(" EX ").append(expire/1000000);
     return buffer;
 }
 
@@ -85,24 +85,19 @@ Connection::Connection(ICodeContext * ctx, const char * _options, const char * p
 {
     server.setown(new RedisServer(ctx, _options, pswd));
 }
-Connection::Connection(ICodeContext * ctx, RedisServer * _server) : alreadyInitialized(false), database(0), timeout(0)
+Connection::Connection(ICodeContext * ctx, RedisServer * _server, const char * pswd, unsigned __int64 _timeout) : alreadyInitialized(false), database(0), timeout(_timeout)
 {
+    //should check that the password passed in is the same as that in server, perhaps?
     server.setown(_server);
 }
-bool Connection::isSameConnection(ICodeContext * ctx, unsigned hash) const
+bool Connection::isSameConnection(ICodeContext * ctx, const char * password) const
 {
-    return server->isSame(ctx, hash);
+    return server->isSame(ctx, password);
 }
 void * Connection::allocateAndCopy(const char * src, size_t size)
 {
     void * value = rtlMalloc(size);
     return memcpy(value, src, size);
-}
-const char * Connection::appendIfKeyNotFoundMsg(const redisReply * reply, const char * key, StringBuffer & target) const
-{
-    if (reply && reply->type == REDIS_REPLY_NIL)
-        target.append("(key: '").append(key).append("') ");
-    return target.str();
 }
 void Connection::init(ICodeContext * ctx)
 {
