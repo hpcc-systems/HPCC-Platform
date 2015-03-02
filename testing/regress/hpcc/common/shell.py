@@ -55,8 +55,10 @@ class Shell:
             _args, stdout = PIPE, stderr = PIPE, close_fds = True, **kwargs)
         stdout, stderr = process.communicate()
         retCode = process.returncode
-        logging.debug("Shell _run retCode:: %d, stdout:'%s', stderr:'%s'",  retCode,  stdout,  stderr)
-        if retCode or len(stderr) > 0:
+        logging.debug("Shell _run retCode: %d",  retCode)
+        logging.debug("            stdout:'%s'",  stdout)
+        logging.debug("            stderr:'%s'",  stderr)
+        if retCode or ((len(stderr) > 0) and ('Error' in stderr)):
             exception = CalledProcessError(
                 process.returncode, repr(args))
             exception.output = ''.join(filter(None, [stdout, stderr]))
