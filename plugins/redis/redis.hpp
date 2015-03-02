@@ -18,7 +18,26 @@
 #ifndef ECL_REDIS_SYNC_INCL
 #define ECL_REDIS_SYNC_INCL
 
-#include "redisplugin.hpp"
+#ifdef _WIN32
+#define ECL_REDIS_CALL _cdecl
+#ifdef ECL_REDIS_EXPORTS
+#define ECL_REDIS_API __declspec(dllexport)
+#else
+#define ECL_REDIS_API __declspec(dllimport)
+#endif
+#else
+#define ECL_REDIS_CALL
+#define ECL_REDIS_API
+#endif
+
+#include "hqlplugins.hpp"
+#include "eclhelper.hpp"
+
+extern "C"
+{
+    ECL_REDIS_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+    ECL_REDIS_API void setPluginContext(IPluginContext * _ctx);
+}
 
 extern "C++"
 {

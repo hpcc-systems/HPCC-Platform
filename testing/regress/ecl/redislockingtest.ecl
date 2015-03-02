@@ -23,11 +23,10 @@ myRedis := redisServer(server, password);
 
 
 myFunc(STRING key) := FUNCTION
- //out := output('uh oh!');
  value := myRedis.getString(key);
- //return WHEN(value, out);
  return value;
 END;
+
 key := 'Einstein';
 key2 := 'Einnie sit';
 
@@ -37,7 +36,6 @@ ENDC++;
 
 SEQUENTIAL(
     myRedis.FlushDB(),
-    //myRedis.setString('redis-cli monitor trace', '************************************************');
     myRedis.setString(key2, 'Good boy Einnie!'),
 
     IF (myRedis.locking.Exists(key),
@@ -86,6 +84,3 @@ SEQUENTIAL(
     myRedis.exists('testlock'),
     myRedis.FlushDB(),
     );
-
-
-myRedis.FlushDB();

@@ -140,7 +140,3 @@ A few notes to point out here:
    it will **silently fail**, leaving the lock to expire, if the server observes any change to the key during the function call duration.
    * When the *race-winner* publishes, it actually publishes the value itself such that any subscriber may obtain the key in this fashion, not requiring an additional `GET` and possible further race condition in doing so.
    * At present the 'lock' is not as such an actual lock, as only the `locking.Get<type>` functions acknowledge it. By current implementation it is better thought as a flag to `GET` to wait and subscribe. I.e. the locked key can be deleted and re-set just as any other key can be, via the `sync` MODULE functions.
-
-
-
-

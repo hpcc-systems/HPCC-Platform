@@ -112,9 +112,6 @@ SEQUENTIAL(
     myRedis.GetString('Einnie'),
     );
 
-//myRedis.GetString('I Don\'t Exist');//Returns empty string.
-//myRedis.GetInteger('I Don\'t Exist');//Throws exception.
-
 myRedis.DBSize();
 myRedis.DBSize(1);
 myRedis.DBSize(2);
