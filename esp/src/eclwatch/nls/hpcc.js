@@ -449,6 +449,7 @@ define({root:
     Started: "Started",
     State: "State",
     Status: "Status",
+    Stats: "Stats",
     Stopped: "Stopped",
     Subgraph: "Subgraph",
     Subgraphs: "Subgraphs",

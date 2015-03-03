@@ -270,6 +270,10 @@ define([
             });
         },
 
+        WUGetStats: function (params) {
+            return ESPRequest.send("WsWorkunits", "WUGetStats", params);
+        },
+
         //  Stub waiting for HPCC-10308
         visualisations: [
             { value: "DojoD3ScatterChart", label: "Scatter Chart" },

@@ -83,6 +83,19 @@ define([
                         SubGraphId: item.SubGraphId
                     });
                 }
+
+                var statsTabID = this.createChildTabID("Stats");
+                var statsTab = new DelayLoadWidget({
+                    id: statsTabID,
+                    title: this.i18n.Stats,
+                    closable: false,
+                    delayWidget: "WUStatsWidget",
+                    hpcc: {
+                        type: "stats",
+                        params: this.params
+                    }
+                });
+                this.addChild(statsTab);
                 this._refreshActionState();
             },
 
