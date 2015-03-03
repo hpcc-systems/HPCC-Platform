@@ -545,9 +545,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     OwnedConstThorRow defaultRight;
     unsigned portbase, node;
     IArrayOf<IDelayedFile> fetchFiles;
-    FPosTableEntry *_fPosToNodeMap; // maps fpos->node for all parts of logical file
-    FPosTableEntry *fPosToNodeMap; // If remoteDataFiles, this will point to fPosToLocalPartMap
-    FPosTableEntry *fPosToLocalPartMap; // maps fpos->local part #
+    FPosTableEntry *localFPosToNodeMap; // maps fpos->local part #
+    FPosTableEntry *globalFPosToNodeMap; // maps fpos->node for all parts of file. If file is remote, localFPosToNodeMap will have all parts
     unsigned pendingGroups, superWidth;
     Semaphore pendingGroupSem;
     CriticalSection pendingGroupCrit, statCrit, lookupCrit;
@@ -790,7 +789,6 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
 
                                 unsigned __int64 localFpos;
                                 unsigned files = owner.dataParts.ordinality();
-                                FPosTableEntry *fPosMap = owner.remoteDataFiles ? owner.fPosToNodeMap : owner.fPosToLocalPartMap;
                                 unsigned filePartIndex = 0;
                                 switch (files)
                                 {
@@ -801,13 +799,13 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                         if (isLocalFpos(fpos))
                                             localFpos = getLocalFposOffset(fpos);
                                         else
-                                            localFpos = fpos-fPosMap[0].base;
+                                            localFpos = fpos-owner.localFPosToNodeMap[0].base;
                                         break;
                                     }
                                     default:
                                     {
                                         // which of multiple parts this slave is dealing with.
-                                        FPosTableEntry *result = (FPosTableEntry *)bsearch(&fpos, fPosMap, files, sizeof(FPosTableEntry), partLookup);
+                                        FPosTableEntry *result = (FPosTableEntry *)bsearch(&fpos, owner.localFPosToNodeMap, files, sizeof(FPosTableEntry), partLookup);
                                         if (isLocalFpos(fpos))
                                             localFpos = getLocalFposOffset(fpos);
                                         else
@@ -956,12 +954,12 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             else
             {
                 if (1 == owner.filePartTotal)
-                    dstNode = owner.fPosToNodeMap[0].index;
+                    dstNode = owner.globalFPosToNodeMap[0].index;
                 else if (isLocalFpos(fpos))
                     dstNode = getLocalFposPart(fpos);
                 else
                 {
-                    const void *result = bsearch(&fpos, owner.fPosToNodeMap, owner.filePartTotal, sizeof(FPosTableEntry), slaveLookup);
+                    const void *result = bsearch(&fpos, owner.globalFPosToNodeMap, owner.filePartTotal, sizeof(FPosTableEntry), slaveLookup);
                     if (!result)
                         throw MakeThorException(TE_FetchOutOfRange, "FETCH: Offset not found in offset table; fpos=%" I64F "d", fpos);
                     dstNode = ((FPosTableEntry *)result)->index;
@@ -1587,8 +1585,8 @@ public:
         onFailTransform = localKey = keyHasTlk = false;
         remoteDataFiles = false;
         fetchHandler = NULL;
-        _fPosToNodeMap = fPosToNodeMap = NULL;
-        fPosToLocalPartMap = NULL;
+        globalFPosToNodeMap = NULL;
+        localFPosToNodeMap = NULL;
 
 #ifdef TRACE_USAGE
         unsigned it=0;
@@ -1601,8 +1599,8 @@ public:
     }
     ~CKeyedJoinSlave()
     {
-        delete [] _fPosToNodeMap;
-        delete [] fPosToLocalPartMap;
+        delete [] globalFPosToNodeMap;
+        delete [] localFPosToNodeMap;
         while (doneGroups.ordinality())
         {
             CJoinGroup *jg = doneGroups.dequeue();
@@ -1817,8 +1815,8 @@ public:
         rowLimit = (rowcount_t)helper->getRowLimit();
         additionalStats = 5; // (seeks, scans, accepted, prefiltered, postfiltered)
         needsDiskRead = helper->diskAccessRequired();
-        _fPosToNodeMap = fPosToNodeMap = NULL;
-        fPosToLocalPartMap = NULL;
+        globalFPosToNodeMap = NULL;
+        localFPosToNodeMap = NULL;
         fetchHandler = NULL;
         filePartTotal = 0;
 
@@ -1928,10 +1926,10 @@ public:
                 if (numDataParts)
                 {
                     deserializePartFileDescriptors(data, dataParts);
-                    fPosToLocalPartMap = new FPosTableEntry[numDataParts];
+                    localFPosToNodeMap = new FPosTableEntry[numDataParts];
                     unsigned f;
                     FPosTableEntry *e;
-                    for (f=0, e=&fPosToLocalPartMap[0]; f<numDataParts; f++, e++)
+                    for (f=0, e=&localFPosToNodeMap[0]; f<numDataParts; f++, e++)
                     {
                         IPartDescriptor &part = dataParts.item(f);
                         e->base = part.queryProperties().getPropInt64("@offset");
@@ -1942,10 +1940,7 @@ public:
                 if (remoteDataFiles) // global offset map not needed if remote and have all fetch parts inc. map (from above)
                 {
                     if (numDataParts)
-                    {
                         filePartTotal = numDataParts;
-                        fPosToNodeMap = fPosToLocalPartMap;
-                    }
                 }
                 else
                 {
@@ -1954,9 +1949,9 @@ public:
                     {
                         size32_t offsetMapSz = 0;
                         data.read(offsetMapSz);
-                        fPosToNodeMap = _fPosToNodeMap = new FPosTableEntry[filePartTotal];
+                        globalFPosToNodeMap = new FPosTableEntry[filePartTotal];
                         const void *offsetMapBytes = (FPosTableEntry *)data.readDirect(offsetMapSz);
-                        memcpy(fPosToNodeMap, offsetMapBytes, offsetMapSz);
+                        memcpy(globalFPosToNodeMap, offsetMapBytes, offsetMapSz);
                     }
                 }
                 unsigned encryptedKeyLen;
@@ -1985,6 +1980,8 @@ public:
                 fetchOutputRowIf.setown(createRowInterfaces(fetchOutputMeta,queryActivityId(),queryCodeContext()));
 
                 fetchHandler = new CKeyedFetchHandler(*this);
+
+                FPosTableEntry *fPosToNodeMap = globalFPosToNodeMap ? globalFPosToNodeMap : localFPosToNodeMap;
                 unsigned c;
                 for (c=0; c<filePartTotal; c++)
                 {
