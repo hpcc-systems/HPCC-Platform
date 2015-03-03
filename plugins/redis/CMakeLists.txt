@@ -28,11 +28,8 @@ if (USE_REDIS)
   ADD_PLUGIN(redis PACKAGES REDIS OPTION MAKE_REDIS)
   if ( MAKE_REDIS )
     set (    SRCS
-             redisplugin.hpp
-             redissync.hpp
-
-             redisplugin.cpp
-             redissync.cpp
+             redis.hpp
+             redis.cpp
         )
 
     include_directories (
