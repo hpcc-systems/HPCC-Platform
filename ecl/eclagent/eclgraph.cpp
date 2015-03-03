@@ -989,19 +989,6 @@ void EclSubGraph::execute(const byte * parentExtract)
     {
         updateProgress();
         cleanupActivities();
-
-        {
-            unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now()-startGraphCycles);
-
-            Owned<IWorkUnit> wu(agent->updateWorkUnit());
-            StringBuffer timerText;
-            formatGraphTimerLabel(timerText, parent.queryGraphName(), seqNo+1, id);
-
-            //graphn: id
-            StringBuffer wuScope;
-            formatGraphTimerScope(wuScope, parent.queryGraphName(), seqNo+1, id);
-            updateWorkunitTimeStat(wu, SSTsubgraph, wuScope, StTimeElapsed, timerText.str(), elapsed);
-        }
     }
     agent->updateWULogfile();//Update workunit logfile name in case of rollover
 }

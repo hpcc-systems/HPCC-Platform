@@ -4267,8 +4267,6 @@ bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &r
             filter.setScopeDepth(req.getMinScopeDepth(), req.getMaxScopeDepth());
         else if (!req.getMinScopeDepth_isNull())
             filter.setScopeDepth(req.getMinScopeDepth());
-        if (!req.getIncludeGraphs_isNull())
-            filter.setMergeSources(req.getIncludeGraphs());
 
         bool createDescriptions = false;
         if (!req.getCreateDescriptions_isNull())
