@@ -47,6 +47,11 @@ IConstWorkUnit *WsEclWuInfo::ensureWorkUnit()
 
 void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *resultSetFactory, IConstWUResult &var, unsigned hashWebserviceSeq=0)
 {
+    Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
+    StringAttr noinput;
+    if (var.getResultFieldOpt("noinput", StringAttrAdaptor(noinput)).length() && strToBool(noinput.length(), noinput.get()))  //developer specified not to show field on form
+        return;
+
     SCMStringBuffer varname;
     var.getResultName(varname);
     int seq = var.getResultSequence();
@@ -56,8 +61,6 @@ void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *r
     SCMStringBuffer eclschema;
     var.getResultEclSchema(eclschema);
 
-    SCMStringBuffer s;
-    Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
     StringBuffer width, height, fieldSeq;
     var.getResultFieldOpt("fieldwidth", StringBufferAdaptor(width));
     var.getResultFieldOpt("fieldheight", StringBufferAdaptor(height));
@@ -66,6 +69,7 @@ void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *r
     else
         var.getResultFieldOpt("sequence", StringBufferAdaptor(fieldSeq));
 
+    SCMStringBuffer s;
     Owned<IPropertyTree> part = createPTree("part");
     if (!var.isResultScalar())
     {
@@ -125,23 +129,34 @@ void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *r
     parts.append(*part.getClear());
 }
 
-int orderParts(IInterface * const * pLeft, IInterface * const * pRight)
+int orderMatchingSequence(IPropertyTree * left, IPropertyTree * right)
 {
-    IPropertyTree * right = (IPropertyTree *)*pRight;
-    IPropertyTree * left = (IPropertyTree *)*pLeft;
-    bool hasRightSeq = right->hasProp("@sequence");
-    bool hasLeftSeq = left->hasProp("@sequence");
-    if (hasRightSeq && hasLeftSeq)
-        return left->getPropInt("@sequence") - right->getPropInt("@sequence");
-    if (hasRightSeq)
-        return -1;
-    if (hasLeftSeq)
-        return 1;
     if (!right->hasProp("@name"))
         return -1;
     if (!left->hasProp("@name"))
         return 1;
-    return stricmp(right->queryProp("@name"), left->queryProp("@name"));  //fields without sequence alphabetical AFTER sequenced fields
+    return stricmp(left->queryProp("@name"), right->queryProp("@name"));
+}
+
+int orderParts(IInterface * const * pLeft, IInterface * const * pRight)
+{
+    IPropertyTree * left = (IPropertyTree *)*pLeft;
+    IPropertyTree * right = (IPropertyTree *)*pRight;
+    bool hasLeftSeq = left->hasProp("@sequence");
+    bool hasRightSeq = right->hasProp("@sequence");
+    if (hasLeftSeq && hasRightSeq)
+    {
+        int rightSeq = right->getPropInt("@sequence");
+        int leftSeq = left->getPropInt("@sequence");
+        if (rightSeq == leftSeq)
+            return orderMatchingSequence(left, right);  //fields with same sequence alphabetical within sequence
+        return leftSeq - rightSeq;
+    }
+    if (hasRightSeq)
+        return 1;
+    if (hasLeftSeq)
+        return -1;
+    return orderMatchingSequence(left, right);  //fields without sequence alphabetical AFTER sequenced fields
 }
 
 bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
