@@ -32,6 +32,8 @@ function kill_process () {
     fi
     if [[ -e $PID ]]; then
         pidwait_fn $PID $PROCESS $TIMEOUT
+        local RC_PIDWAIT=$?
+        return $RC_PIDWAIT
     fi
 }
 
@@ -42,7 +44,7 @@ function pidwait_fn () {
     local TIMEOUT=$(($3*1000))
 
     if ps -p $WATCH_PID -o command= | grep -v "${PROCESS}" &>/dev/null ; then
-      exit 1
+      return 0
     fi
 
     kill $WATCH_PID
@@ -52,6 +54,7 @@ function pidwait_fn () {
     done
 
     if [[ $TIMEOUT -le 0 ]] && ps -p $WATCH_PID -o command= | grep "${PROCESS}" &>/dev/null ; then
+      echo "Failed to kill ${PROCESS} gracefully, sending SIGKILL"
       kill -9 $WATCH_PID &>/dev/null
       sleep 1
       kill -0 $WATCH_PID &>/dev/null
