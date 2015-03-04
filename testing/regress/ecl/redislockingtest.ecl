@@ -16,21 +16,22 @@
 ############################################################################## */
 
 IMPORT redisServer FROM lib_redis;
+IMPORT Std;
 
 STRING server := '--SERVER=127.0.0.1:6379';
 STRING password := 'foobared';
 myRedis := redisServer(server, password);
 
 myFuncStr(STRING key) := FUNCTION
- value := myRedis.getString(key);
+ value := myRedis.GetString(key);
  return value;
 END;
 myFuncUtf8(STRING key) := FUNCTION
- value := myRedis.getUtf8(key);
+ value := myRedis.GetUtf8(key);
  return value;
 END;
 myFuncUni(STRING key) := FUNCTION
- value := myRedis.getUnicode(key);
+ value := myRedis.GetUnicode(key);
  return value;
 END;
 
@@ -47,10 +48,6 @@ getUnicode(STRING key, STRING key2, myFuncUni func) := FUNCTION
     RETURN IF (LENGTH(value) = 0, myRedis.locking.SetUnicode(key, func(key2)), value);
 END;
 
-CSleep(INTEGER duration) := BEGINC++
-    sleep(duration);
-ENDC++;
-
 //Test compatibiltiy between locking and normal functions.
 SEQUENTIAL(
     myRedis.FlushDB(),
@@ -58,46 +55,46 @@ SEQUENTIAL(
     myRedis.GetUtf8('utf8'),
     myRedis.locking.GetUtf8('utf8'),
     myRedis.FlushDB(),
-    myRedis.locking.SetUtf8('utf8', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
-    myRedis.GetUtf8('utf8'),
-    myRedis.locking.GetUtf8('utf8'),
+    myRedis.locking.SetUtf8('utf8-2', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
+    myRedis.GetUtf8('utf8-2'),
+    myRedis.locking.GetUtf8('utf8-2'),
     myRedis.FlushDB(),
 
     myRedis.SetUnicode('unicode', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
     myRedis.GetUnicode('unicode'),
     myRedis.locking.GetUnicode('unicode'),
     myRedis.FlushDB(),
-    myRedis.locking.SetUnicode('unicode', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
-    myRedis.GetUnicode('unicode'),
-    myRedis.locking.GetUnicode('unicode'),
+    myRedis.locking.SetUnicode('unicode-2', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
+    myRedis.GetUnicode('unicode-2'),
+    myRedis.locking.GetUnicode('unicode-2'),
     myRedis.FlushDB()
     );
 
 SEQUENTIAL(
     myRedis.FlushDB(),
-    myRedis.SetUtf8('utf8', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
-    myRedis.GetUtf8('utf8'),
-    myRedis.locking.GetUtf8('utf8'),
+    myRedis.SetUtf8('utf8-4', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
+    myRedis.GetUtf8('utf8-4'),
+    myRedis.locking.GetUtf8('utf8-4'),
     myRedis.FlushDB()
     );
 
 SEQUENTIAL(
     myRedis.FlushDB(),
-    myRedis.locking.SetUtf8('utf8', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
-    myRedis.GetUtf8('utf8'),
-    myRedis.locking.GetUtf8('utf8'),
+    myRedis.locking.SetUtf8('utf8-5', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
+    myRedis.GetUtf8('utf8-5'),
+    myRedis.locking.GetUtf8('utf8-5'),
     myRedis.FlushDB()
     );
 
 SEQUENTIAL(
     myRedis.FlushDB(),
-    myRedis.setUtf8('utf8-2', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
-    getUtf8('utf8', 'utf8-2', myFuncUtf8),
+    myRedis.setUtf8('utf8-6', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
+    getUtf8('utf8', 'utf8-6', myFuncUtf8),
 );
 SEQUENTIAL(
     myRedis.FlushDB(),
-    myRedis.setUnicode('utf8-2', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
-    getUnicode('utf8', 'utf8-2', myFuncUni),
+    myRedis.setUnicode('utf8-7', U'אבגדהוזחטיךכלםמןנסעףפץצקרשת'),
+    getUnicode('utf8', 'utf8-7', myFuncUni),
 );
 
 SEQUENTIAL(
@@ -114,7 +111,7 @@ SEQUENTIAL(
     myRedis.FlushDB(),
     myRedis.locking.Getstring('testlock'),/*by default lock expires after 1s*/
     myRedis.exists('testlock'),
-    CSleep(2),
+    Std.System.Debug.Sleep(2000);
     myRedis.exists('testlock'),
 
     myRedis.setString('testlock', 'redis_ecl_lock_blah_blah_blah'),

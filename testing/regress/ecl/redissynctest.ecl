@@ -16,61 +16,83 @@
 ############################################################################## */
 
 IMPORT sync FROM lib_redis;
+IMPORT Std;
 
 STRING server := '--SERVER=127.0.0.1:6379';
 STRING password := 'foobared';
 sync.FlushDB(server, /*database*/, password);
 
-sync.SetBoolean('b', TRUE, server, /*database*/, /*expire*/, password);
-sync.GetBoolean('b', server, /*database*/, password);
+SEQUENTIAL(
+    sync.SetBoolean('b', TRUE, server, /*database*/, /*expire*/, password);
+    sync.GetBoolean('b', server, /*database*/, password);
+    );
 
 IMPORT redisServer FROM lib_redis;
 myRedis := redisServer(server, password);
 
 REAL pi := 3.14159265359;
-myRedis.SetReal('pi', pi);
-myRedis.GetReal('pi');
+SEQUENTIAL(
+    myRedis.SetReal('pi', pi);
+    myRedis.GetReal('pi');
+    myRedis.GetInteger('pi');
+    );
 
 REAL pi2 := pi*pi;
-myRedis.SetReal('pi', pi2, 1);
-myRedis.GetReal('pi', 1);
+SEQUENTIAL(
+    myRedis.SetReal('pi', pi2, 1);
+    myRedis.GetReal('pi', 1);
+    );
 
 INTEGER i := 123456789;
-myRedis.SetInteger('i', i);
-myRedis.GetInteger('i');
+SEQUENTIAL(
+    myRedis.SetInteger('i', i);
+    myRedis.GetInteger('i');
+    );
 
 myRedis2 := redisServer('--SERVER=127.0.0.1:6380', 'youarefoobared');
-
-myRedis2.SetReal('pi', pi2, 1);
-myRedis2.GetReal('pi', 1);
-
-myRedis2.SetInteger('i', i);
-myRedis2.GetInteger('i');
-
-UNSIGNED u := 7;
-myRedis.SetUnsigned('u', u);
-myRedis.GetUnsigned('u');
-
-STRING str  := 'supercalifragilisticexpialidocious';
-myRedis.SetString('str', str);
-myRedis.GetString('str');
-
-UNICODE uni := U'אבגדהוזחטיךכלםמןנסעףפץצקרשת';
-myRedis.setUnicode('uni', uni);
-myRedis.getUnicode('uni');
-
-UTF8 utf := U'אבגדהוזחטיךכלםמןנסעףפץצקרשת';
-myRedis.SetUtf8('utf8', utf);
-myRedis.GetUtf8('utf8');
-
-DATA mydata := x'd790d791d792d793d794d795d796d798d799d79ad79bd79cd79dd79dd79ed79fd7a0d7a1d7a2d7a3d7a4d7a5d7a6d7a7d7a8d7a9d7aa';
-myRedis.SetData('data', mydata);
-myRedis.GetData('data');
+SEQUENTIAL(
+    myRedis2.SetReal('pi', pi2, 1);
+    myRedis2.GetReal('pi', 1);
+    );
 
 SEQUENTIAL(
-    myRedis.Exists('utf8'),
-    myRedis.Del('utf8'),
-    myRedis.Exists('uft8')
+    myRedis2.SetInteger('i', i);
+    myRedis2.GetInteger('i');
+    );
+
+UNSIGNED u := 7;
+SEQUENTIAL(
+    myRedis.SetUnsigned('u', u);
+    myRedis.GetUnsigned('u');
+    );
+
+STRING str  := 'supercalifragilisticexpialidocious';
+SEQUENTIAL(
+    myRedis.SetString('str', str);
+    myRedis.GetString('str');
+    myRedis.FlushDB();
+    myRedis.Exists('str');
+    );
+
+UNICODE uni := U'אבגדהוזחטיךכלםמןנסעףפץצקרשת';
+SEQUENTIAL(
+    myRedis.setUnicode('uni', uni);
+    myRedis.getUnicode('uni');
+    );
+
+UTF8 utf := U'אבגדהוזחטיךכלםמןנסעףפץצקרשת';
+SEQUENTIAL(
+    myRedis.SetUtf8('utf8', utf);
+    myRedis.GetUtf8('utf8');
+    myRedis.Exists('utf8');
+    myRedis.Del('utf8');
+    myRedis.Exists('uft8');
+    );
+
+DATA mydata := x'd790d791d792d793d794d795d796d798d799d79ad79bd79cd79dd79dd79ed79fd7a0d7a1d7a2d7a3d7a4d7a5d7a6d7a7d7a8d7a9d7aa';
+SEQUENTIAL(
+    myRedis.SetData('data', mydata);
+    myRedis.GetData('data');
     );
 
 SEQUENTIAL(
@@ -78,30 +100,26 @@ SEQUENTIAL(
     myRedis.GetInteger('str2int');
     );
 
-CSleep(INTEGER duration) := BEGINC++
-    sleep(duration);
-ENDC++;
+sleep(INTEGER duration) := Std.System.Debug.Sleep(duration * 1000);
 
 SEQUENTIAL(
-    myRedis.Exists('str'),
-    myRedis.Expire('str', , 1000000),/*\mu-s*/
-    CSleep(2),
-    myRedis.Exists('str'),
+    myRedis.Exists('str2'),
+    myRedis.Expire('str2', , 1000),/*\ms*/
+    sleep(2),
+    myRedis.Exists('str2'),
 
-    myRedis.SetString('str', str),
-    myRedis.Exists('str'),
-    myRedis.Expire('str', , 1000000),/*\mu-s*/
-    myRedis.Persist('str'),
-    CSleep(2),
-    myRedis.Exists('str')
+    myRedis.SetString('str3', str),
+    myRedis.Exists('str3'),
+    myRedis.Expire('str3', , 1000),/*\ms*/
+    myRedis.Persist('str3'),
+    sleep(2),
+    myRedis.Exists('str3')
     );
 
-myRedis.GetInteger('pi');
-
 SEQUENTIAL(
-    myRedis.SetString('Einnie', 'Woof', 0, 1000000),
+    myRedis.SetString('Einnie', 'Woof', 0, 1000),
     myRedis.Exists('Einnie');
-    CSleep(2);
+    sleep(2);
     myRedis.Exists('Einnie');
 
     myRedis.SetString('Einnie', 'Woof', 0),
@@ -116,20 +134,20 @@ myRedis.DBSize();
 myRedis.DBSize(1);
 myRedis.DBSize(2);
 
-SEQUENTIAL(
-    myRedis.FlushDB(),
-    myRedis.Exists('str')
-    );
-
 //The follwoing tests the multithreaded caching of the redis connections
 //SUM(NOFOLD(s1 + s2), a) uses two threads
 INTEGER x := 2;
 INTEGER N := 100;
 myRedis.FlushDB();
-myRedis.SetInteger('i', x);
-s1 := DATASET(N, TRANSFORM({ integer a }, SELF.a := myRedis.GetInteger('i')));
-s2 := DATASET(N, TRANSFORM({ integer a }, SELF.a := myRedis.GetInteger('i')/2));
-SUM(NOFOLD(s1 + s2), a);//answer = (x+x/2)*N, in this case 3N.
+s1 := DATASET(N, TRANSFORM({ integer a }, SELF.a := myRedis.GetInteger('transformTest' +  'x'[1..NOFOLD(0)*COUNTER]   )));
+s2 := DATASET(N, TRANSFORM({ integer a }, SELF.a := myRedis.GetInteger('transformTest' +  'x'[1..NOFOLD(0)*COUNTER]   )/2));
+//'x'[1..NOFOLD(0)*COUNTER] prevents the compiler from obeying the 'once' keyword associated with the GetString service definition and
+//therefore calls GetString('transformTest') 2N times as could be intended.  Without this, it is only called once/thread (in this case twice).
+//In either case the resultant aggregrate below will return 1.5xN (1.5*2*100 = 300).
+SEQUENTIAL(
+    myRedis.SetInteger('transformTest', x),
+    OUTPUT(SUM(NOFOLD(s1 + s2), a))//answer = (x+x/2)*N, in this case 300.
+);
 
 myRedis.FlushDB();
 myRedis2.FlushDB();

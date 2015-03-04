@@ -47,7 +47,7 @@ static __thread ThreadTermFunc threadHookChain;
 StringBuffer & appendExpire(StringBuffer & buffer, unsigned expire)
 {
     if (expire > 0)
-        buffer.append(" EX ").append(expire/1000000);
+        buffer.append(" EX ").append(expire/1000);
     return buffer;
 }
 class Reply : public CInterface
@@ -188,7 +188,7 @@ Connection::Connection(ICodeContext * ctx, const char * _options, const char * _
 }
 void Connection::connect(ICodeContext * ctx, unsigned __int64 _database, const char * password)
 {
-    struct timeval to = { timeout/1000000, timeout%1000000 };
+    struct timeval to = { timeout/1000, timeout%1000 };
     context = redisConnectWithTimeout(ip.str(), port, to);
     redisSetTimeout(context, to);
     assertConnection();
@@ -331,7 +331,7 @@ void Connection::updateTimeout(unsigned __int64 _timeout)
         return;
     assertConnection();
     timeout = _timeout;
-    struct timeval to = { timeout/1000000, timeout%1000000 };
+    struct timeval to = { timeout/1000, timeout%1000 };
     assertex(context);
     if (redisSetTimeout(context, to) != REDIS_OK)
     {
@@ -473,7 +473,7 @@ void Connection::persist(ICodeContext * ctx, const char * key)
 }
 void Connection::expire(ICodeContext * ctx, const char * key, unsigned _expire)
 {
-    OwnedReply reply = Reply::createReply(redisCommand(context, "EXPIRE %b %u", key, strlen(key), _expire/1000000));
+    OwnedReply reply = Reply::createReply(redisCommand(context, "EXPIRE %b %u", key, strlen(key), _expire/1000));
     assertOnCommandErrorWithKey(reply->query(), "Expire", key);
 }
 bool Connection::exists(ICodeContext * ctx, const char * key)
@@ -711,7 +711,7 @@ void Connection::encodeChannel(StringBuffer & channel, const char * key) const
 bool Connection::lock(ICodeContext * ctx, const char * key, const char * channel)
 {
     StringBuffer cmd("SET %b %b NX EX ");
-    cmd.append(timeout/1000000);
+    cmd.append(timeout/1000);
 
     OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str(), key, strlen(key), channel, strlen(channel)));
     assertOnError(reply->query(), cmd.append(" of the key '").append(key).append("' failed"));
