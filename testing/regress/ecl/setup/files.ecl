@@ -58,9 +58,10 @@ EXPORT DG_FetchFileName     := '~REGRESS::' + filePrefix + '::C.DG_FetchFile';
 EXPORT DG_FetchFilePreloadName := '~REGRESS::' + filePrefix + '::C.DG_FetchFilePreload';
 EXPORT DG_FetchFilePreloadIndexedName := '~REGRESS::' + filePrefix + '::C.DG_FetchFilePreloadIndexed';
 EXPORT DG_FetchIndex1Name   := '~REGRESS::' + indexPrefix + '::DG_FetchIndex1';
-EXPORT DG_FetchIndex2Name   := '~REGRESS::' + indexPrefix + '::DG_FetchIndex2';
 EXPORT DG_FetchTransIndexName   := '~REGRESS::' + indexPrefix + '::DG_FetchTransIndex';
 EXPORT DG_FetchIndexDiffName:= '~REGRESS::' + indexPrefix + '::DG_FetchIndexDiff';
+EXPORT DG_KeyDiffIndex1Name   := '~REGRESS::' + indexPrefix + '::DG_KeyDiffIndex1';
+EXPORT DG_KeyDiffIndex2Name   := '~REGRESS::' + indexPrefix + '::DG_KeyDiffIndex2';
 
 EXPORT DG_DsFilename        := '~REGRESS::' + filePrefix + '::SerialLibraryDs';
 EXPORT DG_DictFilename      := '~REGRESS::' + filePrefix + '::SerialLibraryDict';
@@ -84,9 +85,10 @@ EXPORT DG_FetchFilePreloadIndexed := PRELOAD(DATASET(DG_FetchFilePreloadIndexedN
 
 
 EXPORT DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield {blob}:= fname, __filepos},DG_FetchIndex1Name);
-//This version of the index is only used for KEYDIFF
 
-EXPORT DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield {blob}:= fname, __filepos},DG_FetchIndex2Name);
+//These versions of the index are only used for KEYDIFF
+EXPORT DG_KeyDiffIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield := fname, __filepos},DG_KeyDiffIndex1Name);
+EXPORT DG_KeyDiffIndex2 := INDEX(DG_KeyDiffIndex1, DG_KeyDiffIndex2Name);
 
 //This version is used for testing reading from a file requiring translation 
 EXPORT DG_FetchTransIndex := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield {blob}:= fname, __filepos},DG_FetchTransIndexName);

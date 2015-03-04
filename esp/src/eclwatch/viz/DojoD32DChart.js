@@ -38,7 +38,7 @@ define([
 
         renderTo: function (_target) {
             this.chart = new MultiChartSurface()
-                .chartType(this._chartType)
+                .chart_type(this._chartType)
                 .target(_target.domNodeID)
             ;
             if (this.chart.show_title) {

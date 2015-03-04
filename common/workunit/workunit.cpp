@@ -572,6 +572,37 @@ class ExtractedStatistic : public CInterfaceOf<IConstWUStatistic>
 public:
     virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const
     {
+        if (!description && createDefault)
+        {
+            switch (kind)
+            {
+            case StTimeElapsed:
+                {
+                    if (scopeType != SSTsubgraph)
+                        break;
+                    //Create a default description for a root subgraph
+                    const char * colon = strchr(scope, ':');
+                    if (!colon)
+                        break;
+
+                    const char * subgraph = colon+1;
+                    //Check for nested subgraph
+                    if (strchr(subgraph, ':'))
+                        break;
+
+                    assertex(strncmp(subgraph, SubGraphScopePrefix, strlen(SubGraphScopePrefix)) == 0);
+                    StringAttr graphname;
+                    graphname.set(scope, colon - scope);
+                    unsigned subId = atoi(subgraph + strlen(SubGraphScopePrefix));
+
+                    StringBuffer desc;
+                    formatGraphTimerLabel(desc, graphname, 0, subId);
+                    str.set(desc);
+                    return str;
+                }
+            }
+        }
+
         str.set(description);
         return str;
     }
@@ -825,11 +856,20 @@ protected:
             IStatisticCollection * curCollection = &collections.tos();
             if (childIterators.ordinality() < collections.ordinality())
             {
-                //Start iterating the children for the current collection
-                childIterators.append(curCollection->getScopes(NULL));
-                if (!childIterators.tos().first())
+                if (!filter || filter->recurseChildScopes(curStat->scopeType, curStat->scope))
                 {
-                    finishCollection();
+                    //Start iterating the children for the current collection
+                    childIterators.append(curCollection->getScopes(NULL));
+                    if (!childIterators.tos().first())
+                    {
+                        finishCollection();
+                        continue;
+                    }
+                }
+                else
+                {
+                    //Don't walk the child scopes
+                    collections.pop();
                     continue;
                 }
             }
@@ -5476,8 +5516,6 @@ IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter
 
     statistics.load(p,"Statistics/*");
     Owned<IConstWUStatisticIterator> localStats = new WorkUnitStatisticsIterator(statistics, 0, (IConstWorkUnit *) this, filter);
-    if (filter && !filter->queryMergeSources())
-        return *localStats.getClear();
 
     const char * wuid = p->queryName();
     Owned<IConstWUStatisticIterator> graphStats = new CConstGraphProgressStatisticsIterator(wuid, filter);

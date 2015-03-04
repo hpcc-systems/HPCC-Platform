@@ -26,9 +26,10 @@
 class CKeyedJoinMaster : public CMasterActivity
 {
     IHThorKeyedJoinArg *helper;
+    Owned<IFileDescriptor> dataFileDesc;
     Owned<CSlavePartMapping> dataFileMapping;
     MemoryBuffer offsetMapMb, initMb;
-    bool localKey;
+    bool localKey, remoteDataFiles;
     unsigned numTags;
     mptag_t tags[4];
     ProgressInfoArray progressInfoArr;
@@ -58,6 +59,7 @@ public:
         numTags = 0;
         tags[0] = tags[1] = tags[2] = tags[3] = TAG_NULL;
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        remoteDataFiles = false;
     }
     ~CKeyedJoinMaster()
     {
@@ -208,7 +210,7 @@ public:
                         {
                             if (superIndex)
                                 throw MakeActivityException(this, 0, "Superkeys and full keyed joins are not supported");
-                            Owned<IFileDescriptor> dataFileDesc = getConfiguredFileDescriptor(*dataFile);
+                            dataFileDesc.setown(getConfiguredFileDescriptor(*dataFile));
                             void *ekey;
                             size32_t ekeylen;
                             helper->getFileEncryptKey(ekeylen,ekey);
@@ -225,12 +227,26 @@ public:
                             }
                             else if (encrypted)
                                 throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", dataFile->queryLogicalName());
-                            unsigned dataReadWidth = (unsigned)container.queryJob().getWorkUnitValueInt("KJDRR", 0);
-                            if (!dataReadWidth || dataReadWidth>container.queryJob().querySlaves())
-                                dataReadWidth = container.queryJob().querySlaves();
-                            Owned<IGroup> grp = container.queryJob().querySlaveGroup().subset((unsigned)0, dataReadWidth);
-                            dataFileMapping.setown(getFileSlaveMaps(dataFile->queryLogicalName(), *dataFileDesc, container.queryJob().queryUserDescriptor(), *grp, false, false, NULL));
-                            dataFileMapping->serializeFileOffsetMap(offsetMapMb.clear());
+
+                            /* If fetch file is local to cluster, fetches are sent to be processed to local node, each node has info about it's
+                             * local parts only.
+                             * If fetch file is off cluster, fetches are performed by requesting node directly on fetch part, therefore each nodes
+                             * needs all part descriptors.
+                             */
+                            remoteDataFiles = false;
+                            RemoteFilename rfn;
+                            dataFileDesc->queryPart(0)->getFilename(0, rfn);
+                            if (!rfn.queryIP().ipequals(container.queryJob().querySlaveGroup().queryNode(0).endpoint()))
+                                remoteDataFiles = true;
+                            if (!remoteDataFiles) // local to cluster
+                            {
+                                unsigned dataReadWidth = (unsigned)container.queryJob().getWorkUnitValueInt("KJDRR", 0);
+                                if (!dataReadWidth || dataReadWidth>container.queryJob().querySlaves())
+                                    dataReadWidth = container.queryJob().querySlaves();
+                                Owned<IGroup> grp = container.queryJob().querySlaveGroup().subset((unsigned)0, dataReadWidth);
+                                dataFileMapping.setown(getFileSlaveMaps(dataFile->queryLogicalName(), *dataFileDesc, container.queryJob().queryUserDescriptor(), *grp, false, false, NULL));
+                                dataFileMapping->serializeFileOffsetMap(offsetMapMb.clear());
+                            }
                         }
                         else
                             indexFile.clear();
@@ -258,8 +274,19 @@ public:
             IDistributedFile *dataFile = queryReadFile(1);
             if (dataFile)
             {
-                dataFileMapping->serializeMap(slave, dst);
-                dst.append(offsetMapMb);
+                dst.append(remoteDataFiles);
+                if (remoteDataFiles)
+                {
+                    UnsignedArray parts;
+                    parts.append((unsigned)-1); // weird convention meaning all
+                    dst.append(dataFileDesc->numParts());
+                    dataFileDesc->serializeParts(dst, parts);
+                }
+                else
+                {
+                    dataFileMapping->serializeMap(slave, dst);
+                    dst.append(offsetMapMb);
+                }
             }
             else
             {

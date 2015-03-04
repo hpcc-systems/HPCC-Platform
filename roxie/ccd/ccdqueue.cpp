@@ -429,7 +429,7 @@ public:
 
 extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
 {
-    if ((unsigned short)_len != _len)
+    if ((unsigned short)_len != _len && !localSlave)
     {
         StringBuffer s;
         RoxiePacketHeader *header = (RoxiePacketHeader *) _data;

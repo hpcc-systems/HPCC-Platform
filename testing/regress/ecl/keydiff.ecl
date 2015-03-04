@@ -22,7 +22,7 @@
 
 //class=file
 //class=index
-//version multiPart=false
+//noversion multiPart=false   // This should be supported but hthor adds meta information into the index that key diff doesn't support
 //version multiPart=true
 //version multiPart=true,useLocal=true
 
@@ -39,6 +39,6 @@ import $.setup;
 Files := setup.Files(multiPart, useLocal, useTranslation);
 
 
-KEYDIFF(Files.DG_FetchIndex1, Files.DG_FetchIndex2, Files.DG_FetchIndexDiffName, OVERWRITE);
+KEYDIFF(Files.DG_KeyDiffIndex1, Files.DG_KeyDiffIndex2, Files.DG_FetchIndexDiffName, OVERWRITE);
 
 
