@@ -166,6 +166,7 @@ define({root:
     FileUploadStillInProgress: "File upload still in progress",
     Filter: "Filter",
     Find: "Find",
+    Finished: "Finished",
     FindNext: "Find Next",
     FindPrevious: "Find Previous",
     FirstName: "First Name",

@@ -128,8 +128,28 @@ define([
                     },
                     Label: { label: this.i18n.Label, sortable: true },
                     Complete: { label: this.i18n.Completed, width: 72, sortable: true },
+                    WhenStarted: {
+                        label: this.i18n.Started, width: 90,
+                        formatter: function (whenStarted) {
+                            if (whenStarted) {
+                                var dateTime = new Date(whenStarted);
+                                return dateTime.toLocaleTimeString();
+                            }
+                            return "";
+                        }
+                    },
+                    WhenFinished: {
+                        label: this.i18n.Finished, width: 90,
+                        formatter: function (whenFinished, idx) {
+                            if (whenFinished) {
+                                var dateTime = new Date(whenFinished);
+                                return dateTime.toLocaleTimeString();
+                            }
+                            return "";
+                        }
+                    },
                     Time: {
-                        label: this.i18n.Time, width: 90, sortable: true,
+                        label: this.i18n.Duration, width: 90, sortable: true,
                         formatter: function (totalSeconds, idx) {
                             var hours = Math.floor(totalSeconds / 3600);
                             totalSeconds %= 3600;
