@@ -26,6 +26,7 @@ useSequential := #IFDEFINED(root.useSequential, false);
 
 #onwarning (2309, ignore);      // remove complaint aboute filtered right preventing keyed join
 #onwarning (4515, ignore);
+#onwarning (4523, ignore);      // index read is not limited
 
 import $.setup;
 
