@@ -47,22 +47,9 @@ if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
     sleep 1
 fi
 
-masterpid=`cat ${MASTER_PID_NAME} 2> /dev/null`
-if [ ! -z $masterpid ]; then
-  while :
-  do
-    kill -0 $masterpid >& /dev/null
-    masterRunning=$(( $? == 0 ? 1 : 0 ))
-    if [ 0 == $masterRunning ]; then
-      break
-    fi
-    echo --------------------------
-    echo stopping thormaster $THORMASTER 
-    kill $masterpid >& /dev/null
-    sleep 8
-    kill -9 $masterpid >& /dev/null
-    sleep 1
-  done
+kill_process ${MASTER_PID_NAME} thormaster_${comp_base} 8
+if [ $? -eq 1 ]; then
+    echo "unable to kill ${THORNAME}, in zombie state"
 fi
 
 echo --------------------------
