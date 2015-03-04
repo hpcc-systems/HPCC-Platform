@@ -116,9 +116,9 @@ Race Retrieval and Locking Keys
 A common use of external caching systems such as **redis** is for temporarily storing data that may be expensive, computationally or otherwise, to obtain and thus doing so
 *only once* is paramount. In such a scenario it is possible (in cases usual) for multiple clients/requests to *hit* the cache simultaneously and upon finding that the data
 requested has not yet been stored, it is desired that only one of such requests obtain the new value and then store it for the others to then also obtain (from the cache).
-This plugin offers a solution to such a problem via the `locking` MODULE within the `redisServer` MODULE. This module contains only three function categories - the
-`SET` and `GET` functions for **STRING**, **UTF8**, and **UNICODE** (i.e. only those that return empty strings) and lastley, an auxiliary function `Unlock` used to manually
-unlock locked keys as it be discussed.
+This plugin offers a solution to such a problem via the `GetOrLock` and `SetAndPublish` functions within the `redisServer` and `sync` modules of lib_redis.
+This module contains only three function categories - the `SET` and `GET` functions for **STRING**, **UTF8**, and **UNICODE** (i.e. only those that return empty strings)
+and lastley, an auxiliary function `Unlock` used to manually unlock locked keys as it be discussed.
 
 The principle here is based around a *cache miss* in which a requested key does not exist, the first requester (*race winner*) 'locks' the key in an atomic fashion.
 Any other simultaneous requester (*race loser*) finds that the key exists but has been locked and thus **SUBSCRIBES** to the key awaiting a **PUBLICATION** message
@@ -140,9 +140,9 @@ SEQUENTIAL(
     myRedis.SetString('poppins', poppins, 3),
 
     //If the key does not exist it will 'lock' the key and retrun an empty STRING.
-    STRING value := myRedis.locking.GetString('supercali- what?');
+    STRING value := myRedis.GetOrLockString('supercali- what?');
     //All locking.Set<type>() return the value passed in as the 2nd parameter.
-    IF (LENGTH(value) == 0, myRedis.locking.SetString('supercali- what?', myFunc('poppins', 3)), value);
+    IF (LENGTH(value) == 0, myRedis.SetAndPublishString('supercali- what?', myFunc('poppins', 3)), value);
     );
 ```
 
