@@ -24,7 +24,11 @@
 
 if (NOT XERCES_FOUND)
   IF (WIN32)
-    SET (xerces_libs "xerces-c_2")
+    IF (${ARCH64BIT} EQUAL 1)
+      SET (xerces_libs "xerces-c_3")
+    ELSE()
+      SET (xerces_libs "xerces-c_2")
+    ENDIF()
   ELSE()
     SET (xerces_libs "xerces-c")
   ENDIF()
