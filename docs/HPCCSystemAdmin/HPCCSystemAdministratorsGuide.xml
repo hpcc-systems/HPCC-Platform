@@ -688,13 +688,19 @@
           <programlisting>  0 1 * * * /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting>
 
           <para>Backupnode writes out its activity to a log file. That log can
-          be found at /var/log/HPCCSystems/backupnode/MM_DD_YYYY_HH_MM_SS.log
-          with the (MM) Month, (DD) Day, (YYYY) 4-digit Year, (HH) Hour, (MM)
-          Minutes, and (SS) Seconds of the back up in the log file name. The
-          main log file exists on the Thor master node. It shows what nodes it
-          is run on and if it finished. You can find other backupnode logs on
-          each of the thorslaves showing what files, if any, it needed to
-          “restore”.</para>
+          be found at:</para>
+
+          <para> /var/log/HPCCSystems/backupnode/MM_DD_YYYY_HH_MM_SS.log
+          </para>
+
+          <para>The (MM) Month, (DD) Day, (YYYY) 4-digit Year, (HH) Hour, (MM)
+          Minutes, and (SS) Seconds of the back up comprising the log file
+          name.</para>
+
+          <para>The main log file exists on the Thor master node. It shows
+          what nodes it is run on and if it finished. You can find other
+          backupnode logs on each of the Thor nodes showing what files, if
+          any, it needed to “restore”.</para>
 
           <para>It is important to check the logs to ensure the previous back
           ups completed successfully. The following entry is from the
@@ -1401,7 +1407,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           major disaster such as, a major earthquake, a tidal wave, extended
           total power loss, multiple fiber cuts, where the systems will be out
           for a day or more. The likelihood of that occurring may not justify
-          the costs of preventing against it. </para>
+          the costs of preventing against it.</para>
         </sect3>
 
         <sect3>
