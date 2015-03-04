@@ -148,10 +148,11 @@ private:
     RoxiePacketHeader(const RoxiePacketHeader &source);
 
 public:
-    unsigned short packetlength;
+    unsigned packetlength;
     unsigned short retries;         // how many retries on this query, the high bits are used as flags, see above
     unsigned short overflowSequence;// Used if more than one packet-worth of data from server - eg keyed join. We don't mind if we wrap...
     unsigned short continueSequence;// Used if more than one chunk-worth of data from slave. We don't mind if we wrap 
+    unsigned short channel;         // multicast family to send on
     unsigned activityId;            // identifies the helper factory to be used (activityId in graph)
     hash64_t queryHash;             // identifies the query
 
@@ -160,7 +161,6 @@ public:
 #ifdef TIME_PACKETS
     unsigned tick;
 #endif
-    unsigned short channel;         // multicast family to send on
 
     inline RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
     {
