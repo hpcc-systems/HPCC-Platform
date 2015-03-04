@@ -948,9 +948,14 @@ void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpressio
             const char * moduleName = parentScope->queryFullName();
             if (moduleName)
             {
-                IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
-                depend->setProp("@module", moduleName);
-                depend->setProp("@name", expr->queryName()->str());
+                VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, expr->queryName()->str());
+
+                if (!curAttrTree->queryPropTree(xpath.str()))
+                {
+                    IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
+                    depend->setProp("@module", moduleName);
+                    depend->setProp("@name", expr->queryName()->str());
+                }
             }
         }
     }
