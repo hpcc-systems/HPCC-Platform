@@ -15,16 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-IMPORT sync FROM lib_redis;
+IMPORT redis FROM lib_redis;
 IMPORT Std;
 
 STRING server := '--SERVER=127.0.0.1:6379';
 STRING password := 'foobared';
-sync.FlushDB(server, /*database*/, password);
+redis.FlushDB(server, /*database*/, password);
 
 SEQUENTIAL(
-    sync.SetBoolean('b', TRUE, server, /*database*/, /*expire*/, password);
-    sync.GetBoolean('b', server, /*database*/, password);
+    redis.SetBoolean('b', TRUE, server, /*database*/, /*expire*/, password);
+    redis.GetBoolean('b', server, /*database*/, password);
     );
 
 IMPORT redisServer FROM lib_redis;
@@ -64,6 +64,12 @@ UNSIGNED u := 7;
 SEQUENTIAL(
     myRedis.SetUnsigned('u', u);
     myRedis.GetUnsigned('u');
+    );
+
+myRedis3 := RedisServer('--SERVER=127.0.0.1:6381', password);
+SEQUENTIAL(
+    myRedis3.SetUnsigned('u3', u);
+    myRedis3.GetUnsigned('u3');
     );
 
 STRING str  := 'supercalifragilisticexpialidocious';

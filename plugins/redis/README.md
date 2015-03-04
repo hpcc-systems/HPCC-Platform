@@ -30,7 +30,7 @@ on different ports.
 The **redis-server** package comes with the redis client **redis-cli**. This can be used to send and receive commands to and from the server, invoked by `redis-cli` or, for example,
 `redis-cli -p 6380` to connect to the redis-cache on port 6380 (assuming one has been started).
 
-Perhaps on of the most handy uses of **redis-cli** is the ability to monitor all commands issued to the server via the redis command `MONITOR`. `INFO ALL` is also a useful command
+Perhaps one of the most handy uses of **redis-cli** is the ability to monitor all commands issued to the server via the redis command `MONITOR`. `INFO ALL` is also a useful command
 for listing the server and cache settings and statistics. *Note:* that if **requirepass** is activated **redis-cli** with require you to authenticate via `AUTH <passcode>`.
 
 Further [documentation](http://redis.io/documentation) is available with a full list of redis [commands](http://redis.io/commands).
@@ -38,10 +38,10 @@ Further [documentation](http://redis.io/documentation) is available with a full 
 The Actual Plugin
 -----------------
 
-The bulk of this redis plugin for **ECL** is made up of the various `SET` and `GET` commands e.g. `GetString` or `SetReal`. They are accessible via the module `sync`
+The bulk of this redis plugin for **ECL** is made up of the various `SET` and `GET` commands e.g. `GetString` or `SetReal`. They are accessible via the module `redis`
 from the redis plugin **ECL** library `lib-redis`. i.e.
 ```
-IMPORT sync FROM lib_redis;
+IMPORT redis FROM lib_redis;
 ```
 Here is a list of the core plugin **functions**.
 
@@ -90,7 +90,7 @@ The core points to note here are:
    * `UNSIGNED expire` has a default of **0**, i.e. *forever*.
 
 ###The redisServer MODULE
-To avoid the combersom and unnecessary need to constantly pass `options` and `password` with each function call, the module `redisServer` can be imported to effectively 
+To avoid the cumbersome and unnecessary need to constantly pass `options` and `password` with each function call, the module `redisServer` can be imported to effectively 
 *wrap* the above functions.
 ```
 IMPORT redisServer FROM lib_redis;
@@ -116,9 +116,9 @@ Race Retrieval and Locking Keys
 A common use of external caching systems such as **redis** is for temporarily storing data that may be expensive, computationally or otherwise, to obtain and thus doing so
 *only once* is paramount. In such a scenario it is possible (in cases usual) for multiple clients/requests to *hit* the cache simultaneously and upon finding that the data
 requested has not yet been stored, it is desired that only one of such requests obtain the new value and then store it for the others to then also obtain (from the cache).
-This plugin offers a solution to such a problem via the `GetOrLock` and `SetAndPublish` functions within the `redisServer` and `sync` modules of lib_redis.
+This plugin offers a solution to such a problem via the `GetOrLock` and `SetAndPublish` functions within the `redisServer` and `redis` modules of lib_redis.
 This module contains only three function categories - the `SET` and `GET` functions for **STRING**, **UTF8**, and **UNICODE** (i.e. only those that return empty strings)
-and lastley, an auxiliary function `Unlock` used to manually unlock locked keys as it be discussed.
+and lastly, an auxiliary function `Unlock` used to manually unlock locked keys as it be discussed.
 
 The principle here is based around a *cache miss* in which a requested key does not exist, the first requester (*race winner*) 'locks' the key in an atomic fashion.
 Any other simultaneous requester (*race loser*) finds that the key exists but has been locked and thus **SUBSCRIBES** to the key awaiting a **PUBLICATION** message
@@ -159,3 +159,24 @@ A few notes to point out here:
     have the key-value received on another, and yet, the key-value still does not exist on the cache.
    * At present the 'lock' is not as such an actual lock, as only the `locking.Get<type>` functions acknowledge it. By current implementation it is better thought as a flag for
    `GET` to wait and subscribe. I.e. the locked key can be deleted and re-set just as any other key can be.
+   * Since the timeout duration is not for an individual plugin call but instead that waiting for each reply from the server, the actual possible maximum timeout duration differs from
+     various functions within this plugin, i.e. some functions do more than others. Below is a table for each of the plugin functions (or catagories of) including the maximum possible and
+     nominal expected, where the latter is due to using a cached connection, i.e. neither the server IP, port, nor password have changed from the function called prior to the one in
+     question. The values given are multiples of the given timeout.
+
+| Operation/Function  | Nominal | Maximum | Diff due to...   |
+|:--------------------|:-------:|:-------:|-----------------:|
+| A new connection    | 3       | 4       | database         |
+| Cached connection   | 0       | 2       | database, timeout|
+| Get<type>           | 1       | 5       | new connection   |
+| Set<type>           | 1       | 5       | new connection   |
+| FlushDB             | 1       | 5       | new connection   |
+| Del                 | 1       | 5       | new connection   |
+| Persist             | 1       | 5       | new connection   |
+| Exists              | 1       | 5       | new connection   |
+| DBSize              | 1       | 5       | new connection   |
+| Expire              | 1       | 5       | new connection   |
+| GetOrLock           | 7       | 11      | new connection   |
+| GetOrLock (locked)  | 8       | 12      | new connection   |
+| SetAndPublish       | 2       | 6       | new connection   |
+| Unlock              | 5       | 9       | new connection   |
