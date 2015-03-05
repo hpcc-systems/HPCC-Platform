@@ -600,28 +600,39 @@
     <link linkend="configuring-a-multi-node-system"><emphasis>Configuring a
     Multi-Node System</emphasis></link> for more info about configuring your
     system. With the correct environment.xml file in place, you must then run
-    the <emphasis role="bold">initldap</emphasis> utility that installs the
-    initial security components and the default users.</para>
+    the <emphasis role="bold">initldap</emphasis> utility that initializes the
+    security components and the default users.</para>
 
     <sect3>
       <title>The initldap Utility</title>
 
-      <para>The initldap utility is used to create the HPCC Administrator's
-      user account and the HPCC OUs. The initldap utility uses the settings in
-      the LDAPServer component(s) in the environment.xml bound to the
-      configured ESPs.</para>
+      <para>The initldap utility creates the HPCC Administrator's user account
+      and the HPCC OUs for a newly defined LDAP server. The initldap utility
+      extracts these settings from the LDAPServer component(s) in the
+      environment.xml bound to the configured ESPs.</para>
 
-      <para>Once you complete your configuration with LDAP components enabled
-      and have distributed your environment.xml file to all nodes, you must
-      then run the <emphasis role="bold">initldap</emphasis> utility.</para>
+      <para>You run the <emphasis role="bold">initldap</emphasis> utility once
+      you complete your configuration with LDAP components enabled and have
+      distributed your environment.xml file to all nodes.</para>
 
       <programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting>
 
       <para>The <emphasis role="bold">initldap</emphasis> utility prompts you
       for LDAP Administrator credentials. Enter the appropriate values when
-      prompted. The initldap utility uses those values to initialize the LDAP
-      server and create the HPCC System User. It also creates all of the
-      required OUs.</para>
+      prompted. </para>
+
+      <para>The following example of initldap for a 389DirectoryServer
+      deployment. </para>
+
+      <para><programlisting>Enter the '389DirectoryServer' LDAP Admin User name on '10.123.456.78'...Directory Manager        
+Enter the LDAP Admin user 'Directory Manager' password...********
+
+Ready to initialize HPCC LDAP Environment, using the following settings
+       LDAP Server     : 10.123.456.78
+       LDAP Type       : 389DirectoryServer
+       HPCC Admin User : HPCCAdmin389
+Proceed?  y/n 
+</programlisting></para>
     </sect3>
 
     <sect3>
