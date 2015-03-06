@@ -892,7 +892,7 @@ unsigned getAffinityCpus()
 {
     unsigned numCpus = 0;
     DWORD ProcessAffinityMask, SystemAffinityMask;
-    if (GetProcessAffinityMask(GetCurrentProcess(), &ProcessAffinityMask, &SystemAffinityMask))
+    if (GetProcessAffinityMask(GetCurrentProcess(), (PDWORD_PTR)&ProcessAffinityMask, (PDWORD_PTR)&SystemAffinityMask))
     {
         unsigned i = 0;
         while (ProcessAffinityMask)

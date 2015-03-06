@@ -2745,12 +2745,12 @@ public:
             m_ldapconfig->getLdapHost(server);
             fullserver.append(server.str());
             LPWSTR whost = (LPWSTR)alloca((fullserver.length() +1) * sizeof(WCHAR));
-            ConvertCToW(whost, fullserver.str());
+            ConvertCToW((unsigned short *)whost, fullserver.str());
 
             LPWSTR wusername = (LPWSTR)alloca((strlen(username) + 1) * sizeof(WCHAR));
-            ConvertCToW(wusername, username);
+            ConvertCToW((unsigned short *)wusername, username);
             LPWSTR wnewpasswd = (LPWSTR)alloca((strlen(newPassword) + 1) * sizeof(WCHAR));
-            ConvertCToW(wnewpasswd, newPassword);
+            ConvertCToW((unsigned short *)wnewpasswd, newPassword);
             usriSetPassword.usri1003_password  = wnewpasswd;
             nStatus = NetUserSetInfo(whost, wusername,  1003, (LPBYTE)&usriSetPassword, NULL);
 
