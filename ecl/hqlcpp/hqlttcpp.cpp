@@ -2924,44 +2924,47 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         }
     }
 
-    //Sort,Sort->join is O(NlnN) lookup join using a hash table is O(N) =>convert for hthor/roxie
-    if (!isThorCluster(targetClusterType) &&
-        !expr->hasAttribute(_normalized_Atom) && !expr->hasAttribute(smartAtom) && !expr->hasAttribute(streamedAtom))
+    if (!isThorCluster(targetClusterType) && !expr->hasAttribute(_normalized_Atom))
     {
-        bool createLookup = false;
-        if ((op == no_join) && options.convertJoinToLookup)
+        if (!expr->hasAttribute(streamedAtom) && !expr->hasAttribute(smartAtom))
         {
-            if ((targetClusterType == RoxieCluster) || hasFewRows(rightDs))
-                if (!isFullJoin(expr) && !isRightJoin(expr) && !expr->hasAttribute(partitionRightAtom))
-                    createLookup = !expr->hasAttribute(_lightweight_Atom);
-        }
-
-        if (joinInfo.hasOptionalEqualities())
-            createLookup = false;           //doesn't support it yet
-        else if (createLookup && joinInfo.queryLeftSort().ordinality())
-        {
-            //Check this isn't going to generate a between join - if it is that takes precedence.
-            if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftSort().ordinality() == joinInfo.slidingMatches.ordinality()))
-                createLookup = false;
-        }
-
-        if (createLookup)
-        {
-            IHqlExpression * lhs = expr->queryChild(0);
-            HqlExprArray args;
-            if (isGrouped(lhs))
+            //Sort,Sort->join is O(NlnN) lookup join using a hash table is O(N) =>convert for hthor/roxie
+            bool createLookup = false;
+            if ((op == no_join) && options.convertJoinToLookup)
             {
-                OwnedHqlExpr ungroup = createDataset(no_group, LINK(lhs));
-                args.append(*cloneInheritedAnnotations(expr, ungroup));
+                if ((targetClusterType == RoxieCluster) || hasFewRows(rightDs))
+                    if (!isFullJoin(expr) && !isRightJoin(expr) && !expr->hasAttribute(partitionRightAtom))
+                        createLookup = !expr->hasAttribute(_lightweight_Atom);
             }
-            else
-                args.append(*LINK(lhs));
-            unwindChildren(args, expr, 1);
-            args.append(*createAttribute(manyAtom));
-            args.append(*createAttribute(lookupAtom));
-            return expr->clone(args);
+
+            if (joinInfo.hasOptionalEqualities())
+                createLookup = false;           //doesn't support it yet
+            else if (createLookup && joinInfo.queryLeftSort().ordinality())
+            {
+                //Check this isn't going to generate a between join - if it is that takes precedence.
+                if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftSort().ordinality() == joinInfo.slidingMatches.ordinality()))
+                    createLookup = false;
+            }
+
+            if (createLookup)
+            {
+                IHqlExpression * lhs = expr->queryChild(0);
+                HqlExprArray args;
+                if (isGrouped(lhs))
+                {
+                    OwnedHqlExpr ungroup = createDataset(no_group, LINK(lhs));
+                    args.append(*cloneInheritedAnnotations(expr, ungroup));
+                }
+                else
+                    args.append(*LINK(lhs));
+                unwindChildren(args, expr, 1);
+                args.append(*createAttribute(manyAtom));
+                args.append(*createAttribute(lookupAtom));
+                return expr->clone(args);
+            }
         }
 
+        //Ensure that inputs to the activities in hthor/roxie are sorted and grouped.  (Should really be done in the engines)
         OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, joinInfo.queryLeftSort(), options.implicitSubSort);
         OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, joinInfo.queryRightSort(), options.implicitSubSort);
         try
