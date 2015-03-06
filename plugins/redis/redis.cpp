@@ -44,10 +44,9 @@ static const char * REDIS_LOCK_PREFIX = "redis_ecl_lock";
 static __thread Connection * cachedConnection;
 static __thread ThreadTermFunc threadHookChain;
 
-static void * allocateAndCopy(const char * src, size_t size)
+static void * allocateAndCopy(const void * src, size_t size)
 {
-    void * value = rtlMalloc(size);
-    return memcpy(value, src, size);
+    return memcpy(rtlMalloc(size), src, size);
 }
 static StringBuffer & appendExpire(StringBuffer & buffer, unsigned expire)
 {
@@ -129,7 +128,7 @@ protected :
     void assertOnCommandErrorWithKey(const redisReply * reply, const char * cmd, const char * key);
     void assertConnection();
     void updateTimeout(unsigned __int64 _timeout);
-    unsigned hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password) const;
+    static unsigned hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password);
     bool isSameConnection(ICodeContext * ctx, const char * _options, const char * password) const;
 
     //-------------------------------LOCKING------------------------------------------------
@@ -222,7 +221,7 @@ bool Connection::isSameConnection(ICodeContext * ctx, const char * _options, con
 {
     return (hashServerIpPortPassword(ctx, _options, password) == serverIpPortPasswordHash);
 }
-unsigned Connection::hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password) const
+unsigned Connection::hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password)
 {
     return hashc((const unsigned char*)_options, strlen(_options), hashc((const unsigned char*)password, strlen(password), 0));
 }
@@ -679,7 +678,7 @@ void Connection::lockGet(ICodeContext * ctx, const char * key, size_t & returnSi
 //---------------------------------------------------------------------------------------
 void Connection::encodeChannel(StringBuffer & channel, const char * key) const
 {
-    channel.append(REDIS_LOCK_PREFIX).append("_").append(key).append("_").append(database).append("_").append(ip.str()).append("_").append(port);
+    channel.append(REDIS_LOCK_PREFIX).append("_").append(key).append("_").append(database);
 }
 bool Connection::lock(ICodeContext * ctx, const char * key, const char * channel)
 {
@@ -689,9 +688,7 @@ bool Connection::lock(ICodeContext * ctx, const char * key, const char * channel
     OwnedReply reply = Reply::createReply(redisCommand(context, cmd.str(), key, strlen(key), channel, strlen(channel)));
     assertOnError(reply->query(), cmd.append(" of the key '").append(key).append("' failed"));
 
-    if (reply->query()->type == REDIS_REPLY_STATUS && strcmp(reply->query()->str, "OK") == 0)
-        return true;
-    return false;
+    return (reply->query()->type == REDIS_REPLY_STATUS && strcmp(reply->query()->str, "OK") == 0);
 }
 void Connection::unlock(ICodeContext * ctx, const char * key)
 {
@@ -769,9 +766,9 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
     else
     {
         //Check that we SUBSCRIBEd to the correct channel (which could have been manually SET).
-        if (strcmp(reply->query()->str, channel) !=0 )
+        if (strcmp(reply->query()->str, channel.str()) !=0 )
         {
-            VStringBuffer msg("Redis Plugin: ERROR - the key '%s', on database %" I64F "u, is locked with a channel ('%s') different to that subscribed to.", key, database, reply->query()->str);
+            VStringBuffer msg("Redis Plugin: ERROR - the key '%s', on database %" I64F "u, is locked with a channel ('%s') different to that subscribed to (%s).", key, database, reply->query()->str, channel.str());
             rtlFail(0, msg.str());
             //MORE: We could attempt to recover at this stage by subscribing to the channel that the key was actually locked with.
             //However, we may have missed the massage publication already or by then.
@@ -828,25 +825,25 @@ void Connection::handleLockOnSet(ICodeContext * ctx, const char * key, const cha
 //                           ECL SERVICE ENTRYPOINTS
 //--------------------------------------------------------------------------------
 //-----------------------------------SET------------------------------------------
-ECL_REDIS_API void ECL_REDIS_CALL SyncLockRSetStr(ICodeContext * ctx, size32_t & returnSize, char * & returnValue, const char * key, size32_t valueSize, const char * value, const char * options, unsigned __int64 database, unsigned expire, const char * password, unsigned __int64 timeout)
+ECL_REDIS_API void ECL_REDIS_CALL SyncLockRSetStr(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, const char * key, size32_t valueLength, const char * value, const char * options, unsigned __int64 database, unsigned expire, const char * password, unsigned __int64 timeout)
 {
-    SyncLockRSet(ctx, options, key, valueSize, value, expire,  database, password, timeout);
-    returnSize = valueSize;
-    returnValue = (char*)memcpy(rtlMalloc(valueSize), value, valueSize);
+    SyncLockRSet(ctx, options, key, valueLength, value, expire,  database, password, timeout);
+    returnLength = valueLength;
+    returnValue = (char*)allocateAndCopy(value, valueLength);
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncLockRSetUChar(ICodeContext * ctx, size32_t & returnLength, UChar * & returnValue, const char * key, size32_t valueLength, const UChar * value, const char * options, unsigned __int64 database, unsigned expire, const char * password, unsigned __int64 timeout)
 {
     unsigned valueSize = (valueLength)*sizeof(UChar);
     SyncLockRSet(ctx, options, key, valueSize, (char*)value, expire, database, password, timeout);
     returnLength= valueLength;
-    returnValue = (UChar*)memcpy(rtlMalloc(valueSize), (void*)value, valueSize);
+    returnValue = (UChar*)allocateAndCopy(value, valueSize);
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncLockRSetUtf8(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, const char * key, size32_t valueLength, const char * value, const char * options, unsigned __int64 database, unsigned expire, const char * password, unsigned __int64 timeout)
 {
     unsigned valueSize = rtlUtf8Size(valueLength, value);
     SyncLockRSet(ctx, options, key, valueSize, value, expire, database, password, timeout);
     returnLength = valueLength;
-    returnValue = (char*)memcpy(rtlMalloc(valueSize), value, valueSize);
+    returnValue = (char*)allocateAndCopy(value, valueSize);
 }
 //-------------------------------------GET----------------------------------------
 ECL_REDIS_API void ECL_REDIS_CALL SyncLockRGetStr(ICodeContext * ctx, size32_t & returnSize, char * & returnValue, const char * key, const char * options, unsigned __int64 database, const char * password, unsigned __int64 timeout)

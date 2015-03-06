@@ -153,7 +153,21 @@ s2 := DATASET(N, TRANSFORM({ integer a }, SELF.a := myRedis.GetInteger('transfor
 SEQUENTIAL(
     myRedis.SetInteger('transformTest', x),
     OUTPUT(SUM(NOFOLD(s1 + s2), a))//answer = (x+x/2)*N, in this case 300.
-);
+    );
 
+//Test some authentication exceptions
+myRedis4 := RedisServer(server);
+ds1 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis4.GetString('authTest' + (string)COUNTER)));
+SEQUENTIAL(
+    myRedis.FlushDB();
+    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
+    );
+
+ds2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetString('authTest' + (string)COUNTER)));
+SEQUENTIAL(
+    myRedis.FlushDB();
+    OUTPUT(CATCH(ds2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
+    );
+    
 myRedis.FlushDB();
 myRedis2.FlushDB();
