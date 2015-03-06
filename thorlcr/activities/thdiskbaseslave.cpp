@@ -314,7 +314,16 @@ void CDiskWriteSlaveActivityBase::open()
     bool extend = 0 != (diskHelperBase->getFlags() & TDWextend);
     if (extend)
         ActPrintLog("Extending file %s", fName.get());
-    size32_t exclsz = 0;
+
+    size32_t diskRowMinSz = 0;
+    IOutputMetaData *diskRowMeta = diskHelperBase->queryDiskRecordSize()->querySerializedDiskMeta();
+    if (diskRowMeta->isFixedSize())
+    {
+        diskRowMinSz = diskRowMeta->getMinRecordSize();
+        if (grouped)
+            diskRowMinSz += 1;
+    }
+
     calcFileCrc = true;
 
     bool external = dlfn.isExternal();
@@ -324,7 +333,7 @@ void CDiskWriteSlaveActivityBase::open()
 
     bool direct = query || (external && !firstNode());
     bool rename = !external || (!query && lastNode());
-    Owned<IFileIO> iFileIO = createMultipleWrite(this, *partDesc, exclsz, compress, extend||(external&&!query), ecomp, this, direct, rename, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
+    Owned<IFileIO> iFileIO = createMultipleWrite(this, *partDesc, diskRowMinSz, compress, extend||(external&&!query), ecomp, this, direct, rename, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
 
     if (compress)
     {
