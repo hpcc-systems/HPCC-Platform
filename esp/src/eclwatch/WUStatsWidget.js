@@ -89,7 +89,7 @@ define([
                     this.targetID = targetID;
                     this.dimensionID = dimensionID;
                     this.dimension = crossfilter.dimension(function (d) { return d[dimensionID]; });
-                    this.group = this.dimension.group().reduceCount();
+                    this.group = this.dimension.group().reduceSum(function (d) { return d.RawValue; });
 
                     this.widget = new MultiChartSurface()
                         .target(targetID)
@@ -131,12 +131,16 @@ define([
 
                 context.stats = crossfilter([]);
                 context.summaryByKind = context.stats.dimension(function (d) { return d.Kind; });
-                context.groupByKind = context.summaryByKind.group().reduceSum(function (d) { return d.RawValue; });
+                context.groupByKind = context.summaryByKind.group().reduceCount();
 
                 context.select = registry.byId(context.id + "Kind");
                 var prevKind = "";
                 context.select.on("change", function (newValue) {
                     if (prevKind !== newValue) {
+                        context.pieCreatorType.resetFilter();
+                        context.pieScopeType.resetFilter();
+                        context.prevScope = null;
+                        context.summaryByScope.filterAll();
                         context.summaryByKind.filter(newValue);
                         context.doRender(context.select);
                         prevKind = newValue;
@@ -165,7 +169,7 @@ define([
                 ;
 
                 context.prevScope = null;
-                context.scopes.click = function (row, column) {
+                context.scopes.click = SunburstPartition.prototype.debounce(function (row, column) {
                     if (row.id === "") {
                         context.prevScope = null;
                         context.summaryByScope.filter(null);
@@ -179,7 +183,7 @@ define([
                         });
                     }
                     context.doRender(context.scopes);
-                };
+                }, 250);
 
                 context.bar = new MultiChartSurface()
                     .target(context.id + "Stats")
@@ -266,6 +270,12 @@ define([
                     .data(tree)
                 ;
                 this.scopesSurface
+                    .title("Scope" + (this.prevScope ? " (" + this.prevScope + ")" : ""))
+                    .render()
+                ;
+            } else {
+                this.scopesSurface._text
+                    .text("Scope" + (this.prevScope ? " (" + this.prevScope + ")" : ""))
                     .render()
                 ;
             }
@@ -289,7 +299,6 @@ define([
                     return [(this.prevScope && row.Scope.indexOf(this.prevScope) === 0 ? row.Scope.substring(this.prevScope.length + 1) : row.Scope), row.RawValue];
                 }, this);
             }
-            this.scopesSurface.title("Scope" + (this.prevScope ? " (" + this.prevScope + ")" : "")).render();
             var statsLabel = [this.select.get("value"), this.pieCreatorType.filter, this.pieScopeType.filter, this.prevScope].filter(function (item) {
                 return item;
             }).join(", ") || "Unknown";
@@ -326,7 +335,7 @@ define([
  
                     var kind = context.select.get("value");
                     context.select.set("options", context.groupByKind.all().map(function (row) {
-                        return { label: row.key, value: row.key, selected: kind === row.key };
+                        return { label: row.key + " (" + row.value + ")", value: row.key, selected: kind === row.key };
                     }));
 
                     if (kind) context.summaryByKind.filter(kind);
