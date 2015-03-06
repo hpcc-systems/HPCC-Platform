@@ -404,7 +404,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
         if (h == NULL)
         {
             StringBuffer dlErrorMsg(dlerror());
-            DBGLOG("Error loading %s: %s", name, dlErrorMsg.str());
+            DBGLOG("Warning: Could not load %s: %s", name, dlErrorMsg.str());
             if (raiseOnError)
             {
                 if (isCorruptDll(dlErrorMsg.str()))
