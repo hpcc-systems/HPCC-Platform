@@ -333,6 +333,7 @@ public:
    bool transformFile(IXslProcessor& processor, IXslTransform& transform, const char* tempPath)
    {
      m_processed = true;
+     bool bDeleteFile = true;
 
      const char* xsl = getFileSpec(DT_SOURCE);
      const char* target = getFileSpec(DT_TARGET);
@@ -441,6 +442,12 @@ public:
            //UNIMPLEMENTED;
 #endif
          }
+         if (m_warnings.length() > 0)
+         {
+             bDeleteFile = false;
+             throw MakeStringException(-1, "%s", m_warnings.str());
+         }
+
          break;
        }
        catch (IException* e)
@@ -465,7 +472,7 @@ public:
          e->Release();
 
          //remove incomplete (invalid) output file produced thus far
-         if (!DeleteFile(target))
+         if (bDeleteFile && !DeleteFile(target))
            WARNLOG("Couldn't delete file %s", target);
        }
        catch (...)
