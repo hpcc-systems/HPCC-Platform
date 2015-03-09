@@ -827,21 +827,21 @@ void Connection::handleLockOnSet(ICodeContext * ctx, const char * key, const cha
 //-----------------------------------SET------------------------------------------
 ECL_REDIS_API void ECL_REDIS_CALL SyncLockRSetStr(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, const char * key, size32_t valueLength, const char * value, const char * options, unsigned __int64 database, unsigned expire, const char * password, unsigned __int64 timeout)
 {
-    SyncLockRSet(ctx, options, key, valueLength, value, expire,  database, password, timeout);
+    SyncLockRSet(ctx, options, key, valueLength, value, database, expire, password, timeout);
     returnLength = valueLength;
     returnValue = (char*)allocateAndCopy(value, valueLength);
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncLockRSetUChar(ICodeContext * ctx, size32_t & returnLength, UChar * & returnValue, const char * key, size32_t valueLength, const UChar * value, const char * options, unsigned __int64 database, unsigned expire, const char * password, unsigned __int64 timeout)
 {
     unsigned valueSize = (valueLength)*sizeof(UChar);
-    SyncLockRSet(ctx, options, key, valueSize, (char*)value, expire, database, password, timeout);
+    SyncLockRSet(ctx, options, key, valueSize, (char*)value, database, expire, password, timeout);
     returnLength= valueLength;
     returnValue = (UChar*)allocateAndCopy(value, valueSize);
 }
 ECL_REDIS_API void ECL_REDIS_CALL SyncLockRSetUtf8(ICodeContext * ctx, size32_t & returnLength, char * & returnValue, const char * key, size32_t valueLength, const char * value, const char * options, unsigned __int64 database, unsigned expire, const char * password, unsigned __int64 timeout)
 {
     unsigned valueSize = rtlUtf8Size(valueLength, value);
-    SyncLockRSet(ctx, options, key, valueSize, value, expire, database, password, timeout);
+    SyncLockRSet(ctx, options, key, valueSize, value, database, expire, password, timeout);
     returnLength = valueLength;
     returnValue = (char*)allocateAndCopy(value, valueSize);
 }
