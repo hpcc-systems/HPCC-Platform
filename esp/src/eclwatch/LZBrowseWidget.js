@@ -105,6 +105,11 @@ define([
             this.dropZoneFolderSelect = registry.byId(this.id + "DropZoneFolderSelect");
             this.fileListDialog = registry.byId(this.id + "FileListDialog");
             this.overwriteCheckbox = registry.byId(this.id + "FileOverwriteCheckbox");
+            this.fixedSprayReplicateCheckbox = registry.byId(this.id + "FixedSprayReplicate");
+            this.delimitedSprayReplicateCheckbox = registry.byId(this.id + "DelimitedSprayReplicate");
+            this.xmlSprayReplicateCheckbox = registry.byId(this.id + "XMLSprayReplicate");
+            this.variableSprayReplicateCheckbox = registry.byId(this.id + "VariableSprayReplicate");
+            this.blobSprayReplicateCheckbox = registry.byId(this.id + "BlobSprayReplicate");
 
             var context = this;
             this.connect(this.uploader, "onComplete", function (response) {
@@ -468,6 +473,45 @@ define([
             this.dropZoneFolderSelect.init({
                 DropZoneFolders: true,
                 includeBlank: true
+            });
+
+            this.sprayFixedDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.fixedSprayReplicateCheckbox);
+            });
+
+            this.sprayDelimitedDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.delimitedSprayReplicateCheckbox);
+            });
+
+            this.sprayXmlDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.xmlSprayReplicateCheckbox);
+            });
+
+            this.sprayVariableDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.variableSprayReplicateCheckbox);
+            });
+
+            this.sprayBlobDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.blobSprayReplicateCheckbox);
+            });
+        },
+
+        checkReplicate: function (value, checkBoxValue) {
+            FileSpray.GetSprayTargets({
+                request: {}
+            }).then(function (response) {
+                if (lang.exists("GetSprayTargetsResponse.GroupNodes.GroupNode", response)) {
+                    var arr = response.GetSprayTargetsResponse.GroupNodes.GroupNode;
+                    for (var index in arr) {
+                        if (arr[index].Name === value && arr[index].ReplicateOutputs === true) {
+                            checkBoxValue.set("disabled", false);
+                            break;
+                        } else if (arr[index].Name === value) {
+                            checkBoxValue.set("disabled", true);
+                            break;
+                        }
+                    }
+                }
             });
         },
 
