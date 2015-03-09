@@ -156,7 +156,7 @@ Behaviour and Implementation Details
 ------------------------------------
 A few notes to point out here:
    * PUB-SUB channels are not disconnected from the keyspace as they are in their native redis usage. The key itself is used as the lock with its value being set as the channel to later
-   PUBLISH on or SUBSCRIBE to. This channel is unique to the *server-IP*, *cache-port*, *key*, and *database*. It is in fact the underscore concatenation of all four, prefixed with the string **redis_ecl_lock**.
+   PUBLISH on or SUBSCRIBE to. This channel is a string, unique by only the *key* and *database*, prefixed with **'redis_ecl_lock'**.
    * The lock itself is set to expire with a duration equal to the `timeout` value passed to the `locking.Exists(<key>` function (default 1s).
    * It is possible to manually 'unlock' this lock (`DEL` the key) via the `locking.Unlock(<key>)` function. *Note:* this function will fail on any communication or reply error however, 
    it will **silently fail**, leaving the lock to expire, if the server observes any change to the key during the function call duration.
@@ -184,5 +184,6 @@ A few notes to point out here:
 | Expire              | 1       | 5       | new connection   |
 | GetOrLock           | 7       | 11      | new connection   |
 | GetOrLock (locked)  | 8       | 12      | new connection   |
-| SetAndPublish       | 2       | 6       | new connection   |
+| SetAndPublish (value length > 29) | 1       | 5       | new connection   |
+| SetAndPublish (value length < 29) | 4       | 8       | new connection   |
 | Unlock              | 5       | 9       | new connection   |
