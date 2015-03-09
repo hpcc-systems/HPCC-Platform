@@ -54,6 +54,14 @@ while [ 1 ]; do
     else
         nslaves=`cat $instancedir/uslaves.start | wc -l`
         $deploydir/frunssh $instancedir/uslaves.start "/bin/sh -c '$deploydir/start_slaves %a $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1
+        FRUNSSH_RC=$?
+        if [[ ${FRUNSSH_RC} -gt 0 ]]; then
+          echo "Error ${FRUNSSH_RC} in frunssh"
+          echo "Please check `dirname ${logdir}`/frunssh for more details"
+          # clean up any slaves it was able to reach
+          $deploydir/stop_thor $deploydir
+          exit 0
+        fi
     fi
 
     echo thormaster cmd : $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT
