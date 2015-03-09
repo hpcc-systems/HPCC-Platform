@@ -121,9 +121,13 @@ public:
             optionStrings.append(libPath);
         }
 
+        // Options we should set (but allow for override with jvmoptions below)
+        optionStrings.append("-XX:-UseLargePages");
+
         if (conf && conf->hasProp("jvmoptions"))
         {
-            optionStrings.appendList(conf->queryProp("jvmoptions"), ENVSEPSTR);
+            // Use space as field sep as ':' and ';' are valid
+            optionStrings.appendList(conf->queryProp("jvmoptions"), " ");
         }
 
         // Options we know we always want set

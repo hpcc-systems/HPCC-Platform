@@ -159,7 +159,7 @@ public:
     {
         Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
         Owned<IWUResult> r = wu->updateResultBySequence(helper->getSequence());
-        r->setResultStatus(ResultStatusCalculated);
+        //Do not mark the result as calculated - because the patch file isn't a valid result
         r->setResultLogicalName(outputName);
         r.clear();
         wu.clear();

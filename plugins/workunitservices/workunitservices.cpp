@@ -723,7 +723,6 @@ WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __len
     if (wu)
     {
         StatisticsFilter filter;
-        filter.setMergeSources(false);
         filter.setScopeDepth(1, 2);
         filter.setMeasure(SMeasureTimeNs);
 
@@ -823,7 +822,7 @@ WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngi
     //Filter needs to be allocated because the iterator outlasts it.
     Owned<StatisticsFilter> filter = new StatisticsFilter(filterText);
     if (!includeActivities)
-        filter->setMergeSources(false);
+        filter->setScopeDepth(1, 2);
     Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(filter);
     return new StreamedStatistics(wu, allocator, stats);
 }

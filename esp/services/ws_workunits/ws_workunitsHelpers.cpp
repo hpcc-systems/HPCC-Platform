@@ -380,7 +380,6 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
 
         IArrayOf<IEspECLTimer> timers;
         StatisticsFilter filter;
-        filter.setMergeSources(false);
         filter.setScopeDepth(1, 2);
         filter.setMeasure(SMeasureTimeNs);
         Owned<IConstWUStatisticIterator> it = &cw->getStatistics(&filter);
@@ -448,7 +447,6 @@ unsigned WsWuInfo::getTimerCount()
     {
         //This filter must match the filter in the function above, otherwise it will be inconsistent
         StatisticsFilter filter;
-        filter.setMergeSources(false);
         filter.setScopeDepth(1, 2);
         filter.setMeasure(SMeasureTimeNs);
         Owned<IConstWUStatisticIterator> it = &cw->getStatistics(&filter);

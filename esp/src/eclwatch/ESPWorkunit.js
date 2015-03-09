@@ -557,11 +557,12 @@ define([
                                 if (context.timers) {
                                     context.graphs[i].Time = 0;
                                     for (var j = 0; j < context.timers.length; ++j) {
-                                        if (context.timers[j].GraphName == context.graphs[i].Name) {
-                                            context.graphs[i].Time += context.timers[j].Seconds;
+                                        if (context.timers[j].GraphName === context.graphs[i].Name && !context.timers[j].HasSubGraphId) {
+                                            context.graphs[i].Time = context.timers[j].Seconds;
+                                            break;
                                         }
-                                        context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                     }
+                                    context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                 }
                                 if (lang.exists("ApplicationValues.ApplicationValue", context)) {
                                     var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");

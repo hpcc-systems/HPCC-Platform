@@ -17,8 +17,9 @@
 
 DOCBOOK_TO_PDF( ${FO_XSL} PrGd-Includer.xml "ECLProgrammersGuide" "PRG_Mods")
 
-set(zip_out_dir ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs)
-ADD_CUSTOM_COMMAND(
+IF(MAKE_DOCS)
+  set(zip_out_dir ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs)
+  ADD_CUSTOM_COMMAND(
 	COMMAND mkdir -p ${zip_out_dir}
 	COMMAND mkdir -p ECL_Code_Files
 	COMMAND rm -rf ECL_Code_Files/*
@@ -27,5 +28,5 @@ ADD_CUSTOM_COMMAND(
         OUTPUT ${zip_out_dir}/ECL_Code_Files.zip
 	)
 
-ADD_CUSTOM_TARGET(ECL_Code_Files ALL DEPENDS  ${zip_out_dir}/ECL_Code_Files.zip)
-
+  ADD_CUSTOM_TARGET(ECL_Code_Files ALL DEPENDS  ${zip_out_dir}/ECL_Code_Files.zip)
+ENDIF(MAKE_DOCS)

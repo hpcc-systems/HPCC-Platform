@@ -373,7 +373,7 @@ define([
                 });
             } else {
                 if (chartType && this.d3Viz.chart) {
-                    this.d3Viz.chart.chartType(chartType);
+                    this.d3Viz.chart.chart_type(chartType);
                 }
                 deferred.resolve(this.vizType);
             }

@@ -66,74 +66,74 @@ recpair makePairUKSkip(Files.DG_FlatFile L, Files.DG_FlatFileEvens R, string nam
 Out19 :=JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUK(left, right, 'Unkeyed: simple inner'));
+      , makePairUK(left, right, 'Unkeyed: simple inner'), STREAMED);
 Out20 :=JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUK(left, right, 'Unkeyed: simple only'), LEFT ONLY);
+      , makePairUK(left, right, 'Unkeyed: simple only'), LEFT ONLY, STREAMED);
 Out21 :=JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUK(left, right, 'Unkeyed: simple outer'), LEFT OUTER);
+      , makePairUK(left, right, 'Unkeyed: simple outer'), LEFT OUTER, STREAMED);
 Out22 :=JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUKSkip(left, right, 'Unkeyed: simple skip'));
+      , makePairUKSkip(left, right, 'Unkeyed: simple skip'), STREAMED);
 Out23 :=JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUKSkip(left, right, 'Unkeyed: simple skip, left only'), LEFT ONLY);
+      , makePairUKSkip(left, right, 'Unkeyed: simple skip, left only'), LEFT ONLY, STREAMED);
 Out24 :=JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUKSkip(left, right, 'Unkeyed: simple skip, left outer'), LEFT OUTER);
+      , makePairUKSkip(left, right, 'Unkeyed: simple skip, left outer'), LEFT OUTER, STREAMED);
 Out25 :=JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
-      , makePairUK(left, right, 'Unkeyed: simple keep(2)'), KEEP(2));
+      , makePairUK(left, right, 'Unkeyed: simple keep(2)'), KEEP(2), STREAMED);
 Out26 :=JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
-      , makePairUK(left, right, 'Unkeyed: simple atmost(3)'), ATMOST(3));
+      , makePairUK(left, right, 'Unkeyed: simple atmost(3)'), ATMOST(3), STREAMED);
 Out27 :=choosen(JOIN(Files.DG_FlatFile, Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUK(left, right, 'Unkeyed: simple choosen'), LEFT OUTER), 1);
+      , makePairUK(left, right, 'Unkeyed: simple choosen'), LEFT OUTER, STREAMED), 1);
 
 //unkeyedjoins(unkeyedgrouped, group(Files.DG_FlatFile, DG_firstname), 'grouped');
 //Out1 :=dataset([{'Unkeyed: grouped '}], {string80 __________________}));
 Out46 :=JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUK(left, right, 'Unkeyed: grouped inner'));
+      , makePairUK(left, right, 'Unkeyed: grouped inner'), STREAMED);
 Out47 :=JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUK(left, right, 'Unkeyed: grouped only'), LEFT ONLY);
+      , makePairUK(left, right, 'Unkeyed: grouped only'), LEFT ONLY, STREAMED);
 Out48 :=JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUK(left, right, 'Unkeyed: grouped outer'), LEFT OUTER);
+      , makePairUK(left, right, 'Unkeyed: grouped outer'), LEFT OUTER, STREAMED);
 Out49 :=JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUKSkip(left, right, 'Unkeyed: grouped skip'));
+      , makePairUKSkip(left, right, 'Unkeyed: grouped skip'), STREAMED);
 Out50 :=JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUKSkip(left, right, 'Unkeyed: grouped skip, left only'), LEFT ONLY);
+      , makePairUKSkip(left, right, 'Unkeyed: grouped skip, left only'), LEFT ONLY, STREAMED);
 Out51 :=JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUKSkip(left, right, 'Unkeyed: grouped skip, left outer'), LEFT OUTER);
+      , makePairUKSkip(left, right, 'Unkeyed: grouped skip, left outer'), LEFT OUTER, STREAMED);
 Out52 :=JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
-      , makePairUK(left, right, 'Unkeyed: grouped keep(2)'), KEEP(2));
+      , makePairUK(left, right, 'Unkeyed: grouped keep(2)'), KEEP(2), STREAMED);
 Out53 :=JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
-      , makePairUK(left, right, 'Unkeyed: grouped atmost(3)'), ATMOST(3));
+      , makePairUK(left, right, 'Unkeyed: grouped atmost(3)'), ATMOST(3), STREAMED);
 Out54 :=choosen(JOIN(group(Files.DG_FlatFile, DG_firstname), Files.DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , makePairUK(left, right, 'Unkeyed: grouped choosen'), LEFT OUTER), 1);
+      , makePairUK(left, right, 'Unkeyed: grouped choosen'), LEFT OUTER, STREAMED), 1);
 
 output(SORT(Out19,record));
 output(SORT(Out20,record));

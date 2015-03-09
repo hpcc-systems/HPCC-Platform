@@ -88,6 +88,10 @@ var dojoConfig = (function () {
             location: urlInfo.basePath + "/Visualization/widgets/lib/c3",
             main: "c3"
         }, {
+            name: "crossfilter",
+            location: urlInfo.basePath + "/Visualization/widgets/lib/crossfilter",
+            main: "crossfilter"
+        }, {
             name: "topojson",
             location: urlInfo.basePath + "/Visualization/widgets/lib/topojson"
         }, {

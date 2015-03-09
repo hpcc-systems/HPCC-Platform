@@ -152,6 +152,31 @@ define([
                         }
                     }
                 }
+                var tpMachine = null;
+                if (this.params.__hpcc_treeItem.__hpcc_type === "TpMachine") {
+                    tpMachine = this.params.__hpcc_treeItem;
+                } else if (this.params.__hpcc_parentNode && this.params.__hpcc_parentNode.__hpcc_treeItem.__hpcc_type === "TpMachine") {
+                    tpMachine = this.params.__hpcc_parentNode.__hpcc_treeItem;
+                };
+                var tpBinding = null;
+                if (this.params.__hpcc_treeItem.__hpcc_type === "TpBinding") {
+                    tpBinding = this.params.__hpcc_treeItem;
+                } else if (this.params.__hpcc_parentNode && this.params.__hpcc_parentNode.__hpcc_treeItem.__hpcc_type === "TpBinding") {
+                    tpBinding = this.params.__hpcc_parentNode.__hpcc_treeItem;
+                };
+                if (tpBinding && tpMachine) {
+                    var tr = domConstruct.create("tr", {}, table);
+                    domConstruct.create("td", {
+                        innerHTML: "<b>URL:&nbsp;&nbsp;</b>"
+                    }, tr);
+                    var td = domConstruct.create("td", {
+                    }, tr);
+                    var url = tpBinding.Protocol + "://" + tpMachine.Netaddress + ":" + tpBinding.Port + "/";
+                    domConstruct.create("a", {
+                        href: url,
+                        innerHTML: url
+                    }, td);
+                }
                 this.details.setContent(table);
             } else if (currSel.id === this.widget._Configuration.id && !this.widget._Configuration.__hpcc_initalized) {
                 this.widget._Configuration.__hpcc_initalized = true;
