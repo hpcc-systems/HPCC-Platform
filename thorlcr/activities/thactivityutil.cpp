@@ -782,6 +782,8 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     Owned<IFileIO> fileio;
     if (compress)
     {
+        if (activity->getOptBool(THOROPT_COMP_FORCELZW, false))
+            recordSize = 0; // by default if fixed length (recordSize set), row diff compression is used. This forces LZW
         fileio.setown(createCompressedFileWriter(file, recordSize, extend, true, ecomp));
         if (!fileio)
         {
@@ -795,7 +797,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
         fileio.setown(file->open(extend&&file->exists()?IFOwrite:IFOcreate)); 
     if (!fileio)
         throw MakeActivityException(activity, TE_FileCreationFailed, "Failed to create file for write (%s) error = %d", outLocationName.str(), GetLastError());
-    ActPrintLog(activity, "Writing to file: %s", file->queryFilename());
+    ActPrintLog(activity, "Writing to file: %s, compress=%s, rdiff=%s", file->queryFilename(), compress ? "true" : "false", (compress && recordSize) ? "true" : "false");
     return new CWriteHandler(*activity, partDesc, file, fileio, iProgress, direct, renameToPrimary, aborted);
 }
 
