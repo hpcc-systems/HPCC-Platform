@@ -1236,8 +1236,8 @@ lock=/var/lock/HPCCSystems</programlisting>
             use the old group structure, while new files use the new group
             structure.</para>
           </listitem>
-        </orderedlist>In summary, if the environment changes it must be
-      updated in the running Dali.</para>
+        </orderedlist>In summary, if the Thor cluster changes it must be
+      updated in the Dali.</para>
     </sect1>
   </chapter>
 
