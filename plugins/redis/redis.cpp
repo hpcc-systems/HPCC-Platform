@@ -729,7 +729,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
     if (lock(ctx, key, channel.str()))
         return;
 
-#if(0)
+#if(0)//Test empty string handling by deleting the lock/value, and thus GET returns REDIS_REPLY_NIL as the reply type and an empty string.
     {
     OwnedReply pubReply = Reply::createReply(redisCommand(context, "DEL %b", key, strlen(key)));
     assertOnError(pubReply->query(), "del fail");
@@ -747,9 +747,9 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
         rtlFail(0, msg.str());
     }
 
-#if(0)
+#if(0)//Test publish before GET.
     {
-    OwnedReply pubReply = Reply::createReply(redisCommand(context, "PUBLISH %b %b", channel.str(), (size_t)channel.length(), "foo", 3));
+    OwnedReply pubReply = Reply::createReply(redisCommand(context, "PUBLISH %b %b", channel.str(), (size_t)channel.length(), "foo", (size_t)3));
     assertOnError(pubReply->query(), "pub fail");
     }
 #endif
@@ -758,9 +758,9 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
     reply->setClear((redisReply*)redisCommand(context, "GET %b", key, strlen(key)));
     assertOnCommandErrorWithKey(reply->query(), "GET", key);
 
-#if(0)
+#if(0)//Test publish after GET.
     {
-    OwnedReply pubReply = Reply::createReply(redisCommand(context, "PUBLISH %b %b", channel.str(), (size_t)channel.length(), "foo", 3));
+    OwnedReply pubReply = Reply::createReply(redisCommand(context, "PUBLISH %b %b", channel.str(), (size_t)channel.length(), "foo", (size_t)3));
     assertOnError(pubReply->query(), "pub fail");
     }
 #endif
@@ -803,8 +803,7 @@ void Connection::handleLockOnGet(ICodeContext * ctx, const char * key, MemoryAtt
             //More importantly, it is paramount that this routine only return an empty string under one condition, that
             //which indicates to the caller that the key was successfully locked.
             //NOTE: it is possible for an empty message to have been PUBLISHed.
-            const char * message = nakedReply->element[2]->str;
-            if (message && *message)
+            if (nakedReply->element[2]->len > 0)
             {
                 retVal->set(nakedReply->element[2]->len, nakedReply->element[2]->str);//return the published value rather than another (WATCHed) GET.
                 return;
