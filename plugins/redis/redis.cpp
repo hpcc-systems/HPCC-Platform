@@ -402,7 +402,7 @@ void Connection::assertOnCommandError(const redisReply * reply, const char * cmd
 }
 void Connection::assertAuthorization(const redisReply * reply)
 {
-    if (strncmp(reply->str, "NOAUTH", 6) == 0)
+    if (reply && reply->str && ( strncmp(reply->str, "NOAUTH", 6) == 0 || strncmp(reply->str, "ERR operation not permitted", 27) == 0 ))
     {
         VStringBuffer msg("Redis Plugin: server authentication failed - %s", reply->str);
         rtlFail(0, msg.str());
