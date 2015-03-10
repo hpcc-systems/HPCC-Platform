@@ -1195,7 +1195,7 @@ lock=/var/lock/HPCCSystems</programlisting>
       Tutorial</emphasis> documents.</para>
     </sect1>
 
-    <sect1>
+    <sect1 id="Redefining_Thor_Nodes">
       <title>Redefining nodes in a Thor Cluster</title>
 
       <para>To reconfigure a Thor cluster where you replace existing nodes
@@ -1207,37 +1207,42 @@ lock=/var/lock/HPCCSystems</programlisting>
       cluster group state by name and therefore changing its structure would
       invalidate those files and make the physical files inaccessible.</para>
 
-      <para>There are a couple of scenarios: <orderedlist>
-          <listitem>
-            <para>Replacing faulty node(s) If data files are replicated,
-            replacing a node and forcing the new group to be used by existing
-            files may be desirable. In this scenario, reading an existing file
-            will failover to finding a part on the replicate node, when it
-            tries to find a physical file on the new replacement node.</para>
+      <para>There are a couple of scenarios where you would want to redefine
+      your Thor cluster. </para>
 
-            <para>To force the new group to be used, use the following
-            command:</para>
+      <sect2 id="Replace_Faulty_Node" role="nobrk">
+        <title>Replacing faulty node(s)</title>
 
-            <para><programlisting>updtdalienv &lt;environment_file&gt; -f</programlisting>
-            In cases where there is no replication, data loss may be
-            unavoidable and forcing the new group may still be the best
-            option.</para>
-          </listitem>
+        <para>If data files are replicated, replacing a node and forcing the
+        new group to be used by existing files may be desirable. In this
+        scenario, reading an existing file will failover to finding a part on
+        the replicate node, when it tries to find a physical file on the new
+        replacement node.</para>
 
-          <listitem>
-            <para>Resizing the cluster If you are adding or removing Thor
-            cluster nodes but <emphasis>all previous nodes remain part of the
-            environment and accessible</emphasis>, you can <emphasis
-            role="bold">rename</emphasis> the group that is associated with
-            the Thor cluster (or the Cluster name if there is no group
-            name).</para>
+        <para>To force the new group to be used, use the following
+        command:</para>
 
-            <para>This will ensure all previously existing files, continue to
-            use the old group structure, while new files use the new group
-            structure.</para>
-          </listitem>
-        </orderedlist>In summary, if the Thor cluster changes it must be
-      updated in the Dali.</para>
+        <para><programlisting>updtdalienv &lt;environment_file&gt; -f</programlisting>
+        In cases where there is no replication, data loss may be unavoidable
+        and forcing the new group may still be the best option.</para>
+      </sect2>
+
+      <sect2 id="SysAdmin_Resizing_The_Cluster" role="nobrk">
+        <title>Resizing the cluster </title>
+
+        <para>If you are adding or removing Thor cluster nodes but
+        <emphasis>all previous nodes remain part of the environment and
+        accessible</emphasis>, you can <emphasis role="bold">rename</emphasis>
+        the group that is associated with the Thor cluster (or the Cluster
+        name if there is no group name).</para>
+
+        <para>This will ensure all previously existing files, continue to use
+        the old group structure, while new files use the new group
+        structure.</para>
+
+        <para>In summary, if the Thor cluster changes it must be updated in
+        the Dali.</para>
+      </sect2>
     </sect1>
   </chapter>
 
