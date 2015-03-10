@@ -5160,15 +5160,21 @@ IHqlExpression * EclResourcer::doCreateResourced(IHqlExpression * expr, Resource
         }
     case no_select:
         {
-            IHqlExpression * ds = expr->queryChild(0);
-            OwnedHqlExpr newDs = createResourced(ds, ownerGraph, expandInParent, false);
-            if (ds != newDs)
+            //If this isn't a new selector, then it must be <LEFT|RIGHT>.child-dataset, which will not be mapped
+            //and the dataset will not have been resourced
+            if (isNewSelector(expr))
             {
-                args.append(*LINK(newDs));
-                unwindChildren(args, expr, 1);
-                if (!expr->hasAttribute(newAtom) && isNewSelector(expr) && (newDs->getOperator() != no_select))
-                    args.append(*LINK(queryNewSelectAttrExpr()));
-                same = false;
+                IHqlExpression * ds = expr->queryChild(0);
+                OwnedHqlExpr newDs = createResourced(ds, ownerGraph, expandInParent, false);
+
+                if (ds != newDs)
+                {
+                    args.append(*LINK(newDs));
+                    unwindChildren(args, expr, 1);
+                    if (!expr->hasAttribute(newAtom) && (newDs->getOperator() != no_select))
+                        args.append(*LINK(queryNewSelectAttrExpr()));
+                    same = false;
+                }
             }
             break;
         }
