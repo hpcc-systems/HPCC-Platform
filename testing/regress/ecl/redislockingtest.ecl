@@ -160,4 +160,22 @@ SEQUENTIAL(
     myRedis.FlushDB(3);
     );
 
+SEQUENTIAL(
+    myRedis.FlushDB(),
+    myRedis.SetAndPublishString('t1', 'Good boy Einnie!');
+    myRedis.GetString('t1');
+
+    myRedis.SetAndPublishString('t2', 'Good boy Einnie!', 1, 10000);
+    myRedis.GetString('t2', 1);
+
+    myRedis.SetAndPublishString('t3', 'supercalifragilisticexpialidocious');
+    myRedis.GetString('t3');
+
+    myRedis.SetAndPublishString('t4', 'supercalifragilisticexpialidocious', 1, 10000);
+    myRedis.GetString('t4', 1);
+
+    myRedis.FlushDB();
+    myRedis.FlushDB(1);
+    );
+
 myRedis.FlushDB();
