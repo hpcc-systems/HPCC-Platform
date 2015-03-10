@@ -149,7 +149,7 @@ define([
                 displayName: row.Name,
                 type: "dropzone",
                 partialPath: "",
-                fullPath: row.Path + "/",
+                fullPath: row.Path + (row.Path && !this.endsWith(row.Path, "/") ? "/" : ""),
                 DropZone: row
             });
         },
