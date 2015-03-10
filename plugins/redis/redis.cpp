@@ -192,8 +192,8 @@ void Connection::connect(ICodeContext * ctx, unsigned __int64 _database, const c
 {
     struct timeval to = { timeout/1000, (timeout%1000)*1000 };
     context = redisConnectWithTimeout(ip.str(), port, to);
-    redisSetTimeout(context, to);
     assertConnection();
+    redisSetTimeout(context, to);
 
     //The following is the dissemination of the two methods authenticate(ctx, password) & selectDB(ctx, _database)
     //such that they may be pipelined to save an extra round trip to the server and back.

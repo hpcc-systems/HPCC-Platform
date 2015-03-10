@@ -168,6 +168,13 @@ SEQUENTIAL(
     myRedis.FlushDB();
     OUTPUT(CATCH(ds2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
-    
+
+myRedis5 := RedisServer('--SERVER=127.0.0.1:9999');
+ds3 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis5.GetString('connectTest' + (string)COUNTER)));
+SEQUENTIAL(
+    myRedis.FlushDB();
+    OUTPUT(CATCH(ds3, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
+    );
+
 myRedis.FlushDB();
 myRedis2.FlushDB();
