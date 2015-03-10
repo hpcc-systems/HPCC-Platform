@@ -89,8 +89,11 @@
  <Row><Result_30>300</Result_30></Row>
 </Dataset>
 <Dataset name='Result 31'>
- <Row><value>Redis Plugin: server authentication failed - NOAUTH Authentication required.</value></Row>
+ <Row><value>Auth Failed</value></Row>
 </Dataset>
 <Dataset name='Result 32'>
  <Row><value>Redis Plugin: ERROR - the requested key &apos;authTest1&apos; does not exist on database 0</value></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><value>Redis Plugin: Connection failed - Connection refused for 127.0.0.1:9999</value></Row>
 </Dataset>

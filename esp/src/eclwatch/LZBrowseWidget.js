@@ -295,13 +295,10 @@ define([
                 var context = this;
                 arrayUtil.forEach(selections, function (item, idx) {
                     var request = domForm.toObject(context.id + formID);
-                    if (request.namePrefix && !context.endsWith(request.namePrefix, "::")) {
-                        request.namePrefix += "::";
-                    }
                     lang.mixin(request, {
                         sourceIP: item.DropZone.NetAddress,
                         sourcePath: item.fullPath,
-                        destLogicalName: request.namePrefix + item.targetName
+                        destLogicalName: request.namePrefix + (request.namePrefix && !context.endsWith(request.namePrefix, "::") && item.targetName && !context.startsWith(item.targetName, "::") ? "::" : "") + item.targetName
                     });
                     doSpray(request, item);
                 });
