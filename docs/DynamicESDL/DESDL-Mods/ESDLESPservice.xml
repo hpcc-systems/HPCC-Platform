@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="EPservice">
+  <title>ESPservice</title>
+
+  <para>This defines a Web service. Once defined, you can add a service to an
+  ESP server’s configuration to expose its methods and ESDL interfaces. An
+  ESPservice should contain one or more method definitions.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>ESPservice MyService
+{
+  ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
+  ESPmethod MyMethod2(MyMethod2Request, MyMethod2Response);
+};
+</programlisting>
+</sect2>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ESPenum">
+  <title>ESPenum</title>
+
+  <para>A structure containing an enumerated value. </para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>
+ESPenum EyeColors : string
+  
+{
+  Brn("Brown"),
+  Blu("Blue"),
+  Grn("Green"),
+};
+ 
+
+ESPstruct Person
+
+{
+  string FirstName;
+  string MiddleName;
+  string LastName;
+
+  ESPenum EyeColors EyeColor("Brown"); //provides a default value
+};
+   </programlisting>
+</sect2>

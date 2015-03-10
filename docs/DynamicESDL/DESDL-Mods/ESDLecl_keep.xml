@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+     <sect2 id="ESDL_Attributes_ecl_keep">
+       <title>ecl_keep</title>
+ 
+       <para>The <emphasis>ecl_keep</emphasis> attribute keeps the field in the
+       generated ECL even though this field would have been hidden without this
+       attribute.</para>
+ 
+       <para>For instance, a field with <emphasis>get_data_from </emphasis>will
+       be hidden, however, adding this attribute will keep this field. This is
+       needed when we use <emphasis>get_data_from </emphasis>on two fields from
+       each other.</para>
+     </sect2>

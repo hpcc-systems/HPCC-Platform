@@ -75,4 +75,8 @@
   <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_DFU.xml"
               xpointer="Command_Line_DFU"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
+              xpointer="ESDL_CLI" xmlns:xi="http://www.w3.org/2001/XInclude" />
+              
 </book>

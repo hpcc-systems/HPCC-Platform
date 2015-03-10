@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ESDL_Data_double">
+  <title><emphasis role="bold">double</emphasis></title>
+
+  <para>An 8-byte floating point or real number.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>double Temperature;   </programlisting>
+</sect2>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+    <sect2 id="ESDL_Attributes_ecl_name">
+       <title>ecl_name ("<emphasis role="bold">name</emphasis><emphasis
+       role="bold">")</emphasis></title>
+ 
+       <para>The <emphasis>ecl_name</emphasis> attribute specifies the field
+       name in generated ECL code. By default, the field name in ECL is the
+       same as the name defined in ECM. However, in some cases, the name could
+       causes issues in ECL. For example keywords in ECL cannot be used as a
+       field name.</para>
+ 
+       <para><emphasis role="bold">Example:</emphasis></para>
+ 
+       <programlisting>[ecl_name("_export")] string Export;
+ [ecl_name("_type")] string Type;   </programlisting>
+ 
+       <para>Here, both <emphasis role="bold">EXPORT</emphasis> and <emphasis
+       role="bold">TYPE</emphasis> are ECL keywords and cannot be used as ECL
+       field names. We use <emphasis>ecl_name</emphasis> to tell the esdl2ecl
+       process to generate acceptable names.</para>
+     </sect2>

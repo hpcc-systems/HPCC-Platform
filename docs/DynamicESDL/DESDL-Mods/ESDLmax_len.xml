@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ESDL_Attributes_max_len">
+  <title><emphasis role="bold">max_len (</emphasis><emphasis
+  role="bold">n</emphasis><emphasis role="bold">)</emphasis></title>
+
+  <para>The <emphasis>max_len</emphasis> attribute specifies the field length
+  for ECL string field.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>[max_len(20)] string City;   </programlisting>
+
+  <para>It means that in ECL, City field is a fixed length of 20 chars. For
+  integer type, the max_len means the maximum size in bytes for the integer
+  (8*max_len bits integer).</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>[max_len(3)] int Age;   </programlisting>
+
+  <para>This generates ECL code:</para>
+
+  <programlisting>integer3 Age{xpath('Age')};   </programlisting>
+
+  <para>This attribute works for ESPenum type, too. The ECL type is also
+  string.</para>
+
+  <programlisting>[max_len(2)] ESPenum StateCode State;   </programlisting>
+
+  <para>Here the StateCode is 2-char state code enumeration.</para>
+
+  <para>This attribute can also be used for ESPstruct, ESPrequest,
+  ESPresponse:</para>
+
+  <programlisting>ESPstruct [max_len(1867)] IdentitySlim : Identity
+  {
+     ...
+  };   
+  </programlisting>
+
+  <para>This generates ECL code:</para>
+
+  <programlisting>export t_MyQuery := record (share.t_Name), MAXLENGTH(1867)
+  {
+  }; </programlisting>
+
+  <para>The ECL option <emphasis>MAXLENGTH</emphasis> helps ECL engine better
+  manage memory.</para>
+
+  <para>This does not affect the type in the XSD/WSDL. ESP ignores this
+  attribute when generating the schema. The type for a string is xsd:string
+  which has no length limit. Therefore, the schema stays the same if the field
+  length changes in the Roxie query.</para>
+</sect2>
