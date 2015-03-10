@@ -93,7 +93,7 @@ The core points to note here are:
    127.0.0.1:6379 is used. *Note:* 6379 is the default port for **redis-server**.
    * `UNSIGNED timeout` has units *ms* and has a default value of 1 second. This is not a timeout duration for an entire plugin call but rather that set for each
    communication transaction with the redis server. *c.f.* 'Behaviour and Implementation Details' below.
-   * `UNSIGNED expire` has a default of **0**, i.e. *forever*.
+   * `UNSIGNED expire` has units seconds and a default of **0**, i.e. *forever*.
 
 ###The redisServer MODULE
 To avoid the cumbersome and unnecessary need to constantly pass `options` and `password` with each function call, the module `redisServer` can be imported to effectively 
