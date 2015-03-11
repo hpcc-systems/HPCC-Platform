@@ -792,7 +792,7 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathServiceConfig.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
       <sect2 role="brk">
@@ -1007,13 +1007,13 @@
         syntax:</para>
 
         <programlisting>&lt;Methods&gt;
-  &lt;Method name="myMethod" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="myuser" password="mypass"/&gt;
- &lt;Method name="myMethod2" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="myuser" password="mypass"/&gt;
+  &lt;Method name="myMthd1" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="me" password="mypw"/&gt;
+  &lt;Method name="myMthd2" url="http://&lt;RoxieIP&gt;:9876/somepath?someparam=value" user="me" password="mypw"/&gt;
 &lt;/Methods&gt;</programlisting>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathServiceConfig.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
       <sect2 role="brk">
