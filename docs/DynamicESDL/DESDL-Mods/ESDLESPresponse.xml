@@ -8,14 +8,12 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting> 
-ESPresponse  MyQueryResponse
+  <programlisting>ESPresponse  MyQueryResponse
  
 {
     string FirstName;
     string MiddleName;
     string LastName;
  
-};
-   </programlisting>
+};  </programlisting>
 </sect2>
