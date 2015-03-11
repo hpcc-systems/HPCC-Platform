@@ -1677,7 +1677,11 @@ protected:
                 // If stable (and sort needed), already sorted by rowLoader
                 rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted && !stable);
 
-                Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
+                Owned<IThorRowCollector> collector;
+                if (failoverToStdJoin)
+                    collector.setown(createThorRowCollector(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
+                else
+                    collector.setown(createThorRowCollector(*this, queryRowInterfaces(rightITDL), NULL, stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE));
                 collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
                 collector->transferRowsIn(rhs); // can spill after this
 
