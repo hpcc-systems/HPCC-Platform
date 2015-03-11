@@ -792,7 +792,7 @@
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl bind-service myesp 8003 MathSvc.1 MathSvc --config MathSvcCfg.xml -s nnn.nnn.nnn.nnn -p 8010</programlisting>
+        <programlisting>esdl list-bindings -s nnn.nnn.nnn.nnn -p 8010</programlisting>
       </sect2>
 
       <sect2 role="brk">
