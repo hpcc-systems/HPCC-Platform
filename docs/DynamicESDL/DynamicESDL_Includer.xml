@@ -27,8 +27,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -46,7 +46,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -65,7 +65,7 @@
     methodology that helps you develop and manage web-based query interfaces
     quickly and consistently.</para>
 
-    <para>Dynamic ESDL takes an interface first development approach. It
+    <para>Dynamic ESDL takes an interface-first development approach. It
     leverages the ESDL Language to create a common interface “contract” that
     both Roxie Query and Web interface developers will adhere to. It is
     intended to allow developers to create production web services, with clean
@@ -79,70 +79,68 @@
     <para>ESDL’s ability to define and reuse common structures helps maintain
     consistent interfaces across methods.</para>
 
-    <para>The Dynamic ESDL service is built to scale horizontally, and
-    provides hooks to add custom logging and security to help create fully
+    <para>The Dynamic ESDL service is built to scale horizontally, and hooks
+    are provided to add custom logging and security to help create fully
     “productionalized” web services.</para>
 
-    <para>Once a service is deployed, application developers can consume the
-    service using REST, JSON, XML, SOAP, or form encoded posts. Dynamic ESDL
-    provides quick and easy access to a WSDL, live forms, and testing
-    interfaces to allow developers to test logic changes, data changes, or new
-    features, as well as to interact with the service directly using SOAP,
-    XML, or JSON.</para>
+    <para>Once a service is deployed, application developers and end-users can
+    consume the service using REST, JSON, XML, SOAP, or form encoded posts.
+    Dynamic ESDL provides quick and easy access to a WSDL, live forms, sample
+    requests and responses, and testing interfaces to allow developers to test
+    logic changes, data changes, or new features, as well as to interact with
+    the service directly using SOAP, XML, or JSON.</para>
   </chapter>
 
   <chapter>
     <title>Workflow Tutorial</title>
 
-    <sect1>
+    <sect1 role="nobrk">
       <title>Overview</title>
 
-      <para>in this section, we will:</para>
+      <para>In this section, we will:</para>
 
       <para></para>
 
       <itemizedlist>
         <listitem>
-          <para>Use Configuration Manager to add a Dynamic ESDL service and
-          bind it to a port on an ESP server.</para>
+          <para>Use Configuration Manager to add a Dynamic ESDL-based ESP
+          Service and bind it to a port on an ESP server.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
-          <para>Write an ESDL Service Definition</para>
+          <para>Write an ESDL Service Definition.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
-          <para>Generate ECL from the ESDL Service Definition</para>
+          <para>Generate ECL from the ESDL Service Definition, copy it to your
+          ECL repository, and the write the ECL query that will deliver the
+          result (the business logic).</para>
 
           <para></para>
         </listitem>
 
         <listitem>
-          <para>Copy that to our ECL repository and the write the ECL that
-          will deliver the result</para>
+          <para>Compile the ECL business logic query and publish it to a Roxie
+          cluster.</para>
+
+          <para>At this point you can test the query using WsECL.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
-          <para>Compile the query and publish to a Roxie cluster</para>
-
-          <para>At this point you can test the query using WsECL</para>
-        </listitem>
-
-        <listitem>
-          <para>Publish the Dynamic ESDL definition</para>
+          <para>Publish the Dynamic ESDL definition.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
           <para>Bind the service methods to the Roxie queries using a
-          configuration XML file</para>
+          configuration XML file.</para>
 
           <para></para>
         </listitem>
@@ -212,8 +210,9 @@
         </listitem>
 
         <listitem>
-          <para>Select Advanced View and then select the source environment
-          XML file to edit.</para>
+          <para><?dbfo keep-together="always"?>Select <emphasis
+          role="bold">Advanced View</emphasis> and then select the source
+          environment XML file to edit.</para>
 
           <para><graphic fileref="images/desdl-openconfig.jpg" /></para>
         </listitem>
@@ -302,8 +301,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           command copies the XML files out to all nodes as required:</para>
 
           <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
-</programlisting>See the appendix for more information on using this
-          script.</para>
+</programlisting></para>
         </listitem>
 
         <listitem>
@@ -354,25 +352,26 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       <title>Write the ESDL Service Definition</title>
 
       <para>In this section, we will write a the Service Definitions. The
-      program listing below shows a service called MathService. It contains
-      one method, AddThis, with a simple request and a simple response
-      defined.</para>
+      program listing below shows a service called
+      <emphasis>MathService</emphasis>. It contains one method,
+      <emphasis>AddThis</emphasis>, with a simple request and a simple
+      response defined.</para>
 
       <programlisting>ESPservice MathService
 {
-      ESPmethod AddThis(AddThisRequest, AddThisResponse);
+  ESPmethod AddThis(AddThisRequest, AddThisResponse);
 };
-      ESPrequest AddThisRequest 
-      {
-      int  FirstNumber;
-      int  SecondNumber;
-      };
 
+ESPrequest AddThisRequest 
+{
+  int  FirstNumber;
+  int  SecondNumber;
+};
     
-      ESPresponse AddThisResponse 
-      {
-      int  Answer;
-      };
+ESPresponse AddThisResponse 
+{
+  int  Answer;
+};
 
 </programlisting>
 
@@ -393,8 +392,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
       with Client Tools.</para>
 
       <para>You will find this in C:\Program Files
-      (x86)\HPCCSystems\5.2.0\clienttools\bin on a Windows machine or
-      /opt/HPCCSystems/bin/ on a Linux machine.</para>
+      (x86)\HPCCSystems\5.2.0\clienttools\bin on a Windows machine </para>
+
+      <para>or /opt/HPCCSystems/bin/ on a Linux machine.</para>
 
       <para><orderedlist>
           <listitem>
@@ -452,25 +452,38 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
           <listitem>
             <para>Test the service using WsECL :<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8002 </programlisting></para>
           </listitem>
+        </orderedlist></para>
+    </sect1>
 
+    <sect1>
+      <title>Publish the ESDL Service Definitions and Bind the ESDL
+      Service</title>
+
+      <para>In this section, we will publish the ESDL Service definitions to
+      the System Data Store and bind the methods to he published Roxie
+      query.</para>
+
+      <para><orderedlist>
           <listitem>
             <para>Publish the Dynamic ESDL definition</para>
 
-            <programlisting>esdl publish MathService MathService.ecm -s 127.0.0.1 -p 8010 --version 1</programlisting>
+            <programlisting>esdl publish MathService MathService.ecm -s nnn.nnn.nnn.nnn -p 8010 --version 1</programlisting>
 
-            <para>Replace 127.0.0.1 with your server's IP address.</para>
+            <para>Replace nnn.nnn.nnn.nnn with your ECL Watch ESP server's IP
+            address.</para>
           </listitem>
 
           <listitem>
             <para>Create the configuration XML file</para>
 
             <programlisting>&lt;Methods&gt;
-    &lt;Method name="AddThis" url="127.0.0.1:9876" querytype="roxie" queryname="AddThis"/&gt;
+    &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"/&gt;
 &lt;/Methods&gt;</programlisting>
 
             <para>Where name is the name of your method(s) and url is the
             Roxie server's IP and port and queryname is the published name
-            (alias) of the query.</para>
+            (alias) of the query. For a multi-node Roxie, you can use a range
+            in the form of nnn.nnn.nnn.n-nnn. </para>
           </listitem>
 
           <listitem>
@@ -481,7 +494,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>Bind the service methods to the queries using a the
             configuration XML.</para>
 
-            <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathServiceConfig.xml -s 127.0.0.1 -p 8010
+            <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathServiceConfig.xml -s nnn.nnn.nnn.nnn -p 8010
 </programlisting>
 
             <para>Where myesp is the name of your ESP process, 8003 is the
@@ -503,7 +516,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
   <chapter>
     <title>ESDL Language Reference</title>
 
-    <sect1>
+    <sect1 role="nobrk">
       <title>ESDL Structures</title>
 
       <para></para>
@@ -622,10 +635,6 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_type.xml"
-                  xpointer="element(/1)"
-                  xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-      <xi:include href="DynamicESDL/DESDL-Mods/ESDLget_data_from.xml"
                   xpointer="element(/1)"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 

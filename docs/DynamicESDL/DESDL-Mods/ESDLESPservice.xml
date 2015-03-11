@@ -4,9 +4,11 @@
 <sect2 id="EPservice">
   <title>ESPservice</title>
 
-  <para>This defines a Web service. Once defined, you can add a service to an
-  ESP server’s configuration to expose its methods and ESDL interfaces. An
-  ESPservice should contain one or more method definitions.</para>
+  <para>This defines an ESP web service interface. Once defined, this
+  interface definition can be assigned (bound) to a Dynamic ESDL-based ESP
+  Service.</para>
+
+  <para>An ESPservice should contain one or more method definitions.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
