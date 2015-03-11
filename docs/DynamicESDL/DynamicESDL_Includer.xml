@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -99,20 +99,20 @@
 
       <para>In this section, we will:</para>
 
-      <para></para>
+      <para />
 
       <itemizedlist>
         <listitem>
           <para>Use Configuration Manager to add a Dynamic ESDL-based ESP
           Service and bind it to a port on an ESP server.</para>
 
-          <para></para>
+          <para />
         </listitem>
 
         <listitem>
           <para>Write an ESDL Service Definition.</para>
 
-          <para></para>
+          <para />
         </listitem>
 
         <listitem>
@@ -120,7 +120,7 @@
           ECL repository, and the write the ECL query that will deliver the
           result (the business logic).</para>
 
-          <para></para>
+          <para />
         </listitem>
 
         <listitem>
@@ -129,20 +129,20 @@
 
           <para>At this point you can test the query using WsECL.</para>
 
-          <para></para>
+          <para />
         </listitem>
 
         <listitem>
           <para>Publish the Dynamic ESDL definition.</para>
 
-          <para></para>
+          <para />
         </listitem>
 
         <listitem>
           <para>Bind the service methods to the Roxie queries using a
           configuration XML file.</para>
 
-          <para></para>
+          <para />
         </listitem>
       </itemizedlist>
     </sect1>
@@ -160,18 +160,28 @@
           <para>If it is running, stop the HPCC system, using this
           command:</para>
 
-          <para><emphasis role="bold">Centos/Red
-          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+          <para>
+            <emphasis role="bold">Centos/Red Hat</emphasis>
 
-          <para><emphasis role="bold">Ubuntu</emphasis></para>
+            <programlisting>sudo /sbin/service hpcc-init stop</programlisting>
+          </para>
 
-          <para><programlisting>sudo service hpcc-init stop</programlisting></para>
+          <para>
+            <emphasis role="bold">Ubuntu</emphasis>
+          </para>
 
-          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+          <para>
+            <programlisting>sudo service hpcc-init stop</programlisting>
+          </para>
+
+          <para>
+            <emphasis role="bold">Debian 6 (Squeeze)</emphasis>
+          </para>
 
           <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
 
-          <para><informaltable colsep="1" frame="all" rowsep="1">
+          <para>
+            <informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
@@ -181,22 +191,33 @@
 
                 <tbody>
                   <row>
-                    <entry><inlinegraphic
-                    fileref="images/OSSgr3.png" /></entry>
+                    <entry>
+                      <inlinegraphic fileref="images/OSSgr3.png" />
+                    </entry>
 
                     <entry>You can use this command to confirm HPCC processes
-                    are stopped (on Centos/Red Hat):<para><programlisting>sudo /sbin/service hpcc-init status</programlisting><phrase>For
-                    Ubuntu</phrase><programlisting>sudo service hpcc-init status
-</programlisting><phrase>For Debian 6 (Squeeze)</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
+                    are stopped (on Centos/Red Hat):<para>
+                        <programlisting>sudo /sbin/service hpcc-init status</programlisting>
+
+                        <phrase>For Ubuntu</phrase>
+
+                        <programlisting>sudo service hpcc-init status
+</programlisting>
+
+                        <phrase>For Debian 6 (Squeeze)</phrase>
+
+                        <programlisting>sudo /etc/init.d/hpcc-init status</programlisting>
+                      </para></entry>
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable></para>
+            </informaltable>
+          </para>
         </listitem>
 
         <listitem>
           <para>Start the Configuration Manager service.<emphasis
-          role="bold"></emphasis><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+          role="bold" /><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
 </programlisting></para>
         </listitem>
 
@@ -214,7 +235,9 @@
           role="bold">Advanced View</emphasis> and then select the source
           environment XML file to edit.</para>
 
-          <para><graphic fileref="images/desdl-openconfig.jpg" /></para>
+          <para>
+            <graphic fileref="images/desdl-openconfig.jpg" />
+          </para>
         </listitem>
 
         <listitem>
@@ -226,29 +249,37 @@
           and select <emphasis role="bold">New Esp Services</emphasis> &gt;
           <emphasis role="bold">Dynamic ESDL</emphasis>.</para>
 
-          <para></para>
+          <para />
 
-          <para><graphic fileref="images/desdl-addDESDL.jpg" /></para>
+          <para>
+            <graphic fileref="images/desdl-addDESDL.jpg" />
+          </para>
         </listitem>
 
         <listitem>
           <para>Provide a name for the service.</para>
 
-          <para><graphic fileref="images/dsdl-NametheServoice.jpg" /></para>
+          <para>
+            <graphic fileref="images/dsdl-NametheServoice.jpg" />
+          </para>
         </listitem>
 
         <listitem>
           <para>Select your ESP , then select the ESP Service Bindings
           tab.</para>
 
-          <para><graphic fileref="images/desdl-ESPSVCBinding.jpg" /></para>
+          <para>
+            <graphic fileref="images/desdl-ESPSVCBinding.jpg" />
+          </para>
         </listitem>
 
         <listitem>
           <para>Right-click in the list of bindings and select <emphasis
           role="bold">Add</emphasis></para>
 
-          <para><graphic fileref="images/desdl-AddSVCBinding.jpg" /></para>
+          <para>
+            <graphic fileref="images/desdl-AddSVCBinding.jpg" />
+          </para>
         </listitem>
 
         <listitem>
@@ -256,7 +287,9 @@
           definition you added will display in the list of available
           services.</para>
 
-          <para><graphic fileref="images/desdl-NameSVCBinding.jpg" /></para>
+          <para>
+            <graphic fileref="images/desdl-NameSVCBinding.jpg" />
+          </para>
         </listitem>
 
         <listitem>
@@ -266,7 +299,8 @@
           <programlisting># for example
 sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
-          <para><informaltable colsep="1" frame="all" rowsep="1">
+          <para>
+            <informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
@@ -276,8 +310,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
                 <tbody>
                   <row>
-                    <entry><inlinegraphic
-                    fileref="images/caution.png" /></entry>
+                    <entry>
+                      <inlinegraphic fileref="images/caution.png" />
+                    </entry>
 
                     <entry>Make sure that you have sufficient privileges to
                     write file(s) to the destination directory before
@@ -287,7 +322,8 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable></para>
+            </informaltable>
+          </para>
         </listitem>
 
         <listitem>
@@ -300,8 +336,10 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           all nodes. A sample script is provided with HPCC. The following
           command copies the XML files out to all nodes as required:</para>
 
-          <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
-</programlisting></para>
+          <para>
+            <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+</programlisting>
+          </para>
         </listitem>
 
         <listitem>
@@ -309,18 +347,27 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           role="bold">every</emphasis> node. The following command starts the
           HPCC system on an individual node:</para>
 
-          <para><emphasis role="bold">Centos/Red
-          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+          <para>
+            <emphasis role="bold">Centos/Red Hat</emphasis>
 
-          <para><emphasis role="bold">Ubuntu</emphasis></para>
+            <programlisting>sudo /sbin/service hpcc-init start</programlisting>
+          </para>
 
-          <para><programlisting>sudo service hpcc-init start</programlisting></para>
+          <para>
+            <emphasis role="bold">Ubuntu</emphasis>
+          </para>
 
-          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+          <para>
+            <programlisting>sudo service hpcc-init start</programlisting>
+          </para>
+
+          <para>
+            <emphasis role="bold">Debian 6 (Squeeze)</emphasis>
+          </para>
 
           <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
 
-          <para></para>
+          <para />
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <?dbfo keep-together="always"?>
@@ -332,18 +379,26 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
               <tbody>
                 <row>
-                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+                  <entry>
+                    <inlinegraphic fileref="images/OSSgr3.png" />
+                  </entry>
 
-                  <entry><para>You may want to create a script to push this
-                  command out to every node. A sample script is provided with
-                  HPCC. Use the following command to start HPCC on all
-                  nodes:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
+                  <entry>
+                    <para>You may want to create a script to push this command
+                    out to every node. A sample script is provided with HPCC.
+                    Use the following command to start HPCC on all
+                    nodes:</para>
+
+                    <para>
+                      <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting>
+                    </para>
+                  </entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable>
 
-          <para></para>
+          <para />
         </listitem>
       </orderedlist>
     </sect1>
@@ -379,7 +434,7 @@ ESPresponse AddThisResponse
         <listitem>
           <para>Save the file as MathService.ecm.</para>
 
-          <para></para>
+          <para />
         </listitem>
       </orderedlist>
     </sect1>
@@ -392,11 +447,12 @@ ESPresponse AddThisResponse
       with Client Tools.</para>
 
       <para>You will find this in C:\Program Files
-      (x86)\HPCCSystems\5.2.0\clienttools\bin on a Windows machine </para>
+      (x86)\HPCCSystems\5.2.0\clienttools\bin on a Windows machine</para>
 
       <para>or /opt/HPCCSystems/bin/ on a Linux machine.</para>
 
-      <para><orderedlist>
+      <para>
+        <orderedlist>
           <listitem>
             <para>From the command line, run:</para>
 
@@ -425,7 +481,7 @@ end;
 /*===================================================*/</emphasis>
 </programlisting>
 
-            <para></para>
+            <para />
           </listitem>
 
           <listitem>
@@ -452,7 +508,8 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
           <listitem>
             <para>Test the service using WsECL :<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8002 </programlisting></para>
           </listitem>
-        </orderedlist></para>
+        </orderedlist>
+      </para>
     </sect1>
 
     <sect1>
@@ -463,7 +520,8 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
       the System Data Store and bind the methods to he published Roxie
       query.</para>
 
-      <para><orderedlist>
+      <para>
+        <orderedlist>
           <listitem>
             <para>Publish the Dynamic ESDL definition</para>
 
@@ -483,7 +541,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>Where name is the name of your method(s) and url is the
             Roxie server's IP and port and queryname is the published name
             (alias) of the query. For a multi-node Roxie, you can use a range
-            in the form of nnn.nnn.nnn.n-nnn. </para>
+            in the form of nnn.nnn.nnn.n-nnn.</para>
           </listitem>
 
           <listitem>
@@ -500,13 +558,14 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>Where myesp is the name of your ESP process, 8003 is the
             port you reserved for your Dynamic ESDL service.</para>
 
-            <para></para>
+            <para />
           </listitem>
 
           <listitem>
             <para>Test the service using the new interface:<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8003</programlisting></para>
           </listitem>
-        </orderedlist></para>
+        </orderedlist>
+      </para>
     </sect1>
   </chapter>
 
@@ -519,7 +578,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
     <sect1 role="nobrk">
       <title>ESDL Structures</title>
 
-      <para></para>
+      <para />
 
       <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPstruct.xml"
                   xpointer="element(/1)"
