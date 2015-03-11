@@ -331,8 +331,8 @@ int init_main(int argc, char* argv[])
             procpt->getProp("@componentfilesDir", componentfilesDir);
         if(componentfilesDir.length() > 0 && strcmp(componentfilesDir.str(), ".") != 0)
         {
-            DBGLOG("componentfiles are under %s", componentfilesDir.str());
             setCFD(componentfilesDir.str());
+            DBGLOG("componentfiles are under %s", getCFD());
         }
 
         StringBuffer sehsetting;

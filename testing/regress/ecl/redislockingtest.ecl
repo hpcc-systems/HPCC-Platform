@@ -135,3 +135,47 @@ SEQUENTIAL(
     myRedis.SetString('channelTest2', 'redis_ecl_lock_channelTest2_0');
     OUTPUT(CATCH(ds2, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
+
+SEQUENTIAL(
+    myRedis.FlushDB(1);
+    myRedis.SetAndPublishString('testDatabaseExpire1', 'databaseThenExpire', 1, 10000);
+    myRedis.GetString('testDatabaseExpire1', 1);
+    myRedis.GetOrLockString('testDatabaseExpire1', 1);
+    myRedis.FlushDB(1);
+    );
+
+SEQUENTIAL(
+    myRedis.FlushDB(2);
+    myRedis.SetAndPublishUnicode('testDatabaseExpire2', 'databaseThenExpire', 2, 10000);
+    myRedis.GetUnicode('testDatabaseExpire2', 2);
+    myRedis.GetOrLockUnicode('testDatabaseExpire2', 2);
+    myRedis.FlushDB(2);
+    );
+
+SEQUENTIAL(
+    myRedis.FlushDB(3);
+    myRedis.SetAndPublishUtf8('testDatabaseExpire3', 'databaseThenExpire', 3, 10000);
+    myRedis.GetUtf8('testDatabaseExpire3', 3);
+    myRedis.GetOrLockUtf8('testDatabaseExpire3', 3);
+    myRedis.FlushDB(3);
+    );
+
+SEQUENTIAL(
+    myRedis.FlushDB(),
+    myRedis.SetAndPublishString('t1', 'Good boy Einnie!');
+    myRedis.GetString('t1');
+
+    myRedis.SetAndPublishString('t2', 'Good boy Einnie!', 1, 10000);
+    myRedis.GetString('t2', 1);
+
+    myRedis.SetAndPublishString('t3', 'supercalifragilisticexpialidocious');
+    myRedis.GetString('t3');
+
+    myRedis.SetAndPublishString('t4', 'supercalifragilisticexpialidocious', 1, 10000);
+    myRedis.GetString('t4', 1);
+
+    myRedis.FlushDB();
+    myRedis.FlushDB(1);
+    );
+
+myRedis.FlushDB();
