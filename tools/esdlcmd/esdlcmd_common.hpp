@@ -27,6 +27,9 @@
 #include "ws_esdlconfig_esp.ipp"
 #include "esdl2xml.hpp"
 
+#define COMPONENTS_DIR_NAME "componentfiles"
+#define HIGHER_DIR_RELATIVE ".."
+
 //=========================================================================================
 
 interface IEsdlCommand : extends IInterface
@@ -300,4 +303,27 @@ public:
     virtual void setTransformParams(IProperties *params )=0;
 };
 
+static bool getCurrentFolder(StringBuffer & path)
+{
+    StringBuffer folder;
+    splitDirTail(queryCurrentProcessPath(), folder);
+    removeTrailingPathSepChar(folder);
+    if (folder.length())
+    {
+        path = folder;
+        return true;
+    }
+    return false;
+}
+
+static bool getComponentFilesRelPathFromBin(StringBuffer & path)
+{
+    if (getCurrentFolder(path))
+    {
+        path.append(PATHSEPCHAR).append(HIGHER_DIR_RELATIVE).append(PATHSEPCHAR).append(COMPONENTS_DIR_NAME);
+        return true;
+    }
+
+    return false;
+}
 #endif
