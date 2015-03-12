@@ -44,9 +44,10 @@ public:
     ~StringBuffer();
 
     inline size32_t length() const                      { return curLen; }
+    inline bool     isEmpty() const                     { return (curLen == 0); }
     void            setLength(unsigned len);
     inline void     ensureCapacity(unsigned max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
-    
+
     StringBuffer &  append(char value);
     StringBuffer &  append(unsigned char value);
     StringBuffer &  append(const char * value);
@@ -90,13 +91,13 @@ public:
     StringBuffer &  insert(int offset, const IStringVal * value);
     StringBuffer &  reverse();
     void            setCharAt(unsigned offset, char value);
-    
+
     //Non-standard functions:
     MemoryBuffer &  deserialize(MemoryBuffer & in);
     MemoryBuffer &  serialize(MemoryBuffer & out) const;
     StringBuffer &  loadFile(const char *fname, bool binaryMode=false);
     StringBuffer &  loadFile(IFile* f);
-    
+
     StringBuffer &  append(const StringBuffer & value);
     StringBuffer &  newline();
     StringBuffer &  pad(unsigned count);
@@ -122,11 +123,11 @@ public:
     inline StringBuffer& set(const char* value) { return clear().append(value); }
     inline operator const char* () const { return str(); }
     inline StringBuffer& operator=(const char* value)
-    { 
+    {
         return clear().append(value);
     }
     inline StringBuffer& operator=(const StringBuffer& value)
-    { 
+    {
         return clear().append(value.str());
     }
 
