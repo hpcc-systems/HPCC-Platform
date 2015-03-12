@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+     <sect2 id="ESDL_Attributes_leading_zero">
+       <title>leading_zero(<emphasis role="bold">n</emphasis><emphasis
+       role="bold">)</emphasis></title>
+ 
+       <para>The <emphasis>leading_zero</emphasis> attribute adds zero(s) to
+       the field value to so that the total length is
+       <emphasis>n</emphasis>.</para>
+ 
+       <para><emphasis role="bold">Example:</emphasis></para>
+ 
+       <programlisting>ESPstruct Date
+ {
+    [leading_zero(4)] Year;
+    [leading_zero(2)] Month;
+    [leading_zero(2)] Day;
+ };  </programlisting>
+ 
+       <para>So the Date will always have a 4-digit Year and a 2-digit Month
+       and a 2-digit Day.</para>
+     </sect2>

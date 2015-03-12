@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ESDL_Attributes_ecl_null">
+  <title>ecl_null (<emphasis role="bold">n</emphasis><emphasis role="bold"> |
+  </emphasis><emphasis role="bold">string</emphasis><emphasis
+  role="bold">)</emphasis></title>
+
+  <para>The <emphasis>ecl_null </emphasis>attribute tells ESP to remove the
+  field altogether if the field's value is <emphasis>n</emphasis> or
+  <emphasis>string</emphasis>. This provides a means to remove a field
+  completely when there is no data for it.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>[ecl_null(0)] int Age;
+[ecl_null('false')] bool IsMatch;   </programlisting>
+
+  <para>Age 0 means there is no Age data for this person. So, if Age is 0, the
+  &lt;Age&gt; tag is not returned. </para>
+
+  <para>Without this attribute, <emphasis
+  role="bold">&lt;Age&gt;0&lt;/Age&gt;</emphasis> would be returned.</para>
+
+  <para>For the second example, a bool value of <emphasis>false</emphasis>,
+  returned as a string, is treated as null and therefore the tag is not
+  returned.</para>
+</sect2>

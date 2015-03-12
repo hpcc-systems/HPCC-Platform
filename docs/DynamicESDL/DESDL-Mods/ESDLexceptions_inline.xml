@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_exceptions_inline">
+  <title><emphasis role="bold">exceptions_inline</emphasis></title>
+
+  <para>The exceptions_inline attribute (valid only for an ****ESPMethod)
+  allows you to specify that the service should return app / service level
+  exceptions as part of a response message rather than as a SOAPfault.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>E*****</programlisting>
+</sect1>

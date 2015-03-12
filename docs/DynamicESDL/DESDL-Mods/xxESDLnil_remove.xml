@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_nil_remove">
+  <title><emphasis role="bold">nil_remove</emphasis></title>
+
+  <para>The nil_remove attribute (valid for an ESPrequest, ESPStruct, or
+  ESPresponse) specifies to remove any empty tags. This is useful to save
+  bandwidth by returning only relavent tags. </para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>ESPresponse [nil_remove] MyQueryResponse
+ 
+{
+    string FirstName;
+    string MiddleName;
+    string LastName;
+ 
+};
+</programlisting>
+</sect1>

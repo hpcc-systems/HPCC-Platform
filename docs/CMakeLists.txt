@@ -49,10 +49,11 @@ add_subdirectory(resources)
 
 
 # Doc dirs to include.
+add_subdirectory(DynamicESDL)
 add_subdirectory(ECLLanguageReference)
 add_subdirectory(ECLProgrammersGuide)
 add_subdirectory(ECLStandardLibraryReference)
-add_subdirectory(ECLReference)
+#add_subdirectory(ECLReference)
 add_subdirectory(EclipseHelp)
 add_subdirectory(HPCCClientTools)
 add_subdirectory(HPCCCertify)
