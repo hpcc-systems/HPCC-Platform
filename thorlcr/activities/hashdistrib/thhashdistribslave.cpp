@@ -438,18 +438,18 @@ protected:
                         rawSz = 0;
                         msg.clear();
                     }
-                    owner.decTotal(writerTotalSz);
-                    writerTotalSz = 0;
                     // see if others to process
                     // NB: this will never start processing a bucket for a destination which already has an active writer.
                     CriticalBlock b(owner.activeWritersLock);
+                    owner.decTotal(writerTotalSz);
                     target->decActiveWriters();
                     sendBucket.setown(owner.getAnotherBucket(nextPending));
-                    if (!sendBucket)
+                    if (!sendBucket) // 0 pending buckets to any target OR those that are pending have enough handlers (>targetWriterLimit)
                     {
                         target = NULL; // will be reinitialized to new target in init(), when thread pool thread is reused
                         break;
                     }
+                    writerTotalSz = 0; // now reset for new bucket to send
                     dest = sendBucket->queryDestination();
                     target = owner.targets.item(dest);
                     target->incActiveWriters();
@@ -765,7 +765,7 @@ protected:
                         loop
                         {
                             if (timer.elapsedCycles() >= queryOneSecCycles()*10)
-                                owner.ActPrintLog("HD sender, waiting for space, active writers = %d", queryInactiveWriters());
+                                owner.ActPrintLog("HD sender, waiting for space, inactive writers = %d, totalSz = %d", queryInactiveWriters(), queryTotalSz());
                             timer.reset();
 
                             if (senderFullSem.wait(10000))
