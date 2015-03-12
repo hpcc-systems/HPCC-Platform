@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+   
+
+    <sect2 id="ESPrequest">
+      <title><emphasis role="bold">ESPrequest</emphasis></title>
+
+      <para>The request structure for a method.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>
+ESPrequest  MyQueryRequest
+
+{
+    string FirstName;
+    string MiddleName;
+    string LastName;
+    string Sortby;
+ 
+    bool Descending(false);
+};
+   </programlisting>
+    </sect2>

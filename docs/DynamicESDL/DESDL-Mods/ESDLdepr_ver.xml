@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+   <sect2 id="ESDL_Attributes_depr_ver">
+      <title><emphasis role="bold">depr_ver</emphasis></title>
+
+      <para>The depr_ver attribute allows you to declare a field's end of life
+      version. The field is deprecated at the specified version number.
+      Requests using that version or any subsequent version will not have
+      access to the field.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[depr_ver("1.04")] bool IsValid;</programlisting>
+    </sect2>

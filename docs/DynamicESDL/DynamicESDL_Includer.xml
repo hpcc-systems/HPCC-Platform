@@ -1,0 +1,725 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Dynamic ESDL</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
+
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies.</para>
+
+      <para>All names and example data used in this manual are fictitious. Any
+      similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para />
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Dynamic ESDL</title>
+
+    <para>Dynamic ESDL (Enterprise Service Description Language) is a
+    methodology that helps you develop and manage web-based query interfaces
+    quickly and consistently.</para>
+
+    <para>Dynamic ESDL takes an interface-first development approach. It
+    leverages the ESDL Language to create a common interface “contract” that
+    both Roxie Query and Web interface developers will adhere to. It is
+    intended to allow developers to create production web services, with clean
+    interfaces that can evolve and grow over time without breaking existing
+    applications.</para>
+
+    <para>ESDL’s built-in versioning support helps ensure compiled and
+    deployed applications continue to operate while changes are made to the
+    deployed service’s interface for new functionality.</para>
+
+    <para>ESDL’s ability to define and reuse common structures helps maintain
+    consistent interfaces across methods.</para>
+
+    <para>The Dynamic ESDL service is built to scale horizontally, and hooks
+    are provided to add custom logging and security to help create fully
+    “productionalized” web services.</para>
+
+    <para>Once a service is deployed, application developers and end-users can
+    consume the service using REST, JSON, XML, SOAP, or form encoded posts.
+    Dynamic ESDL provides quick and easy access to a WSDL, live forms, sample
+    requests and responses, and testing interfaces to allow developers to test
+    logic changes, data changes, or new features, as well as to interact with
+    the service directly using SOAP, XML, or JSON.</para>
+  </chapter>
+
+  <chapter>
+    <title>Workflow Tutorial</title>
+
+    <sect1 role="nobrk">
+      <title>Overview</title>
+
+      <para>In this section, we will:</para>
+
+      <para />
+
+      <itemizedlist>
+        <listitem>
+          <para>Use Configuration Manager to add a Dynamic ESDL-based ESP
+          Service and bind it to a port on an ESP server.</para>
+
+          <para />
+        </listitem>
+
+        <listitem>
+          <para>Write an ESDL Service Definition.</para>
+
+          <para />
+        </listitem>
+
+        <listitem>
+          <para>Generate ECL from the ESDL Service Definition, copy it to your
+          ECL repository, and the write the ECL query that will deliver the
+          result (the business logic).</para>
+
+          <para />
+        </listitem>
+
+        <listitem>
+          <para>Compile the ECL business logic query and publish it to a Roxie
+          cluster.</para>
+
+          <para>At this point you can test the query using WsECL.</para>
+
+          <para />
+        </listitem>
+
+        <listitem>
+          <para>Publish the Dynamic ESDL definition.</para>
+
+          <para />
+        </listitem>
+
+        <listitem>
+          <para>Bind the service methods to the Roxie queries using a
+          configuration XML file.</para>
+
+          <para />
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1>
+      <title>Configure and Bind a Dynamic ESDL service</title>
+
+      <para>This step adds an ESP service and a service binding that reserves
+      a port for the dynamic ESDL service. This step is independent of the
+      development and publishing of the actual Roxie query, so you can set it
+      up before or after your query is ready.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>If it is running, stop the HPCC system, using this
+          command:</para>
+
+          <para>
+            <emphasis role="bold">Centos/Red Hat</emphasis>
+
+            <programlisting>sudo /sbin/service hpcc-init stop</programlisting>
+          </para>
+
+          <para>
+            <emphasis role="bold">Ubuntu</emphasis>
+          </para>
+
+          <para>
+            <programlisting>sudo service hpcc-init stop</programlisting>
+          </para>
+
+          <para>
+            <emphasis role="bold">Debian 6 (Squeeze)</emphasis>
+          </para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+
+          <para>
+            <informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry>
+                      <inlinegraphic fileref="images/OSSgr3.png" />
+                    </entry>
+
+                    <entry>You can use this command to confirm HPCC processes
+                    are stopped (on Centos/Red Hat):<para>
+                        <programlisting>sudo /sbin/service hpcc-init status</programlisting>
+
+                        <phrase>For Ubuntu</phrase>
+
+                        <programlisting>sudo service hpcc-init status
+</programlisting>
+
+                        <phrase>For Debian 6 (Squeeze)</phrase>
+
+                        <programlisting>sudo /etc/init.d/hpcc-init status</programlisting>
+                      </para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Start the Configuration Manager service.<emphasis
+          role="bold" /><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Using a Web browser, go to the Configuration Manager's
+          interface:</para>
+
+          <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
+
+          <para>The Configuration Manager startup wizard displays.</para>
+        </listitem>
+
+        <listitem>
+          <para><?dbfo keep-together="always"?>Select <emphasis
+          role="bold">Advanced View</emphasis> and then select the source
+          environment XML file to edit.</para>
+
+          <para>
+            <graphic fileref="images/desdl-openconfig.jpg" />
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Next</emphasis> button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Right-click on <emphasis role="bold">Esp Services</emphasis>
+          and select <emphasis role="bold">New Esp Services</emphasis> &gt;
+          <emphasis role="bold">Dynamic ESDL</emphasis>.</para>
+
+          <para />
+
+          <para>
+            <graphic fileref="images/desdl-addDESDL.jpg" />
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Provide a name for the service.</para>
+
+          <para>
+            <graphic fileref="images/dsdl-NametheServoice.jpg" />
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Select your ESP , then select the ESP Service Bindings
+          tab.</para>
+
+          <para>
+            <graphic fileref="images/desdl-ESPSVCBinding.jpg" />
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Right-click in the list of bindings and select <emphasis
+          role="bold">Add</emphasis></para>
+
+          <para>
+            <graphic fileref="images/desdl-AddSVCBinding.jpg" />
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Provide a name, port, and then select the service. The service
+          definition you added will display in the list of available
+          services.</para>
+
+          <para>
+            <graphic fileref="images/desdl-NameSVCBinding.jpg" />
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the NewEnvironment.xml file from the source directory to
+          the /etc/HPCCSystems and rename the file to environment.xml</para>
+
+          <programlisting># for example
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+          <para>
+            <informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry>
+                      <inlinegraphic fileref="images/caution.png" />
+                    </entry>
+
+                    <entry>Make sure that you have sufficient privileges to
+                    write file(s) to the destination directory before
+                    attempting to copy. If prompted to overwrite the
+                    destination file, you should answer <emphasis
+                    role="bold">yes</emphasis>.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the <emphasis
+          role="bold">/etc/HPCCSystems/environment.xml</emphasis> to <emphasis
+          role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
+          role="bold">every</emphasis> node.</para>
+
+          <para>You may want to create a script to push out the XML file to
+          all nodes. A sample script is provided with HPCC. The following
+          command copies the XML files out to all nodes as required:</para>
+
+          <para>
+            <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Restart the HPCC system on <emphasis
+          role="bold">every</emphasis> node. The following command starts the
+          HPCC system on an individual node:</para>
+
+          <para>
+            <emphasis role="bold">Centos/Red Hat</emphasis>
+
+            <programlisting>sudo /sbin/service hpcc-init start</programlisting>
+          </para>
+
+          <para>
+            <emphasis role="bold">Ubuntu</emphasis>
+          </para>
+
+          <para>
+            <programlisting>sudo service hpcc-init start</programlisting>
+          </para>
+
+          <para>
+            <emphasis role="bold">Debian 6 (Squeeze)</emphasis>
+          </para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+
+          <para />
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>
+                    <inlinegraphic fileref="images/OSSgr3.png" />
+                  </entry>
+
+                  <entry>
+                    <para>You may want to create a script to push this command
+                    out to every node. A sample script is provided with HPCC.
+                    Use the following command to start HPCC on all
+                    nodes:</para>
+
+                    <para>
+                      <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting>
+                    </para>
+                  </entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para />
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Write the ESDL Service Definition</title>
+
+      <para>In this section, we will write a the Service Definitions. The
+      program listing below shows a service called
+      <emphasis>MathService</emphasis>. It contains one method,
+      <emphasis>AddThis</emphasis>, with a simple request and a simple
+      response defined.</para>
+
+      <programlisting>ESPservice MathService
+{
+  ESPmethod AddThis(AddThisRequest, AddThisResponse);
+};
+
+ESPrequest AddThisRequest 
+{
+  int  FirstNumber;
+  int  SecondNumber;
+};
+    
+ESPresponse AddThisResponse 
+{
+  int  Answer;
+};
+
+</programlisting>
+
+      <orderedlist>
+        <listitem>
+          <para>Save the file as MathService.ecm.</para>
+
+          <para />
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Generate ECL definitions from the ESDL Service Definition</title>
+
+      <para>In this section, we will generate ECL from this ESDL Service
+      Definition file. This will use the esdl executable that is installed
+      with Client Tools.</para>
+
+      <para>You will find this in C:\Program Files
+      (x86)\HPCCSystems\5.2.0\clienttools\bin on a Windows machine</para>
+
+      <para>or /opt/HPCCSystems/bin/ on a Linux machine.</para>
+
+      <para>
+        <orderedlist>
+          <listitem>
+            <para>From the command line, run:</para>
+
+            <para><programlisting>esdl ecl MathService.ecm .</programlisting>This
+            produces a file named MathService.ecl in the current
+            directory</para>
+
+            <programlisting><emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
+/*** ECL Interface generated by esdl2ecl version 1.0 from MathService.xml. ***/
+/*===================================================*/</emphasis>
+
+export MathService := MODULE
+
+export t_AddThisRequest := record
+  integer FirstNumber {xpath('FirstNumber')};
+  integer SecondNumber {xpath('SecondNumber')};
+end;
+
+export t_AddThisResponse := record
+  integer Answer {xpath('Answer')};
+end;
+end;
+
+<emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
+/*** ECL Interface generated by esdl2ecl version 1.0 from MathService.xml. ***/
+/*===================================================*/</emphasis>
+</programlisting>
+
+            <para />
+          </listitem>
+
+          <listitem>
+            <para>Copy the MathService.ecl file to a module in your ECL
+            Repository. For example, myMathService.</para>
+          </listitem>
+
+          <listitem>
+            <para>Write ECL to support the service:</para>
+
+            <programlisting>IMPORT MyMathService;
+rec_in := MyMathService.MathService.t_AddThisRequest;
+
+First_Row := ROW ([], rec_in) : STORED ('AddThisRequest', FEW);
+c:= first_row.FirstNumber + first_row.SecondNumber;
+ds_out := ROW ({c},MyMathService.MathService.t_AddThisResponse);
+OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Compile and Publish to your Roxie cluster.</para>
+          </listitem>
+
+          <listitem>
+            <para>Test the service using WsECL :<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8002 </programlisting></para>
+          </listitem>
+        </orderedlist>
+      </para>
+    </sect1>
+
+    <sect1>
+      <title>Publish the ESDL Service Definitions and Bind the ESDL
+      Service</title>
+
+      <para>In this section, we will publish the ESDL Service definitions to
+      the System Data Store and bind the methods to he published Roxie
+      query.</para>
+
+      <para>
+        <orderedlist>
+          <listitem>
+            <para>Publish the Dynamic ESDL definition</para>
+
+            <programlisting>esdl publish MathService MathService.ecm -s nnn.nnn.nnn.nnn -p 8010 --version 1</programlisting>
+
+            <para>Replace nnn.nnn.nnn.nnn with your ECL Watch ESP server's IP
+            address.</para>
+          </listitem>
+
+          <listitem>
+            <para>Create the configuration XML file</para>
+
+            <programlisting>&lt;Methods&gt;
+    &lt;Method name="AddThis" url="&lt;RoxieIP&gt;:9876" querytype="roxie" queryname="AddThis"/&gt;
+&lt;/Methods&gt;</programlisting>
+
+            <para>Where name is the name of your method(s) and url is the
+            Roxie server's IP and port and queryname is the published name
+            (alias) of the query. For a multi-node Roxie, you can use a range
+            in the form of nnn.nnn.nnn.n-nnn.</para>
+          </listitem>
+
+          <listitem>
+            <para>Save the file as MathServiceConfig.xml</para>
+          </listitem>
+
+          <listitem>
+            <para>Bind the service methods to the queries using a the
+            configuration XML.</para>
+
+            <programlisting>esdl bind-service myesp 8003 MathService.1 MathService --config MathServiceConfig.xml -s nnn.nnn.nnn.nnn -p 8010
+</programlisting>
+
+            <para>Where myesp is the name of your ESP process, 8003 is the
+            port you reserved for your Dynamic ESDL service.</para>
+
+            <para />
+          </listitem>
+
+          <listitem>
+            <para>Test the service using the new interface:<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8003</programlisting></para>
+          </listitem>
+        </orderedlist>
+      </para>
+    </sect1>
+  </chapter>
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
+              xpointer="ESDL_CLI" xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <chapter>
+    <title>ESDL Language Reference</title>
+
+    <sect1 role="nobrk">
+      <title>ESDL Structures</title>
+
+      <para />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPstruct.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPrequest.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPresponse.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLESParray.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPenum.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPinclude.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPservice.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLESPmethod.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+
+    <sect1>
+      <title>ESDL Datatypes</title>
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLbooleanbool.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLstring.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLint.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLint64.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLfloat.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLdouble.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLbinary.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLTypeMapping.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+
+    <sect1>
+      <title>ESDL Attributes</title>
+
+      <para>You can use ESDL attributes to extend and override the default
+      behavior of an ESDL definition. For example, adding a max_len(n) to a
+      string defines the string will only need to store a certain number of
+      characters.</para>
+
+      <para>Many attributes are treated as hints that may have more effect on
+      some implementations than others. For example, max_len(n) will affect
+      generated ECL code, but is ignored when generating C++.</para>
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_len.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_max_len.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_name.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLcounter_and_count_val.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_count_var.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_null.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLleading_zero.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_hide.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_type.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLecl_keep.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLmin_ver.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLmax_ver.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLdepr_ver.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLhelp.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <xi:include href="DynamicESDL/DESDL-Mods/ESDLdescription.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+  </chapter>
+</book>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+   <sect2 id="ESDL_Attributes_counter-count_val">
+      <title>counter and count_val</title>
+
+      <para>These two attributes are used to help ESP calculate the record
+      count of the response.</para>
+
+      <para><emphasis>counter</emphasis> counts the number of children of the
+      nodes. When the node is an array, it is the same as the number of items
+      in the array.</para>
+
+      <para><emphasis>count_val</emphasis> will use the value of the node as
+      record count. Field <emphasis role="bold">RecordCount</emphasis> is
+      implicitly marked as <emphasis>count_val</emphasis>.</para>
+
+      <para>When an response has multiple counter, count_val, the sum of the
+      values is returned as record-count.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[counter] ESParray&lt;MyRecord, Record&gt; Records;
+[count_val] int TotalFound;   </programlisting>
+    </sect2>
