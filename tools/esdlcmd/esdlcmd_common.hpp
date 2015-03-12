@@ -320,7 +320,7 @@ static bool getComponentFilesRelPathFromBin(StringBuffer & path)
 {
     if (getCurrentFolder(path))
     {
-        path.append(PATHSEPCHAR).append(HIGHER_DIR_RELATIVE).append(PATHSEPCHAR).append(COMPONENTS_DIR_NAME);
+        path.appendf("%c%s%c%s", PATHSEPCHAR, HIGHER_DIR_RELATIVE,PATHSEPCHAR,COMPONENTS_DIR_NAME);
         return true;
     }
 
