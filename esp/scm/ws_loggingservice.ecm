@@ -51,7 +51,7 @@ ESPresponse [exceptions_inline] UpdateLogResponse
     string StatusMessage;
 };
 
-ESPService [version("1.0"), default_client_version("1.0"), noforms, use_method_name] WsLoggingService
+ESPService [version("1.0"), noforms, use_method_name] WsLoggingService
 {
     ESPmethod GetTransactionSeed(GetTransactionSeedRequest, GetTransactionSeedResponse);
     ESPmethod UpdateLog(UpdateLogRequest, UpdateLogResponse);
