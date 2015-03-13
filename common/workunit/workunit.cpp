@@ -690,7 +690,8 @@ public:
         }
 
         //Don't lock the statistics while we iterate - any partial updates must not cause problems
-        conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_NONE, SDS_LOCK_TIMEOUT));
+        if (daliClientActive())
+            conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_NONE, SDS_LOCK_TIMEOUT));
 
         if (conn && !singleGraph)
             graphIter.setown(conn->queryRoot()->getElements("*"));
