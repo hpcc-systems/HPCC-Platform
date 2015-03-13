@@ -2183,7 +2183,10 @@ public:
     }
     void setup(CSlaveActivity *activity, rowidx_t size, IHash *_leftHash, IHash *_rightHash, ICompare *_compareLeftRight)
     {
-        size32_t sz = sizeof(const void *)*size;
+        unsigned __int64 _sz = sizeof(const void *) * ((unsigned __int64)size);
+        memsize_t sz = (memsize_t)_sz;
+        if (sz != _sz) // treat as OOM exception for handling purposes.
+            throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Unsigned overflow, trying to allocate hash table of size: %" I64F "d ", _sz);
         void *ht = activity->queryJob().queryRowManager()->allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
         memset(ht, 0, sz);
         htMemory.setown(ht);
