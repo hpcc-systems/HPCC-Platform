@@ -130,6 +130,7 @@ static const unsigned MAX_TYPEMISMATCHCOUNT = 10;
 
 static __thread MCached * cachedConnection;
 static __thread ThreadTermFunc threadHookChain;
+static __thread bool threadHooked;
 
 //The following class is here to ensure destruction of the cachedConnection within the main thread
 //as this is not handled by the thread hook mechanism.
@@ -140,26 +141,37 @@ public :
     ~mainThreadCachedConnection()
     {
         if (cachedConnection)
+        {
             cachedConnection->Release();
+            cachedConnection = NULL;
+        }
     }
 } mainThread;
 
 static void releaseContext()
 {
     if (cachedConnection)
+    {
         cachedConnection->Release();
+        cachedConnection = NULL;
+    }
     if (threadHookChain)
     {
         (*threadHookChain)();
         threadHookChain = NULL;
     }
+    threadHooked = false;
 }
 MCached * createConnection(ICodeContext * ctx, const char * options)
 {
     if (!cachedConnection)
     {
         cachedConnection = new MemCachedPlugin::MCached(ctx, options);
-        threadHookChain = addThreadTermFunc(releaseContext);
+        if (!threadHooked)
+        {
+            threadHookChain = addThreadTermFunc(releaseContext);
+            threadHooked = true;
+        }
         return LINK(cachedConnection);
     }
 
@@ -167,6 +179,7 @@ MCached * createConnection(ICodeContext * ctx, const char * options)
         return LINK(cachedConnection);
 
     cachedConnection->Release();
+    cachedConnection = NULL;
     cachedConnection = new MemCachedPlugin::MCached(ctx, options);
     return LINK(cachedConnection);
 }
