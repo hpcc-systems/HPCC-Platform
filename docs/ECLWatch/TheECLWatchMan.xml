@@ -667,6 +667,97 @@
     </sect1>
   </chapter>
 
+  <chapter id="Plug-Ins_for_ECLWatch">
+    <title>Plug-ins</title>
+
+    <para>You can add functionality to ECL Watch with plug-ins. You can
+    integrate certain plug-ins into the ECL Watch interface. After you install
+    an approved plug-in, the plug-in icon displays in the navigation bar at
+    the top of the ECL Watch page. Click on the plug-in icon to view the
+    plug-ins page in ECL Watch. <figure>
+        <title>ECL Watch Plug-in icon</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWaPlug.jpg" vendor="VM_welcome" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <sect1 id="Ganglia_in_ECLWatch">
+      <title>Ganglia in ECL Watch</title>
+
+      <para>With the HPCC Systems<superscript>®</superscript>
+      Ganglia-monitoring plug-in installed, you can view the Ganglia
+      statistics and graphs through the ECL Watch interface. The default
+      monitoring displays several key statistics, but you can customize and
+      configure the views.</para>
+
+      <figure>
+        <title>Ganglia in ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GAN051.jpg" vendor="VM_welcome" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <sect2 id="Customize_Monitoring" role="brk">
+        <title>Customize Monitoring</title>
+
+        <para>The default Ganglia page has a tab for Custom Monitoring where
+        you can easily add custom monitoring components. <figure>
+            <title>Ganglia Custom Monitoring </title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWa481.jpg" vendor="VM_welcome" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>To customize the monitoring page;</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Select the <emphasis role="bold">Custom
+              Monitoring</emphasis> tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Metrics</emphasis>
+              button.</para>
+            </listitem>
+
+            <listitem>
+              <para>Use the drop menus to display the various graphing
+              utilities.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para><figure>
+            <title>Customize the Metrics</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWa482.jpg" vendor="VM_welcome" />
+              </imageobject>
+            </mediaobject>
+          </figure> </para>
+      </sect2>
+
+      <sect2>
+        <title>Installing Ganglia in ECL Watch</title>
+
+        <para>In order to use Ganglia in ECL Watch, you need to have Ganglia
+        installed on your HPCC System. For details on installing Ganglia for
+        ECL Watch, refer to the <emphasis>HPCC Monitoring and
+        Reporting</emphasis> manual. </para>
+      </sect2>
+    </sect1>
+  </chapter>
+
   <chapter id="Account_Info">
     <title>Advanced Menu</title>
 
