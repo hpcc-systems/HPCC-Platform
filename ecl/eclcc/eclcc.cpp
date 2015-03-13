@@ -819,6 +819,11 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 }
             }
         }
+        catch (IError * _e)
+        {
+            Owned<IError> e = _e;
+            errorProcessor.report(e);
+        }
         catch (IException * _e)
         {
             Owned<IException> e = _e;
