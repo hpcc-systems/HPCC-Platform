@@ -819,15 +819,18 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 }
             }
         }
-        catch (IException * e)
+        catch (IException * _e)
         {
-            if (e->errorCode() != HQLERR_ErrorAlreadyReported)
+            Owned<IException> e = _e;
+            unsigned errCode = e->errorCode();
+            if (errCode != HQLERR_ErrorAlreadyReported)
             {
                 StringBuffer exceptionText;
                 e->errorMessage(exceptionText);
-                errorProcessor.reportError(ERR_INTERNALEXCEPTION, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
+                if (errCode == 0)
+                    errCode = ERR_INTERNALEXCEPTION;
+                errorProcessor.reportError(errCode, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
             }
-            e->Release();
         }
 
         try
