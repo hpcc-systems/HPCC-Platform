@@ -748,7 +748,7 @@
       </itemizedlist>
     </sect2>
 
-    <sect2 id="Spray_XML" role="brk">
+    <sect2 id="Spray_JSON" role="brk">
       <title><emphasis role="bold">Spray JSON</emphasis></title>
 
       <itemizedlist>
@@ -815,7 +815,7 @@
                     <entry><emphasis role="bold">Row Path </emphasis></entry>
 
                     <entry>The row path delimiter. The default puts the entire
-                    array into a single row. </entry>
+                    array into a single row.</entry>
                   </row>
 
                   <row>
