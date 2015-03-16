@@ -43,6 +43,7 @@ class Connection;
 static const char * REDIS_LOCK_PREFIX = "redis_ecl_lock";
 static __thread Connection * cachedConnection;
 static __thread ThreadTermFunc threadHookChain;
+static __thread bool threadHooked;
 
 static void * allocateAndCopy(const void * src, size_t size)
 {
@@ -158,7 +159,10 @@ public :
     ~MainThreadCachedConnection()
     {
         if (cachedConnection)
+        {
             cachedConnection->Release();
+            cachedConnection = NULL;
+        }
     }
 } mainThread;
 
@@ -174,6 +178,7 @@ static void releaseContext()
         (*threadHookChain)();
         threadHookChain = NULL;
     }
+    threadHooked = false;
 }
 Connection::Connection(ICodeContext * ctx, const char * _options, unsigned __int64 _database, const char * password, unsigned __int64 _timeout)
   : database(0), timeout(_timeout), port(0), serverIpPortPasswordHash(hashServerIpPortPassword(ctx, _options, password))
@@ -290,7 +295,11 @@ Connection * Connection::createConnection(ICodeContext * ctx, const char * optio
     if (!cachedConnection)
     {
         cachedConnection = new Connection(ctx, options, _database, password, _timeout);
-        threadHookChain = addThreadTermFunc(releaseContext);
+        if (!threadHooked)
+        {
+            threadHookChain = addThreadTermFunc(releaseContext);
+            threadHooked = true;
+        }
         return LINK(cachedConnection);
     }
 

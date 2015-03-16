@@ -477,6 +477,7 @@
 #define HQLERR_AtmostLegacyMismatch             3134
 #define HQLERR_PropertyArgumentNotConstant      3135
 #define HQLERR_InvalidErrorCategory             3136
+#define HQLERR_MultipleHashWebserviceCalls      3137
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -515,6 +516,7 @@
 #define HQLERR_AtmostLegacyMismatch_Text        "Legacy JOIN condition on field[1..*] should be included in the optional fields"
 #define HQLERR_PropertyArgumentNotConstant_Text "The argument to attribute '%s' must be a constant"
 #define HQLERR_InvalidErrorCategory_Text        "Unrecognised ONWARNING category '%s'"
+#define HQLERR_MultipleHashWebserviceCalls_Text "#webservice can only be called once"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

@@ -111,7 +111,7 @@
     <para>Typically, Roxie results are returned to the requester rather than
     writing a result to a file. However, Roxie can write data files, although
     you generally would not want to write a file when a query is not
-    workunit-based. </para>
+    workunit-based.</para>
 
     <sect1 id="Roxie_Overview">
       <title>Roxie Overview</title>
@@ -537,71 +537,16 @@
   <chapter id="Deploying-Data-to-a-Cluster-using-DFU">
     <title>Deploying Data to a Roxie Cluster using DFU</title>
 
-    <para>You can use the Distributed File Utility (DFU) in ECL Watch to
-    spray, copy, or remote copy data files to a Roxie cluster. This allows you
-    to copy large files to a cluster in advance of publishing a query. If data
-    files are copied in advance, a query which requires those files will use
-    the ones already in place. If you have large data sets, this allows you to
+    <para>You can use the Distributed File Utility (DFU) in ECL Watch to copy,
+    or remote copy data files to a Roxie cluster. This allows you to copy
+    large files to a cluster in advance of publishing a query. If data files
+    are copied in advance, a query which requires those files will use the
+    ones already in place. If you have large data sets, this allows you to
     prepare in advance of query deployment.</para>
 
     <para><emphasis role="bold">Note:</emphasis> To use this feature, the
     FTSlave utility must be installed to each node in the cluster. This is
     done automatically by the Configuration Manager Wizard.</para>
-
-    <sect1 id="LZ_Spray">
-      <title>Spray Files</title>
-
-      <para>You can spray files to your Roxie clusters from the Landing Zone
-      page. <orderedlist>
-          <listitem>
-            <para>In ECL Watch, select the file from your drop zone by
-            checking the box next to it.</para>
-          </listitem>
-
-          <listitem>
-            <para>Select the appropriate drop menu option for the type of
-            spray you want.</para>
-
-            <para>For example, to spray a delimited file, select the <emphasis
-            role="bold">Delimited</emphasis> drop menu option.</para>
-
-            <para><figure>
-                <title>Landing Zone Spray</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/RM441.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Fill in the values as appropriate for the spray.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Spray</emphasis> button to
-            spray the file.</para>
-          </listitem>
-        </orderedlist></para>
-
-      <sect2 id="multi-fileSpray">
-        <title>Spray multiple files</title>
-
-        <para>You can choose to spray multiple files with the multi-file spray
-        feature. This feature is useful for spraying a number of files of the
-        same type and the same scope using the same spray options.</para>
-
-        <para>Fixed (length) files can have different record lengths and XML
-        files can have different row tags which must be specified individually
-        for each file. To specify these differences select the files you want
-        to spray and the spray type. You will then see the files listed. Enter
-        the record length or row tag information for each file if using the
-        Fixed or XML spray types, then check all other applicable options and
-        Spray.</para>
-      </sect2>
-    </sect1>
 
     <sect1 id="Copy">
       <title>DFU Copy</title>

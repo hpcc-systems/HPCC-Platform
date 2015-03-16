@@ -16,14 +16,14 @@
 ############################################################################## */
 
 export memcached := SERVICE : plugin('memcached'), namespace('MemCachedPlugin')
-  SetUnicode(CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
-  SetString(CONST VARSTRING key, CONST STRING value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
-  SetUtf8(CONST VARSTRING key, CONST UTF8 value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSetUtf8';
-  SetBoolean(CONST VARSTRING key, BOOLEAN value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
-  SetReal(CONST VARSTRING key, REAL value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
-  SetInteger(CONST VARSTRING key, INTEGER value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
-  SetUnsigned(CONST VARSTRING key, UNSIGNED value, CONST VARSTRING options, CONST VARSTRING partitionKey = '',  UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
-  SetData(CONST VARSTRING key, CONST DATA value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSetData';
+  SetUnicode(CONST VARSTRING key, CONST UNICODE value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED expire = 0) : cpp,action,context,entrypoint='MSet';
+  SetString(CONST VARSTRING key, CONST STRING value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED expire = 0) : cpp,action,context,entrypoint='MSet';
+  SetUtf8(CONST VARSTRING key, CONST UTF8 value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED expire = 0) : cpp,action,context,entrypoint='MSetUtf8';
+  SetBoolean(CONST VARSTRING key, BOOLEAN value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED expire = 0) : cpp,action,context,entrypoint='MSet';
+  SetReal(CONST VARSTRING key, REAL value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED expire = 0) : cpp,action,context,entrypoint='MSet';
+  SetInteger(CONST VARSTRING key, INTEGER value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED expire = 0) : cpp,action,context,entrypoint='MSet';
+  SetUnsigned(CONST VARSTRING key, UNSIGNED value, CONST VARSTRING options, CONST VARSTRING partitionKey = '',  UNSIGNED expire = 0) : cpp,action,context,entrypoint='MSet';
+  SetData(CONST VARSTRING key, CONST DATA value, CONST VARSTRING options, CONST VARSTRING partitionKey = '', UNSIGNED expire = 0) : cpp,action,context,entrypoint='MSetData';
 
   INTEGER8 GetInteger(CONST VARSTRING key, CONST VARSTRING options, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MGetInt8';
   UNSIGNED8 GetUnsigned(CONST VARSTRING key, CONST VARSTRING options, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MGetUint8';
