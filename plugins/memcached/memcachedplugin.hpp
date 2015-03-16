@@ -44,14 +44,14 @@ extern "C++"
 {
 namespace MemCachedPlugin {
     //--------------------------SET----------------------------------------
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, bool value, const char * options, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, signed __int64 value, const char * options, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, unsigned __int64 value, const char * options, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, double value, const char * options, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * _ctx, const char * key, size32_t valueLength, const char * value, const char * options, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, size32_t valueLength, const char * value, const char * options, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, size32_t valueLength, const UChar * value, const char * options, const char * partitionKey, unsigned expire);
-    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetData(ICodeContext * _ctx, const char * key, size32_t valueLength, const void * value, const char * options, const char * partitionKey, unsigned expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, bool value, const char * options, const char * partitionKey, unsigned __int64 expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, signed __int64 value, const char * options, const char * partitionKey, unsigned __int64 expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, unsigned __int64 value, const char * options, const char * partitionKey, unsigned __int64 expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, double value, const char * options, const char * partitionKey, unsigned __int64 expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetUtf8(ICodeContext * _ctx, const char * key, size32_t valueLength, const char * value, const char * options, const char * partitionKey, unsigned __int64 expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, size32_t valueLength, const char * value, const char * options, const char * partitionKey, unsigned __int64 expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSet    (ICodeContext * _ctx, const char * key, size32_t valueLength, const UChar * value, const char * options, const char * partitionKey, unsigned __int64 expire);
+    ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MSetData(ICodeContext * _ctx, const char * key, size32_t valueLength, const void * value, const char * options, const char * partitionKey, unsigned __int64 expire);
     //--------------------------GET----------------------------------------
     ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MGetBool  (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
     ECL_MEMCACHED_API signed __int64   ECL_MEMCACHED_CALL MGetInt8  (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
