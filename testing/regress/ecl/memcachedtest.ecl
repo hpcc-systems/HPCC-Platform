@@ -90,3 +90,15 @@ SEQUENTIAL(
     Std.System.Debug.Sleep(2 * 1000);
     memcached.Exists('testExpire', servers);
     );
+
+SEQUENTIAL(
+    memcached.SetString('testDelete', 'foobar', servers);
+    memcached.Exists('testDelete', servers);
+    memcached.Delete('testDelete', servers);
+    memcached.Exists('testDelete', servers);
+
+    memcached.SetString('testDelete', 'foobar', servers, 'hashWithThis');
+    memcached.Exists('testDelete', servers, 'hashWithThis');
+    memcached.Delete('testDelete', servers, 'hashWithThis');
+    memcached.Exists('testDelete', servers, 'hashWithThis');
+    );

@@ -97,6 +97,7 @@ public :
 
     void clear(ICodeContext * ctx, unsigned when);
     bool exists(ICodeContext * ctx, const char * key, const char * partitionKey);
+    void deleteKey(ICodeContext * ctx, const char * key, const char * partitionKey);
     eclDataType getKeyType(const char * key, const char * partitionKey);
 
     bool isSameConnection(const char * _options) const;
@@ -496,7 +497,16 @@ bool MemCachedPlugin::MCached::exists(ICodeContext * ctx, const char * key, cons
     }
 #endif
 }
-
+void MemCachedPlugin::MCached::deleteKey(ICodeContext * ctx, const char * key, const char * partitionKey)
+{
+    memcached_return_t rc;
+    size_t partitionKeyLength = strlen(partitionKey);
+    if (partitionKeyLength)
+        rc = memcached_delete_by_key(connection, partitionKey, partitionKeyLength, key, strlen(key), (time_t)0);
+    else
+        rc = memcached_delete(connection, key, strlen(key), (time_t)0);
+    assertOnError(rc, "'Delete' request failed - ");
+}
 MemCachedPlugin::eclDataType MemCachedPlugin::MCached::getKeyType(const char * key, const char * partitionKey)
 {
     size_t returnValueLength;
@@ -639,6 +649,11 @@ ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * ctx, c
     OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
     const char * keyType = enumToStr(serverPool->getKeyType(key, partitionKey));
     return keyType;
+}
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MDelete(ICodeContext * ctx, const char * key, const char * options, const char * partitionKey)
+{
+    OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
+    serverPool->deleteKey(ctx, key, partitionKey);
 }
 //-----------------------------------SET------------------------------------------
 //NOTE: These were all overloaded by 'value' type, however; this caused problems since ecl implicitly casts and doesn't type check.
