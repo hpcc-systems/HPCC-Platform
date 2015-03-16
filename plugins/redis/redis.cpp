@@ -290,7 +290,8 @@ Connection * Connection::createConnection(ICodeContext * ctx, const char * optio
     if (!cachedConnection)
     {
         cachedConnection = new Connection(ctx, options, _database, password, _timeout);
-        threadHookChain = addThreadTermFunc(releaseContext);
+        if (!threadHookChain)
+            threadHookChain = addThreadTermFunc(releaseContext);
         return LINK(cachedConnection);
     }
 
