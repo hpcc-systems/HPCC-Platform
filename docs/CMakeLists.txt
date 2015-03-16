@@ -49,6 +49,7 @@ add_subdirectory(resources)
 
 
 # Doc dirs to include.
+add_subdirectory(DynamicESDL)
 add_subdirectory(ECLLanguageReference)
 add_subdirectory(ECLProgrammersGuide)
 add_subdirectory(ECLStandardLibraryReference)
@@ -70,6 +71,11 @@ add_subdirectory(ECLPlayground)
 add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
+
+# Docs automation
+if (DOCS_AUTO)
+   add_subdirectory(Automation)
+endif()
 
 
 #WIP -  Docs

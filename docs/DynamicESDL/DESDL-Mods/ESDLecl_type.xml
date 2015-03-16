@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+    <sect2 id="ESDL_Attributes_ecl_type">
+      <title>ecl_type ("<emphasis role="bold">type</emphasis><emphasis
+      role="bold">")</emphasis></title>
+
+      <para>The <emphasis>ecl_type</emphasis> attribute defines the field type
+      in ECL.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting> [ecl_type("Decimal10_2")] double RetailPrice;   </programlisting>
+
+      <para>ESDL does not have a monetary type, so we use
+      <emphasis>ecl_type</emphasis> to define it.</para>
+    </sect2>

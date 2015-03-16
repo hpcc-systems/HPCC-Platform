@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US">
+  <bookinfo>
+    <author>
+      <surname>DeFabia, Jim (RIS-BCT)</surname>
+    </author>
+
+    <date>2015-01-14</date>
+
+    <corpname>LexisNexis Risk Solutions</corpname>
+  </bookinfo>
+
+  <chapter>
+    <title>ESDL Language Reference</title>
+
+    <sect1 id="ESP_Struct">
+      <title>ESP<emphasis role="bold">struct</emphasis></title>
+
+      <para>ESPstruct is a set of elements grouped together under one name.
+      These elements, known as <emphasis>members</emphasis>, can have
+      different types and different lengths. Structures can be nested and
+      support inheritance.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>
+ESPstruct NameBlock
+
+{
+    string FirstName;
+    string MiddleName;
+    string LastName;
+    int Age;
+};
+   </programlisting>
+    </sect1>
+
+    <sect1 id="ESPrequest">
+      <title><emphasis role="bold">ESPrequest</emphasis></title>
+
+      <para>The request structure for a method.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>
+ESPrequest  MyQueryRequest
+
+{
+    string FirstName;
+    string MiddleName;
+    string LastName;
+    string Sortby;
+ 
+    bool Descending(false);
+};
+   </programlisting>
+    </sect1>
+
+    <sect1 id="ESPresponse">
+      <title><emphasis role="bold">ESPresponse</emphasis></title>
+
+      <para>The response structure for a method.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting> 
+ESPresponse  MyQueryResponse
+ 
+{
+    string FirstName;
+    string MiddleName;
+    string LastName;
+ 
+ 
+};
+   </programlisting>
+    </sect1>
+
+    <sect1 id="ESParray">
+      <title><emphasis role="bold">ESParray</emphasis></title>
+
+      <para>A structure for unbounded arrays. Arrays support inheritance and
+      can be nested.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>
+ESPstruct NameBlock
+  
+{
+    string FirstName;
+    string MiddleName;
+    string LastName;
+ 
+    int Age;
+};
+ 
+ESParray&lt;ESPstruct NameBlock&gt; Names;
+   </programlisting>
+    </sect1>
+
+    <sect1 id="ESPenum">
+      <title><emphasis role="bold">ESPenum</emphasis></title>
+
+      <para>A structure containing an enumerated value.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>
+ESPenum EyeColors : string
+  
+{
+  Brn("Brown"),
+  Blu("Blue"),
+  Grn("Green"),
+};
+ 
+
+ESPstruct Person
+
+{
+  string FirstName;
+  string MiddleName;
+  string LastName;
+
+  ESPenum EyeColors EyeColor;
+};
+   </programlisting>
+    </sect1>
+
+    <sect1 id="ESPinclude">
+      <title><emphasis role="bold">ESPinclude</emphasis></title>
+
+      <para>ESPinclude allows you to include an external ESDLfile. This is
+      similar to the #include ststement.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>
+ESPinclude(ws_topology);
+  </programlisting>
+    </sect1>
+
+    <sect1 id="ESPservice">
+      <title><emphasis role="bold">ESPservice</emphasis></title>
+
+      <para>This defines a Web service. Once defined, you can add a service to
+      an ESP server’s configuration to expose its methods and ESDL interfaces.
+      An ESPservice should contain one or more method definitions.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>
+ESPservice MyService
+
+{
+
+  ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
+  ESPmethod MyMethod2(MyMethod2Request, MyMethod2Response);
+
+};
+
+
+   </programlisting>
+    </sect1>
+
+    <sect1 id="ESPmethod">
+      <title><emphasis role="bold">ESPmethod</emphasis></title>
+
+      <para>This defines a method definition you can reference in an
+      ESPservice structure. The method definition should contain references to
+      a previously defined ESPrequest and ESPresponse.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>
+ESPservice MyService
+
+{
+  ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
+  ESPmethod MyMethod2(MyMethod2Request, MyMethod2Response);
+};
+
+   </programlisting>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>ESDL Datatypes</title>
+
+    <sect1 id="boolean_bool">
+      <title><emphasis role="bold">boolean</emphasis><emphasis
+      role="bold">bool</emphasis></title>
+
+      <para>A boolean or logical data type having one of two possible values:
+      true (1) or false (0).</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>boolean includeFlag; </programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Data_string">
+      <title><emphasis role="bold">string</emphasis></title>
+
+      <para>A data type consisting of sequence of alphanumeric
+      characters.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>string FirstName;
+</programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Data_int">
+      <title><emphasis role="bold">int</emphasis></title>
+
+      <para>An integer value.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>int Age;   </programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Data_int64">
+      <title><emphasis role="bold">int64</emphasis></title>
+
+      <para>A 64-bit integer value</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>int64 Iterations;
+</programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Data_float">
+      <title><emphasis role="bold">float</emphasis></title>
+
+      <para>A 4-byte floating point or real number.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>float Temperature;
+</programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Data_double">
+      <title><emphasis role="bold">double</emphasis></title>
+
+      <para>An 8-byte floating point or real number.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>float Temperature;   </programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Data_binary">
+      <title><emphasis role="bold">binary</emphasis></title>
+
+      <para>A data type containing binary data, similar to a BLOB .</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>binary RetinaScanSample;   </programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Data_ECLTypeMapping">
+      <title><emphasis role="bold">ESDL, XSD, and ECL Type
+      Mapping</emphasis></title>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="3">
+            <colspec colwidth="86.75pt" />
+
+            <colspec colwidth="76.50pt" />
+
+            <colspec colwidth="126.00pt" />
+
+            <tbody>
+              <row>
+                <entry><emphasis role="bold">ESDL</emphasis></entry>
+
+                <entry><emphasis role="bold">XSD</emphasis></entry>
+
+                <entry><emphasis role="bold">ECL</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>Bool boolean</entry>
+
+                <entry>bool</entry>
+
+                <entry>boolean</entry>
+              </row>
+
+              <row>
+                <entry>Binary</entry>
+
+                <entry>Base64Binary</entry>
+
+                <entry>String (base64 encoded)</entry>
+              </row>
+
+              <row>
+                <entry>Float</entry>
+
+                <entry>float</entry>
+
+                <entry>REAL4</entry>
+              </row>
+
+              <row>
+                <entry>Double</entry>
+
+                <entry>double</entry>
+
+                <entry>REAL8</entry>
+              </row>
+
+              <row>
+                <entry>Int</entry>
+
+                <entry>int</entry>
+
+                <entry>INTEGER</entry>
+              </row>
+
+              <row>
+                <entry>Int64</entry>
+
+                <entry>long</entry>
+
+                <entry>INTEGER8</entry>
+              </row>
+
+              <row>
+                <entry>String</entry>
+
+                <entry>string</entry>
+
+                <entry>String</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>ESDL Attributes</title>
+
+    <para>You can use ESDL attributes to extend and override the default
+    behavior of an ESDL definition. For example, adding a max_len(n) to a
+    string defines the string will only need to store a certain number of
+    characters.</para>
+
+    <para>Many attributes are treated as hints that may have more effect on
+    some implementations than others. For example, max_len(n) will affect
+    generated ECL code, but is ignored when generating C++.</para>
+
+    <sect1 id="ESDL_Attributes_max_len">
+      <title><emphasis role="bold">max_len (</emphasis><emphasis
+      role="bold">n</emphasis><emphasis role="bold">)</emphasis></title>
+
+      <para>The <emphasis>max_len</emphasis> attribute specifies the field
+      length for ECL string field.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[max_len(20)] string City;   </programlisting>
+
+      <para>It means that in ECL, City field is a fixed length of 20 chars.
+      For integer type, the max_len means the maximum size in bytes for the
+      integer (8*max_len bits integer).</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[max_len(3)] int Age;   </programlisting>
+
+      <para>This generates ECL code:</para>
+
+      <programlisting>integer3 Age{xpath('Age')};   </programlisting>
+
+      <para>This attribute works for ESPenum type, too. The ECL type is also
+      string.</para>
+
+      <programlisting>[max_len(2)] ESPenum StateCode State;   </programlisting>
+
+      <para>Here the StateCode is 2-char state code enumeration.</para>
+
+      <para>This attribute can also be used for ESPstruct, ESPrequest,
+      ESPresponse:</para>
+
+      <programlisting>ESPstruct [max_len(1867)] BpsReportIdentitySlim : Identity  
+{
+   ...
+};   </programlisting>
+
+      <para>This generates ECL code:</para>
+
+      <programlisting>export t_MyQuery := record (share.t_Name), MAXLENGTH(1867)
+{
+}; </programlisting>
+
+      <para>The ECL option <emphasis>MAXLENGTH</emphasis> helps ECL engine
+      better manage memory.</para>
+
+      <para>This does not affect the type in the XSD/WSDL. ESP ignores this
+      attribute when generating the schema. The type for a string is
+      xsd:string which has no length limit. Therefore, the schema stays the
+      same if the field length changes in the Roxie query.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_ecl_max_len">
+      <title>ecl_max_len (<emphasis role="bold">n</emphasis><emphasis
+      role="bold">)</emphasis></title>
+
+      <para>This <emphasis>ecl_max_len</emphasis> attribute tells the ECL
+      generator to use ECL <emphasis>maxlength </emphasis>instead of the
+      regular field length.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[ecl_max_len(50)] string CompanyName;
+[max_len(6)] string Gender;   </programlisting>
+
+      <para>The generated ECL code is:</para>
+
+      <programlisting>string CompanyName { xpath("CompanyName"),maxlength(50) };
+string6 Gender { xpath("Gender") };   </programlisting>
+
+      <para><emphasis role="bold">Note</emphasis>: when both
+      <emphasis>max_len</emphasis> and <emphasis>ecl_max_len</emphasis> are
+      specified, <emphasis>ecl_max_len</emphasis> is used and
+      <emphasis>max_len</emphasis> is ignored.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_ecl_name">
+      <title>ecl_name ("<emphasis role="bold">name</emphasis><emphasis
+      role="bold">")</emphasis></title>
+
+      <para>The <emphasis>ecl_name</emphasis> attribute specifies the field
+      name in generated ECL code. By default, the field name in ECL is the
+      same as the name defined in ECM. However, in some cases, the name could
+      causes issues in ECL. For example keywords in ECL cannot be used as a
+      field name.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[ecl_name("_export")] string Export;
+[ecl_name("_type")] string Type;   </programlisting>
+
+      <para>Here, both <emphasis role="bold">EXPORT</emphasis> and <emphasis
+      role="bold">TYPE</emphasis> are ECL keywords and cannot be used as ECL
+      field names. We use <emphasis>ecl_name</emphasis> to tell the esdl2ecl
+      process to generate acceptable names.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_counter-count_val">
+      <title>counter and count_val</title>
+
+      <para>These two attributes are used to help ESP calculate the record
+      count of the response.</para>
+
+      <para><emphasis>counter</emphasis> counts the number of children of the
+      nodes. When the node is an array, it is the same as the number of items
+      in the array.</para>
+
+      <para><emphasis>count_val</emphasis> will use the value of the node as
+      record count. Field <emphasis role="bold">RecordCount</emphasis> is
+      implicitly marked as <emphasis>count_val</emphasis>.</para>
+
+      <para>When an response has multiple counter, count_val, the sum of the
+      values is returned as record-count.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[counter] ESParray&lt;MyRecord, Record&gt; Records;
+[count_val] int TotalFound;   </programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_max_count_var">
+      <title><emphasis role="bold">max_count_var</emphasis></title>
+
+      <para>The max_count_var attribute is used to specify the expected max
+      items in a dataset (ESParray).</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[max_count_var("iesp.Constants.JD.MaxRecords")] ESParray &lt;ESPstruct MYRecord, Record&gt; Records;   </programlisting>
+
+      <para>Roxie will define the constant iesp.Constants.JD.MaxRecords and
+      change it at will without affecting ESP.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_ecl_null">
+      <title>ecl_null (<emphasis role="bold">n</emphasis><emphasis
+      role="bold"> || </emphasis><emphasis
+      role="bold">string</emphasis><emphasis role="bold">)</emphasis></title>
+
+      <para>The <emphasis>ecl_null </emphasis>attribute tells ESP to remove
+      the field altogether if the field's value is <emphasis>n</emphasis> or
+      <emphasis>string</emphasis>. This provides a means to remove a field
+      completely when there is no data for it.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>[ecl_null(0)] int Age;
+[ecl_null('false')] bool IsMatch;   </programlisting>
+
+      <para>Age 0 means we don’t have data for this person. So if Age is 0,
+      tag &lt;Age&gt; will not be returned.</para>
+
+      <para>Without this attribute, <emphasis
+      role="bold">&lt;Age&gt;0&lt;/Age&gt;</emphasis> will be returned.</para>
+
+      <para>For the second example, a bool value of <emphasis>false</emphasis>
+      (treated as string) is not returned.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_leading_zero">
+      <title>leading_zero(<emphasis role="bold">n</emphasis><emphasis
+      role="bold">)</emphasis></title>
+
+      <para>The <emphasis>leading_zero</emphasis> attribute adds zero(s) to
+      the field value to so that the total length is
+      <emphasis>n</emphasis>.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>ESPstruct Date
+{
+   [leading_zero(4)] Year;
+   [leading_zero(2)] Month;
+   [leading_zero(2)] Day;
+};  </programlisting>
+
+      <para>So the Date will always have a 4-digit Year and a 2-digit Month
+      and a 2-digit Day.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_ecl_hide">
+      <title><emphasis role="bold">ecl_hide</emphasis></title>
+
+      <para>The <emphasis>ecl_hide</emphasis> attribute hides the field from
+      ECL (that is, the field is removed when generating the ECL code). This
+      is used for some special cases.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting>ESPstruct Relative
+{
+   [ecl_hide] ESParray&lt;ESPstruct Relative, Relative&gt; Relatives;
+   "
+};   </programlisting>
+
+      <para>In this case, the Relative structure is defined in a recursive
+      manner, and ECL does not support such a construct. Therefore, we use
+      <emphasis>ecl_hide</emphasis> to avoid the recursive definition in
+      ECL.</para>
+
+      <para>Sometimes a field is hidden from ecl for other reasons.</para>
+
+      <para>For example, a field with <emphasis>get_data_from</emphasis>
+      attribute will be automatically hidden. In these cases,
+      <emphasis>ecl_hide</emphasis> is not needed.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_ecl_type">
+      <title>ecl_type ("<emphasis role="bold">type</emphasis><emphasis
+      role="bold">")</emphasis></title>
+
+      <para>The <emphasis>ecl_type</emphasis> attribute defines the field type
+      in ECL.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting> [ecl_type("Decimal10_2")] double RetailPrice;   </programlisting>
+
+      <para>ESDL does not have a monetary type, so we use
+      <emphasis>ecl_type</emphasis> to define it.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_get_data_from">
+      <title>get_data_from ("<emphasis role="bold">field</emphasis><emphasis
+      role="bold">")</emphasis></title>
+
+      <para>For code reuse and simplification, when complex versioning changes
+      have been made.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_ecl_keep">
+      <title>ecl_keep</title>
+
+      <para>The <emphasis>ecl_keep</emphasis> attribute keeps the field in the
+      generated ECL even though this field would have been hidden without this
+      attribute.</para>
+
+      <para>For instance, a field with <emphasis>get_data_from </emphasis>will
+      be hidden, however, adding this attribute will keep this field. This is
+      needed when we use <emphasis>get_data_from </emphasis>on two fields from
+      each other.</para>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_min_ver">
+      <title><emphasis role="bold">min_ver</emphasis></title>
+
+      <para>The min_ver attribute allows you to define the minimum (earliest)
+      version where a field is visible. Requests using a prior version will
+      not have access to the field.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting> [min_ver("1.03")] bool IsValid;   </programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_max_ver">
+      <title><emphasis role="bold">max_ver</emphasis></title>
+
+      <para>The max_ver attribute allows you to define the maximum (latest)
+      version where a field is visible. Requests using a later version will
+      not have access to the field.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting> [max_ver("1.04")] bool IsValid;   </programlisting>
+    </sect1>
+
+    <sect1 id="ESDL_Attributes_depr_ver">
+      <title><emphasis role="bold">depr_ver</emphasis></title>
+
+      <para>The depr_ver attribute allows you to declare a field’s end of life
+      version. The field is deprecated at the specified version number.
+      Requests using that version or any subsequent version will not have
+      access to the field.</para>
+
+      <para><emphasis role="bold">Example:</emphasis></para>
+
+      <programlisting> [depr_ver("1.04")] bool IsValid;   </programlisting>
+    </sect1>
+  </chapter>
+</book>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ESParray">
+  <title><emphasis role="bold">ESParray</emphasis></title>
+
+  <para>A structure for unbounded arrays. Arrays support inheritance and can
+  be nested.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>
+ ESPstruct NameBlock
+   
+ {
+     string FirstName;
+     string MiddleName;
+     string LastName;
+  
+     int Age;
+ };
+  
+ ESParray&lt;ESPstruct NameBlock, Name&gt; Names;
+
+   </programlisting>
+
+  <para>This results in something like:</para>
+
+  <para><programlisting>&lt;Names&gt;
+  &lt;Name&gt;
+    &lt;FirstName&gt;James&lt;/FirstName&gt;
+    &lt;MiddleName&gt;Joseph&lt;/MiddleName&gt;
+    &lt;LastName&gt;Deerfield&lt;/LastName&gt;
+    &lt;Age&gt;42&lt;/Age&gt;
+  &lt;/Name&gt;
+  &lt;Name&gt;
+    &lt;FirstName&gt;Emily&lt;/FirstName&gt;
+    &lt;MiddleName&gt;Kate&lt;/MiddleName&gt;
+    &lt;LastName&gt;Constance&lt;/LastName&gt;
+    &lt;Age&gt;33&lt;/Age&gt;
+  &lt;/Name&gt;
+&lt;/Names&gt;</programlisting></para>
+</sect2>

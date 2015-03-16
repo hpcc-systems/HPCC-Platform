@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+
+    <sect1 id="ESDL_Attributes">
+    <title>ESDL Attributes</title>
+
+    <para>You can use ESDL attributes to extend and override the default
+    behavior of an ESDL definition. For example, adding a max_len(n) to a
+    string defines the string will only need to store a certain number of
+    characters.</para>
+
+    <para>Many attributes are treated as hints that may have more effect on
+    some implementations than others. For example, max_len(n) will affect
+    generated ECL code, but is ignored when generating C++.</para>
+    
+    </sect1>

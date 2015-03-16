@@ -54,6 +54,12 @@
           facilitate automation of data file spray, despray, and other common
           file handling tasks.</entry>
         </row>
+
+        <row>
+          <entry><emphasis role="bold">ESDL</emphasis></entry>
+
+          <entry>Command line ESDL management tool.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>

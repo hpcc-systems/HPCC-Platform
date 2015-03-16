@@ -37,3 +37,12 @@
 <Dataset name='Result 13'>
  <Row><Result_13>Nonexistent</Result_13></Row>
 </Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>true</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>true</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>false</Result_16></Row>
+</Dataset>

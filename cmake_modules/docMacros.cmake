@@ -139,3 +139,23 @@ MACRO(FILE_LIST_GENERATOR outxml filename linkname description)
 	message("---- FILE_LIST_GENERATOR: Adding ${filename}")
 	set(${outxml} "${${outxml}}${xmlout}")
 ENDMACRO(FILE_LIST_GENERATOR)
+
+MACRO(XSD_TO_XML _xsd_files _in_dir _out_dir)
+
+        set(_xml_files)
+	ADD_CUSTOM_COMMAND(
+		COMMAND mkdir -p ${_out_dir}
+		OUTPUT ${_out_dir}
+                )
+        foreach(_xsd_file ${_xsd_files})
+            STRING(REGEX REPLACE "(.*).xsd" "\\1.xml" _xml_file "${_xsd_file}")
+	    ADD_CUSTOM_COMMAND(
+		COMMAND ./configurator -doc -use ${_xsd_file} -b ${_in_dir} -t ${_out_dir}
+		OUTPUT ${_out_dir}/${_xml_file}
+                WORKING_DIRECTORY ${CONFIGURATOR_DIRECTORY}
+		DEPENDS ${_out_dir} ${_in_dir}/${_xsd_file} ${_in_dir}/environment.xsd
+		)
+            list(APPEND _xml_files ${_out_dir}/${_xml_file})
+        endforeach()
+	ADD_CUSTOM_TARGET("xsd_to_xml" ALL  DEPENDS ${_out_dir} ${_xml_files} )
+ENDMACRO(XSD_TO_XML)

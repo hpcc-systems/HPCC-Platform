@@ -284,7 +284,11 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
         IAtom * kind = expr->queryChild(0)->queryName();
         if (kind == webserviceAtom)
         {
-            Owned<IWUWebServicesInfo> wsi = wu->updateWebServicesInfo(true);
+            Owned<IWUWebServicesInfo> wsi = wu->updateWebServicesInfo(false);
+            if (wsi)
+                throwError(HQLERR_MultipleHashWebserviceCalls);
+            wsi.setown(wu->updateWebServicesInfo(true));
+
             IHqlExpression *wsExpr = expr->queryChild(0);
             ForEachChild(i, wsExpr)
             {
