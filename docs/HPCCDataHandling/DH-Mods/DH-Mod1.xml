@@ -748,6 +748,149 @@
       </itemizedlist>
     </sect2>
 
+    <sect2 id="Spray_XML" role="brk">
+      <title><emphasis role="bold">Spray JSON</emphasis></title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the <emphasis role="bold">Landing Zones</emphasis> link from
+          the navigation sub-menu.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the arrow next to your dropzone to expand the
+          list.</para>
+
+          <para>The files on your drop zone display.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the checkboxes for the file(s) you want to spray, then
+          press the Spray:<emphasis role="bold"> JSON </emphasis> action
+          button.</para>
+
+          <para>The dialog displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in relevant details:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Target</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of cluster to spray to. You can
+                    only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Name
+                    Prefix</emphasis></entry>
+
+                    <entry>The prefix for the logical file</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Name</emphasis></entry>
+
+                    <entry>The logical filename to create. This is pre-filled
+                    with the name of the source file on the landing zone, but
+                    can be changed.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Row Path </emphasis></entry>
+
+                    <entry>The row path delimiter. The default puts the entire
+                    array into a single row. </entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Format</emphasis></entry>
+
+                    <entry>Select the format from the droplist</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Max Record
+                    Length</emphasis></entry>
+
+                    <entry>The length of longest record in the file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                    <entry>Check this box to prevent splitting file parts to
+                    multiple target parts.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source
+                    file</emphasis></entry>
+
+                    <entry>Check this box to allow the spray to fail if no
+                    source file is found.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Spray</emphasis>
+          button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+          for each job. You can see the progress of each spray operation on
+          the tab. If a job fails, information related to the cause of the
+          failure also displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
     <sect2 id="Spray_Variable" role="brk">
       <title><emphasis role="bold">Spray Variable</emphasis></title>
 
