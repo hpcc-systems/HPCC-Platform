@@ -188,8 +188,14 @@ public:
 class Esdl2EclCmd : public EsdlConvertCmd
 {
 public:
-    Esdl2EclCmd() : optGenerateAllIncludes(false), optOutputExpandedXML(false), optHPCCCompFilesDir(COMPONENTFILES_DIR)
-    {}
+    Esdl2EclCmd() : optGenerateAllIncludes(false), optOutputExpandedXML(false)
+    {
+        StringBuffer componentsfolder;
+        if (getComponentFilesRelPathFromBin(componentsfolder))
+            optHPCCCompFilesDir.set(componentsfolder.str());
+        else
+            optHPCCCompFilesDir.set(COMPONENTFILES_DIR);
+    }
 
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {

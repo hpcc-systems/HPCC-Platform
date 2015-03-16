@@ -145,7 +145,13 @@ public:
         }
 
         if (optXsltPath.isEmpty())
-            optXsltPath.set(COMPONENTFILES_DIR);
+        {
+            StringBuffer tmp;
+            if (getComponentFilesRelPathFromBin(tmp))
+                optXsltPath.set(tmp.str());
+            else
+                optXsltPath.set(COMPONENTFILES_DIR);
+        }
 
         fullxsltpath.set(optXsltPath);
         fullxsltpath.append("/xslt/esxdl2xsd.xslt");
