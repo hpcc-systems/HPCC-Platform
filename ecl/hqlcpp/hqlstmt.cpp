@@ -127,6 +127,18 @@ IHqlStmt * BuildCtx::addAssign(IHqlExpression * target, IHqlExpression * value)
 }
 
 
+IHqlStmt * BuildCtx::addAssignLink(IHqlExpression * target, IHqlExpression * value)
+{
+    if (ignoreInput)
+        return NULL;
+
+    HqlStmt * next = new HqlStmt(assign_link_stmt, curStmts);
+    next->addExpr(LINK(target));
+    next->addExpr(LINK(value));
+    return appendSimple(next);
+}
+
+
 IHqlStmt * BuildCtx::addAssignIncrement(IHqlExpression * target, IHqlExpression * value)
 {
     if (ignoreInput)

@@ -4475,6 +4475,14 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, IHqlExpression * expr, CHql
             }
             break;
         }
+    case no_getresult:
+    case no_deserialize:
+        if (expr->isDatarow())
+        {
+            buildAnyExpr(ctx, expr, tgt);
+            return;
+        }
+        break;
     case no_id2blob:
         buildExpr(ctx, expr, tgt);
         return;
