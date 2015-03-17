@@ -1460,6 +1460,11 @@ RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const 
 }
 
 
+RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type)
+: RtlFieldInfo(rtlCreateFieldNameAtom(_name), _xpath, _type, NULL)
+{
+}
+
 
 
 /* 
