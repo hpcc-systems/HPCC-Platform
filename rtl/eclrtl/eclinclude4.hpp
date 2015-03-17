@@ -46,7 +46,7 @@
 #include <math.h>
 
 #define CHEAP_UCHAR_DEF
-#if __WIN32
+#if __WIN32 || _WIN64
 typedef wchar_t UChar;
 #else //__WIN32
 typedef unsigned short UChar;

@@ -27,7 +27,7 @@ elseif (WIN32)
     #TODO:  Should find these dlls not assume them.
     if (NOT USE_NATIVE_LIBRARIES)
       if (${ARCH64BIT} EQUAL 1)
-        find_file (BOOST_REGEX_BIN "boost_regex-vc100-mt-1_46.dll" "${EXTERNALS_DIRECTORY}/boost/windows-x86_64-vc100/lib" NO_DEFAULT_PATH)
+        find_file (BOOST_REGEX_BIN "boost_regex-vc90-mt-1_57.dll" "${EXTERNALS_DIRECTORY}/boost/windows-x86_64-vc90/lib" NO_DEFAULT_PATH)
       else()
         find_file (BOOST_REGEX_BIN "boost_regex-vc90-mt-1_44.dll" "${EXTERNALS_DIRECTORY}/boost/windows-i386-vc90/lib" NO_DEFAULT_PATH)
       endif()

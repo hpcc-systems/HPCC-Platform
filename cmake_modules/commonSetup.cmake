@@ -182,6 +182,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
     if (${ARCH64BIT} EQUAL 0)
       add_definitions(/Zc:wchar_t-)
+    else()
+      add_definitions(/bigobj)
     endif ()
 
     if ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
