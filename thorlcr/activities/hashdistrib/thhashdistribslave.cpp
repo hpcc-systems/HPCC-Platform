@@ -305,8 +305,7 @@ protected:
                 {
                     if (owner.selfPush(target))
                         assertex(target != owner.self);
-                    if (!owner.sendBlock(target, mb))
-                        owner.markStopped(target); // Probably a bit pointless if 'self' - process loop will have done already
+                    owner.sendBlock(target, mb);
                 }
             }
             inline unsigned getNumPendingBuckets() const
@@ -353,7 +352,10 @@ protected:
             {
                 return bucket.getClear();
             }
-            atomic_t *querySenderFinished() { return &senderFinished; }
+            bool queryMarkSenderFinished()
+            {
+                return (atomic_cas(&senderFinished, 1, 0));
+            }
         };
         /*
          * CWriterHandler, a per thread class and member of the writerPool
@@ -415,10 +417,7 @@ protected:
                         if (sendSz < distributor.bucketSendSize)
                         {
                             // more added to dest I'm processing?
-                            {
-                                CriticalBlock b(owner.activeWritersLock);
-                                sendBucket.setown(target->dequeuePendingBucket());
-                            }
+                            sendBucket.setown(target->dequeuePendingBucket());
                             if (sendBucket)
                             {
                                 HDSendPrintLog3("CWriteHandler, pending(b=%d) rolled, size=%d", sendBucket->queryDestination(), sendBucket->querySize());
@@ -550,12 +549,12 @@ protected:
             SpinBlock b(totalSzLock);
             return totalSz;
         }
-        inline bool sendBlock(unsigned i, CMessageBuffer &msg)
+        inline void sendBlock(unsigned target, CMessageBuffer &msg)
         {
-            if (owner.sendBlock(i, msg))
-                return true;
-            owner.ActPrintLog("CSender::sendBlock stopped slave %d (finished=%d)", i+1, atomic_read(&numFinished));
-            return false;
+            if (owner.sendBlock(target, msg))
+                return;
+            markStopped(target); // Probably a bit pointless if target is 'self' - process loop will have done already
+            owner.ActPrintLog("CSender::sendBlock stopped slave %d (finished=%d)", target+1, atomic_read(&numFinished));
         }
         inline bool selfPush(unsigned i) const
         {
@@ -641,6 +640,8 @@ protected:
         void checkSendersFinished()
         {
             // check if any target has stopped and clear out partial now defunct buckets taking space.
+            if (atomic_read(&stoppedTargets) == 0) // cheap compared to atomic_xchg, so saves a few cycles in common case.
+               return;
             int numStopped = atomic_xchg(0, &stoppedTargets);
             if (numStopped)
             {
@@ -853,7 +854,7 @@ protected:
         }
         void markStopped(unsigned target)
         {
-            if (atomic_cas(targets.item(target)->querySenderFinished(), 1, 0))
+            if (targets.item(target)->queryMarkSenderFinished())
             {
                 atomic_inc(&numFinished);
                 atomic_inc(&stoppedTargets);
