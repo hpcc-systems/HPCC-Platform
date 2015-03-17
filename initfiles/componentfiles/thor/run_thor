@@ -17,8 +17,7 @@
 
 thorpid=0
 
-
-
+source "${PATH_PRE}"
 
 RUN_THOR_PID_NAME="$PID/run_thor.`basename $PWD`.pid"
 # prevent two thors starting together
@@ -38,11 +37,34 @@ while [[ 1 ]]; do
     daliadmin server=$DALISERVER dfsgroup ${groupName} slaves
     errcode=$?
     if [[ 0 != ${errcode} ]]; then
-    echo "failed to lookup dali group for $groupName"
+        echo "failed to lookup dali group for $groupName"
         exit 1
     fi
     $deploydir/makethorgroup
     sort $instancedir/slaves | uniq > $instancedir/uslaves.start
+    ${INSTALL_DIR}/sbin/configgen -env ${CONFIG_DIR}/${ENV_XML_FILE} -c ${THORNAME} -listall2 | awk 'BEGIN {FS=",";} /ThorSlaveProcess/ { print $3 }' > $instancedir/configgen.out
+    rm -f $instancedir/hosts.resolve > /dev/null 2>&1
+    errcode=0
+    while read line; do
+        resolved_value=$(python -c "import socket; print socket.gethostbyname('${line}')" 2> /dev/null)
+        if [[ $? -eq 0 ]]; then
+            echo $resolved_value >> $instancedir/hosts.resolve
+        else
+            echo "ERROR:  Could not resolve the line -${line}- from configgen -listall2 output"
+            exit 1
+        fi
+    done < $instancedir/configgen.out
+
+    sort $instancedir/hosts.resolve | uniq > $instancedir/hosts.uniq
+    diff $instancedir/uslaves.start $instancedir/hosts.uniq > /dev/null 2>&1
+    DFSGROUP_CHECK=$?
+    rm -f $instancedir/hosts.resolve $instancedir/configgen.out $instancedir/hosts.uniq > /dev/null 2>&1
+    if [[ $DFSGROUP_CHECK -ne 0 ]]; then
+        echo "ERROR:  dfsgroup $groupName is not the same as the environment.xml"
+        echo "If this was intentional, please run 'updtdalienv ${CONFIG_DIR}/${ENV_XML_FILE} -f'"
+        echo "Stopping $groupName"
+        exit 1
+    fi
 
     echo "--------------------------"
     echo "starting thorslaves ..."
