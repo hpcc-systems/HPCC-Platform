@@ -354,7 +354,7 @@ protected:
             }
             bool queryMarkSenderFinished()
             {
-                return (atomic_cas(&senderFinished, 1, 0));
+                return atomic_cas(&senderFinished, 1, 0);
             }
         };
         /*
