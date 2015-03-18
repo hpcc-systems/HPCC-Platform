@@ -576,7 +576,7 @@
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/ECLWA460.jpg" />
+            <imagedata fileref="images/ECLWA460.jpg" vendor="eclwatchSS" />
           </imageobject>
         </mediaobject>
       </figure></para>
@@ -589,6 +589,72 @@
     <para>There are also some system administration type links such as, Users,
     Groups, Permissions, and Resources. These links allow you to perform some
     system administration tasks through ECL watch.</para>
+
+    <sect1>
+      <title>Topology</title>
+
+      <para>The Topology page provides information in a visual tree display on
+      clusters, services, and nodes. </para>
+
+      <para>Press the <emphasis role="bold">Topology</emphasis> link from the
+      Operations navigation sub-menu to access the topology page.</para>
+
+      <para><figure>
+          <title>Topology Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA463.jpg" vendor="ECLWatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Press the arrow to the left of the Cluster folder/object you wish
+      to expand. The expanded view displays. </para>
+
+      <para><figure>
+          <title>Expanded View</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA464.jpg" vendor="ECLWatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure>The expanded view displays the nodes for that cluster. Select
+      the node to display more information including access to the logs. The
+      Summary, Configuration and Log tabs on the left side of the page display
+      information for the selected component. </para>
+
+      <para>Press the <emphasis role="bold">Services</emphasis> Action button
+      to display information on the various services running on your cluster.
+      <figure>
+          <title>Expanded Services</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA465.jpg" vendor="ECLWatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>The services view provides a service oriented tree view that
+      provides access to the services. Expand the tree, and select the
+      component to view the Summary, Configuration or Logs tabs for the
+      selected component. <figure>
+          <title>Machines Viewx</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA466.jpg" vendor="ECLWatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Press the <emphasis role="bold">Machines</emphasis> action button
+      to open a node oriented view of the tree. Expand the nodes to see the
+      services on each node. Select the component to view the Summary,
+      Configuration or Logs tabs for that selected component. </para>
+    </sect1>
 
     <sect1>
       <title>Disk Usage</title>
@@ -708,7 +774,7 @@
 
         <para>The default Ganglia page has a tab for Custom Monitoring where
         you can easily add custom monitoring components. <figure>
-            <title>Ganglia Custom Monitoring </title>
+            <title>Ganglia Custom Monitoring</title>
 
             <mediaobject>
               <imageobject>
@@ -744,7 +810,7 @@
                 <imagedata fileref="images/ECLWa482.jpg" vendor="VM_welcome" />
               </imageobject>
             </mediaobject>
-          </figure> </para>
+          </figure></para>
       </sect2>
 
       <sect2>
@@ -753,7 +819,7 @@
         <para>In order to use Ganglia in ECL Watch, you need to have Ganglia
         installed on your HPCC System. For details on installing Ganglia for
         ECL Watch, refer to the <emphasis>HPCC Monitoring and
-        Reporting</emphasis> manual. </para>
+        Reporting</emphasis> manual.</para>
       </sect2>
     </sect1>
   </chapter>
