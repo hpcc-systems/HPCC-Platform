@@ -814,8 +814,9 @@
                   <row>
                     <entry><emphasis role="bold">Row Path </emphasis></entry>
 
-                    <entry>The row path delimiter. The default puts the entire
-                    array into a single row.</entry>
+                    <entry>The path specifier to the JSON content. The default
+                    takes the root level content as an array of objects to be
+                    treated as rows.</entry>
                   </row>
 
                   <row>
