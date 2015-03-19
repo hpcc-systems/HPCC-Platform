@@ -5731,7 +5731,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
 
     IHqlExpression * external = funcdef->queryChild(0);
     IHqlExpression * formals = funcdef->queryChild(1);
-    if (external->hasAttribute(ctxmethodAtom))
+    if (external->hasAttribute(ctxmethodAtom) || external->hasAttribute(contextAtom))
         ensureContextAvailable(ctx);
     if (external->hasAttribute(gctxmethodAtom) || external->hasAttribute(globalContextAtom))
     {
