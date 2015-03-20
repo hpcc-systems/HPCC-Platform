@@ -7688,7 +7688,7 @@ static bool isFilePersist(IHqlExpression * expr)
             expr = expr->queryChild(1);
             break;
         case no_output:
-            return (queryRealChild(expr, 1) != NULL);
+            return isFileOutput(expr);
         case no_actionlist:
         case no_orderedactionlist:
             expr = expr->queryChild(expr->numChildren()-1);
