@@ -71,7 +71,7 @@ if [ ! -z ${THORPRIMARY} ]; then
 else
     groupName=${THORNAME}
 fi
-daliadmin $DALISERVER dfsgroup ${groupName} > $INSTANCE_DIR/slaves
+daliadmin server=$DALISERVER dfsgroup ${groupName} > $INSTANCE_DIR/slaves
 errcode=$?
 if [ 0 != ${errcode} ]; then
     echo 'failed to lookup dali group for $groupName'
