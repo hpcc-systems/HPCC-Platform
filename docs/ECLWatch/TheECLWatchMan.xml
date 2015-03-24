@@ -593,11 +593,11 @@
     <sect1>
       <title>Topology</title>
 
-      <para>The Topology page provides information in a visual tree display on
-      clusters, services, and nodes. </para>
+      <para>The Topology page provides a visual tree display with information
+      about your clusters, services, and nodes.</para>
 
-      <para>Press the <emphasis role="bold">Topology</emphasis> link from the
-      Operations navigation sub-menu to access the topology page.</para>
+      <para>Click on the <emphasis role="bold">Topology</emphasis> link from
+      the Operations navigation sub-menu to access the topology page.</para>
 
       <para><figure>
           <title>Topology Page</title>
@@ -609,51 +609,78 @@
           </mediaobject>
         </figure></para>
 
-      <para>Press the arrow to the left of the Cluster folder/object you wish
-      to expand. The expanded view displays. </para>
+      <sect2 id="TopologyTargets">
+        <title>Targets</title>
 
-      <para><figure>
-          <title>Expanded View</title>
+        <para>The <emphasis role="bold">Targets</emphasis> Action button
+        displays your clusters by type.</para>
 
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="images/ECLWA464.jpg" vendor="ECLWatchSS" />
-            </imageobject>
-          </mediaobject>
-        </figure>The expanded view displays the nodes for that cluster. Select
-      the node to display more information including access to the logs. The
-      Summary, Configuration and Log tabs on the left side of the page display
-      information for the selected component. </para>
+        <para>Click on the arrow to the left of the Cluster folder/object to
+        expand. The expanded view displays.</para>
 
-      <para>Press the <emphasis role="bold">Services</emphasis> Action button
-      to display information on the various services running on your cluster.
-      <figure>
-          <title>Expanded Services</title>
+        <para><figure>
+            <title>Expanded View</title>
 
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="images/ECLWA465.jpg" vendor="ECLWatchSS" />
-            </imageobject>
-          </mediaobject>
-        </figure></para>
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA464.jpg" vendor="ECLWatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure>The expanded view displays the objects and nodes in the
+        selected container. Select the node or object to display more
+        information or to access the logs. The Summary, Configuration, and Log
+        tabs on the left side of the page display the relevant information for
+        the selected component.</para>
+      </sect2>
 
-      <para>The services view provides a service oriented tree view that
-      provides access to the services. Expand the tree, and select the
-      component to view the Summary, Configuration or Logs tabs for the
-      selected component. <figure>
-          <title>Machines Viewx</title>
+      <sect2 id="TopologyServices">
+        <title>Services</title>
 
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="images/ECLWA466.jpg" vendor="ECLWatchSS" />
-            </imageobject>
-          </mediaobject>
-        </figure></para>
+        <para>Press the <emphasis role="bold">Services</emphasis> Action
+        button to display information on the various services running on your
+        cluster.</para>
 
-      <para>Press the <emphasis role="bold">Machines</emphasis> action button
-      to open a node oriented view of the tree. Expand the nodes to see the
-      services on each node. Select the component to view the Summary,
-      Configuration or Logs tabs for that selected component. </para>
+        <para>Click on the arrow to the left of the service you wish to
+        expand. The expanded view displays.</para>
+
+        <para><figure>
+            <title>Expanded Services</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA465.jpg" vendor="ECLWatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The services view provides a service oriented tree view that
+        provides access to the services. Expand the tree, and select the
+        component to view the Summary, Configuration, or Logs tabs for the
+        selected component.</para>
+      </sect2>
+
+      <sect2>
+        <title>Machines</title>
+
+        <para>Press the <emphasis role="bold">Machines</emphasis> Action
+        button for more information on the various machines or nodes running
+        in your cluster(s).</para>
+
+        <para><figure>
+            <title>Machines View</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA466.jpg" vendor="ECLWatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The <emphasis role="bold">Machines</emphasis> action button
+        opens a node oriented view of the tree. Expand the nodes to see the
+        services on each node. Select the component to view the Summary,
+        Configuration, or Logs tabs for that selected component.</para>
+      </sect2>
     </sect1>
 
     <sect1>
