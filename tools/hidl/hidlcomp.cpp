@@ -5920,6 +5920,8 @@ void EspServInfo::write_esp_binding()
     outs("{\n");
     StrBuffer defVer;
     bool hasDefVer = getMetaVerInfo(tags,"default_client_version",defVer);
+    if (!hasDefVer)
+        hasDefVer = getMetaVerInfo(tags,"version",defVer);
     if (hasDefVer)
     {
         outf("\tif (context.getClientVersion()<=0)\n");

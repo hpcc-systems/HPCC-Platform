@@ -310,7 +310,7 @@ ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse
     [min_ver("1.12")] string AcceptLanguage;
 };
 //-------- service ---------
-ESPservice [version("1.13"), default_client_version("1.13")] ws_machine
+ESPservice [version("1.13")] ws_machine
 {
     ESPuses ESPstruct RequestInfoStruct;
     ESPuses ESPstruct MachineInfoEx;
