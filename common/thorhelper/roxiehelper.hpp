@@ -34,6 +34,7 @@ private:
     StringAttr urlPath;
     StringAttr authToken;
     StringAttr contentType;
+    StringAttr target;
     Owned<IProperties> parameters;
 private:
     inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
@@ -55,6 +56,7 @@ public:
     bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
     void setIsHttp(bool __isHttp) { _isHttp = __isHttp; }
     const char *queryAuthToken() { return authToken.sget(); }
+    const char *queryTarget() { return target.get(); }
     inline void setAuthToken(const char *v)
     {
         setHttpHeaderValue(authToken, v, false);
