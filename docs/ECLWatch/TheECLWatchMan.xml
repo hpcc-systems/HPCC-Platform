@@ -341,6 +341,14 @@
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                   xpointer="Spray_XML"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
+ 
+
+ 
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Spray_JSON"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+               
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                   xpointer="Spray_Variable"
