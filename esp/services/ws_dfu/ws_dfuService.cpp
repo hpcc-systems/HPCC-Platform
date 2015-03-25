@@ -1704,7 +1704,7 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
                 partSizeStr.set("<N/A>");
             else
             {
-                __uint64 size = partPropertyTree->getPropInt("@size");
+                __uint64 size = partPropertyTree->getPropInt64("@size");
                 comma c4(size);
                 partSizeStr<<c4;
 
