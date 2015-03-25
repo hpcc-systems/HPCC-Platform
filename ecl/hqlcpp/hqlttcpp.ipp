@@ -30,7 +30,7 @@ class NewThorStoredReplacer : public QuickHqlTransformer
 public:
     NewThorStoredReplacer(HqlCppTranslator & _translator, IWorkUnit * _wu, ICodegenContextCallback * _logger);
 
-    virtual void doAnalyseBody(IHqlExpression * expr);
+    virtual void doAnalyse(IHqlExpression * expr);
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
 
     bool needToTransform();
