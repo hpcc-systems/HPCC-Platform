@@ -37,4 +37,5 @@ export memcached := SERVICE : plugin('memcached'), namespace('MemCachedPlugin')
   BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MExists';
   CONST VARSTRING KeyType(CONST VARSTRING key, CONST VARSTRING options, CONST VARSTRING partitionKey = '') : cpp,action,context,entrypoint='MKeyType'; //NOTE: calls get
   Clear(CONST VARSTRING options) : cpp,action,context,entrypoint='MClear';
+  Delete(CONST VARSTRING key, CONST VARSTRING options, CONST VARSTRING partionKey = '') : cpp,action,context,entrypoint='MDelete';
 END;
