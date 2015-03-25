@@ -315,9 +315,12 @@ void CDiskWriteSlaveActivityBase::open()
     if (extend)
         ActPrintLog("Extending file %s", fName.get());
 
+    /* Fixed length record size is used when outputting compressed stream to determine run-length compression vs default LZW compression.
+     * NB: only for FLAT files, not CSV or XML
+     */
     size32_t diskRowMinSz = 0;
     IOutputMetaData *diskRowMeta = diskHelperBase->queryDiskRecordSize()->querySerializedDiskMeta();
-    if (diskRowMeta->isFixedSize())
+    if (diskRowMeta->isFixedSize() && (TAKdiskwrite == container.getKind()))
     {
         diskRowMinSz = diskRowMeta->getMinRecordSize();
         if (grouped)

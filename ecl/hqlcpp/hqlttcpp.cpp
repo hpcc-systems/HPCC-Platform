@@ -271,7 +271,7 @@ NewThorStoredReplacer::NewThorStoredReplacer(HqlCppTranslator & _translator, IWo
 }
 
 
-void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
+void NewThorStoredReplacer::doAnalyse(IHqlExpression * expr)
 {
     //NOTE: This is called very early before no_assertconstant has been processed, so we need to explicitly
     //constant fold, and check it is constant (bug 26963)
@@ -286,7 +286,7 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
         {
             Owned<IWUWebServicesInfo> wsi = wu->updateWebServicesInfo(false);
             if (wsi)
-                throwError(HQLERR_MultipleHashWebserviceCalls);
+                translator.ERRORAT(expr, HQLERR_MultipleHashWebserviceCalls);
             wsi.setown(wu->updateWebServicesInfo(true));
 
             IHqlExpression *wsExpr = expr->queryChild(0);
@@ -306,9 +306,9 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
             IValue * value = foldedValue->queryValue();
 
             if (!name)
-                throwError1(HQLERR_ExpectedConstantDebug, getExprECL(foldedName, errorTemp).str());
+                translator.reportError(expr, ECODETEXT(HQLERR_ExpectedConstantDebug), getExprECL(foldedName, errorTemp).str());
             if (!value)
-                throwError1(HQLERR_ExpectedConstantDebug, getExprECL(foldedValue, errorTemp).str());
+                translator.reportError(expr, ECODETEXT(HQLERR_ExpectedConstantDebug), getExprECL(foldedValue, errorTemp).str());
 
             StringBuffer nameText,valueText;
             name->getStringValue(nameText);
@@ -329,9 +329,9 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
             IValue * value = foldedValue->queryValue();
 
             if (!name)
-                throwError1(HQLERR_ExpectedConstantWorkunit, getExprECL(foldedName, errorTemp).str());
+                translator.reportError(expr, ECODETEXT(HQLERR_ExpectedConstantWorkunit), getExprECL(foldedName, errorTemp).str());
             if (!value)
-                throwError1(HQLERR_ExpectedConstantWorkunit, getExprECL(foldedValue, errorTemp).str());
+                translator.reportError(expr, ECODETEXT(HQLERR_ExpectedConstantWorkunit), getExprECL(foldedValue, errorTemp).str());
 
             StringBuffer nameText,valueText;
             name->getStringValue(nameText);
@@ -368,7 +368,7 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
                 wu->setWuScope(valueText.str());
             }
             else
-                throwError1(HQLERR_UnsupportedHashWorkunit, nameText.str());
+                translator.reportError(expr, ECODETEXT(HQLERR_UnsupportedHashWorkunit), nameText.str());
         }
         else if (kind == linkAtom)
         {
@@ -395,7 +395,9 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
             seenMeta = true;
     }
 
-    QuickHqlTransformer::doAnalyseBody(expr);
+    //Walk the body rather than expr so that the no_setmeta isn't processed again.
+    //If the code above was in doAnalyseBody() the error location information would not be available.
+    QuickHqlTransformer::doAnalyseBody(expr->queryBody());
 }
 
 bool NewThorStoredReplacer::needToTransform()
@@ -479,10 +481,10 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                             othersText.append(",");
                             getExprECL(&activeReplacements.item(i), othersText);
                         }
-                        throwError3(HQLERR_RecursiveStoredOther,  forceConstant ? "CONSTANT" : "STORED", nameText.str(), othersText.str()+1);
+                        translator.reportError(expr, ECODETEXT(HQLERR_RecursiveStoredOther),  forceConstant ? "CONSTANT" : "STORED", nameText.str(), othersText.str()+1);
                     }
                     else
-                        throwError2(HQLERR_RecursiveStored,  forceConstant ? "CONSTANT" : "STORED", nameText.str());
+                        translator.reportError(expr, ECODETEXT(HQLERR_RecursiveStored),  forceConstant ? "CONSTANT" : "STORED", nameText.str());
                 }
 
                 ITypeInfo * exprType = expr->queryType();
@@ -505,12 +507,12 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                             getExprECL(matchedName, nameText);
                             getFriendlyTypeStr(exprType, exprTypeText);
                             getFriendlyTypeStr(replacementType, replacementTypeText);
-                            throwError3(HQLERR_HashStoredTypeMismatch, nameText.str(), exprTypeText.str(), replacementTypeText.str());
+                            translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
                         }
                         else if (expr->queryRecord() != replacement->queryRecord())
                         {
                             StringBuffer s;
-                            throwError1(HQLERR_HashStoredRecordMismatch, getExprECL(matchedName, s).str());
+                            translator.reportError(expr, ECODETEXT(HQLERR_HashStoredRecordMismatch), getExprECL(matchedName, s).str());
                         }
                     }
                     break;
@@ -522,7 +524,7 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                             getExprECL(matchedName, nameText);
                             getFriendlyTypeStr(exprType, exprTypeText);
                             getFriendlyTypeStr(replacementType, replacementTypeText);
-                            throwError3(HQLERR_HashStoredTypeMismatch, nameText.str(), exprTypeText.str(), replacementTypeText.str());
+                            translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
                         }
                         replacement.setown(ensureExprType(replacement, exprType));
                         break;
@@ -541,7 +543,7 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                                 getExprECL(matchedName, nameText);
                                 getFriendlyTypeStr(exprType, exprTypeText);
                                 getFriendlyTypeStr(replacementType, replacementTypeText);
-                                throwError3(HQLERR_HashStoredTypeMismatch, nameText.str(), exprTypeText.str(), replacementTypeText.str());
+                                translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
                             }
                         default:
                             replacement.setown(ensureExprType(replacement, exprType));

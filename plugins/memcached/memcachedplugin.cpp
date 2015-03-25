@@ -97,6 +97,7 @@ public :
 
     void clear(ICodeContext * ctx, unsigned when);
     bool exists(ICodeContext * ctx, const char * key, const char * partitionKey);
+    void deleteKey(ICodeContext * ctx, const char * key, const char * partitionKey);
     eclDataType getKeyType(const char * key, const char * partitionKey);
 
     bool isSameConnection(const char * _options) const;
@@ -109,10 +110,6 @@ private :
     bool logErrorOnFail(ICodeContext * ctx, memcached_return_t rc, const char * _msg);
     void reportKeyTypeMismatch(ICodeContext * ctx, const char * key, uint32_t flag, eclDataType eclType);
     void * cpy(const char * src, size_t length);
-    void logServerStats(ICodeContext * ctx);
-    void init(ICodeContext * ctx);
-    void invokePoolSecurity(ICodeContext * ctx);
-    void invokeConnectionSecurity(ICodeContext * ctx);
     void setPoolSettings();
     void assertPool();//For internal purposes to insure correct order of the above processes and instantiation.
 
@@ -120,7 +117,6 @@ private :
     memcached_st * connection;
     memcached_pool_st * pool;
     StringAttr options;
-    bool alreadyInitialized;
     unsigned typeMismatchCount;
 };
 
@@ -298,13 +294,9 @@ void MemCachedPlugin::MCached::getVoidPtrLenPair(ICodeContext * ctx, const char 
     returnValue = reinterpret_cast<void*>(cpy(value, returnLength));
 }
 
-MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _options)
+MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _options) : connection(NULL), pool(NULL), typeMismatchCount(0)
 {
-    alreadyInitialized = false;
-    connection = NULL;
-    pool = NULL;
     options.set(_options);
-    typeMismatchCount = 0;
 
 #if (LIBMEMCACHED_VERSION_HEX<0x53000)
     memcached_st *memc = memcached_create(NULL);
@@ -363,7 +355,6 @@ MemCachedPlugin::MCached::MCached(ICodeContext * ctx, const char * _options)
     assertPool();
 
     setPoolSettings();
-    invokePoolSecurity(ctx);
     connect(ctx);
     checkServersUp(ctx);
 }
@@ -496,7 +487,16 @@ bool MemCachedPlugin::MCached::exists(ICodeContext * ctx, const char * key, cons
     }
 #endif
 }
-
+void MemCachedPlugin::MCached::deleteKey(ICodeContext * ctx, const char * key, const char * partitionKey)
+{
+    memcached_return_t rc;
+    size_t partitionKeyLength = strlen(partitionKey);
+    if (partitionKeyLength)
+        rc = memcached_delete_by_key(connection, partitionKey, partitionKeyLength, key, strlen(key), (time_t)0);
+    else
+        rc = memcached_delete(connection, key, strlen(key), (time_t)0);
+    assertOnError(rc, "'Delete' request failed - ");
+}
 MemCachedPlugin::eclDataType MemCachedPlugin::MCached::getKeyType(const char * key, const char * partitionKey)
 {
     size_t returnValueLength;
@@ -530,70 +530,18 @@ void MemCachedPlugin::MCached::reportKeyTypeMismatch(ICodeContext * ctx, const c
     }
 }
 
-void MemCachedPlugin::MCached::logServerStats(ICodeContext * ctx)
-{
-    //NOTE: errors are ignored here so that at least some info is reported, such as non-connection related libmemcached version numbers
-    memcached_return_t rc;
-    char * args = NULL;
-
-    OwnedMalloc<memcached_stat_st> stats;
-    stats.setown(memcached_stat(connection, args, &rc));
-
-    OwnedMalloc<char*> keys;
-    keys.setown(memcached_stat_get_keys(connection, stats, &rc));
-
-    unsigned int numberOfServers = memcached_server_count(connection);
-    for (unsigned int i = 0; i < numberOfServers; ++i)
-    {
-        StringBuffer statsStr;
-        unsigned j = 0;
-        do
-        {
-            OwnedMalloc<char> value;
-            value.setown(memcached_stat_get_value(connection, &stats[i], keys[j], &rc));
-            statsStr.newline().append("libmemcached server stat - ").append(keys[j]).append(":").append(value);
-        } while (keys[++j]);
-        statsStr.newline().append("libmemcached client stat - libmemcached version:").append(memcached_lib_version());
-        ctx->logString(statsStr.str());
-    }
-}
-
-void MemCachedPlugin::MCached::init(ICodeContext * ctx)
-{
-    logServerStats(ctx);
-}
-
 void MemCachedPlugin::MCached::setPoolSettings()
 {
     assertPool();
     const char * msg = "memcached_pool_behavior_set failed - ";
-    assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_HASH_WITH_PREFIX_KEY, 1), msg);//key set in invokeConnectionSecurity. Only hashed with keys and not partitionKeys
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_KETAMA, 1), msg);//NOTE: alias of MEMCACHED_DISTRIBUTION_CONSISTENT_KETAMA amongst others.
     memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_USE_UDP, 0);  // Note that this fails on early versions of libmemcached, so ignore result
-    assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_SERVER_FAILURE_LIMIT, 1), msg);
-#if (LIBMEMCACHED_VERSION_HEX>=0x50000)
-    assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_REMOVE_FAILED_SERVERS, 1), msg);
-#endif
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_NO_BLOCK, 0), msg);
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, 1000), msg);//units of ms.
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_SND_TIMEOUT, 1000000), msg);//units of mu-s.
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_RCV_TIMEOUT, 1000000), msg);//units of mu-s.
-    assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_BUFFER_REQUESTS, 0), msg);// Buffering does not work with the ecl runtime paradigm
-}
-
-void MemCachedPlugin::MCached::invokePoolSecurity(ICodeContext * ctx)
-{
-    assertPool();
+    assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_BUFFER_REQUESTS, 0), msg);
     assertOnError(memcached_pool_behavior_set(pool, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1), "memcached_pool_behavior_set failed - ");
-}
-
-void MemCachedPlugin::MCached::invokeConnectionSecurity(ICodeContext * ctx)
-{
-    //NOTE: Whether to assert or just report? This depends on when this is called. If before checkServersUp() and
-    //a server is down, it will cause the following to fail if asserted with only a 'poor' libmemcached error message.
-    //Reporting means that these 'security' measures may not be carried out. Moving checkServersUp() to here is probably the best
-    //soln. however, this comes with extra overhead.
-    logErrorOnFail(ctx, memcached_verbosity(connection, (uint32_t)(0)), "memcached_verbosity=0 failed - ");
 }
 
 void MemCachedPlugin::MCached::connect(ICodeContext * ctx)
@@ -611,13 +559,6 @@ void MemCachedPlugin::MCached::connect(ICodeContext * ctx)
 #else
     connection = memcached_pool_fetch(pool, (struct timespec *)0 , &rc);
 #endif
-    invokeConnectionSecurity(ctx);
-
-    if (!alreadyInitialized)//Do this now rather than after assert. Better to have something even if it could be jiberish.
-    {
-        init(ctx);//doesn't necessarily initialize anything, instead outputs specs etc for debugging
-        alreadyInitialized = true;
-    }
     assertOnError(rc, "memcached_pool_pop failed - ");
 }
 
@@ -639,6 +580,11 @@ ECL_MEMCACHED_API const char * ECL_MEMCACHED_CALL MKeyType(ICodeContext * ctx, c
     OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
     const char * keyType = enumToStr(serverPool->getKeyType(key, partitionKey));
     return keyType;
+}
+ECL_MEMCACHED_API void ECL_MEMCACHED_CALL MDelete(ICodeContext * ctx, const char * key, const char * options, const char * partitionKey)
+{
+    OwnedMCached serverPool = MemCachedPlugin::createConnection(ctx, options);
+    serverPool->deleteKey(ctx, key, partitionKey);
 }
 //-----------------------------------SET------------------------------------------
 //NOTE: These were all overloaded by 'value' type, however; this caused problems since ecl implicitly casts and doesn't type check.

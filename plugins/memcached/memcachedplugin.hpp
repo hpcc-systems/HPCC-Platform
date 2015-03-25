@@ -65,6 +65,7 @@ namespace MemCachedPlugin {
     ECL_MEMCACHED_API bool             ECL_MEMCACHED_CALL MExists (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
     ECL_MEMCACHED_API const char *     ECL_MEMCACHED_CALL MKeyType(ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
     ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MClear  (ICodeContext * _ctx, const char * options);
+    ECL_MEMCACHED_API void             ECL_MEMCACHED_CALL MDelete (ICodeContext * _ctx, const char * key, const char * options, const char * partitionKey);
 }//close namespace
 }
 #endif

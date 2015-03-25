@@ -679,7 +679,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.29"), default_client_version("1.29"),
+    version("1.29"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

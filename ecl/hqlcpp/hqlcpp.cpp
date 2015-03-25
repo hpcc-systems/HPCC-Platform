@@ -2184,19 +2184,16 @@ void HqlCppTranslator::ThrowStringException(int code,const char *format, ...)
     throw ret;
 }
 
-void HqlCppTranslator::reportErrorDirect(IHqlExpression * location, int code,const char *msg, bool alwaysAbort)
+void HqlCppTranslator::reportErrorDirect(IHqlExpression * exprOrLocation, int code,const char *msg, bool alwaysAbort)
 {
-    if (location)
-    {
-        ECLlocation loc;
-        loc.extractLocationAttr(location);
-        if (alwaysAbort)
-            throw createError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
-        errorProcessor->reportError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
-    }
-    else
-//        errorProcessor->reportError(code, msg, NULL, 0, 0, 0);
-        throw MakeStringExceptionDirect(code, msg);
+    ECLlocation loc;
+    if (!loc.extractLocationAttr(exprOrLocation))
+        loc.extractLocationAttr(queryActiveActivityLocation());
+    const char * sourcePath = loc.sourcePath->str();
+
+    if (alwaysAbort)
+        throw createError(code, msg, sourcePath, loc.lineno, loc.column, loc.position);
+    errorProcessor->reportError(code, msg, sourcePath, loc.lineno, loc.column, loc.position);
 }
 
 void HqlCppTranslator::reportError(IHqlExpression * location, int code,const char *format, ...)
@@ -4476,6 +4473,14 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, IHqlExpression * expr, CHql
             }
             break;
         }
+    case no_getresult:
+    case no_deserialize:
+        if (expr->isDatarow())
+        {
+            buildAnyExpr(ctx, expr, tgt);
+            return;
+        }
+        break;
     case no_id2blob:
         buildExpr(ctx, expr, tgt);
         return;
@@ -5732,7 +5737,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
 
     IHqlExpression * external = funcdef->queryChild(0);
     IHqlExpression * formals = funcdef->queryChild(1);
-    if (external->hasAttribute(ctxmethodAtom))
+    if (external->hasAttribute(ctxmethodAtom) || external->hasAttribute(contextAtom))
         ensureContextAvailable(ctx);
     if (external->hasAttribute(gctxmethodAtom) || external->hasAttribute(globalContextAtom))
     {

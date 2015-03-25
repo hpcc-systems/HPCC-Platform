@@ -34,7 +34,7 @@ public:
 
     using IHqlCppDatasetCursor::buildIterateClass;
 protected:
-    IHqlExpression * createRow(BuildCtx & ctx, const char * prefix, StringBuffer & rowName, bool conditional);
+    IHqlExpression * createRow(BuildCtx & ctx, const char * prefix, StringBuffer & rowName);
 
 protected:
     HqlCppTranslator & translator;

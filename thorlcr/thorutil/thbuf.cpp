@@ -284,6 +284,11 @@ public:
         while (out->ordinality()) 
             ReleaseThorRow(out->dequeue());
         delete out;
+        if (fileio)
+        {
+            fileio.clear();
+            file->remove();
+        }
     }
 
     void putRow(const void *row)
