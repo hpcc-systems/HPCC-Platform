@@ -7177,63 +7177,97 @@ void mergeThorGraphs(WorkflowItem & workflow, bool resourceConditionalActions, b
 }
 
 //------------------------------------------------------------------------
-//#define NEW_SCALAR_CODE
-//I think NEW_SCALAR_CODE should be better - but in practice it seems to be worse.....
-
 inline bool isTypeToHoist(ITypeInfo * type)
 {
     return isSingleValuedType(type);// || (type && type->getTypeCode() == type_set);
 }
 
+//Currently we do not create globals for common sub expressions between global expressions
+//I suspect a better solution is to create them much later in the resourcing, but keep the
+//code for the moment for reference.
+static const bool createGlobalForGlobalCse = false;
+
 static HqlTransformerInfo scalarGlobalTransformerInfo("ScalarGlobalTransformer");
 ScalarGlobalTransformer::ScalarGlobalTransformer(HqlCppTranslator & _translator)
 : HoistingHqlTransformer(scalarGlobalTransformerInfo, CTFtraverseallnodes), translator(_translator)
 {
-    okToHoist = true;
-    neverHoist = false;
+    isGlobal = true;
+    isOkToHoist = true;
+}
+
+bool ScalarGlobalTransformer::isCandidate(IHqlExpression * expr)
+{
+    //  Commented line has problems with SELF used in HOLE definition, and explosion in thumphrey7 etc.
+    //return !expr->isConstant() && !isContextDependent(expr) && expr->isPure() && expr->isIndependentOfScope();
+    if (!containsAnyDataset(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure() && expr->isIndependentOfScope())
+    {
+        node_operator op = expr->getOperator();
+        switch (op)
+        {
+        case no_nofold:
+            //try to hoist the thing that is nofolded instead
+            return false;
+        default:
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ScalarGlobalTransformer::canCreateCandidate(IHqlExpression * expr)
+{
+    ITypeInfo * type = expr->queryType();
+    if (isTypeToHoist(type))
+    {
+        if (canCreateTemporary(expr))
+            return true;
+    }
+    return false;
 }
 
 void ScalarGlobalTransformer::analyseExpr(IHqlExpression * expr)
 {
     ScalarGlobalExtra * extra = queryBodyExtra(expr);
 
+    bool wasGlobal = isGlobal;
+    bool wasOkToHoist = isOkToHoist;
     analyseThis(expr);
-#ifdef NEW_SCALAR_CODE
-    if (++extra->numUses > 1)
-    {
-        if (!extra->candidate)
-            return;
-        if (extra->couldHoist || extra->alreadyGlobal)
-            return;
-    }
-    extra->candidate = !containsAnyDataset(expr) && !expr->isConstant() && !isContextDependent(expr);
-    extra->couldHoist = extra->candidate && isTypeToHoist(expr->queryType()) && canCreateTemporary(expr) && expr->isPure();
-#else
-    if (++extra->numUses > 1)
-    {
-        if (!okToHoist)
-        {
-            if (!neverHoist || extra->neverHoist)
-                return;
-        }
 
-        if (extra->couldHoist)
+    if (++extra->numUses > 1)
+    {
+        //Already creating an alias => no need to look any further
+        if (extra->createGlobal)
+            return;
+
+        //If we have already visited this node globally then any elements that are candidates will already be tagged
+        if (extra->visitedAllowHoist)
+            return;
+
+        if (createGlobalForGlobalCse)
         {
-            if (extra->createGlobal)
+            //Option1: no_globalscope is added for cses between no_globalscopes.
+            extra->visitedAllowHoist = true;
+
+            //Otherwise it may be worth creating a new candidate for an expression used from two places
+            isOkToHoist = true;
+        }
+        else
+        {
+            //Option2: Don't create a common node for cses between no_globalscopes
+            if (!isGlobal)
                 return;
-            //Allow a global to be created inside a global marked from somewhere else.
-            if (containsAnyDataset(expr) || expr->isConstant() || isContextDependent(expr) || !expr->isIndependentOfScope())
-                return;
+            extra->visitedAllowHoist = true;
         }
     }
-    extra->couldHoist = okToHoist;
-    if (!okToHoist && !neverHoist && !isTypeToHoist(expr->queryType()))
-        okToHoist = true;
-#endif
-    extra->neverHoist = neverHoist;
+    else
+        extra->visitedAllowHoist = isOkToHoist;
+
+    if (isGlobal)
+        extra->isLocal = false;
+
     doAnalyseExpr(expr);
-    okToHoist = extra->couldHoist;
-    neverHoist = extra->neverHoist;
+    isGlobal = wasGlobal;
+    isOkToHoist = wasOkToHoist;
 }
 
 void ScalarGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
@@ -7260,35 +7294,30 @@ void ScalarGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
         }
     case no_getresult:
     case no_libraryinput:
+    case no_setresult:
         queryBodyExtra(expr)->alreadyGlobal = true;
         break;
     case no_globalscope:
-    case no_setresult:
+        queryBodyExtra(expr)->alreadyGlobal = true;                     // don't tag again - even if opt flag is present
+        queryBodyExtra(expr->queryChild(0))->alreadyGlobal = true;
+        break;
     case no_ensureresult:
-        {
-            queryBodyExtra(expr)->alreadyGlobal = true;                     // don't tag again - even if opt flag is present
-            queryBodyExtra(expr->queryChild(0))->alreadyGlobal = true;
-            okToHoist = false;
-            break;
-        }
+        //When transformed, transform tends to be called on the children only
+        //=> Stop the argument being turned unnecessarily to a global temporary
+        queryBodyExtra(expr)->alreadyGlobal = true;
+        queryBodyExtra(expr->queryChild(0))->alreadyGlobal = true;
+        break;
     }
 
-#ifndef NEW_SCALAR_CODE
-//  Commented line has problems with SELF used in HOLE definition, and explosion in thumphrey7 etc.
-//  if (okToHoist && isIndependentOfScope(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure())
-    if (okToHoist && !containsAnyDataset(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure() && expr->isIndependentOfScope())
+    if (isOkToHoist && isCandidate(expr))
     {
-        ITypeInfo * type = expr->queryType();
-        if (isTypeToHoist(type))
+        if (canCreateCandidate(expr))
         {
-            if (canCreateTemporary(expr))
-            {
-                queryBodyExtra(expr)->createGlobal = true;
-                okToHoist = false;
-            }
+            queryBodyExtra(expr)->createGlobal = true;
+            isGlobal = false;
+            isOkToHoist = false;
         }
     }
-#endif
 
     HoistingHqlTransformer::doAnalyseExpr(expr);
 }
@@ -7307,7 +7336,7 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
     if (checkGlobal)
     {
         //If something else has turned this into a global then no point.
-        if (extra->alreadyGlobal)
+        if (extra->alreadyGlobal || extra->createGlobal)
             return false;
     }
 
@@ -7338,6 +7367,11 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
         //Accessed more than once-> probably worth commoning up
         if (extra->numUses > 1)
             return true;
+
+        //Some possible improvements.  Probably better to implement these and all hoisting in the resourcing phase.
+        //MORE: Probably more efficient to calculate a boolean and serialize just that - if it is used in a dataset context
+        //MORE: If an argument is a string probably worth commoning up - it depends on whether the string is also used in
+        //      the same context.
         break;
         //f[1..length(trim(x))] = x is very common, and if the length(trim)) was serialized separately then
         //the generated code would be worse.
@@ -7373,21 +7407,45 @@ IHqlExpression * ScalarGlobalTransformer::createTransformed(IHqlExpression * exp
 
     OwnedHqlExpr transformed = HoistingHqlTransformer::createTransformed(expr);
 
-    ScalarGlobalExtra * extra = queryBodyExtra(expr);
-#ifdef NEW_SCALAR_CODE
-    if (extra->numUses > 1 && extra->couldHoist && !extra->alreadyGlobal && isComplex(expr, false))
-#else
-    if (extra->createGlobal && !extra->alreadyGlobal && isComplex(expr, false))
-#endif
+    switch (transformed->getOperator())
     {
+    case no_setresult:
+    case no_globalscope:
+    case no_ensureresult:
+        {
+        //Don't prevent no_globalscope being added in analyse because other expression may require
+        //it to be made global.  However if a no_globalscope has been added to the child, remove it.  
+        IHqlExpression * child = transformed->queryChild(0);
+        if (child->getOperator() == no_globalscope)
+        {
+            if (expr->queryChild(0)->getOperator() != no_globalscope)
+            {
+                HqlExprArray args;
+                args.append(*LINK(child->queryChild(0)));
+                unwindChildren(args, transformed, 1);
+                return transformed->clone(args);
+            }
+        }
+        break;
+        }
+    }
+
+    ScalarGlobalExtra * extra = queryBodyExtra(expr);
+    if (extra->createGlobal)
+    {
+        if (!extra->alreadyGlobal && isComplex(expr, false))
+        {
 #ifdef _DEBUG
         translator.traceExpression("Mark as global", expr);
 #endif
-        //mark as global, so isComplex() can take it into account.
-        extra->alreadyGlobal = true;
-        if (expr->getOperator() == no_createset)
-            transformed.setown(projectCreateSetDataset(transformed));
-        return createValue(no_globalscope, transformed->getType(), LINK(transformed));
+            //mark as global, so isComplex() can take it into account.
+            extra->alreadyGlobal = true;
+            if (expr->getOperator() == no_createset)
+                transformed.setown(projectCreateSetDataset(transformed));
+            return createValue(no_globalscope, transformed->getType(), LINK(transformed));
+        }
+        else
+            extra->createGlobal = false;
     }
     return transformed.getClear();
 }
