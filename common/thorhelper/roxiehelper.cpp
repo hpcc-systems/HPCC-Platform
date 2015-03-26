@@ -1555,7 +1555,21 @@ void IRoxieContextLogger::CTXLOGae(IException *E, const char *file, unsigned lin
 
 void HttpHelper::gatherUrlParameters()
 {
-    const char *finger = strchr(urlPath, '?');
+    const char *start = urlPath.str();
+    while (isspace(*start))
+        start++;
+    if (*start=='/')
+        start++;
+    const char *finger = strpbrk(start, "/?");
+    if (!finger)
+    {
+        target.set(start);
+        return;
+    }
+
+    target.set(start, finger-start);
+    if (*finger=='/')
+        finger = strchr(finger, '?');
     if (!finger)
         return;
     finger++;

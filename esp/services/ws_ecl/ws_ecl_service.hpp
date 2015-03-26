@@ -21,7 +21,7 @@
 
 #include "jliball.hpp"
 #include "junicode.hpp"
-#include "jsmartsock.hpp"
+#include "jsmartsock.ipp"
 #include "fileview.hpp"
 
 #include "esp.hpp"
@@ -87,11 +87,21 @@ typedef enum wsEclTypes_
 
 } wsEclType;
 
+class RoxieConnEndpoint : public CSmartSocketFactory
+{
+public:
+    bool includeTargetInURL;
+
+    RoxieConnEndpoint(const char *_socklist, bool _retry, bool includeTarget) : CSmartSocketFactory(_socklist, _retry), includeTargetInURL(includeTarget)
+    {
+    }
+};
+
 class CWsEclService : public CInterface,
     implements IEspService
 {
 public:
-    MapStringToMyClass<ISmartSocketFactory> connMap;
+    MapStringToMyClassViaBase<RoxieConnEndpoint, ISmartSocketFactory> connMap;
     StringArray targets;
     StringAttr auth_method;
     StringAttr portal_URL;
