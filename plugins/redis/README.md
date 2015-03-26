@@ -14,7 +14,7 @@ sudo apt-get install libhiredis-dev
 
 The redis server and client software can be obtained via either - [binaries](http://redis.io/download), [source](https://github.com/antirez/redis) or the preferred method:
 ```
-sudo apt-get redis-server
+sudo apt-get install redis-server
 ```
 
 *Note:* redis-server 2.6.12 or greater is required to use this plugin as intended. For efficiency, such version requirments are not checked as this is a runtime check only. The use of a
