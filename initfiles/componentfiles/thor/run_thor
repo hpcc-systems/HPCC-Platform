@@ -35,7 +35,7 @@ echo $$ > $RUN_THOR_PID_NAME
 export SENTINEL="thor.sentinel"
 while [ 1 ]; do
     # update slaves file in case state of environment has been altered since last run
-    daliadmin $DALISERVER dfsgroup ${groupName} slaves
+    daliadmin server=$DALISERVER dfsgroup ${groupName} slaves
     errcode=$?
     if [ 0 != ${errcode} ]; then
     echo 'failed to lookup dali group for $groupName'
@@ -50,7 +50,8 @@ while [ 1 ]; do
     logredirect="$logdir/start_slaves_$logpthtail.log"
     # Would be simpler, if there was simple way to test if ip is local and get rid of 'localthor' setting
     if [ "$localthor" = "true" ]; then
-        $deploydir/start_slaves $THORMASTER $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect
+        slaveip=$(head -n 1 $instancedir/uslaves.start)
+        $deploydir/start_slaves $slaveip $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect
     else
         nslaves=`cat $instancedir/uslaves.start | wc -l`
         $deploydir/frunssh $instancedir/uslaves.start "/bin/sh -c '$deploydir/start_slaves %a $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1
