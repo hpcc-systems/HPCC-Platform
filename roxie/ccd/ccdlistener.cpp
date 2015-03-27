@@ -1651,9 +1651,12 @@ readAnother:
                     }
                     else
                     {
+                        StringBuffer querySetName;
                         if (isHTTP)
+                        {
                             client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
-                        StringBuffer querySetName(httpHelper.queryTarget());
+                            querySetName.set(httpHelper.queryTarget());
+                        }
                         queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
                         if (queryFactory)
                         {
