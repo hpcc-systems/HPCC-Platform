@@ -71,7 +71,7 @@ public:
                 IncludeInfo * ii;
                 for (ii=hc.includes;ii;ii=ii->next)
                 {
-                   subfile.setf("%s%s.ecm", srcDir.str(), ii->pathstr.str());
+                   subfile.setf("%s%s.%s", srcDir.str(), ii->pathstr.str(), ESDL_FILE_EXTENTION);
                    transform(subfile, outdir, out, outputIncludes);
                 }
             }

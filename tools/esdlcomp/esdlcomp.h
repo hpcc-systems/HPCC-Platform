@@ -55,6 +55,9 @@ inline bool es_streq(const char* s, const char* t) {  return strcmp(s,t)==0; }
 #define PF_ESPSTRUCT    0x800
 #define PF_MASK        0x7fff
 
+#define LEGACY_FILE_EXTENTION ".ecm"
+#define ESDL_FILE_EXTENTION   ".esdl"
+#define XML_FILE_EXTENTION    ".xml"
 
 enum type_kind
 {

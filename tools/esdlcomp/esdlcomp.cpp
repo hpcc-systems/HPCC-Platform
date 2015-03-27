@@ -31,8 +31,6 @@
 inline bool es_strieq(const char* s,const char* t) { return stricmp(s,t)==0; }
 
 //-------------------------------------------------------------------------------------------------------------
-#define ESDL "ESDL"
-
 extern FILE *yyin;
 extern int yyparse();
 
@@ -1100,17 +1098,31 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
     methods=NULL;
     versions = NULL;
 
-    splitFilename(sourceFile, NULL, &srcDir, &name, NULL);
-
-
     filename = strdup(sourceFile);
     size_t l = strlen(filename);
+
+    StringBuffer ext;
+    splitFilename(sourceFile, NULL, &srcDir, &name, &ext);
 
     yyin = fopen(sourceFile, "rt");
     if (!yyin)
     {
-        fprintf(stderr, "Fatal Error: Cannot read %s\n",sourceFile);
-        exit(1);
+        fprintf(stderr, "Could not load: %s...\n",sourceFile);
+        StringBuffer alternateExtFilename(srcDir);
+        alternateExtFilename.append(name.str());
+
+        if (stricmp(ext.str(), ESDL_FILE_EXTENTION)==0)
+            alternateExtFilename.append(LEGACY_FILE_EXTENTION);
+        else
+            alternateExtFilename.append(ESDL_FILE_EXTENTION);
+
+        fprintf(stderr, "Attempting to re-load with alternate extension: %s\n",alternateExtFilename.str());
+        yyin = fopen(alternateExtFilename.str(), "rt");
+        if (!yyin)
+        {
+            fprintf(stderr, "Fatal Error: Could not read %s nor %s\n",sourceFile, alternateExtFilename.str());
+            exit(1);
+        }
     }
 
     packagename = es_gettail(sourceFile);

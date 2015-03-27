@@ -102,16 +102,16 @@ public:
 
             IPropertyTree *src = NULL;
 
-            if (stricmp(srcext,".ecm")==0)
+            if (stricmp(srcext,LEGACY_FILE_EXTENTION)==0 || stricmp(srcext,ESDL_FILE_EXTENTION)==0)
             {
-                fileName.append(".ecm");
+                fileName.append(srcext);
                 StringBuffer esxml;
                 EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, false, true, true);
                 src = createPTreeFromXMLString(esxml, 0);
             }
-            else if (!srcext || !*srcext || stricmp(srcext, ".xml")==0)
+            else if (!srcext || !*srcext || stricmp(srcext, XML_FILE_EXTENTION)==0)
             {
-                fileName.append(".xml");
+                fileName.append(XML_FILE_EXTENTION);
                 src = createPTreeFromXMLFile(fileName.str(), false);
             }
             else
@@ -282,6 +282,7 @@ public:
         unsigned start = msTick();
         EsdlIndexedPropertyTrees trees;
         trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, optGenerateAllIncludes);
+        //trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, true);
         DBGLOG("Time taken to load ESDL files %u", msTick() - start);
 
         StringBuffer idxxml("<types><type name=\"StringArrayItem\" src=\"share\"/>");
@@ -325,7 +326,6 @@ public:
             Owned<IPropertyTreeIterator> files = trees.all->getElements("esxdl");
             ForEach(*files)
             {
-
                 IPropertyTree &file = files->query();
                 const char * filename = file.queryProp("@name");
                 StringBuffer xmlfile;
@@ -347,11 +347,12 @@ public:
                     toXML(file, xmlfile, 0,0);
 
                     //expandEsxdlForEclGeneration(trees, srcName.str());
-                    outputEcl(srcPath.str(), srcName.str(), optOutDirPath.get(), idxxml.str(), xmlfile); //rodrigo
+                    outputEcl(srcPath.str(), srcName.str(), optOutDirPath.get(), idxxml.str(), xmlfile);
                 }
             }
         }
 
+        DBGLOG("Time taken to translate ESDL files %u", msTick() - start);
         return 0;
     }
 

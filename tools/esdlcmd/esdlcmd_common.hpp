@@ -157,7 +157,7 @@ public:
             StringBuffer extension;
             StringBuffer filename;
             splitFilename(sourceFileName, NULL, NULL, &filename, &extension);
-            if (stricmp(extension.str(),".ecm")==0)
+            if (stricmp(extension.str(),LEGACY_FILE_EXTENTION)==0 || stricmp(extension.str(),ESDL_FILE_EXTENTION)==0)
             {
                 StringBuffer esxml;
                 EsdlCmdHelper::convertECMtoESXDL(sourceFileName, filename.str(), esxml, true, true, false);
@@ -187,7 +187,7 @@ public:
     static void convertECMtoESXDL(const char * filepath, const char * esxdlname, StringBuffer & esxml, bool recursive, bool verbose, bool outputincludes)
     {
         if (verbose)
-            fprintf(stdout,"Converting ecm file %s to XML\n", filepath);
+            fprintf(stdout,"Converting ESDL file %s to XML\n", filepath);
 
         Owned<Esdl2Esxdl> cmd = new Esdl2Esxdl(recursive, verbose);
         esxml.setf( "<esxdl name=\"%s\">", esxdlname);
