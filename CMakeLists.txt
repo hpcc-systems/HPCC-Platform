@@ -53,7 +53,7 @@ cmake_minimum_required (VERSION 2.8.3)
 include(CTest)
 ENABLE_TESTING()
 
-set (HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
 include(${HPCC_SOURCE_DIR}/version.cmake)
