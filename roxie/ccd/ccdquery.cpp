@@ -504,7 +504,7 @@ protected:
         case TAKalljoin:
         case TAKalldenormalize:
         case TAKalldenormalizegroup:
-            return createRoxieServerAllJoinActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerAllJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKapply:
             return createRoxieServerApplyActivityFactory(id, subgraphId, *this, helperFactory, kind, isRootAction(node));
         case TAKaggregate:
@@ -649,7 +649,7 @@ protected:
         case TAKjoinlight:
         case TAKdenormalize:
         case TAKdenormalizegroup:
-            return createRoxieServerJoinActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKkeyeddistribute:
             throwUnexpected();  // Code generator should have removed or transformed
         case TAKkeyedjoin:
@@ -709,7 +709,7 @@ protected:
             return createRoxieServerSelectNActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKselfjoin:
         case TAKselfjoinlight:
-            return createRoxieServerSelfJoinActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerSelfJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKskiplimit:
         case TAKcreaterowlimit:
             return createRoxieServerSkipLimitActivityFactory(id, subgraphId, *this, helperFactory, kind);
