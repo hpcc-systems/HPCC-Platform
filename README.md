@@ -39,7 +39,7 @@ To build for Linux:
 ```
    make
 ```
-6. Executables will be created in ./<releasemode>/bin and ./<releasemode>/libs
+6. Executables will be created in ./&lt;releasemode&gt;/bin and ./&lt;releasemode&gt;/libs
 7. To create a .deb / ,rpm to install, run
    make package
 
@@ -56,7 +56,7 @@ To build for Windows:
 ```
 5. The sln file hpccsystems-platform.sln will be created in the current directory, and will support debug and release targets
 6. To build the project, load the solution into the visual studio IDE and build in the usual way.
-7. Executables will be created in (for example) c:\hpcc\bin\<release_mode>
+7. Executables will be created in (for example) c:\hpcc\bin\&lt;releasemode&gt;
 
 To build client tools for Macintosh OSX:
 ----------------------------------------
@@ -95,7 +95,7 @@ To build client tools for Macintosh OSX:
 
 * To build the makefiles just created above, run
    make
-* Executables will be created in ./<releasemode>/bin and ./<releasemode>/libs
+* Executables will be created in ./&lt;releasemode&gt;/bin and ./&lt;releasemode&gt;/libs
 * To create a .dmg to install, run
    make package
  
