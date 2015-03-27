@@ -1235,6 +1235,7 @@ class CHThorJoinActivity : public CHThorActivityBase
     Owned<IException> failingLimit;
     ConstPointerArray filteredRight;
     Owned<IRHLimitedCompareHelper> limitedhelper;
+    Owned<GroupedInputReader> groupedRightInput;
 
 //MORE: Following are good candidates for a join base class + others
     OwnedConstRoxieRow defaultLeft;
@@ -1248,6 +1249,7 @@ private:
     void * cloneOrReturnOutput(memsize_t thisSize);
     void fillLeft();
     void fillRight();
+    const void *nextRightInGroup();
     //bool getMatchingRecords();
     //bool queryAdvanceCursors();
     const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter);
@@ -1313,6 +1315,8 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     Owned<IEngineRowAllocator> defaultAllocator;    
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
+    Owned<GroupedInputReader> groupedInput;
+    IInputBase *dualCacheInput;
 private:
     bool fillGroup();
     const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except);
@@ -1321,6 +1325,7 @@ private:
 public:
     CHThorSelfJoinActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind);
 
+    virtual void setInput(unsigned index, IHThorInput * _input);
     IHThorInput *queryOutput(unsigned index) { return this; }
 
     virtual void ready();

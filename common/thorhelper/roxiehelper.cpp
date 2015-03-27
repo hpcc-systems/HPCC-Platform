@@ -411,6 +411,57 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
     }
     return group.ordinality()>0;
 }
+
+//=========================================================================================
+
+GroupedInputReader::GroupedInputReader(IInputBase *_input, const ICompare *_compare) : input(_input), compare(_compare)
+{
+    reset();
+}
+
+void GroupedInputReader::reset()
+{
+    firstRead = false;
+    eof = false;
+    endGroupPending = false;
+    next.clear();
+}
+
+IOutputMetaData * GroupedInputReader::queryOutputMeta() const
+{
+    return input->queryOutputMeta();
+}
+
+const void *GroupedInputReader::nextInGroup()
+{
+    if (!firstRead)
+    {
+        firstRead = true;
+        next.setown(input->nextInGroup());
+    }
+
+    if (eof || endGroupPending)
+    {
+        endGroupPending = false;
+        return NULL;
+    }
+
+    OwnedConstRoxieRow prev(next.getClear());
+    next.setown(input->nextInGroup());
+    if (!next)  // skip incoming grouping if present
+        next.setown(input->nextInGroup());
+
+   if (next)
+   {
+        assertex(prev);  // If this fails, you have an initial empty group. That is not legal.
+        if (compare->docompare(prev, next) != 0) // MORE - could assert >=0, as input is supposed to be sorted
+             endGroupPending = true;
+   }
+   else
+       eof = true;
+    return prev.getClear();
+}
+
 //========================================================================================= 
 
 CSafeSocket::CSafeSocket(ISocket *_sock)

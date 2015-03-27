@@ -79,6 +79,29 @@ public:
 
 //========================================================================================= 
 
+// Effectively this is a copy of the group activity code, used by join activities
+
+using roxiemem::OwnedConstRoxieRow;
+
+class GroupedInputReader : public CInterfaceOf<IInputBase>
+{
+protected:
+    bool firstRead;
+    bool eof;
+    bool endGroupPending;
+    OwnedConstRoxieRow next;
+
+    IInputBase *input;
+    const ICompare *compare;
+public:
+    GroupedInputReader(IInputBase *_input, const ICompare *_compare);
+    void reset();
+    virtual const void *nextInGroup();
+    virtual IOutputMetaData * queryOutputMeta() const;
+};
+
+//=========================================================================================
+
 interface SafeSocket : extends IInterface
 {
     virtual ISocket *querySocket()  = 0;
