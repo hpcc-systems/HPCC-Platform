@@ -4543,27 +4543,27 @@ IHqlExpression * CompoundActivityTransformer::createTransformed(IHqlExpression *
         {
             if (transformed->hasAttribute(onFailAtom))
                 break;
+
             LinkedHqlExpr dataset = transformed->queryChild(0);
             if (dataset->hasAttribute(limitAtom) || transformed->hasAttribute(skipAtom))
                 break;
+
+            // A limited KEYED-JOIN should never read more than limit rows from the index for each left row
+            // so add a LIMIT attribute onto the keyed join to ensure it doesn't return too many records.
             switch (dataset->getOperator())
             {
             case no_join:
-            case no_denormalize:
-            case no_denormalizegroup:
                 if (isKeyedJoin(dataset))
                     break;
                 return transformed.getClear();
             default:
                 return transformed.getClear();
             }
-            if (!isThorCluster(targetClusterType))
-                return mergeLimitIntoDataset(dataset, transformed);
+
             HqlExprArray args;
             unwindChildren(args, transformed);
             args.replace(*mergeLimitIntoDataset(dataset, transformed), 0);
             return transformed->clone(args);
-
         }
     }
 
