@@ -39,3 +39,7 @@ if ( CMAKE_SYSTEM MATCHES Linux )
     message ("-- Building start-stop-daemon")
     HPCC_ADD_SUBDIRECTORY (start-stop-daemon)
 endif()
+
+if (APPLE)
+    HPCC_ADD_SUBDIRECTORY (start-stop-daemon)
+endif (APPLE)
