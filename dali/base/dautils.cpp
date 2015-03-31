@@ -1983,7 +1983,7 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
         if (elem)
             postfilter = elem->postFilter; // reuse cached postfilter
     }
-    else
+    if (!elem)
     {
         elem.setown(new CPECacheElem(owner, postfilter));
         elem->conn.setown(elementsPager->getElements(elem->totalres));
