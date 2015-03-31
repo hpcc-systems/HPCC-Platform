@@ -38,6 +38,7 @@ EXPORT redis := SERVICE : plugin('redis'), namespace('RedisPlugin')
   BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,once,context,entrypoint='RExist';
   FlushDB(CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,action,context,entrypoint='RClear';
   Delete(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,action,context,entrypoint='RDel';
+  Del(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,action,context,entrypoint='RDel';
   Persist(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,action,context,entrypoint='RPersist';
   Expire(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,action,context,entrypoint='RExpire';
   INTEGER DBSize(CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000) : cpp,once,context,entrypoint='RDBSize';
@@ -75,6 +76,7 @@ EXPORT RedisServer(VARSTRING options, VARSTRING password = '', UNSIGNED timeout 
   EXPORT Exists(VARSTRING key, UNSIGNED database = 0) := redis.Exists(key, options, database, password, timeout);
   EXPORT FlushDB(UNSIGNED database = 0) := redis.FlushDB(options, database, password, timeout);
   EXPORT Delete(VARSTRING key, UNSIGNED database = 0) := redis.Delete(key, options, database, password, timeout);
+  EXPORT Del(VARSTRING key, UNSIGNED database = 0) := redis.Del(key, options, database, password, timeout);
   EXPORT Persist(VARSTRING key, UNSIGNED database = 0) := redis.Persist(key, options, database, password, timeout);
   EXPORT Expire(VARSTRING key, UNSIGNED database = 0, UNSIGNED4 expire)  := redis.Expire(key, options, database, expire, password, timeout);
   EXPORT DBSize(UNSIGNED database = 0) := redis.DBSize(options, database, password, timeout);
