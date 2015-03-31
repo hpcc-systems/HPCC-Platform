@@ -20,28 +20,55 @@ http://hpccsystems.com
 To build for Linux:
 -------------------
 
-1. Check out sources (for example, to directory ~/hpcc)
-2. Create a build directory - either as a child of hpcc or elsewhere
-3. cd to the build directory
-4. To create makefiles to build native release version for local machine, run
+Prerequisites: (w/ base Ubuntu 14)
+```
+sudo apt-get install cmake
+sudo apt-get install bison
+sudo apt-get install flex
+sudo apt-get install binutils-dev
+sudo apt-get install libiberty-dev
+sudo apt-get install slapd
+sudo apt-get install openldap-dev
+sudo apt-get install libicu-dev
+sudo apt-get install libxslt-dev
+sudo apt-get install zlib1g-dev
+sudo apt-get install libarchive-dev
+sudo apt-get install libboost-all-dev
+sudo apt-get install libssl-dev
+sudo apt-get install libapr1-dev
+sudo apt-get install libaprutil1-dev
+sudo apt-get install clang
+```
+
+* Check out sources (for example, to directory ~/hpcc)
+* Fetch all sub-modules with:
+
+```
+   git submodule update --init --recursive
+```   
+* Create a build directory - either as a child of hpcc or elsewhere
+* cd to the build directory
+* To create makefiles to build native release version for local machine, run
 ```
    cmake ~/hpcc
 ```
-4. To create makefiles to build native debug version, run
+* To create makefiles to build native debug version, run
 ```
    cmake -DCMAKE_BUILD_TYPE=Debug ~/hpcc
 ```
-4. To create makefiles to build 32-bit version from 64-bit host, run
+*  To create makefiles to build 32-bit version from 64-bit host, run
 ```
    cmake -DCMAKE_C_FLAGS:STRING="-m32 -march=i386" -DCMAKE_CXX_FLAGS:STRING="-m32 -march=i386" ~/hpcc
 ```
-5. To build the makefiles just created above, run
+* To build the makefiles just created above, run
 ```
    make
 ```
-6. Executables will be created in ./&lt;releasemode&gt;/bin and ./&lt;releasemode&gt;/libs
-7. To create a .deb / ,rpm to install, run
+* Executables will be created in ./&lt;releasemode&gt;/bin and ./&lt;releasemode&gt;/libs
+* To create a .deb / ,rpm to install, run
+```
    make package
+```
 
  
 To build for Windows:
