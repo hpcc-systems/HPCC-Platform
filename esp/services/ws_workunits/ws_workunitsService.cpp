@@ -623,6 +623,8 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
         {
             Owned<IWUQuery> query=wu->updateQuery();
             query->setQueryText(req.getQueryText());
+            if ((version >= 1.56) && !req.getQueryLanguage_isNull())
+                query->setQueryLanguage((WUQueryLanguage) req.getQueryLanguage());
         }
 
         if (version > 1.34 && notEmpty(req.getQueryMainDefinition()))

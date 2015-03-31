@@ -110,7 +110,13 @@ enum WUQueryType
     QueryTypeSize = 5
 };
 
-
+enum WUQueryLanguage
+{
+    QueryLanguageUnknown = 0,
+    QueryLanguageEcl = 1,
+    QueryLanguageKel = 2,
+    QueryLanguageSize = 3
+};
 
 enum WUState
 {
@@ -386,6 +392,7 @@ interface IConstWUAssociatedFileIterator : extends IScmIterator
 interface IConstWUQuery : extends IInterface
 {
     virtual WUQueryType getQueryType() const = 0;
+    virtual WUQueryLanguage getQueryLanguage() const = 0;
     virtual IStringVal & getQueryText(IStringVal & str) const = 0;
     virtual IStringVal & getQueryName(IStringVal & str) const = 0;
     virtual IStringVal & getQueryDllName(IStringVal & str) const = 0;
@@ -402,6 +409,7 @@ interface IConstWUQuery : extends IInterface
 interface IWUQuery : extends IConstWUQuery
 {
     virtual void setQueryType(WUQueryType qt) = 0;
+    virtual void setQueryLanguage(WUQueryLanguage ql) = 0;
     virtual void setQueryText(const char * pstr) = 0;
     virtual void setQueryName(const char * pstr) = 0;
     virtual void addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc) = 0;
