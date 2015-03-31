@@ -70,6 +70,18 @@ sudo apt-get install clang
    make package
 ```
 
+* To install from the built binaries, you will need node.js installed. 
+(Be sure to run both of the lines below!  See: https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager)
+``` 
+   curl -sL https://deb.nodesource.com/setup | sudo bash -
+   sudo apt-get install -y nodejs
+```
+
+* Then, you can run make install as root.
+```
+   sudo make install
+```
+
  
 To build for Windows:
 ---------------------
