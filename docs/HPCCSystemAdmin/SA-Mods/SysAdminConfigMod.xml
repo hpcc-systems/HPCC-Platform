@@ -2,7 +2,6 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
-  
   <chapter id="Usin-HPCC-ConfigMgr">
     <title>Using Configuration Manager</title>
 
@@ -551,7 +550,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         a site with large volumes of data. A good policy is to set the Thor
         size to 4 times the source data on your HPCC. Typically, Roxie would
         be about ¼ the size of Thor. This is because the data is compressed
-        and the system does not hold any transient data in Roxie.</para>
+        and the system does not hold any transient data in Roxie. Remember
+        that you do not want the number of Roxie nodes to exceed the number of
+        Thor nodes. </para>
 
         <sect3>
           <title>High Data Thor sizing considerations</title>
