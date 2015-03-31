@@ -63,19 +63,7 @@ createIPListFile(){
 createIPListFileExcludeDIP(){
     local _input=$1
     local _output=$2
-    rm -f $_output >/dev/null 2>&1
-    while read _ip_addr; do
-        local _found=0
-        for _dip in $DIP; do
-            if [[ "$_ip_addr" == "$_dip" ]]; then
-                _found=1
-                break
-            fi
-        done
-        if [[ $_found -eq 0 ]]; then
-            echo "$_ip_addr" >> $_output
-        fi
-    done < $_input
+    grep -vwF "$DIP" $_input > $_output 2> /dev/null
 }
 
 doOneIP(){
