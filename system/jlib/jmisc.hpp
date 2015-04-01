@@ -246,7 +246,10 @@ inline unsigned __int32 low(__int64 n)
 
 //MORE - We really should restructure this file.  Also would this be better with a class interface?
 //Handle ^C/break from a console program.
-typedef bool (*AbortHandler)();                                                 // return true to exit program
+
+enum ahType { ahTerminate, ahInterrupt};
+typedef bool (*AbortHandler)(ahType);                                       // return true to exit program
+typedef bool (*SimpleAbortHandler)();
 
 interface IAbortHandler : public IInterface
 {
@@ -256,8 +259,10 @@ interface IAbortHandler : public IInterface
 #define JLIBERR_UserAbort       0xffffff00
 
 extern jlib_decl void addAbortHandler(AbortHandler handler=NULL);               // no parameter means just set the flag for later testing.
+extern jlib_decl void addAbortHandler(SimpleAbortHandler handler=NULL);
 extern jlib_decl void addAbortHandler(IAbortHandler & handler);
 extern jlib_decl void removeAbortHandler(AbortHandler handler);
+extern jlib_decl void removeAbortHandler(SimpleAbortHandler handler);
 extern jlib_decl void removeAbortHandler(IAbortHandler & handler);
 extern jlib_decl bool isAborting();
 extern jlib_decl void throwAbortException();
@@ -272,10 +277,12 @@ interface IAbortRequestCallback
 class LocalAbortHandler
 {
 public:
-    LocalAbortHandler(AbortHandler _handler=NULL)   { handler = _handler; addAbortHandler(handler); }
-    ~LocalAbortHandler()                            { removeAbortHandler(handler); }
+    LocalAbortHandler(AbortHandler _handler=NULL)   { handler = _handler; shandler = NULL; addAbortHandler(handler); }
+    LocalAbortHandler(SimpleAbortHandler _handler=NULL) { shandler = _handler; handler = NULL; addAbortHandler(shandler); }
+    ~LocalAbortHandler()                            { if (handler) { removeAbortHandler(handler); } else removeAbortHandler(shandler); }
 private:
     AbortHandler            handler;
+    SimpleAbortHandler        shandler;
 };
 
 class LocalIAbortHandler
