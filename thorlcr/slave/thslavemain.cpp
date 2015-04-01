@@ -192,7 +192,7 @@ void UnregisterSelf(IException *e)
     }
 }
 
-bool ControlHandler() 
+bool ControlHandler(int sig) 
 { 
     LOG(MCdebugProgress, thorJob, "CTRL-C pressed");
     if (masterNode) UnregisterSelf(NULL);

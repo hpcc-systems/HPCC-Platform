@@ -241,7 +241,7 @@ int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
 
 //---------------------------------------------------------------------------------
 
-bool ControlHandler() 
+bool ControlHandler(int sig) 
 { 
     if (execSvr)
     {

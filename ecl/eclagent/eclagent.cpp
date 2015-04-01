@@ -3149,7 +3149,7 @@ void printStart(int argc, const char *argv[])
 
 //--------------------------------------------------------------
 
-bool ControlHandler()
+bool ControlHandler(int sig)
 {
     LOG(MCevent,"ControlHandler Stop signalled");
     return true;

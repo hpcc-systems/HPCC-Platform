@@ -118,7 +118,7 @@ static void stopServer()
     stopMPServer();
 }
 
-bool actionOnAbort()
+bool actionOnAbort(int sig)
 {
     stopServer();
     return true;

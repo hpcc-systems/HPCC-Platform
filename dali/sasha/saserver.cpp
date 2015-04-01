@@ -88,7 +88,7 @@ static void stopServer()
 }
 
 
-static bool actionOnAbort()
+static bool actionOnAbort(int sig)
 {
     LOG(MCprogress, unknownJob, "Stop signalled");
     if (stopped)
