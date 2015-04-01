@@ -192,12 +192,14 @@ void UnregisterSelf(IException *e)
     }
 }
 
-bool ControlHandler() 
-{ 
-    LOG(MCdebugProgress, thorJob, "CTRL-C pressed");
-    if (masterNode) UnregisterSelf(NULL);
+bool ControlHandler(ahType aht_val)
+{
+    if (aht_interrupt == aht_val)
+        LOG(MCdebugProgress, thorJob, "CTRL-C pressed");
+    if (masterNode)
+        UnregisterSelf(NULL);
     abortSlave();
-    return false; 
+    return false;
 }
 
 void usage()

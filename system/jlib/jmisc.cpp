@@ -710,7 +710,7 @@ public:
         installer = GetCurrentThreadId();
     }
 
-    bool handle()
+    bool handle(ahType aht_val)
     {
 #ifndef _WIN32
         if (installer == GetCurrentThreadId())
@@ -718,7 +718,7 @@ public:
         {
 //          DBGLOG("handle abort %x", GetCurrentThreadId());
             if (handler)
-                return handler();
+                return handler(aht_val);
             else
                 return ihandler->onAbort();
         }
@@ -731,7 +731,7 @@ public:
 
 CIArrayOf<AbortHandlerInfo> handlers;
 
-bool notifyOnAbort()
+bool notifyOnAbort(ahType aht_val)
 {
 //  DBGLOG("notifyOnAbort %x", GetCurrentThreadId());
 //      CriticalBlock c(abortCrit); You would think that this was needed, but it locks up.
@@ -739,7 +739,7 @@ bool notifyOnAbort()
     bool doExit = false;
     ForEachItemInRev(idx, handlers)
     {
-        if (handlers.item(idx).handle())
+        if (handlers.item(idx).handle(aht_val))
             doExit = true;
     }
 //  DBGLOG("notifyOnAbort returning %d", (int) doExit);
@@ -756,13 +756,13 @@ BOOL WINAPI WindowsAbortHandler ( DWORD dwCtrlType )
         case CTRL_CLOSE_EVENT:
         {
             hadAbortSignal = true;
-            bool doExit = notifyOnAbort();
+            bool doExit = notifyOnAbort(aht_interrupt);
             return !doExit; 
         }
         case CTRL_LOGOFF_EVENT:
         case CTRL_SHUTDOWN_EVENT:
             hadAbortSignal = true;
-            notifyOnAbort();
+            notifyOnAbort(aht_terminate);
             return FALSE;
     }
     return FALSE; 
@@ -782,10 +782,14 @@ BOOL WINAPI ModuleExitHandler ( DWORD dwCtrlType )
     return FALSE; 
 } 
 #else
-static void UnixAbortHandler(int sig)
+static void UnixAbortHandler(int signo)
 {
+    ahType aht_val = aht_interrupt;
+    if (SIGTERM == signo)
+            aht_val = aht_terminate;
+
     hadAbortSignal = true;
-    if (handlers.length()==0 || notifyOnAbort())
+    if (handlers.length()==0 || notifyOnAbort(aht_val))
     {
         _exit(0);
     }

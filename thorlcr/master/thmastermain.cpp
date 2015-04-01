@@ -401,42 +401,55 @@ bool checkClusterRelicateDAFS(IGroup *grp)
 static bool auditStartLogged = false;
 
 static bool firstCtrlC = true;
-bool ControlHandler() 
-{ 
-    if (firstCtrlC)
+bool ControlHandler(ahType aht_val)
+{
+    if (aht_interrupt == aht_val)
     {
-        LOG(MCdebugProgress, thorJob, "CTRL-C detected");
-        firstCtrlC = false;
+        if (firstCtrlC)
         {
-            Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
-            if (registry)
-                registry->stop();
+            LOG(MCdebugProgress, thorJob, "CTRL-C detected");
+            firstCtrlC = false;
+            {
+                Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
+                if (registry)
+                    registry->stop();
+            }
+            abortThor(NULL, TEC_CtrlC);
         }
-        abortThor(NULL, TEC_CtrlC);
+        else
+        {
+            LOG(MCdebugProgress, thorJob, "2nd CTRL-C detected - terminating process");
+
+            if (auditStartLogged)
+            {
+                auditStartLogged = false;
+                LOG(daliAuditLogCat,",Progress,Thor,Terminate,%s,%s,%s,ctrlc",
+                    queryServerStatus().queryProperties()->queryProp("@thorname"),
+                    queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
+                    queryServerStatus().queryProperties()->queryProp("@queue"));
+            }
+            queryLogMsgManager()->flushQueue(10*1000);
+#ifdef _WIN32
+            TerminateProcess(GetCurrentProcess(), 1);
+#else
+            //MORE- verify this
+            // why not just raise(SIGKILL);  ?
+            kill(getpid(), SIGKILL);
+#endif
+            _exit(1);
+        }
     }
+    // aht_terminate
     else
     {
-        LOG(MCdebugProgress, thorJob, "2nd CTRL-C detected - terminating process");
-
-        if (auditStartLogged)
-        {
-            auditStartLogged = false;
-            LOG(daliAuditLogCat,",Progress,Thor,Terminate,%s,%s,%s,ctrlc",
-                queryServerStatus().queryProperties()->queryProp("@thorname"),
-                queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
-                queryServerStatus().queryProperties()->queryProp("@queue"));
-        }
-        queryLogMsgManager()->flushQueue(10*1000);
-#ifdef _WIN32
-        TerminateProcess(GetCurrentProcess(), 1);
-#else
-        //MORE- verify this
-        kill(getpid(), SIGKILL);
-#endif
-        _exit(1);
+        LOG(MCdebugProgress, thorJob, "SIGTERM detected, shutting down");
+        Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
+        if (registry)
+            registry->stop();
+        abortThor(NULL, TEC_Clean);
     }
-    return false; 
-} 
+    return false;
+}
 
 
 #include "thactivitymaster.hpp"

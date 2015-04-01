@@ -30,6 +30,6 @@
 
 typedef __int32 crc32_t;
 
-bool daftAbortHandler();
+bool daftAbortHandler(ahType);
 
 #endif

@@ -246,7 +246,9 @@ inline unsigned __int32 low(__int64 n)
 
 //MORE - We really should restructure this file.  Also would this be better with a class interface?
 //Handle ^C/break from a console program.
-typedef bool (*AbortHandler)();                                                 // return true to exit program
+
+enum ahType { aht_terminate, aht_interrupt};
+typedef bool (*AbortHandler)(ahType);                                       // return true to exit program
 
 interface IAbortHandler : public IInterface
 {

@@ -27,7 +27,7 @@
 Semaphore sem;
 
 
-bool myAbortHandler()
+bool myAbortHandler(ahType aht_val)
 {
     sem.signal();
     return false;

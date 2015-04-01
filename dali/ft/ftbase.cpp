@@ -748,7 +748,7 @@ size32_t CrcIOStream::write(size32_t len, const void * data)
 //---------------------------------------------------------------------------
 
 static int breakCount;
-bool daftAbortHandler()
+bool daftAbortHandler(ahType aht_val)
 {
     LOG(MCprogress, unknownJob, "Aborting...");
     // hit ^C 3 times to really stop it...
