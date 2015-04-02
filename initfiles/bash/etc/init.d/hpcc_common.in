@@ -561,38 +561,26 @@ stop_component() {
     fi
 
     eval $stopcmd
-    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
-    RESULT="$?"
 
-    if [ "${RESULT}" -eq 0 ] ; then
-        while [ 1 ]
-        do
-            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
-            RCSTOP=$?
-            if [ ${RCSTOP} -ne 0 ] ; then
-               #Before exiting check whether init_<component> is still running or not
-                while [ 1 ]
-                do
-                   checkPid ${PIDPATH}
-                   if [ $__flagPid -eq 1 ];then
-                        checkPidExist ${PIDPATH}
-                        if [ $__pidExists -ne 1 ];then
-                            cleanupRuntimeEnvironment
-                            log_success_msg
-                            RCSTOP=0
-                            break 2
-                        fi
-                    fi
-                    sleep 1
-                done
-            fi
+    RESULT=0
+    local counter=0
+    while [[ $RESULT -eq 0 && $counter -le 20 ]]; do
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+        RESULT=$?
+        ((counter++))
+        if [[ $RESULT -eq 0 ]]; then
             sleep 1
-       done
+        fi
+    done
+
+    if [[ $RESULT -ne 1 && $RESULT -ne 4 ]]; then
+        log_failure_msg
     else
-        cleanupRuntimeEnvironment
         log_success_msg
-        RCSTOP=0
     fi
+
+    cleanupRuntimeEnvironment
+    RCSTOP=0
 
     return ${RCSTOP}
 }

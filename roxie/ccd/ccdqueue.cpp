@@ -2439,7 +2439,7 @@ public:
         IMessageCollator *ret = collators.getValue(id);
         if (!ret)
             ret = defaultCollator;
-        return QUERYINTERFACE(ret, ILocalMessageCollator);
+        return LINK(QUERYINTERFACE(ret, ILocalMessageCollator));
     }
 
 };
@@ -2449,7 +2449,7 @@ void LocalMessagePacker::flush(bool last_message)
     data.setLength(lastput);
     if (last_message)
     {
-        ILocalMessageCollator *collator = rm->lookupCollator(id);
+        Owned<ILocalMessageCollator> collator = rm->lookupCollator(id);
         if (collator)
         {
             unsigned datalen = data.length();

@@ -14,7 +14,7 @@ sudo apt-get install libhiredis-dev
 
 The redis server and client software can be obtained via either - [binaries](http://redis.io/download), [source](https://github.com/antirez/redis) or the preferred method:
 ```
-sudo apt-get redis-server
+sudo apt-get install redis-server
 ```
 
 *Note:* redis-server 2.6.12 or greater is required to use this plugin as intended. For efficiency, such version requirments are not checked as this is a runtime check only. The use of a
@@ -79,7 +79,7 @@ DATA          GetData(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED dat
 ```
 BOOLEAN Exists(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000)
 FlushDB(CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000)
-Del(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000)
+Delete(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000)
 Persist(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000)
 Expire(CONST VARSTRING key, CONST VARSTRING options, UNSIGNED database = 0, UNSIGNED4 expire, CONST VARSTRING password = '', UNSIGNED timeout = 1000)
 INTEGER DBSize(CONST VARSTRING options, UNSIGNED database = 0, CONST VARSTRING password = '', UNSIGNED timeout = 1000)
@@ -158,7 +158,7 @@ A few notes to point out here:
    * PUB-SUB channels are not disconnected from the keyspace as they are in their native redis usage. The key itself is used as the lock with its value being set as the channel to later
    PUBLISH on or SUBSCRIBE to. This channel is a string, unique by only the *key* and *database*, prefixed with **'redis_ecl_lock'**.
    * The lock itself is set to expire with a duration equal to the `timeout` value passed to the `locking.Exists(<key>` function (default 1s).
-   * It is possible to manually 'unlock' this lock (`DEL` the key) via the `locking.Unlock(<key>)` function. *Note:* this function will fail on any communication or reply error however, 
+   * It is possible to manually 'unlock' this lock (`DELETE` the key) via the `locking.Unlock(<key>)` function. *Note:* this function will fail on any communication or reply error however,
    it will **silently fail**, leaving the lock to expire, if the server observes any change to the key during the function call duration.
    * When the *race-winner* publishes, it actually publishes the value itself and that any subscriber will then obtain the key-value in this fashion. Therefore, not requiring an
     additional `GET` and possible further race conditions in doing so. *Note:* This does however, mean that it is possible for the actual redis `SET` to fail on one client/process,
@@ -177,7 +177,7 @@ A few notes to point out here:
 | Get<type>           | 1       | 5       | new connection   |
 | Set<type>           | 1       | 5       | new connection   |
 | FlushDB             | 1       | 5       | new connection   |
-| Del                 | 1       | 5       | new connection   |
+| Delete              | 1       | 5       | new connection   |
 | Persist             | 1       | 5       | new connection   |
 | Exists              | 1       | 5       | new connection   |
 | DBSize              | 1       | 5       | new connection   |
