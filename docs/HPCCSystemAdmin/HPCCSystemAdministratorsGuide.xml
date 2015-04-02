@@ -520,6 +520,12 @@
       <para>Running multiple HPCC Roxie nodes on a single physical server is
       not recommended, except in the cases of virtualization or
       containers.</para>
+
+      <para>Configure your system to balance the size of your Thor and Roxie
+      clusters. The number of Roxie nodes should never exceed the number of
+      Thor nodes. In addition, the number of Thor nodes should be evenly
+      divisible by the number of Roxie nodes. This ensures an efficient
+      distribution of file parts from Thor to Roxie. </para>
     </sect1>
 
     <sect1>
@@ -1208,7 +1214,7 @@ lock=/var/lock/HPCCSystems</programlisting>
       invalidate those files and make the physical files inaccessible.</para>
 
       <para>There are a couple of scenarios where you would want to redefine
-      your Thor cluster. </para>
+      your Thor cluster.</para>
 
       <sect2 id="Replace_Faulty_Node" role="nobrk">
         <title>Replacing faulty node(s)</title>
@@ -1228,7 +1234,7 @@ lock=/var/lock/HPCCSystems</programlisting>
       </sect2>
 
       <sect2 id="SysAdmin_Resizing_The_Cluster" role="nobrk">
-        <title>Resizing the cluster </title>
+        <title>Resizing the cluster</title>
 
         <para>If you are adding or removing Thor cluster nodes but
         <emphasis>all previous nodes remain part of the environment and
@@ -1378,7 +1384,7 @@ lock=/var/lock/HPCCSystems</programlisting>
     </sect1>
 
     <sect1 id="BP_High_Availability">
-      <title>High Availability and Disaster Recovery</title>
+      <title>High Availability</title>
 
       <para>If you require high availability for your HPCC system, there are
       some additional considerations that you should be aware of. This is not
@@ -1570,21 +1576,15 @@ lock=/var/lock/HPCCSystems</programlisting>
     <sect1>
       <title>Additional Resources</title>
 
-      <para>Additional help for Learning ECL is also available. There are
-      online courses.</para>
+      <para>Additional help with HPCC and Learning ECL is also available.
+      There are online courses available. Go to :</para>
 
       <para><ulink
-      url="https://learn.lexisnexis.com/lexisnexis/resources/courses">https://learn.lexisnexis.com/lexisnexis/resources/courses
+      url="https://learn.lexisnexis.com/hpcc">https://learn.lexisnexis.com/hpcc
       </ulink></para>
 
-      <para>There are training videos online.</para>
-
-      <para><ulink
-      url="https://learn.lexisnexis.com/lexisnexis/resources/courses/HPCC/Summit2014/NewECLWatch50Features/NewECLWatch50Features.html">Legacy
-      ECL Watch and New 5.0 ECL Watch</ulink></para>
-
-      <para>A quick summary of the differences in the interface, goes into
-      particular detail. Helpful for learning how to deploy Roxies.</para>
+      <para>You may need to register for the site. There are several training
+      videos and other very helpful information.</para>
     </sect1>
   </chapter>
 </book>
