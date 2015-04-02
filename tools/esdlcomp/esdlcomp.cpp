@@ -1086,8 +1086,9 @@ char* getTargetBase(const char* outDir, const char* src)
         return strdup(src);
 }
 
-ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir, bool outputIncludes_)
+ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir, bool outputIncludes_, bool isIncludedEsdl)
 {
+    //includedEsdl = includedEsdl_;
     outputIncludes = outputIncludes_;
     modules = NULL;
     enums = NULL;
@@ -1107,22 +1108,29 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
     yyin = fopen(sourceFile, "rt");
     if (!yyin)
     {
-        fprintf(stderr, "Could not load: %s...\n",sourceFile);
-        StringBuffer alternateExtFilename(srcDir);
-        alternateExtFilename.append(name.str());
-
-        if (stricmp(ext.str(), ESDL_FILE_EXTENTION)==0)
-            alternateExtFilename.append(LEGACY_FILE_EXTENTION);
-        else
-            alternateExtFilename.append(ESDL_FILE_EXTENTION);
-
-        fprintf(stderr, "Attempting to re-load with alternate extension: %s\n",alternateExtFilename.str());
-        yyin = fopen(alternateExtFilename.str(), "rt");
-        if (!yyin)
+        if (isIncludedEsdl)
         {
-            fprintf(stderr, "Fatal Error: Could not read %s nor %s\n",sourceFile, alternateExtFilename.str());
+            StringBuffer alternateExtFilename(srcDir);
+            alternateExtFilename.append(name.str());
+
+            if (stricmp(ext.str(), ESDL_FILE_EXTENTION)==0)
+                alternateExtFilename.append(LEGACY_FILE_EXTENTION);
+            else
+                alternateExtFilename.append(ESDL_FILE_EXTENTION);
+
+            yyin = fopen(alternateExtFilename.str(), "rt");
+            if (!yyin)
+            {
+                fprintf(stderr, "Fatal Error: Could not load included ESDL grammar %s\n", filename);
+                exit(1);
+            }
+        }
+        else
+        {
+            fprintf(stderr, "Fatal Error: Could not load ESDL grammar %s\n", sourceFile);
             exit(1);
         }
+
     }
 
     packagename = es_gettail(sourceFile);

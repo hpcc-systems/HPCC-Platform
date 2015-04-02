@@ -1289,7 +1289,7 @@ public:
 class esdlcomp_decl ESDLcompiler
 {
 public:
-    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes);
+    ESDLcompiler(const char * sourceFile, bool generatefile, const char * outDir, bool outputIncludes, bool includedEsdl);
     ~ESDLcompiler();
 
     void Process();

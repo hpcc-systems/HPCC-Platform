@@ -88,14 +88,14 @@ public:
         return qname;
     }
 
-    void loadFile(const char *srcpath, const char *srcfile, const char *srcext="", IProperties *versions=NULL, bool loadincludes=false)
+    void loadFile(const char *srcpath, const char *srcfile, const char *srcext="", IProperties *versions=NULL, bool loadincludes=false, bool isIncludedESDL=false)
     {
         if (!srcfile || !*srcfile)
             throw MakeStringException(-1, "EsdlInclude no file name");
 
         if (!included.getValue(srcfile))
         {
-            DBGLOG("ESDL Loading include: %s", srcfile);
+            DBGLOG("ESDL Loading: %s", srcfile);
 
             StringBuffer fileName(srcpath);
             fileName.append(srcfile);
@@ -106,7 +106,7 @@ public:
             {
                 fileName.append(srcext);
                 StringBuffer esxml;
-                EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, false, true, true);
+                EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, false, true, true, isIncludedESDL);
                 src = createPTreeFromXMLString(esxml, 0);
             }
             else if (!srcext || !*srcext || stricmp(srcext, XML_FILE_EXTENTION)==0)
@@ -178,7 +178,7 @@ public:
                 ForEachItemIn(idx, add_includes)
                 {
                     const char *file=add_includes.item(idx);
-                    loadFile(srcpath, file, srcext, versions, loadincludes);
+                    loadFile(srcpath, file, srcext, versions, loadincludes, true);
                 }
             }
         }
@@ -281,8 +281,7 @@ public:
 
         unsigned start = msTick();
         EsdlIndexedPropertyTrees trees;
-        trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, optGenerateAllIncludes);
-        //trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, true);
+        trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, optGenerateAllIncludes, false);
         DBGLOG("Time taken to load ESDL files %u", msTick() - start);
 
         StringBuffer idxxml("<types><type name=\"StringArrayItem\" src=\"share\"/>");

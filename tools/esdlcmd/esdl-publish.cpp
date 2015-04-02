@@ -162,7 +162,7 @@ public:
         printf("\nUsage:\n\n"
                 "esdl publish <servicename> <filename.(ecm|esdl)> [command options]\n\n"
                 "   <servicename>               The ESDL defined ESP service to publish\n"
-                "   <filename.(ecm|esdl)>       The ESDL file containing service definition\n"
+                "   <filename.(ecm|esdl|xml)>   The ESDL file containing service definition in esdl format (.ecm |.esdl) or in esxdl format (.xml) \n"
                 "Options (use option flag followed by appropriate value):\n"
                 "   --overwrite                 Overwrite the latest version of this ESDL Definition\n"
                 );
@@ -180,7 +180,7 @@ public:
 
        //First x parameter's order is fixed.
        //<servicename>
-       //<filename.(ecm|esdl)>       The ESDL file containing service definition\n"
+       //<filename.(ecm|esdl|xml)>       The ESDL file containing service definition\n"
        for (int cur = 0; cur < 2 && !iter.done(); cur++)
        {
           const char *arg = iter.query();
