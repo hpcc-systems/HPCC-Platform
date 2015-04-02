@@ -237,7 +237,7 @@ public:
         data->packetlength = lengthRemaining;
         const byte *finger = (const byte *) (data + 1);
         lengthRemaining -= sizeof(RoxiePacketHeader);
-        if (data->activityId == ROXIE_FILECALLBACK || data->activityId == ROXIE_DEBUGCALLBACK)
+        if (data->activityId == ROXIE_FILECALLBACK || data->activityId == ROXIE_DEBUGCALLBACK || data->retries == QUERY_ABORTED)
         {
             continuationData = NULL;
             continuationLength = 0;
@@ -2214,7 +2214,7 @@ public:
 
 interface ILocalMessageCollator : extends IMessageCollator
 {
-    virtual void enqueueMessage(void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen) = 0;
+    virtual void enqueueMessage(bool outOfBand, void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen) = 0;
 };
 
 interface ILocalReceiveManager : extends IReceiveManager
@@ -2223,16 +2223,18 @@ interface ILocalReceiveManager : extends IReceiveManager
 };
 
 
+
 class LocalMessagePacker : public CDummyMessagePacker
 {
     MemoryBuffer meta;
     MemoryBuffer header;
     Linked<ILocalReceiveManager> rm;
     ruid_t id;
+    bool outOfBand;
 
 public:
     IMPLEMENT_IINTERFACE;
-    LocalMessagePacker(RoxiePacketHeader &_header, ILocalReceiveManager *_rm) : rm(_rm)
+    LocalMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm) : rm(_rm), outOfBand(_outOfBand)
     {
         id = _header.uid;
         header.append(sizeof(RoxiePacketHeader), &_header);
@@ -2382,10 +2384,13 @@ public:
         sem.interrupt(E);
     }
 
-    virtual void enqueueMessage(void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen)
+    virtual void enqueueMessage(bool outOfBand, void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen)
     {
         CriticalBlock c(crit);
-        pending.enqueue(new CLocalMessageResult(data, datalen, meta, metalen, header, headerlen));
+        if (outOfBand)
+            pending.enqueueHead(new CLocalMessageResult(data, datalen, meta, metalen, header, headerlen));
+        else
+            pending.enqueue(new CLocalMessageResult(data, datalen, meta, metalen, header, headerlen));
         sem.signal();
         totalBytesReceived += datalen + metalen + headerlen;
     }
@@ -2399,7 +2404,6 @@ public:
 class RoxieLocalReceiveManager : public CInterface, implements ILocalReceiveManager
 {
     MapXToMyClass<ruid_t, ruid_t, ILocalMessageCollator> collators;
-    Owned<IRowManager> rowManager;
     CriticalSection crit;
     Owned<StringContextLogger> logctx;
     Linked<IMessageCollator> defaultCollator;
@@ -2412,10 +2416,8 @@ public:
 
     virtual IMessageCollator *createMessageCollator(IRowManager *manager, ruid_t ruid)
     {
+        IMessageCollator *collator = new CLocalMessageCollator(manager, ruid);
         CriticalBlock b(crit);
-        if (!rowManager)
-            rowManager.setown(roxiemem::createRowManager(0, NULL, *logctx, NULL, false)); // MORE - should not really use default limits
-        IMessageCollator *collator = new CLocalMessageCollator(rowManager, ruid); // MORE - is this right - why two rowManagers and why pass this one (not the other) ?
         collators.setValue(ruid, collator);
         return collator;
     }
@@ -2455,7 +2457,7 @@ void LocalMessagePacker::flush(bool last_message)
             unsigned datalen = data.length();
             unsigned metalen = meta.length();
             unsigned headerlen = header.length();
-            collator->enqueueMessage(data.detach(), datalen, meta.detach(), metalen, header.detach(), headerlen);
+            collator->enqueueMessage(outOfBand, data.detach(), datalen, meta.detach(), metalen, header.detach(), headerlen);
         }
         // otherwise Roxie server is no longer interested and we can simply discard
     }
@@ -2483,7 +2485,6 @@ CLocalMessageCollator::~CLocalMessageCollator()
 
 class RoxieLocalQueueManager : public RoxieReceiverBase
 {
-    Linked<ISendManager> sendManager;
     Linked<RoxieLocalReceiveManager> receiveManager;
 
 public:
@@ -2520,6 +2521,7 @@ public:
                 RoxiePacketHeader newHeader(header, ROXIE_ALIVE);
                 Owned<IMessagePacker> output = createOutputStream(newHeader, true, logctx);
                 output->flush(true);
+                return; // No point sending the retry in localSlave mode
             }
             RoxieQueue *targetQueue;
 #ifdef ROXIE_SLA_LOGIC
@@ -2555,19 +2557,39 @@ public:
 
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx)
     {
-        // MORE - should really have some code here? - no one to alert about the abort
-        //UNIMPLEMENTED;
+        MTIME_SECTION(queryActiveTimer(), "RoxieLocalQueueManager::sendAbort");
+        RoxiePacketHeader abortHeader(header, header.activityId & ROXIE_PRIORITY_MASK);
+        abortHeader.retries = QUERY_ABORTED;
+        if (logctx.queryTraceLevel() > 8)
+        {
+            StringBuffer s; logctx.CTXLOG("Sending ABORT packet %s", abortHeader.toString(s).str());
+        }
+        MemoryBuffer data;
+        data.append(sizeof(abortHeader), &abortHeader);
+        Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
+        sendPacket(packet, logctx);
+        atomic_inc(&abortsSent);
     }
 
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx)
     {
-        // MORE - should really have some code here
-        //UNIMPLEMENTED;
+        MTIME_SECTION(queryActiveTimer(), "RoxieLocalQueueManager::sendAbortCallback");
+        RoxiePacketHeader abortHeader(header, ROXIE_FILECALLBACK);
+        abortHeader.retries = QUERY_ABORTED;
+        MemoryBuffer data;
+        data.append(sizeof(abortHeader), &abortHeader).append(lfn);
+        if (logctx.queryTraceLevel() > 5)
+        {
+            StringBuffer s; logctx.CTXLOG("Sending ABORT FILECALLBACK packet %s for file %s", abortHeader.toString(s).str(), lfn);
+        }
+        Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
+        sendPacket(packet, logctx);
+        atomic_inc(&abortsSent);
     }
 
     virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IRoxieContextLogger &logctx)
     {
-        return new LocalMessagePacker(header, receiveManager);
+        return new LocalMessagePacker(header, outOfBand, receiveManager);
     }
 
     virtual IReceiveManager *queryReceiveManager()
@@ -2577,8 +2599,8 @@ public:
 
     virtual bool replyPending(RoxiePacketHeader &header)
     {
-        // MORE - should really have some code here!
-        return false;
+        // MORE - should really have some code here! But returning true is a reasonable approximation.
+        return true;
     }
 
     virtual bool abortCompleted(RoxiePacketHeader &header)
@@ -2586,6 +2608,9 @@ public:
         // MORE - should really have some code here!
         return false;
     }
+
+
+
 };
 
 IRoxieOutputQueueManager *ROQ;
