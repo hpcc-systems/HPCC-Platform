@@ -2569,42 +2569,6 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
     return expr->cloneAllAnnotations(grouped);
 }
 
-static IHqlExpression * getNonThorSortedJoinInput(IHqlExpression * joinExpr, IHqlExpression * dataset, const HqlExprArray & sorts, bool implicitSubSort)
-{
-    if (!sorts.length())
-        return LINK(dataset);
-
-    LinkedHqlExpr expr = dataset;
-    if (isGrouped(expr))
-    {
-        expr.setown(createDataset(no_group, LINK(expr), NULL));
-        expr.setown(cloneInheritedAnnotations(joinExpr, expr));
-    }
-
-    // if already sorted or grouped, use it!
-    OwnedHqlExpr groupOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-    groupOrder.setown(replaceSelector(groupOrder, queryActiveTableSelector(), expr->queryNormalizedSelector()));
-
-    //not used for thor, so sort can be local
-    OwnedHqlExpr table = ensureSorted(expr, groupOrder, joinExpr, false, true, true, implicitSubSort, false);
-    if (table != expr)
-        table.setown(cloneInheritedAnnotations(joinExpr, table));
-
-    OwnedHqlExpr group = createDatasetF(no_group, table.getClear(), LINK(groupOrder), NULL);
-    return cloneInheritedAnnotations(joinExpr, group);
-}
-
-
-static bool sameOrGrouped(IHqlExpression * newLeft, IHqlExpression * oldLeft)
-{
-    if (newLeft->queryBody() == oldLeft->queryBody())
-        return true;
-    if (newLeft->getOperator() != no_group)
-        return false;
-    newLeft = newLeft->queryChild(0);
-    return (newLeft->queryBody() == oldLeft->queryBody());
-}
-
 static bool canReorderMatchExistingLocalSort(HqlExprArray & newElements1, HqlExprArray & newElements2, IHqlExpression * ds1, Shared<IHqlExpression> & ds2, const HqlExprArray & elements1, const HqlExprArray & elements2, bool canSubSort, bool isLocal, bool alwaysLocal)
 {
     newElements1.kill();
@@ -3047,28 +3011,6 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                 args.append(*createAttribute(lookupAtom));
                 return expr->clone(args);
             }
-        }
-
-        //Ensure that inputs to the activities in hthor/roxie are sorted and grouped.  (Should really be done in the engines)
-        OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, joinInfo.queryLeftSort(), options.implicitSubSort);
-        OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, joinInfo.queryRightSort(), options.implicitSubSort);
-        try
-        {
-            if ((leftDs != newLeft) || (rightDs != newRight))
-            {
-                HqlExprArray args;
-                args.append(*newLeft.getClear());
-                args.append(*newRight.getClear());
-                unwindChildren(args, expr, 2);
-                args.append(*createAttribute(_normalized_Atom));
-                return expr->clone(args);
-            }
-        }
-        catch (IException * e)
-        {
-            //Couldn't work out the sort orders - shouldn't be fatal because may constant fold later.
-            EXCLOG(e, "Transform");
-            e->Release();
         }
     }
 
