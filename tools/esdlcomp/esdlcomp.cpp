@@ -1088,7 +1088,6 @@ char* getTargetBase(const char* outDir, const char* src)
 
 ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir, bool outputIncludes_, bool isIncludedEsdl)
 {
-    //includedEsdl = includedEsdl_;
     outputIncludes = outputIncludes_;
     modules = NULL;
     enums = NULL;
