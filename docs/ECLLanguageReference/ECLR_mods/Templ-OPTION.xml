@@ -461,6 +461,22 @@
               needed before Skew errors/warnings are generated. Overrides any
               ECL THRESHOLD(nn) attribute values in the current job.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>applyInstantEclTransformations</emphasis></entry>
+
+              <entry>Default false</entry>
+
+              <entry>Limit non-file outputs with a CHOOSEN</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>applyInstantEclTransformationsLimit</emphasis></entry>
+
+              <entry>Default 100</entry>
+
+              <entry>Number of records to limit to</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
@@ -642,6 +658,38 @@
 
               <entry>If true, look for common sub-expressions in
               TRANSFORMs/filters.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>noteRecordSizeInGraph</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Add estimates of record sizes to the graph</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>showActivitySizeInGraph</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Show estimates of generated c++ size in the graph</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>showMetaInGraph</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Add distribution/sort orders to the graph</entry>
+            </row>
+
+            <row>
+              <entry><emphasis> showRecordCountInGraph</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Show estimates of record counts in the graph </entry>
             </row>
           </tbody>
         </tgroup>
@@ -1162,6 +1210,56 @@
 
               <entry>If false, disables attempted aggressive constant value
               optimizations.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>exportDependencies</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Generate information about inter-definition
+              dependencies</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maxCompileThreads</emphasis></entry>
+
+              <entry>Default 2</entry>
+
+              <entry>Number of compiler instances to compile the c++</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>reportCppWarnings</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Report warnings from c++ compilation</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>saveCppTempFiles</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Retain the generated c++ files</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spanMultipleCpp</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Generate a work unit in multiple c++ files </entry>
+            </row>
+
+            <row>
+              <entry><emphasis>activitiesPerCpp</emphasis></entry>
+
+              <entry>Default 1</entry>
+
+              <entry>Number of activities in each c++ file (requires
+              spanMultipleCpp)</entry>
             </row>
           </tbody>
         </tgroup>
