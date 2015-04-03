@@ -995,6 +995,10 @@ Param
      CurParam->flags |= PF_IN;
  }
  |
+ {
+   //There was no Param, make sure CurParam is nulled out
+   CurParam = NULL;
+ }
  ;
 
 TypeModifiers

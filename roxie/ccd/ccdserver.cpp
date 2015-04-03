@@ -4272,7 +4272,7 @@ public:
             }
             else
             {
-                if (!anyActivity)
+                if (!anyActivity && !localSlave)
                 {
                     activity.queryLogCtx().CTXLOG("Input has stalled - retry required?");
                     retryPending();

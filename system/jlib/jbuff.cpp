@@ -287,10 +287,11 @@ void *MemoryBuffer::insertDirect(unsigned offset, size32_t insertLen)
 }
 
 
-void MemoryBuffer::ensureCapacity(unsigned max)
+void * MemoryBuffer::ensureCapacity(unsigned max)
 {
     if (maxLen - curLen < max)
         _realloc(curLen + max);
+    return buffer + curLen;
 }
 
 void MemoryBuffer::kill()
