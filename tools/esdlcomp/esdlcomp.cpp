@@ -1098,11 +1098,11 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
     methods=NULL;
     versions = NULL;
 
-    filename = strdup(sourceFile);
-    size_t l = strlen(filename);
-
     StringBuffer ext;
     splitFilename(sourceFile, NULL, &srcDir, &name, &ext);
+
+    filename = strdup(sourceFile);
+    size_t l = strlen(filename);
 
     yyin = fopen(sourceFile, "rt");
     if (!yyin)
