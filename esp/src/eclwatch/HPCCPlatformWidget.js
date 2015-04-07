@@ -35,7 +35,6 @@ define([
     "hpcc/ESPActivity",
     "hpcc/ws_account",
     "hpcc/ws_access",
-    "hpcc/WsDfu",
     "hpcc/WsSMC",
     "hpcc/GraphWidget",
     "hpcc/DelayLoadWidget",
@@ -63,7 +62,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, domGeo, cookie,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget, DelayLoadWidget,
+                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, GraphWidget, DelayLoadWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -147,23 +146,7 @@ define([
         },
 
         refreshUserName: function () {
-            var userDisplay = this.userName ? this.userName : "";
-
-            var total = 0;
-            var myTotal = 0;
-            arrayUtil.forEach(this.spaceUsage, function (item, idx) {
-                var itemTotal = item.TotalSize.split(",").join("");
-                total += parseInt(itemTotal);
-                if (item.Name === this.userName) {
-                    myTotal = parseInt(itemTotal);
-                }
-            }, this);
-            this.userUsage = (myTotal / total) * 100;
-
-            if (this.userUsage) {
-                userDisplay += " (" + (Math.round(this.userUsage * 100) / 100) + "%)"
-            }
-            dom.byId(this.id + "UserID").innerHTML = userDisplay;
+            dom.byId(this.id + "UserID").innerHTML = this.userName ? this.userName : "";
         },
 
         init: function (params) {
@@ -199,17 +182,6 @@ define([
                             }
                         }
                     }
-                }
-            });
-
-            WsDfu.DFUSpace({
-                request: {
-                    CountBy: "Owner"
-                }
-            }).then(function (response) {
-                if (lang.exists("DFUSpaceResponse.DFUSpaceItems.DFUSpaceItem", response)) {
-                    context.spaceUsage = response.DFUSpaceResponse.DFUSpaceItems.DFUSpaceItem;
-                    context.refreshUserName();
                 }
             });
 
