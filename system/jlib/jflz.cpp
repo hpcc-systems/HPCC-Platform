@@ -637,6 +637,8 @@ class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
         if (trailing)
             return;
         size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
+        if (toflush == 0)
+            return;
         assertex(outlen+sizeof(size32_t)*2+toflush+fastlzSlack(toflush)<=blksz);
         size32_t *cmpsize = (size32_t *)(outbuf+outlen);
         byte *out = (byte *)(cmpsize+1);
@@ -791,7 +793,7 @@ public:
     }
 
     virtual void expand(void *buf)
-{
+    {
         if (!outlen)
             return;
         if (buf) {
