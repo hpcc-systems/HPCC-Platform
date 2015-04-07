@@ -663,7 +663,7 @@
             <row>
               <entry><emphasis>noteRecordSizeInGraph</emphasis></entry>
 
-              <entry>Default: false</entry>
+              <entry>Default: true</entry>
 
               <entry>Add estimates of record sizes to the graph</entry>
             </row>
@@ -685,11 +685,11 @@
             </row>
 
             <row>
-              <entry><emphasis> showRecordCountInGraph</emphasis></entry>
+              <entry><emphasis>showRecordCountInGraph</emphasis></entry>
 
-              <entry>Default: false</entry>
+              <entry>Default: true</entry>
 
-              <entry>Show estimates of record counts in the graph </entry>
+              <entry>Show estimates of record counts in the graph</entry>
             </row>
           </tbody>
         </tgroup>
@@ -1224,7 +1224,7 @@
             <row>
               <entry><emphasis>maxCompileThreads</emphasis></entry>
 
-              <entry>Default 2</entry>
+              <entry>Default 4 for eclccserver and 1 for eclcc </entry>
 
               <entry>Number of compiler instances to compile the c++</entry>
             </row>
@@ -1248,15 +1248,15 @@
             <row>
               <entry><emphasis>spanMultipleCpp</emphasis></entry>
 
-              <entry>Default: false</entry>
+              <entry>Default: true</entry>
 
-              <entry>Generate a work unit in multiple c++ files </entry>
+              <entry>Generate a work unit in multiple c++ files</entry>
             </row>
 
             <row>
               <entry><emphasis>activitiesPerCpp</emphasis></entry>
 
-              <entry>Default 1</entry>
+              <entry>Default 500 for Linux or 800 for Windows</entry>
 
               <entry>Number of activities in each c++ file (requires
               spanMultipleCpp)</entry>
