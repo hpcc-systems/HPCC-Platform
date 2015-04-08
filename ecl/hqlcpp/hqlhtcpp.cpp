@@ -8001,7 +8001,11 @@ void HqlCppTranslator::doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget 
             case type_dictionary:
             case type_table:
             case type_groupedtable:
-                UNIMPLEMENTED;
+                {
+                    StringBuffer typeName;
+                    getFriendlyTypeStr(leftType, typeName);
+                    throwError2(HQLERR_UnsupportedRowDiffType, typeName.str(), expr->queryId()->str());
+                }
             }
 
             StringBuffer fullName;
