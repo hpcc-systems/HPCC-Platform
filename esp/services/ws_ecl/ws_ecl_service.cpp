@@ -282,7 +282,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         }
         if (list.length())
         {
-            Owned<RoxieConnEndpoint> sf = new RoxieConnEndpoint(list.str(), !loadBalanced, includeTargetInURL);
+            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL);
             connMap.setValue(target.str(), sf.get());
         }
     }
@@ -1847,7 +1847,7 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
     SocketEndpoint ep;
     try
     {
-        RoxieConnEndpoint *conn = wsecl->connMap.getValue(target);
+        ISmartSocketFactory *conn = wsecl->connMap.getValue(target);
         if (!conn)
             throw MakeStringException(-1, "roxie target cluster not mapped: %s", target);
         ep = conn->nextEndpoint();
@@ -1855,7 +1855,7 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
         StringBuffer url("http://");
         ep.getIpText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
-        if (conn->includeTargetInURL)
+        if (static_cast<RoxieSocketFactory*>(conn)->includeTargetInURL)
             url.append(target);
         if (!trim)
             url.append("?.trim=0");

@@ -87,12 +87,12 @@ typedef enum wsEclTypes_
 
 } wsEclType;
 
-class RoxieConnEndpoint : public CSmartSocketFactory
+class RoxieSocketFactory : public CSmartSocketFactory
 {
 public:
     bool includeTargetInURL;
 
-    RoxieConnEndpoint(const char *_socklist, bool _retry, bool includeTarget) : CSmartSocketFactory(_socklist, _retry), includeTargetInURL(includeTarget)
+    RoxieSocketFactory(const char *_socklist, bool _retry, bool includeTarget) : CSmartSocketFactory(_socklist, _retry), includeTargetInURL(includeTarget)
     {
     }
 };
@@ -101,7 +101,7 @@ class CWsEclService : public CInterface,
     implements IEspService
 {
 public:
-    MapStringToMyClassViaBase<RoxieConnEndpoint, ISmartSocketFactory> connMap;
+    MapStringToMyClass<ISmartSocketFactory> connMap;
     StringArray targets;
     StringAttr auth_method;
     StringAttr portal_URL;
