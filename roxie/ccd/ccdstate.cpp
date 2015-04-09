@@ -1076,6 +1076,8 @@ public:
 
     virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const
     {
+        if (querySet && querySet->length() && !streq(querySet->str(), querySetName))
+            return NULL;
         IQueryFactory *ret;
         ret = aliases.getValue(id);
         if (ret && logctx.queryTraceLevel() > 5)
@@ -1569,6 +1571,8 @@ public:
 
     IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
     {
+        if (querySet && querySet->length() && !allQuerySetNames.contains(querySet->str()))
+            throw MakeStringException(ROXIE_INVALID_TARGET, "Target %s not found", querySet->str());
         ForEachItemIn(idx, allQueryPackages)
         {
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();

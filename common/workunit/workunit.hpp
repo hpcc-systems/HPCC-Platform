@@ -44,9 +44,9 @@
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
 typedef wchar_t UChar;
-#else //__WIN32
+#else //_WIN32
 typedef unsigned short UChar;
-#endif //__WIN32
+#endif //_WIN32
 
 
 // error codes

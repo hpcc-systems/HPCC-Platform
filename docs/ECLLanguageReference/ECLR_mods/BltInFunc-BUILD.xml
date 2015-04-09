@@ -4,7 +4,7 @@
 <sect1 id="BUILD">
   <title>BUILD</title>
 
-  <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
+  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis
   role="bold"> ] BUILD<indexterm>
       <primary>BUILD</primary>
     </indexterm>(</emphasis><emphasis>baserecset</emphasis><emphasis
@@ -15,7 +15,7 @@
 
   <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
   :=<emphasis role="bold">
-  ]BUILD(</emphasis><emphasis>baserecset</emphasis><emphasis
+  ] BUILD(</emphasis><emphasis>baserecset</emphasis><emphasis
   role="bold">,</emphasis><emphasis> keys</emphasis><emphasis
   role="bold">,</emphasis><emphasis> payload</emphasis><emphasis role="bold">,
   </emphasis><emphasis>indexfile </emphasis><emphasis role="bold">[,
