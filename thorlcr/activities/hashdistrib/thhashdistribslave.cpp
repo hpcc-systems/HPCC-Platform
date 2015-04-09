@@ -562,6 +562,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             if (target->getSenderFinished())
             {
                 HDSendPrintLog2("CSender::add disposing of bucket [finished(%d)]", dest);
+                decTotal(bucket->querySize());
                 bucket->Release();
             }
             else
@@ -688,7 +689,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                         loop
                         {
                             if (timer.elapsedCycles() >= queryOneSecCycles()*10)
-                                owner.ActPrintLog("HD sender, waiting for space, inactive writers = %d, totalSz = %d", queryInactiveWriters(), queryTotalSz());
+                                owner.ActPrintLog("HD sender, waiting for space, inactive writers = %d, totalSz = %d, numFinished = %d", queryInactiveWriters(), queryTotalSz(), atomic_read(&numFinished));
                             timer.reset();
 
                             if (senderFullSem.wait(10000))
