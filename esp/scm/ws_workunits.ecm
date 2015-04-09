@@ -20,6 +20,21 @@
 
 EspInclude(common);
 
+ESPenum ECLWUActions : string
+{
+    Abort("Abort"),
+    Delete("Delete"),
+    EventDeschedule("Deschedule"),
+    EventReschedule("Reschedule"),
+    Pause("Pause"),
+    PauseNow("PauseNow"),
+    Protect("Protect"),
+    Unprotect("Unprotect"),
+    Restore("Restore"),
+    Resume("Resume"),
+    SetToFailed("SetToFailed"),
+};
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -453,7 +468,7 @@ ESPresponse [exceptions_inline] WUDeleteResponse
 ESPrequest [nil_remove] WUActionRequest
 {
     ESParray<string> Wuids;
-    string ActionType;
+    ESPenum ECLWUActions ActionType;
 
     string Cluster;
     string Owner;

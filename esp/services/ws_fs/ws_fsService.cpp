@@ -1531,6 +1531,9 @@ bool markWUFailed(IDFUWorkUnitFactory *f, const char *wuid)
     return false;
 }
 
+static unsigned NumOfDFUWUActionNames = 5;
+static const char *DFUWUActionNames[] = { "Delete", "Protect" , "Unprotect" , "Restore" , "SetToFailed" };
+
 bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsActionRequest &req, IEspDFUWorkunitsActionResponse &resp)
 {
     try
@@ -1538,49 +1541,22 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
         if (!context.validateFeatureAccess(DFU_WU_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to update DFU workunit. Permission denied.");
 
-        bool bAllSuccess = true;
-        IArrayOf<IEspDFUActionResult> results;
-        const char* action = req.getType();
-        if(!action || !*action || !strcmp(action, "Delete"))
+        CDFUWUActions action = req.getType();
+        if (action == DFUWUActions_Undefined)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Action not defined.");
+
+        StringArray& wuids = req.getWuids();
+        if (!wuids.ordinality())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit not defined.");
+
+        Owned<INode> node;
+        Owned<ISashaCommand> cmd;
+        StringBuffer sashaAddress;
+        if (action == CDFUWUActions_Restore)
         {
-            Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-            StringArray & wuids = req.getWuids();
-            for(unsigned i = 0; i < wuids.ordinality(); ++i)
-            {
-                Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
-                res->setID(wuids.item(i));
-                res->setAction("Delete");
-                res->setResult("Success");
-
-                try
-                {
-                    if (markWUFailed(factory, wuids.item(i)))
-                    {
-                        if (!factory->deleteWorkUnit(wuids.item(i)))
-                            throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "Failed in deleting workunit %s.", wuids.item(i));
-                    }
-                }
-                catch (IException *e)
-                {
-                    bAllSuccess = false;
-                    StringBuffer eMsg;
-                    eMsg = e->errorMessage(eMsg);
-                    e->Release();
-
-                    StringBuffer failedMsg = "Failed: ";
-                    failedMsg.append(eMsg);
-                    res->setResult(failedMsg.str());
-                }
-
-                results.append(*res.getLink());
-            }
-        }
-        else if (!strcmp(action, "Restore"))
-        {
-            StringBuffer sashaAddress;
             IArrayOf<IConstTpSashaServer> sashaservers;
             CTpWrapper dummy;
-            dummy.getTpSashaServers(sashaservers);  
+            dummy.getTpSashaServers(sashaservers);
             ForEachItemIn(i, sashaservers)
             {
                 IConstTpSashaServer& sashaserver = sashaservers.item(i);
@@ -1593,155 +1569,79 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
             }
 
             SocketEndpoint ep(sashaAddress.str(), DEFAULT_SASHA_PORT);
-            Owned<INode> node = createINode(ep);
-            Owned<ISashaCommand> cmd = createSashaCommand();
+            node.setown(createINode(ep));
+            cmd.setown(createSashaCommand());
             cmd->setAction(SCA_RESTORE);
-            cmd->setDFU(true);  
-
-            StringArray & wuids = req.getWuids();
-            for(unsigned ii = 0; ii < wuids.ordinality(); ++ii)
-            {
-                StringBuffer msg;
-                const char *wuid = wuids.item(ii);
-                cmd->addId(wuid);
-
-                if (!cmd->send(node,1*60*1000)) 
-                {
-                    throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to archive server at %s.",sashaAddress.str());
-                }
-                if (cmd->numIds()==0) 
-                {
-                    bAllSuccess = false;
-
-                    msg.appendf("Restore failed for %s", wuid);
-                }
-                else
-                {
-                    StringBuffer reply;
-                    cmd->getId(0,reply);
-                    msg.appendf("Restore: %s, reply: %s", wuid, reply.str());
-                }
-
-                Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
-                res->setID(wuid);
-                res->setAction("Restore");
-                res->setResult(msg.str());
-
-                results.append(*res.getLink());
-            }
+            cmd->setDFU(true);
         }
-        else if(!strcmp(action, "Protect"))
+
+        IArrayOf<IEspDFUActionResult> results;
+        Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+        for(unsigned i = 0; i < wuids.ordinality(); ++i)
         {
-            Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-            StringArray & wuids = req.getWuids();
-            for(unsigned i = 0; i < wuids.ordinality(); ++i)
+            const char* wuid = wuids.item(i);
+
+            Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
+            res->setID(wuid);
+            res->setAction((action < NumOfDFUWUActionNames) ? DFUWUActionNames[action] : "Unknown");
+
+            try
             {
-                Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
-                res->setID(wuids.item(i));
-                res->setAction("Protect");
-                res->setResult("Success");
-
-                try
+                switch (action)
                 {
-                    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-                    Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
-                    if(!wu.get())
-                        continue;
-
-                    wu->protect(true);
-                    wu->commit();
-                }
-                catch (IException *e)
-                {
-                    bAllSuccess = false;
-                    StringBuffer eMsg;
-                    eMsg = e->errorMessage(eMsg);
-                    e->Release();
-
-                    StringBuffer failedMsg = "Failed: ";
-                    failedMsg.append(eMsg);
-                    res->setResult(failedMsg.str());
-                }
-
-                results.append(*res.getLink());
-            }
-        }
-        else if(!strcmp(action, "Unprotect"))
-        {
-            Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-            StringArray & wuids = req.getWuids();
-            for(unsigned i = 0; i < wuids.ordinality(); ++i)
-            {
-                Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
-                res->setID(wuids.item(i));
-                res->setAction("Unprotect");
-                res->setResult("Success");
-
-                try
-                {
-                    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-                    Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
-                    if(!wu.get())
-                        continue;
-
-                    wu->protect(false);
-                    wu->commit();
-                }
-                catch (IException *e)
-                {
-                    bAllSuccess = false;
-                    StringBuffer eMsg;
-                    eMsg = e->errorMessage(eMsg);
-                    e->Release();
-
-                    StringBuffer failedMsg = "Failed: ";
-                    failedMsg.append(eMsg);
-                    res->setResult(failedMsg.str());
-                }
-
-                results.append(*res.getLink());
-            }
-        }
-        else if(!strcmp(action, "SetToFailed"))
-        {
-            Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-            StringArray & wuids = req.getWuids();
-            for(unsigned i = 0; i < wuids.ordinality(); ++i)
-            {
-                Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
-                res->setID(wuids.item(i));
-                res->setAction("SetToFailed");
-                res->setResult("Success");
-
-                try
-                {
-                    Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
-                    if(wu)
+                case CDFUWUActions_Delete:
+                    if (!markWUFailed(factory, wuid))
+                        throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "Failed to mark workunit failed.");
+                    if (!factory->deleteWorkUnit(wuid))
+                        throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "Failed in deleting workunit.");
+                    res->setResult("Success");
+                    break;
+                case CDFUWUActions_Restore:
+                    cmd->addId(wuid);
+                    if (!cmd->send(node,1*60*1000))
+                        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to archive server at %s.",sashaAddress.str());
                     {
-                        IDFUprogress *prog = wu->queryUpdateProgress();
-                        if (prog)
-                        {
-                            prog->setState(DFUstate_failed);
-                            wu->commit();
-                        }
+                        StringBuffer reply = "Restore ID: ";
+                        if (!cmd->getId(0, reply))
+                            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Failed to get ID.");
+                        res->setResult(reply.str());
                     }
+                    break;
+                case CDFUWUActions_Protect:
+                case CDFUWUActions_Unprotect:
+                case CDFUWUActions_SetToFailed:
+                    Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(wuid);
+                    if(!wu.get())
+                        throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Failed in calling updateWorkUnit().");
+                    switch (action)
+                    {
+                    case CDFUWUActions_Protect:
+                        wu->protect(true);
+                        break;
+                    case CDFUWUActions_Unprotect:
+                        wu->protect(false);
+                        break;
+                    case CDFUWUActions_SetToFailed:
+                        IDFUprogress *prog = wu->queryUpdateProgress();
+                        if (!prog)
+                            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Failed in calling queryUpdateProgress().");
+                        prog->setState(DFUstate_failed);
+                        break;
+                    }
+                    wu->commit();
+                    res->setResult("Success");
+                    break;
                 }
-                catch (IException *e)
-                {
-                    bAllSuccess = false;
-                    StringBuffer eMsg;
-                    eMsg = e->errorMessage(eMsg);
-                    e->Release();
-
-                    StringBuffer failedMsg = "Failed: ";
-                    failedMsg.append(eMsg);
-                    res->setResult(failedMsg.str());
-                }
-                results.append(*res.getLink());
             }
+            catch (IException *e)
+            {
+                StringBuffer eMsg, failedMsg("Failed: ");
+                res->setResult(failedMsg.append(e->errorMessage(eMsg)).str());
+                e->Release();
+            }
+
+            results.append(*res.getLink());
         }
-        else
-            throw MakeStringException(ECLWATCH_INVALID_ACTION, "Unknown action type %s", action);
 
         resp.setDFUActionResults(results);
     }

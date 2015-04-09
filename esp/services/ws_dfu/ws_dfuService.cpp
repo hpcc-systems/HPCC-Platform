@@ -1331,6 +1331,10 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to update Logical Files. Permission denied.");
 
+        CDFUArrayActions action = req.getType();
+        if (action == DFUArrayActions_Undefined)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Action not defined.");
+
         double version = context.getClientVersion();
         if (version > 1.03)
         {
@@ -1344,31 +1348,10 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             }
         }
 
-        if (strcmp(req.getType(), Action_Delete) == 0)
-        {
-            /*StringArray roxieQueries;
-            checkRoxieQueryFilesOnDelete(req, roxieQueries);
-            if (roxieQueries.length() > 0)
-            {
-                returnStr.append("<Message><Value>Cannot delete the files because of the following roxie queries: ");
-                for(int i = 0; i < roxieQueries.length();i++)
-                {
-                    const char* query = roxieQueries.item(i);
-                    if(!query || !*query)
-                        continue;
-
-                    if (i==0)
-                        returnStr.append(query);
-                    else
-                        returnStr.appendf(",%s", query);
-                }
-                returnStr.append("</Value></Message>");
-                resp.setDFUArrayActionResult(returnStr.str());
-                return true;
-            }*/
+        if (action == CDFUArrayActions_Delete)
             return  DFUDeleteFiles(context, req, resp);
-        }
 
+        //the code below is only for legacy ECLWatch. Other application should use AddtoSuperfile.
         StringBuffer username;
         context.getUserID(username);
 
@@ -1380,7 +1363,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             userdesc->set(username.str(), passwd);
         }
 
-        StringBuffer returnStr;
+        StringBuffer errorStr, subfiles;
         for(unsigned i = 0; i < req.getLogicalFiles().length();i++)
         {
             const char* file = req.getLogicalFiles().item(i);
@@ -1401,79 +1384,50 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             strncpy(curfile, file, len);
             curfile[len] = 0;
             
-            DBGLOG("CWsDfuEx::onDFUArrayAction User=%s Action=%s File=%s",username.str(),req.getType(), file);
             try
             {
-                onDFUAction(userdesc.get(), curfile, cluster, req.getType(), returnStr);
+                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(curfile, userdesc.get(), true);
+                if (df)
+                {
+                    if (subfiles.length() > 0)
+                        subfiles.append(",");
+                    subfiles.append(curfile);
+                }
+                else
+                    errorStr.appendf("<Message><Value>%s not found</Value></Message>", curfile);
             }
             catch(IException* e)
             {
                 StringBuffer emsg;
                 e->errorMessage(emsg);
-                if((e->errorCode() == DFSERR_CreateAccessDenied) && (req.getType() != NULL))
-                {
-                    if (strcmp(req.getType(), Action_AddtoSuperfile) == 0)
-                    {
-                        emsg.replaceString("Create ", "AddtoSuperfile ");               
-                    }
-                }
+                if (e->errorCode() == DFSERR_CreateAccessDenied)
+                    emsg.replaceString("Create ", "AddtoSuperfile ");
 
-                returnStr.appendf("<Message><Value>%s</Value></Message>", emsg.str());
+                errorStr.appendf("<Message><Value>%s for %s</Value></Message>", emsg.str(), curfile);
                 e->Release();
             }
             catch(...)
             {
-                returnStr.appendf("<Message><Value>Unknown exception onDFUArrayAction %s</Value></Message>", curfile);
+                errorStr.appendf("<Message><Value>Unknown exception for %s</Value></Message>", curfile);
             }
             delete [] curfile;
         }
 
-        if (strcmp(Action_AddtoSuperfile ,req.getType()) == 0)
+        if (errorStr.length())
         {
-            returnStr.replaceString("#", "%23");
-            if (version < 1.18)
-                resp.setRedirectUrl(StringBuffer("/WsDFU/AddtoSuperfile?Subfiles=").append(returnStr.str()));
-            else
-            {
-                resp.setRedirectTo(returnStr.str());
-            }
+            resp.setDFUArrayActionResult(errorStr.str());
+            return false;
         }
+
+        if (version < 1.18)
+            resp.setRedirectUrl(StringBuffer("/WsDFU/AddtoSuperfile?Subfiles=").append(subfiles.str()));
         else
-        {
-            resp.setDFUArrayActionResult(returnStr.str());
-        }
+            resp.setRedirectTo(subfiles.str());
     }
     catch(IException* e)
     {   
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
-    return true;
-}
-
-bool CWsDfuEx::onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, const char* ClusterName, const char* ActionType, StringBuffer& returnStr)
-{
-    //No 'try/catch' is needed for this method since it will be called internally.
-    if (strcmp(Action_Delete ,ActionType) == 0)
-    {
-        LogicFileWrapper Logicfile;
-        if (!Logicfile.doDeleteFile(LogicalFileName,ClusterName, returnStr, udesc))
-            return false;
-    }
-    else if (strcmp(Action_AddtoSuperfile ,ActionType) == 0)
-    {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(LogicalFileName, udesc, true);
-        if (df)
-        {
-            if (returnStr.length() > 0)
-                returnStr.appendf(",%s", LogicalFileName);
-            else
-                returnStr.appendf("%s", LogicalFileName);
-            return false;
-        }
-    }
-    else
-        DBGLOG("Unknown Action type:%s\n",ActionType);
-    
     return true;
 }
 

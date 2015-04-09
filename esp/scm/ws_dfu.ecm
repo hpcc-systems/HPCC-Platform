@@ -18,6 +18,12 @@
 #include "xslprocessor.hpp" 
 //  ===========================================================================
 
+ESPenum DFUArrayActions : string
+{
+    Delete("Delete"),
+    AddToSuperfile("Add To Superfile"),
+};
+
 ESPStruct SpaceItem
 {
     string Name;
@@ -243,7 +249,7 @@ ESPrequest
 ]
 DFUArrayActionRequest
 {
-    DFUActionType Type;
+    ESPenum DFUArrayActions Type;
     bool NoDelete;
     [min_ver("1.04")] string BackToPage;
     ESParray<string> LogicalFiles;
