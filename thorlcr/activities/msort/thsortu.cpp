@@ -670,7 +670,7 @@ public:
                     case TAKhashdenormalizegroup:
                     case TAKlookupdenormalizegroup:
                     case TAKsmartdenormalizegroup:
-                        gotsz = helper->transform(ret, nextleft, NULL, 0, (const void **)NULL);
+                        gotsz = helper->transform(ret, nextleft, defaultRight, 0, (const void **)NULL);
                         break;
                     case TAKjoin:
                     case TAKhashjoin:
