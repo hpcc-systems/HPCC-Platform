@@ -1338,7 +1338,7 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
                 IEspTpGroup* pGroup = createTpGroup("","");
                 const char* name = group.queryProp("@name");
                 pGroup->setName(name);
-                if (espVersion >= 1.21)
+                if (kind && *kind && (espVersion >= 1.21))
                 {
                     pGroup->setKind(kind);
                     pGroup->setReplicateOutputs(checkGroupReplicateOutputs(name, kind));
