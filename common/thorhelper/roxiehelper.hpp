@@ -31,9 +31,10 @@ class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     bool _isHttp;
-    StringAttr urlPath;
+    StringAttr url;
     StringAttr authToken;
     StringAttr contentType;
+    StringArray pathNodes;
     Owned<IProperties> parameters;
 private:
     inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
@@ -46,7 +47,7 @@ private:
         if (len)
             s.set(v, len);
     }
-    void gatherUrlParameters();
+    void parseURL();
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -55,6 +56,7 @@ public:
     bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
     void setIsHttp(bool __isHttp) { _isHttp = __isHttp; }
     const char *queryAuthToken() { return authToken.sget(); }
+    const char *queryTarget() { return (pathNodes.length()) ? pathNodes.item(0) : NULL; }
     inline void setAuthToken(const char *v)
     {
         setHttpHeaderValue(authToken, v, false);
@@ -64,13 +66,13 @@ public:
     {
         setHttpHeaderValue(contentType, v, true);
     };
-    inline void setUrlPath(const char *v)
+    inline void parseHTTPRequestLine(const char *v)
     {
         const char *end = strstr(v, " HTTP");
         if (end)
         {
-            urlPath.set(v, end - v);
-            gatherUrlParameters();
+            url.set(v, end - v);
+            parseURL();
         }
     }
     TextMarkupFormat queryContentFormat(){return (strieq(queryContentType(), "application/json")) ? MarkupFmt_JSON : MarkupFmt_XML;}

@@ -21,7 +21,7 @@
 
 #include "jliball.hpp"
 #include "junicode.hpp"
-#include "jsmartsock.hpp"
+#include "jsmartsock.ipp"
 #include "fileview.hpp"
 
 #include "esp.hpp"
@@ -86,6 +86,16 @@ typedef enum wsEclTypes_
     maxWsEclType
 
 } wsEclType;
+
+class RoxieSocketFactory : public CSmartSocketFactory
+{
+public:
+    bool includeTargetInURL;
+
+    RoxieSocketFactory(const char *_socklist, bool _retry, bool includeTarget) : CSmartSocketFactory(_socklist, _retry), includeTargetInURL(includeTarget)
+    {
+    }
+};
 
 class CWsEclService : public CInterface,
     implements IEspService

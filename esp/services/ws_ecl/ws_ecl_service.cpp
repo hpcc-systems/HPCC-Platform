@@ -252,8 +252,16 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         if (!process.length())
             continue;
         const char *vip = NULL;
+        bool includeTargetInURL = true;
         if (vips)
-            vip = vips->queryProp(xpath.clear().appendf("ProcessCluster[@name='%s']/@vip", process.str()).str());
+        {
+            IPropertyTree *pc = vips->queryPropTree(xpath.clear().appendf("ProcessCluster[@name='%s']", process.str()));
+            if (pc)
+            {
+                vip = pc->queryProp("@vip");
+                includeTargetInURL = pc->getPropBool("@includeTargetInURL", true);
+            }
+        }
         StringBuffer list;
         bool loadBalanced = false;
         if (vip && *vip)
@@ -274,7 +282,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         }
         if (list.length())
         {
-            Owned<ISmartSocketFactory> sf = createSmartSocketFactory(list.str(), !loadBalanced);
+            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL);
             connMap.setValue(target.str(), sf.get());
         }
     }
@@ -1846,7 +1854,9 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
 
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
         StringBuffer url("http://");
-        ep.getIpText(url).append(':').append(ep.port).append('/').append(target);
+        ep.getIpText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
+        if (static_cast<RoxieSocketFactory*>(conn)->includeTargetInURL)
+            url.append(target);
         if (!trim)
             url.append("?.trim=0");
 
