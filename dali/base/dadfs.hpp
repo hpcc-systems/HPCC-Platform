@@ -179,7 +179,14 @@ enum DFUQFilterType
     DFUQFTstringRange,
     DFUQFTintegerRange,
     DFUQFTinteger64Range,
-    DFUQFTspecial
+    DFUQFTspecial,
+    DFUQFTincludeFileAttr
+};
+
+enum DFUQSerializeFileAttrOption
+{
+    DFUQSFAOincludeSuperOwner = 1
+    //May add more
 };
 
 enum DFUQSpecialFilter
@@ -258,7 +265,9 @@ enum DFUQResultField
     DFUQRFcompressedsize = 17,
     DFUQRFdirectory = 18,
     DFUQRFpartmask = 19,
-    DFUQRFterm = 20,
+    DFUQRFsuperowners = 20,
+    DFUQRFpersistent = 21,
+    DFUQRFterm = 22,
     DFUQRFreverse = 256,
     DFUQRFnocase = 512,
     DFUQRFnumeric = 1024
