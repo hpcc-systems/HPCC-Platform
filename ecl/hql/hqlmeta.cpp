@@ -1393,13 +1393,13 @@ static bool isCompatibleSortOrder(IHqlExpression * existingOrder, IHqlExpression
     return true;
 }
 
-static bool normalizedIsAlreadySorted(IHqlExpression * dataset, IHqlExpression * normalizedOrder, bool isLocal, bool ignoreGrouping)
+static bool normalizedIsAlreadySorted(IHqlExpression * dataset, IHqlExpression * normalizedOrder, bool isLocal, bool ignoreGrouping, bool requireDistribution)
 {
 #ifdef OPTIMIZATION2
     if (hasNoMoreRowsThan(dataset, 1))
         return true;
 #endif
-    if (!isCorrectDistributionForSort(dataset, normalizedOrder, isLocal, ignoreGrouping))
+    if (requireDistribution && !isCorrectDistributionForSort(dataset, normalizedOrder, isLocal, ignoreGrouping))
         return false;
 
     //Constant items and duplicates should have been removed already.
@@ -1408,7 +1408,7 @@ static bool normalizedIsAlreadySorted(IHqlExpression * dataset, IHqlExpression *
 }
 
 
-bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping)
+bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool requireDistribution)
 {
 #ifdef OPTIMIZATION2
     if (hasNoMoreRowsThan(dataset, 1))
@@ -1416,17 +1416,17 @@ bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLo
 #endif
 
     OwnedHqlExpr normalizedOrder = normalizeSortlist(order, dataset);
-    return normalizedIsAlreadySorted(dataset, normalizedOrder, isLocal, ignoreGrouping);
+    return normalizedIsAlreadySorted(dataset, normalizedOrder, isLocal, ignoreGrouping, requireDistribution);
 }
 
 
 //Elements in the exprarray have already been mapped;
-bool isAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+bool isAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping, bool requireDistribution)
 {
     HqlExprArray components;
     normalizeComponents(components, newSort);
     OwnedHqlExpr normalizedOrder = createSortList(components);
-    return normalizedIsAlreadySorted(dataset, normalizedOrder, isLocal, ignoreGrouping);
+    return normalizedIsAlreadySorted(dataset, normalizedOrder, isLocal, ignoreGrouping, requireDistribution);
 }
 
 
@@ -1540,13 +1540,13 @@ static IHqlExpression * createSubSorted(IHqlExpression * dataset, IHqlExpression
     if (!isLocal && !alwaysLocal)
         subsort.setown(convertSubSortToGroupedSort(subsort));
 
-    assertex(isAlreadySorted(subsort, order, isLocal||alwaysLocal, ignoreGrouping));
+    assertex(isAlreadySorted(subsort, order, isLocal||alwaysLocal, ignoreGrouping, false));
     return subsort.getClear();
 }
 
 IHqlExpression * getSubSort(IHqlExpression * dataset, const HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
 {
-    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
+    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping, true))  // could possible have requireDistribution = false
         return NULL;
 
     OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), order);
@@ -1556,7 +1556,7 @@ IHqlExpression * getSubSort(IHqlExpression * dataset, const HqlExprArray & order
 
 IHqlExpression * getSubSort(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
 {
-    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
+    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping, true))  // could possible have requireDistribution = false
         return NULL;
 
     return createSubSorted(dataset, order, isLocal, ignoreGrouping, alwaysLocal);
@@ -1566,7 +1566,7 @@ IHqlExpression * getSubSort(IHqlExpression * dataset, IHqlExpression * order, bo
 
 IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, IHqlExpression * parentExpr, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowSubSort, bool requestSpilling)
 {
-    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
+    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping, true))
         return LINK(dataset);
 
     if (allowSubSort && (isLocal || alwaysLocal))

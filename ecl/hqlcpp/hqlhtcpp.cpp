@@ -11487,7 +11487,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     compareName.append("compare").append(sideText);
 
     assertex(dataset.querySide() == no_activetable);
-    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true);
+    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true, true);
     if (userPreventsSort(noSortAttr, side))
         noNeedToSort = true;
 
@@ -12182,9 +12182,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (joinInfo.hasOptionalEqualities())
         flags.append("|JFlimitedprefixjoin");
 
-    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true) || userPreventsSort(noSortAttr, no_left))
+    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true, false) || userPreventsSort(noSortAttr, no_left))
         flags.append("|JFleftSortedLocally");
-    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true) || userPreventsSort(noSortAttr, no_right))
+    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true, false) || userPreventsSort(noSortAttr, no_right))
         flags.append("|JFrightSortedLocally");
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
     if (isSmartJoin || expr->hasAttribute(unstableAtom))
@@ -16652,9 +16652,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityQuantile(BuildCtx & ctx, IHqlE
         flags.append("|TQFfirst");
     if (expr->hasAttribute(lastAtom))
         flags.append("|TQFlast");
-    if (isAlreadySorted(dataset, sortlist, false, false))
+    if (isAlreadySorted(dataset, sortlist, false, false, false))
         flags.append("|TQFsorted|TQFlocalsorted");
-    else if (isAlreadySorted(dataset, sortlist, true, false))
+    else if (isAlreadySorted(dataset, sortlist, true, false, false))
         flags.append("|TQFlocalsorted");
     if (score)
         flags.append("|TQFhasscore");
