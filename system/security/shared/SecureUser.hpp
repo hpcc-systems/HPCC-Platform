@@ -200,7 +200,7 @@ public:
 
     virtual CDateTime & getPasswordExpiration(CDateTime& expirationDate){ return expirationDate; }
     virtual bool setPasswordExpiration(CDateTime& expirationDate) { return true; }
-    virtual int getPasswordDaysRemaining() {return -1;}
+    virtual int getPasswordDaysRemaining() {return -2;}//never expires
     virtual authStatus getAuthenticateStatus() {return m_authenticateStatus;}
     virtual void setAuthenticateStatus(authStatus status){m_authenticateStatus = status;}
 
