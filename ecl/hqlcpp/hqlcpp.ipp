@@ -744,6 +744,8 @@ struct HqlCppOptions
     bool                newBalancedSpotter;
     bool                keyedJoinPreservesOrder;
     bool                expandSelectCreateRow;
+    bool                obfuscateOutput;
+    bool                showEclInGraph;
     bool                optimizeSortAllFields;
     bool                optimizeSortAllFieldsStrict;
 };
