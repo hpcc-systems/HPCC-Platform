@@ -82,7 +82,7 @@
           <emphasis>#OPTION(maxLength,####)</emphasis> to change the default).
           The maximum record size should be set as conservatively as possible,
           and is better set on a per-field basis (see the <emphasis
-          role="bold">Field Modifiers</emphasis>section below). </entry>
+          role="bold">Field Modifiers</emphasis>section below).</entry>
         </row>
 
         <row>
@@ -625,7 +625,7 @@ END;</programlisting>
             DICTIONARY lookup returns no match.</para><para>2. When an
             out-of-range record is fetched using ds[n] (as in ds[5] when ds
             contains only 4 records). </para><para>3. In the default record
-            passed to TRANSFORM functions in LEFT ONLY or RIGHT ONLY JOINs
+            passed to TRANSFORM functions in LEFT OUTER or RIGHT OUTER JOINs
             where there is no corresponding row. </para><para>4. When
             defaulting field values in a TRANSFORM using SELF = [
             ].</para></entry>
