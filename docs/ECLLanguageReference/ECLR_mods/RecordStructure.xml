@@ -624,11 +624,10 @@ END;</programlisting>
             <emphasis>value</emphasis> will be used: <para>1. When a
             DICTIONARY lookup returns no match.</para><para>2. When an
             out-of-range record is fetched using ds[n] (as in ds[5] when ds
-            contains only 4 records). </para><para>3. In the default record
-            passed to TRANSFORM functions in LEFT OUTER or RIGHT OUTER JOINs
-            where there is no corresponding row. </para><para>4. When
-            defaulting field values in a TRANSFORM using SELF = [
-            ].</para></entry>
+            contains only 4 records). </para><para>3. In the default records
+            passed to TRANSFORM functions in non-INNER JOINS where there is no
+            corresponding row. </para><para>4. When defaulting field values in
+            a TRANSFORM using SELF = [ ].</para></entry>
           </row>
 
           <row>
