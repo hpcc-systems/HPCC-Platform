@@ -83,7 +83,7 @@
     </indexterm><emphasis> </emphasis><emphasis role="bold">[
   (</emphasis><emphasis> recstruct </emphasis><emphasis role="bold">)
   ]</emphasis><emphasis> ruleid </emphasis><emphasis role="bold">:=
-  </emphasis><emphasis>parsepattern</emphasis><emphasis
+  </emphasis><emphasis>rulePattern</emphasis><emphasis
   role="bold">;</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -108,12 +108,12 @@
         </row>
 
         <row>
-          <entry><emphasis>parsepattern</emphasis></entry>
+          <entry><emphasis>rulePattern</emphasis></entry>
 
-          <entry>The token pattern, very similar to regular expressions. This
-          may contain PATTERN attributes but no TOKEN or RULE attributes. See
-          <emphasis role="bold">ParsePattern Definitions</emphasis>
-          below.</entry>
+          <entry>The rule pattern, very similar to regular expressions. This
+          may contain PATTERN attributes, TOKEN attributes, or RULE
+          attributes. See <emphasis role="bold">ParsePattern
+          Definitions</emphasis> below.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -126,7 +126,7 @@
 
   <para>If the PARSE option is present on the PARSE function (thereby
   implementing tomita parsing for the operation), each alternative RULE
-  <emphasis>parsepattern</emphasis> may have an associated TRANSFORM function.
+  <emphasis>rulePattern</emphasis> may have an associated TRANSFORM function.
   The different input patterns can be referred to using $1, $2 etc. If the
   pattern has an associated <emphasis>recstruct</emphasis> then $1 is a row,
   otherwise it is a string. Default TRANSFORM functions are created in two
