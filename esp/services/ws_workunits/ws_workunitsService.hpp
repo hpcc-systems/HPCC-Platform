@@ -256,6 +256,8 @@ public:
     bool onWUCheckFeatures(IEspContext &context, IEspWUCheckFeaturesRequest &req, IEspWUCheckFeaturesResponse &resp);
     bool onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &req, IEspWUGetStatsResponse &resp);
 
+    bool onWUListArchiveFiles(IEspContext &context, IEspWUListArchiveFilesRequest &req, IEspWUListArchiveFilesResponse &resp);
+    bool onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp);
 private:
     void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
     void createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
@@ -267,6 +269,7 @@ private:
     bool resetQueryStats(IEspContext &context, const char* target, IProperties* queryIds, IEspWUQuerySetQueryActionResponse& resp);
     void readGraph(IEspContext& context, const char* subGraphId, WUGraphIDType& id, bool running,
         IConstWUGraph* graph, IArrayOf<IEspECLGraphEx>& graphs);
+    IPropertyTree* getWorkunitArchive(IEspContext &context, WsWuInfo& winfo, const char* wuid, unsigned cacheMinutes);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
@@ -274,6 +277,7 @@ private:
     StringAttr daliServers;
     Owned<DataCache> dataCache;
     Owned<ArchivedWuCache> archivedWuCache;
+    Owned<WUArchiveCache> wuArchiveCache;
     StringAttr sashaServerIp;
     unsigned short sashaServerPort;
     BoolHash validClusters;
