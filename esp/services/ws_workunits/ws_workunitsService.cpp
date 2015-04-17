@@ -1835,7 +1835,17 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);
-    addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
+    if (version < 1.55)
+        addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
+    else
+    {
+        IArrayOf<IConstApplicationValue>& applicationFilters = req.getApplicationValues();
+        ForEachItemIn(i, applicationFilters)
+        {
+            IConstApplicationValue &item = applicationFilters.item(i);
+            addWUQueryFilterApplication(filters, filterCount, filterbuf, item.getApplication(), item.getName(), item.getValue());
+        }
+    }
 
     filters[filterCount] = WUSFterm;
 
@@ -1875,6 +1885,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         Owned<IEspECLWorkunit> info = createECLWorkunit("","");
         WsWuInfo winfo(context, wuid);
         winfo.getCommon(*info, 0);
+        if (version >= 1.55)
+            winfo.getApplicationValues(*info, WUINFO_IncludeApplicationValues);
         results.append(*info.getClear());
     }
 
