@@ -157,7 +157,7 @@ public:
             StringBuffer extension;
             StringBuffer filename;
             splitFilename(sourceFileName, NULL, NULL, &filename, &extension);
-            if (stricmp(extension.str(),LEGACY_FILE_EXTENTION)==0 || stricmp(extension.str(),ESDL_FILE_EXTENTION)==0)
+            if (stricmp(extension.str(),LEGACY_FILE_EXTENSION)==0 || stricmp(extension.str(),ESDL_FILE_EXTENSION)==0)
             {
                 StringBuffer esxml;
                 EsdlCmdHelper::convertECMtoESXDL(sourceFileName, filename.str(), esxml, true, true, false, true);

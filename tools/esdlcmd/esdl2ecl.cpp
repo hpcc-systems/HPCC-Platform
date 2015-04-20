@@ -102,16 +102,16 @@ public:
 
             IPropertyTree *src = NULL;
 
-            if (stricmp(srcext,LEGACY_FILE_EXTENTION)==0 || stricmp(srcext,ESDL_FILE_EXTENTION)==0)
+            if (stricmp(srcext,LEGACY_FILE_EXTENSION)==0 || stricmp(srcext,ESDL_FILE_EXTENSION)==0)
             {
                 fileName.append(srcext);
                 StringBuffer esxml;
                 EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, false, true, true, isIncludedESDL);
                 src = createPTreeFromXMLString(esxml, 0);
             }
-            else if (!srcext || !*srcext || stricmp(srcext, XML_FILE_EXTENTION)==0)
+            else if (!srcext || !*srcext || stricmp(srcext, XML_FILE_EXTENSION)==0)
             {
-                fileName.append(XML_FILE_EXTENTION);
+                fileName.append(XML_FILE_EXTENSION);
                 src = createPTreeFromXMLFile(fileName.str(), false);
             }
             else

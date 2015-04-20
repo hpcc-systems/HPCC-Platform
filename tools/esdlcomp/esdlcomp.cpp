@@ -1112,10 +1112,10 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
             StringBuffer alternateExtFilename(srcDir);
             alternateExtFilename.append(name.str());
 
-            if (stricmp(ext.str(), ESDL_FILE_EXTENTION)==0)
-                alternateExtFilename.append(LEGACY_FILE_EXTENTION);
+            if (stricmp(ext.str(), ESDL_FILE_EXTENSION)==0)
+                alternateExtFilename.append(LEGACY_FILE_EXTENSION);
             else
-                alternateExtFilename.append(ESDL_FILE_EXTENTION);
+                alternateExtFilename.append(ESDL_FILE_EXTENSION);
 
             yyin = fopen(alternateExtFilename.str(), "rt");
             if (!yyin)
