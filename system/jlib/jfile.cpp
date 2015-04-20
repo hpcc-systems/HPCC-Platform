@@ -27,13 +27,16 @@
 #include <sys/stat.h>
 #include <algorithm>
 
-#if defined (__linux__)
+#if defined (__linux__) || defined (__APPLE__)
 #include <time.h>
 #include <dirent.h>
 #include <utime.h>
 #include <sys/syscall.h>
-#include <sys/vfs.h>
 #include <sys/mman.h>
+#endif
+
+#if defined (__linux__)
+#include <sys/vfs.h>
 #include <sys/sendfile.h>
 #endif
 
@@ -455,8 +458,7 @@ bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime
     CloseHandle(handle);
     return true;
 
-#elif defined (__linux__)
-
+#else
     struct utimbuf am;
     if (!accessedTime||!modifiedTime) {
         struct stat info;
@@ -470,8 +472,6 @@ bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime
     if (modifiedTime)
         am.modtime  = timetFromIDateTime (modifiedTime);
     return (utime(filename, &am)==0);
-#else
-    UNIMPLEMENTED;
 #endif
 }
 
