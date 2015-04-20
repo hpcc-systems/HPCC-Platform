@@ -113,7 +113,8 @@ namespace HttpParamHelpers
         {
             const char *key = props->getPropKey();
             const char *value = parameters->queryProp(key);
-            ensureParameter(pt, key, value);
+            if (value && *value)
+                ensureParameter(pt, key, value);
         }
         return pt.getClear();
     }
