@@ -58,76 +58,6 @@ static void controlException(StringBuffer &response, IException *E, const IRoxie
 
 //================================================================================================================
 
-static void sendSoapException(SafeSocket &client, IException *E, const char *queryName)
-{
-    try
-    {
-        if (!queryName)
-            queryName = "Unknown"; // Exceptions when parsing query XML can leave queryName unset/unknowable....
-
-        StringBuffer response;
-        response.append("<").append(queryName).append("Response");
-        response.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(strlen(queryName), queryName).append("\">");
-        response.appendf("<Results><Result><Exception><Source>Roxie</Source><Code>%d</Code>", E->errorCode());
-        response.append("<Message>");
-        StringBuffer s;
-        E->errorMessage(s);
-        encodeXML(s.str(), response);
-        response.append("</Message></Exception></Result></Results>");
-        response.append("</").append(queryName).append("Response>");
-        client.write(response.str(), response.length());
-    }
-    catch(IException *EE)
-    {
-        StringBuffer error("While reporting exception: ");
-        EE->errorMessage(error);
-        DBGLOG("%s", error.str());
-        EE->Release();
-    }
-#ifndef _DEBUG
-    catch(...) {}
-#endif
-}
-
-static void sendJsonException(SafeSocket &client, IException *E, const char *queryName)
-{
-    try
-    {
-        if (!queryName)
-            queryName = "Unknown"; // Exceptions when parsing query XML can leave queryName unset/unknowable....
-
-        StringBuffer response;
-        appendfJSONName(response, "%sResponse", queryName).append(" {");
-        appendJSONName(response, "Results").append(" {");
-        appendJSONName(response, "Exception").append(" [{");
-        appendJSONValue(response, "Source", "Roxie");
-        appendJSONValue(response, "Code", E->errorCode());
-        StringBuffer s;
-        appendJSONValue(response, "Message", E->errorMessage(s).str());
-        response.append("}]}}");
-        client.write(response.str(), response.length());
-    }
-    catch(IException *EE)
-    {
-        StringBuffer error("While reporting exception: ");
-        DBGLOG("%s", EE->errorMessage(error).str());
-        EE->Release();
-    }
-#ifndef _DEBUG
-    catch(...) {}
-#endif
-}
-
-static void sendHttpException(SafeSocket &client, TextMarkupFormat fmt, IException *E, const char *queryName)
-{
-    if (fmt==MarkupFmt_JSON)
-        sendJsonException(client, E, queryName);
-    else
-        sendSoapException(client, E, queryName);
-}
-
-//================================================================================================================
-
 class CHttpRequestAsyncFor : public CInterface, public CAsyncFor
 {
 private:
@@ -161,7 +91,7 @@ public:
         StringBuffer error("EXCEPTION: ");
         E->errorMessage(error);
         DBGLOG("%s", error.str());
-        sendHttpException(client, httpHelper.queryContentFormat(), E, queryName);
+        client.checkSendHttpException(httpHelper, E, queryName);
         E->Release();
     }
 
@@ -1357,9 +1287,14 @@ private:
                     else
                         throw MakeStringException(ROXIE_DATA_ERROR, "Malformed JSON request");
                 }
-                else if (strieq(queryName, "envelope"))
+                else
                 {
-                    queryXML.setown(queryXML->getPropTree("Body/*"));
+                    if (strieq(queryName, "envelope"))
+                        queryXML.setown(queryXML->getPropTree("Body/*"));
+                    else if (!strnicmp(httpHelper.queryContentType(), "application/soap", strlen("application/soap")))
+                        throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request");
+                    else
+                        httpHelper.setUseEnvelope(false);
                     if (!queryXML)
                         throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request (missing Body)");
                     String reqName(queryXML->queryName());
@@ -1384,8 +1319,6 @@ private:
 
                     queryXML->renameProp("/", queryName.get());  // reset the name of the tree
                 }
-                else
-                    throw MakeStringException(ROXIE_DATA_ERROR, "Malformed SOAP request");
             }
 
             // convert to XML with attribute values in single quotes - makes replaying queries easier
@@ -1418,7 +1351,7 @@ private:
 readAnother:
         Owned<IDebuggerContext> debuggerContext;
         unsigned slavesReplyLen = 0;
-        HttpHelper httpHelper;
+        HttpHelper httpHelper(&allQuerySetNames);
         try
         {
             if (client)
@@ -1654,7 +1587,7 @@ readAnother:
                         StringBuffer querySetName;
                         if (isHTTP)
                         {
-                            client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
+                            client->setHttpMode(queryName, isRequestArray, httpHelper);
                             querySetName.set(httpHelper.queryTarget());
                         }
                         queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
@@ -1803,7 +1736,7 @@ readAnother:
             if (client)
             {
                 if (isHTTP)
-                    sendHttpException(*client, httpHelper.queryContentFormat(), E, queryName);
+                    client->checkSendHttpException(httpHelper, E, queryName);
                 else
                     client->sendException("Roxie", code, error.str(), isBlocked, logctx);
             }
@@ -1828,7 +1761,7 @@ readAnother:
             if (client)
             {
                 if (isHTTP)
-                    sendHttpException(*client, httpHelper.queryContentFormat(), E, queryName);
+                    client->checkSendHttpException(httpHelper, E, queryName);
                 else
                     client->sendException("Roxie", code, error.str(), isBlocked, logctx);
             }

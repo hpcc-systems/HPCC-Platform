@@ -335,7 +335,7 @@ public:
 
         Owned<IDebuggerContext> debuggerContext;
         unsigned slavesReplyLen = 0;
-        HttpHelper httpHelper;
+        HttpHelper httpHelper(NULL);
         try
         {
             client->querySocket()->getPeerAddress(peer);

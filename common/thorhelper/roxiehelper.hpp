@@ -31,10 +31,12 @@ class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     bool _isHttp;
+    bool useEnvelope;
     StringAttr url;
     StringAttr authToken;
     StringAttr contentType;
     StringArray pathNodes;
+    StringArray *validTargets;
     Owned<IProperties> parameters;
 private:
     inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
@@ -51,12 +53,16 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    HttpHelper() { _isHttp = false; parameters.setown(createProperties(true));}
+    HttpHelper(StringArray *_validTargets) : validTargets(_validTargets) { _isHttp = false; useEnvelope=true; parameters.setown(createProperties(true));}
     bool isHttp() { return _isHttp; }
+    bool getUseEnvelope(){return useEnvelope;}
+    void setUseEnvelope(bool _useEnvelope){useEnvelope=_useEnvelope;}
     bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
     void setIsHttp(bool __isHttp) { _isHttp = __isHttp; }
     const char *queryAuthToken() { return authToken.sget(); }
     const char *queryTarget() { return (pathNodes.length()) ? pathNodes.item(0) : NULL; }
+    const char *queryQueryName() { return (pathNodes.length()>1) ? pathNodes.item(1) : NULL; }
+
     inline void setAuthToken(const char *v)
     {
         setHttpHeaderValue(authToken, v, false);
@@ -75,8 +81,20 @@ public:
             parseURL();
         }
     }
-    TextMarkupFormat queryContentFormat(){return (strieq(queryContentType(), "application/json")) ? MarkupFmt_JSON : MarkupFmt_XML;}
+    TextMarkupFormat queryContentFormat()
+    {
+        if (!contentType.length())
+        {
+            if (pathNodes.length()>2 && strieq(pathNodes.item(2), "json"))
+                contentType.set("application/json");
+            else
+                contentType.set("text/xml");
+        }
+
+        return (strieq(queryContentType(), "application/json")) ? MarkupFmt_JSON : MarkupFmt_XML;
+    }
     IProperties *queryUrlParameters(){return parameters;}
+    bool validateTarget(const char *target){return (validTargets) ? validTargets->contains(target) : false;}
 };
 
 //========================================================================================= 
@@ -87,7 +105,10 @@ interface SafeSocket : extends IInterface
     virtual size32_t write(const void *buf, size32_t size, bool takeOwnership=false) = 0;
     virtual bool readBlock(MemoryBuffer &ret, unsigned maxBlockSize, unsigned timeout = (unsigned) WAIT_FOREVER) = 0;
     virtual bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize) = 0;
-    virtual void setHttpMode(const char *queryName, bool arrayMode, TextMarkupFormat txtfmt) = 0;
+    virtual void checkSendHttpException(HttpHelper &httphelper, IException *E, const char *queryName) = 0;
+    virtual void sendSoapException(IException *E, const char *queryName) = 0;
+    virtual void sendJsonException(IException *E, const char *queryName) = 0;
+    virtual void setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper) = 0;
     virtual void setHeartBeat() = 0;
     virtual bool sendHeartBeat(const IContextLogger &logctx) = 0;
     virtual void flush() = 0;
@@ -124,7 +145,11 @@ public:
     size32_t write(const void *buf, size32_t size, bool takeOwnership=false);
     bool readBlock(MemoryBuffer &ret, unsigned maxBlockSize, unsigned timeout = (unsigned) WAIT_FOREVER);
     bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize);
-    void setHttpMode(const char *queryName, bool arrayMode, TextMarkupFormat txtfmt);
+    void setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper);
+    void checkSendHttpException(HttpHelper &httphelper, IException *E, const char *queryName);
+    void sendSoapException(IException *E, const char *queryName);
+    void sendJsonException(IException *E, const char *queryName);
+
     void setHeartBeat();
     bool sendHeartBeat(const IContextLogger &logctx);
     void flush();
