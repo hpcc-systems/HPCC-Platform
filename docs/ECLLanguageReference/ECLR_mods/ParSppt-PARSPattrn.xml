@@ -411,7 +411,8 @@ the following supported syntax elements:
  (?=…) (?!...)     Look ahead assertion
  (?&lt;=…) (?&lt;!...)   Look behind assertion
 
-Escape sequences can be used to define UNICODE Character ranges. The encoding is UTF-16 Big Endian.  
+Escape sequences can be used to define UNICODE Character ranges. 
+The encoding is UTF-16 Big Endian.  
 For example:
 PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
 </programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
