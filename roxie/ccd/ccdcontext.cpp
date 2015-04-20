@@ -299,7 +299,7 @@ protected:
         SCMStringBuffer name;
         const char *logicalName = item.getPersistName(name).str();
         StringBuffer whenName;
-        expandLogicalFilename(whenName, logicalName, workunit, false);
+        expandLogicalFilename(whenName, logicalName, workunit, false, false);
         whenName.append("$when");
         if (!isResult(whenName, ResultSequencePersist))
             return false;
@@ -354,7 +354,7 @@ private:
     bool checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer &errText)
     {
         StringBuffer lfn, crcName, eclName;
-        expandLogicalFilename(lfn, logicalName, workunit, false);
+        expandLogicalFilename(lfn, logicalName, workunit, false, false);
         crcName.append(lfn).append("$crc");
         eclName.append(lfn).append("$eclcrc");
 
@@ -416,7 +416,7 @@ private:
     IRemoteConnection *getPersistReadLock(const char * logicalName)
     {
         StringBuffer lfn;
-        expandLogicalFilename(lfn, logicalName, workunit, false);
+        expandLogicalFilename(lfn, logicalName, workunit, false, false);
         if (!lfn.length())
             throw MakeStringException(0, "Invalid persist name used : '%s'", logicalName);
 
@@ -507,7 +507,7 @@ private:
     void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
     {
         StringBuffer lfn, crcName, eclName, whenName;
-        expandLogicalFilename(lfn, logicalName, workunit, false);
+        expandLogicalFilename(lfn, logicalName, workunit, false, false);
         crcName.append(lfn).append("$crc");
         eclName.append(lfn).append("$eclcrc");
         whenName.append(lfn).append("$when");
@@ -532,7 +532,7 @@ private:
     void checkPersistMatches(const char * logicalName, unsigned eclCRC)
     {
         StringBuffer lfn, eclName;
-        expandLogicalFilename(lfn, logicalName, workunit, true);
+        expandLogicalFilename(lfn, logicalName, workunit, true, false);
         eclName.append(lfn).append("$eclcrc");
 
         if (!isResult(lfn, ResultSequencePersist))
@@ -565,7 +565,7 @@ private:
     void deleteLRUPersists(const char * logicalName, unsigned keep)
     {
         StringBuffer lfn;
-        expandLogicalFilename(lfn, logicalName, workunit, false);
+        expandLogicalFilename(lfn, logicalName, workunit, false, false);
         logicalName = lfn.str();
         const char *tail = strrchr(logicalName, '_');     // Locate the trailing double-underbar
         assertex(tail);
@@ -3497,7 +3497,7 @@ public:
     {
         CriticalBlock b(contextCrit);
         StringBuffer expandedName;
-        expandLogicalFilename(expandedName, fileName, workUnit, false);
+        expandLogicalFilename(expandedName, fileName, workUnit, false, !workUnit);
         Linked<const IResolvedFile> ret = fileCache.getValue(expandedName);
         if (!ret)
         {
@@ -3662,7 +3662,7 @@ public:
     virtual char * getExpandLogicalName(const char * logicalName)
     {
         StringBuffer lfn;
-        expandLogicalFilename(lfn, logicalName, workUnit, false);
+        expandLogicalFilename(lfn, logicalName, workUnit, false, false);
         return lfn.detach();
     }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
@@ -3709,7 +3709,7 @@ public:
     virtual unsigned __int64 getDatasetHash(const char * logicalName, unsigned __int64 crc)
     {
         StringBuffer fullname;
-        expandLogicalFilename(fullname, logicalName, workUnit, false);
+        expandLogicalFilename(fullname, logicalName, workUnit, false, false);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fullname.str(),queryUserDescriptor());
         if (file)
         {

@@ -1375,7 +1375,7 @@ bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalNa
 ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, bool isWrite, StringBuffer * expandedlfn)
 {
     StringBuffer lfn;
-    expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally);
+    expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally, false);
     if (resolveFilesLocally && *fname != '~')
     {
         StringBuffer name;
