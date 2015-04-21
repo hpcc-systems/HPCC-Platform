@@ -30,7 +30,7 @@ interface ILoadedDllEntry : extends IInterface
     virtual const char * queryVersion() const = 0;
     virtual const char * queryName() const = 0;
     virtual const byte * getResource(unsigned id) const = 0;
-    virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id) const = 0;
+    virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace=true) const = 0;
 };
 
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *name, bool isGlobal, const IFileIO *dllFile);
