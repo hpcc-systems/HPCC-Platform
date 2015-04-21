@@ -51,8 +51,8 @@
    'Success',
    'Failure - 1');  //success
     
-B := IF(STD.Str.FindCount('ABCDEABCDE', 'BC') = 2,
+B := IF(STD.Str.FindCount('ABCDEABCDE', 'BC') = 1,
    'Success',
-   'Failure - 2');  //failure
+   'Failure - 1');  //failure
 </programlisting>
 </sect1>

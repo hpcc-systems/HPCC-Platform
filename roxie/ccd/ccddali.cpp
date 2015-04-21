@@ -572,7 +572,7 @@ public:
 
     virtual void commitCache()
     {
-        if (isConnected)
+        if (isConnected && cache)
         {
             CriticalBlock b(cacheCrit);
             if (!recursiveCreateDirectory(queryDirectory))

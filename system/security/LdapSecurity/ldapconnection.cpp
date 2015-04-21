@@ -1409,7 +1409,7 @@ public:
                 {
                     //This path is typical if running ESP on Windows. We have no way
                     //to determine if password entered is valid but expired
-                    if (user.getPasswordDaysRemaining() == -1)
+                    if (user.getPasswordDaysRemaining() == scPasswordExpired)
                     {
                         DBGLOG("LDAP: Password Expired(2) for user %s", username);
                         user.setAuthenticateStatus(AS_PASSWORD_EXPIRED);

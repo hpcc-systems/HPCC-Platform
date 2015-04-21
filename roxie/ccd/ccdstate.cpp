@@ -669,7 +669,7 @@ public:
     virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, wu, false);
+        expandLogicalFilename(fileName, _fileName, wu, false, !wu);
         if (traceLevel > 5)
             DBGLOG("lookupFileName %s", fileName.str());
 
@@ -690,7 +690,7 @@ public:
     virtual IRoxieWriteHandler *createFileName(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, wu, false);
+        expandLogicalFilename(fileName, _fileName, wu, false, false);
         Owned<IResolvedFile> resolved = lookupFile(fileName, false, false, true, true);
         if (!resolved)
             resolved.setown(resolveLFNusingDaliOrLocal(fileName, false, false, true, true, resolveLocally()));

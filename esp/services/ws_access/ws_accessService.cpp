@@ -440,10 +440,10 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
                     StringBuffer sb;
                     switch (usr->getPasswordDaysRemaining())//-1 if expired, -2 if never expires
                     {
-                    case -1:
+                    case scPasswordExpired:
                         sb.set("Expired");
                         break;
-                    case -2:
+                    case scPasswordNeverExpires:
                         sb.set("Never");
                         break;
                     default:
