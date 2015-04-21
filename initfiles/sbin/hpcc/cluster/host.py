@@ -28,9 +28,6 @@ class Host(object):
     Several static help methods are provided to create cluster hast list.
     '''
     # Default user name and passwords
-    user_name = 'hpcc'
-    user_passowrd = 'hpcc'
-    admin_password = 'hpcc'
 
     logger = logging.getLogger("hpcc.cluster.Host")
 
@@ -62,40 +59,27 @@ class Host(object):
 
     @property
     def user_name(self):
-        if self._user_name:
-            return self._user_name
-        else:
-            return Host.user_name
+        return self._user_name
 
     @user_name.setter
     def user_name(self, value):
         self._user_name = value
 
-
     @property
     def user_password(self):
-        if self._user_password:
-            return self._user_password
-        else:
-            return Host.user_password
+        return self._user_password
 
     @user_password.setter
     def user_password(self, value):
         self._user_password = value
 
-
-
     @property
     def admin_password(self):
-        if self._admin_password:
-            return self._admin_password
-        else:
-            return Host.admin_password
+        return self._admin_password
 
     @admin_password.setter
     def admin_password(self, value):
         self._admin_password = value
-
 
     @classmethod
     def get_hosts_from_env(cls, env_xml="/etc/HPCCSystems/environment.xml",
@@ -133,7 +117,6 @@ class Host(object):
             return Host.exclude_local_host(hosts)
         else:
             return hosts
-
 
     @classmethod
     def get_hosts_from_file(cls, file_name, exclude_local=False):
