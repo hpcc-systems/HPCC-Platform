@@ -4691,7 +4691,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 mb.clear().append((int) DAMP_SDSREPLY_OK);
                 if (queryTransactionLogging())
                 {
-                    CServerRemoteTree *idTree = (CServerRemoteTree *) SDSManager->queryRegisteredTree(serverId);
+                    Owned<CServerRemoteTree> idTree = (CServerRemoteTree *) SDSManager->getRegisteredTree(serverId);
                     transactionLog.log("%s", idTree?idTree->queryName():"???");
                 }
                 SDSManager->getExternalValueFromServerId(serverId, mb);
@@ -7207,7 +7207,7 @@ void CCovenSDSManager::getExternalValue(__int64 index, MemoryBuffer &mb)
 
 void CCovenSDSManager::getExternalValueFromServerId(__int64 serverId, MemoryBuffer &mb)
 {
-    CServerRemoteTree *idTree = (CServerRemoteTree *) SDSManager->queryRegisteredTree(serverId);
+    Owned<CServerRemoteTree> idTree = (CServerRemoteTree *) SDSManager->getRegisteredTree(serverId);
     if (idTree)
     {
         CHECKEDCRITICALBLOCK(extCrit, fakeCritTimeout);
