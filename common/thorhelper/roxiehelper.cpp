@@ -2421,9 +2421,9 @@ static const char *skipLfnForeign(const char *lfn)
     return lfn;
 }
 
-StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
+StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix)
 {
-    const char *native = skipLfnForeign(fname); //foreign location should already be reflected in local dali dfs meta data
+    const char *native = (ignoreForeignPrefix) ? skipLfnForeign(fname) : fname; //for published roxie queries foreign location already reflected in local dfs meta data
     if (fname[0]=='~')
         logicalName.append(native);
     else if (resolveLocally)

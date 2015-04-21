@@ -10032,7 +10032,7 @@ protected:
         {
             OwnedRoxieString rawLogicalName = helper.getFileName();
             StringBuffer lfn;   // logical filename
-            expandLogicalFilename(lfn, rawLogicalName, wu, false);
+            expandLogicalFilename(lfn, rawLogicalName, wu, false, false);
             if (lfn.length())
             {
                 unsigned flags = helper.getFlags();
@@ -10510,7 +10510,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         {
             OwnedRoxieString rawLogicalName = helper.getFileName();
             StringBuffer lfn;   // logical filename
-            expandLogicalFilename(lfn, rawLogicalName, wu, false);
+            expandLogicalFilename(lfn, rawLogicalName, wu, false, false);
             if (lfn.length())
             {
                 if (helper.getSequence() >= 0)

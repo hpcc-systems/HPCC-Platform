@@ -664,7 +664,7 @@ void CHThorDiskWriteActivity::publish()
     properties.setPropInt("@formatCrc", helper.getFormatCrc());
 
     StringBuffer lfn;
-    expandLogicalFilename(lfn, mangledHelperFileName.str(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+    expandLogicalFilename(lfn, mangledHelperFileName.str(), agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     CDfsLogicalFileName logicalName;
     if (agent.queryResolveFilesLocally())
         logicalName.allowOsPath(true);
@@ -992,7 +992,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     incomplete = false;
     StringBuffer lfn;
     OwnedRoxieString fname(helper.getFileName());
-    expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+    expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     if (!agent.queryResolveFilesLocally())
     {
         Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
@@ -1210,7 +1210,7 @@ void CHThorIndexWriteActivity::execute()
     {
         dfile.setown(queryDistributedFileDirectory().createNew(desc));
         OwnedRoxieString fname(helper.getFileName());
-        expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+        expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
         dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(dfile, "HThor", "CREATED");
     }

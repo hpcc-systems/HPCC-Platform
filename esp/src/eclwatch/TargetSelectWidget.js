@@ -66,7 +66,7 @@ define([
                 });
             }
             if (params.Groups === true) {
-                this.loadGroups();
+                this.loadClusterGroups();
             } else if (params.SprayTargets === true) {
                 this.loadSprayTargets();
             } else if (params.DropZones === true) {
@@ -170,17 +170,23 @@ define([
             }
         },
 
-        loadGroups: function () {
+        loadClusterGroups: function () {
             var context = this;
             WsTopology.TpGroupQuery({
                 load: function (response) {
                     if (lang.exists("TpGroupQueryResponse.TpGroups.TpGroup", response)) {
                         var targetData = response.TpGroupQueryResponse.TpGroups.TpGroup;
                         for (var i = 0; i < targetData.length; ++i) {
-                            context.options.push({
-                                label: targetData[i].Name,
-                                value: targetData[i].Name
-                            });
+                            switch(targetData[i].Kind) {
+                                case "Thor":
+                                case "hthor":
+                                case "Roxie":
+                                    context.options.push({
+                                        label: targetData[i].Name,
+                                        value: targetData[i].Name
+                                    });
+                                break;
+                            }
                         }
                         context._postLoad();
                     }

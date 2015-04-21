@@ -116,6 +116,8 @@ enum SecUserStatus
 };
 
 
+const static int scPasswordExpired = -1;
+const static int scPasswordNeverExpires = -2;
 
 interface ISecCredentials : extends IInterface
 {

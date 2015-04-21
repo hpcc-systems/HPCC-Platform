@@ -3458,6 +3458,10 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
 
     //If locally distributed then don't do anything
     OwnedHqlExpr noMerge = removeAttribute(expr, mergeAtom);
+    //This transformation only works for grouped aggregation
+    if (!groupBy || groupBy->isAttribute())
+        return noMerge.getClear();
+
     if (!translator.targetThor() || expr->hasAttribute(localAtom) || isPartitionedForGroup(dataset, groupBy, true))
         return noMerge.getClear();
 

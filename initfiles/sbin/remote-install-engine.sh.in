@@ -150,8 +150,8 @@ checkKeys(){
                 fi
                 rm -rf ${MD5}
                 rm -rf ${CURR}
-    else
-        CNT=1
+        else
+                CNT=1
         fi
         if [ "$CNT" == "1" ]; then
                 installKeys ${NEW} $1

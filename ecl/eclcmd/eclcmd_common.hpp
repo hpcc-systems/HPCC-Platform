@@ -19,6 +19,7 @@
 #define ECLCMD_COMMON_HPP
 
 #include "ws_workunits.hpp"
+#include "eclcc.hpp"
 
 //=========================================================================================
 
@@ -261,13 +262,31 @@ public:
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
             "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
             "   -Dname=value           Override the definition of a global attribute 'name'\n"
-            " eclcc options:\n"
-            "   -Ipath                 Add path to locations to search for ecl imports\n"
-            "   -Lpath                 Add path to locations to search for system libraries\n"
-            "   --manifest             Specify path to manifest file\n"
-            "   --legacy               Use legacy import semantics (deprecated)\n"
-            "   --debug, -g            Enable debug symbols in generated code\n"
+            " eclcc options (everything following):\n"
         );
+        for (unsigned line=0; line < _elements_in(helpText); line++)
+        {
+            const char * text = helpText[line];
+            StringBuffer wsPrefix;
+            if (*text == '?')
+            {
+                text = text+1;
+                if (*text != ' ')
+                    wsPrefix.append(' ');
+            }
+            else
+                continue;
+            if (*text == '!')
+            {
+                if (optVerbose)
+                {
+                    text = text+1;
+                    fprintf(stdout, "%s%s\n", wsPrefix.str(), text);
+                }
+            }
+            else
+                fprintf(stdout, "%s%s\n", wsPrefix.str(), text);
+        }
     }
 public:
     StringAttr optTargetCluster;

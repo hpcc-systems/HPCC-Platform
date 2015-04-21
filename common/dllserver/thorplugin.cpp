@@ -82,7 +82,7 @@ public:
     virtual const char * queryVersion() const;
     virtual const char * queryName() const;
     virtual const byte * getResource(unsigned id) const;
-    virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id) const;
+    virtual bool getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace) const;
 
     bool load(bool isGlobal, bool raiseOnError);
     bool loadCurrentExecutable();
@@ -184,7 +184,7 @@ const byte resourceHeaderVersion=1;
 const size32_t resourceHeaderLength = sizeof(byte) + sizeof(byte) + sizeof(bool) + sizeof(size32_t);
 
 
-bool HelperDll::getResource(size32_t & len, const void * & data, const char * type, unsigned id) const
+bool HelperDll::getResource(size32_t & len, const void * & data, const char * type, unsigned id, bool trace) const
 {
 #ifdef _WIN32
     HINSTANCE dllHandle = so.getInstanceHandle();
@@ -200,7 +200,8 @@ bool HelperDll::getResource(size32_t & len, const void * & data, const char * ty
     data = (const void *) getEntry(symName.str());
     if (!data)
     {
-        printf("Failed to locate symbol %s", symName.str());
+        if (trace)
+            printf("Failed to locate symbol %s", symName.str());
         return false;
     }
     byte bom;
@@ -468,7 +469,7 @@ extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll)
 {
     size32_t len = 0;
     const void * data = NULL;
-    return dll->getResource(len, data, "WORKUNIT", 1000);
+    return dll->getResource(len, data, "WORKUNIT", 1000, false);
 }
 
 extern DLLSERVER_API bool getResourceXMLFromFile(const char *filename, const char *type, unsigned id, StringBuffer &xml)
