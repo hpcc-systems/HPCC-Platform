@@ -40,6 +40,7 @@ public:
 class CSplitterOutput : public CSplitterOutputBase
 {
     NSplitterSlaveActivity &activity;
+    Semaphore writeBlockSem;
 
     unsigned output;
     rowcount_t rec, max;
@@ -67,7 +68,8 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     bool eofHit;
     bool inputsConfigured;
     bool writeBlocked, pagedOut;
-    CriticalSection startLock, writeAheadCrit, writeBlockedCrit;
+    CriticalSection startLock, writeAheadCrit;
+    PointerArrayOf<Semaphore> stalledWriters;
     unsigned nstopped;
     rowcount_t recsReady;
     IThorDataLink *input;
@@ -92,8 +94,9 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         ~CWriter() { stop(); }
         virtual void main()
         {
+            Semaphore writeBlockSem;
             while (!stopped && !parent.eofHit)
-                current = parent.writeahead(current, stopped);
+                current = parent.writeahead(current, stopped, writeBlockSem);
         }
         void start()
         {
@@ -261,6 +264,7 @@ public:
         eofHit = false;
         recsReady = 0;
         writeBlocked = false;
+        stalledWriters.kill();
         if (inputsConfigured)
         {
             // ensure old inputs cleared, to avoid being reused before re-setup on subsequent executions
@@ -334,7 +338,7 @@ public:
             throw LINK(writeAheadException);
         return row.getClear();
     }
-    rowcount_t writeahead(rowcount_t current, const bool &stopped)
+    rowcount_t writeahead(rowcount_t current, const bool &stopped, Semaphore &writeBlockSem)
     {
         // NB: readers call writeahead, which will block others
         CriticalBlock b(writeAheadCrit);
@@ -344,16 +348,11 @@ public:
                 return recsReady;
             if (current < recsReady)
                 return recsReady;
-            else if (writeBlocked)
+            else if (writeBlocked) // NB: only used by 'balanced' splitter, which blocks write when too far ahead
             {
-                // NB: When here, writeAheadCrit has been released _and_ writeBlockedCrit will be held until the writer is unblocked
-                {
-                    CriticalUnblock ub(writeAheadCrit);
-                    {
-                        CriticalBlock b(writeBlockedCrit); // This will block until the thread that is writing ahead has done
-                        // Once writeBlockCrit gained, writeBlocked is always 'false'
-                    }
-                }
+                stalledWriters.append(&writeBlockSem);
+                CriticalUnblock ub(writeAheadCrit);
+                writeBlockSem.wait(); // when active writer unblocks, signals all stalledWriters
                 // recsReady or eofHit will have been updated by the blocking thread by now, loop and re-check
             }
             else
@@ -374,7 +373,7 @@ public:
                     row.setown(input->nextRow());
                     if (row)
                     {
-                        smartBuf->putRow(NULL, this);
+                        smartBuf->putRow(NULL, this); // may call blocked() (see ISharedSmartBufferCallback impl. below)
                         ++recsReady;
                     }
                 }
@@ -421,7 +420,6 @@ public:
     virtual void paged() { pagedOut = true; }
     virtual void blocked()
     {
-        writeBlockedCrit.enter(); // enter before unblocking writeahead
         writeBlocked = true; // Prevent other users getting beyond checking recsReady in writeahead()
         writeAheadCrit.leave();
     }
@@ -429,7 +427,11 @@ public:
     {
         writeAheadCrit.enter();
         writeBlocked = false;
-        writeBlockedCrit.leave(); // leave after re-blocking writer
+        if (stalledWriters.ordinality())
+        {
+            ForEachItemInRev(s, stalledWriters)
+                stalledWriters.popGet()->signal();
+        }
     }
 friend class CInputWrapper;
 friend class CSplitterOutput;
@@ -465,7 +467,7 @@ void CSplitterOutput::stop()
 const void *CSplitterOutput::nextRow()
 {
     if (rec == max)
-        max = activity.writeahead(max, activity.queryAbortSoon());
+        max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem);
     ActivityTimer t(totalCycles, activity.queryTimeActivities());
     const void *row = activity.nextRow(output); // pass ptr to max if need more
     ++rec;
