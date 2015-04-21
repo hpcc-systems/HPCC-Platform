@@ -50,6 +50,7 @@
 #include "rmtfile.hpp"
 
 #include "reservedwords.hpp"
+#include "eclcc.hpp"
 
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
@@ -1935,7 +1936,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             debugOptions.append(tempArg);
         }
-        else if (iter.matchFlag(tempBool, "-g"))
+        else if (iter.matchFlag(tempBool, "-g") || iter.matchFlag(tempBool, "--debug"))
         {
             if (tempBool)
             {
@@ -2164,123 +2165,32 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
 //=========================================================================================
 
-// Exclamation in the first column indicates it is only part of the verbose output
-const char * const helpText[] = {
-    "",
-    "Usage:",
-    "    eclcc <options> queryfile.ecl",
-    "",
-    "General options:",
-    "    -I <path>     Add path to locations to search for ecl imports",
-    "    -L <path>     Add path to locations to search for system libraries",
-    "    -o <file>     Specify name of output file (default a.out if linking to",
-    "                  executable, or stdout)",
-    "    -manifest     Specify path to manifest file listing resources to add",
-    "    -foption[=value] Set an ecl option (#option)",
-    "    -main <ref>   Compile definition <ref> from the source collection",
-    "    -syntax       Perform a syntax check of the ECL",
-    "    -platform=hthor Generate code for hthor executable (default)",
-    "    -platform=roxie Generate code for roxie cluster",
-    "    -platform=thor  Generate code for thor cluster",
-    "",
-    "Output control options",
-    "    -E            Output preprocessed ECL in xml archive form",
-    "!   -M            Output meta information for the ecl files",
-    "!   -Md           Output dependency information",
-    "!   -Me           eclcc should evaluate supplied ecl code rather than generating a workunit",
-    "    -q            Save ECL query text as part of workunit",
-    "    -wu           Only generate workunit information as xml file",
-    "",
-    "c++ options",
-    "    -S            Generate c++ output, but don't compile",
-    "!   -c            compile only (don't link)",
-    "    -g            Enable debug symbols in generated code",
-    "    -Wc,xx        Pass option xx to the c++ compiler",
-    "!   -Wl,xx        Pass option xx to the linker",
-    "!   -Wa,xx        Passed straight through to c++ compiler",
-    "!   -Wp,xx        Passed straight through to c++ compiler",
-    "!   -save-cpps    Do not delete generated c++ files (implied if -g)",
-    "!   -save-temps   Do not delete intermediate files",
-    "    -shared       Generate workunit shared object instead of a stand-alone exe",
-    "",
-    "Other options:",
-    "!   -aoption[=value] Set an application option",
-    "!   --allow=str   Allow use of named feature",
-    "!   -b            Batch mode.  Each source file is processed in turn.  Output",
-    "!                 name depends on the input filename",
-    "!   -checkVersion Enable/disable ecl version checking from archives",
-    "!   --component   Set the name of the component this is executing on behalf of",
-#ifdef _WIN32
-    "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
-#endif
-    "!   -Dname=value  Override the definition of a global attribute 'name'",
-    "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
-    "!   --deny=str    Disallow use of named feature",
-    "    -help, --help Display this message",
-    "    -help -v      Display verbose help message",
-    "!   -internal     Run internal tests",
-    "!   -legacy       Use legacy import and when semantics (deprecated)",
-    "!   --keywords    Outputs the list of ECL reserved words to ECLKeywords.xml",
-    "!   -legacyimport Use legacy import semantics (deprecated)",
-    "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
-    "    --logfile <file> Write log to specified file",
-    "!   --logdetail=n Set the level of detail in the log file",
-    "!   --nologfile   Do not write any logfile",
-#ifdef _WIN32
-    "!   -m            Enable leak checking",
-#endif
-    "    --nosourcepath Compile as if the source came from stdin",
-#ifndef _WIN32
-    "!   -pch          Generate precompiled header for eclinclude4.hpp",
-#endif
-    "!   -P <path>     Specify the path of the output files (only with -b option)",
-    "!   -showpaths    Print information about the searchpaths eclcc is using",
-    "    -specs file   Read eclcc configuration from specified file",
-    "!   -split m:n    Process a subset m of n input files (only with -b option)",
-    "    -v --verbose  Output additional tracing information while compiling",
-    "    -wxxxx=level  Set the severity for a particular warning code or category",
-    "!                 -wall sets default severity for all warnings",
-    "!                 level=ignore|log|warning|error|fail",
-    "    --version     Output version information",
-    "!   --timings     Output additional timing information",
-    "!",
-    "!#options",
-    "! -factivitiesPerCpp      Number of activities in each c++ file",
-    "!                         (requires -fspanMultipleCpp)",
-    "! -fapplyInstantEclTransformations Limit non file outputs with a CHOOSEN",
-    "! -fapplyInstantEclTransformationsLimit Number of records to limit to",
-    "! -fcheckAsserts          Check ASSERT() statements",
-    "! -fexportDependencies    Generate information about inter-definition dependencies",
-    "! -fmaxCompileThreads     Number of compiler instances to compile the c++",
-    "! -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
-    "! -fpickBestEngine        Allow simple thor queries to be passed to thor",
-    "! -freportCppWarnings     Report warnings from c++ compilation",
-    "! -fsaveCppTempFiles      Retain the generated c++ files",
-    "! -fshowActivitySizeInGraph Show estimates of generated c++ size in the graph",
-    "! -fshowMetaInGraph       Add distribution/sort orders to the graph",
-    "! -fshowRecordCountInGraph Show estimates of record counts in the graph",
-    "! -fspanMultipleCpp       Generate a work unit in multiple c++ files",
-    "",
-};
+
 
 void EclCC::usage()
 {
     for (unsigned line=0; line < _elements_in(helpText); line++)
     {
         const char * text = helpText[line];
+        StringBuffer wsPrefix;
+        if (*text == '?')  //NOTE: '?' indicates eclcmd usage so don't print.
+        {
+            text = text+1;
+            if (*text == ' ' || ( *text == '!' && text[1] == ' '))
+                wsPrefix.append(' ');
+        }
         if (*text == '!')
         {
             if (logVerbose)
             {
-                //Allow conditional headers
-                if (text[1] == ' ')
-                    fprintf(stdout, " %s\n", text+1);
-                else
-                    fprintf(stdout, "%s\n", text+1);
+                text = text+1;
+                if (*text == ' ')
+                    wsPrefix.append(' ');
+                fprintf(stdout, "%s%s\n", wsPrefix.str(), text);
             }
         }
         else
-            fprintf(stdout, "%s\n", text);
+            fprintf(stdout, "%s%s\n", wsPrefix.str(), text);
     }
 }
 

@@ -38,6 +38,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/xmllib
          ${HPCC_SOURCE_DIR}/ecl/eclcmd
+         ${HPCC_SOURCE_DIR}/ecl/eclcc
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
