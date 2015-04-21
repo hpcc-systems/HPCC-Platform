@@ -41,8 +41,8 @@
   <para>Example:</para>
 
   <programlisting>  ds := NONEMPTY(SomeData(SomeFilter),
-  SomeData(SomeOtherFilter),
-  SomeOtherData(YetAnotherFilter));</programlisting>
+                 SomeData(SomeOtherFilter),
+                 SomeOtherData(YetAnotherFilter));</programlisting>
 
   <para>See Also: <link linkend="EXISTS">EXISTS</link></para>
 </sect1>
