@@ -275,7 +275,8 @@ IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *para
     {
         const char *key = props->getPropKey();
         const char *value = parameters->queryProp(key);
-        ensureParameter(pt, key, value);
+        if (value && *value)
+            ensureParameter(pt, key, value);
     }
     return pt.getClear();
 }
@@ -1917,7 +1918,7 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     IProperties *parms = context.queryRequestParameters();
 
     StringBuffer soapmsg, pageName;
-    getSoapMessage(soapmsg, context, request, wsinfo, 0, true);
+    getSoapMessage(soapmsg, context, request, wsinfo, REQSF_TRIM|REQSF_ROOT, true);
 
     StringBuffer params;
     const char* excludes[] = {"soap_builder_",NULL};
@@ -1983,7 +1984,7 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     IProperties *parms = context.queryRequestParameters();
 
     StringBuffer jsonmsg, pageName;
-    getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0, true);
+    getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, REQSF_TRIM, true);
 
     StringBuffer params;
     const char* excludes[] = {"soap_builder_",NULL};
@@ -2233,7 +2234,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
     if (isRoxieReq && outputJSON)
     {
         StringBuffer jsonmsg;
-        getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0, false);
+        getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, REQSF_TRIM, false);
         if (jsonp && *jsonp)
             output.append(jsonp).append('(');
         sendRoxieRequest(wsinfo.qsetname.get(), jsonmsg, output, status, wsinfo.queryname, "application/json");
