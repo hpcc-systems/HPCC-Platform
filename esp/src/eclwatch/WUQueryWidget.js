@@ -198,6 +198,7 @@ define([
         getFilter: function () {
             var retVal = this.filter.toObject();
             lang.mixin(retVal, {
+                Wuid: retVal.Wuid.toUpperCase().trim(),
                 StartDate: this.getISOString("FromDate", "FromTime"),
                 EndDate: this.getISOString("ToDate", "ToTime")
             });
