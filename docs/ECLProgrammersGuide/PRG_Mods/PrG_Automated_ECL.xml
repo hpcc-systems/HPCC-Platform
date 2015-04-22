@@ -50,7 +50,7 @@ PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
   correctly, you can automate the process by using ECLplus.</para>
 
   <para>Install the ECLplus program in its own directory on the same PC that
-  runs the ECL IDE, and create an ECLPLUS.INI file with the correct settings
+  runs the ECL IDE, and create an ECLPLUS.INI file in the same folder with the correct settings
   to access your cluster (see the <emphasis>Command Line ECL</emphasis>
   section of the <emphasis>Client Tools </emphasis>PDF). Then you can open a
   Command Prompt window and run the same query from the command line like
