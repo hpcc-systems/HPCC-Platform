@@ -48,6 +48,7 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPLogicalFile",
+    "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/SFDetailsWidget.html",
 
@@ -56,7 +57,7 @@ define([
                 BorderContainer, TabContainer, ContentPane, Toolbar, ToolbarSeparator, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 selector,
                 _TabContainerWidget,
-                ESPUtil, ESPLogicalFile,
+                ESPUtil, ESPLogicalFile, DelayLoadWidget,
                 template) {
     exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -96,6 +97,19 @@ define([
         },
         _onRemove: function (event) {
             this.logicalFile.removeSubfiles(this.subfilesGrid.getSelected());
+        },
+        _onOpen: function (event) {
+            var selections = this.subfilesGrid.getSelected();
+            var firstTab = null;
+            for (var i = selections.length - 1; i >= 0; --i) {
+                var tab = this.ensureLFPane(selections[i].Name, selections[i]);
+                if (i == 0) {
+                    firstTab = tab;
+                }
+            }
+            if (firstTab) {
+                this.selectChild(firstTab, true);
+            }
         },
         _onCopyOk: function (event) {
             this.logicalFile.copy({
@@ -194,7 +208,12 @@ define([
                             return "";
                         }
                     },
-                    Name: { label: this.i18n.LogicalName },
+                    Name: {
+                        label: this.i18n.LogicalName,
+                        formatter: function (name, row) {
+                            return "<a href='#' class='dgrid-row-url'>" + name + "</a>";
+                        }
+                    },
                     Owner: { label: this.i18n.Owner, width: 72 },
                     Description: { label: this.i18n.Description, width: 153 },
                     RecordCount: { label: this.i18n.Records, width: 72, sortable: false },
@@ -204,11 +223,30 @@ define([
                 },
                 store: this.subfilesStore
             }, this.id + "SubfilesGrid");
+            var context = this;
+            this.subfilesGrid.on(".dgrid-row-url:click", function (evt) {
+                var item = context.subfilesGrid.row(evt).data;
+                var tab = context.ensureLFPane(item.Name, item);
+                context.selectChild(tab, true);
+            });
+            this.subfilesGrid.on(".dgrid-row:dblclick", function (evt) {
+                var item = context.subfilesGrid.row(evt).data;
+                var tab = context.ensureLFPane(item.Name, item);
+                context.selectChild(tab, true);
+            });
             this.subfilesGrid.startup();
         },
 
         initTab: function () {
             var currSel = this.getSelectedChild();
+            if (currSel && !currSel.initalized) {
+                if (currSel.id === this.summaryWidget.id) {
+                } else {
+                    if (!currSel.initalized) {
+                        currSel.init(currSel._hpccParams);
+                    }
+                }
+            }
         },
 
         showMessage: function (msg) {
@@ -256,6 +294,25 @@ define([
                 domClass.remove(this.id + "StateIdImage");
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
             }
+        },
+
+        ensureLFPane: function (id, params) {
+            id = this.createChildTabID(id);
+            var retVal = registry.byId(id);
+            if (!retVal) {
+                retVal = new DelayLoadWidget({
+                    id: id,
+                    title: params.Name,
+                    closable: true,
+                    delayWidget: "LFDetailsWidget",
+                    _hpccParams: {
+                        NodeGroup: params.NodeGroup,
+                        Name: params.Name
+                    }
+                });
+                this.addChild(retVal, 1);
+            }
+            return retVal;
         }
     });
 });

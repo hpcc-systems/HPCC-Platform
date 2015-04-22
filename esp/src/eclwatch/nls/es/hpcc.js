@@ -86,6 +86,7 @@ define(
     DeleteSelectedQueries: "¿Borrar queries seleccionados?",
     DeleteSelectedUsers: "Eliminar Usuario(s) escojido(s)?",
     DeleteSelectedWorkunits: "¿Borrar unidades de trabajo seleccionadas?",
+    DeleteSuperfile2: "¿Borrar Super-Archivo?",
     DeleteSuperfile: "¿Borrar super-archivo?",
     DeleteThisPackage: "Eliminar este paquete?",
     Delimited: "Delimitado",

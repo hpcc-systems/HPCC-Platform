@@ -87,6 +87,7 @@ define({root:
     DeleteSelectedUsers: "Delete selected user(s)?",
     DeleteSelectedWorkunits: "Delete Selected Workunits?",
     DeleteSuperfile: "Delete Superfile?",
+    DeleteSuperfile2: "Delete Superfile",
     DeleteThisPackage: "Delete this package?",
     Delimited: "Delimited",
     DenyAccess: "<center>Deny<br>Access</center>",

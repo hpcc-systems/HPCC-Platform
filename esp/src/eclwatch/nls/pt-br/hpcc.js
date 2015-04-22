@@ -44,6 +44,7 @@
     DeleteSelectedFiles: "Apagar Arquivos Selecionados?",
     DeleteSelectedQueries: "Apagar Consultas Selecionadas?",
     DeleteSelectedWorkunits: "Apagar Tarefas Selecionadas?",
+    DeleteSuperfile2: "Remover Super Arquivo",
     DeleteSuperfile: "Apagar Super Arquivo?",
     Delimited: "Delimitado",
     Depth: "Profundidade",
