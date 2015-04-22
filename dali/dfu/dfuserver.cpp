@@ -62,7 +62,7 @@ void usage()
 
 
 
-static bool exitDFUserver()
+static bool exitDFUserver(int sig)
 {
     engine->abortListeners();
     return false;

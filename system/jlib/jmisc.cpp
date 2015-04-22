@@ -710,7 +710,7 @@ public:
         installer = GetCurrentThreadId();
     }
 
-    bool handle()
+    bool handle(int sig=0)
     {
 #ifndef _WIN32
         if (installer == GetCurrentThreadId())
@@ -718,7 +718,7 @@ public:
         {
 //          DBGLOG("handle abort %x", GetCurrentThreadId());
             if (handler)
-                return handler();
+                return handler(sig);
             else
                 return ihandler->onAbort();
         }
@@ -731,7 +731,7 @@ public:
 
 CIArrayOf<AbortHandlerInfo> handlers;
 
-bool notifyOnAbort()
+bool notifyOnAbort(int sig)
 {
 //  DBGLOG("notifyOnAbort %x", GetCurrentThreadId());
 //      CriticalBlock c(abortCrit); You would think that this was needed, but it locks up.
@@ -739,7 +739,7 @@ bool notifyOnAbort()
     bool doExit = false;
     ForEachItemInRev(idx, handlers)
     {
-        if (handlers.item(idx).handle())
+        if (handlers.item(idx).handle(sig))
             doExit = true;
     }
 //  DBGLOG("notifyOnAbort returning %d", (int) doExit);
@@ -785,7 +785,7 @@ BOOL WINAPI ModuleExitHandler ( DWORD dwCtrlType )
 static void UnixAbortHandler(int sig)
 {
     hadAbortSignal = true;
-    if (handlers.length()==0 || notifyOnAbort())
+    if (handlers.length()==0 || notifyOnAbort(sig))
     {
         _exit(0);
     }

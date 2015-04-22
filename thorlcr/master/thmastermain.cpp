@@ -401,39 +401,48 @@ bool checkClusterRelicateDAFS(IGroup *grp)
 static bool auditStartLogged = false;
 
 static bool firstCtrlC = true;
-bool ControlHandler() 
+bool ControlHandler(int sig) 
 { 
-    if (firstCtrlC)
+    if (sig == SIGTERM)
     {
-        LOG(MCdebugProgress, thorJob, "CTRL-C detected");
-        firstCtrlC = false;
-        {
-            Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
-            if (registry)
-                registry->stop();
-        }
-        abortThor(NULL, TEC_CtrlC);
+        LOG(MCdebugProgress, thorJob, "SIGTERM detected, shutting down");
+        abortThor(NULL, TEC_Clean);
     }
-    else
+    else if (sig == SIGINT)
     {
-        LOG(MCdebugProgress, thorJob, "2nd CTRL-C detected - terminating process");
-
-        if (auditStartLogged)
+        if (firstCtrlC)
         {
-            auditStartLogged = false;
-            LOG(daliAuditLogCat,",Progress,Thor,Terminate,%s,%s,%s,ctrlc",
-                queryServerStatus().queryProperties()->queryProp("@thorname"),
-                queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
-                queryServerStatus().queryProperties()->queryProp("@queue"));
+            LOG(MCdebugProgress, thorJob, "CTRL-C detected");
+            firstCtrlC = false;
+            {
+                Owned<CRegistryServer> registry = CRegistryServer::getRegistryServer();
+                if (registry)
+                    registry->stop();
+            }
+            abortThor(NULL, TEC_CtrlC);
         }
-        queryLogMsgManager()->flushQueue(10*1000);
+        else
+        {
+            LOG(MCdebugProgress, thorJob, "2nd CTRL-C detected - terminating process");
+
+            if (auditStartLogged)
+            {
+                auditStartLogged = false;
+                LOG(daliAuditLogCat,",Progress,Thor,Terminate,%s,%s,%s,ctrlc",
+                    queryServerStatus().queryProperties()->queryProp("@thorname"),
+                    queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
+                    queryServerStatus().queryProperties()->queryProp("@queue"));
+            }
+            queryLogMsgManager()->flushQueue(10*1000);
 #ifdef _WIN32
-        TerminateProcess(GetCurrentProcess(), 1);
+            TerminateProcess(GetCurrentProcess(), 1);
 #else
-        //MORE- verify this
-        kill(getpid(), SIGKILL);
+            //MORE- verify this
+            // why not just raise(SIGKILL);  ?
+            kill(getpid(), SIGKILL);
 #endif
-        _exit(1);
+            _exit(1);
+        }
     }
     return false; 
 } 
