@@ -62,8 +62,8 @@
                 <entry>Optional. The name of a file containing necessary
                 <emphasis>options</emphasis>. If omitted and no command line
                 <emphasis>options</emphasis> are specified, the appropriate
-                <emphasis>options</emphasis> must be in the dfuplus.ini
-                file.</entry>
+                <emphasis>options</emphasis> must be in the dfuplus.ini file
+                in the same directory as the executable.</entry>
               </row>
 
               <row>
@@ -74,7 +74,8 @@
                 <emphasis>operation</emphasis> being executed. If omitted and
                 no <emphasis>@filename</emphasis> is specified, the
                 appropriate <emphasis>options</emphasis> must be in the
-                dfuplus.ini file.</entry>
+                dfuplus.ini file in the same directory as the
+                executable.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -84,7 +85,8 @@
         command line parameters to send to the Distributed File Utility (DFU)
         engine via the ESP server. These <emphasis>options</emphasis> can be
         specified on the command line, in the <emphasis>@filename</emphasis>,
-        in the dfuplus.ini file, or any combination.</para>
+        in the dfuplus.ini file in the same directory as the executable, or
+        any combination.</para>
 
         <para>Evaluation of options follows this order of precedence:</para>
 
@@ -283,9 +285,10 @@
           <title>dfuplus.ini</title>
 
           <para>Any <emphasis>options</emphasis> can be specified in a file
-          called dfuplus.ini. If your operating system is case-sensitive, make
-          sure the filename is in lowercase. Options that rarely change can be
-          put in the dfuplus.ini file. For example:</para>
+          called dfuplus.ini in the same directory as the executable. If your
+          operating system is case-sensitive, make sure the filename is in
+          lowercase. Options that rarely change can be put in the dfuplus.ini
+          file. For example:</para>
 
           <programlisting>server=http://10.150.50.12:8010
 username=rlor
@@ -706,13 +709,13 @@ dfuplus action=dspray srcname=le::imagedb
           from all the nodes of the cluster), typically from one cluster to
           another. It appropriately handles re-distributing the file parts if
           the source and destination clusters do not have the same number of
-          nodes. </para>
+          nodes.</para>
 
           <para>The copy operation can also be used to copy files from other
           HPCC environments (using the <emphasis>srcdali</emphasis> option).
           This is also known as a remote copy. For a remote copy of a file
           that contains a variable length field, you must include the
-          <emphasis role="bold">nosplit</emphasis> option. </para>
+          <emphasis role="bold">nosplit</emphasis> option.</para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">copy</emphasis> <emphasis>operation</emphasis>:</para>
