@@ -1494,18 +1494,18 @@ StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
 
 static const char *skipLfnForeign(const char *lfn)
 {
-    while (*lfn=='~')
-        lfn++;
+    // NOTE: The leading ~ and any leading spaces have already been stripped at this point
     const char *finger = lfn;
-    const char *scope = strstr(finger, "::");
-    if (scope)
+    if (strnicmp(finger, "foreign", 7)==0)
     {
-        StringBuffer cmp;
-        if (strieq("foreign", cmp.append(scope-finger, finger).trim()))
+        finger += 7;
+        while (*finger == ' ')
+            finger++;
+        if (finger[0] == ':' && finger[1] == ':')
         {
-            // foreign scope - need to strip off the ip and port
-            scope += 2;  // skip ::
-            finger = strstr(scope,"::");
+            // foreign scope - need to strip off the ip and port (i.e. from here to the next ::)
+            finger += 2;  // skip ::
+            finger = strstr(finger, "::");
             if (finger)
             {
                 finger += 2;
@@ -1520,12 +1520,17 @@ static const char *skipLfnForeign(const char *lfn)
 
 StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix)
 {
-    const char *native = (ignoreForeignPrefix) ? skipLfnForeign(fname) : fname; //for published roxie queries foreign location already reflected in local dfs meta data
     if (fname[0]=='~')
-        logicalName.append(native);
+    {
+        while (*fname=='~' || *fname==' ')
+            fname++;
+        if (ignoreForeignPrefix)
+            fname = skipLfnForeign(fname);
+        logicalName.append(fname);
+    }
     else if (resolveLocally)
     {
-        StringBuffer sb(native);
+        StringBuffer sb(fname);
         sb.replaceString("::",PATHSEPSTR);
         makeAbsolutePath(sb.str(), logicalName.clear());
     }
@@ -1538,7 +1543,7 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
             if(lfn.length())
                 logicalName.append(lfn.s).append("::");
         }
-        logicalName.append(native);
+        logicalName.append(fname);
     }
     return logicalName;
 }
