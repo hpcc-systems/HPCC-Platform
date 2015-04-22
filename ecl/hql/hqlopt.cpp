@@ -934,10 +934,22 @@ bool CTreeOptimizer::expandFilterCondition(HqlExprArray & expanded, HqlExprArray
         {
             ExpandComplexityMonitor expandMonitor(*this);
             OwnedHqlExpr expandedFilter;
-            if (moveOver)
-                expandedFilter.setown(expandFields(mapper, cur, child, grandchild, &expandMonitor));
-            else
-                expandedFilter.setown(mapper->expandFields(cur, child, grandchild, grandchild, &expandMonitor));
+            try
+            {
+                if (moveOver)
+                    expandedFilter.setown(expandFields(mapper, cur, child, grandchild, &expandMonitor));
+                else
+                    expandedFilter.setown(mapper->expandFields(cur, child, grandchild, grandchild, &expandMonitor));
+            }
+            catch (IException * e)
+            {
+                //Highly unusual, but assertwild doesn't force the fields into the output, so the output of the
+                //project project may not include the fields that are wildcarded.
+                if (cur->getOperator() != no_assertwild)
+                    throw;
+                e->Release();
+                expandedFilter.set(cur);
+            }
 
             if (expandedFilter->isConstant())
             {
