@@ -1641,7 +1641,10 @@ void HqlCppWriter::generateStmt(IHqlStmt * stmt)
     switch (kind)
     {
         case assign_stmt:
-            generateStmtAssign(stmt);
+            generateStmtAssign(stmt, false);
+            break;
+        case assign_link_stmt:
+            generateStmtAssign(stmt, true);
             break;
         case block_stmt:
             generateChildren(stmt, true);
@@ -1753,12 +1756,13 @@ void HqlCppWriter::generateSimpleAssign(IHqlExpression * target, IHqlExpression 
     generateExprCpp(source).append(";");
 }
 
-void HqlCppWriter::generateStmtAssign(IHqlStmt * assign)
+void HqlCppWriter::generateStmtAssign(IHqlStmt * assign, bool link)
 {
     IHqlExpression * target = assign->queryExpr(0);
     IHqlExpression * source = assign->queryExpr(1);
 
     ITypeInfo * type = target->queryType();
+    const char * setFunction = link ? ".set(" : ".setown(";
 
     switch (type->getTypeCode())
     {
@@ -1781,7 +1785,7 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign)
             else if (type->getSize() == UNKNOWN_LENGTH)
             {
                 indent();
-                generateExprCpp(target).append(".setown(");
+                generateExprCpp(target).append(setFunction);
                 generateExprCpp(source).append(");");
             }
             else
@@ -1796,14 +1800,14 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign)
                 {
                     assertex(source->getOperator() == no_complex);
                     indent();
-                    generateExprCpp(target).append(".setown(");
+                    generateExprCpp(target).append(setFunction);
                     generateExprCpp(source->queryChild(0)).append(",");
                     generateExprCpp(source->queryChild(1)).append(");");
                 }
                 else
                 {
                     indent();
-                    generateExprCpp(target).append(".setown(");
+                    generateExprCpp(target).append(setFunction);
                     generateExprCpp(source).append(");");
                 }
             }
@@ -1815,7 +1819,7 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign)
             if (hasWrapperModifier(type))
             {
                 indent();
-                generateExprCpp(target).append(".setown(");
+                generateExprCpp(target).append(setFunction);
                 generateExprCpp(source).append(");");
             }
             else

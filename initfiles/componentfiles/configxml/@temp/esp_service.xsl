@@ -939,7 +939,13 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                         <xsl:if test="string(@roxie) != '' and string(@vip) != ''">
                             <xsl:variable name="roxie" select="@roxie"/>
                             <xsl:variable name="vip" select="@vip"/>
-                            <ProcessCluster name="{$roxie}" vip="{$vip}"></ProcessCluster>
+                            <xsl:variable name="sendTarget">
+                                <xsl:choose>
+                                    <xsl:when test="@sendTargetToRoxie"><xsl:value-of select="@sendTargetToRoxie"/></xsl:when>
+                                    <xsl:otherwise>true</xsl:otherwise>
+                                </xsl:choose>
+                            </xsl:variable>
+                            <ProcessCluster name="{$roxie}" vip="{$vip}" includeTargetInURL="{$sendTarget}"></ProcessCluster>
                         </xsl:if>
                     </xsl:for-each>
                 </VIPS>

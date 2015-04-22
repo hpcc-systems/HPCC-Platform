@@ -2274,9 +2274,11 @@ action
                         {
                             $1.annotateExprWithLocation();
                             $$.inherit($1);
-                            $$.setPosition($1);
                         }
-    | setMetaCommand
+    | setMetaCommand    {
+                            $1.annotateExprWithLocation();
+                            $$.inherit($1);
+                        }
     ;
 
 actionStmt

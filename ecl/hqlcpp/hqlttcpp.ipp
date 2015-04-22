@@ -30,7 +30,7 @@ class NewThorStoredReplacer : public QuickHqlTransformer
 public:
     NewThorStoredReplacer(HqlCppTranslator & _translator, IWorkUnit * _wu, ICodegenContextCallback * _logger);
 
-    virtual void doAnalyseBody(IHqlExpression * expr);
+    virtual void doAnalyse(IHqlExpression * expr);
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
 
     bool needToTransform();
@@ -601,15 +601,21 @@ private:
 class ScalarGlobalExtra : public HoistingTransformInfo
 {
 public:
-    ScalarGlobalExtra(IHqlExpression * _original) : HoistingTransformInfo(_original) { numUses = 0; alreadyGlobal = false; createGlobal = false; couldHoist = false; candidate = false; neverHoist = false; }
+    ScalarGlobalExtra(IHqlExpression * _original) : HoistingTransformInfo(_original)
+    {
+        numUses = 0;
+        alreadyGlobal = false;
+        createGlobal = false;
+        visitedAllowHoist = false;
+        isLocal = true;
+    }
 
 public:
     unsigned numUses;
-    bool alreadyGlobal;
-    bool createGlobal;
-    bool couldHoist;
-    bool candidate;
-    bool neverHoist;
+    bool alreadyGlobal;         // Is the expression always global anyway
+    bool createGlobal;          // Is it worth attempting to mark this as global
+    bool isLocal;               // Are all references to this expression within new globals()
+    bool visitedAllowHoist;     // Has this expr been visited allowing globals to be marked?
 };
 
 //Only does anything to scalar expressions => don't need a mergingTransformer
@@ -635,10 +641,13 @@ protected:
 
     inline ScalarGlobalExtra * queryBodyExtra(IHqlExpression * expr)        { return static_cast<ScalarGlobalExtra*>(queryTransformExtra(expr->queryBody())); }
 
+    static bool isCandidate(IHqlExpression * expr);
+    static bool canCreateCandidate(IHqlExpression * expr);
+
 protected:
     HqlCppTranslator & translator;
-    bool okToHoist;
-    bool neverHoist;
+    bool isGlobal;
+    bool isOkToHoist;
 };
 
 

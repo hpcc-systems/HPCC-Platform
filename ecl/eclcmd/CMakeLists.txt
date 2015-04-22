@@ -58,6 +58,7 @@ include_directories (
          ./../../system/include
          ./../../esp/bindings
          ./../../ecl/hql
+         ./../../ecl/eclcc
          ./../../dali/base
          ./../../esp/platform
          ./../../system/jlib

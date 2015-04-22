@@ -691,7 +691,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
 };
 
 
-ESPservice [version("1.08"), default_client_version("1.08"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.08"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);

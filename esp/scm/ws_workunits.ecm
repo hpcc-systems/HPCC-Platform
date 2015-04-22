@@ -1609,7 +1609,7 @@ ESPresponse [exceptions_inline] WUGetStatsResponse
 };
 
 ESPservice [
-    version("1.54"), default_client_version("1.54"),
+    version("1.54"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

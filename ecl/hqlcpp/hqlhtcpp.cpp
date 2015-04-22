@@ -1835,7 +1835,7 @@ void ActivityInstance::addAttribute(const char * name, IHqlExpression * expr)
 
 void ActivityInstance::addLocationAttribute(IHqlExpression * location)
 {
-    if (!translator.queryOptions().reportLocations)
+    if (!translator.queryOptions().reportLocations || translator.queryOptions().obfuscateOutput)
         return;
 
     unsigned line = location->getStartLine();
@@ -1858,6 +1858,9 @@ void ActivityInstance::addLocationAttribute(IHqlExpression * location)
 
 void ActivityInstance::addNameAttribute(IHqlExpression * symbol)
 {
+    if (translator.queryOptions().obfuscateOutput)
+        return;
+
     //Not so sure about adding a location for a named symbol if there are other locations already present....
     //We should probably perform some deduping instead.
     addLocationAttribute(symbol);
@@ -1934,9 +1937,12 @@ void ActivityInstance::processHint(IHqlExpression * attr)
 
 void ActivityInstance::processSection(IHqlExpression * section)
 {
-    StringBuffer sectionName;
-    getStringValue(sectionName, section->queryChild(0));
-    addAttribute("section", sectionName);
+    if (!translator.queryOptions().obfuscateOutput)
+    {
+        StringBuffer sectionName;
+        getStringValue(sectionName, section->queryChild(0));
+        addAttribute("section", sectionName);
+    }
 }
 
 void ActivityInstance::processHints(IHqlExpression * hintAttr)
@@ -1974,18 +1980,24 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     IPropertyTree * parentGraphNode = subgraph ? subgraph->tree.get() : defaultSubGraph;
     if (!parentGraphNode)
         return;
+
+    HqlCppOptions const & options = translator.queryOptions();
     assertex(kind < TAKlast);
     graphNode.set(parentGraphNode->addPropTree("node", createPTree()));
 
     graphNode->setPropInt64("@id", activityId);
-    StringBuffer label;
-    if (isGrouped)
-        label.append("Grouped ");
-    else if (isLocal)
-        label.append("Local ");
-    label.append(getActivityText(kind));
 
-    graphNode->setProp("@label", graphLabel ? graphLabel.get() : label.str());
+    if (!options.obfuscateOutput)
+    {
+        StringBuffer label;
+        if (isGrouped)
+            label.append("Grouped ");
+        else if (isLocal)
+            label.append("Local ");
+        label.append(getActivityText(kind));
+
+        graphNode->setProp("@label", graphLabel ? graphLabel.get() : label.str());
+    }
 
     IHqlExpression * cur = dataset;
     loop
@@ -2027,82 +2039,88 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (isNoAccess)
         addAttributeBool("noAccess", true);
 
-    if (graphEclText.length() == 0)
-        toECL(dataset->queryBody(), graphEclText, false, true);
-
-    elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
-    if (strcmp(graphEclText.str(), "<>") != 0)
-        addAttribute("ecl", graphEclText.str());
-
-    if (translator.queryOptions().showSeqInGraph)
+    if (!options.obfuscateOutput)
     {
-        IHqlExpression * selSeq = querySelSeq(dataset);
-        if (selSeq)
-            addAttributeInt("selSeq", selSeq->querySequenceExtra());
-    }
+        if (graphEclText.length() == 0)
+            toECL(dataset->queryBody(), graphEclText, false, true);
 
-
-    if (translator.queryOptions().showMetaInGraph)
-    {
-        StringBuffer s;
-        if (translator.targetThor())
+        elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
+        if (options.showEclInGraph)
         {
-            IHqlExpression * distribution = queryDistribution(dataset);
-            if (distribution && distribution->queryName() != localAtom)
-                addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
+            if (strcmp(graphEclText.str(), "<>") != 0)
+                addAttribute("ecl", graphEclText.str());
         }
 
-        IHqlExpression * grouping = queryGrouping(dataset);
-        if (grouping)
-            addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
-
-        if (translator.targetThor())
+        if (options.showSeqInGraph)
         {
-            IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
-            if (globalSortOrder)
-                addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
+            IHqlExpression * selSeq = querySelSeq(dataset);
+            if (selSeq)
+                addAttributeInt("selSeq", selSeq->querySequenceExtra());
         }
 
-        IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
-        if (localSortOrder)
-            addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
 
-        IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
-        if (groupSortOrder)
-            addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
-    }
-
-    if (translator.queryOptions().noteRecordSizeInGraph)
-    {
-        IHqlExpression * record = dataset->queryRecord();
-        if (!record && (getNumChildTables(dataset) == 1))
-            record = dataset->queryChild(0)->queryRecord();
-        if (record)
+        if (options.showMetaInGraph)
         {
-            size32_t maxSize = getMaxRecordSize(record, translator.getDefaultMaxRecordSize());
-            if (isVariableSizeRecord(record))
+            StringBuffer s;
+            if (translator.targetThor())
             {
-                size32_t minSize = getMinRecordSize(record);
-                size32_t expectedSize = getExpectedRecordSize(record);
-                StringBuffer temp;
-                temp.append(minSize).append("..");
-                if (maxRecordSizeUsesDefault(record))
-                    temp.append("?");
-                else
-                    temp.append(maxSize);
-                temp.append("(").append(expectedSize).append(")");
-                addAttribute("recordSize", temp.str());
+                IHqlExpression * distribution = queryDistribution(dataset);
+                if (distribution && distribution->queryName() != localAtom)
+                    addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
             }
-            else
-                addAttributeInt("recordSize", maxSize);
-        }
-    }
 
-    if (translator.queryOptions().showRecordCountInGraph && !dataset->isAction())
-    {
-        StringBuffer text;
-        getRecordCountText(text, dataset);
-        addAttribute("predictedCount", text);
+            IHqlExpression * grouping = queryGrouping(dataset);
+            if (grouping)
+                addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
+
+            if (translator.targetThor())
+            {
+                IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
+                if (globalSortOrder)
+                    addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
+            }
+
+            IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
+            if (localSortOrder)
+                addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
+
+            IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
+            if (groupSortOrder)
+                addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
+        }
+
+        if (options.noteRecordSizeInGraph)
+        {
+            IHqlExpression * record = dataset->queryRecord();
+            if (!record && (getNumChildTables(dataset) == 1))
+                record = dataset->queryChild(0)->queryRecord();
+            if (record)
+            {
+                size32_t maxSize = getMaxRecordSize(record, translator.getDefaultMaxRecordSize());
+                if (isVariableSizeRecord(record))
+                {
+                    size32_t minSize = getMinRecordSize(record);
+                    size32_t expectedSize = getExpectedRecordSize(record);
+                    StringBuffer temp;
+                    temp.append(minSize).append("..");
+                    if (maxRecordSizeUsesDefault(record))
+                        temp.append("?");
+                    else
+                        temp.append(maxSize);
+                    temp.append("(").append(expectedSize).append(")");
+                    addAttribute("recordSize", temp.str());
+                }
+                else
+                    addAttributeInt("recordSize", maxSize);
+            }
+        }
+
+        if (options.showRecordCountInGraph && !dataset->isAction())
+        {
+            StringBuffer text;
+            getRecordCountText(text, dataset);
+            addAttribute("predictedCount", text);
+        }
     }
 
     processAnnotations(dataset);
@@ -2248,7 +2266,7 @@ void ActivityInstance::buildSuffix()
             if ((options.complexClassesActivityFilter == 0) || (kind == options.complexClassesActivityFilter))
                 translator.WARNING2(CategoryEfficiency, HQLWRN_ComplexHelperClass, activityId, approxSize);
         }
-        if (options.showActivitySizeInGraph)
+        if (!options.obfuscateOutput && options.showActivitySizeInGraph)
             addAttributeInt("approxClassSize", approxSize);
     }
 
@@ -6760,10 +6778,12 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 }
         }
     }
+    catch (IError * e)
+    {
+        throw;
+    }
     catch (IException * e)
     {
-        if (dynamic_cast<IError *>(e))
-            throw;
         IHqlExpression * location = queryActiveActivityLocation();
         if (location)
         {
@@ -7999,7 +8019,11 @@ void HqlCppTranslator::doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget 
             case type_dictionary:
             case type_table:
             case type_groupedtable:
-                UNIMPLEMENTED;
+                {
+                    StringBuffer typeName;
+                    getFriendlyTypeStr(leftType, typeName);
+                    throwError2(HQLERR_UnsupportedRowDiffType, typeName.str(), expr->queryId()->str());
+                }
             }
 
             StringBuffer fullName;
