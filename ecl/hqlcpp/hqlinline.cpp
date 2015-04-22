@@ -284,7 +284,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             return 0;
         return getInlineFlags(ctx, expr->queryChild(0));
     case no_getgraphresult:
-        if (expr->hasAttribute(_distributed_Atom))
+        if (expr->hasAttribute(_distributed_Atom) || expr->hasAttribute(_streaming_Atom))
             return 0;
         return expr->isDatarow() ? RETevaluate : RETassign;
     case no_temptable:
