@@ -2268,6 +2268,8 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsiz
         trailer.crc = ~0U;
         trailer.compressedType = fast?FASTCOMPRESSEDFILEFLAG:COMPRESSEDFILEFLAG;
         trailer.blockSize = COMPRESSEDFILEBLOCKSIZE;
+        if (fast)
+            trailer.blockSize *= 4;
         trailer.recordSize = recordsize;
     }
     if (compressor)

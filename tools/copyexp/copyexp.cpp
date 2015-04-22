@@ -45,7 +45,7 @@ void usage(bool isHelp)
     doexit(isHelp ? 0 : 2);
 }
 
-#define BUFFERSIZE (0x100000)
+#define BUFFERSIZE (0x10000)
 
 void printCompDetails(const char *fname,IFileIO *baseio,ICompressedFileIO *cmpio,IFileIOStream *flzstrm)
 {
@@ -70,7 +70,7 @@ static const char *formatTime(unsigned t,StringBuffer &str)
     str.clear();
     if (t>100000)
         str.appendf("%ds",t/1000);
-    else if (t>100000)
+    else
         str.appendf("%dms",t);
     return str.str();
 
@@ -99,7 +99,7 @@ static void printStats(offset_t filesize,unsigned start,unsigned startu)
     if (elapsed<1000)
         printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsedu)*1000000,formatTimeU(elapsedu,tmp));
     else
-        printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsed)*1000,formatTime(elapsed*1000,tmp));
+        printf("%" I64F "d bytes copied, at %.2f MB/s in %s\n",filesize,((((double)filesize)/(1024*1024))/elapsed)*1000,formatTime(elapsed,tmp));
 }
 
 int copyExpanded(const char *from, const char *to, bool stats)
