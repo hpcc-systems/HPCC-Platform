@@ -1036,6 +1036,61 @@ public:
     }
 };
 
+class CLDAPMessage
+{
+public:
+    LDAPMessage *msg;
+    CLDAPMessage()       { msg = NULL; }
+    ~CLDAPMessage()      { ldapMsgFree(); }
+    inline void ldapMsgFree()  { if (msg) { ldap_msgfree(msg); msg = NULL;} }
+    inline operator LDAPMessage *() const { return msg; }
+};
+
+static CriticalSection  mpaCrit;
+static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _baseDN)
+{
+    static time_t   lastPwdAgeCheck = 0;
+    static __int64  maxPwdAge = PWD_NEVER_EXPIRES;
+    #define HOURLY  ((time_t)(60*60*1000))
+
+    CriticalBlock block(mpaCrit);
+    if (lastPwdAgeCheck != 0 && (((msTick() - lastPwdAgeCheck) < HOURLY)))//in case it was retrieved whilst this thread blocked
+        return maxPwdAge;
+
+    DBGLOG("Retrieving LDAP 'maxPwdAge'");
+    char* attrs[] = {"maxPwdAge", NULL};
+    CLDAPMessage searchResult;
+    TIMEVAL timeOut = {LDAPTIMEOUT,0};
+    Owned<ILdapConnection> lconn = _conns->getConnection();
+    LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
+    int result = ldap_search_ext_s(sys_ld, (char*)_baseDN, LDAP_SCOPE_BASE, NULL,
+        attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
+    if(result != LDAP_SUCCESS)
+    {
+        DBGLOG("ldap_search_ext_s error: %s, when searching maxPwdAge", ldap_err2string( result ));
+        return 0;
+    }
+    unsigned entries = ldap_count_entries(sys_ld, searchResult);
+    if(entries == 0)
+    {
+        DBGLOG("ldap_search_ext_s error: Could not find maxPwdAge");
+        return 0;
+    }
+    maxPwdAge = 0;
+    CLDAPGetValuesWrapper vals(sys_ld, searchResult.msg, "maxPwdAge");
+    if (vals.hasValues())
+    {
+        char *val = vals.queryValues()[0];
+        if (*val == '-')
+            ++val;
+        for (int x=0; val[x]; x++)
+            maxPwdAge = maxPwdAge * 10 + ( (int)val[x] - '0');
+    }
+    else
+        maxPwdAge = PWD_NEVER_EXPIRES;
+    lastPwdAgeCheck = msTick();
+    return maxPwdAge;
+}
 
 class CLdapClient : public CInterface, implements ILdapClient
 {
@@ -1047,18 +1102,6 @@ private:
     Owned<CLdapConfig>   m_ldapconfig;
     StringBuffer         m_pwscheme;
     bool                 m_domainPwdsNeverExpire;//no domain policy for password expiration
-    __int64              m_maxPwdAge;
-    time_t               m_lastPwdAgeCheck;
-
-    class CLDAPMessage
-    {
-    public:
-        LDAPMessage *msg;
-        CLDAPMessage()       { msg = NULL; }
-        ~CLDAPMessage()      { ldapMsgFree(); }
-        inline void ldapMsgFree()  { if (msg) { ldap_msgfree(msg); msg = NULL;} }
-        inline operator LDAPMessage *() const { return msg; }
-    };
 
 public:
     IMPLEMENT_IINTERFACE
@@ -1071,7 +1114,6 @@ public:
         else
             m_connections.setown(new CLdapConnectionPool(m_ldapconfig.get()));  
         m_pp = NULL;
-        m_lastPwdAgeCheck = 0;
         //m_defaultFileScopePermission = -2;
         //m_defaultWorkunitScopePermission = -2;
     }
@@ -1121,50 +1163,12 @@ public:
         createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(rtype), PT_DEFAULT);
     }
 
-    virtual __int64 getMaxPwdAge()
-    {
-        if ((msTick() - m_lastPwdAgeCheck) < (60*1000))
-            return m_maxPwdAge;
-        char* attrs[] = {"maxPwdAge", NULL};
-        CLDAPMessage searchResult;
-        TIMEVAL timeOut = {LDAPTIMEOUT,0};
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
-        LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
-        int result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getBasedn(), LDAP_SCOPE_BASE, NULL,
-                                        attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
-        if(result != LDAP_SUCCESS)
-        {
-            DBGLOG("ldap_search_ext_s error: %s, when searching maxPwdAge", ldap_err2string( result ));
-            return 0;
-        }
-        unsigned entries = ldap_count_entries(sys_ld, searchResult);
-        if(entries == 0)
-        {
-            DBGLOG("ldap_search_ext_s error: Could not find maxPwdAge");
-            return 0;
-        }
-        m_maxPwdAge = 0;
-        CLDAPGetValuesWrapper vals(sys_ld, searchResult.msg, "maxPwdAge");
-        if (vals.hasValues())
-        {
-            char *val = vals.queryValues()[0];
-            if (*val == '-')
-                ++val;
-            for (int x=0; val[x]; x++)
-                m_maxPwdAge = m_maxPwdAge * 10 + ( (int)val[x] - '0');
-        }
-        else
-            m_maxPwdAge = PWD_NEVER_EXPIRES;
-        m_lastPwdAgeCheck = msTick();
-        return m_maxPwdAge;
-    }
-
     void calcPWExpiry(CDateTime &dt, unsigned len, char * val)
     {
         __int64 time = 0;
         for (unsigned x=0; x < len; x++)
             time = time * 10 + ( (int)val[x] - '0');
-        time += m_maxPwdAge;
+        time += getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn() );
         dt.setFromFILETIME(time);
         dt.adjustTime(dt.queryUtcToLocalDelta());
     }
@@ -1180,8 +1184,7 @@ public:
             if(!username || !*username || !password || !*password)
                 return false;
 
-            getMaxPwdAge();//sets m_maxPwdAge
-            if (m_maxPwdAge != PWD_NEVER_EXPIRES)
+            if (getMaxPwdAge(m_connections,(char*)m_ldapconfig->getBasedn()) != PWD_NEVER_EXPIRES)
                 m_domainPwdsNeverExpire = false;
             else
                 m_domainPwdsNeverExpire = true;
