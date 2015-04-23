@@ -6601,7 +6601,9 @@ e) Repeat (c) again.
 
 f) Split the logical graph into subgraphs.  For Thor the subgraphs have the following requirements:
    1) Dependencies are in separate subgraphs from the activities that need them
-   2) Lazy results are in separate subgraphs from non-lazy results (?? is this needed)
+   2) Lazy results are in separate subgraphs from non-lazy results.
+      **When lazy results are implemented, check if this really is still a requirement, or can Thor child graphs
+        be executed more like roxie?
    3) Conditional subgraphs are not combined
    4) Each subgraph is within the appropriate resource limits.
 
@@ -6617,8 +6619,8 @@ Because they are implemented by different stages it is necessary to keep track o
 are required, and which are primarily dependencies within the graph.  (Note external results that are lazily executed
 may also be marked as lazy.)  The following attributes are used:
 
-attr(_lazy_Atom, optCondition) - this external result is evaluated lazily.  The condition is optional
+attr(_lazy_Atom, optCondition) - this external result is evaluated lazily.  The condition is optional.
 attr(_graphLocal_Atom) - this result is only evaluated within the graph.  (May want to not save via the workunit.)
-attr(_update_Atom) - a dependency of something with a ,UPDATE flag so may not be evaluated.  (Not currently used).
+attr(_update_Atom) - a dependency of something with a ,UPDATE flag so may not be evaluated.  (Not currently used.)
 
  */

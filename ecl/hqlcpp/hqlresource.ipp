@@ -204,7 +204,7 @@ protected:
 public:
     OwnedHqlExpr createdGraph;
     CResourceOptions * options;
-    GraphLinkArray dependsOn;           // NB: These do no link....
+    GraphLinkArray dependsOn;           // NB: These do not link....
     GraphLinkArray sources;
     GraphLinkArray sinks;
     HqlExprArray conditions;
@@ -421,7 +421,7 @@ public:
     HqlExprArray projected;
     HqlExprAttr projectedExpr;
     CIArrayOf<CSplitterLink> balancedLinks;
-    GraphLinkArray dependsOn;           // NB: These do no link....
+    GraphLinkArray dependsOn;           // NB: These do not link....
 
     unsigned numUses;
     unsigned numExternalUses;
