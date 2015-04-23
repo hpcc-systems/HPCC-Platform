@@ -576,7 +576,9 @@ stop_component() {
         log_success_msg
     fi
 
-    cleanupRuntimeEnvironment
+    removePid ${PIDPATH}
+    unlock ${LOCKPATH}
+
     RCSTOP=0
 
     return ${RCSTOP}
