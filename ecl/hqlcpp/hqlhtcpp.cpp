@@ -5805,6 +5805,12 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,BUILD_TAG,LANGUAGE_VERSION);
         cacheOptions();
 
+        if (options.obfuscateOutput)
+        {
+            Owned<IWUQuery> query = wu()->updateQuery();
+            query->setQueryText(NULL);
+        }
+
         useLibrary(ECLRTL_LIB);
         useInclude("eclrtl.hpp");
 

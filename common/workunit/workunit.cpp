@@ -1999,6 +1999,7 @@ public:
     virtual void        setQueryMainDefinition(const char * str);
     virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc);
     virtual void        removeAssociatedFiles();
+    virtual void        removeAssociatedFile(WUFileType type, const char * name, const char * desc);
 };
 
 class CLocalWUWebServicesInfo : public CInterface, implements IWUWebServicesInfo
@@ -7647,6 +7648,23 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
         s->setPropInt("@crc", crc);
     IConstWUAssociatedFile * q = new CLocalWUAssociated(LINK(s)); 
     associated.append(*q);
+}
+
+void CLocalWUQuery::removeAssociatedFile(WUFileType type, const char * name, const char * desc)
+{
+    CriticalBlock block(crit);
+    associatedCached = false;
+    associated.kill();
+    StringBuffer xpath;
+    xpath.append("Associated/File");
+    if (type)
+        xpath.append("[@type=\"").append(getEnumText(type, queryFileTypes)).append("\"]");
+    if (name)
+        xpath.append("[@filename=\"").append(name).append("\"]");
+    if (desc)
+        xpath.append("[@desc=\"").append(desc).append("\"]");
+
+    p->removeProp(xpath.str());
 }
 
 void CLocalWUQuery::removeAssociatedFiles()
