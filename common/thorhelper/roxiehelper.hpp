@@ -110,6 +110,7 @@ interface ISortAlgorithm : extends IInterface
     virtual void prepare(IInputBase *input) = 0;
     virtual const void *next() = 0;
     virtual void reset() = 0;
+    virtual void getSortedGroup(ConstPointerArray & result) = 0;
 };
 
 extern THORHELPER_API ISortAlgorithm *createQuickSortAlgorithm(ICompare *_compare);
