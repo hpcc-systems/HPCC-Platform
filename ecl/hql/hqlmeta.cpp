@@ -2443,6 +2443,22 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
             }
             break;
         }
+    case no_quantile:
+        //It is not be safe to assume that all implementations of the quantile activity will generate their results in order.
+        if (expr->hasAttribute(localAtom) || isGrouped(dataset))
+        {
+            IHqlExpression * transform = expr->queryChild(3);
+            OwnedHqlExpr leftSelect = createSelector(no_left, dataset, expr->queryAttribute(_selectorSequence_Atom));
+            TableProjectMapper mapper;
+            mapper.setMapping(transform, leftSelect);
+
+            extractMeta(meta, dataset);
+            meta.removeAllSortOrders();
+            meta.applyProject(mapper);  // distribution preserved if local..
+        }
+        else
+            meta.preserveGrouping(dataset);
+        break;
     case no_iterate:
     case no_transformebcdic:
     case no_transformascii:
@@ -3072,6 +3088,10 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
         break;
     case no_newsoapcall:
         recordArg = 4;
+        break;
+    case no_quantile:
+        recordArg = 3;
+        nowGrouped = isGrouped(datasetType);
         break;
     case no_soapcall_ds:
         recordArg = 4;

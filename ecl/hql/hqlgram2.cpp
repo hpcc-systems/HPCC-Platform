@@ -5770,6 +5770,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
     return NULL;
 }
 
+
 IHqlExpression * HqlGram::createDistributeCond(IHqlExpression * leftDs, IHqlExpression * rightDs, const attribute & err, const attribute & seqAttr)
 {
     IHqlSimpleScope * leftScope = leftDs->queryRecord()->querySimpleScope();
@@ -10649,6 +10650,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case PROJECT: msg.append("PROJECT"); break;
     case PULL: msg.append("PULL"); break;
     case PULLED: msg.append("PULLED"); break;
+    case QUANTILE: msg.append("QUANTILE"); break;
     case QUOTE: msg.append("QUOTE"); break;
     case RANDOM: msg.append("RANDOM"); break;
     case RANGE: msg.append("RANGE"); break;
@@ -10680,6 +10682,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case RULE: msg.append("RULE"); break;
     case SAMPLE: msg.append("SAMPLE"); break;
     case SCAN: msg.append("SCAN"); break;
+    case SCORE: msg.append("SCORE"); break;
     case SECTION: msg.append("SECTION"); break;
     case SELF: msg.append("SELF"); break;
     case SEPARATOR: msg.append("SEPARATOR"); break;
@@ -10904,7 +10907,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,

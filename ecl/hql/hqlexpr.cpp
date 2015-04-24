@@ -1349,6 +1349,7 @@ const char *getOpString(node_operator op)
     case no_newsoapcall: return "SOAPCALL";
     case no_newsoapcall_ds: return "SOAPCALL";
     case no_soapaction_ds: return "SOAPCALL";
+    case no_quantile: return "QUANTILE";
     case no_newsoapaction_ds: return "SOAPCALL";
     case no_temprow: return "ROW"; 
     case no_projectrow: return "ROW"; 
@@ -1528,7 +1529,6 @@ const char *getOpString(node_operator op)
     case no_unused80:
     case no_unused81:
     case no_unused83:
-    case no_unused101:
     case no_unused102:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
@@ -1602,6 +1602,7 @@ bool checkConstant(node_operator op)
     case no_newsoapcall:
     case no_newsoapcall_ds:
     case no_newsoapaction_ds:
+    case no_quantile:
     case no_filepos:
     case no_file_logicalname:
     case no_failcode:
@@ -2009,6 +2010,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_soapaction_ds:
     case no_newsoapcall_ds:
     case no_newsoapaction_ds:
+    case no_quantile:
         return childdataset_datasetleft;
     case no_keyeddistribute:
         return childdataset_leftright;
@@ -2216,6 +2218,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_soapaction_ds:
     case no_newsoapcall_ds:
     case no_newsoapaction_ds:
+    case no_quantile:
     case no_activerow:
     case no_newrow:
     case no_keyedlimit:
@@ -2567,6 +2570,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_soapcall_ds:
     case no_newsoapcall:
     case no_newsoapcall_ds:
+    case no_quantile:
     case no_alias:
     case no_id2blob:
     case no_embedbody:
@@ -2672,6 +2676,7 @@ unsigned queryTransformIndex(IHqlExpression * expr)
     case no_parse:
     case no_soapcall:
     case no_newxmlparse:
+    case no_quantile:
         pos = 3;
         break;
     case no_newparse:
@@ -2737,6 +2742,7 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     case no_soapcall:
     case no_httpcall:
     case no_newxmlparse:
+    case no_quantile:
         return expr->queryChild(3);
     case no_newparse:
     case no_newsoapcall:            // 4 because input(2) gets transformed.
@@ -11826,6 +11832,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
     switch (op)
     {
     case no_soapcall:
+    case no_quantile:
         {
             IHqlExpression & record = args.item(3);
             type = makeRowType(record.getType());

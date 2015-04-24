@@ -5917,6 +5917,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_projectrow:
     case no_createrow:
     case no_dataset_from_transform:
+    case no_quantile:
         {
             IHqlExpression * transform = queryNewColumnProvider(expr);
             exprMapping.setown(HqlConstantPercolator::extractConstantMapping(transform));

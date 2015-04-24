@@ -347,6 +347,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_soapcall_ds:
     case no_newsoapcall:
     case no_newsoapcall_ds:
+    case no_quantile:
     case no_nonempty:
     case no_filtergroup:
     case no_limit:
@@ -629,7 +630,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
     case no_unused80: case no_unused83:
-    case no_unused101: case no_unused102:
+    case no_unused102:
     case no_is_null:
     case no_position:
     case no_current_time:
@@ -2813,6 +2814,27 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                 info.limitMin(choosenLimit);
         }
         break;
+    case no_quantile:
+        {
+            __int64 parts = getIntValue(expr->queryChild(1), 0);
+            if ((parts > 0) && !isGrouped(expr) && !isLocalActivity(expr))
+            {
+                if (expr->hasAttribute(firstAtom))
+                    parts++;
+                if (expr->hasAttribute(lastAtom))
+                    parts++;
+
+                IHqlExpression * transform = queryNewColumnProvider(expr);
+                if (transformContainsSkip(transform) || expr->hasAttribute(dedupAtom))
+                    info.setRange(0,parts-1);
+                else
+                    info.setN(parts-1);
+            }
+            else
+                info.setUnknown(RCMfew);
+        }
+        break;
+
     case no_topn:
         {
             retrieveRowInformation(info, ds);
