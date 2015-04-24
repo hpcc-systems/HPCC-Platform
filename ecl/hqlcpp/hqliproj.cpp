@@ -2006,6 +2006,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_createrow:
     case no_rollupgroup:
     case no_projectrow:
+    case no_quantile:
         return CreateRecordActivity;
     case no_inlinetable:
     case no_dataset_from_transform:

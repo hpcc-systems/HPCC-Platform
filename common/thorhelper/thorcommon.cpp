@@ -779,6 +779,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKselfdenormalize:        return "Self Denormalize";
     case TAKselfdenormalizegroup:   return "Self Denormalize Group";
     case TAKtrace:                  return "Trace";
+    case TAKquantile:               return "Quantile";
     }
     throwUnexpected();
 }
