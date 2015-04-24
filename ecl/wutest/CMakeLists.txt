@@ -49,7 +49,8 @@ target_link_libraries ( wutest
          dllserver 
          nbcd 
          eclrtl 
-         deftype 
+         deftype
+         cassandra 
          workunit 
     )
 

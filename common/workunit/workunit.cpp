@@ -39,6 +39,7 @@
 #include "danqs.hpp"
 #include "dautils.hpp"
 #include "dllserver.hpp"
+#include "thorplugin.hpp"
 #include "thorhelper.hpp"
 #include "workflow.hpp"
 
@@ -1809,6 +1810,8 @@ public:
     virtual void        setResultRow(unsigned len, const void * data);
     virtual void        setResultXmlns(const char *prefix, const char *uri);
     virtual void        setResultFieldOpt(const char *name, const char *value);
+
+    virtual IPropertyTree *queryPTree() { return p; }
 };
 
 class CLocalWUPlugin : public CInterface, implements IWUPlugin
@@ -2796,7 +2799,143 @@ public:
         return new CConstWUArrayIterator(results);
     }
 
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
+    {
+        StringBuffer wuRoot;
+        getXPath(wuRoot, wuid);
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot.str());
+        LocalIAbortHandler abortHandler(*waiter);
+        WUState ret = WUStateUnknown;
+        Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), session, 0, SDS_LOCK_TIMEOUT);
+        if (conn)
+        {
+            unsigned start = msTick();
+            loop
+            {
+                ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
+                switch (ret)
+                {
+                case WUStateCompiled:
+                case WUStateUploadingFiles:
+                    if (!compiled)
+                        break;
+                    // fall into
+                case WUStateCompleted:
+                case WUStateFailed:
+                case WUStateAborted:
+                    waiter->unsubscribe();
+                    return ret;
+                case WUStateWait:
+                    if(returnOnWaitState)
+                    {
+                        waiter->unsubscribe();
+                        return ret;
+                    }
+                    break;
+                case WUStateCompiling:
+                case WUStateRunning:
+                case WUStateDebugPaused:
+                case WUStateDebugRunning:
+                case WUStateBlocked:
+                case WUStateAborting:
+                    if (queryDaliServerVersion().compare("2.1")>=0)
+                    {
+                        SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
+                        if((agent>0) && querySessionManager().sessionStopped(agent, 0))
+                        {
+                            waiter->unsubscribe();
+                            conn->reload();
+                            ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
+                            bool isEcl = false;
+                            switch (ret)
+                            {
+                                case WUStateCompiling:
+                                    isEcl = true;
+                                    // drop into
+                                case WUStateRunning:
+                                case WUStateBlocked:
+                                    ret = WUStateFailed;
+                                    break;
+                                case WUStateAborting:
+                                    ret = WUStateAborted;
+                                    break;
+                                default:
+                                    return ret;
+                            }
+                            WARNLOG("_waitForWorkUnit terminated: %" I64F "d state = %d",(__int64)agent,(int)ret);
+                            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                            Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
+                            wu->setState(ret);
+                            Owned<IWUException> e = wu->createException();
+                            e->setExceptionCode(isEcl ? 1001 : 1000);
+                            e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
+                            return ret;
+                        }
+                    }
+                    break;
+                }
+                unsigned waited = msTick() - start;
+                if (timeout==-1)
+                {
+                    waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
+                    if (waiter->aborted)
+                    {
+                        ret = WUStateUnknown;  // MORE - throw an exception?
+                        break;
+                    }
+                }
+                else if (waited > timeout || !waiter->wait(timeout-waited))
+                {
+                    ret = WUStateUnknown;  // MORE - throw an exception?
+                    break;
+                }
+                conn->reload();
+            }
+        }
+        waiter->unsubscribe();
+        return ret;
+    }
+
 protected:
+    class WorkUnitWaiter : public CInterface, implements ISDSSubscription, implements IAbortHandler
+    {
+        Semaphore changed;
+        SubscriptionId change;
+    public:
+        IMPLEMENT_IINTERFACE;
+
+        WorkUnitWaiter(const char *xpath)
+        {
+            change = querySDS().subscribe(xpath, *this, false);
+            aborted = false;
+        }
+        ~WorkUnitWaiter()
+        {
+            assertex(change==0);
+        }
+
+        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+        {
+            changed.signal();
+        }
+        bool wait(unsigned timeout)
+        {
+            return changed.wait(timeout) && !aborted;
+        }
+        bool onAbort()
+        {
+            aborted = true;
+            changed.signal();
+            return false;
+        }
+        void unsubscribe()
+        {
+            querySDS().unsubscribe(change);
+            change = 0;
+        }
+        bool aborted;
+    };
+
     IConstWorkUnitIterator * _getWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
     {
         Owned<IRemoteConnection> conn = sdsManager->connect("/WorkUnits", session, 0, SDS_LOCK_TIMEOUT);
@@ -2816,29 +2955,51 @@ protected:
     SessionId session;
 };
 
+static CriticalSection factoryCrit;
+static Owned<ILoadedDllEntry> workunitServerPlugin;  // NOTE - unload AFTER the factory is released!
 static Owned<IWorkUnitFactory> factory;
 
 void CDaliWorkUnitFactory::clientShutdown()
 {
+    CriticalBlock b(factoryCrit);
     factory.clear();
 }
 
 void clientShutdownWorkUnit()
 {
+    CriticalBlock b(factoryCrit);
     factory.clear();
-}
-
-extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory)
-{
-    // Used by plugins that override the default (dali) workunit factory
-    factory.setown(_factory);
 }
 
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
 {
-    // MORE - This is not threadsafe - do we care?
     if (!factory)
-        factory.setown(new CDaliWorkUnitFactory());
+    {
+        CriticalBlock b(factoryCrit);
+        if (!factory)   // NOTE - this "double test" paradigm is not guaranteed threadsafe on modern systems/compilers - I think in this instance that is harmless even in the (extremely) unlikely event that it resulted in the setown being called twice.
+        {
+            Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/WorkUnitsServer", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+            // MORE - arguably should be looking in the config section that corresponds to the dali we connected to. If you want to allow some dalis to be configured to use a WU server and others not.
+            if (conn)
+            {
+                const IPropertyTree *ptree = conn->queryRoot();
+                const char *pluginName = ptree->queryProp("@plugin");
+                if (!pluginName)
+                    throw makeStringException(WUERR_WorkunitPluginError, "WorkUnitsServer information missing plugin name");
+                workunitServerPlugin.setown(createDllEntry(pluginName, false, NULL));
+                if (!workunitServerPlugin)
+                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: failed to load plugin %s", pluginName);
+                WorkUnitFactoryFactory pf = (WorkUnitFactoryFactory) workunitServerPlugin->getEntry("createWorkUnitFactory");
+                if (!pf)
+                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: function createWorkUnitFactory not found in plugin %s", pluginName);
+                factory.setown(pf(ptree));
+                if (!factory)
+                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: createWorkUnitFactory returned NULL in plugin %s", pluginName);
+            }
+            else
+                factory.setown(new CDaliWorkUnitFactory());
+        }
+    }
     return factory.getLink();
 }
 
@@ -2986,6 +3147,10 @@ public:
     virtual void clearAborting(const char *wuid)
     {
         baseFactory->clearAborting(wuid);
+    }
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
+    {
+        return baseFactory->waitForWorkUnit(wuid, timeout, compiled, returnOnWaitState);
     }
 private:
     Owned<IWorkUnitFactory> baseFactory;
@@ -5741,19 +5906,24 @@ static int compareResults(IInterface * const *ll, IInterface * const *rr)
     return l->getResultSequence() - r->getResultSequence();
 }
 
+void CLocalWorkUnit::_loadResults() const
+{
+    Owned<IPropertyTreeIterator> r = p->getElements("Results/Result");
+    for (r->first(); r->isValid(); r->next())
+    {
+        IPropertyTree *rp = &r->query();
+        rp->Link();
+        results.append(*new CLocalWUResult(rp));
+    }
+}
+
 void CLocalWorkUnit::loadResults() const
 {
     CriticalBlock block(crit);
     if (!resultsCached)
     {
         assertex(results.length() == 0);
-        Owned<IPropertyTreeIterator> r = p->getElements("Results/Result");
-        for (r->first(); r->isValid(); r->next())
-        {
-            IPropertyTree *rp = &r->query();
-            rp->Link();
-            results.append(*new CLocalWUResult(rp));
-        }
+        _loadResults();
         results.sort(compareResults);
         resultsCached = true;
     }
@@ -9161,145 +9331,9 @@ void testWorkflow()
 
 //------------------------------------------------------------------------------------------
 
-class WorkUnitWaiter : public CInterface, implements ISDSSubscription, implements IAbortHandler
-{
-    Semaphore changed;
-    SubscriptionId change;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    WorkUnitWaiter(const char *xpath) 
-    {
-        change = querySDS().subscribe(xpath, *this, false);
-        aborted = false; 
-    }
-    ~WorkUnitWaiter()
-    {
-        assertex(change==0);
-    }
-
-    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-    {
-        changed.signal();
-    }
-    bool wait(unsigned timeout)
-    {
-        return changed.wait(timeout) && !aborted;
-    }
-    bool onAbort()
-    {
-        aborted = true;
-        changed.signal();
-        return false;
-    }
-    void unsubscribe()
-    {
-        querySDS().unsubscribe(change);
-        change = 0;
-    }
-    bool aborted;
-};
-
-static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
-{
-    StringBuffer wuRoot;
-    getXPath(wuRoot, wuid);
-    Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot.str());
-    LocalIAbortHandler abortHandler(*waiter);
-    WUState ret = WUStateUnknown;
-    Owned<IRemoteConnection> conn = querySDS().connect(wuRoot.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-    if (conn)
-    {
-        unsigned start = msTick();
-        loop
-        {
-            ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
-            switch (ret)
-            {
-            case WUStateCompiled:
-            case WUStateUploadingFiles:
-                if (!compiled)
-                    break;
-                // fall into
-            case WUStateCompleted:
-            case WUStateFailed:
-            case WUStateAborted:
-                waiter->unsubscribe();
-                return ret;
-            case WUStateWait:
-                if(returnOnWaitState)
-                {
-                    waiter->unsubscribe();
-                    return ret;
-                }
-                break;
-            case WUStateCompiling:
-            case WUStateRunning:
-            case WUStateDebugPaused:
-            case WUStateDebugRunning:
-            case WUStateBlocked:
-            case WUStateAborting:
-                if (queryDaliServerVersion().compare("2.1")>=0)
-                {
-                    SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
-                    if((agent>0) && querySessionManager().sessionStopped(agent, 0))
-                    {
-                        waiter->unsubscribe();
-                        conn->reload();
-                        ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
-                        bool isEcl = false;
-                        switch (ret)
-                        {
-                            case WUStateCompiling:
-                                isEcl = true;
-                                // drop into
-                            case WUStateRunning:
-                            case WUStateBlocked:
-                                ret = WUStateFailed;
-                                break;
-                            case WUStateAborting:
-                                ret = WUStateAborted;
-                                break;
-                            default:
-                                return ret;
-                        }
-                        WARNLOG("_waitForWorkUnit terminated: %" I64F "d state = %d",(__int64)agent,(int)ret);
-                        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                        Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
-                        wu->setState(ret);
-                        Owned<IWUException> e = wu->createException();
-                        e->setExceptionCode(isEcl ? 1001 : 1000);
-                        e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
-                        return ret;
-                    }
-                }
-                break;
-            }
-            unsigned waited = msTick() - start;
-            if (timeout==-1)
-            {
-                waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
-                if (waiter->aborted)
-                {
-                    ret = WUStateUnknown;  // MORE - throw an exception?
-                    break;
-                }
-            }
-            else if (waited > timeout || !waiter->wait(timeout-waited))
-            {
-                ret = WUStateUnknown;  // MORE - throw an exception?
-                break;
-            }
-            conn->reload();
-        }
-    }
-    waiter->unsubscribe();
-    return ret;
-}
-
 extern WUState waitForWorkUnitToComplete(const char * wuid, int timeout, bool returnOnWaitState)
 {
-    return _waitForWorkUnit(wuid, (unsigned)timeout, false, returnOnWaitState);
+    return factory->waitForWorkUnit(wuid, (unsigned) timeout, false, returnOnWaitState);
 }
 
 extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout, bool returnOnWaitState)
@@ -9311,7 +9345,7 @@ extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISec
 
 extern bool waitForWorkUnitToCompile(const char * wuid, int timeout)
 {
-    switch(_waitForWorkUnit(wuid, (unsigned)timeout, true, true))
+    switch(factory->waitForWorkUnit(wuid, (unsigned) timeout, true, true))
     {
     case WUStateCompiled:
     case WUStateCompleted:
