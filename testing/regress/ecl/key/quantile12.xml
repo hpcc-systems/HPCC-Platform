@@ -1,0 +1,36 @@
+<Dataset name='Result 1'>
+ <Row><id>0</id><quant>0</quant></Row>
+ <Row><id>20</id><quant>1</quant></Row>
+ <Row><id>40</id><quant>2</quant></Row>
+ <Row><id>60</id><quant>3</quant></Row>
+ <Row><id>80</id><quant>4</quant></Row>
+ <Row><id>99</id><quant>5</quant></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><id>4</id><quant>1</quant></Row>
+ <Row><id>7</id><quant>2</quant></Row>
+ <Row><id>11</id><quant>3</quant></Row>
+ <Row><id>15</id><quant>4</quant></Row>
+ <Row><id>19</id><quant>5</quant></Row>
+ <Row><id>22</id><quant>6</quant></Row>
+ <Row><id>26</id><quant>7</quant></Row>
+ <Row><id>30</id><quant>8</quant></Row>
+ <Row><id>33</id><quant>9</quant></Row>
+ <Row><id>37</id><quant>10</quant></Row>
+ <Row><id>41</id><quant>11</quant></Row>
+ <Row><id>44</id><quant>12</quant></Row>
+ <Row><id>48</id><quant>13</quant></Row>
+ <Row><id>52</id><quant>14</quant></Row>
+ <Row><id>56</id><quant>15</quant></Row>
+ <Row><id>59</id><quant>16</quant></Row>
+ <Row><id>63</id><quant>17</quant></Row>
+ <Row><id>67</id><quant>18</quant></Row>
+ <Row><id>70</id><quant>19</quant></Row>
+ <Row><id>74</id><quant>20</quant></Row>
+ <Row><id>78</id><quant>21</quant></Row>
+ <Row><id>81</id><quant>22</quant></Row>
+ <Row><id>85</id><quant>23</quant></Row>
+ <Row><id>89</id><quant>24</quant></Row>
+ <Row><id>93</id><quant>25</quant></Row>
+ <Row><id>96</id><quant>26</quant></Row>
+</Dataset>
