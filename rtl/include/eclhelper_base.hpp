@@ -1,4 +1,3 @@
-
 /*##############################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
@@ -706,6 +705,30 @@ class CThorProjectArg : public CThorArg, implements IHThorProjectArg
     }
     
     virtual bool canFilter()                                { return false; }
+};
+
+class CThorQuantileArg : public CThorArg, implements IHThorQuantileArg
+{
+    virtual void Link() const { RtlCInterface::Link(); }
+    virtual bool Release() const { return RtlCInterface::Release(); }
+    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
+
+    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
+    {
+        switch (which)
+        {
+        case TAIarg:
+        case TAIquantilearg_1:
+            return static_cast<IHThorQuantileArg *>(this);
+        }
+        return NULL;
+    }
+
+    virtual unsigned getFlags() { return 0; }
+    virtual unsigned __int64 getNumDivisions() { return 2; }
+    virtual double getSkew() { return 0; }
+    virtual unsigned __int64 getScore(const void * _left) { return 1; }
+    virtual void getRange(bool & isAll, size32_t & tlen, void * & tgt) { isAll = true; tlen = 0; tgt = NULL; }
 };
 
 class CThorPrefetchProjectArg : public CThorArg, implements IHThorPrefetchProjectArg
