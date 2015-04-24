@@ -118,6 +118,8 @@ extern THORHELPER_API ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_
 extern THORHELPER_API ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId);
 extern THORHELPER_API ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable);
+extern THORHELPER_API ISortAlgorithm *createMergeSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createParallelMergeSortAlgorithm(ICompare *_compare);
 
 extern THORHELPER_API ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm algorithm, ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId);
 

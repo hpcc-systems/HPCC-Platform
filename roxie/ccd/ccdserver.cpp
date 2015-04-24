@@ -7466,6 +7466,17 @@ IRoxieServerActivityFactory *createRoxieServerSortActivityFactory(unsigned _id, 
 
 //=====================================================================================================
 
+static int compareUint64(const void * _left, const void * _right)
+{
+    const unsigned __int64 left = *static_cast<const unsigned __int64 *>(_left);
+    const unsigned __int64 right = *static_cast<const unsigned __int64 *>(_right);
+    if (left < right)
+        return -1;
+    if (left > right)
+        return -1;
+    return 0;
+}
+
 class CRoxieServerQuantileActivity : public CRoxieServerActivity
 {
 protected:
@@ -7476,6 +7487,9 @@ protected:
     unsigned flags;
     double skew;
     unsigned __int64 numDivisions;
+    bool rangeIsAll;
+    size32_t rangeSize;
+    rtlDataAttr rangeValues;
     bool calculated;
     bool processedAny;
     bool anyThisGroup;
@@ -7485,6 +7499,7 @@ protected:
     unsigned curIndexExtra;
     unsigned skipSize;
     unsigned skipExtra;
+    unsigned prevIndex;
 
 public:
     CRoxieServerQuantileActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _flags)
@@ -7497,15 +7512,18 @@ public:
         processedAny = false;
         anyThisGroup = false;
         eof = false;
+        rangeIsAll = true;
+        rangeSize = 0;
         curQuantile = 0;
+        prevIndex = 0;
         curIndex = 0;
         curIndexExtra = 0;
         skipSize = 0;
         skipExtra = 0;
         if (flags & TQFunstable)
-            sorter.setown(new CQuickSortAlgorithm(compare));
+            sorter.setown(createQuickSortAlgorithm(compare));
         else
-            sorter.setown(new CStableQuickSortAlgorithm(compare));
+            sorter.setown(createMergeSortAlgorithm(compare));
     }
 
     virtual void reset()
@@ -7525,11 +7543,24 @@ public:
         //Check for -ve integer values and treat as out of range
         if ((__int64)numDivisions < 1)
             numDivisions = 1;
+        if (flags & TQFhasrange)
+            helper.getRange(rangeIsAll, rangeSize, rangeValues.refdata());
+        else
+        {
+            rangeIsAll = true;
+            rangeSize = 0;
+        }
+        if (rangeSize)
+        {
+            //Sort the range items into order to allow quick comparison
+            qsort(rangeValues.getdata(), rangeSize / sizeof(unsigned __int64), sizeof(unsigned __int64), compareUint64);
+        }
         calculated = false;
         processedAny = false;
         anyThisGroup = false;
         eof = false;
         curQuantile = 0;
+        prevIndex = 0;
         curIndex = 0;
         curIndexExtra = 0;
     }
@@ -7547,8 +7578,21 @@ public:
         {
             if (!calculated)
             {
-                sorter->prepare(input);
-                sorter->getSortedGroup(sorted);
+                if (flags & TQFlocalsorted)
+                {
+                    for (;;)
+                    {
+                        const void * next = input->nextInGroup();
+                        if (!next)
+                            break;
+                        sorted.append(next);
+                    }
+                }
+                else
+                {
+                    sorter->prepare(input);
+                    sorter->getSortedGroup(sorted);
+                }
 
                 if (sorted.ordinality() == 0)
                 {
@@ -7570,24 +7614,40 @@ public:
                 curQuantile = 0;
                 curIndex = 0;
                 curIndexExtra = (numDivisions-1) / 2;   // to ensure correctly rounded up
+                prevIndex = curIndex-1; // Ensure it doesn't match
                 skipSize = (sorted.ordinality() / numDivisions);
                 skipExtra = (sorted.ordinality() % numDivisions);
             }
 
-            const void * lhs = sorted.item(curIndex);
-            unsigned outSize;
-            RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            try
+            if (isQuantileIncluded(curQuantile))
             {
-                outSize = helper.transform(rowBuilder, lhs, curQuantile);
-            }
-            catch (IException *E)
-            {
-                throw makeWrappedException(E);
-            }
+                if (!(flags & TQFdedup) || (prevIndex != curIndex))
+                {
+                    const void * lhs = sorted.item(curIndex);
+                    if (flags & TQFneedtransform)
+                    {
+                        unsigned outSize;
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        try
+                        {
+                            outSize = helper.transform(rowBuilder, lhs, curQuantile);
+                        }
+                        catch (IException *E)
+                        {
+                            throw makeWrappedException(E);
+                        }
 
-            if (outSize)
-                ret = rowBuilder.finalizeRowClear(outSize);
+                        if (outSize)
+                            ret = rowBuilder.finalizeRowClear(outSize);
+                    }
+                    else
+                    {
+                        LinkRoxieRow(lhs);
+                        ret = lhs;
+                    }
+                    prevIndex = curIndex; // even if output was skipped?
+                }
+            }
 
             curIndex += skipSize;
             curIndexExtra += skipExtra;
@@ -7620,6 +7680,26 @@ public:
                     return NULL;
             }
         }
+    }
+
+    bool isQuantileIncluded(unsigned quantile) const
+    {
+        if (quantile == 0)
+            return (flags & TQFfirst) != 0;
+        if (quantile == numDivisions)
+            return (flags & TQFlast) != 0;
+        if (rangeIsAll)
+            return true;
+        //Compare against the list of ranges provided
+        //MORE: Since the list is sorted should only need to compare the next (and allow for dups)
+        unsigned rangeNum = rangeSize / sizeof(unsigned __int64);
+        const unsigned __int64 * ranges = static_cast<const unsigned __int64 *>(rangeValues.getdata());
+        for (unsigned i = 0; i < rangeNum; i++)
+        {
+            if (ranges[i] == quantile)
+                return true;
+        }
+        return false;
     }
 };
 

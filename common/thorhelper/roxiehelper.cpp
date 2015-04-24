@@ -1382,6 +1382,16 @@ extern ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare)
     return new CHeapSortAlgorithm(_compare);
 }
 
+extern ISortAlgorithm *createMergeSortAlgorithm(ICompare *_compare)
+{
+    return new CMergeSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createParallelMergeSortAlgorithm(ICompare *_compare)
+{
+    return new CParallelMergeSortAlgorithm(_compare);
+}
+
 extern ISortAlgorithm *createSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable)
 {
     return new CSpillingQuickSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, _stable);
