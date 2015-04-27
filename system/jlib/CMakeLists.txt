@@ -48,6 +48,8 @@ set (    SRCS
          jexcept.cpp 
          jfile.cpp 
          jflz.cpp 
+         jlz4.cpp
+         lz4.c
          jhash.cpp 
          jiface.cpp 
          jio.cpp 
@@ -102,6 +104,8 @@ set (    INCLUDES
         jfile.hpp
         jfile.ipp
         jflz.hpp
+        jlz4.hpp
+        lz4.h
         jhash.hpp
         jhash.ipp
         jheap.hpp
