@@ -54,7 +54,7 @@
 #define THOROPT_HDIST_BUFFER_SIZE     "hdInBufferSize"       // Distribute send buffer size (for all targets)                                 (default = 32MB)
 #define THOROPT_HDIST_CANDIDATELIMIT  "hdCandidateLimit"        // Limits # of buckets to push to the writers when send buffer is full           (default = is 50% largest)
 #define THOROPT_HDIST_TARGETWRITELIMIT "hdTargetLimit"          // Limit # of writer threads working on a single target                          (default = unbound, but picks round-robin)
-#define THOROPT_HDIST_COMP            "hdCompressorType"        // Distribute compressor to use                                                  (default = "FLZ")
+#define THOROPT_HDIST_COMP            "hdCompressorType"        // Distribute compressor to use                                                  (default = "LZ4")
 #define THOROPT_HDIST_COMPOPTIONS     "hdCompressorOptions"     // Distribute compressor options, e.g. AES key                                   (default = "")
 #define THOROPT_SPLITTER_SPILL        "splitterSpill"           // Force splitters to spill or not, default is to adhere to helper setting       (default = -1)
 #define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"            // Max # of iterations that LOOP can cycle through with 0 results before errors  (default = 1000)

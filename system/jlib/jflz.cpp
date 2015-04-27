@@ -628,10 +628,7 @@ class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
             trailing = true;    // too small to bother compressing
         else {
             trailing = false;
-            size32_t slack = inmax/17;
-            if (slack<66)
-                slack = 66;
-            inmax -= slack+sizeof(size32_t);
+            inmax -= (fastlzSlack(inmax) + sizeof(size32_t));
         }
     }
 

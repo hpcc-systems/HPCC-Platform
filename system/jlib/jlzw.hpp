@@ -98,6 +98,7 @@ extern jlib_decl void appendToBuffer(MemoryBuffer & out, size32_t len, const voi
 #define COMPRESS_METHOD_LZW    2
 #define COMPRESS_METHOD_FASTLZ 3
 #define COMPRESS_METHOD_LZMA   4
+#define COMPRESS_METHOD_LZ4    5
 
 interface ICompressedFileIO: extends IFileIO
 {
@@ -111,8 +112,8 @@ interface ICompressedFileIO: extends IFileIO
 
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander=NULL, bool memorymapped=false, IFEflags extraFlags=IFEnone);
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expander=NULL);
-extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append=false,bool setcrc=true,ICompressor *compressor=NULL,bool fast=false, IFEflags extraFlags=IFEnone);
-extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsize,bool setcrc=true,ICompressor *compressor=NULL,bool fast=false);
+extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append=false,bool setcrc=true,ICompressor *compressor=NULL, __int64 compType=COMPRESS_METHOD_LZW, IFEflags extraFlags=IFEnone);
+extern jlib_decl ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsize,bool setcrc=true,ICompressor *compressor=NULL, __int64 compType=COMPRESS_METHOD_LZW);
 
 #define COMPRESSEDFILECRC (~0U)
 
