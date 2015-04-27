@@ -97,6 +97,7 @@ class CBroadcaster : public CSimpleInterface
     InterruptableSemaphore allDoneSem;
     CriticalSection allDoneLock, bcastOtherCrit;
     bool allDone, allDoneWaiting, allRequestStop, stopping, stopRecv;
+    broadcast_flags stopFlag;
     Owned<IBitSet> slavesDone, slavesStopping;
 
     class CRecv : implements IThreaded
@@ -367,6 +368,7 @@ public:
         slavesStopping.setown(createThreadSafeBitSet());
         mpTag = TAG_NULL;
         recvInterface = NULL;
+        stopFlag = bcastflag_null;
     }
     void start(IBCastReceive *_recvInterface, mptag_t _mpTag, bool _stopping)
     {
@@ -382,6 +384,7 @@ public:
     void reset()
     {
         allDone = allDoneWaiting = allRequestStop = stopping = false;
+        stopFlag = bcastflag_null;
         slavesDone->reset();
         slavesStopping->reset();
     }
@@ -435,9 +438,21 @@ public:
     {
         return slavesStopping->test(myNode-1);
     }
+    broadcast_flags queryStopFlag() { return stopFlag; }
+    bool stopRequested()
+    {
+        if (bcastflag_null != queryStopFlag()) // if this node has requested to stop immediately
+            return true;
+        return allRequestStop; // if not, if all have request to stop
+    }
     void setStopping()
     {
         slavesStopping->set(myNode-1, true);
+    }
+    void stop(broadcast_flags flag)
+    {
+        setStopping();
+        stopFlag = flag;
     }
 };
 
@@ -923,17 +938,17 @@ protected:
                         throw MakeActivityException(this, 0, "Out of memory: Unable to add any more rows to RHS");
 
                     rightSerializer->serialize(mbser, (const byte *)row.get());
-                    if (mb.length() >= MAX_SEND_SIZE || broadcaster.isStopping())
+                    if (mb.length() >= MAX_SEND_SIZE || broadcaster.stopRequested())
                         break;
                 }
                 if (0 == mb.length())
                     break;
-                if (broadcaster.isStopping())
-                    sendItem->setFlag(bcastflag_spilt);
+                if (broadcaster.stopRequested())
+                    sendItem->setFlag(broadcaster.queryStopFlag());
                 ThorCompress(mb, sendItem->queryMsg());
                 if (!broadcaster.send(sendItem))
                     break;
-                if (broadcaster.isStopping())
+                if (broadcaster.stopRequested())
                     break;
                 mb.clear();
                 broadcaster.resetSendItem(sendItem);
@@ -946,8 +961,8 @@ protected:
         }
 
         sendItem.setown(broadcaster.newSendItem(bcast_stop));
-        if (broadcaster.isStopping())
-            sendItem->setFlag(bcastflag_spilt);
+        if (broadcaster.stopRequested())
+            sendItem->setFlag(broadcaster.queryStopFlag());
         ActPrintLog("Sending final RHS broadcast packet");
         broadcaster.send(sendItem); // signals stop to others
     }
@@ -1445,7 +1460,7 @@ protected:
         setLocalLookup(true);
         ActPrintLog("Clearing non-local rows - cause: %s", msg);
 
-        broadcaster.setStopping(); // signals to broadcast to start stopping
+        broadcaster.stop(bcastflag_spilt); // signals to broadcast to start stopping immediately and to signal spilt to others
 
         rowidx_t clearedRows = 0;
         if (rhsCollated)
