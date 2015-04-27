@@ -19,9 +19,13 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
+    "dojo/dom-class",
     "dojo/Stateful",
     "dojo/query",
     "dojo/json",
+    "dojo/aspect",
+    "dojo/Evented",
+    "dojo/on",
 
     "dijit/registry",
     "dijit/Tooltip",
@@ -32,12 +36,11 @@ define([
     "dgrid/Selection",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/ColumnHider",
-    "dgrid/extensions/ColumnReorder",
     "dgrid/extensions/DijitRegistry",
     "dgrid/extensions/Pagination"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Stateful, query, json,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, Stateful, query, json, aspect, Evented, on,
     registry, Tooltip,
-    Grid, OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, ColumnReorder, DijitRegistry, Pagination) {
+    Grid, OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, Pagination) {
 
     var SingletonData = declare([Stateful], {
         //  Attributes  ---
@@ -58,8 +61,8 @@ define([
 
         //  Methods  ---
         constructor: function (args) {
-            this.changedCount = 0;
-            this._changedCache = {};
+            this.__hpcc_changedCount = 0;
+            this.__hpcc_changedCache = {};
         },
         getData: function () {
             if (this instanceof SingletonData) {
@@ -70,18 +73,20 @@ define([
         updateData: function (response) {
             var changed = false;
             for (var key in response) {
-                var jsonStr = json.stringify(response[key]);
-                if (this._changedCache[key] !== jsonStr) {
-                    this._changedCache[key] = jsonStr;
-                    this.set(key, response[key]);
-                    changed = true;
+                if (response[key] !== undefined || response[key] !== null) {
+                    var jsonStr = json.stringify(response[key]);
+                    if (this.__hpcc_changedCache[key] !== jsonStr) {
+                        this.__hpcc_changedCache[key] = jsonStr;
+                        this.set(key, response[key]);
+                        changed = true;
+                    }
                 }
             }
             if (changed) {
                 try {
-                    this.set("changedCount", this.get("changedCount") + 1);
+                    this.set("__hpcc_changedCount", this.get("__hpcc_changedCount") + 1);
                 } catch (e) {
-                    /*  changedCount can notify a dgrid instance that a row has changed.  
+                    /*  __hpcc_changedCount can notify a dgrid instance that a row has changed.  
                     *   There is an issue (TODO check issue number) with dgrid which can cause an exception to be thrown during the notify.
                     *   By catching these exceptions here normal execution can continue.
                     */
@@ -237,9 +242,48 @@ define([
         }
     });
 
+    var IdleWatcher = dojo.declare([Evented], {
+        constructor: function(idleDuration) {
+            idleDuration = idleDuration || 30 * 1000;
+            this._idleDuration = idleDuration;
+        },
+
+        start: function(){
+            this.stop();
+            var context = this;
+            this._keydownHandle = on(document, "keydown", function (item, index, array) {
+                context.stop();
+                context.start();
+            });
+            this._mousedownHandle = on(document, "mousedown", function (item, index, array) {
+                context.stop();
+                context.start();
+            });
+            this._intervalHandle = setInterval(function () {
+                context.emit("idle", {});
+            }, this._idleDuration);
+        },
+
+        stop: function(){
+            if(this._intervalHandle){
+                clearInterval(this._intervalHandle);
+                delete this._intervalHandle;
+            }
+            if (this._mousedownHandle) {
+                this._mousedownHandle.remove();
+                delete this._mousedownHandle;
+            }
+            if (this._keydownHandle) {
+                this._keydownHandle.remove();
+                delete this._keydownHandle;
+            }
+        }
+    });
+
     return {
         Singleton: SingletonData,
         Monitor: Monitor,
+        IdleWatcher: IdleWatcher,
 
         FormHelper: declare(null, {
             getISOString: function (dateField, timeField) {
@@ -257,11 +301,11 @@ define([
             }
         }),
 
-        Grid: function (pagination, selection) {
+        Grid: function (pagination, selection, overrides) {
             var baseClass = [];
             var params = {};
             if (pagination) {
-                baseClass = [Grid, Pagination, ColumnResizer, ColumnHider, ColumnReorder, Keyboard, DijitRegistry];
+                baseClass = [Grid, Pagination, ColumnResizer, ColumnHider, Keyboard, DijitRegistry];
                 lang.mixin(params, {
                     rowsPerPage: 50,
                     pagingLinks: 1,
@@ -270,7 +314,7 @@ define([
                     pageSizeOptions: [25, 50, 100, 1000]
                 });
             } else {
-                baseClass = [OnDemandGrid, ColumnResizer, ColumnHider, ColumnReorder, Keyboard, DijitRegistry];
+                baseClass = [OnDemandGrid, ColumnResizer, ColumnHider, Keyboard, DijitRegistry];
             }
             if (selection) {
                 baseClass.push(Selection);
@@ -280,7 +324,54 @@ define([
                 });
             }
             baseClass.push(GridHelper);
-            return declare(baseClass, params);
+            return declare(baseClass, lang.mixin(params, overrides));
+        },
+
+        MonitorVisibility: function (widget, callback) {
+            //  There are many places that may cause the widget to be hidden, the possible places are calculated by walking the DOM hierarchy upwards. 
+            var watchList = {};
+            var domNode = widget.domNode;
+            while (domNode) {
+                if (domNode.id) {
+                    watchList[domNode.id] = false;
+                }
+                domNode = domNode.parentElement;
+            }
+
+            function isHidden() {
+                for (key in watchList) {
+                    if (watchList[key] === true) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            //  Hijack the dojo style class replacement call and monitor for elements in our watchList. 
+            aspect.around(domClass, "replace", function (origFunc) {
+                return function (node, addStyle, removeStyle) {
+                    if (node.firstChild && (node.firstChild.id in watchList)) {
+                        if (addStyle === "dijitHidden" || addStyle === "hpccHidden") {
+                            if (!isHidden()) {
+                                if (callback(false, node)) {
+                                    addStyle = "hpccHidden";
+                                    removeStyle = "hpccVisible";
+                                }
+                            }
+                            watchList[node.firstChild.id] = true;
+                        } else if ((addStyle === "dijitVisible" || addStyle === "hpccVisible") && watchList[node.firstChild.id] === true) {
+                            watchList[node.firstChild.id] = false;
+                            if (!isHidden()) {
+                                if (callback(true, node)) {
+                                    addStyle = "hpccVisible";
+                                    removeStyle = "hpccHidden";
+                                }
+                            }
+                        }
+                    }
+                    return origFunc(node, addStyle, removeStyle);
+                }
+            });
         }
     };
 });

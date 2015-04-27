@@ -28,6 +28,7 @@
 #include "eclcmd_core.hpp"
 
 #include "ws_dfuXref.hpp"
+#include "ws_dfu.hpp"
 
 #define INIFILE "ecl.ini"
 #define SYSTEMCONFDIR CONFIG_DIR
@@ -383,6 +384,8 @@ public:
             }
             if (iter.matchFlag(optCheckPackageMaps, ECLOPT_CHECK_PACKAGEMAPS))
                 continue;
+            if (iter.matchFlag(optDeleteFiles, ECLOPT_DELETE_FILES))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -411,15 +414,42 @@ public:
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
 
+        StringArray filesToDelete;
         StringArray &unusedFiles = resp->getUnusedFiles();
         if (!unusedFiles.length())
-            fputs("\nNo unused files found in DFS\n", stderr);
+            fputs("\nNo unused files found in DFS\n", stdout);
         else
         {
-            fprintf(stderr, "\n%d Files found in DFS, not used on roxie:\n", unusedFiles.length());
+            fprintf(stdout, "\n%d Files found in DFS, not used on roxie:\n", unusedFiles.length());
             ForEachItemIn(i, unusedFiles)
-                fprintf(stderr, "  %s\n", unusedFiles.item(i));
-            fputs("\n", stderr);
+            {
+                fprintf(stdout, "  %s\n", unusedFiles.item(i));
+                if (optDeleteFiles)
+                {
+                    VStringBuffer lfn("%s@%s", unusedFiles.item(i), optProcess.get());
+                    filesToDelete.append(lfn);
+                }
+            }
+            fputs("\n", stdout);
+        }
+
+        if (filesToDelete.length())
+        {
+            fputs("Deleting...\n", stderr);
+
+            Owned<IClientWsDfu> dfuClient = createCmdClient(WsDfu, *this);
+            Owned<IClientDFUArrayActionRequest> dfuReq = dfuClient->createDFUArrayActionRequest();
+            dfuReq->setType("Delete");
+            dfuReq->setLogicalFiles(filesToDelete);
+
+            Owned<IClientDFUArrayActionResponse> dfuResp = dfuClient->DFUArrayAction(dfuReq);
+            if (dfuResp->getExceptions().ordinality())
+                outputMultiExceptions(dfuResp->getExceptions());
+
+            IArrayOf<IConstDFUActionInfo> &results = dfuResp->getActionResults();
+            ForEachItemIn(i, results)
+                fprintf(stdout, "  %s\n", results.item(i).getActionResult()); //result text already has filename
+            fputs("\n", stdout);
         }
 
         return 0;
@@ -439,6 +469,7 @@ public:
 
         fputs("\n"
             "   --check-packagemaps    Exclude files referenced in active packagemaps\n"
+            "   --delete               Delete unused files from DFS\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -446,6 +477,7 @@ public:
 private:
     StringAttr optProcess;
     bool optCheckPackageMaps;
+    bool optDeleteFiles;
 };
 
 IEclCommand *createEclRoxieCommand(const char *cmdname)

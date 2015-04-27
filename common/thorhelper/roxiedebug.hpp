@@ -173,7 +173,7 @@ public:
     unsigned channel;
     unsigned sequence;
     IArrayOf<IDebugGraphManager> childGraphs;
-    StringBuffer idText;
+    StringAttr idText;
     Owned<IProperties> properties;
 
     IMPLEMENT_IINTERFACE;
@@ -253,7 +253,7 @@ protected:
     DebugState currentState; // What program was doing when it was interrupted
     unsigned debuggerActive;
     Semaphore debuggerSem;
-    unsigned __int64 debugCyclesAdjust;
+    cycle_t debugCyclesAdjust;
 
     static const char * queryStateString(DebugState state);
     bool _checkPendingBreakpoints(DebugState state, const char *graphName);

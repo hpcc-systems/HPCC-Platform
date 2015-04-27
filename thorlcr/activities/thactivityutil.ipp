@@ -99,7 +99,7 @@ protected:
 #endif
         count |= THORDATALINK_STOPPED;
 #ifdef _TESTING
-        ActPrintLog(owner, "ITDL output %d stopped, count was %"RCPF"d", outputId, getDataLinkCount());
+        ActPrintLog(owner, "ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
 #endif
     }
 
@@ -179,21 +179,6 @@ interface ISmartBufferNotify
     virtual bool startAsync() =0;                       // return true if need to start asynchronously
     virtual void onInputStarted(IException *e) =0;      // e==NULL if start suceeded, NB only called with exception if Async
     virtual void onInputFinished(rowcount_t count) =0;
-};
-
-
-class CThorRowAggregator : public RowAggregator
-{
-    CActivityBase &activity;
-    
-public:
-    CThorRowAggregator(CActivityBase &_activity, IHThorHashAggregateExtra &extra, IHThorRowAggregator &helper) : RowAggregator(extra, helper), activity(_activity)
-    {
-    }
-
-// overloaded
-    AggregateRowBuilder &addRow(const void *row);
-    void mergeElement(const void *otherElement);
 };
 
 interface IDiskUsage;

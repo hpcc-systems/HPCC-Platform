@@ -56,7 +56,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         dataLinkStart();
         input = inputs.item(0);
         unsigned spillPriority = container.queryGrouped() ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
@@ -79,7 +79,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon || eoi)
             return NULL;
         OwnedConstThorRow row = out->nextRow();
@@ -136,7 +136,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         dataLinkStart();
         input = inputs.item(0);
         startInput(input);
@@ -151,12 +151,12 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow ret = input->nextRow();
         if (ret && prev && icompare->docompare(prev, ret) > 0)
         {
             // MORE - better to give mismatching rows than indexes?
-            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %"RCPF"d,  %"RCPF"d))", getDataLinkCount(), getDataLinkCount()+1);
+            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %" RCPF "d,  %" RCPF "d))", getDataLinkCount(), getDataLinkCount()+1);
         }
         prev.set(ret);
         if (ret)
@@ -170,12 +170,12 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && prev && stepCompare->docompare(prev, ret, numFields) > 0)
         {
             // MORE - better to give mismatching rows than indexes?
-            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %"RCPF"d,  %"RCPF"d))", getDataLinkCount(), getDataLinkCount()+1);
+            throw MakeActivityException(this, TE_NotSorted, "detected incorrectly sorted rows (row %" RCPF "d,  %" RCPF "d))", getDataLinkCount(), getDataLinkCount()+1);
         }
         prev.set(ret);
         if (ret)

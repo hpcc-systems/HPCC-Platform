@@ -1583,7 +1583,7 @@ public:
         if (idx>=pending->ordinality())
             ERRLOG("IFileDescriptor setPart called after cluster finished");
         else {
-            SocketEndpoint &pep = pending->item(idx);
+            SocketEndpoint &pep = pending->element(idx);
             if (pep.isNull())
                 pep=ep;
             else
@@ -2900,7 +2900,7 @@ IFileDescriptor *createFileDescriptorFromRoxieXML(IPropertyTree *tree,const char
                 ForEachItemIn(d,locdirs) {
                     if (strcmp(rfn.getLocalPath(locpath.clear()).str(),locdirs.item(d))==0) {
                         SocketEndpoint ep = rfn.queryEndpoint();
-                        if (ep.port==DAFILESRV_PORT)
+                        if (ep.port==DAFILESRV_PORT || ep.port==SECURE_DAFILESRV_PORT)
                             ep.port = 0;
                         epa[d].append(ep);
                         found = true;

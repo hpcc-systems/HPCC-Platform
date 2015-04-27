@@ -114,7 +114,7 @@ public:
     virtual void start();
     virtual void startRelease();        
 
-    StringBuffer &getInfo(StringBuffer &str) { str.appendf("%8"I64F"X %6"I64F"d %u: %s",(__int64)threadid,(__int64)threadid,tidlog,getName()); return str; } 
+    StringBuffer &getInfo(StringBuffer &str) { str.appendf("%8" I64F "X %6" I64F "d %u: %s",(__int64)threadid,(__int64)threadid,tidlog,getName()); return str; } 
     const char *getLogInfo(int &thandle,unsigned &tid) { 
 #ifdef _WIN32
         thandle = (int)(memsize_t)hThread;
@@ -245,6 +245,8 @@ extern jlib_decl StringBuffer &getThreadName(int thandle,unsigned logtid,StringB
 
 // Simple pipe process support
 interface ISimpleReadStream;
+
+#define START_FAILURE (199) // return code if program cannot be started
 
 interface IPipeProcess: extends IInterface
 {

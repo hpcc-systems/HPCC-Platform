@@ -664,6 +664,27 @@ const void * createRowFromXml(IEngineRowAllocator * rowAllocator, size32_t len, 
     return rowBuilder.finalizeRowClear(newSize);
 }
 
+size32_t createRowFromJson(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    Owned<IPropertyTree> root = createPTreeFromJSONString(size, utf8, ipt_none, stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
+    if (!root)
+    {
+        throwError(THORCERR_InvalidJsonFromJson);
+        return 0;
+    }
+    Owned <XmlColumnProvider> columns = new XmlDatasetColumnProvider;
+    columns->setRow(root);
+    NullDiskCallback dummyCallback;
+    return xmlTransformer->transform(rowBuilder, columns, &dummyCallback);
+}
+
+const void * createRowFromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+    size32_t newSize = createRowFromJson(rowBuilder, rtlUtf8Size(len, utf8), utf8, xmlTransformer, stripWhitespace);
+    return rowBuilder.finalizeRowClear(newSize);
+}
+
 //=====================================================================================================
 
 IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, const void * text, bool isDataSet)
@@ -1330,7 +1351,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1350,7 +1372,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1370,7 +1393,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1391,7 +1415,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1415,38 +1440,32 @@ public:
     }
     virtual bool readBool(const char * path, bool _default)
     {
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
             throw MakeStringException(0, "Attempting to extract xml content text as boolean");
 
         const char *str = queryProp(path);
         if (!str) return _default;
-
-        CriticalBlock b(crit);
-        cnv2Latin1((size32_t)strlen(str), str, sharedResult.clear());
-
-        size32_t resultLen = sharedResult.length();
-        const char * resultText = (const char *)sharedResult.toByteArray();
-        return strToBool(resultLen, resultText);
+        return strToBool(str);
     }
     virtual __int64 readInt(const char * path, __int64 _default)
     {
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
             throw MakeStringException(0, "Attempting to extract xml content text as integer");
 
         const char *str = queryProp(path);
         if (!str) return _default;
-
-        CriticalBlock b(crit);
-        cnv2Latin1((size32_t)strlen(str), str, sharedResult.clear());
-        return atoi64_l((const char *)sharedResult.toByteArray(), sharedResult.length());
+        return _atoi64(str);
     }
     virtual void readQString(size32_t len, char * text, const char * path, size32_t _lenDefault, const char * _default)
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1468,7 +1487,8 @@ public:
     {
         CriticalBlock b(crit);
         sharedResult.clear();
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             cnv2Latin1(length, contentMb.toByteArray()+offset, sharedResult);
@@ -1489,7 +1509,8 @@ public:
     virtual void readStringX(size32_t & len, char * & text, const char * path, size32_t _lenDefault, const char * _default)
     {
         MemoryBuffer result;
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             if (length)
@@ -1511,7 +1532,8 @@ public:
     }
     virtual void readUnicodeX(size32_t & len, UChar * & text, const char * path, size32_t _lenDefault, const UChar * _default)
     {
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         if (contentRequest(path, offset, length))
         {
             rtlCodepageToUnicodeX(len, text, length, contentMb.toByteArray()+offset, "utf-8");
@@ -1528,7 +1550,8 @@ public:
     }
     virtual void readUtf8X(size32_t & len, char * & text, const char * path, size32_t _lenDefault, const char * _default)
     {
-        size32_t offset, length;
+        size32_t offset = 0;
+        size32_t length = 0;
         size32_t size;
         if (contentRequest(path, offset, length))
         {
@@ -1582,13 +1605,14 @@ class CXMLParse : public CInterface, implements IXMLParse
     StringAttr xpath;
     IXMLSelect *iXMLSelect;  // NOTE - not linked - creates circular links
     PTreeReaderOptions xmlOptions;
-    bool step, contentRequired;
+    bool step, contentRequired, isJson;
 
-    class CXMLMaker : public CInterface, implements IPTreeMaker
+    class CMakerBase : public CInterface, implements IPTreeMaker
     {
+    protected:
         CXPath xpath;
         IXMLSelect *iXMLSelect;   // NOTE - not linked - creates circular links
-        CopyCIArrayOf<CParseStackInfo> stack, freeParseInfo;
+        CICopyArrayOf<CParseStackInfo> stack, freeParseInfo;
         IPTreeMaker *maker;
         Linked<CMarkReadBase> marking;
         Owned<COffsetNodeCreator> nodeCreator;
@@ -1601,14 +1625,14 @@ class CXMLParse : public CInterface, implements IXMLParse
     public:
         IMPLEMENT_IINTERFACE;
 
-        CXMLMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : xpath(_xpath, ignoreNameSpaces), iXMLSelect(&_iXMLSelect), contentRequired(_contentRequired)
+        CMakerBase(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : xpath(_xpath, ignoreNameSpaces), iXMLSelect(&_iXMLSelect), contentRequired(_contentRequired)
         {
             lastMatchKeptLevel = 0;
             lastMatchKeptNode = lastMatchKeptNodeParent = NULL;
             maker = NULL;
             utf8Translator = NULL;
         }
-        ~CXMLMaker()
+        ~CMakerBase()
         {
             ForEachItemIn(i, stack)
                 delete &stack.item(i);
@@ -1647,7 +1671,7 @@ class CXMLParse : public CInterface, implements IXMLParse
             CParseStackInfo *stackInfo;
             if (freeParseInfo.ordinality())
             {
-                stackInfo = &freeParseInfo.pop();
+                stackInfo = &freeParseInfo.popGet();
                 stackInfo->reset();
             }
             else
@@ -1875,25 +1899,79 @@ class CXMLParse : public CInterface, implements IXMLParse
         }
     } *iXMLMaker;
 
+    class CXMLMaker : public CMakerBase
+    {
+    public:
+        CXMLMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : CMakerBase(_xpath, _iXMLSelect, _contentRequired, ignoreNameSpaces)
+        {
+        }
+    };
+
+    class CJSONMaker : public CMakerBase
+    {
+    public:
+        CJSONMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : CMakerBase(_xpath, _iXMLSelect, _contentRequired, ignoreNameSpaces)
+        {
+        }
+
+        bool checkSkipRoot(const char *tag)
+        {
+            if (stack.ordinality()) //root level only
+                return false;
+            if (streq(tag, "__array__")) //xpath starts after root array
+                return true;
+            if (streq(tag, "__object__") && xpath.queryDepth()) //empty xpath matches start object, otherwise skip, xpath starts immediately after
+                return true;
+            return false;
+        }
+
+        virtual void beginNode(const char *tag, offset_t startOffset)
+        {
+            if (!checkSkipRoot(tag))
+                CMakerBase::beginNode(tag, startOffset);
+        }
+        virtual void newAttribute(const char *tag, const char *value)
+        {
+            if (stack.ordinality() && stack.tos().keep)
+                maker->newAttribute(tag, value);
+        }
+        virtual void beginNodeContent(const char *tag)
+        {
+            if (!checkSkipRoot(tag))
+                CMakerBase::beginNodeContent(tag);
+        }
+        virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
+        {
+            if (!checkSkipRoot(tag))
+                CMakerBase::endNode(tag, length, value, binary, endOffset);
+        }
+    };
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CXMLParse(const char *fName, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(fName); }
-    CXMLParse(IFile &ifile, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(ifile); }
-    CXMLParse(IFileIO &fileio, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(fileio); }
-    CXMLParse(ISimpleReadStream &stream, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(stream); }
-    CXMLParse(const void *buffer, unsigned bufLen, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(buffer, bufLen); }
-    CXMLParse(const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); }
+    CXMLParse(const char *fName, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(fName); }
+    CXMLParse(IFile &ifile, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(ifile); }
+    CXMLParse(IFileIO &fileio, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(fileio); }
+    CXMLParse(ISimpleReadStream &stream, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(stream); }
+    CXMLParse(const void *buffer, unsigned bufLen, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); go(buffer, bufLen); }
+    CXMLParse(const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true, bool _isJson=false) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step), isJson(_isJson) { init(); }
     ~CXMLParse()
     {
         ::Release(iXMLMaker);
         ::Release(xmlReader);
     }
+    CMakerBase *createMaker()
+    {
+        bool ignoreNameSpaces = 0 != ((unsigned)xmlOptions & (unsigned)ptr_ignoreNameSpaces);
+        if (isJson)
+            return new CJSONMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces);
+        return new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces);
+    }
     void init()
     {
         xmlReader = NULL;
-        bool ignoreNameSpaces = 0 != ((unsigned)xmlOptions & (unsigned)ptr_ignoreNameSpaces);
-        iXMLMaker = new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces);
+        iXMLMaker = createMaker();
         iXMLMaker->init();
     }
 
@@ -1914,6 +1992,7 @@ public:
         Owned<IIOStream> stream = createIOStream(&fileio);
         go(*stream);
     }
+
     void go(ISimpleReadStream &stream)
     {
         if (contentRequired)
@@ -1921,8 +2000,13 @@ public:
             // only need marking stream if fetching xml text content.
             Owned<CMarkReadStream> markingStream = new CMarkReadStream(*LINK(&stream));
             iXMLMaker->setMarkingStream(*markingStream);
-            xmlReader = createPullXMLStreamReader(*markingStream, *iXMLMaker, xmlOptions);
+            if (isJson)
+                xmlReader = createPullJSONStreamReader(*markingStream, *iXMLMaker, xmlOptions);
+            else
+                xmlReader = createPullXMLStreamReader(*markingStream, *iXMLMaker, xmlOptions);
         }
+        else if (isJson)
+            xmlReader = createPullJSONStreamReader(stream, *iXMLMaker, xmlOptions);
         else
             xmlReader = createPullXMLStreamReader(stream, *iXMLMaker, xmlOptions);
         if (!step)
@@ -1939,7 +2023,10 @@ public:
             Owned<CMarkReadBase> markingStream = new CMarkRead(buffer, bufLen);
             iXMLMaker->setMarkingStream(*markingStream);
         }
-        xmlReader = createPullXMLBufferReader(buffer, bufLen, *iXMLMaker, xmlOptions);
+        if (isJson)
+            xmlReader = createPullJSONBufferReader(buffer, bufLen, *iXMLMaker, xmlOptions);
+        else
+            xmlReader = createPullXMLBufferReader(buffer, bufLen, *iXMLMaker, xmlOptions);
         if (!step)
         {
             xmlReader->load();
@@ -1954,7 +2041,10 @@ public:
             Owned<CMarkReadBase> markingStream = new CMarkRead(str, strlen(str));
             iXMLMaker->setMarkingStream(*markingStream);
         }
-        xmlReader = createPullXMLStringReader(str, *iXMLMaker, xmlOptions);
+        if (isJson)
+            xmlReader = createPullJSONStringReader(str, *iXMLMaker, xmlOptions);
+        else
+            xmlReader = createPullXMLStringReader(str, *iXMLMaker, xmlOptions);
         if (!step)
         {
             xmlReader->load();
@@ -1993,6 +2083,27 @@ IXMLParse *createXMLParse(const void *buffer, unsigned bufLen, const char *xpath
 IXMLParse *createXMLParseString(const char *string, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
 {
     CXMLParse *parser = new CXMLParse(xpath, iselect, xmlOptions, contentRequired);
+    parser->provideXML(string);
+    return parser;
+}
+
+IXMLParse *createJSONParse(const char *filename, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
+{
+    return new CXMLParse(filename, xpath, iselect, xmlOptions, contentRequired, true, true);
+}
+IXMLParse *createJSONParse(ISimpleReadStream &stream, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
+{
+    return new CXMLParse(stream, xpath, iselect, xmlOptions, contentRequired, true, true);
+}
+
+IXMLParse *createJSONParse(const void *buffer, unsigned bufLen, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
+{
+    return new CXMLParse(buffer, bufLen, xpath, iselect, xmlOptions, contentRequired, true, true);
+}
+
+IXMLParse *createJSONParseString(const char *string, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
+{
+    CXMLParse *parser = new CXMLParse(xpath, iselect, xmlOptions, contentRequired, true, true);
     parser->provideXML(string);
     return parser;
 }

@@ -20,7 +20,6 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
-    "dojo/dom-class",
     "dojo/dom-form",
     "dojo/date",
     "dojo/on",
@@ -57,7 +56,7 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on, topic,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, date, on, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 selector,
                 _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -85,6 +84,18 @@ define([
         startup: function (args) {
             this.inherited(arguments);
             this.initContextMenu();
+            this._idleWatcher = new ESPUtil.IdleWatcher();
+            this._idleWatcher.start();
+            var context = this;
+            this._idleWatcherHandle = this._idleWatcher.on("idle", function () {
+                context._onRefresh();
+            });
+        },
+
+        destroy: function (args) {
+            this._idleWatcherHandle.remove();
+            this._idleWatcher.stop();
+            this.inherited(arguments);
         },
 
         getTitle: function () {
@@ -197,14 +208,19 @@ define([
         //  Implementation  ---
         getFilter: function () {
             var retVal = this.filter.toObject();
-            lang.mixin(retVal, {
-                Wuid: retVal.Wuid.toUpperCase().trim(),
-                StartDate: this.getISOString("FromDate", "FromTime"),
-                EndDate: this.getISOString("ToDate", "ToTime")
-            });
-            if (retVal.StartDate != "" && retVal.EndDate != "") {
+            if (retVal.StartDate && retVal.FromTime) {
+                lang.mixin(retVal, {
+                    StartDate: this.getISOString("FromDate", "FromTime")
+                });
+            }
+            if (retVal.EndDate && retVal.ToTime) {
+                lang.mixin(retVal, {
+                    EndDate: this.getISOString("ToDate", "ToTime")
+                });
+            }
+            if (retVal.StartDate && retVal.EndDate) {
                 retVal["DateRB"] = "0";
-            } else if (retVal.LastNDays != "") {
+            } else if (retVal.LastNDays) {
                 retVal["DateRB"] = "0";
                 var now = new Date();
                 retVal.StartDate = date.add(now, "day", retVal.LastNDays * -1).toISOString();
@@ -217,6 +233,10 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
+
+            if (this.params.searchResults) {
+                this.filter.disable(true);
+            }
 
             this.clusterTargetSelect.init({
                 Targets: true,
@@ -247,6 +267,12 @@ define([
 
             topic.subscribe("hpcc/ecl_wu_created", function (topic) {
                 context.refreshGrid();
+            });
+
+            ESPUtil.MonitorVisibility(this.workunitsTab, function (visibility) {
+                if (visibility) {
+                    context.refreshGrid();
+                }
             });
         },
 
@@ -352,7 +378,7 @@ define([
 
         initWorkunitsGrid: function () {
             var context = this;
-            var store = new ESPWorkunit.CreateWUQueryStore();
+            var store = this.params.searchResults ? this.params.searchResults : new ESPWorkunit.CreateWUQueryStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
                 query: this.getFilter(),
@@ -386,7 +412,7 @@ define([
                     Cluster: { label: this.i18n.Cluster, width: 90 },
                     RoxieCluster: { label: this.i18n.RoxieCluster, width: 99 },
                     State: { label: this.i18n.State, width: 90 },
-                    TotalThorTime: { label: this.i18n.TotalThorTime, width: 117 }
+                    TotalClusterTime: { label: this.i18n.TotalClusterTime, width: 117 }
                 }
             }, this.id + "WorkunitsGrid");
 

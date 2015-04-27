@@ -409,7 +409,7 @@ public:
                     SocketEndpointArray epa;
                     grp->getSocketEndpoints(epa);
                     ForEachItemIn(i1,epa) {
-                        epa.item(i1).port = getDaliServixPort();
+                        epa.element(i1).port = getDaliServixPort();
                     }
                     SocketEndpointArray failures;
                     UnsignedArray failedcodes;
@@ -708,7 +708,7 @@ class CAutoSwapNode : public CSwapNode
         ForEachItemIn(i4,badepa) {
             StringBuffer from;
             badepa.item(i4).getIpText(from);
-            SocketEndpoint &spareEp = spareepa.item(i4);
+            const SocketEndpoint &spareEp = spareepa.item(i4);
             StringBuffer to;
             spareEp.getIpText(to);
             rank_t r = spareGroup->rank(spareEp);

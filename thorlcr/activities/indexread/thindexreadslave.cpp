@@ -627,7 +627,7 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         first = true;
         eoi = false;
         keyedLimit = helperKeyedLimit;
@@ -677,7 +677,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eoi) 
             return NULL;
         if (RCMAX != keyedLimitCount)
@@ -765,7 +765,7 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, public CTh
 {
     IHThorIndexGroupAggregateArg *helper;
     bool gathered, eoi, merging;
-    Owned<CThorRowAggregator> localAggTable;
+    Owned<RowAggregator> localAggTable;
     memsize_t maxMem;
     Owned<IHashDistributor> distributor;
 
@@ -798,8 +798,8 @@ public:
     virtual bool isGrouped() { return false; }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
+        ActivityTimer s(totalCycles, timeActivities);
+        localAggTable.setown(new RowAggregator(*helper, *helper));
         localAggTable->start(queryRowAllocator());
         gathered = eoi = false;
         dataLinkStart();
@@ -811,7 +811,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eoi) 
             return NULL;
         if (!gathered)
@@ -900,7 +900,7 @@ public:
     virtual bool isGrouped() { return false; }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         eoi = false;
         if (!helper->canMatchAny())
         {
@@ -917,7 +917,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eoi)
             return NULL;
         rowcount_t totalCount = 0;
@@ -1065,7 +1065,7 @@ public:
     virtual bool isGrouped() { return false; }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         keyedLimit = (rowcount_t)helper->getKeyedLimit();
         rowLimit = (rowcount_t)helper->getRowLimit();
         if (helper->getFlags() & TIRlimitskips)
@@ -1109,7 +1109,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eoi)
             return NULL;
 
@@ -1251,7 +1251,7 @@ public:
     virtual bool isGrouped() { return false; }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         eoi = hadElement = false;
         partn = 0;
         dataLinkStart();
@@ -1265,7 +1265,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eoi)
             return NULL;
         eoi = true;

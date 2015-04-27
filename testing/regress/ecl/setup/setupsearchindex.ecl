@@ -15,12 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
+//class=textsearch
+
 #option ('checkAsserts',false);
 
 import $.SetupText;
 import $.Options;
 import Std.File;
-Files := $.Files(__PLATFORM__, false);
+
+boolean createMultiPart := (__PLATFORM__[1..4] = 'thor');
+Files := $.Files(createMultiPart, false);
 
 string OriginalTextFilesIp := '.' : STORED('OriginalTextFilesIp');
 string OriginalTextFilesPath := '' : STORED('OriginalTextFilesEclPath');

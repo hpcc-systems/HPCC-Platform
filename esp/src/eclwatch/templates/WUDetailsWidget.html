@@ -63,9 +63,9 @@
                                 <label class="Prompt" for="${id}Owner">${i18n.Owner}:</label>
                                 <div id="${id}Owner"></div>
                             </li>
-                            <li>
+                            <li id="scopeOptional" class="hidden">
                                 <label class="Prompt" for="${id}Scope">${i18n.Scope}:</label>
-                                <div id="${id}Scope"></div>
+                                <div><input id="${id}Scope" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox"/></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="${id}Jobname">${i18n.JobName}:</label>
@@ -84,13 +84,13 @@
                                 <div id="${id}Cluster"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}TotalThorTime">${i18n.TotalThorTime}:</label>
-                                <div id="${id}TotalThorTime"></div>
+                                <label class="Prompt" for="${id}TotalClusterTime">${i18n.TotalClusterTime}:</label>
+                                <div id="${id}TotalClusterTime"></div>
                             </li>
                         </ul>
                     </form>
                 </div>
-                <div id="${id}InfoContainer" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120" data-dojo-type="InfoGridWidget">
+                <div id="${id}InfoContainer" class="wrap" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120" data-dojo-type="InfoGridWidget">
                 </div>
             </div>
             <div id="${id}_Variables" title="${i18n.Variables}" data-dojo-props="delayWidget: 'VariablesWidget', disabled: true" data-dojo-type="DelayLoadWidget">
@@ -109,7 +109,7 @@
             </div>
             <div id="${id}_Resources" title="${i18n.Resources}" data-dojo-props="delayWidget: 'ResourcesWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Logs" title="${i18n.Helpers}" data-dojo-props="delayWidget: 'LogsWidget', disabled: true" data-dojo-type="DelayLoadWidget">
+            <div id="${id}_Logs" title="${i18n.Helpers}" data-dojo-props="delayWidget: 'HelpersWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
             <div id="${id}_ECL" title="${i18n.ECL}" data-dojo-props="delayWidget: 'ECLSourceWidget'" data-dojo-type="DelayLoadWidget">
             </div>
@@ -118,7 +118,7 @@
         </div>
     </div>
     <div id="${id}ZapDialog" data-dojo-type="dijit.Dialog" title="${i18n.ZippedAnalysisPackage}">
-        <form id="${id}ZapForm" action="/WsWorkunits/WUCreateZAPInfo" style="width:400px" method="post" encType="application/x-www-form-urlencoded">
+        <form id="${id}ZapForm" action="/WsWorkunits/WUCreateZAPInfo" style="width:460px" method="post" encType="application/x-www-form-urlencoded">
             <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                 <input id="${id}ZapWUID" title="${i18n.WUID}:" name="Wuid" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
                 <input id="${id}BuildVersion" title="${i18n.ESPBuildVersion}:" name="BuildVersion" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
@@ -127,6 +127,7 @@
                 <input id="${id}ZapDescription" title="${i18n.Description}:" name="ProblemDescription" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
                 <input id="${id}WarnHistory" title="${i18n.History}:" name="WhatChanged" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
                 <input id="${id}WarnTimings" title="${i18n.Timings}:" name="WhereSlow" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+                <input id="${id}Password" title="${i18n.PasswordOpenZAP}:" name="Password" cols="22" colspan="2" type="password" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
             </div>
             <button id="${id}onZapSubmit" data-dojo-attach-event="onClick:_onCancelDialog" class="bottomFormButtons" type="submit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
             <button class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>

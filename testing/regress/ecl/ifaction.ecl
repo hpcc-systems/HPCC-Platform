@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('resourceConditionalActions', true)
+#option ('resourceConditionalActions', true);
 
 r := { string x{maxlength(256)}; };
 

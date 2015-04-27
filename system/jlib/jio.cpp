@@ -55,7 +55,7 @@ extern jlib_decl offset_t checked_lseeki64( int handle, offset_t offset, int ori
 {
     offset_t ret=_lseeki64(handle,offset,origin);
     if (ret==(offset_t)-1) 
-        throw MakeErrnoException("checked_lseeki64");
+        throw makeErrnoException("checked_lseeki64");
     return ret;
 }
 
@@ -89,7 +89,7 @@ extern jlib_decl size32_t checked_read(int file, void *buffer, size32_t len)
                     readNow = 0;
                     break;
                 }
-                throw MakeErrnoException(errno, "checked_read");
+                throw makeErrnoException(errno, "checked_read");
             }
         }
         else if (!readNow)
@@ -128,7 +128,7 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
         if (err == ERROR_INVALID_PARAMETER) // Win98 etc
             atomicsupported = false;
         else
-            throw MakeOsException(GetLastError(), "checked_pread");
+            throw makeOsException(GetLastError(), "checked_pread");
     }
     {
         CriticalBlock blk(atomicsection);
@@ -163,7 +163,7 @@ extern jlib_decl size32_t checked_pread(int file, void *buffer, size32_t len, of
                     readNow = 0;
                     break;
                 }
-                throw MakeErrnoException(errno,"checked_pread");
+                throw makeErrnoException(errno, "checked_pread");
             }
         }
         else if (!readNow)
@@ -184,7 +184,7 @@ extern jlib_decl size32_t checked_write( int handle, const void *buffer, size32_
     int ret=_write(handle,buffer,count);
     if ((size32_t)ret != count)
     {
-        throw MakeErrnoException((ret==-1)?errno:DISK_FULL_EXCEPTION_CODE, "checked_write");
+        throw makeErrnoException((ret==-1)?errno:DISK_FULL_EXCEPTION_CODE, "checked_write");
     }
     return (size32_t)ret;
 }
@@ -803,7 +803,7 @@ ElevatorScanner::ElevatorScanner(int _file, size32_t _recordSize) : Thread("Elev
 
 ElevatorScanner::~ElevatorScanner()
 {
-    PrintLog("Elevator scanner statistics: %"I64F"d reads (%"I64F"d bytes), %d scans", reads, reads*recordSize, scans);
+    PrintLog("Elevator scanner statistics: %" I64F "d reads (%" I64F "d bytes), %d scans", reads, reads*recordSize, scans);
 }
 
 void ElevatorScanner::beforeDispose()

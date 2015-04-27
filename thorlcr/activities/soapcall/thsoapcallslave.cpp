@@ -66,7 +66,7 @@ public:
     // IThorDataLink methods
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         eof = false;
         dataLinkStart();
         if (wscHelper)
@@ -80,7 +80,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!eof && wscHelper.get())
         {
             OwnedConstThorRow row = wscHelper->getRow();
@@ -144,7 +144,7 @@ public:
     // IThorDataLink methods
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         eof = false;
         input = inputs.item(0);
         startInput(input);
@@ -159,7 +159,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow row = wscHelper->getRow();
         if (row)
         {

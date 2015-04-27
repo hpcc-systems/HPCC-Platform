@@ -18,7 +18,6 @@
 
 #include "jiface.hpp"
 #include "jarray.hpp"
-#include "jarray.tpp"
 #include "jsort.hpp"
 #include "jmisc.hpp"
 #include "jlib.hpp"
@@ -87,7 +86,13 @@ void Allocator::_reallocate(aindex_t newLen, size32_t itemSize)
         while (newLen > newMax)
             newMax += newMax;
     }
-    void *newhead = realloc(_head, itemSize * newMax);
+    size_t allocSize = (size_t)itemSize * newMax;
+    if (allocSize < newMax)
+    {
+        PrintLog("Out of memory (overflow) in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, newLen);
+        throw MakeStringException(0, "Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, newLen);
+    }
+    void *newhead = realloc(_head, allocSize);
     if (!newhead) 
     {
         PrintLog("Out of memory in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, max);

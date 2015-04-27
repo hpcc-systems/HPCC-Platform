@@ -90,6 +90,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKlimit] = "limit";
     kindArray[TAKcsvfetch] = "csvfetch";
     kindArray[TAKxmlwrite] = "xmlwrite";
+    kindArray[TAKjsonwrite] = "jsonwrite";
     kindArray[TAKparse] = "parse";
     kindArray[TAKtopn] = "topn";
     kindArray[TAKmerge] = "merge";
@@ -132,6 +133,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKchildthroughnormalize] = "childthroughnormalize";
     kindArray[TAKcsvread] = "csvread";
     kindArray[TAKxmlread] = "xmlread";
+    kindArray[TAKjsonread] = "jsonread";
     kindArray[TAKlocalresultread] = "localresultread";
     kindArray[TAKlocalresultwrite] = "localresultwrite";
     kindArray[TAKcombine] = "combine";

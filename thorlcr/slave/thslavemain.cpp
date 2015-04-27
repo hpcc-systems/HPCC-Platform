@@ -169,7 +169,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
     return true;
 }
 
-void UnregisterSelf()
+void UnregisterSelf(IException *e)
 {
     StringBuffer slfStr;
     slfEp.getUrlStr(slfStr);
@@ -178,6 +178,7 @@ void UnregisterSelf()
     {
         CMessageBuffer msg;
         msg.append((int)rc_deregister);
+        serializeException(e, msg); // NB: allows exception to be NULL
         if (!queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION, 60*1000))
         {
             LOG(MCerror, thorJob, "Failed to unregister slave : %s", slfStr.toCharArray());
@@ -194,7 +195,7 @@ void UnregisterSelf()
 bool ControlHandler() 
 { 
     LOG(MCdebugProgress, thorJob, "CTRL-C pressed");
-    if (masterNode) UnregisterSelf();
+    if (masterNode) UnregisterSelf(NULL);
     abortSlave();
     return false; 
 }
@@ -265,7 +266,10 @@ int main( int argc, char *argv[]  )
         globals = iFile->exists() ? createPTree(*iFile, ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
     }
     unsigned multiThorMemoryThreshold = 0;
-    try {
+
+    Owned<IException> unregisterException;
+    try
+    {
         if (argc==1)
         {
             usage();
@@ -322,7 +326,7 @@ int main( int argc, char *argv[]  )
             int err = _chdir(thorPath.str());
             if (err)
             {
-                IException *e = MakeErrnoException(-1, "Failed to change dir to '%s'",thorPath.str());
+                IException *e = makeErrnoExceptionV(-1, "Failed to change dir to '%s'", thorPath.str());
                 FLLOG(MCexception(e), thorJob, e);
                 throw e;
             }
@@ -353,10 +357,10 @@ int main( int argc, char *argv[]  )
                 globals->setProp("@thorTempDirectory", tempDirStr.str());
             else
                 tempDirStr.append(globals->queryProp("@thorTempDirectory"));
+            addPathSepChar(tempDirStr).append(getMachinePortBase());
+
             logDiskSpace(); // Log before temp space is cleared
-            StringBuffer tempPrefix("thtmp");
-            tempPrefix.append(getMachinePortBase()).append("_");
-            SetTempDir(tempDirStr.str(), tempPrefix.str(), true);
+            SetTempDir(tempDirStr.str(), "thtmp", true);
 
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 
@@ -369,8 +373,8 @@ int main( int argc, char *argv[]  )
             ULARGE_INTEGER free;
             if (GetDiskFreeSpaceEx("c:\\",&userfree,&total,&free)&&total.QuadPart) {
                 unsigned pc = (unsigned)(free.QuadPart*100/total.QuadPart);
-                LOG(MCdebugProgress, thorJob, "Total disk space = %"I64F"d k", total.QuadPart/1000);
-                LOG(MCdebugProgress, thorJob, "Free  disk space = %"I64F"d k", free.QuadPart/1000);
+                LOG(MCdebugProgress, thorJob, "Total disk space = %" I64F "d k", total.QuadPart/1000);
+                LOG(MCdebugProgress, thorJob, "Free  disk space = %" I64F "d k", free.QuadPart/1000);
                 LOG(MCdebugProgress, thorJob, "%d%% disk free\n",pc);
             }
 #endif
@@ -403,7 +407,7 @@ int main( int argc, char *argv[]  )
                 if (lgname.length()) {
                     Owned<ILargeMemLimitNotify> notify = createMultiThorResourceMutex(lgname.str());
                     setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
-                    PROGLOG("Multi-Thor resource limit for %s set to %"I64F"d",lgname.str(),(__int64)multiThorMemoryThreshold);
+                    PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",lgname.str(),(__int64)multiThorMemoryThreshold);
                 }   
                 else
                     multiThorMemoryThreshold = 0;
@@ -416,17 +420,16 @@ int main( int argc, char *argv[]  )
     catch (IException *e) 
     {
         FLLOG(MCexception(e), thorJob, e,"ThorSlave");
-        e->Release();
-    }
-    catch (CATCHALL)
-    {
-        FLLOG(MCerror, thorJob, "ThorSlave exiting because of uncaught exception");
+        unregisterException.setown(e);
     }
     ClearTempDirs();
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
     roxiemem::releaseRoxieHeap();
+
+    if (unregisterException.get())
+        UnregisterSelf(unregisterException);
 
     if (globals->getPropBool("Debug/@slaveDaliClient"))
         disableThorSlaveAsDaliClient();

@@ -102,7 +102,7 @@ public:
 // Bit risky if *very* out of memory so protect against recursion and catch exceptions
             try { 
                 // try to log
-                PROGLOG("Jbuff: Out of Memory (%d,%"I64F"d,%"I64F"dk)",_errcode,(unsigned __int64)wanted,(unsigned __int64) (got/1024));
+                PROGLOG("Jbuff: Out of Memory (%d,%" I64F "d,%" I64F "dk)",_errcode,(unsigned __int64)wanted,(unsigned __int64) (got/1024));
                 PrintStackReport();
                 PrintMemoryReport();
             }
@@ -287,10 +287,11 @@ void *MemoryBuffer::insertDirect(unsigned offset, size32_t insertLen)
 }
 
 
-void MemoryBuffer::ensureCapacity(unsigned max)
+void * MemoryBuffer::ensureCapacity(unsigned max)
 {
     if (maxLen - curLen < max)
         _realloc(curLen + max);
+    return buffer + curLen;
 }
 
 void MemoryBuffer::kill()
@@ -606,7 +607,7 @@ MemoryBuffer &MemoryBuffer::appendFile(const char *fileName)
     int r;
     while ((r = _read(h, buf, 1024)) != 0)
     {
-        if (-1==r) throw MakeErrnoException("MemoryBuffer::appendFile");
+        if (-1==r) throw makeErrnoException("MemoryBuffer::appendFile");
         append(r, buf); 
     }
     _close(h);
@@ -933,11 +934,11 @@ inline void incLargeMemTotal(memsize_t sz)
         LMtotal += sz;
 #ifdef TRACE_LARGEMEM
         if ((LMtotal/0x100000)!=((LMtotal-sz)/0x100000))
-            PROGLOG("LARGEMEM(+): %"I64F"d",(offset_t)LMtotal);
+            PROGLOG("LARGEMEM(+): %" I64F "d",(offset_t)LMtotal);
 #endif
         if (!LMlocked&&LMnotify.get()&&(LMtotal>=LMsemlimit)) {
             LMlocked = true;
-            DBGLOG("LargeMemTotal limit exceeded: %"I64F"d",(offset_t)LMtotal);
+            DBGLOG("LargeMemTotal limit exceeded: %" I64F "d",(offset_t)LMtotal);
             if (!LMnotify->take(LMtotal)) {
                 LMtotal -= sz;
                 LMlocked = false;
@@ -955,11 +956,11 @@ inline void decLargeMemTotal(memsize_t sz)
         LMtotal -= sz;
 #ifdef TRACE_LARGEMEM
         if ((LMtotal/0x100000)!=((LMtotal+sz)/0x100000))
-            PROGLOG("LARGEMEM(-): %"I64F"d",(offset_t)LMtotal);
+            PROGLOG("LARGEMEM(-): %" I64F "d",(offset_t)LMtotal);
 #endif
         if (LMlocked) {
             if (LMtotal<LMsemlimit) {
-                DBGLOG("LargeMemTotal limit reduced to %"I64F"d",(offset_t)LMtotal);
+                DBGLOG("LargeMemTotal limit reduced to %" I64F "d",(offset_t)LMtotal);
                 LMlocked = false;
                 if (LMnotify.get())
                     LMnotify->give(LMtotal);
@@ -1009,7 +1010,7 @@ bool CLargeMemoryAllocator::newchunk(size32_t sz,size32_t extra,bool exceptionwa
     if (maxallocated()+newchunksz+extra>totalmax) {
 #ifdef TRACE_LARGEMEM_OOM
         PrintStackReport();
-        PROGLOG("OOM.1 wanted sz=%d, extra = %d, maxallocated=%"I64F"d, newchunksz=%u, totalmax=%"I64F"d",sz,extra,(offset_t)maxallocated(),newchunksz,(offset_t)totalmax);
+        PROGLOG("OOM.1 wanted sz=%d, extra = %d, maxallocated=%" I64F "d, newchunksz=%u, totalmax=%" I64F "d",sz,extra,(offset_t)maxallocated(),newchunksz,(offset_t)totalmax);
 #endif
         if (exceptionwanted) {
             throw createOutOfMemException(-5,sz, maxallocated(),true);
@@ -1042,7 +1043,7 @@ bool CLargeMemoryAllocator::newchunk(size32_t sz,size32_t extra,bool exceptionwa
             chunk.max = 0;
 #ifdef TRACE_LARGEMEM_OOM
         PrintStackReport();
-        PROGLOG("OOM.2 wanted sz=%d, extra = %d, maxallocated=%"I64F"d, newchunksz=%u, totalmax=%"I64F"d",sz,extra,(offset_t)maxallocated(),newchunksz,(offset_t)totalmax);
+        PROGLOG("OOM.2 wanted sz=%d, extra = %d, maxallocated=%" I64F "d, newchunksz=%u, totalmax=%" I64F "d",sz,extra,(offset_t)maxallocated(),newchunksz,(offset_t)totalmax);
 #endif
         if (throwexception) {
             throw createOutOfMemException(-6,sz, maxallocated(),true);

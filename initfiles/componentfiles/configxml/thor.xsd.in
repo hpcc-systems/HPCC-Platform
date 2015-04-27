@@ -381,6 +381,27 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="heapMasterUseHugePages" type="xs:boolean" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Allow heapUseHugePages to be overridden for the master.  Useful to disable if running on a single machine.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="heapUseTransparentHugePages" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Allow Thor master and slave to use memory from transparent huge pages.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="heapRetainMemory" type="xs:boolean" default="false">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Retain and do not return unused memory to the operating system.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="pluginsPath" type="relativePath" default="${PLUGINS_PATH}/"/>
       <xs:attribute name="nodeGroup" type="xs:string" use="optional">
         <xs:annotation>

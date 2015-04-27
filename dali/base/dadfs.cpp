@@ -255,6 +255,8 @@ public:
             return str.append(": Cluster already exists: ").append(errstr);
         case DFSERR_LookupConnectionTimout: 
             return str.append(": Lookup connection timeout: ").append(errstr);
+        case DFSERR_FailedToDeleteFile:
+            return str.append(": Failed to delete file: ").append(errstr);
         }
         return str.append("Unknown DFS Exception"); 
     }
@@ -4635,7 +4637,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     return false;
                 }
                 if (!transaction->isSubFile(parent, subfile, true))
-                    WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
+                    WARNLOG("removeSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
             }
             // Try to lock all files
             addFileLock(parent);
@@ -7949,12 +7951,12 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
     catch (IException *e)
     {
         // TODO: Transform removeEntry into void
-        StringBuffer msg;
+        StringBuffer msg(logicalname.get());
+        msg.append(" - cause: ");
         e->errorMessage(msg);
-        ERRLOG("Error while deleting %s: %s", logicalname.get(), msg.str());
+        ERRLOG("%s", msg.str());
         if (throwException)
-            throw;
-
+            throw new CDFS_Exception(DFSERR_FailedToDeleteFile, msg.str());
         e->Release();
         return false;
     }
@@ -9313,7 +9315,7 @@ public:
                         }
                         // add remaining
                         ForEachItemIn(e, *eps) {
-                            SocketEndpoint &ep = eps->item(e);
+                            const SocketEndpoint &ep = eps->item(e);
                             StringBuffer ipStr;
                             ep.getIpText(ipStr);
                             IPropertyTree *node = createPTree();
@@ -9332,7 +9334,7 @@ public:
                         IPropertyTree *existing = root->queryPropTree(xpath.str());
                         if (existing) {
                             ForEachItemIn(e, *eps) {
-                                SocketEndpoint &ep = eps->item(e);
+                                const SocketEndpoint &ep = eps->item(e);
                                 StringBuffer ipStr;
                                 ep.getIpText(ipStr);
                                 VStringBuffer xpath("Node[@ip=\"%s\"]", ipStr.str());
@@ -11672,7 +11674,7 @@ bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &lo
         void Do(unsigned i)
         {
             UnsignedArray parts;
-            SocketEndpoint &ep = ips.item(i);
+            const SocketEndpoint &ep = ips.item(i);
             if (ep.isNull())
                 return;
             ForEachItemIn(j,ips) {

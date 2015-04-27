@@ -19,6 +19,7 @@
 #define _THORMISC_
 
 #include "jiface.hpp"
+#include "jdebug.hpp"
 #include "jthread.hpp"
 #include "jexcept.hpp"
 #include "jarray.hpp"
@@ -49,22 +50,24 @@
 #define THOROPT_COMPRESS_SPILLS       "compressInternalSpills"  // Compress internal spills, e.g. spills created by lookahead or sort gathering  (default = true)
 #define THOROPT_HDIST_SPILL           "hdistSpill"              // Allow distribute receiver to spill to disk, rather than blocking              (default = true)
 #define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"       // Distribute send thread pool size                                              (default = 16)
-#define THOROPT_HDIST_BUCKET_SIZE     "hd_out_buffer_size"      // Distribute target bucket send size                                            (default = 1MB)
-#define THOROPT_HDIST_BUFFER_SIZE     "hd_in_buffer_size"       // Distribute send buffer size (for all targets)                                 (default = 32MB)
+#define THOROPT_HDIST_BUCKET_SIZE     "hdOutBufferSize"      // Distribute target bucket send size                                            (default = 1MB)
+#define THOROPT_HDIST_BUFFER_SIZE     "hdInBufferSize"       // Distribute send buffer size (for all targets)                                 (default = 32MB)
 #define THOROPT_HDIST_CANDIDATELIMIT  "hdCandidateLimit"        // Limits # of buckets to push to the writers when send buffer is full           (default = is 50% largest)
 #define THOROPT_HDIST_TARGETWRITELIMIT "hdTargetLimit"          // Limit # of writer threads working on a single target                          (default = unbound, but picks round-robin)
+#define THOROPT_HDIST_COMP            "hdCompressorType"        // Distribute compressor to use                                                  (default = "FLZ")
+#define THOROPT_HDIST_COMPOPTIONS     "hdCompressorOptions"     // Distribute compressor options, e.g. AES key                                   (default = "")
 #define THOROPT_SPLITTER_SPILL        "splitterSpill"           // Force splitters to spill or not, default is to adhere to helper setting       (default = -1)
 #define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"            // Max # of iterations that LOOP can cycle through with 0 results before errors  (default = 1000)
 #define THOROPT_SMALLSORT             "smallSortThreshold"      // Use minisort approach, if estimate size of data to sort is below this setting (default = 0)
 #define THOROPT_PARALLEL_FUNNEL       "parallelFunnel"          // Use parallel funnel impl. if !ordered                                         (default = true)
 #define THOROPT_SORT_MAX_DEVIANCE     "sort_max_deviance"       // Max (byte) variance allowed during sort partitioning                          (default = 10Mb)
 #define THOROPT_OUTPUT_FLUSH_THRESHOLD "output_flush_threshold" // When above limit, workunit result is flushed (committed to Dali)              (default = -1 [off])
-#define THOROPT_OUTPUTLIMIT           "outputLimit"             // OUTPUT Mb limit                                                               (default = 10)
 #define THOROPT_PARALLEL_MATCH        "parallel_match"          // Use multi-threaded join helper (retains sort order without unsorted_output)   (default = false)
 #define THOROPT_UNSORTED_OUTPUT       "unsorted_output"         // Allow Join results to be reodered, implies parallel match                     (default = false)
 #define THOROPT_JOINHELPER_THREADS    "joinHelperThreads"       // Number of threads to use in threaded variety of join helper
 #define THOROPT_LKJOIN_LOCALFAILOVER  "lkjoin_localfailover"    // Force SMART to failover to distributed local lookup join (for testing only)   (default = false)
 #define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover" // Force SMART to failover to hash join (for testing only)                     (default = false)
+#define THOROPT_MAX_KERNLOG           "max_kern_level"          // Max kernel logging level, to push to workunit, -1 to disable                  (default = 3)
 #define THOROPT_COMP_FORCELZW         "forceLZW"                // Forces file compression to use LZW                                            (default = false)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
@@ -297,7 +300,7 @@ interface IThorException : extends IException
     virtual const char *queryJobId() = 0;
     virtual void getAssert(StringAttr &file, unsigned &line, unsigned &column) = 0;
     virtual const char *queryOrigin() = 0;
-    virtual WUExceptionSeverity querySeverity() = 0;
+    virtual ErrorSeverity querySeverity() = 0;
     virtual const char *queryMessage() = 0;
     virtual bool queryNotified() const = 0;
     virtual MemoryBuffer &queryData() = 0;
@@ -312,7 +315,7 @@ interface IThorException : extends IException
     virtual void setMessage(const char *msg) = 0;
     virtual void setAssert(const char *file, unsigned line, unsigned column) = 0;
     virtual void setOrigin(const char *origin) = 0;
-    virtual void setSeverity(WUExceptionSeverity severity) = 0;
+    virtual void setSeverity(ErrorSeverity severity) = 0;
 };
 
 class CGraphElementBase;
@@ -413,7 +416,7 @@ extern graph_decl const char *queryTempDir(bool altdisk=false);
 extern graph_decl void loadCmdProp(IPropertyTree *tree, const char *cmdProp);
 
 extern graph_decl void ensureDirectoryForFile(const char *fName);
-extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, WUExceptionSeverity severity=ExceptionSeverityWarning);
+extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity=SeverityWarning);
 
 extern graph_decl IPropertyTree *globals;
 extern graph_decl mptag_t masterSlaveMpTag;
@@ -461,6 +464,9 @@ interface IRowInterfaces;
 extern graph_decl void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf);
 
 extern graph_decl void logDiskSpace();
+
+class CJobBase;
+extern graph_decl IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int minLevel, IPerfMonHook *chain=NULL); // for passing to jdebug startPerformanceMonitor
 
 #endif
 

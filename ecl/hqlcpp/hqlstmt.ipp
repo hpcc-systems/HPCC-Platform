@@ -24,7 +24,8 @@
 class HqlStmts;
 class PeepHoleOptimizer;
 
-class HqlStmt : public CInterfaceOf<IHqlStmt>
+//All generation is single threaded.  Even if multiple wus were generated at once the statements aren't shared
+class HqlStmt : public CSingleThreadSimpleInterfaceOf<IHqlStmt>
 {
 public:
     HqlStmt(StmtKind _kind, HqlStmts * _container);

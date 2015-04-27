@@ -679,7 +679,7 @@ public:
     {
         StringBuffer path;
         if (idx==(unsigned)-1)
-            path.appendf("Client[@session=\"%"I64F"d\"]",sessionid);
+            path.appendf("Client[@session=\"%" I64F "d\"]",sessionid);
         else
             path.appendf("Client[%d]",idx+1);
         IPropertyTree *ret = qd.root->queryPropTree(path.str());
@@ -1439,7 +1439,7 @@ public:
                 item = qd.root->queryPropTree(path.str());
                 if (!item)
                     break;
-//              PROGLOG("WUJOBQ: Removing %s as session %"I64F"x not active",item->queryProp("@wuid"),item->getPropInt64("@session"));
+//              PROGLOG("WUJOBQ: Removing %s as session %" I64F "x not active",item->queryProp("@wuid"),item->getPropInt64("@session"));
                 removeItem(qd,item,false);
             }
             else

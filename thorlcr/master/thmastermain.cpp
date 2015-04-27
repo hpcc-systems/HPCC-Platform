@@ -124,8 +124,11 @@ class CRegistryServer : public CSimpleInterface
                 }
                 RegistryCode code;
                 msg.read((int &)code);
-                if (!rc_deregister == code)
+                if (rc_deregister != code)
                     throwUnexpected();
+                Owned<IException> e = deserializeException(msg);
+                if (e.get())
+                    EXCLOG(e, "Slave unregistered with exception");
                 registry.deregisterNode(sender);
             }
             running = false;
@@ -137,7 +140,7 @@ public:
 
     CRegistryServer()  : deregistrationWatch(*this), stopped(false)
     {
-        status = createBitSet();
+        status = createThreadSafeBitSet();
         msgDelay = SLAVEREG_VERIFY_DELAY;
         slavesRegistered = 0;
         if (globals->getPropBool("@watchdogEnabled"))
@@ -177,7 +180,7 @@ public:
         --slavesRegistered;
         if (watchdog)
             watchdog->removeSlave(ep);
-        abortThor(MakeThorOperatorException(TE_AbortException, "The machine %s and/or the slave was shutdown. Aborting Thor", url.str()));
+        abortThor(MakeThorOperatorException(TE_AbortException, "The machine %s and/or the slave was shutdown. Aborting Thor", url.str()), TEC_SlaveInit);
     }
     void registerNode(unsigned slave)
     {
@@ -201,7 +204,7 @@ public:
         unsigned timeWaited = 0;
         unsigned connected = 0;
         unsigned slaves = queryClusterWidth();
-        Owned<IBitSet> connectedSet = createBitSet();
+        Owned<IBitSet> connectedSet = createThreadSafeBitSet();
         loop
         {
             CTimeMon tm(msgDelay);
@@ -376,7 +379,7 @@ bool checkClusterRelicateDAFS(IGroup *grp)
     SocketEndpointArray epa;
     grp->getSocketEndpoints(epa);
     ForEachItemIn(i1,epa) {
-        epa.item(i1).port = getDaliServixPort();
+        epa.element(i1).port = getDaliServixPort();
     }
     SocketEndpointArray failures;
     UnsignedArray failedcodes;
@@ -409,7 +412,7 @@ bool ControlHandler()
             if (registry)
                 registry->stop();
         }
-        abortThor();
+        abortThor(NULL, TEC_CtrlC);
     }
     else
     {
@@ -452,6 +455,8 @@ int main( int argc, char *argv[]  )
         Owned<IFile> iFile = createIFile("thor.xml");
         globals = iFile->exists() ? createPTree(*iFile, ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
     }
+    setStatisticsComponentName(SCTthor, globals->queryProp("@name"), false);
+
     globals->setProp("@masterBuildTag", BUILD_TAG);
     char **pp = argv+1;
     while (*pp)
@@ -626,6 +631,7 @@ int main( int argc, char *argv[]  )
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
         globals->setPropInt("@masterTotalMem", hdwInfo.totalMemory);
+        unsigned mmemSize = globals->getPropInt("@masterMemorySize"); // in MB
         unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
         if (0 == gmemSize)
         {
@@ -650,7 +656,17 @@ int main( int argc, char *argv[]  )
 #endif            
 #endif
 #endif
-            gmemSize = maxMem * 3 / 4; // default to 75% of total
+            if (globals->getPropBool("@localThor") && 0 == mmemSize)
+            {
+                gmemSize = maxMem / 2; // 50% of total for slaves
+                mmemSize = maxMem / 4; // 25% of total for master
+            }
+            else
+            {
+                gmemSize = maxMem * 3 / 4; // 75% of total for slaves
+                if (0 == mmemSize)
+                    mmemSize = gmemSize; // default to same as slaves
+            }
             unsigned perSlaveSize = gmemSize;
             unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
             if (slavesPerNode>1)
@@ -660,18 +676,25 @@ int main( int argc, char *argv[]  )
             }
             globals->setPropInt("@globalMemorySize", perSlaveSize);
         }
-        else if (gmemSize >= hdwInfo.totalMemory)
+        else
         {
-            // should prob. error here
+            if (gmemSize >= hdwInfo.totalMemory)
+            {
+                // should prob. error here
+            }
+            if (0 == mmemSize)
+                mmemSize = gmemSize;
         }
-        unsigned gmemSizeMaster = globals->getPropInt("@masterMemorySize", gmemSize); // in MB
         bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
+        gmemAllowHugePages = globals->getPropBool("@heapMasterUseHugePages", gmemAllowHugePages);
+        bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
+        bool gmemRetainMemory = globals->getPropBool("@heapRetainMemory", false);
 
         // if @masterMemorySize and @globalMemorySize unspecified gmemSize will be default based on h/w
-        globals->setPropInt("@masterMemorySize", gmemSizeMaster);
+        globals->setPropInt("@masterMemorySize", mmemSize);
 
-        PROGLOG("Global memory size = %d MB", gmemSizeMaster);
-        roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)gmemSizeMaster) * 0x100000, 0, NULL);
+        PROGLOG("Global memory size = %d MB", mmemSize);
+        roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)mmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
@@ -727,12 +750,6 @@ int main( int argc, char *argv[]  )
         connectLogMsgManagerToDali();
         if (globals->getPropBool("@cache_dafilesrv_master",false))
             setDaliServixSocketCaching(true); // speeds up deletes under linux
-
-        unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
-        if (pinterval) {
-            perfmonhook.setown(createThorMemStatsPerfMonHook());
-            startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
-        }
     }
     catch (IException *e)
     {
@@ -765,8 +782,6 @@ int main( int argc, char *argv[]  )
         addAbortHandler(ControlHandler);
         masterSlaveMpTag = allocateClusterMPTag();
 
-        writeSentinelFile(sentinelFile);
-
         if (registry->connect())
         {
             PROGLOG("verifying mp connection to rest of cluster");
@@ -777,6 +792,8 @@ int main( int argc, char *argv[]  )
 
             LOG(daliAuditLogCat, ",Progress,Thor,Startup,%s,%s,%s,%s",nodeGroup.str(),thorname,queueName.str(),logUrl.str());
             auditStartLogged = true;
+
+            writeSentinelFile(sentinelFile);
 
             thorMain(logHandler);
             LOG(daliAuditLogCat, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
@@ -793,9 +810,6 @@ int main( int argc, char *argv[]  )
     disconnectLogMsgManagerFromDali();
     closeThorServerStatus();
     if (globals) globals->Release();
-    PROGLOG("Thor closing down 6");
-
-    stopPerformanceMonitor();
     PROGLOG("Thor closing down 5");
     PROGLOG("Thor closing down 4");
     closeDllServer();

@@ -66,7 +66,8 @@
                                 var desc = document.getElementById("ProblemDescription").value;
                                 var history = document.getElementById("WhatChanged").value;
                                 var timing = document.getElementById("WhereSlow").value;
-                                opener.createZAPInfo(wuid, espIP, thorIP, buildVersion, desc, history, timing);
+                                var password = document.getElementById("Password").value;
+                                opener.createZAPInfo(wuid, espIP, thorIP, buildVersion, desc, history, timing, password);
                             }
                             window.close();
                         }
@@ -81,6 +82,7 @@
                         document.getElementById("ProblemDescription").value = "";
                         document.getElementById("WhatChanged").value = "";
                         document.getElementById("WhereSlow").value = "";
+                        document.getElementById("Password").value = "";
                     }
                     ]]></xsl:text>
                 </script>
@@ -173,6 +175,12 @@
                                 </td>
                                 <td>
                                     <textarea rows="10" cols="72" id="WhereSlow" name="WhereSlow">&#160;</textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>
+                                    Password to open ZAP (optional):<input type="password" id="Password" name="Password"/>
                                 </td>
                             </tr>
                             <tr>

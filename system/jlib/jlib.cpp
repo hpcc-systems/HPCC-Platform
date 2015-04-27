@@ -59,7 +59,7 @@ void InitTable::init(SoContext ctx)
     initializers.sort(&sortFuncDescending);
     ForEachItemIn(i, initializers)
     {
-        InitializerType &iT = initializers.item(i);
+        InitializerType &iT = initializers.element(i);
 //      printf("module initialization %d:%d\n", iT.modpriority, iT.priority);
 
         if (iT.soCtx == ctx && iT.state == ITS_Uninitialized && iT.initFunc)
@@ -89,7 +89,7 @@ void InitTable::exit(SoContext ctx)
     initializers.sort(&sortFuncDescending);  // NB read in reverse so no need to sort ascending
     ForEachItemInRev(i, initializers)
     {
-        InitializerType &iT = initializers.item(i);
+        InitializerType &iT = initializers.element(i);
         if (iT.soCtx == ctx)
         {
             assertex(iT.state == ITS_Initialized);
@@ -105,13 +105,13 @@ void InitTable::exit(SoContext ctx)
     }
 }
     
-int InitTable::sortFuncDescending(InitializerType *i1, InitializerType *i2)
+int InitTable::sortFuncDescending(const InitializerType * i1, const InitializerType * i2)
 {
     int ret = i2->modpriority - i1->modpriority;
     return ret ? ret : i2->priority - i1->priority;
 }
 
-int InitTable::sortFuncAscending(InitializerType *i1, InitializerType *i2)
+int InitTable::sortFuncAscending(InitializerType const *i1, InitializerType const *i2)
 {
     int ret = i1->modpriority - i2->modpriority;
     return ret ? ret : i1->priority - i2->priority;
@@ -148,7 +148,7 @@ DynamicScopeCtx::~DynamicScopeCtx()
         // add to global table with patched ctx's, for use by ExitModuleObjects(ctx) call
         ForEachItemIn(i, initTable.initializers)
         {
-            InitializerType &iT = initTable.initializers.item(i);
+            InitializerType &iT = initTable.element(i);
             iT.soCtx = soCtx;
             queryInitTable()->add(iT);
         }
@@ -169,13 +169,13 @@ ModInit::ModInit(boolFunc func, unsigned int priority, unsigned int modpriority)
 
 ModExit::ModExit(voidFunc _func)
 {
-// assumes modinit preceeded this call
+// assumes modinit preceded this call
     InitTable *initTable = dynamicScopeCtx ? &dynamicScopeCtx->initTable : queryInitTable();
     assertex(initTable->items());
 
     func = _func;
 
-    InitializerType &iT = initTable->initializers.tos();
+    InitializerType &iT = initTable->initializers.last();
     assertex(!iT.modExit);
     iT.modExit = this;
 }

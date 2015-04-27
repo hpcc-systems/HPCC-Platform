@@ -260,7 +260,7 @@ public:
         case EINPROGRESS:           return str.append("EINPROGRESS - operation now in progress ");
 #endif
         }
-        IException *ose = MakeOsException(err);
+        IException *ose = makeOsException(err);
         ose->errorMessage(str);
         ose->Release();
         return str;
@@ -372,7 +372,7 @@ protected:
     SOCKETMODE      sockmode;
     IpAddress       targetip;
     SocketEndpoint  returnep;   // set by set_return_addr
-    
+
     MCASTREQ    *   mcastreq;
     size32_t        nextblocksize;
     unsigned        blockflags;
@@ -401,8 +401,9 @@ public:
     void        readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timedelaysecs);
     void        read(void* buf, size32_t size);
     size32_t    write(void const* buf, size32_t size);
+    size32_t    writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER);
     size32_t    write_multiple(unsigned num,void const**buf, size32_t *size);
-    size32_t    udp_write_to(SocketEndpoint &ep,void const* buf, size32_t size);
+    size32_t    udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size);
     void        close();
     void        errclose();
     bool        connectionless() { return (sockmode!=sm_tcp)&&(sockmode!=sm_tcp_server); }
@@ -465,7 +466,7 @@ private:
             sock = INVALID_SOCKET;
             STATS.activesockets--;
     #ifdef SOCKTRACE
-            PROGLOG("SOCKTRACE: Closing socket %x %d (%x)", s, s, this);
+            PROGLOG("SOCKTRACE: Closing socket %x %d (%p)", s, s, this);
     #endif
     #ifdef _WIN32
             return ::closesocket(s);
@@ -791,7 +792,14 @@ size32_t CSocket::avail_read()
 
 int CSocket::pre_connect (bool block)
 {
-    assertex(hostname);
+    if (NULL == hostname || '\0' == (*hostname))
+    {
+        StringBuffer err;
+        err.appendf("CSocket::pre_connect - Invalid/missing host IP address raised in : %s, line %d",__FILE__, __LINE__);
+        IJSOCK_Exception *e = new SocketException(JSOCKERR_bad_netaddr,err.str());
+        throw e;
+    }
+
     DEFINE_SOCKADDR(u);
     if (targetip.isNull()) {
         set_return_addr(hostport,hostname);
@@ -827,7 +835,7 @@ int CSocket::pre_connect (bool block)
     } else
         atomic_set(&pre_conn_unreach_cnt, 0);
 #ifdef SOCKTRACE
-    PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%x) err=%d", block?"(block)":"", sock, sock, (int)this, err);
+    PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%p) err=%d", block?"(block)":"", sock, sock, this, err);
 #endif
     return err;
 }
@@ -863,7 +871,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
     STATS.activesockets++;
 
 #ifdef SOCKTRACE
-    PROGLOG("SOCKTRACE: opened socket %x %d (%x)", sock,sock,this);
+    PROGLOG("SOCKTRACE: opened socket %x %d (%p)", sock,sock,this);
 #endif
 
     if ((hostport==0)&&(sockmode==sm_udp)) {
@@ -955,7 +963,7 @@ ISocket* CSocket::accept(bool allowcancel)
         newsock = (sock!=INVALID_SOCKET)?::accept(sock, NULL, NULL):INVALID_SOCKET;
         in_accept = false;
     #ifdef SOCKTRACE
-        PROGLOG("SOCKTRACE: accept created socket %x %d (%x)", newsock,newsock,this);
+        PROGLOG("SOCKTRACE: accept created socket %x %d (%p)", newsock,newsock,this);
     #endif
 
         if (newsock!=INVALID_SOCKET) {
@@ -1121,7 +1129,7 @@ void CSocket::cancel_accept()
         THROWJSOCKEXCEPTION(JSOCKERR_connectionless_socket);
     }
 #ifdef SOCKTRACE
-    PROGLOG("SOCKTRACE: Cancel accept socket %x %d (%x)", sock, sock, this);
+    PROGLOG("SOCKTRACE: Cancel accept socket %x %d (%p)", sock, sock, this);
 #endif
     if (!in_accept) {
         accept_cancel_state = accept_cancelled;
@@ -1268,7 +1276,7 @@ void CSocket::connect_wait(unsigned timems)
     while (!exit) {
 #ifdef CENTRAL_NODE_RANDOM_DELAY
         ForEachItemIn(cn,CentralNodeArray) {
-            SocketEndpoint &ep=CentralNodeArray.item(cn);
+            const SocketEndpoint &ep=CentralNodeArray.item(cn);
             if (ep.ipequals(targetip)) {
                 unsigned sleeptime = getRandom() % 1000;
                 StringBuffer s;
@@ -1401,7 +1409,7 @@ void CSocket::udpconnect()
     socklen_t  ul = setSockAddr(u,targetip,hostport);
     sock = ::socket(u.sa.sa_family, SOCK_DGRAM, targetip.isIp4()?0:PF_INET6);
 #ifdef SOCKTRACE
-    PROGLOG("SOCKTRACE: udp connected socket %x %d (%x)", sock, sock, this);
+    PROGLOG("SOCKTRACE: udp connected socket %x %d (%p)", sock, sock, this);
 #endif
     STATS.activesockets++;
     if (sock == INVALID_SOCKET) {
@@ -1543,7 +1551,8 @@ EintrRetry:
                 goto EintrRetry;
             }
             else {
-                LOGERR2(err,1,"readtms");
+                VStringBuffer errMsg("readtms(timeoutms=%d)", timeoutms);
+                LOGERR2(err,1,errMsg.str());
                 if ((err==ECONNRESET)||(err==EINTRCALL)||(err==ECONNABORTED)) {
                     errclose();
                     err = JSOCKERR_broken_pipe;
@@ -1767,6 +1776,58 @@ EintrRetry:
     return res;
 }
 
+size32_t CSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
+{
+    if (size==0)
+        return 0;
+
+    if (state != ss_open)
+    {
+        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
+    }
+
+    if (timeoutms == WAIT_FOREVER)
+        return write(buf, size);
+
+    const char *p = (const char *)buf;
+    unsigned start, elapsed;
+    start = msTick();
+    elapsed = 0;
+    size32_t nwritten = 0;
+    size32_t nleft = size;
+    unsigned rollover = 0;
+
+    bool prevblock = set_nonblock(true);
+
+    while ( (nwritten < size) && (elapsed <= timeoutms) )
+    {
+        size32_t amnt = write(p,nleft);
+
+        if ( ((amnt == (size32_t)-1) || (amnt == 0)) && (++rollover >= 20) )
+        {
+            rollover = 0;
+            Sleep(20);
+        }
+        else
+        {
+            nwritten += amnt;
+            nleft -= amnt;
+            p += amnt;
+        }
+        elapsed = msTick() - start;
+    }
+
+    set_nonblock(prevblock);
+
+    if (nwritten < size)
+    {
+        ERRLOG("writetms timed out; timeout: %u, nwritten: %u, size: %u", timeoutms, nwritten, size);
+        THROWJSOCKEXCEPTION(JSOCKERR_timeout_expired);
+    }
+
+    return nwritten;
+}
+
 bool CSocket::check_connection()
 {
     if (state != ss_open) 
@@ -1795,7 +1856,7 @@ EintrRetry:
     return true;
 }
 
-size32_t CSocket::udp_write_to(SocketEndpoint &ep, void const* buf, size32_t size)
+size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32_t size)
 {
     if (size==0)
         return 0;
@@ -2188,7 +2249,7 @@ void CSocket::shutdown(unsigned mode)
     if (state == ss_open) {
         state = ss_shutdown;
 #ifdef SOCKTRACE
-        PROGLOG("SOCKTRACE: shutdown(%d) socket %x %d (%x)", mode, sock, sock, this);
+        PROGLOG("SOCKTRACE: shutdown(%d) socket %x %d (%p)", mode, sock, sock, this);
 #endif
         int rc = ::shutdown(sock, mode);
         if (rc != 0) {
@@ -2213,7 +2274,7 @@ void CSocket::errclose()
     if (state != ss_close) {
         state = ss_close;
 #ifdef SOCKTRACE
-        PROGLOG("SOCKTRACE: errclose socket %x %d (%x)", sock, sock, this);
+        PROGLOG("SOCKTRACE: errclose socket %x %d (%p)", sock, sock, this);
 #endif
         if (mcastreq)
             setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP,(char*)mcastreq,sizeof(*mcastreq));
@@ -2232,7 +2293,7 @@ void CSocket::close()
 #endif
     if (state != ss_close) {
 #ifdef SOCKTRACE
-        PROGLOG("SOCKTRACE: close socket %x %d (%x)", sock, sock, this);
+        PROGLOG("SOCKTRACE: close socket %x %d (%p)", sock, sock, this);
 #endif
         state = ss_close;
         if (mcastreq)
@@ -2965,7 +3026,7 @@ StringBuffer & IpAddress::getIpText(StringBuffer & out) const
     char tmp[INET6_ADDRSTRLEN];
     const char *res = _inet_ntop(AF_INET6, &netaddr, tmp, sizeof(tmp));
     if (!res) 
-        throw MakeOsException(errno);
+        throw makeOsException(errno);
     return out.append(res);
 }
 
@@ -3255,7 +3316,7 @@ const char * SocketListCreator::getText()
 void SocketListCreator::addSockets(SocketEndpointArray &array)
 {
     ForEachItemIn(i,array) {
-        SocketEndpoint &sockep=array.item(i);
+        const SocketEndpoint &sockep=array.item(i);
         StringBuffer ipstr;
         sockep.getIpText(ipstr);
         addSocket(ipstr.str(),sockep.port);
@@ -3455,13 +3516,10 @@ struct SelectItem
     byte mode;
     bool del;
     bool add_epoll;
+    bool operator == (const SelectItem & other) const { return sock == other.sock; }
 };
 
-inline SelectItem &Array__Member2Param(SelectItem &src)                 { return src; }
-inline void Array__Assign(SelectItem & dest, SelectItem &src)           { dest=src; }
-inline bool Array__Equal(SelectItem &m, SelectItem &p)                  { return m.sock==p.sock; }
-inline void Array__Destroy(SelectItem &p)                               { }
-class SelectItemArray : public ArrayOf<SelectItem, SelectItem &> { };
+class SelectItemArray : public StructArrayOf<SelectItem> { };
 
 #define SELECT_TIMEOUT_SECS 1           // but it does (TBD)
 
@@ -3598,7 +3656,7 @@ public:
             return true;
         }
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (!si.del&&(si.sock==sock)) {
                 si.del = true;
                 selectvarschange = true;
@@ -3667,7 +3725,7 @@ public:
     {
         bool ret = false;
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (si.del)
                 ret = true; // maybe that bad one
             else  if (!sockOk(si.handle)) {
@@ -3724,7 +3782,7 @@ class CSocketSelectThread: public CSocketBaseThread
         if (dummysockopen) { 
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
 #ifdef SOCKTRACE
-            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%x)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
+            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%p)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
 #endif
             ::close(dummysock[0]);
             ::close(dummysock[1]);
@@ -3775,7 +3833,7 @@ class CSocketSelectThread: public CSocketBaseThread
         unsigned h = HASHSOCKET(handle);
         unsigned sh = h;
         loop {
-            SelectItem &i=items.item(hashtab[h]);
+            SelectItem &i=items.element(hashtab[h]);
             if (i.handle==handle) 
                 return i;
             if (++h==HASHTABSIZE)
@@ -3827,7 +3885,7 @@ public:
         closedummy();
         ForEachItemIn(i,items) {
             try {
-                SelectItem &si = items.item(i);
+                SelectItem &si = items.element(i);
                 si.sock->Release();
                 si.nfy->Release();
             }
@@ -3846,7 +3904,7 @@ public:
         unsigned n = items.ordinality();
         bool hashupdateneeded = (n!=basesize); // additions all come at end
         for (unsigned i=0;i<n;) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (si.del) {
                 si.nfy->Release();
                 try {
@@ -3883,7 +3941,7 @@ public:
         CriticalBlock block(sect);
         unsigned n=0;
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (!si.del) {
                 if (si.sock==sock) {
                     si.del = true;
@@ -3947,7 +4005,7 @@ public:
             offset = 0;
         unsigned j=offset;
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(j);
+            SelectItem &si = items.element(j);
             j++;
             if (j==ni)
                 j = 0;
@@ -4073,21 +4131,21 @@ public:
                             if (r&&findfds(rs,si->handle,r)) {
                                 if (!si->del) {
                                     tonotify.append(*si);
-                                    tonotify.item(tonotify.length()-1).mode = SELECTMODE_READ;
+                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_READ;
                                 }
                                 --n;
                             }
                             if (w&&findfds(ws,si->handle,w)) {
                                 if (!si->del) {
                                     tonotify.append(*si);
-                                    tonotify.item(tonotify.length()-1).mode = SELECTMODE_WRITE;
+                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_WRITE;
                                 }
                                 --n;
                             }
                             if (e&&findfds(es,si->handle,e)) {
                                 if (!si->del) {
                                     tonotify.append(*si);
-                                    tonotify.item(tonotify.length()-1).mode = SELECTMODE_EXCEPT;
+                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_EXCEPT;
                                 }
                                 --n;
                             }
@@ -4098,7 +4156,7 @@ public:
 #endif
                     }
                     ForEachItemIn(j,tonotify) {
-                        SelectItem &si = tonotify.item(j);
+                        const SelectItem &si = tonotify.item(j);
                         try {
                             si.nfy->notifySelected(si.sock,si.mode); // ignore return
                         }
@@ -4234,8 +4292,13 @@ class CSocketEpollThread: public CSocketBaseThread
     {
         int srtn;
         struct epoll_event event;
+
+        // write all bytes to eliminate uninitialized warnings
+        memset(&event, 0, sizeof(event));
+
         event.events = event_mask;
         event.data.fd = fd;
+
 # ifdef EPOLLTRACE
         DBGLOG("EPOLL: op(%d) fd %d to epfd %d", op, fd, efd);
 # endif
@@ -4277,7 +4340,10 @@ class CSocketEpollThread: public CSocketBaseThread
             else
                 dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
             CHECKSOCKRANGE(dummysock);
-            epoll_op(epfd, EPOLL_CTL_ADD, dummysock, (EPOLLIN | EPOLLERR));
+            // added EPOLLIN also because cannot find anywhere MSG_OOB is sent
+            // added here to match existing select() code above which sets
+            // the except fd_set mask.
+            epoll_op(epfd, EPOLL_CTL_ADD, dummysock, (EPOLLIN | EPOLLPRI));
 #endif
             dummysockopen = true;
         }
@@ -4292,7 +4358,7 @@ class CSocketEpollThread: public CSocketBaseThread
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
             epoll_op(epfd, EPOLL_CTL_DEL, dummysock[0], 0);
 #ifdef SOCKTRACE
-            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%x)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
+            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%p)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
 #endif
             ::close(dummysock[0]);
             ::close(dummysock[1]);
@@ -4353,7 +4419,7 @@ public:
         closedummy();
         ForEachItemIn(i,items) {
             try {
-                SelectItem &si = items.item(i);
+                SelectItem &si = items.element(i);
                 epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
                 si.sock->Release();
                 si.nfy->Release();
@@ -4382,7 +4448,7 @@ public:
         unsigned n = items.ordinality();
         bool reindex = false;
         for (unsigned i=0;i<n;) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (si.add_epoll) {
                 reindex = true;
             }
@@ -4415,7 +4481,7 @@ public:
             int max_sockid = 0;
 # endif
             ForEachItemIn(j,items) {
-                SelectItem &si = items.item(j);
+                SelectItem &si = items.element(j);
                 epfdtbl[si.handle] = j;
                 if (si.add_epoll) {
                     si.add_epoll = false;
@@ -4424,16 +4490,15 @@ public:
                     if (si.mode != 0) {
                         ep_mode = 0;
                         if (si.mode & SELECTMODE_READ) {
-                            ep_mode |= (EPOLLIN | EPOLLPRI);
+                            ep_mode |= EPOLLIN;
                         }
                         if (si.mode & SELECTMODE_WRITE) {
                             ep_mode |= EPOLLOUT;
                         }
                         if (si.mode & SELECTMODE_EXCEPT) {
-                            ep_mode |= EPOLLERR;
+                            ep_mode |= EPOLLPRI;
                         }
                         if (ep_mode != 0) {
-                            ep_mode |= EPOLLRDHUP;
                             epoll_op(epfd, EPOLL_CTL_ADD, si.handle, ep_mode);
                         }
                     }
@@ -4459,7 +4524,7 @@ public:
         CriticalBlock block(sect);
         unsigned n=0;
         ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
+            SelectItem &si = items.element(i);
             if (!si.del) {
                 if (si.sock==sock) {
                     si.del = true;
@@ -4585,29 +4650,25 @@ public:
                                 SelectItem *epsi = items.getArray(epfdtbl[epevents[j].data.fd]);
                                 if (!epsi->del) {
                                     unsigned int ep_mode = 0;
-                                    if (epevents[j].events & (EPOLLIN | EPOLLPRI)) {
-                                        ep_mode |= SELECTMODE_READ;
-                                    }
-                                    if (epevents[j].events & (EPOLLERR | EPOLLHUP)) {
-                                        ep_mode |= SELECTMODE_READ;
-                                    }
-                                    if (epevents[j].events & EPOLLRDHUP) {
-                                        // TODO - or should we set EXCEPT ?
+                                    if (epevents[j].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
                                         ep_mode |= SELECTMODE_READ;
                                     }
                                     if (epevents[j].events & EPOLLOUT) {
                                         ep_mode |= SELECTMODE_WRITE;
                                     }
+                                    if (epevents[j].events & EPOLLPRI) {
+                                        ep_mode |= SELECTMODE_EXCEPT;
+                                    }
                                     if (ep_mode != 0) {
                                         tonotify.append(*epsi);
-                                        tonotify.item(tonotify.length()-1).mode = ep_mode;
+                                        tonotify.element(tonotify.length()-1).mode = ep_mode;
                                     }
                                 }
                             }
                         }
                     }
                     ForEachItemIn(j,tonotify) {
-                        SelectItem &si = tonotify.item(j);
+                        const SelectItem &si = tonotify.item(j);
                         try {
                             si.nfy->notifySelected(si.sock,si.mode); // ignore return
                         }
@@ -5308,7 +5369,7 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
         SocketEndpoint ep;
         unsigned idx;
         IMPLEMENT_IINTERFACE;
-        void init(CSocket *_sock,unsigned _idx,SocketEndpoint &_ep,CriticalSection *_sect,ISocketSelectHandler *_handler,ISocketConnectNotify *_inotify, unsigned *_remaining, Semaphore *_notifysem)
+        void init(CSocket *_sock,unsigned _idx,const SocketEndpoint &_ep,CriticalSection *_sect,ISocketSelectHandler *_handler,ISocketConnectNotify *_inotify, unsigned *_remaining, Semaphore *_notifysem)
         {
             ep = _ep;
             idx = _idx;
@@ -5408,7 +5469,7 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
     delete [] elems;
 }
 
-void multiConnect(const SocketEndpointArray &eps, PointerIArrayOf<ISocket> &retsockets,unsigned timeout)
+void multiConnect(const SocketEndpointArray &eps, IPointerArrayOf<ISocket> &retsockets,unsigned timeout)
 {
     unsigned n = eps.ordinality();
     if (n==0)
@@ -5431,9 +5492,9 @@ void multiConnect(const SocketEndpointArray &eps, PointerIArrayOf<ISocket> &rets
     class cNotify: implements ISocketConnectNotify
     {
         CriticalSection &sect;
-        PointerIArrayOf<ISocket> &retsockets;
+        IPointerArrayOf<ISocket> &retsockets;
     public:
-        cNotify(PointerIArrayOf<ISocket> &_retsockets,CriticalSection &_sect)
+        cNotify(IPointerArrayOf<ISocket> &_retsockets,CriticalSection &_sect)
             : retsockets(_retsockets),sect(_sect)
         {
         }
@@ -6004,4 +6065,97 @@ public:
 ISocketConnectWait *nonBlockingConnect(SocketEndpoint &ep,unsigned connecttimeoutms)
 {
     return new CSocketConnectWait(ep,connecttimeoutms);
+}
+
+
+
+int wait_multiple(bool isRead,               //IN   true if wait read, false it wait write
+                  UnsignedArray &socks,      //IN   sockets to be checked for readiness
+                  unsigned timeoutMS,        //IN   timeout
+                  UnsignedArray &readySocks) //OUT  sockets ready
+{
+    aindex_t numSocks = socks.length();
+    if (numSocks == 0)
+        THROWJSOCKEXCEPTION2(JSOCKERR_bad_address);
+
+    SOCKET maxSocket = 0;
+    T_FD_SET fds;
+    XFD_ZERO(&fds);
+
+    //Add each SOCKET in array to T_FD_SET
+#ifdef _DEBUG
+    StringBuffer dbgSB("wait_multiple() on sockets :");
+#endif
+    for (aindex_t idx = 0; idx < numSocks; idx++)
+    {
+#ifdef _DEBUG
+        dbgSB.appendf(" %d",socks.item(idx));
+#endif
+        maxSocket = socks.item(idx) > maxSocket ? socks.item(idx) : maxSocket;
+        FD_SET((unsigned)socks.item(idx), &fds);
+    }
+#ifdef _DEBUG
+    DBGLOG("%s",dbgSB.str());
+#endif
+
+    //Check socket states
+    int res;
+    if (timeoutMS == WAIT_FOREVER)
+        res = ::select( maxSocket + 1, isRead ? (fd_set *)&fds : NULL, isRead ? NULL : (fd_set *)&fds, NULL, NULL );
+    else
+    {
+        struct timeval tv;
+        tv.tv_sec = timeoutMS / 1000;
+        tv.tv_usec = (timeoutMS % 1000)*1000;
+        res = ::select( maxSocket + 1,  isRead ? (fd_set *)&fds : NULL, isRead ? NULL : (fd_set *)&fds, NULL, &tv );
+    }
+
+    if (res != SOCKET_ERROR)
+    {
+#ifdef _DEBUG
+        StringBuffer dbgSB("wait_multiple() ready socket(s) :");
+#endif
+        //Build up list of socks which are ready for accept read/write without blocking
+        for (aindex_t idx = 0; res && idx < socks.length(); idx++)
+        {
+            if (FD_ISSET(socks.item(idx), &fds))
+            {
+#ifdef _DEBUG
+                dbgSB.appendf(" %d",socks.item(idx));
+#endif
+                readySocks.append(socks.item(idx));
+                if (readySocks.length() == res)
+                    break;
+            }
+        }
+#ifdef _DEBUG
+        if (res)
+            DBGLOG("%s",dbgSB.str());
+#endif
+    }
+    else
+    {
+        int err = ERRNO();
+        if (err != EINTRCALL)
+        {
+            throw MakeStringException(-1,"wait_multiple::select error %d", err);
+        }
+    }
+    return res;
+}
+
+//Given a list of sockets, wait until any one or more are ready to be read (wont block)
+//returns 0 if timeout, number of waiting sockets otherwise
+int wait_read_multiple(UnsignedArray &socks,        //IN   sockets to be checked for readiness
+                       unsigned timeoutMS,          //IN   timeout
+                       UnsignedArray &readySocks)   //OUT  sockets ready to be read
+{
+    return wait_multiple(true, socks, timeoutMS, readySocks);
+}
+
+int wait_write_multiple(UnsignedArray &socks,       //IN   sockets to be checked for readiness
+                       unsigned timeoutMS,          //IN   timeout
+                       UnsignedArray &readySocks)   //OUT  sockets ready to be written
+{
+    return wait_multiple(false, socks, timeoutMS, readySocks);
 }

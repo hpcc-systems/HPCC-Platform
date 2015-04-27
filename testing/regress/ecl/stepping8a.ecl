@@ -15,12 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
+//class=textsearch
+
 //Stepped global joins unsupported, see issue HPCC-8148
 //skip type==thorlcr TBD
 
+//version multiPart=false
+//version multiPart=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.Setup;
 import $.Setup.TS;
-searchIndex := Setup.Files('hthor', false).getSearchIndex();
+searchIndex := Setup.Files(multiPart, false).getSearchIndex();
 
 extractWord(string searchWord, unsigned searchPriority) := STEPPED(searchIndex(kind=1 AND word=searchWord), doc, PRIORITY(searchPriority),HINT(maxseeklookahead(50)));
 

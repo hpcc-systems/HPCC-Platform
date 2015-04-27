@@ -73,6 +73,8 @@ ESPStruct [nil_remove] ECLGraph
     [min_ver("1.09")] bool Complete;
     [min_ver("1.14")] bool Failed;
     int64 RunningId;
+    [min_ver("1.53")]string WhenStarted;
+    [min_ver("1.53")]string WhenFinished;
 };
 //  ===========================================================================
 ESPStruct [nil_remove] ECLGraphEx
@@ -194,7 +196,8 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.30")] bool ThorLCR(false);
     [min_ver("1.01")] int EventSchedule;
     [min_ver("1.02")] bool HaveSubGraphTimings;
-    [min_ver("1.28")] string TotalThorTime;
+    [min_ver("1.28"), depr_ver("1.53")] string TotalThorTime;
+    [min_ver("1.53")] string TotalClusterTime;
 
     ESPstruct ECLQuery Query;
     [min_ver("1.03")] ESParray<ESPstruct ECLHelpFile> Helpers;
@@ -212,6 +215,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.17")] int ErrorCount;
     [min_ver("1.17")] int WarningCount;
     [min_ver("1.17")] int InfoCount;
+    [min_ver("1.52")] int AlertCount;
     [min_ver("1.17")] int GraphCount;
     [min_ver("1.17")] int SourceFileCount;
     [min_ver("1.17")] int ResultCount;
@@ -516,7 +520,8 @@ ESPenum WUExceptionSeverity : string
 {
     INFO("info"),
     WARNING("warning"),
-    ERROR("error")
+    ERROR("error"),
+    ALERT("alert")
 };
 
 ESPrequest WURunRequest
@@ -617,6 +622,7 @@ ESPresponse [exceptions_inline] WUInfoResponse
    bool CanCompile;
    [min_ver("1.25")] string ThorSlaveIP;
    [min_ver("1.34")] ESParray<string, View> ResultViews;
+   [min_ver("1.54")] string SecMethod;
 }; 
 
 ESPrequest WUResultSummaryRequest
@@ -1400,7 +1406,8 @@ ESPenum QuerySetQueryActionTypes : string
     ToggleSuspend("ToggleSuspend"),
     Activate("Activate"),
     Delete("Delete"),
-    RemoveAllAliases("RemoveAllAliases")
+    RemoveAllAliases("RemoveAllAliases"),
+    ResetQueryStats("ResetQueryStats")
 };
 
 ESPStruct QuerySetQueryClientState
@@ -1538,6 +1545,7 @@ ESPrequest [nil_remove] WUCreateZAPInfoRequest
     string ProblemDescription;
     string WhatChanged;
     string WhereSlow;
+    [min_ver("1.53")] string Password;
 };
 
 ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
@@ -1563,8 +1571,45 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
     ESPStruct DeploymentFeatures Deployment;
 };
 
+ESPStruct [nil_remove] WUStatisticItem
+{
+    string Creator;
+    string CreatorType;
+    string Scope;
+    string ScopeType;
+    string Description;
+    string TimeStamp;
+    string Measure;
+    string Kind;
+    string Value;
+    int64 RawValue;
+    int64 Count;
+    int64 Max;
+};
+
+ESPrequest [nil_remove] WUGetStatsRequest
+{
+    string WUID;
+    string CreatorType;
+    string Creator;
+    string ScopeType;
+    string Scope;
+    string Kind;
+    string Measure;
+    unsigned MinScopeDepth;
+    unsigned MaxScopeDepth;
+    boolean IncludeGraphs;
+    boolean CreateDescriptions;
+};
+
+ESPresponse [exceptions_inline] WUGetStatsResponse
+{
+    string WUID;
+    ESParray<ESPstruct WUStatisticItem> Statistics;
+};
+
 ESPservice [
-    version("1.51"), default_client_version("1.51"),
+    version("1.54"), default_client_version("1.54"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1639,6 +1684,7 @@ ESPservice [
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
     ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
+    ESPmethod WUGetStats(WUGetStatsRequest, WUGetStatsResponse);
 };
 
 

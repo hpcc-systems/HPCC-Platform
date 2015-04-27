@@ -15,8 +15,20 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4537, ignore);
+#onwarning(1038, ignore);
+
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
+#onwarning (5402, ignore);
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 unsigned xxid := 0 : stored('xxid');
 

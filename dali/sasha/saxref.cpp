@@ -1455,7 +1455,7 @@ public:
         basedir.setLength(bds);
     }
 
-    static int compareDirs(IInterface **t1,IInterface **t2)
+    static int compareDirs(IInterface * const *t1,IInterface * const *t2)
     {
         IPropertyTree *pt1 = *(IPropertyTree **)t1;
         IPropertyTree *pt2 = *(IPropertyTree **)t2;
@@ -1762,7 +1762,7 @@ public:
                 unsigned numsub = file.getPropInt("@numsubfiles");
                 unsigned n = 0;
                 Owned<IPropertyTreeIterator> iter = file.getElements("SubFile");
-                Owned<IBitSet> parts = createBitSet();
+                Owned<IBitSet> parts = createThreadSafeBitSet();
                 StringArray subname;
                 ForEach(*iter) {
                     IPropertyTree &sfile = iter->query();
@@ -2344,16 +2344,14 @@ public:
             PROGLOG(LOGPFX2 "Deleting %s",lfn);
             try
             {
-                queryDistributedFileDirectory().removeEntry(lfn,UNKNOWN_USER);//MORE:Pass IUserDescriptor
+                queryDistributedFileDirectory().removeEntry(lfn, UNKNOWN_USER, NULL, INFINITE, true); //MORE:Pass IUserDescriptor
+                PROGLOG(LOGPFX2 "Deleted %s",lfn);
             }
             catch (IException *e) // may want to just detach if fails
             {
-                StringBuffer s;
                 EXCLOG(e, LOGPFX2 "remove");
                 e->Release();
             }
-            PROGLOG(LOGPFX2 "Deleted %s",lfn);
-
         }
         PROGLOG(LOGPFX2 "%s",stopped?"Stopped":"Done");
     }

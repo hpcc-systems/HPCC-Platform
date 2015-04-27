@@ -215,7 +215,15 @@ hr.dashedLine {
     padding-left:25px;
 }
 
-.claro .dgrid-cell { text-overflow: ellipsis; white-space: nowrap; }
+.claro .dgrid-cell { 
+    text-overflow: ellipsis; 
+    white-space: nowrap; 
+}
+
+.claro .wrap .dgrid-cell { 
+    text-overflow: initial; 
+    white-space: normal; 
+}
 
 .claro .hpccCentered { 
     text-align: center; 
@@ -358,6 +366,13 @@ hr.dashedLine {
 
 .iconOperations{
     background-image: url("../img/Operations.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconPlugins{
+    background-image: url("../img/Plugins.png");
     width: 32px;
     height: 32px;
     cursor: pointer;
@@ -1010,3 +1025,29 @@ margin-left:-20px;
     height: auto;
 }
 
+.claro .graph_Graph .zoom {
+    fill: white;
+}
+
+.claro .graph_Graph .edge .common_Shape {
+    fill: white;
+}
+
+.claro .graph_Graph .graphVertex > .common_Shape .common_Shape {
+    stroke: black;
+    fill: none;
+}
+
+.claro .graph_Graph .graphVertex > .common_Shape.selected .common_Shape {
+    stroke: #1f77b4;
+}
+
+.claro .graph_Graph .graphVertex .common_TextBox .common_Shape {
+    stroke: black;
+    fill: white;
+}
+
+.claro .graph_Graph .graphVertex .common_TextBox.selected .common_Shape {
+    fill: #dcf1ff;
+    stroke: #1f77b4;
+}

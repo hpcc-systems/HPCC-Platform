@@ -19,6 +19,8 @@
 
 #include "hqlresource.hpp"
 
+//#define TRACE_BALANCED
+
 enum ResourceType { 
 //Slave specific
     RESslavememory,
@@ -36,12 +38,47 @@ enum ResourceType {
 class CResourceOptions
 {
 public:
-    CResourceOptions() { memset(this, 0, sizeof(*this)); state.updateSequence = 0; }
+    CResourceOptions(UniqueSequenceCounter & _spillSequence)
+    : spillSequence(_spillSequence)
+    {
+        filteredSpillThreshold = 0;
+        minimizeSpillSize = 0;
+        allowThroughSpill = false;
+        allowThroughResult = false;
+        cloneFilteredIndex = false;
+        spillSharedConditionals = false;
+        shareDontExpand = false;
+        useGraphResults = false;
+        noConditionalLinks = false;
+        minimiseSpills = false;
+        hoistResourced = false;
+        isChildQuery = false;
+        groupedChildIterators = false;
+        allowSplitBetweenSubGraphs = false;
+        preventKeyedSplit = false;
+        preventSteppedSplit = false;
+        minimizeSkewBeforeSpill = false;
+        expandSingleConstRow = false;
+        createSpillAsDataset = false;
+        optimizeSharedInputs = false;
+        combineSiblings = false;
+        actionLinkInNewGraph = false;
+        convertCompoundToExecuteWhen = false;
+        useResultsForChildSpills = false;
+        alwaysUseGraphResults = false;
+        newBalancedSpotter = false;
+        graphIdExpr = NULL;
+        nextResult = 0;
+        clusterSize = 0;
+        targetClusterType = ThorLCRCluster;
+        state.updateSequence = 0;
+    }
 
     IHqlExpression * createSpillName(bool isGraphResult);
     void noteGraphsChanged() { state.updateSequence++; }
 
 public:
+    UniqueSequenceCounter & spillSequence;
     unsigned filteredSpillThreshold;
     unsigned minimizeSpillSize;
     bool     allowThroughSpill;
@@ -67,6 +104,7 @@ public:
     bool     convertCompoundToExecuteWhen;
     bool     useResultsForChildSpills;
     bool     alwaysUseGraphResults;
+    bool     newBalancedSpotter;
 
     IHqlExpression * graphIdExpr;
     unsigned nextResult;
@@ -147,7 +185,7 @@ public:
 };
 
 typedef CIArrayOf<ResourceGraphInfo> ResourceGraphArray;
-typedef CopyCIArrayOf<ResourceGraphLink> GraphLinkArray;
+typedef CICopyArrayOf<ResourceGraphLink> GraphLinkArray;
 
 class ResourceGraphInfo : public CInterface
 {
@@ -236,13 +274,65 @@ public:
     unsigned findOriginal(IHqlExpression * expr);
 };
 
-class ResourcerInfo : public CInterface, public IInterface
+class CSplitterLink : public CInterface
+{
+public:
+    CSplitterLink(IHqlExpression * _source, IHqlExpression * _sink) : source(_source->queryBody()), sink(_sink->queryBody())
+    {
+    }
+
+    IHqlExpression * queryOther(IHqlExpression * expr) const
+    {
+        if (expr->queryBody() == source)
+            return sink;
+        else
+            return source;
+    }
+
+    bool hasSink(IHqlExpression * expr) const { return sink == expr->queryBody(); }
+    bool hasSource(IHqlExpression * expr) const { return source == expr->queryBody(); }
+
+private:
+    LinkedHqlExpr source;
+    LinkedHqlExpr sink;
+};
+
+class EclResourcer;
+class CSplitterInfo
+{
+public:
+    CSplitterInfo(EclResourcer & _resourcer, bool _preserveBalanced, bool _ignoreExternalDependencies);
+    ~CSplitterInfo();
+
+    void addLink(IHqlExpression * source, IHqlExpression * sink, bool isExternal);
+    bool allInputsPulledIndependently(IHqlExpression * expr) const;
+    void gatherPotentialSplitters(IHqlExpression * expr, IHqlExpression * sink, ResourceGraphInfo * graph, bool isDependency);
+    bool isSplitOrBranch(IHqlExpression * expr) const;
+    bool isBalancedSplitter(IHqlExpression * expr) const;
+    void restoreBalanced();
+
+private:
+    CSplitterInfo();
+
+    void gatherPotentialDependencySplitters(IHqlExpression * expr, IHqlExpression * sink, ResourceGraphInfo * graph);
+
+public:
+    EclResourcer & resourcer;
+    HqlExprCopyArray externalSources;
+    HqlExprCopyArray sinks;
+    HqlExprCopyArray dependents;
+    BoolArray wasBalanced;
+    unsigned nextBalanceId;
+    bool preserveBalanced;
+    bool ignoreExternalDependencies;
+};
+
+class ResourcerInfo : public CInterfaceOf<IInterface>
 {
 public:
     enum { PathUnknown, PathConditional, PathUnconditional };
 
     ResourcerInfo(IHqlExpression * _original, CResourceOptions * _options);
-    IMPLEMENT_IINTERFACE
 
     IHqlExpression * createSpilledRead(IHqlExpression * spillReason);
     IHqlExpression * createTransformedExpr(IHqlExpression * expr);
@@ -254,6 +344,7 @@ public:
     void clearProjected();
     bool expandRatherThanSpill(bool noteOtherSpills);
     bool expandRatherThanSplit();
+    bool hasDependency() const;
     bool isExternalSpill();
     bool neverCommonUp();
     bool isSplit();
@@ -262,6 +353,7 @@ public:
     void noteUsedFromChild(bool _forceHoist);
     unsigned numInternalUses();
     unsigned numSplitPaths();
+    void resetBalanced();
     void setConditionSource(IHqlExpression * condition, bool isFirst);
 
     //hthor - don't merge anything to a global result because we don't allow splitters.
@@ -288,6 +380,16 @@ public:
         return isActivity || containsActivity;
     }
     void setRootActivity();
+    bool finishedWalkingSplitters() const
+    {
+        return (curBalanceLink == balancedLinks.ordinality());
+    }
+    const CSplitterLink * queryCurrentLink() const
+    {
+        if (balancedLinks.isItem(curBalanceLink))
+            return &balancedLinks.item(curBalanceLink);
+        return NULL;
+    }
 
 protected:
     bool spillSharesSplitter();
@@ -318,25 +420,33 @@ public:
     HqlExprAttr splitterOutput;
     HqlExprArray projected;
     HqlExprAttr projectedExpr;
+    CIArrayOf<CSplitterLink> balancedLinks;
 
     unsigned numUses;
     unsigned numExternalUses;
     unsigned conditionSourceCount;
     unsigned currentSource;
+    unsigned curBalanceLink;
+    unsigned lastPass;
+    unsigned balancedExternalUses;
+#ifdef TRACE_BALANCED
+    unsigned balanceId;
+#endif
     byte pathToExpr;
-    bool containsActivity;
-    bool isActivity;
-    bool isRootActivity;
-    bool gatheredDependencies;
-    bool isSpillPoint;
-    bool balanced;
-    bool isAlreadyInScope;
-    bool linkedFromChild;
-    bool forceHoist;
-    bool neverSplit;
-    bool isConditionalFilter;
-    bool projectResult;
-    bool visited;
+    bool containsActivity:1;
+    bool isActivity:1;
+    bool isRootActivity:1;
+    bool gatheredDependencies:1;
+    bool isSpillPoint:1;
+    bool balanced:1;
+    bool isAlreadyInScope:1;
+    bool linkedFromChild:1;
+    bool forceHoist:1;
+    bool neverSplit:1;
+    bool isConditionalFilter:1;
+    bool projectResult:1;
+    bool visited:1;
+    bool balancedVisiting:1;
 };
 
 struct DependencySourceInfo
@@ -350,8 +460,9 @@ struct DependencySourceInfo
 class EclResourcer
 {
     friend class SelectHoistTransformer;
+    friend class CSplitterInfo;
 public:
-    EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions);
+    EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions, UniqueSequenceCounter & _spillSequence);
     ~EclResourcer();
 
     void resourceGraph(IHqlExpression * expr, HqlExprArray & transformed);
@@ -425,12 +536,19 @@ protected:
     void mergeSiblings();
 
 //Pass 6b
-    void spotUnbalancedSplitters(IHqlExpression * expr, unsigned whichSource, IHqlExpression * path, ResourceGraphInfo * graph);
-    void spotUnbalancedSplitters(HqlExprArray & exprs);
+    void oldSpotUnbalancedSplitters(IHqlExpression * expr, unsigned whichSource, IHqlExpression * path, ResourceGraphInfo * graph);
+    void oldSpotUnbalancedSplitters(HqlExprArray & exprs);
 
 //Pass 6c
     void spotSharedInputs(IHqlExpression * expr, ResourceGraphInfo * graph);
     void spotSharedInputs();
+
+    void optimizeConditionalLinks(CSplitterInfo & connections);
+    IHqlExpression * walkPotentialSplitterLinks(CSplitterInfo & connections, IHqlExpression * expr, const CSplitterLink * link);
+    IHqlExpression * walkPotentialSplitters(CSplitterInfo & connections, IHqlExpression * expr, const CSplitterLink & link);
+    void walkPotentialSplitters(CSplitterInfo & connections);
+    void extractSharedInputs(CSplitterInfo & connections, ResourceGraphInfo & graph);
+    void spotUnbalancedSplitters(const HqlExprArray & exprs);
 
 //Pass 7
     bool optimizeAggregate(IHqlExpression * expr);
@@ -456,6 +574,8 @@ protected:
     void checkRecursion(ResourceGraphInfo * graph, PointerArray & visited);
     void checkRecursion(ResourceGraphInfo * graph);
     unsigned getMaxDepth() const;
+    bool checkAlreadyVisited(ResourcerInfo * info);
+    void nextPass() { thisPass++; }
 
 protected:
     Owned<IConstWorkUnit> wu;
@@ -466,6 +586,7 @@ protected:
     unsigned clusterSize;
     CResources * resourceLimit;
     IErrorReceiver * errors;
+    unsigned thisPass;
     bool spilled;
     bool spillMultiCondition;
     bool spotThroughAggregate;

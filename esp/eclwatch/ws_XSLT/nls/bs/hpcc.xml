@@ -110,6 +110,7 @@
 <st id='Refresh'>Osvježite</st>
 <st id='Rows'>redovi</st>
 <st id='RoxieServer'>Roxie Server</st>
+<st id='RoxieState'>Roxie State</st>
 <st id='SashaServers'>Sasha Serveri</st>
 <st id='SchedulerProcess'>Proces za raspoređivanje poslova</st>
 <st id='SecurityString'>Sigurnosni Tekst</st>

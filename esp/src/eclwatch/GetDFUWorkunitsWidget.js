@@ -84,6 +84,19 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
+            this.initContextMenu();
+            this._idleWatcher = new ESPUtil.IdleWatcher();
+            this._idleWatcher.start();
+            var context = this;
+            this._idleWatcherHandle = this._idleWatcher.on("idle", function () {
+                context._onRefresh();
+            });
+        },
+
+        destroy: function (args) {
+            this._idleWatcherHandle.remove();
+            this._idleWatcher.stop();
+            this.inherited(arguments);
         },
 
         getTitle: function () {
@@ -179,6 +192,9 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (this.params.searchResults) {
+                this.filter.disable(true);
+            }
             if (params.ClusterName) {
                 registry.byId(this.id + "Cluster").set("value", params.ClusterName);
             }
@@ -202,6 +218,11 @@ define([
             });
             topic.subscribe("hpcc/dfu_wu_created", function (topic) {
                 context.refreshGrid();
+            });
+            ESPUtil.MonitorVisibility(this.workunitsTab, function (visibility) {
+                if (visibility) {
+                    context.refreshGrid();
+                }
             });
         },
 
@@ -304,7 +325,7 @@ define([
 
         initWorkunitsGrid: function() {
             var context = this;
-            var store = new ESPDFUWorkunit.CreateWUQueryStore();
+            var store = this.params.searchResults ? this.params.searchResults : new ESPDFUWorkunit.CreateWUQueryStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
                 columns: {

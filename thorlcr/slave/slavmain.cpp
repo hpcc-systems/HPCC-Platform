@@ -294,6 +294,8 @@ public:
                             PROGLOG("Workunit option 'slaveDaliClient' enabled");
                             enableThorSlaveAsDaliClient();
                         }
+                        job->startJob();
+
                         msg.clear();
                         msg.append(false);
                         break;
@@ -329,7 +331,7 @@ public:
                         Owned<IPropertyTree> graphNode = createPTree(msg);
                         Owned<CSlaveGraph> subGraph = (CSlaveGraph *)job->createGraph();
                         subGraph->createFromXGMML(graphNode, NULL, NULL, NULL);
-                        PROGLOG("GraphInit: %s, graphId=%"GIDPF"d", jobKey.get(), subGraph->queryGraphId());
+                        PROGLOG("GraphInit: %s, graphId=%" GIDPF "d", jobKey.get(), subGraph->queryGraphId());
                         subGraph->setExecuteReplyTag(subGraph->queryJob().deserializeMPTag(msg));
                         size32_t len;
                         msg.read(len);
@@ -661,11 +663,14 @@ void slaveMain()
         WARNLOG("Slave has less memory than master node");
     unsigned gmemSize = globals->getPropInt("@globalMemorySize");
     bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
+    bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
+    bool gmemRetainMemory = globals->getPropBool("@heapRetainMemory", false);
+
     if (gmemSize >= hdwInfo.totalMemory)
     {
         // should prob. error here
     }
-    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, ((memsize_t)gmemSize) * 0x100000, 0, NULL);
+    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)gmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
     CJobListener jobListener;
     CThorResourceSlave slaveResource;

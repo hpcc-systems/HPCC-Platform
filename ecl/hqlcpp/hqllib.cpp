@@ -121,7 +121,7 @@ unsigned HqlCppLibrary::getHash(const HqlExprArray & values, unsigned crc) const
         case type_groupedtable:
         case type_dictionary:
             {
-                OwnedHqlExpr normalizedRecord = normalizeRecord(translator, cur.queryRecord());
+                OwnedHqlExpr normalizedRecord = normalizeExpression(translator, cur.queryRecord());
                 OwnedHqlExpr serialized = getSerializedForm(normalizedRecord, diskAtom);
                 unsigned recordCrc = getExpressionCRC(serialized);
                 crc = hashc((const byte *)&tc, sizeof(tc), crc);
@@ -306,14 +306,18 @@ public:
                 if (internalExpr)
                 {
                     IHqlExpression * nameExpr = moduleExpr->queryAttribute(nameAtom);
-                    if (!matchedInternalLibraries.contains(*nameExpr))
+                    unsigned sequence = matchedInternalLibraries.find(*nameExpr);
+                    if (sequence == NotFound)
                     {
+                        sequence = internalLibraries.ordinality();
                         internalLibraries.append(*transformEmbeddedLibrary(scopeFunc));
                         matchedInternalLibraries.append(*LINK(nameExpr));
                     }
                     //remove the parameter from the internal attribute from the module that is being called.
                     //so save in subsequent translation
-                    OwnedHqlExpr newModuleExpr = replaceOwnedAttribute(moduleExpr, createAttribute(internalAtom));
+                    VStringBuffer graphName("graph%u", EMBEDDED_GRAPH_DELTA+(sequence+1));
+                    OwnedHqlExpr noInternalExpr = removeAttribute(moduleExpr, internalAtom);
+                    OwnedHqlExpr newModuleExpr = appendOwnedOperand(noInternalExpr, createAttribute(embeddedAtom, createConstant(graphName)));
                     OwnedHqlExpr newScopeFunc = replaceChild(scopeFunc, 0, newModuleExpr);
                     HqlExprArray instanceArgs;
                     unwindChildren(instanceArgs, expr);
@@ -517,6 +521,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     IHqlExpression * module = moduleFunction->queryChild(0);
     assertex(module->getOperator() == no_libraryscope);
     IHqlExpression * nameAttr = module->queryAttribute(nameAtom);
+    IHqlExpression * embeddedAttr = module->queryAttribute(embeddedAtom);
     OwnedHqlExpr name = foldHqlExpression(nameAttr->queryChild(0));
     IValue * nameValue = name->queryValue();
     IHqlExpression * originalName = queryAttributeChild(module, _original_Atom, 0);
@@ -552,12 +557,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     {
         instance->addAttribute("libname", libraryName.str());
         Owned<IWULibrary> wulib = wu()->updateLibraryByName(libraryName.str());
-        wulib->addActivity((unsigned)instance->activityId);
     }
 
+
     instance->addAttributeInt("_interfaceHash", library->getInterfaceHash());
-    instance->addAttributeBool("embedded", module->hasAttribute(internalAtom));
+    instance->addAttributeBool("embedded", (embeddedAttr != NULL));
     instance->addAttributeInt("_maxOutputs", library->outputs.ordinality());
+    if (embeddedAttr)
+        instance->addAttribute("graph", embeddedAttr->queryChild(0));
     if (!targetHThor())
         instance->addAttributeInt("_graphid", nextActivityId());            // reserve an id...
 
@@ -647,7 +654,8 @@ void HqlCppTranslator::buildLibraryGraph(BuildCtx & ctx, IHqlExpression * expr, 
     for (unsigned i2 = outputLibrary->numStreamedInputs(); i2 < numParams; i2++)
     {
         IHqlExpression * parameter = outputLibrary->queryInputExpr(i2);
-        extractBuilder->evaluateExpression(evalctx, parameter, dummyTarget, NULL, false);
+        OwnedHqlExpr normalParameter = normalizeExpression(*this, parameter);
+        extractBuilder->evaluateExpression(evalctx, normalParameter, dummyTarget, NULL, false);
     }
 
     BuildCtx graphctx(initctx);

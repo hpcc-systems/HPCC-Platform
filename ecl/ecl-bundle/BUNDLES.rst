@@ -21,6 +21,9 @@ entire bundle in a single .ecl file, with Bundle exported from it as a nested mo
 in such cases that the Bundle module can be exported without any external dependencies (for example,
 by using ,FORWARD on the main module's definition).
 
+You must add the bundle folder as the source folder to have the same import paths for the attribute when 
+installed as a bundle.
+
 Metadata
 ========
 The Bundle.ECL should inherit from the standard library module Std.BundleBase, as in the following

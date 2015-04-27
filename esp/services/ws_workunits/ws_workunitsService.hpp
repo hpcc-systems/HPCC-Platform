@@ -174,8 +174,7 @@ public:
     }
     void refreshValidClusters();
     bool isValidCluster(const char *cluster);
-    void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL);
-    void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
+    void deploySharedObjectReq(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL);
     unsigned getGraphIdsByQueryId(const char *target, const char *queryId, StringArray& graphIds);
     bool getQueryFiles(const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *superFiles);
     void getGraphsByQueryId(const char *target, const char *queryId, const char *graphName, const char *subGraphId, IArrayOf<IEspECLGraphEx>& ECLGraphs);
@@ -255,11 +254,18 @@ public:
     bool onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp);
     bool onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoRequest &req, IEspWUGetZAPInfoResponse &resp);
     bool onWUCheckFeatures(IEspContext &context, IEspWUCheckFeaturesRequest &req, IEspWUCheckFeaturesResponse &resp);
+    bool onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &req, IEspWUGetStatsResponse &resp);
 
 private:
-#ifdef _USE_ZLIB
-    void addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr);
-#endif
+    void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
+    void createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
+    void createZAPWUXMLFile(WsWuInfo &winfo, const char* pathNameStr);
+    void createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, const char* pathNameStr);
+    void createZAPFile(const char* fileName, size32_t len, const void* data);
+    void cleanZAPFolder(IFile* zipDir, bool removeFolder);
+    IPropertyTree* sendControlQuery(IEspContext &context, const char* target, const char* query, unsigned timeout);
+    bool resetQueryStats(IEspContext &context, const char* target, IProperties* queryIds, IEspWUQuerySetQueryActionResponse& resp);
+
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
     StringBuffer envLocalAddress;
@@ -275,6 +281,7 @@ private:
     Owned<IPropertyTree> directories;
     int maxRequestEntityLength;
     Owned<IThreadPool> clusterQueryStatePool;
+    StringAttr authMethod;
 public:
     QueryFilesInUse filesInUse;
 };
@@ -318,6 +325,8 @@ private:
     bool batchWatchFeaturesOnly;
     CWsWorkunitsEx *wswService;
 };
+
+void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
 
 class CClusterQueryStateParam : public CInterface
 {

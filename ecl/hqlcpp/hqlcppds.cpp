@@ -56,7 +56,12 @@
 void addGraphIdAttribute(ActivityInstance * instance, BuildCtx & ctx, IHqlExpression * graphId)
 {
     SubGraphInfo * match = matchActiveGraph(ctx, graphId);
-    assertex(match);
+    if (!match)
+    {
+        StringBuffer graphname;
+        graphname.append(graphId->queryChild(0)->querySequenceExtra());
+        throwError1(HQLERR_AccessUnavailableGraph, graphname.str());
+    }
     instance->addAttributeInt("_graphId", match->graphId);
 }
 
@@ -314,7 +319,7 @@ void HqlCppTranslator::buildNullRow(BuildCtx & ctx, IHqlExpression * expr, CHqlB
     bound.expr.setown(createValue(no_nullptr, makeRowReferenceType(expr)));
 }
 
-IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExpression * expr)
+IReferenceSelector * HqlCppTranslator::doBuildRowFromXMLorJSON(BuildCtx & ctx, IHqlExpression * expr)
 {
 //  assertex(supportsLinkCountedRows);
     Owned<ITypeInfo> overrideType = setLinkCountedAttr(expr->queryType(), true);
@@ -322,10 +327,11 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExp
     IHqlExpression * record = expr->queryRecord();
     OwnedHqlExpr ds = createDataset(no_anon, LINK(record));
 
-    StringBuffer xmlInstanceName, xmlFactoryName, s;
+    StringBuffer instanceName, factoryName, s;
     bool usesContents = false;
-    getUniqueId(xmlInstanceName.append("xml"));
-    buildXmlReadTransform(ds, xmlFactoryName, usesContents);
+    node_operator op = expr->getOperator();
+    getUniqueId(instanceName.append(op==no_fromjson ? "json" : "xml"));
+    buildXmlReadTransform(ds, factoryName, usesContents);
 
     OwnedHqlExpr curActivityId = getCurrentActivityId(ctx);
 
@@ -334,23 +340,27 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExp
     BuildCtx * initCtx = &ctx;
     if (!insideOnCreate(ctx) && getInvariantMemberContext(ctx, &declareCtx, &initCtx, false, false))
     {
-        declareCtx->addQuoted(s.clear().append("Owned<IXmlToRowTransformer> ").append(xmlInstanceName).append(";"));
-        s.clear().append(xmlInstanceName).append(".setown(").append(xmlFactoryName).append("(ctx,");
+        declareCtx->addQuoted(s.clear().append("Owned<IXmlToRowTransformer> ").append(instanceName).append(";"));
+        s.clear().append(instanceName).append(".setown(").append(factoryName).append("(ctx,");
         generateExprCpp(s, curActivityId).append("));");
         initCtx->addQuoted(s);
     }
     else
     {
-        s.append("Owned<IXmlToRowTransformer> ").append(xmlInstanceName).append(" = ").append(xmlFactoryName).append("(ctx,");
+        s.append("Owned<IXmlToRowTransformer> ").append(instanceName).append(" = ").append(factoryName).append("(ctx,");
         generateExprCpp(s, curActivityId).append(");");
         ctx.addQuoted(s);
     }
 
     HqlExprArray args;
     args.append(*ensureExprType(expr->queryChild(1), utf8Type));
-    args.append(*createQuoted(xmlInstanceName, makeBoolType()));
+    args.append(*createQuoted(instanceName, makeBoolType()));
     args.append(*createConstant(expr->hasAttribute(trimAtom)));
-    OwnedHqlExpr function = bindFunctionCall(createRowFromXmlId, args, overrideType);
+    OwnedHqlExpr function;
+    if (op==no_fromjson)
+        function.setown(bindFunctionCall(createRowFromJsonId, args, overrideType));
+    else
+        function.setown(bindFunctionCall(createRowFromXmlId, args, overrideType));
 
     CHqlBoundExpr bound;
     buildExpr(ctx, function, bound);
@@ -411,7 +421,8 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_activetable:
         return buildActiveRow(ctx, expr);
     case no_fromxml:
-        return doBuildRowFromXML(ctx, expr);
+    case no_fromjson:
+        return doBuildRowFromXMLorJSON(ctx, expr);
     case no_serialize:
         {
             IHqlExpression * deserialized = expr->queryChild(0);
@@ -1669,24 +1680,25 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     }
 
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         CompoundSourceTransformer transformer(*this, CSFpreload|csfFlags);
         resourced.setown(transformer.process(resourced));
         checkNormalized(ctx, resourced);
-        updateTimer("workunit;tree transform: optimize disk read", msTick()-time);
+        noteFinishedTiming("workunit;tree transform: optimize disk read", startCycles);
     }
 
     if (options.optimizeGraph)
     {
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         traceExpression("BeforeOptimizeSub", resourced);
         resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags()|HOOcompoundproject));
         traceExpression("AfterOptimizeSub", resourced);
-        updateTimer("workunit;optimize graph", msTick()-time);
+        noteFinishedTiming("workunit;optimize graph", startCycles);
     }
 
     traceExpression("BeforeResourcing Child", resourced);
-    unsigned time = msTick();
+
+    cycle_t startCycles = get_cycles_now();
     HqlExprCopyArray activeRows;
     gatherActiveCursors(ctx, activeRows);
     if (graphKind == no_loop)
@@ -1697,7 +1709,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     else
         resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
 
-    updateTimer("workunit;resource graph", msTick()-time);
+    noteFinishedTiming("workunit;resource graph", startCycles);
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
     
@@ -2059,20 +2071,8 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
         doBuildStmtFail(ctx, expr->queryChild(1));
         //fallthrough
     case no_null:
-        {
-            tgt.count.setown(getSizetConstant(0));
-            tgt.length.setown(getSizetConstant(0));
-            IHqlExpression * record = expr->queryRecord();
-            Owned<ITypeInfo> type;
-            if (expr->isDictionary())
-                type.setown(makeDictionaryType(makeRowType(record->getType())));
-            else
-                type.setown(makeTableType(makeRowType(record->getType())));
-            if ((format == FormatLinkedDataset) || (format == FormatArrayDataset) || expr->isDictionary())
-                type.setown(setLinkCountedAttr(type, true));
-            tgt.expr.setown(createValue(no_nullptr, makeReferenceModifier(type.getClear())));
-            return;
-        }
+        doBuildDatasetNull(expr, tgt, format);
+        return;
     case no_translated:
         expandTranslated(expr, tgt);
         return;
@@ -2753,6 +2753,22 @@ void HqlCppTranslator::doBuildDatasetLimit(BuildCtx & ctx, IHqlExpression * expr
 
     doBuildCheckDatasetLimit(ctx, expr, tgt);
 }
+
+void HqlCppTranslator::doBuildDatasetNull(IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format)
+{
+     tgt.count.setown(getSizetConstant(0));
+     tgt.length.setown(getSizetConstant(0));
+     IHqlExpression * record = expr->queryRecord();
+     Owned<ITypeInfo> type;
+     if (expr->isDictionary())
+         type.setown(makeDictionaryType(makeRowType(record->getType())));
+     else
+         type.setown(makeTableType(makeRowType(record->getType())));
+     if ((format == FormatLinkedDataset) || (format == FormatArrayDataset) || expr->isDictionary())
+         type.setown(setLinkCountedAttr(type, true));
+     tgt.expr.setown(createValue(no_nullptr, makeReferenceModifier(type.getClear())));
+}
+
 
 class ConstantRow : public CInterface
 {
@@ -4873,7 +4889,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
             specialCase = true;
             break;
         default:
-            specialCase = alwaysEvaluatesToBound(dataset);
+            specialCase = alwaysEvaluatesToBound(dataset) || hasSingleRow(dataset) || !canIterateInline(&ctx, dataset);
             break;
         }
 

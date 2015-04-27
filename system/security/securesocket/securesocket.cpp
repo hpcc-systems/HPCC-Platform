@@ -154,6 +154,7 @@ public:
     virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
     virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms);
     virtual size32_t write(void const* buf, size32_t size);
+    virtual size32_t writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER);
 
     void readTimeout(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout, bool useSeconds);
 
@@ -162,7 +163,8 @@ public:
 
     virtual void   read(void* buf, size32_t size)
     {
-        throw MakeStringException(-1, "not implemented");
+        size32_t size_read;
+        readTimeout(buf, size, size, size_read, 0, false);
     }
 
     virtual size32_t get_max_send_size()
@@ -311,7 +313,10 @@ public:
 
     virtual size32_t avail_read()            // called after wait_read to see how much data available
     {
-        throw MakeStringException(-1, "not implemented");
+        int pending = SSL_pending(m_ssl);
+        if(pending > 0)
+            return pending;
+        return m_socket->avail_read();
     }
 
     virtual size32_t write_multiple(unsigned num,const void **buf, size32_t *size)
@@ -356,7 +361,7 @@ public:
         throw MakeStringException(-1, "not implemented");
     }
 
-    virtual size32_t udp_write_to(SocketEndpoint &ep, void const* buf, size32_t size)
+    virtual size32_t udp_write_to(const SocketEndpoint &ep, void const* buf, size32_t size)
     {
         throw MakeStringException(-1, "not implemented");
     }
@@ -555,10 +560,11 @@ int CSecureSocket::secure_accept()
     }
     else if(err < 0)
     {
+        int ret = SSL_get_error(m_ssl, err);
         char errbuf[512];
         ERR_error_string_n(ERR_get_error(), errbuf, 512);
         errbuf[511] = '\0';
-        DBGLOG("SSL_accept returned %d, error - %s", err, errbuf);
+        DBGLOG("SSL_accept returned %d, SSL_get_error=%d, error - %s", err, ret, errbuf);
         if(strstr(errbuf, "error:1408F455:") != NULL)
         {
             DBGLOG("Unrecoverable SSL library error.");
@@ -593,12 +599,13 @@ int CSecureSocket::secure_accept()
 int CSecureSocket::secure_connect()
 {
     int err = SSL_connect (m_ssl);                     
-    if(err < 0)
+    if(err <= 0)
     {
+        int ret = SSL_get_error(m_ssl, err);
         char errbuf[512];
         ERR_error_string_n(ERR_get_error(), errbuf, 512);
-        DBGLOG("SSL_connect error - %s", errbuf);
-        throw MakeStringException(-1, "Certificate verification failed: %s", errbuf);
+        DBGLOG("SSL_connect error - %s, SSL_get_error=%d, error - %d", errbuf,ret, err);
+        throw MakeStringException(-1, "SSL_connect failed: %s", errbuf);
     }
     
 
@@ -730,6 +737,13 @@ void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32
 
 size32_t CSecureSocket::write(void const* buf, size32_t size)
 {
+    int numwritten = SSL_write(m_ssl, buf, size);
+    return numwritten;
+}
+
+size32_t CSecureSocket::writetms(void const* buf, size32_t size, unsigned timeoutms)
+{
+    // timeoutms not implemented yet ...
     int numwritten = SSL_write(m_ssl, buf, size);
     return numwritten;
 }

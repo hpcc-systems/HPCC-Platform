@@ -26,6 +26,7 @@
 #include <map>
 
 class CMachineInfoThreadParam;
+class CRoxieStateInfoThreadParam;
 class CMetricsThreadParam;
 class CRemoteExecThreadParam;
 
@@ -186,25 +187,20 @@ public:
 
 class CProcessData : public CInterface
 {
-    StringBuffer    m_type;
-    StringBuffer    m_name;
-    StringBuffer    m_path;
+    StringAttr    m_type;
+    StringAttr    m_name;
+    StringAttr    m_path;
     unsigned        m_processNumber;
     bool            m_multipleInstances;     //required from ProcessFilter in environment.xml
 
-    StringBuffer    m_pid;
-    StringBuffer    m_upTime;
+    StringAttr    m_pid;
+    StringAttr    m_upTime;
     set<string>     m_dependencies;
 public:
 IMPLEMENT_IINTERFACE;
 
 	CProcessData()
     {
-        m_name.clear();
-        m_type.clear();
-        m_path.clear();
-        m_pid.clear();
-        m_upTime.clear();
         m_processNumber = 0;
         m_multipleInstances = false;
         m_dependencies.clear();
@@ -213,11 +209,9 @@ IMPLEMENT_IINTERFACE;
     CProcessData(const char* name, const char* type, const char* path, unsigned processNumber):
         m_processNumber(processNumber)
     {
-        m_name = name;
-        m_type = type;
-        m_path = path;
-        m_pid.clear();
-        m_upTime.clear();
+        m_name.set(name);
+        m_type.set(type);
+        m_path.set(path);
         m_multipleInstances = false;
         m_dependencies.clear();
     }
@@ -225,7 +219,7 @@ IMPLEMENT_IINTERFACE;
 
     void setName(const char* name)
     {
-        m_name.clear().append(name);
+        m_name.set(name);
     }
 
     const char* getName()
@@ -235,7 +229,7 @@ IMPLEMENT_IINTERFACE;
 
     void setType(const char* type)
     {
-        m_type.clear().append(type);
+        m_type.set(type);
     }
 
     const char* getType()
@@ -245,7 +239,7 @@ IMPLEMENT_IINTERFACE;
 
     void setPath(const char* path)
     {
-        m_path.clear().append(path);
+        m_path.set(path);
     }
 
     const char* getPath()
@@ -255,7 +249,7 @@ IMPLEMENT_IINTERFACE;
 
     void setPID(const char* pid)
     {
-        m_pid.clear().append(pid);
+        m_pid.set(pid);
     }
 
     const char* getPID()
@@ -265,7 +259,7 @@ IMPLEMENT_IINTERFACE;
 
     void setUpTime(const char* upTime)
     {
-        m_upTime.clear().append(upTime);
+        m_upTime.set(upTime);
     }
 
     const char* getUpTime()
@@ -361,6 +355,93 @@ public:
     const int getDiskSpacePercentAvail()
     {
         return m_diskSpacePercentAvail;
+    }
+};
+
+interface IStateHash : extends IInterface
+{
+    virtual unsigned queryID() = 0;
+    virtual unsigned queryCount() = 0;
+    virtual void incrementCount() = 0;
+};
+
+class CStateHash : public CInterface, implements IStateHash
+{
+    unsigned   id;
+    unsigned   count;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CStateHash(unsigned _id, unsigned _count) : id(_id), count(_count) { };
+
+    virtual unsigned queryID() { return id; }
+    virtual unsigned queryCount() { return count; }
+    virtual void incrementCount() { count++; };
+};
+
+typedef MapStringToMyClass<IStateHash> StateHashes;
+
+class CRoxieStateData : public CInterface
+{
+    BoolHash   ipAddress;
+    StringAttr hash;
+    unsigned   hashID; //the position inside cluster's state hash list - used to set the majorHash flag in updateMajorRoxieStateHash().
+    bool       majorHash; //whether its state hash is the same as the most of other roxie cluster nodes or not.
+    bool       ok;
+    bool       attached;
+    bool       detached;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CRoxieStateData(const char* _ipAddress, unsigned _hashID) : hashID(_hashID), majorHash(true), ok(false), attached(false), detached(false)
+    {
+        ipAddress.setValue(_ipAddress, true);
+    };
+
+    bool matchIPAddress(const char* _ipAddress)
+    {
+        bool* match = ipAddress.getValue(_ipAddress);
+        return (match && *match);
+    }
+    unsigned getHashID() { return hashID; }
+    const char* getHash() { return hash.get(); }
+    void setMajorHash(bool _majorHash) { majorHash = _majorHash; }
+
+    void setState(bool _ok, bool _attached, bool _detached, const char* _hash)
+    {
+        ok = _ok;
+        attached = _attached;
+        detached = _detached;
+        hash.set(_hash);
+    }
+
+    void reportState(StringBuffer& state, StringBuffer& stateDetails)
+    {
+        if (!ok)
+            state.set("Node State: not ok ...");
+        else if (!hash || !*hash)
+            state.set("empty state hash ...");
+        else if (!majorHash)
+            state.set("State hash mismatch ...");
+        else if (!attached)
+            state.set("Not attached to DALI ...");
+        else
+            state.set("ok");
+
+        if (ok)
+            stateDetails.appendf("Node State: ok\n");
+        else
+            stateDetails.appendf("Node State: not ok\n");
+        if (!hash || !*hash)
+            stateDetails.appendf("This node had an empty hash\n");
+        else
+            stateDetails.appendf("State hash: %s\n", hash.get());
+        if (!majorHash)
+            stateDetails.appendf("State hash: mismatch\n");
+        if (attached)
+            stateDetails.appendf("This node attached to DALI\n");
+        if (detached)
+            stateDetails.appendf("This node detached from DALI\n");
     }
 };
 
@@ -598,6 +679,9 @@ class CGetMachineInfoData
     IArrayOf<IEspMachineInfoEx>     m_machineInfoTable;
     StringArray                     m_machineInfoColumns;
 
+    StringArray                     roxieClusters;
+    BoolHash                        uniqueRoxieClusters;
+
 public:
     CGetMachineInfoUserOptions& getOptions()
     {
@@ -617,6 +701,21 @@ public:
     StringArray& getMachineInfoColumns()
     {
         return m_machineInfoColumns;
+    }
+
+    StringArray& getRoxieClusters()
+    {
+        return roxieClusters;
+    }
+
+    void appendRoxieClusters(const char* clusterName)
+    {
+        bool* found = uniqueRoxieClusters.getValue(clusterName);
+        if (found && *found)
+            return;
+
+        roxieClusters.append(clusterName);
+        uniqueRoxieClusters.setValue(clusterName, true);
     }
 };
 
@@ -639,6 +738,7 @@ public:
     bool onStartStopBegin( IEspContext &context, IEspStartStopBeginRequest &req,  IEspStartStopBeginResponse &resp);
     bool onStartStopDone( IEspContext &context, IEspStartStopDoneRequest &req,  IEspStartStopResponse &resp);
 
+    void getRoxieStateInfo(CRoxieStateInfoThreadParam* param);
     void doGetMachineInfo(IEspContext& context, CMachineInfoThreadParam* pReq);
     void doGetMetrics(CMetricsThreadParam* pParam);
     bool doStartStop(IEspContext &context, StringArray& addresses, char* userName, char* password, bool bStop, IEspStartStopResponse &resp);
@@ -670,6 +770,7 @@ private:
 
     void readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool localFileSystemsOnly, bool getSwInfo, bool applyProcessFilter, StringArray& addresses, const char* addProcessesToFilters, CGetMachineInfoData& machineInfoData);
     void readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool localFileSystemsOnly, bool getSwInfo, bool applyProcessFilter, const char* addProcessesToFilters, StringArray& targetClustersIn, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
+    void getMachineInfo(IEspContext& context, bool getRoxieState, CGetMachineInfoData& machineInfoData);
     void getMachineInfo(IEspContext& context, CGetMachineInfoData& machineInfoData);
     void setMachineInfoResponse(IEspContext& context, IEspGetMachineInfoRequest& req, CGetMachineInfoData& machineInfoData, IEspGetMachineInfoResponse& resp);
     void setTargetClusterInfoResponse(IEspContext& context, IEspGetTargetClusterInfoRequest& req, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClusterTree, IEspGetTargetClusterInfoResponse& resp);
@@ -696,6 +797,10 @@ private:
     void doPostProcessing(CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap);
     void processValue(const char *oid, const char *value, const bool bShow, CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap);
     void addIpAddressesToBuffer( void** buffer, unsigned& count, const char* address);
+
+    void readRoxieStatus(const Owned<IPropertyTree> controlResp, CIArrayOf<CRoxieStateData>& roxieStates);
+    unsigned addRoxieStateHash(const char* hash, StateHashes& stateHashes, unsigned& totalUniqueHashes);
+    void updateMajorRoxieStateHash(StateHashes& stateHashes, CIArrayOf<CRoxieStateData>& roxieStates);
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
 
     //Still used in StartStop/Rexec, so keep them for now.
@@ -737,6 +842,9 @@ public:
 
 protected:
 
+    CWsMachineThreadParam(Cws_machineEx* pService) : m_pService(pService)
+    {
+    }
     CWsMachineThreadParam( const char* pszAddress,
                           const char* pszSecurityString, Cws_machineEx* pService)
         : m_sAddress(pszAddress), m_sSecurityString(pszSecurityString), m_pService(pService)

@@ -57,7 +57,7 @@ void setFullNameProp(IPropertyTree * tree, const char * prop, IHqlExpression * e
         setFullNameProp(tree, prop, expr->queryFullContainerId()->lower()->str(), expr->queryName()->str());
 }
 
-static int compareSymbolsByPosition(IInterface * * pleft, IInterface * * pright)
+static int compareSymbolsByPosition(IInterface * const * pleft, IInterface * const * pright)
 {
     IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
     IHqlExpression * right = static_cast<IHqlExpression *>(*pright);

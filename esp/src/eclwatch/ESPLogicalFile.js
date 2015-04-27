@@ -76,7 +76,7 @@ define([
             storeItem.updateData(item);
             if (!this._watched[id]) {
                 var context = this;
-                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
                         context.notify(storeItem, id);
                     }
@@ -106,7 +106,7 @@ define([
 
         _fetchFiles: function (scope) {
             var context = this;
-            results = WsDfu.DFUFileView({
+            var results = WsDfu.DFUFileView({
                 request: {
                     Scope: scope
                 }
@@ -143,7 +143,7 @@ define([
                         } else {
                             storeItem = create(item.__hpcc_id);
                             if (!context._watched[item.__hpcc_id]) {
-                                context._watched[item.__hpcc_id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                                context._watched[item.__hpcc_id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                                     if (oldValue !== newValue) {
                                         context.notify(storeItem, storeItem.__hpcc_id);
                                     }
@@ -222,6 +222,12 @@ define([
                 }, this);
             }
             this.set("DFUFileParts", DFUFileParts);
+        },
+        _CompressedFileSizeSetter: function (CompressedFileSize) {
+            this.CompressedFileSize = "";
+            if (CompressedFileSize) {
+                this.CompressedFileSize = CompressedFileSize.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
         },
         constructor: function (args) {
             if (args) {
@@ -387,12 +393,21 @@ define([
     });
 
     return {
-        Get: function (Cluster, Name) {
+        Get: function (Cluster, Name, data) {
             if (!Name) {
                 throw new Error("Invalid Logical File ID");
             }
             var store = new Store();
-            return store.get(createID(Cluster, Name));
+            var retVal = store.get(createID(Cluster, Name));
+            if (data) {
+                lang.mixin(data, {
+                    __hpcc_id: createID(data.NodeGroup, data.Name),
+                    __hpcc_isDir: false,
+                    __hpcc_displayName: data.Name
+                });
+                retVal.updateData(data);
+            }
+            return retVal;
         },
 
         CreateLFQueryStore: function (options) {

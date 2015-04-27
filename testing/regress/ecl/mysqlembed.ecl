@@ -15,18 +15,23 @@
     limitations under the License.
 ############################################################################## */
 
+//class=embedded
+
 IMPORT mysql;
+
+myUser := 'rchapman' : stored('myUser');
+myDb := 'test' : stored('myDb');
 
 childrec := RECORD
    string name,
-   integer value,
-   boolean boolval,
-   real8 r8,
-   real4 r4,
-   DATA d,
-   DECIMAL10_2 ddd,
-   UTF8 u1,
-   UNICODE8 u2
+   integer4 value { default(99999) },
+   boolean boolval { default(true) },
+   real8 r8 {default(99.99)},
+   real4 r4 {default(999.99)},
+   DATA d {default (D'999999')},
+   DECIMAL10_2 ddd {default(9.99)},
+   UTF8 u1 {default(U'9999 ß')},
+   UNICODE8 u2 {default(U'9999 ßßßß')}
 END;
 
 stringrec := RECORD
@@ -48,12 +53,16 @@ create() := EMBED(mysql : user('rchapman'),database('test'))
   CREATE TABLE tbl1 ( name VARCHAR(20), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10) );
 ENDEMBED;
 
-initialize(dataset(childrec) values) := EMBED(mysql : user('rchapman'),database('test'))
+initialize(dataset(childrec) values) := EMBED(mysql : user(myUser),database(myDb))
   INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?);
 ENDEMBED;
 
-initializeNulls() := EMBED(mysql : user('rchapman'),database('test'))
+initializeNulls() := EMBED(mysql : user('rchapman'),database(myDb))
   INSERT INTO tbl1 (name) values ('nulls');
+ENDEMBED;
+
+initializeUtf8() := EMBED(mysql : user(myUser),database('test'))
+  INSERT INTO tbl1 values ('utf8test', 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße');
 ENDEMBED;
 
 dataset(childrec) testMySQLDS() := EMBED(mysql : user('rchapman'),database('test'))
@@ -121,6 +130,7 @@ sequential (
   create(),
   initialize(init),
   initializeNulls(),
+  initializeUtf8(),
   OUTPUT(testMySQLDS()),
   OUTPUT(testMySQLRow().name),
   OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),

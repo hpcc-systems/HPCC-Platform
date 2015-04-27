@@ -22,6 +22,8 @@
 #include "jcomp.hpp"
 #include "jsem.hpp"
 #include "jexcept.hpp"
+#include "jregexp.hpp"
+#include "jerror.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -80,17 +82,24 @@ static const char * COMPILE_ONLY[] = { "/c", "-c" };
 
 static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1" };
 static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." , "" };
-static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC -pipe -O0" };
+static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0" };
 
-static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
-static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -Wl,-E -fPIC -pipe -O0" };
 
-static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC -pipe -O0" };
+static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC  -O0" };
 
 static const char * CC_OPTION_PRECOMPILEHEADER[] = { "", " -x c++-header" };
 
+#ifdef __APPLE__
+static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
+static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -fPIC -pipe -O0 -Wl,-export_dynamic -v" };
+static const char * DLL_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-shared -L. -fPIC -pipe -O0" };
+static const char * EXE_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-L. -fPIC -pipe -O0 -Wl,-export_dynamic -v" };
+#else
+static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
+static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -Wl,-E -fPIC -pipe -O0" };
 static const char * DLL_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-shared -L. -fPIC -pipe -O0" };
 static const char * EXE_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-L. -Wl,-E -fPIC -pipe -O0" };
+#endif
 
 static const char * LINK_TARGET[] = { " /out:", " -o " };
 static const char * DEFAULT_CC_LOCATION[] = { ".", "." };
@@ -193,7 +202,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
 #endif
         if (verbose)
             PrintLog("SetCompilerPath - no compiler found");
-        throw MakeOsException(GetLastError(), "setCompilerPath could not locate compiler %s", fname.str());
+        throw makeOsExceptionV(GetLastError(), "setCompilerPath could not locate compiler %s", fname.str());
     }
 
     if(tmpdir && *tmpdir)
@@ -237,9 +246,7 @@ static void setDirectoryPrefix(StringAttr & target, const char * source)
 
 CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose)
 {
-#define CORE_NAME allSources.item(0)
-    if (_coreName)
-        addSourceFile(_coreName);
+    coreName.set(_coreName);
     targetCompiler = _targetCompiler;
     createDLL = true;
 #ifdef _DEBUG
@@ -258,6 +265,7 @@ CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const 
     saveTemps = false;
     abortChecker = NULL;
     precompileHeader = false;
+    linkFailed = false;
 }
 
 void CppCompiler::addCompileOption(const char * option)
@@ -347,7 +355,13 @@ void CppCompiler::addLinkOption(const char * option)
 
 void CppCompiler::addSourceFile(const char * filename)
 {
+    DBGLOG("addSourceFile %s", filename);
     allSources.append(filename);
+}
+
+void CppCompiler::addObjectFile(const char * filename)
+{
+    linkerLibraries.append(" ").append(filename);
 }
 
 void CppCompiler::writeLogFile(const char* filepath, StringBuffer& log)
@@ -464,8 +478,6 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
         addPathSepChar(cmdline);
     }
     cmdline.append(filename);
-    if (!precompileHeader)
-        cmdline.append(".cpp");
     cmdline.append("\" ");
     expandCompileOptions(cmdline);
 
@@ -480,15 +492,18 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     {
         if (targetDir.get())
             cmdline.append(" /Fo").append("\"").append(targetDir).append("\"");
+
+        StringBuffer basename;
+        splitFilename(filename, &basename, &basename, &basename, NULL);
         cmdline.append(" /Fd").append("\"").append(targetDir).append(createDLL ? SharedObjectPrefix : NULL).append(filename).append(".pdb").append("\"");//MORE: prefer create a single pdb file using coreName
     }
     else
     {
-        cmdline.append(" -o ").append("\"").append(targetDir).append(filename).append('.');
+        cmdline.append(" -o ").append("\"");
         if (precompileHeader)
-            cmdline.append(PCH_FILE_EXT[targetCompiler]);
+            cmdline.append(targetDir).append(filename).append('.').append(PCH_FILE_EXT[targetCompiler]);
         else
-            cmdline.append(OBJECT_FILE_EXT[targetCompiler]);
+            getObjectName(cmdline, filename);
         cmdline.append("\"");
     }
     
@@ -505,6 +520,118 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     pool->start(parm.get());
 
     return true;
+}
+
+void CppCompiler::extractErrors(IArrayOf<IError> & errors)
+{
+    const char* cclog = ccLogPath.get();
+    if(!cclog||!*cclog)
+        cclog = queryCcLogName();
+    Owned <IFile> logfile = createIFile(cclog);
+    if (!logfile->exists())
+        return;
+
+    try
+    {
+        StringBuffer file;
+        file.loadFile(logfile);
+
+        RegExpr vsErrorPattern("^{.+}({[0-9]+}) : error {.*$}");
+        RegExpr vsLinkErrorPattern("^{.+} : error {.*$}");
+
+        //cpperr.ecl:7:10: error: ‘syntaxError’ was not declared in this scope
+        RegExpr gccErrorPattern("^{.+}:{[0-9]+}:{[0-9]+}: {[a-z]+}: {.*$}");
+        RegExpr gccErrorPattern2("^{.+}:{[0-9]+}: {[a-z]+}: {.*$}");
+        RegExpr gccLinkErrorPattern("^{.+}:{[0-9]+}: {.*$}"); // undefined reference
+        RegExpr gccLinkErrorPattern2("^.+ld: {.*$}"); // fail to find library etc.
+        RegExpr gccExitStatusPattern("^.*exit status$"); // collect2: error: ld returned 1 exit status
+        const char * cur = file.str();
+        do
+        {
+            const char * newline = strchr(cur, '\n');
+            StringAttr next;
+            if (newline)
+            {
+                next.set(cur, newline-cur);
+                cur = newline+1;
+                if (*cur == '\r')
+                    cur++;
+            }
+            else
+            {
+                next.set(cur);
+                cur = NULL;
+            }
+
+            if (gccExitStatusPattern.find(next))
+            {
+                //ignore
+            }
+            else if (gccErrorPattern.find(next))
+            {
+                StringBuffer filename, line, column, kind, msg;
+                gccErrorPattern.findstr(filename, 1);
+                gccErrorPattern.findstr(line, 2);
+                gccErrorPattern.findstr(column, 3);
+                gccErrorPattern.findstr(kind, 4);
+                gccErrorPattern.findstr(msg, 5);
+
+                if (strieq(kind, "error"))
+                    errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+                else
+                    errors.append(*createError(CategoryCpp, SeverityWarning, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+            }
+            else if (gccErrorPattern2.find(next))
+            {
+                StringBuffer filename, line, kind, msg;
+                gccErrorPattern2.findstr(filename, 1);
+                gccErrorPattern2.findstr(line, 2);
+                gccErrorPattern2.findstr(kind, 3);
+                gccErrorPattern2.findstr(msg, 4);
+
+                if (strieq(kind, "error"))
+                    errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
+                else
+                    errors.append(*createError(CategoryCpp, SeverityWarning, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
+            }
+            else if (gccLinkErrorPattern.find(next))
+            {
+                StringBuffer filename, line, msg;
+                gccLinkErrorPattern.findstr(filename, 1);
+                gccLinkErrorPattern.findstr(line, 2);
+                gccLinkErrorPattern.findstr(msg, 3);
+
+                ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
+                errors.append(*createError(CategoryError, severity, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
+            }
+            else if (gccLinkErrorPattern2.find(next))
+            {
+                StringBuffer msg("C++ link error: ");
+                gccLinkErrorPattern2.findstr(msg, 1);
+                ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
+                errors.append(*createError(CategoryError, severity, JLIBERR_CppCompileError, msg.str(), NULL, 0, 0, 0));
+            }
+            else if (vsErrorPattern.find(next))
+            {
+                StringBuffer filename, line, msg("C++ compiler error: ");
+                vsErrorPattern.findstr(filename, 1);
+                vsErrorPattern.findstr(line, 2);
+                vsErrorPattern.findstr(msg, 3);
+                errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
+            }
+            else if (vsLinkErrorPattern.find(next))
+            {
+                StringBuffer filename, msg("C++ link error: ");
+                vsLinkErrorPattern.findstr(filename, 1);
+                vsLinkErrorPattern.findstr(msg, 2);
+                errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), 0, 0, 0));
+            }
+        } while (cur);
+    }
+    catch (IException * e)
+    {
+        e->Release();
+    }
 }
 
 void CppCompiler::expandCompileOptions(StringBuffer & target)
@@ -534,13 +661,17 @@ bool CppCompiler::doLink()
     cmdline.append(stdLibs);
 
     ForEachItemIn(i0, allSources)
-        cmdline.append(" ").append("\"").append(targetDir).append(allSources.item(i0)).append(".").append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
+    {
+        StringBuffer objFilename;
+        getObjectName(objFilename, allSources.item(i0));
+        cmdline.append(" ").append("\"").append(objFilename).append("\"");
+    }
 
     cmdline.append(linkerOptions);
     cmdline.append(linkerLibraries);
 
     StringBuffer outName;
-    outName.append(createDLL ? SharedObjectPrefix : NULL).append(CORE_NAME).append(createDLL ? SharedObjectExtension : ProcessExtension);
+    outName.append(createDLL ? SharedObjectPrefix : NULL).append(coreName).append(createDLL ? SharedObjectExtension : ProcessExtension);
     cmdline.append(LINK_TARGET[targetCompiler]).append("\"").append(targetDir).append(outName).append("\"");
 
     StringBuffer temp;
@@ -552,9 +683,10 @@ bool CppCompiler::doLink()
     DWORD runcode = 0;
     if (verbose)
         PrintLog("%s", expanded.toCharArray());
-    StringBuffer logFile = StringBuffer(CORE_NAME).append("_link.log.tmp");
+    StringBuffer logFile = StringBuffer(coreName).append("_link.log.tmp");
     logFiles.append(logFile);
     bool ret = invoke_program(expanded.toCharArray(), runcode, true, logFile) && (runcode == 0);
+    linkFailed = !ret;
     return ret;
 }
 
@@ -581,26 +713,37 @@ void CppCompiler::expandRootDirectory(StringBuffer & expanded, StringBuffer & in
 StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filename)
 {
     out.append(targetDir);
-    splitFilename(filename, NULL, NULL, &out, &out);
+    if (targetCompiler == Vs6CppCompiler)
+        splitFilename(filename, NULL, NULL, &out, NULL);
+    else
+        splitFilename(filename, NULL, NULL, &out, &out);
     return out.append(".").append(OBJECT_FILE_EXT[targetCompiler]);
 }
 
 void CppCompiler::removeTemporaries()
 {
+    DBGLOG("Remove temporaries");
     switch (targetCompiler)
     {
     case Vs6CppCompiler:
     case GccCppCompiler:
         {
             StringBuffer temp;
-            remove(temp.clear().append(targetDir).append(CORE_NAME).append(".exp").str());
-            remove(getObjectName(temp.clear(), CORE_NAME).str());
-            remove(temp.clear().append(targetDir).append(CORE_NAME).append(".lib").str());
+            remove(temp.clear().append(targetDir).append(coreName).append(".exp").str());
+            remove(getObjectName(temp.clear(), coreName).str());
+            remove(temp.clear().append(targetDir).append(coreName).append(".lib").str());
 #ifdef _WIN32
-            remove(temp.clear().append(targetDir).append(CORE_NAME).append(".res.lib").str());
+            remove(temp.clear().append(targetDir).append(coreName).append(".res").str());
+#elif defined (_USE_BINUTILS)
+            remove(temp.clear().append(targetDir).append(coreName).append(".res.o").str());
 #else
-            remove(temp.clear().append(targetDir).append(CORE_NAME).append(".res.o.lib").str());
-            remove(temp.clear().append(targetDir).append("lib").append(CORE_NAME).append(".res.o.so").str());
+            temp.clear().append(coreName).append(".res.s*");
+            DBGLOG("Remove %s%s",targetDir.str(), temp.str());
+            Owned<IDirectoryIterator> resTemps = createDirectoryIterator(targetDir, temp.str());
+            ForEach(*resTemps)
+            {
+                remove(resTemps->getName(temp.clear().append(targetDir)).str());
+            }
 #endif
             break;
         }

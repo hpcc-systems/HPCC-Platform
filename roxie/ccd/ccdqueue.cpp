@@ -162,14 +162,14 @@ size32_t channelWrite(unsigned channel, void const* buf, size32_t size)
     return minwrote;
 }
 
-#define TEST_SLAVE_FAILURE
+// #define TEST_SLAVE_FAILURE
 
 //============================================================================================
 
 StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
 {
     const IpAddress &serverIP = getNodeAddress(serverIdx);
-    ret.appendf("uid="RUIDF" activityId=", uid);
+    ret.appendf("uid=" RUIDF " activityId=", uid);
     switch(activityId & ~ROXIE_PRIORITY_MASK)
     {
     case ROXIE_UNLOAD: ret.append("ROXIE_UNLOAD"); break;
@@ -196,7 +196,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
         case ROXIE_LOW_PRIORITY: ret.append("LOW"); break;
         default: ret.append("???"); break;
     }
-    ret.appendf(" queryHash=%"I64F"x ch=%u seq=%d cont=%d server=", queryHash, channel, overflowSequence, continueSequence);
+    ret.appendf(" queryHash=%" I64F "x ch=%u seq=%d cont=%d server=", queryHash, channel, overflowSequence, continueSequence);
     serverIP.getIpText(ret);
     if (retries) 
     {
@@ -237,7 +237,7 @@ public:
         data->packetlength = lengthRemaining;
         const byte *finger = (const byte *) (data + 1);
         lengthRemaining -= sizeof(RoxiePacketHeader);
-        if (data->activityId == ROXIE_FILECALLBACK || data->activityId == ROXIE_DEBUGCALLBACK)
+        if (data->activityId == ROXIE_FILECALLBACK || data->activityId == ROXIE_DEBUGCALLBACK || data->retries == QUERY_ABORTED)
         {
             continuationData = NULL;
             continuationLength = 0;
@@ -429,7 +429,7 @@ public:
 
 extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
 {
-    if ((unsigned short)_len != _len)
+    if ((unsigned short)_len != _len && !localSlave)
     {
         StringBuffer s;
         RoxiePacketHeader *header = (RoxiePacketHeader *) _data;
@@ -466,7 +466,8 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     intercept = false;
     debuggerActive = false;
     checkingHeap = false;
-    traceActivityTimes = false;
+    aborted = false;
+    stats.reset();
     start = msTick();
     if (packet)
     {
@@ -486,8 +487,6 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 ctxTraceLevel = (*traceInfo++ - 1); // avoid null byte here in case anyone still thinks there's just a null-terminated string
                 traceLength--;
             }
-            if (loggingFlags & LOGGING_TIMEACTIVITIES)
-                traceActivityTimes = true;
             if (loggingFlags & LOGGING_BLIND)
                 blind = true;
             if (loggingFlags & LOGGING_CHECKINGHEAP)
@@ -532,45 +531,72 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     }
 }
 
-void SlaveContextLogger::flush(bool closing, bool aborted) const
+
+void SlaveContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed) const
 {
-    if (closing && !aborted)
+    if (output && mergeSlaveStatistics)
     {
-        if (queryTraceLevel() > 5)
-            stats.dumpStats(*this);
+        MemoryBuffer buf;
+        buf.append((char) LOG_CHILDCOUNT); // A special log entry for the stats
+        buf.append(subGraphId);
+        buf.append(actId);
+        buf.append(idx);
+        buf.append(processed);
     }
+}
+
+void SlaveContextLogger::putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const
+{
+    if (output && mergeSlaveStatistics)
+    {
+        MemoryBuffer buf;
+        buf.append((char) LOG_CHILDSTATS); // A special log entry for the stats
+        buf.append(subGraphId);
+        buf.append(actId);
+        if (stats.serialize(buf))
+        {
+            unsigned len = buf.length();
+            void *ret = output->getBuffer(len, true);
+            memcpy(ret, buf.toByteArray(), len);
+            output->putBuffer(ret, len, true);
+            anyOutput = true;
+        }
+    }
+}
+
+void SlaveContextLogger::flush()
+{
     if (output)
     {
         CriticalBlock b(crit);
-        if (aborted)
-            output->abort();
-        else
+        if (mergeSlaveStatistics)
         {
-            if (closing && mergeSlaveStatistics)
+            MemoryBuffer buf;
+            buf.append((char) LOG_STATVALUES); // A special log entry for the stats
+            if (stats.serialize(buf))
             {
-                stats.cascade(channel, *this);
-            }
-            ForEachItemIn(idx, log) // typically just one, as currently coded...
-            {
-                MemoryBuffer buf;
-                LogItem &logItem = log.item(idx);
-                logItem.serialize(buf);
                 unsigned len = buf.length();
                 void *ret = output->getBuffer(len, true);
                 memcpy(ret, buf.toByteArray(), len);
                 output->putBuffer(ret, len, true);
                 anyOutput = true;
             }
-            log.kill();
-            if (closing)
-            {
-                if (anyOutput)
-                    output->flush(true);
-                else
-                    output->abort();
-                output.clear();
-            }
         }
+        ForEachItemIn(idx, log)
+        {
+            MemoryBuffer buf;
+            LogItem &logItem = log.item(idx);
+            logItem.serialize(buf);
+            unsigned len = buf.length();
+            void *ret = output->getBuffer(len, true);
+            memcpy(ret, buf.toByteArray(), len);
+            output->putBuffer(ret, len, true);
+            anyOutput = true;
+        }
+        log.kill();
+        if (anyOutput)
+            output->flush(true);
+         output.clear();
     }
 }
 
@@ -703,16 +729,6 @@ public:
     void enqueue(IRoxieQueryPacket *x)
     {
         {
-#ifdef _DEBUG
-            RoxiePacketHeader &header = x->queryHeader();
-            if (traceLevel > 10)
-            {
-                StringBuffer xx;
-                SlaveContextLogger l(x);
-                l.CTXLOG("enqueued %s", header.toString(xx).str());
-                l.flush(true, false);
-            }
-#endif
             CriticalBlock qc(qcrit);
 #ifdef TIME_PACKETS
             header.tick = msTick();
@@ -1017,8 +1033,6 @@ public:
         {
             Owned <IRoxieDaliHelper> daliHelper = connectToDali();
             Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid(), NULL);
-            SCMStringBuffer target;
-            wu->getClusterName(target);
             queryFactory.setown(createSlaveQueryFactoryFromWu(wu, channel));
             if (queryFactory)
                 cacheOnDemandQuery(queryHash, channel, queryFactory);
@@ -1116,8 +1130,8 @@ public:
             Owned <ISlaveActivityFactory> factory = queryFactory->getSlaveActivityFactory(activityId);
             assertex(factory);
             setActivity(factory->createActivity(logctx, packet));
-            bool skip = false;
 #ifdef TEST_SLAVE_FAILURE
+            bool skip = false;
             if (testSlaveFailure) 
             {
                 // Meaning of each byte in testSlaveFailure
@@ -1161,15 +1175,26 @@ public:
                     }
                 }
             }
-#endif
-            if (!skip && activity->process())
-                atomic_inc(&activitiesCompleted);
-            factory->noteStatistics(logctx.queryStats());
-            if (logctx.queryTraceLevel() > 5)
+            if (!skip)
             {
-                StringBuffer x;
-                logctx.CTXLOG("done processing %s", header.toString(x).str());
+#endif
+                Owned<IMessagePacker> output = activity->process();
+                if (logctx.queryTraceLevel() > 5)
+                {
+                    StringBuffer x;
+                    logctx.CTXLOG("done processing %s", header.toString(x).str());
+                }
+                if (output)
+                {
+                    atomic_inc(&activitiesCompleted);
+                    busy = false; // Keep order - before setActivity below
+                    setActivity(NULL);  // Ensures all stats are merged from child queries etc
+                    logctx.flush();
+                    output->flush(true);
+                }
+#ifdef TEST_SLAVE_FAILURE
             }
+#endif
         }
         catch (IUserException *E)
         {
@@ -1633,7 +1658,7 @@ public:
                 unsigned length = packet->queryHeader().packetlength;
 
                 {
-                    MTIME_SECTION(timer, "bucket_wait");
+                    MTIME_SECTION(queryActiveTimer(), "bucket_wait");
                     bucket.wait((length / 1024) + 1);
                 }
                 if (channelWrite(header.channel, &header, length) != length)
@@ -1769,7 +1794,7 @@ public:
             throttledPacketSendManager->sendPacket(x, logctx);
         else
         {
-            MTIME_SECTION(timer, "RoxieSocketQueueManager::sendPacket");
+            MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendPacket");
             RoxiePacketHeader &header = x->queryHeader();
 
 
@@ -1805,7 +1830,7 @@ public:
 
     virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx)
     {
-        MTIME_SECTION(timer, "RoxieSocketQueueManager::sendIbyti");
+        MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendIbyti");
         RoxiePacketHeader ibytiHeader(header, header.activityId & ROXIE_PRIORITY_MASK);
     
         if (logctx.queryTraceLevel() > 8)
@@ -1822,7 +1847,7 @@ public:
 
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx)
     {
-        MTIME_SECTION(timer, "RoxieSocketQueueManager::sendAbort");
+        MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendAbort");
         RoxiePacketHeader abortHeader(header, header.activityId & ROXIE_PRIORITY_MASK);
         abortHeader.retries = QUERY_ABORTED;
         if (logctx.queryTraceLevel() > 8)
@@ -1838,7 +1863,7 @@ public:
 
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx) 
     {
-        MTIME_SECTION(timer, "RoxieSocketQueueManager::sendAbortCallback");
+        MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendAbortCallback");
         RoxiePacketHeader abortHeader(header, ROXIE_FILECALLBACK);
         abortHeader.retries = QUERY_ABORTED;
         MemoryBuffer data;
@@ -2189,7 +2214,7 @@ public:
 
 interface ILocalMessageCollator : extends IMessageCollator
 {
-    virtual void enqueueMessage(void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen) = 0;
+    virtual void enqueueMessage(bool outOfBand, void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen) = 0;
 };
 
 interface ILocalReceiveManager : extends IReceiveManager
@@ -2198,16 +2223,18 @@ interface ILocalReceiveManager : extends IReceiveManager
 };
 
 
+
 class LocalMessagePacker : public CDummyMessagePacker
 {
     MemoryBuffer meta;
     MemoryBuffer header;
     Linked<ILocalReceiveManager> rm;
     ruid_t id;
+    bool outOfBand;
 
 public:
     IMPLEMENT_IINTERFACE;
-    LocalMessagePacker(RoxiePacketHeader &_header, ILocalReceiveManager *_rm) : rm(_rm)
+    LocalMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm) : rm(_rm), outOfBand(_outOfBand)
     {
         id = _header.uid;
         header.append(sizeof(RoxiePacketHeader), &_header);
@@ -2357,10 +2384,13 @@ public:
         sem.interrupt(E);
     }
 
-    virtual void enqueueMessage(void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen)
+    virtual void enqueueMessage(bool outOfBand, void *data, unsigned datalen, void *meta, unsigned metalen, void *header, unsigned headerlen)
     {
         CriticalBlock c(crit);
-        pending.enqueue(new CLocalMessageResult(data, datalen, meta, metalen, header, headerlen));
+        if (outOfBand)
+            pending.enqueueHead(new CLocalMessageResult(data, datalen, meta, metalen, header, headerlen));
+        else
+            pending.enqueue(new CLocalMessageResult(data, datalen, meta, metalen, header, headerlen));
         sem.signal();
         totalBytesReceived += datalen + metalen + headerlen;
     }
@@ -2374,7 +2404,6 @@ public:
 class RoxieLocalReceiveManager : public CInterface, implements ILocalReceiveManager
 {
     MapXToMyClass<ruid_t, ruid_t, ILocalMessageCollator> collators;
-    Owned<IRowManager> rowManager;
     CriticalSection crit;
     Owned<StringContextLogger> logctx;
     Linked<IMessageCollator> defaultCollator;
@@ -2387,10 +2416,8 @@ public:
 
     virtual IMessageCollator *createMessageCollator(IRowManager *manager, ruid_t ruid)
     {
+        IMessageCollator *collator = new CLocalMessageCollator(manager, ruid);
         CriticalBlock b(crit);
-        if (!rowManager)
-            rowManager.setown(roxiemem::createRowManager(0, NULL, *logctx, NULL, false)); // MORE - should not really use default limits
-        IMessageCollator *collator = new CLocalMessageCollator(rowManager, ruid); // MORE - is this right - why two rowManagers and why pass this one (not the other) ?
         collators.setValue(ruid, collator);
         return collator;
     }
@@ -2414,7 +2441,7 @@ public:
         IMessageCollator *ret = collators.getValue(id);
         if (!ret)
             ret = defaultCollator;
-        return QUERYINTERFACE(ret, ILocalMessageCollator);
+        return LINK(QUERYINTERFACE(ret, ILocalMessageCollator));
     }
 
 };
@@ -2424,13 +2451,13 @@ void LocalMessagePacker::flush(bool last_message)
     data.setLength(lastput);
     if (last_message)
     {
-        ILocalMessageCollator *collator = rm->lookupCollator(id);
+        Owned<ILocalMessageCollator> collator = rm->lookupCollator(id);
         if (collator)
         {
             unsigned datalen = data.length();
             unsigned metalen = meta.length();
             unsigned headerlen = header.length();
-            collator->enqueueMessage(data.detach(), datalen, meta.detach(), metalen, header.detach(), headerlen);
+            collator->enqueueMessage(outOfBand, data.detach(), datalen, meta.detach(), metalen, header.detach(), headerlen);
         }
         // otherwise Roxie server is no longer interested and we can simply discard
     }
@@ -2458,7 +2485,6 @@ CLocalMessageCollator::~CLocalMessageCollator()
 
 class RoxieLocalQueueManager : public RoxieReceiverBase
 {
-    Linked<ISendManager> sendManager;
     Linked<RoxieLocalReceiveManager> receiveManager;
 
 public:
@@ -2495,6 +2521,7 @@ public:
                 RoxiePacketHeader newHeader(header, ROXIE_ALIVE);
                 Owned<IMessagePacker> output = createOutputStream(newHeader, true, logctx);
                 output->flush(true);
+                return; // No point sending the retry in localSlave mode
             }
             RoxieQueue *targetQueue;
 #ifdef ROXIE_SLA_LOGIC
@@ -2530,19 +2557,39 @@ public:
 
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx)
     {
-        // MORE - should really have some code here? - no one to alert about the abort
-        //UNIMPLEMENTED;
+        MTIME_SECTION(queryActiveTimer(), "RoxieLocalQueueManager::sendAbort");
+        RoxiePacketHeader abortHeader(header, header.activityId & ROXIE_PRIORITY_MASK);
+        abortHeader.retries = QUERY_ABORTED;
+        if (logctx.queryTraceLevel() > 8)
+        {
+            StringBuffer s; logctx.CTXLOG("Sending ABORT packet %s", abortHeader.toString(s).str());
+        }
+        MemoryBuffer data;
+        data.append(sizeof(abortHeader), &abortHeader);
+        Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
+        sendPacket(packet, logctx);
+        atomic_inc(&abortsSent);
     }
 
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx)
     {
-        // MORE - should really have some code here
-        //UNIMPLEMENTED;
+        MTIME_SECTION(queryActiveTimer(), "RoxieLocalQueueManager::sendAbortCallback");
+        RoxiePacketHeader abortHeader(header, ROXIE_FILECALLBACK);
+        abortHeader.retries = QUERY_ABORTED;
+        MemoryBuffer data;
+        data.append(sizeof(abortHeader), &abortHeader).append(lfn);
+        if (logctx.queryTraceLevel() > 5)
+        {
+            StringBuffer s; logctx.CTXLOG("Sending ABORT FILECALLBACK packet %s for file %s", abortHeader.toString(s).str(), lfn);
+        }
+        Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
+        sendPacket(packet, logctx);
+        atomic_inc(&abortsSent);
     }
 
     virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IRoxieContextLogger &logctx)
     {
-        return new LocalMessagePacker(header, receiveManager);
+        return new LocalMessagePacker(header, outOfBand, receiveManager);
     }
 
     virtual IReceiveManager *queryReceiveManager()
@@ -2552,8 +2599,8 @@ public:
 
     virtual bool replyPending(RoxiePacketHeader &header)
     {
-        // MORE - should really have some code here!
-        return false;
+        // MORE - should really have some code here! But returning true is a reasonable approximation.
+        return true;
     }
 
     virtual bool abortCompleted(RoxiePacketHeader &header)
@@ -2561,6 +2608,9 @@ public:
         // MORE - should really have some code here!
         return false;
     }
+
+
+
 };
 
 IRoxieOutputQueueManager *ROQ;

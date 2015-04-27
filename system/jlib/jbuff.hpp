@@ -52,8 +52,8 @@ public:
     inline void *       bufferBase() const { return ptr; } // like get except non-const
 
 private:
-    size32_t      len;
-    void *      ptr;
+    void * ptr;
+    size32_t len;
 };
 
 
@@ -197,7 +197,7 @@ public:
     void            swapWith(MemoryBuffer & other);
 
     inline size32_t capacity() { return (maxLen - curLen); }
-    void            ensureCapacity(unsigned max);
+    void *          ensureCapacity (unsigned max);
     inline size32_t length() const { return curLen; }
     inline size32_t remaining() const { return curLen - readPos; }
 

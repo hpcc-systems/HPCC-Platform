@@ -51,6 +51,7 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/SelectionGridWidget",
+    "hpcc/WsTopology",
 
     "put-selector/put",
 
@@ -77,7 +78,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
                 editor, selector, tree,
-                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget,
+                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget, WsTopology,
                 put,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
@@ -102,6 +103,7 @@ define([
             this.desprayForm = registry.byId(this.id + "DesprayForm");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
             this.desprayGrid = registry.byId(this.id + "DesprayGrid");
+            this.remoteCopyReplicateCheckbox = registry.byId(this.id + "RemoteCopyReplicate");
         },
 
         startup: function (args) {
@@ -284,6 +286,11 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (this.params.searchResults) {
+                this.filter.disable(true);
+                this.widget.Tree.set("disabled", true);
+            }
+
             this.clusterTargetSelect.init({
                 Groups: true,
                 includeBlank: true
@@ -292,6 +299,11 @@ define([
             this.importTargetSelect.init({
                 Groups: true
             });
+
+            this.importTargetSelect.on('change', function (value){
+                context.checkReplicate(value, context.remoteCopyReplicateCheckbox);
+            });
+
             this.copyTargetSelect.init({
                 Groups: true
             });
@@ -389,9 +401,28 @@ define([
             pMenu.startup();
         },
 
+        checkReplicate: function (value, checkBoxValue) {
+            WsTopology.TpGroupQuery({
+                request: {}
+            }).then(function (response) {
+                if (lang.exists("TpGroupQueryResponse.TpGroups.TpGroup", response)) {
+                    var arr = response.TpGroupQueryResponse.TpGroups.TpGroup;
+                    for (var index in arr) {
+                        if (arr[index].Name === value && arr[index].ReplicateOutputs === true) {
+                            checkBoxValue.set("disabled", false);
+                            break;
+                        } else if (arr[index].Name === value) {
+                            checkBoxValue.set("disabled", true);
+                            break;
+                        }
+                    }
+                }
+            });
+        },
+
         initWorkunitsGrid: function () {
             var context = this;
-            this.listStore = new ESPLogicalFile.CreateLFQueryStore();
+            this.listStore = this.params.searchResults ? this.params.searchResults : new ESPLogicalFile.CreateLFQueryStore();
             this.treeStore = new ESPLogicalFile.CreateLFQueryTreeStore();
             this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: this.listStore,
@@ -560,7 +591,7 @@ define([
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "DesprayDropDown").set("disabled", !hasSelection);
-            registry.byId(this.id + "FilterFilterDropDown").set("disabled", this.treeMode);
+            registry.byId(this.id + "FilterFilterDropDown").set("disabled", this.treeMode || this.params.searchResults);
 
             if (hasSelection) {
                 var context = this;

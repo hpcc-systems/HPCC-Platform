@@ -110,6 +110,7 @@
 <st id='Refresh'>更新</st>
 <st id='Rows'>行</st>
 <st id='RoxieServer'>Roxie服务器</st>
+<st id='RoxieState'>Roxie State</st>
 <st id='SashaServers'>Sasha服务器</st>
 <st id='SchedulerProcess'>调度器进程</st>
 <st id='SecurityString'>安全码</st>

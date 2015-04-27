@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ESDL_Attributes_help">
+  <title><emphasis role="bold">help</emphasis></title>
+
+  <para>The help attribute (valid only for an ESPMethod) allows you to specify
+  some additional text to display on the form that is automatically generated
+  to execute a method. </para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>ESPservice MyService
+
+ {
+   ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
+   ESPmethod 
+    [
+     description("MyMethod Two"),
+     help("This method does everything MyMethod1 does plus a few extra features"),
+     min_ver("1.2")
+    ]
+   MyMethod2(MyMethod2Request, MyMethod2Response);
+ };</programlisting>
+</sect2>

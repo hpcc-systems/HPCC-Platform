@@ -30,9 +30,9 @@
 class CMethodInfo : public CInterface
 {
 public:
-    StringBuffer m_label;
-    StringBuffer m_requestLabel;
-    StringBuffer m_responseLabel;
+    StringAttr m_label;
+    StringAttr m_requestLabel;
+    StringAttr m_responseLabel;
 
     //StringBuffer m_securityTag;
     //StringBuffer m_optionalTag;
@@ -43,9 +43,9 @@ public:
     IMPLEMENT_IINTERFACE;
     CMethodInfo(const char * label, const char * req, const char * resp) //, const char *sectag, const char *optag,const char* minver=NULL, const char* maxver=NULL)
     {
-        m_label.append(label);
-        m_requestLabel.append(req);
-        m_responseLabel.append(resp);
+        m_label.set(label);
+        m_requestLabel.set(req);
+        m_responseLabel.set(resp);
         /*
         if (sectag)
             m_securityTag.append(sectag);
@@ -58,9 +58,9 @@ public:
 
     CMethodInfo(CMethodInfo &src)
     {
-        m_label.append(src.m_label);
-        m_requestLabel.append(src.m_requestLabel);
-        m_responseLabel.append(src.m_responseLabel);
+        m_label.set(src.m_label);
+        m_requestLabel.set(src.m_requestLabel);
+        m_responseLabel.set(src.m_responseLabel);
     };
 };
 
@@ -119,8 +119,8 @@ class esp_http_decl EspHttpBinding :
     implements IEspWsdlSections
 {
 private:
-    StringBuffer            m_host;
-    StringBuffer            m_realm;
+    StringAttr              m_host;
+    StringAttr              m_realm;
     unsigned short          m_port;
     bool                    m_viewConfig;
     bool                    m_formOptions;
@@ -129,8 +129,8 @@ private:
 
     HINSTANCE               m_hSecDll;
 
-    StringBuffer            m_authtype;
-    StringBuffer            m_authmethod;
+    StringAttr              m_authtype;
+    StringAttr              m_authmethod;
     StringBuffer            m_reqPath;
     StringBuffer            m_filespath;
     StringBuffer            m_wsdlAddress;
@@ -159,13 +159,13 @@ public:
     const char *getHost(){return m_host.str();}
     unsigned short getPort(){return m_port;}
 
-    void setRealm(const char *realm){m_realm.clear().append((realm) ? realm : "EspService");}
+    void setRealm(const char *realm){m_realm.set((realm) ? realm : "EspService");}
     const char *getRealm(){return m_realm.str();}
     const char* getChallengeRealm() {return m_challenge_realm.str();}
     double getWsdlVersion(){return m_wsdlVer;}
     void setWsdlVersion(double ver){m_wsdlVer=ver;}
     const char *getWsdlAddress(){return m_wsdlAddress.str();}
-    void setWsdlAddress(const char *wsdladdress){m_wsdlAddress.clear().append(wsdladdress);}
+    void setWsdlAddress(const char *wsdladdress){m_wsdlAddress.set(wsdladdress);}
 
     virtual void setRequestPath(const char *path);
     virtual bool rootAuthRequired();

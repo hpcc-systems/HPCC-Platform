@@ -1,4 +1,4 @@
-#!/usr/bin/env expect 
+#!/usr/bin/env expect
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
@@ -34,6 +34,21 @@ proc print_usage {} {
     exit 1
 }
 
+proc sshcmd { cmd params_string } {
+  global password user
+  if {[string length $password] == 0 } {
+     set cmd2 "$cmd -o BatchMode=yes -o StrictHostKeyChecking=no"
+     if {[string compare $::env(USER) $user] == 0} {
+        return "$cmd2 $params_string"
+     } else {
+        return "su $user -c \"$cmd2  [regsub -all "\"" $params_string \\\"]\""
+     }
+  } else {
+     return "$cmd $params_string"
+  }
+}
+
+
 
 proc testWithPing {} {
    global ip
@@ -53,7 +68,8 @@ proc checkSSHConnection {} {
    global ip user password prompt
 
    set timeout 60
-   spawn ssh ${user}@${ip} 
+   # JIRA 12585 in chance root user cannot ssh with key pairs
+   eval "spawn [sshcmd ssh "${user}@${ip}"]"
    expect {
       *?assword:* {
          send "${password}\r";
@@ -68,20 +84,21 @@ proc checkSSHConnection {} {
          exit 1;
       } eof {
          exit 1;
-      }  -re "${prompt}" { 
+      }  -re "${prompt}" {
          puts "Connection is OK"
          send "exit\r"
       }
    }
-   expect -re .*
+
+   expect -re $
    interact;
 }
 
 proc copyPayload {} {
    global ip user password prompt
-   
+
    set timeout 300
-   spawn scp /tmp/remote_install.tgz ${user}@${ip}:~;
+   eval "spawn [sshcmd scp "/tmp/remote_install.tgz ${user}@${ip}:~;"]"
    expect {
       *?assword:* {
          send "${password}\r";
@@ -108,7 +125,7 @@ proc expandPayload {} {
    global ip user password prompt
 
    set timeout 180
-   spawn ssh ${user}@${ip} "cd /; tar -zxf ~/remote_install.tgz"
+   eval "spawn [sshcmd ssh "${user}@${ip} \"cd /; tar -zxf ~/remote_install.tgz\""]"
    expect {
       *?assword:* {
          send "${password}\r"
@@ -126,7 +143,7 @@ proc expandPayload {} {
          if { [lindex $result 3] != 0 } {
             exit [lindex $result 3]
          }
-      } 
+      }
    }
    sleep 1
 }
@@ -136,7 +153,9 @@ proc runPayload {} {
 
    set basepkg  [file tail  ${pkg}]
    set timeout 60
-   spawn ssh ${user}@${ip}
+
+   expect -re $
+   eval "spawn [sshcmd ssh ${user}@${ip}]"
    expect {
       *?assword:* {
          send "${password}\r"
@@ -153,9 +172,11 @@ proc runPayload {} {
          exit 1;
       } -re "${prompt}" {}
    }
+
+   expect -re $
    send "${cmd_prefix} ${remote_install}/remote-install-engine.sh ${remote_install}/${basepkg}\r"
    expect {
-      *?assword:* {
+      "*password for*" {
          send "${password}\r"
          exp_continue
       } "*?ermission denied*" {
@@ -168,16 +189,24 @@ proc runPayload {} {
       }  -re "${prompt}" {}
    }
 
-   expect  -re .*
+   expect  -re $
    send "echo \$?\r"
    expect   -re "(\r\n| )(\[0-9]*)\r\n" {
       if { [string compare $expect_out(2,string) "0" ] == 0 } {
          puts "${ip}: Done."
+         set remotelog 0
       } else {
-         puts "${ip}: Cannot Ping host? (Host Alive?)"
-         exit 1
+         set remotelog 1
       }
    }
+
+   if { $remotelog == 1 } {
+      expect -re $
+      send "cat ${remote_install}/remote-install.log\r"
+      expect -re "${prompt}" {}
+      exit 1
+   }
+
    send "exit\r"
    interact
 }

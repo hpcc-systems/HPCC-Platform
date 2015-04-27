@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-/* Proxy plugin definition for (EE-only) dmetaphone library version DMETAPHONE 1.1.05 */
+/* Proxy plugin definition for dmetaphone library version DMETAPHONE 1.1.05 */
 
 export MetaphoneLib := SERVICE : plugin('dmetaphone')
   string DMetaphone1(const string src) : c,pure,entrypoint='mpDMetaphone1';

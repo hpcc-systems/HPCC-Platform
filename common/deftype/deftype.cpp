@@ -1947,17 +1947,18 @@ extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype)
     return commonUpType(new CGroupedTableTypeInfo(basetype));
 }
 
-extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * parameters, IInterface * defaults)
+extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * parameters, IInterface * defaults, IInterface * attrs)
 {
     assertex(basetype->getTypeCode() != type_function); // not just yet anyway
     if (!basetype || !parameters)
     {
-        basetype->Release();
-        parameters->Release();
-        defaults->Release();
+        ::Release(basetype);
+        ::Release(parameters);
+        ::Release(defaults);
+        ::Release(attrs);
         throwUnexpected();
     }
-    return commonUpType(new CFunctionTypeInfo(basetype, parameters, defaults));
+    return commonUpType(new CFunctionTypeInfo(basetype, parameters, defaults, attrs));
 }
 
 /* In basetype: linked. Return: linked */
@@ -3846,7 +3847,7 @@ void XmlSchemaBuilder::endRecord(const char * name)
     attributes.pop();
     xml.append("</xs:complexType>").newline();
     xml.append("</xs:element>").newline();
-    optionalNesting = nesting.pop();
+    optionalNesting = nesting.popGet();
 }
 
 bool XmlSchemaBuilder::beginDataset(const char * name, const char * row, bool hasMixedContent, unsigned *updatePos)
@@ -3913,7 +3914,7 @@ void XmlSchemaBuilder::endDataset(const char * name, const char * row)
         xml.append("</xs:complexType>").newline();
         xml.append("</xs:element>").newline();
     }
-    optionalNesting = nesting.pop();
+    optionalNesting = nesting.popGet();
 }
 
 bool XmlSchemaBuilder::addSingleFieldDataset(const char * name, const char * childname, ITypeInfo & type)

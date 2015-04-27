@@ -275,7 +275,7 @@ void CConfigHelper::addNewComponentsFromBuildSetToEnv(IPropertyTree *pEnvTree) c
     if (sCompArray.length() == 0)
         return;
 
-    for (int idx = 0; idx < sCompArray.length(); idx++)
+    for (unsigned idx = 0; idx < sCompArray.length(); idx++)
     {
         StringBuffer xpath;
         xpath.appendf("%s/%s/%s[%s=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_ATTR_NAME, (sCompArray.item(idx)));
@@ -283,7 +283,7 @@ void CConfigHelper::addNewComponentsFromBuildSetToEnv(IPropertyTree *pEnvTree) c
         if (pEnvTree->hasProp(xpath.str()) == true)
             continue;
 
-        pEnvTree->queryPropTree(XML_TAG_PROGRAMS"/"XML_TAG_BUILD)->addPropTree(XML_TAG_BUILDSET, createPTreeFromIPT(m_pDefBldSet->queryPropTree(xpath.str())));
+        pEnvTree->queryPropTree(XML_TAG_PROGRAMS "/" XML_TAG_BUILD)->addPropTree(XML_TAG_BUILDSET, createPTreeFromIPT(m_pDefBldSet->queryPropTree(xpath.str())));
     }
 }
 
@@ -356,7 +356,7 @@ void CConfigHelper::addPluginsToConfigGenCompList(IPropertyTree *pCGenComplist, 
                 ForEach(*pCGenCompListIterator)
                 {
                     StringBuffer strXPath2(XML_TAG_COMPONENT);
-                    StringBuffer strXPath3(XML_TAG_COMPONENT"/"XML_TAG_FILE);
+                    StringBuffer strXPath3(XML_TAG_COMPONENT "/" XML_TAG_FILE);
 
                     const char *pServiceName = pCGenCompListIterator->query().queryProp(XML_ATTR_NAME);
                     strXPath2.appendf("[%s='%s']", XML_ATTR_NAME, pServiceName);

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ESDL_Attributes_ecl_hide">
+  <title><emphasis role="bold">ecl_hide</emphasis></title>
+
+  <para>The <emphasis>ecl_hide</emphasis> attribute hides the field from ECL
+  (that is, the field is removed when generating the ECL code). This is used
+  for some special cases.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>ESPstruct Relative
+ {
+    [ecl_hide] ESParray&lt;ESPstruct Relative, Relative&gt; Relatives;
+    "
+ };   </programlisting>
+
+  <para>In this case, the Relative structure is defined in a recursive manner,
+  and ECL does not support such a construct. Therefore, we use
+  <emphasis>ecl_hide</emphasis> to avoid the recursive definition in
+  ECL.</para>
+
+  <para>Sometimes a field is hidden from ECL for other reasons. In these
+  cases, <emphasis>ecl_hide</emphasis> is not needed.</para>
+</sect2>

@@ -89,6 +89,9 @@ define([
             this.sprayXmlForm = registry.byId(this.id + "SprayXmlForm");
             this.sprayXmlDestinationSelect = registry.byId(this.id + "SprayXmlDestinationSelect");
             this.sprayXmlGrid = registry.byId(this.id + "SprayXmlGrid");
+            this.sprayJsonForm = registry.byId(this.id + "SprayJsonForm");
+            this.sprayJsonDestinationSelect = registry.byId(this.id + "SprayJsonDestinationSelect");
+            this.sprayJsonGrid = registry.byId(this.id + "SprayJsonGrid");
             this.sprayVariableForm = registry.byId(this.id + "SprayVariableForm");
             this.sprayVariableDestinationSelect = registry.byId(this.id + "SprayVariableDestination");
             this.sprayVariableGrid = registry.byId(this.id + "SprayVariableGrid");
@@ -98,9 +101,15 @@ define([
             this.landingZonesTab = registry.byId(this.id + "_LandingZones");
             this.uploader = registry.byId(this.id + "Upload");
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
-            this.dropZoneSelect = registry.byId(this.id + "DropZoneTargetSelect");
+            this.dropZoneTargetSelect = registry.byId(this.id + "DropZoneTargetSelect");
+            this.dropZoneFolderSelect = registry.byId(this.id + "DropZoneFolderSelect");
             this.fileListDialog = registry.byId(this.id + "FileListDialog");
             this.overwriteCheckbox = registry.byId(this.id + "FileOverwriteCheckbox");
+            this.fixedSprayReplicateCheckbox = registry.byId(this.id + "FixedSprayReplicate");
+            this.delimitedSprayReplicateCheckbox = registry.byId(this.id + "DelimitedSprayReplicate");
+            this.xmlSprayReplicateCheckbox = registry.byId(this.id + "XMLSprayReplicate");
+            this.variableSprayReplicateCheckbox = registry.byId(this.id + "VariableSprayReplicate");
+            this.blobSprayReplicateCheckbox = registry.byId(this.id + "BlobSprayReplicate");
 
             var context = this;
             this.connect(this.uploader, "onComplete", function (response) {
@@ -176,11 +185,11 @@ define([
                 this._onUploadSubmit();
                 this.fileListDialog.hide();
             } else {
-                var item = context.dropZoneSelect.get("row");
+                var target = context.dropZoneTargetSelect.get("row");
                 FileSpray.FileList({
                     request: {
-                        Netaddr: item.machine.Netaddress,
-                        Path: item.machine.Directory
+                        Netaddr: target.machine.Netaddress,
+                        Path: context.getUploadPath()
                     }
                 }).then(function (response) {
                     var fileName = "";
@@ -216,9 +225,15 @@ define([
             }
         },
 
+        getUploadPath: function () {
+            var target = this.dropZoneTargetSelect.get("row");
+            var folder = this.dropZoneFolderSelect.get("row");
+            return target.machine.Directory + (this.endsWith(target.machine.Directory, "/") ? "" : "/") + folder.value;
+        },
+
         _onUploadSubmit: function (event) {
-            var item = this.dropZoneSelect.get("row");
-            this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + item.machine.Netaddress + "&OS=" + item.machine.OS + "&Path=" + item.machine.Directory);
+            var target = this.dropZoneTargetSelect.get("row");
+            this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + target.machine.Netaddress + "&OS=" + target.machine.OS + "&Path=" + this.getUploadPath());
             this.uploader.upload();
         },
 
@@ -377,6 +392,21 @@ define([
             });
         },
 
+        _onSprayJson: function(event) {
+            var context = this;
+            this._spraySelectedOneAtATime("SprayJsonDropDown", "SprayJsonForm", function (request, item) {
+                lang.mixin(request, {
+                    sourceRowPath: item.targetRowPath,
+                    isJSON: true
+                });
+                FileSpray.SprayVariable({
+                    request: request
+                }).then(function (response) {
+                    context._handleResponse("SprayResponse.wuid", response);
+                });
+            });
+        },
+
         _onSprayVariable: function (event) {
             var context = this;
             this._spraySelectedOneAtATime("SprayVariableDropDown", "SprayVariableForm", function (request, item) {
@@ -409,24 +439,77 @@ define([
 
             this.initLandingZonesGrid();
             this.sprayFixedDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             this.sprayDelimitedDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             this.sprayXmlDestinationSelect.init({
+                SprayTargets: true
+            });
+            this.sprayJsonDestinationSelect.init({
                 Groups: true
             });
             this.sprayVariableDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
             this.sprayBlobDestinationSelect.init({
-                Groups: true
+                SprayTargets: true
             });
-            this.dropZoneSelect.init({
-                DropZones: true
+            var context = this;
+            this.dropZoneTargetSelect.init({
+                DropZones: true,
+                callback: function (value, row) {
+                    if (context.dropZoneFolderSelect) {
+                        context.dropZoneFolderSelect._dropZoneTarget = row;
+                        context.dropZoneFolderSelect.defaultValue = context.dropZoneFolderSelect.get("value");
+                        context.dropZoneFolderSelect.loadDropZoneFolders();
+                    }
+                }
+            });
+            this.dropZoneFolderSelect.init({
+                DropZoneFolders: true,
+                includeBlank: true
             });
 
+            this.sprayFixedDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.fixedSprayReplicateCheckbox);
+            });
+
+            this.sprayDelimitedDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.delimitedSprayReplicateCheckbox);
+            });
+
+            this.sprayXmlDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.xmlSprayReplicateCheckbox);
+            });
+
+            this.sprayVariableDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.variableSprayReplicateCheckbox);
+            });
+
+            this.sprayBlobDestinationSelect.on('change', function (value){
+                context.checkReplicate(value, context.blobSprayReplicateCheckbox);
+            });
+        },
+
+        checkReplicate: function (value, checkBoxValue) {
+            FileSpray.GetSprayTargets({
+                request: {}
+            }).then(function (response) {
+                if (lang.exists("GetSprayTargetsResponse.GroupNodes.GroupNode", response)) {
+                    var arr = response.GetSprayTargetsResponse.GroupNodes.GroupNode;
+                    for (var index in arr) {
+                        if (arr[index].Name === value && arr[index].ReplicateOutputs === true) {
+                            checkBoxValue.set("disabled", false);
+                            break;
+                        } else if (arr[index].Name === value) {
+                            checkBoxValue.set("disabled", true);
+                            break;
+                        }
+                    }
+                }
+            });
         },
 
         initTab: function () {
@@ -556,6 +639,24 @@ define([
                 }
             });
 
+            this.sprayJsonGrid.createGrid({
+                idProperty: "calculatedID",
+                columns: {
+                    targetName: editor({
+                        label: this.i18n.TargetName,
+                        width: 144,
+                        autoSave: true,
+                        editor: "text"
+                    }),
+                    targetRowPath: editor({
+                        label: this.i18n.RowPath,
+                        width: 72,
+                        autoSave: true,
+                        editor: "text"
+                    })
+                }
+            });
+
             this.sprayVariableGrid.createGrid({
                 idProperty: "calculatedID",
                 columns: {
@@ -601,6 +702,7 @@ define([
             registry.byId(this.id + "SprayFixedDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "SprayDelimitedDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "SprayXmlDropDown").set("disabled", !hasSelection);
+            registry.byId(this.id + "SprayJsonDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "SprayVariableDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "SprayBlobDropDown").set("disabled", !hasSelection);
 
@@ -611,13 +713,15 @@ define([
                     lang.mixin(item, lang.mixin({
                         targetName: item.displayName,
                         targetRecordLength: "",
-                        targetRowTag: context.i18n.tag
+                        targetRowTag: context.i18n.tag,
+                        targetRowPath: "/"
                     }, item));
                     data.push(item);
                 });
                 this.sprayFixedGrid.setData(data);
                 this.sprayDelimitedGrid.setData(data);
                 this.sprayXmlGrid.setData(data);
+                this.sprayJsonGrid.setData(data);
                 this.sprayVariableGrid.setData(data);
                 this.sprayBlobGrid.setData(data);
             }

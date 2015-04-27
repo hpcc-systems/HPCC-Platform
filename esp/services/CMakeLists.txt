@@ -13,6 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+HPCC_ADD_SUBDIRECTORY (common)
 HPCC_ADD_SUBDIRECTORY (ecldirect "PLATFORM")
 IF (USE_OPENLDAP)
     HPCC_ADD_SUBDIRECTORY (ws_access "PLATFORM")
@@ -29,3 +30,5 @@ HPCC_ADD_SUBDIRECTORY (ws_topology "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (ws_workunits "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (WsDeploy "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (ws_packageprocess "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (ws_esdlconfig "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (esdl_svc_engine "PLATFORM")

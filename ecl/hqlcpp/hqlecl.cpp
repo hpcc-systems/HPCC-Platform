@@ -115,6 +115,7 @@ protected:
     unsigned defaultMaxCompileThreads;
     StringArray sourceFiles;
     StringArray libraries;
+    StringArray objects;
     offset_t totalGeneratedSize;
     bool checkForLocalFileUploads;
     bool noOutput;
@@ -151,9 +152,28 @@ void HqlDllGenerator::addLibrariesToCompiler()
         const char * lib = code->queryLibrary(idx);
         if (!lib)
             break;
-
         PrintLog("Adding library: %s", lib);
         addLibrary(lib);
+        idx++;
+    }
+    idx=0;
+    loop
+    {
+        const char * obj = code->queryObjectFile(idx);
+        if (!obj)
+            break;
+        PrintLog("Adding object file: %s", obj);
+        objects.append(obj);
+        idx++;
+    }
+    idx=0;
+    loop
+    {
+        const char * src = code->querySourceFile(idx);
+        if (!src)
+            break;
+        PrintLog("Adding source file: %s", src);
+        sourceFiles.append(src);
         idx++;
     }
 }
@@ -369,10 +389,10 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
         // ensure warnings/errors are available before we do the processing...
         wu->commit();
 
-        MTIME_SECTION (timer, "Generate_code");
-        unsigned time = msTick();
+        cycle_t startCycles = get_cycles_now();
         HqlCppTranslator translator(errs, wuname, code, targetClusterType, ctxCallback);
         processMetaCommands(translator, wu, query, ctxCallback);
+        translator.exportWarningMappings();
 
         if (wu->getDebugValueBool("generateFullFieldUsage", false))
         {
@@ -394,7 +414,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
             translator.finalizeResources();
             translator.expandFunctions(true);
         }
-        catch (IECLError * e)
+        catch (IError * e)
         {
             if (e->errorCode() != HQLERR_ErrorAlreadyReported)
             {
@@ -439,9 +459,17 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
         doExpand(translator);
         if (wu->getDebugValueBool("addTimingToWorkunit", true))
         {
-            unsigned elapsed = msTick()-time;
-            updateWorkunitTimeStat(wu, "eclcc", "workunit", "GenerateCpp", "eclcc: generate code", milliToNano(elapsed), 1, 0);
+            unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
+            updateWorkunitTimeStat(wu, SSTcompilestage, "compile:generate c++", StTimeElapsed, NULL, elapsed);
         }
+        if (wu->getDebugValueBool("addMemoryToWorkunit", true))
+        {
+            memsize_t peakVm, peakResident;
+            getPeakMemUsage(peakVm, peakResident);
+            if (peakResident)
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StSizePeakMemory, NULL, peakResident, 1, 0, StatsMergeReplace);
+        }
+
 
         wu->commit();
         addWorkUnitAsResource();
@@ -468,10 +496,13 @@ void HqlDllGenerator::insertStandAloneCode()
 
 void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
 {
-    unsigned startExpandTime = msTick();
+    cycle_t startCycles = get_cycles_now();
     unsigned numExtraFiles = translator.getNumExtraCppFiles();
     bool isMultiFile = translator.spanMultipleCppFiles() && (numExtraFiles != 0);
     expandCode(MAIN_MODULE_TEMPLATE, ".cpp", code, isMultiFile, 0, translator.queryOptions().targetCompiler);
+    StringBuffer fullname;
+    fullname.append(wuname).append(".cpp");
+    sourceFiles.append(fullname);
     if (isMultiFile)
     {
         expandCode(HEADER_TEMPLATE, ".hpp", code, true, 0, translator.queryOptions().targetCompiler);
@@ -482,14 +513,14 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
             expandCode(CHILD_MODULE_TEMPLATE, fullext, code, true, i+1, translator.queryOptions().targetCompiler);
 
             StringBuffer fullname;
-            fullname.append(wuname).append("_").append(i+1);
+            fullname.append(wuname).append("_").append(i+1).append(".cpp");
             sourceFiles.append(fullname);
         }
     }
 
-    unsigned endExpandTime = msTick();
+    cycle_t elapsedCycles = get_cycles_now() - startCycles;
     if (wu->getDebugValueBool("addTimingToWorkunit", true))
-        updateWorkunitTimeStat(wu, "eclcc", "workunit", "writeCpp", "eclcc: Time to write c++", milliToNano(endExpandTime-startExpandTime), 1, 0);
+        updateWorkunitTimeStat(wu, SSTcompilestage, "compile:write c++", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
 }
 
 bool HqlDllGenerator::abortRequested()
@@ -499,6 +530,7 @@ bool HqlDllGenerator::abortRequested()
 
 bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
 {
+    cycle_t startCycles = get_cycles_now();
     ForEachItemIn(i, sourceFiles)
         compiler->addSourceFile(sourceFiles.item(i));
 
@@ -526,6 +558,8 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
 
     ForEachItemIn(idx, libraries)
         compiler->addLibrary(libraries.item(idx));
+    ForEachItemIn(idx2, objects)
+        compiler->addObjectFile(objects.item(idx2));
 
     StringBuffer options;
     StringBufferAdaptor linkOptionAdaptor(options);
@@ -539,17 +573,26 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     if (okToAbort)
         compiler->setAbortChecker(this);
 
-    MTIME_SECTION (timer, "Compile_code");
-    unsigned time = msTick();
     PrintLog("Compiling %s", wuname);
     bool ok = compiler->compile();
     if(ok)
         PrintLog("Compiled %s", wuname);
     else
         PrintLog("Failed to compile %s", wuname);
-    time = msTick()-time;
-    if (wu->getDebugValueBool("addTimingToWorkunit", true))
-        updateWorkunitTimeStat(wu, "eclcc", "workunit", "compile", "eclcc: compile code", milliToNano(time), 1, 0);
+
+    bool reportCppWarnings = wu->getDebugValueBool("reportCppWarnings", false);
+    IArrayOf<IError> errors;
+    compiler->extractErrors(errors);
+    ForEachItemIn(iErr, errors)
+    {
+        IError & cur = errors.item(iErr);
+        if (isError(&cur) || reportCppWarnings)
+            errs->report(&cur);
+    }
+
+    cycle_t elapsedCycles = get_cycles_now() - startCycles;
+    //For eclcc the workunit has been written to the resource - so any further timings will not be preserved -> need to report differently
+    queryActiveTimer()->addTiming("compile:compile c++", elapsedCycles);
 
     //Keep the files if there was a compile error.
     if (ok && deleteGenerated)
@@ -559,8 +602,7 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
         remove(temp.clear().append(wuname).append(".hpp").str());
         ForEachItemIn(i, sourceFiles)
         {
-            temp.clear().append(sourceFiles.item(i)).append(".cpp");
-            remove(temp.str());
+            remove(sourceFiles.item(i));
         }
     }
     return ok;
@@ -568,14 +610,8 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
 
 void HqlDllGenerator::flushResources()
 {
-    StringBuffer resname(wuname);
-#ifdef _WIN32
-    resname.append(".res");
-#else
-    resname.append(".res.o");
-#endif
     if (code)
-        code->flushResources(resname.str(), ctxCallback);
+        code->flushResources(wuname, ctxCallback);
 }
 
 

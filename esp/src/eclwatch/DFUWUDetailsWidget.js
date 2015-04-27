@@ -264,7 +264,7 @@ define([
                 case "hasCompleted":
                     this.refreshActionState();
                     break;
-                case "changedCount":
+                case "__hpcc_changedCount":
                     if (this.wu.SourceLogicalName) {
                         this.ensurePane("SourceLogicalName", this.i18n.Source, {
                             NodeGroup: this.wu.SourceGroupName,

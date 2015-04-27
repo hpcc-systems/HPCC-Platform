@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="boolean_bool">
+  <title><emphasis role="bold">boolean bool</emphasis></title>
+
+  <para>A boolean or logical data type having one of two possible values: true
+  (1) or false (0).</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>boolean includeFlag; 
+bool includeMore;</programlisting>
+</sect2>

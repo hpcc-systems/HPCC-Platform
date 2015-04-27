@@ -15,11 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
+//version multiPart=false
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
+
 import $.setup;
-sq := setup.sq('hthor');
+sq := setup.sq(multiPart);
 
 // Test filtering at different levels - especially including subqueries at different levels
-
 
 udecimal8 todaysDate := 20040602D;
 unsigned4 age(udecimal8 dob) := ((todaysDate - dob) / 10000D);

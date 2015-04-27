@@ -201,7 +201,7 @@ public:
     virtual bool startAsync() { return true; }
     virtual void onInputFinished(rowcount_t count)
     {
-        ActPrintLog("JOIN: %s input finished, %"RCPF"d rows read", rightpartition?"LHS":"RHS", count);
+        ActPrintLog("JOIN: %s input finished, %" RCPF "d rows read", rightpartition?"LHS":"RHS", count);
     }
 
     void doDataLinkStart()
@@ -212,7 +212,7 @@ public:
         {
             case TAKjoin:
             {
-                bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & helper->getJoinFlags());
+                bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & helper->getJoinFlags()) != 0);
                 bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                 joinhelper.setown(createJoinHelper(*this, helperjn, this, hintparallelmatch, hintunsortedoutput));
                 break;
@@ -228,7 +228,7 @@ public:
 
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         rightpartition = (container.getKind()==TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
 
         Linked<IRowInterfaces> primaryRowIf, secondaryRowIf;
@@ -382,7 +382,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if(joinhelper) 
         {
             OwnedConstThorRow row = joinhelper->nextRow();
@@ -619,7 +619,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         bool matched = true;
         OwnedConstThorRow next = processor.nextGE(seek, numFields, matched, stepExtra);
         if (next)

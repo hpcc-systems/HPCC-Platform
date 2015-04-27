@@ -1674,7 +1674,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateCompound(IHqlExpression * tran
         return NULL;
     IHqlExpression * tableExpr = queryRoot(transformed);
     node_operator modeOp = queryTableMode(tableExpr);
-    if (modeOp == no_csv || modeOp == no_xml)
+    if (modeOp == no_csv || modeOp == no_xml || modeOp == no_json)
         return NULL;
 
     if (isLimitedDataset(child) && !isSimpleCountExistsAggregate(transformed, true, false))
@@ -2410,7 +2410,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                             {
                                 //This test should not be required, but it avoids problems with elements from rows
                                 //being used conditionally within transforms.  See HPCC-11018 for details.
-                                if (isIndependentOfScope(match))
+                                if ((options & HOOexpandselectcreaterow) || isIndependentOfScope(match))
                                 {
                                     DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(cur), queryNode1Text(transformed));
                                     noteUnused(child);

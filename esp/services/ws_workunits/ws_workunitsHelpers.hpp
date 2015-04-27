@@ -46,6 +46,7 @@ namespace ws_workunits {
 #define    File_ArchiveQuery "ArchiveQuery"
 
 #define    TOTALTHORTIME    "Total thor time"
+#define    TOTALCLUSTERTIME "Total cluster time" //for roxie and hthor
 
 #define    TEMPZIPDIR "tempzipfiles"
 
@@ -98,12 +99,14 @@ struct WsWUExceptions
     int ErrCount() { return numerr; }
     int WrnCount() { return numwrn; }
     int InfCount() { return numinf; }
+    int AlertCount() { return numalert; }
 
 private:
     IArrayOf<IEspECLException> errors;
     int numerr;
     int numwrn;
     int numinf;
+    int numalert;
 };
 
 #define WUINFO_TruncateEclTo64k         0x0001
@@ -156,6 +159,7 @@ public:
     void getApplicationValues(IEspECLWorkunit &info, unsigned flags);
     void getExceptions(IEspECLWorkunit &info, unsigned flags);
     void getSourceFiles(IEspECLWorkunit &info, unsigned flags);
+    unsigned getTimerCount();
     void getTimers(IEspECLWorkunit &info, unsigned flags);
     void getHelpers(IEspECLWorkunit &info, unsigned flags);
     void getGraphInfo(IEspECLWorkunit &info, unsigned flags);
@@ -171,6 +175,7 @@ public:
     void getEclSchemaFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional);
     bool getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas);
     void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned flags);
+    void getStats(StatisticsFilter& filter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
 
     void getWorkunitEclAgentLog(const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf);
     void getWorkunitThorLog(const char *processName, MemoryBuffer& buf);
@@ -185,7 +190,14 @@ public:
     void getEventScheduleFlag(IEspECLWorkunit &info);
     unsigned getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info);
     IDistributedFile* getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent);
-    void addTimerToList(SCMStringBuffer& name, unsigned count, unsigned duration, unsigned& totalThorTimerCount, StringBuffer& totalThorTimeValue, IArrayOf<IEspECLTimer>& timers);
+
+protected:
+    void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
+    unsigned getTotalThorTime();
+    unsigned getLegacyTotalThorTime();
+    bool hasSubGraphTimings();
+    bool legacyHasSubGraphTimings();
+    void legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
 
 public:
     IEspContext &context;
@@ -367,7 +379,7 @@ namespace WsWuHelpers
             IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL);
     void runWsWorkunit(IEspContext &context, IConstWorkUnit *cw, const char *srcWuid, const char *cluster, const char *paramXml=NULL,
             IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL);
-    IException * noteException(IWorkUnit *wu, IException *e, WUExceptionSeverity level=ExceptionSeverityError);
+    IException * noteException(IWorkUnit *wu, IException *e, ErrorSeverity level=SeverityError);
     StringBuffer & resolveQueryWuid(StringBuffer &wuid, const char *queryset, const char *query, bool notSuspended=true, IWorkUnit *wu=NULL);
     void runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const char *queryset, const char *query, const char *cluster, const char *paramXml=NULL);
     void runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query, const char *cluster, const char *paramXml=NULL);
@@ -379,20 +391,29 @@ class NewWsWorkunit : public Owned<IWorkUnit>
 public:
     NewWsWorkunit(IWorkUnitFactory *factory, IEspContext &context)
     {
-        create(factory, context);
+        create(factory, context, NULL);
     }
 
     NewWsWorkunit(IEspContext &context)
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        create(factory, context);
+        create(factory, context, NULL);
+    }
+
+    NewWsWorkunit(IEspContext &context, const char *wuid)
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        create(factory, context, wuid);
     }
 
     ~NewWsWorkunit() { if (get()) get()->commit(); }
 
-    void create(IWorkUnitFactory *factory, IEspContext &context)
+    void create(IWorkUnitFactory *factory, IEspContext &context, const char *wuid)
     {
-        setown(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+        if (wuid && *wuid)
+            setown(factory->createNamedWorkUnit(wuid, "ws_workunits", context.queryUserId()));
+        else
+            setown(factory->createWorkUnit("ws_workunits", context.queryUserId()));
         if(!get())
           throw MakeStringException(ECLWATCH_CANNOT_CREATE_WORKUNIT,"Could not create workunit.");
         get()->setUser(context.queryUserId());

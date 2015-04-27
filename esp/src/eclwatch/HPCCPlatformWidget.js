@@ -36,6 +36,7 @@ define([
     "hpcc/ws_account",
     "hpcc/ws_access",
     "hpcc/WsSMC",
+    "hpcc/WsTopology",
     "hpcc/GraphWidget",
     "hpcc/DelayLoadWidget",
 
@@ -62,7 +63,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, domGeo, cookie,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, GraphWidget, DelayLoadWidget,
+                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -80,6 +81,7 @@ define([
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
             this.errWarnPage = registry.byId(this.id + "_ErrWarn");
+            this.pluginsPage = registry.byId(this.id + "_Plugins");
             registry.byId(this.id + "SetBanner").set("disabled", true);
 
             this.upgradeBar = new UpgradeBar({
@@ -90,6 +92,9 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
+            domStyle.set(dom.byId(this.id + "StackController_stub_Plugins").parentNode.parentNode, {
+                visibility: "hidden"
+            });
             domStyle.set(dom.byId(this.id + "StackController_stub_ErrWarn").parentNode.parentNode, {
                 visibility: "hidden"
             });
@@ -99,26 +104,6 @@ define([
         },
 
         //  Implementation  ---
-        parseBuildString: function (build) {
-            if (!build) {
-                return;
-            }
-            this.build = {};
-            this.build.orig = build;
-            this.build.prefix = "";
-            this.build.postfix = "";
-            var verArray = build.split("[");
-            if (verArray.length > 1) {
-                this.build.postfix = verArray[1].split("]")[0];
-            }
-            verArray = verArray[0].split("_");
-            if (verArray.length > 1) {
-                this.build.prefix = verArray[0];
-                verArray.splice(0, 1);
-            }
-            this.build.version = verArray.join("_");
-        },
-
         refreshBanner: function (activity) {
             if (this.showBanner !== activity.ShowBanner ||
                 this.bannerContent !== activity.BannerContent ||
@@ -173,7 +158,7 @@ define([
                                 case -2:
                                     break;
                                 default:
-                                    if (response.MyAccountResponse.passwordDaysRemaining <= 10) {
+                                    if (response.MyAccountResponse.passwordDaysRemaining <= response.MyAccountResponse.passwordExpirationWarningDays) {
                                         if (confirm(context.i18n.PasswordExpirePrefix + response.MyAccountResponse.passwordDaysRemaining + context.i18n.PasswordExpirePostfix)) {
                                             context._onUserID();
                                         }
@@ -185,9 +170,20 @@ define([
                 }
             });
 
+            WsTopology.TpGetServicePlugins({
+                request: {
+                }
+            }).then(function (response) {
+                if (lang.exists("TpGetServicePluginsResponse.Plugins.Plugin", response) && response.TpGetServicePluginsResponse.Plugins.Plugin.length) {
+                    domStyle.set(dom.byId(context.id + "StackController_stub_Plugins").parentNode.parentNode, {
+                        visibility: "visible"
+                    });
+                }
+            });
+
             this.activity = ESPActivity.Get();
             this.activity.watch("Build", function (name, oldValue, newValue) {
-                context.parseBuildString(newValue);
+                context.build = WsSMC.parseBuildString(newValue);
             });
             this.activity.watch("changedCount", function (name, oldValue, newValue) {
                 context.refreshBanner(context.activity);
@@ -198,6 +194,7 @@ define([
             this.createStackControllerTooltip(this.id + "_Files", this.i18n.Files);
             this.createStackControllerTooltip(this.id + "_RoxieQueries", this.i18n.PublishedQueries);
             this.createStackControllerTooltip(this.id + "_OPS", this.i18n.Operations);
+            this.createStackControllerTooltip(this.id + "_Plugins", this.i18n.Plugins);
             this.initTab();
         },
 
@@ -227,7 +224,7 @@ define([
                 }).then(function (response) {
                     if (lang.exists("UserEditResponse.Groups.Group", response)) {
                         arrayUtil.some(response.UserEditResponse.Groups.Group, function (item, idx) {
-                            if(item.name == "Administrators"){
+                            if(item.name == "Administrators" || "Directory Administrators"){
                                 dojoConfig.isAdmin = true;
                                 registry.byId(context.id + "SetBanner").set("disabled", false);
                                 if (context.widget._OPS.refresh) {
@@ -299,12 +296,13 @@ define([
                     context.configSourceCM = CodeMirror.fromTextArea(dom.byId(context.id + "ConfigTextArea"), {
                         tabMode: "indent",
                         matchBrackets: true,
-                        gutter: true,
                         lineNumbers: true,
                         mode: "xml",
                         readOnly: true,
-                        onGutterClick: CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder)
+                        foldGutter: true,
+                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
                     });
+                    context.configSourceCM.setSize("100%", "100%");
                     context.configSourceCM.setValue(context.configText);
                 }); 
             }

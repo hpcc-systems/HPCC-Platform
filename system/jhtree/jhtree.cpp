@@ -478,9 +478,9 @@ protected:
         wildseeks += lwildseeks;
         if (ctx)
         {
-            if (lseeks) ctx->noteStatistic(STATS_INDEX_SEEKS, lseeks, 1);
-            if (lscans) ctx->noteStatistic(STATS_INDEX_SCANS, lscans, 1);
-            if (lwildseeks) ctx->noteStatistic(STATS_INDEX_WILDSEEKS, lwildseeks, 1);
+            if (lseeks) ctx->noteStatistic(StNumIndexSeeks, lseeks);
+            if (lscans) ctx->noteStatistic(StNumIndexScans, lscans);
+            if (lwildseeks) ctx->noteStatistic(StNumIndexWildSeeks, lwildseeks);
         }
     }
 
@@ -490,8 +490,8 @@ protected:
         nullSkips += lnullSkips;
         if (ctx)
         {
-            if (lskips) ctx->noteStatistic(STATS_INDEX_SKIPS, lskips, 1);
-            if (lnullSkips) ctx->noteStatistic(STATS_INDEX_NULLSKIPS, lnullSkips, 1);
+            if (lskips) ctx->noteStatistic(StNumIndexSkips, lskips);
+            if (lnullSkips) ctx->noteStatistic(StNumIndexNullSkips, lnullSkips);
         }
     }
 
@@ -1139,7 +1139,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
     {
-        MTIME_SECTION(timer, "CKeyStore_load");
+        MTIME_SECTION(queryActiveTimer(), "CKeyStore_load");
         IKeyIndex *keyIndex;
 
         // MORE - holds onto the mutex way too long
@@ -1380,14 +1380,14 @@ CJHTreeNode *CMemKeyIndex::loadNode(offset_t pos)
     atomic_inc(&nodesLoaded);
     if (pos + keyHdr->getNodeSize() > io->fileSize())
     {
-        IException *E = MakeStringException(errno, "Error reading node at position %"I64F"x past EOF", pos); 
+        IException *E = MakeStringException(errno, "Error reading node at position %" I64F "x past EOF", pos); 
         StringBuffer m;
-        m.appendf("In key %s, position 0x%"I64F"x", name.get(), pos);
+        m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
         EXCLOG(E, m.str());
         throw E;
     }
     char *nodeData = (char *) (io->base() + pos);
-    MTIME_SECTION(timer, "JHTREE read node");
+    MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     return CKeyIndex::loadNode(nodeData, pos, false);
 }
 
@@ -1407,12 +1407,12 @@ CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos)
     unsigned nodeSize = keyHdr->getNodeSize();
     MemoryAttr ma;
     char *nodeData = (char *) ma.allocate(nodeSize);
-    MTIME_SECTION(timer, "JHTREE read node");
+    MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     if (io->read(pos, nodeSize, nodeData) != nodeSize)
     {
-        IException *E = MakeStringException(errno, "Error %d reading node at position %"I64F"x", errno, pos); 
+        IException *E = MakeStringException(errno, "Error %d reading node at position %" I64F "x", errno, pos); 
         StringBuffer m;
-        m.appendf("In key %s, position 0x%"I64F"x", name.get(), pos);
+        m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
         EXCLOG(E, m.str());
         throw E;
     }
@@ -1446,7 +1446,7 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
             throwUnexpected();
         }
         {
-            MTIME_SECTION(timer, "JHTREE load node");
+            MTIME_SECTION(queryActiveTimer(), "JHTREE load node");
             ret->load(keyHdr, nodeData, pos, true);
         }
         return ret.getClear();
@@ -1454,13 +1454,13 @@ CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
     catch (IException *E)
     {
         StringBuffer m;
-        m.appendf("In key %s, position 0x%"I64F"x", name.get(), pos);
+        m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
         EXCLOG(E, m.str());
         throw;
     }
     catch (...)
     {
-        DBGLOG("Unknown exception in key %s, position 0x%"I64F"x", name.get(), pos);
+        DBGLOG("Unknown exception in key %s, position 0x%" I64F "x", name.get(), pos);
         throw;
     }
 }
@@ -1489,7 +1489,7 @@ CJHTreeNode *CKeyIndex::getNode(offset_t offset, IContextLogger *ctx)
 void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool raw)
 {
     if (!raw)
-        fprintf(out, "Node dump: fpos(%"I64F"d) leaf(%d)\n", node->getFpos(), node->isLeaf());
+        fprintf(out, "Node dump: fpos(%" I64F "d) leaf(%d)\n", node->getFpos(), node->isLeaf());
     if (rowCount==0 || rowCount > node->getNumKeys())
         rowCount = node->getNumKeys();
     for (unsigned int i=0; i<rowCount; i++)
@@ -1505,7 +1505,7 @@ void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool 
             offset_t pos = node->getFPosAt(i);
             StringBuffer s;
             appendURL(&s, dst, length, true);
-            fprintf(out, "keyVal %d [%"I64F"d] = %s\n", i, pos, s.toCharArray());
+            fprintf(out, "keyVal %d [%" I64F "d] = %s\n", i, pos, s.toCharArray());
         }
     }
     if (!raw)
@@ -2006,7 +2006,7 @@ extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, 
 extern jhtree_decl IKeyIndex *createKeyIndex(IReplicatedFile &part, unsigned crc, bool isTLK, bool preloadAllowed)
 {
     StringBuffer filePath;
-    RemoteFilename &rfn = part.queryCopies().item(0);
+    const RemoteFilename &rfn = part.queryCopies().item(0);
     rfn.getPath(filePath);
     return queryKeyStore()->load(filePath.str(), crc, part, isTLK, preloadAllowed);
 }
@@ -2105,7 +2105,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             if (cacheNode)
             {
                 atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_PRELOADCACHEHIT, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumPreloadCacheHits, 1);
                 atomic_inc(&preloadCacheHits);
                 return LINK(cacheNode);
             }
@@ -2116,7 +2116,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             if (cacheNode)
             {
                 atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_NODECACHEHIT, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumNodeCacheHits, 1);
                 atomic_inc(&nodeCacheHits);
                 return LINK(cacheNode);
             }
@@ -2127,7 +2127,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             if (cacheNode)
             {
                 atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_LEAFCACHEHIT, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumLeafCacheHits, 1);
                 atomic_inc(&leafCacheHits);
                 return LINK(cacheNode);
             }
@@ -2138,7 +2138,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
             if (cacheNode)
             {
                 atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_BLOBCACHEHIT, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumBlobCacheHits, 1);
                 atomic_inc(&blobCacheHits);
                 return LINK(cacheNode);
             }
@@ -2158,11 +2158,11 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 {
                     ::Release(node);
                     atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_BLOBCACHEHIT, 1, 1);
+                    if (ctx) ctx->noteStatistic(StNumBlobCacheHits, 1);
                     atomic_inc(&blobCacheHits);
                     return LINK(cacheNode);
                 }
-                if (ctx) ctx->noteStatistic(STATS_BLOBCACHEADD, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumBlobCacheAdds, 1);
                 atomic_inc(&blobCacheAdds);
                 blobCache.add(key, *LINK(node));
             }
@@ -2176,11 +2176,11 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 {
                     ::Release(node);
                     atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_LEAFCACHEHIT, 1, 1);
+                    if (ctx) ctx->noteStatistic(StNumLeafCacheHits, 1);
                     atomic_inc(&leafCacheHits);
                     return LINK(cacheNode);
                 }
-                if (ctx) ctx->noteStatistic(STATS_LEAFCACHEADD, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumLeafCacheAdds, 1);
                 atomic_inc(&leafCacheAdds);
                 leafCache.add(key, *LINK(node));
             }
@@ -2194,11 +2194,11 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
                 {
                     ::Release(node);
                     atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_NODECACHEHIT, 1, 1);
+                    if (ctx) ctx->noteStatistic(StNumNodeCacheHits, 1);
                     atomic_inc(&nodeCacheHits);
                     return LINK(cacheNode);
                 }
-                if (ctx) ctx->noteStatistic(STATS_NODECACHEADD, 1, 1);
+                if (ctx) ctx->noteStatistic(StNumNodeCacheAdds, 1);
                 atomic_inc(&nodeCacheAdds);
                 nodeCache.add(key, *LINK(node));
             }
@@ -2217,7 +2217,7 @@ void CNodeCache::preload(CJHTreeNode *node, int iD, offset_t pos, IContextLogger
     if (!cacheNode)
     {
         atomic_inc(&cacheAdds);
-        if (ctx) ctx->noteStatistic(STATS_PRELOADCACHEADD, 1, 1);
+        if (ctx) ctx->noteStatistic(StNumPreloadCacheAdds, 1);
         atomic_inc(&preloadCacheAdds);
         preloadCache.add(key, *LINK(node));
     }
@@ -2453,7 +2453,7 @@ public:
                     if (!activekeys)
                     {
                         if (ctx)
-                            ctx->noteStatistic(STATS_INDEX_MERGECOMPARES, compares, 1); 
+                            ctx->noteStatistic(StNumIndexMergeCompares, compares);
                         return false;
                     }
                     eof = false;
@@ -2507,7 +2507,7 @@ public:
                     }
 #endif
                     if (ctx)
-                        ctx->noteStatistic(STATS_INDEX_MERGECOMPARES, compares, 1);
+                        ctx->noteStatistic(StNumIndexMergeCompares, compares);
                     return true;
                 }
                 else
@@ -2515,7 +2515,7 @@ public:
                     compares++;
                     if (ctx && (compares == 100))
                     {
-                        ctx->noteStatistic(STATS_INDEX_MERGECOMPARES, compares, 1); // also checks for abort...
+                        ctx->noteStatistic(StNumIndexMergeCompares, compares); // also checks for abort...
                         compares = 0;
                     }
                 }
@@ -2649,7 +2649,7 @@ public:
         if (activekeys>0) 
         {
             if (ctx)
-                ctx->noteStatistic(STATS_INDEX_MERGES, activekeys, 1);
+                ctx->noteStatistic(StNumIndexMerges, activekeys);
             cursors = cursorArray.getArray();
             fposes = fposArray.getArray();
             matcheds = (bool *) matchedArray.getArray();  // For some reason BoolArray is typedef'd to CharArray on linux...
@@ -2902,7 +2902,7 @@ class CKeyArray : public CInterface, implements IKeyArray
 public:
     IMPLEMENT_IINTERFACE;
     virtual bool IsShared() const { return CInterface::IsShared(); }
-    PointerIArrayOf<IKeyIndexBase> keys;
+    IPointerArrayOf<IKeyIndexBase> keys;
     virtual IKeyIndexBase *queryKeyPart(unsigned partNo)
     {
         if (!keys.isItem(partNo))
@@ -3050,7 +3050,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         Owned<IFileIOStream> out = createIOStream(io);
         unsigned maxRecSize = (variable && blobby) ? 18 : 10;
         unsigned keyedSize = (shortForm || (variable && blobby)) ? 10 : (unsigned) -1;
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, 0, NODESIZE, keyedSize, 0);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0);
 
         char keybuf[18];
         memset(keybuf, '0', 18);

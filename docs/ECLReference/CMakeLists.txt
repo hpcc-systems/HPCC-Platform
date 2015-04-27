@@ -14,5 +14,15 @@
 #    limitations under the License.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} ECLReference.xml "ECLReference")
+GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
 
+SET(XSLTPROC_DEPENDENCIES)
+FOREACH(T ${Current_Targets})
+   IF("${T}" MATCHES ".*ECLLanguageReference.*" OR
+      "${T}" MATCHES ".*ECLProgrammersGuide.*" OR
+      "${T}" MATCHES ".*ECLStandardLibraryReference.*")
+      LIST(APPEND XSLTPROC_DEPENDENCIES  ${T})
+   ENDIF()
+ENDFOREACH()
+SET(DISABLE_PDF ON)
+DOCBOOK_TO_PDF( ${FO_XSL} ECLReference.xml "ECLReference")

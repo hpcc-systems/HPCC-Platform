@@ -28,7 +28,12 @@ ERROR = {
     "3001": "Return diff does not match.",
     "4000": "Unknown cluster!",
     "4001": "No ECl file!",
-    "5000": "Missing argument of -X parameter!\nIt should be 'name=val[,name2=val2..]'"
+    "5000": "Missing argument of -X parameter!\nIt should be 'name=val[,name2=val2..]'",
+    "6000": "HPCC System is not installed!",
+    "6001": "HPCC System is not running!",
+    "6002": "OS error when try to call ecl command!",
+    "6003": "Parameter error when try to call ecl command!",
+    "6004": "Can't connect to remote HPCC System!",
 }
 
 
@@ -44,4 +49,4 @@ class Error(Exception):
         return "Error (%s): %s " % (self.code, ERROR[self.code])
         
     def getErrorCode(self):
-        return self.code
+        return int(self.code)

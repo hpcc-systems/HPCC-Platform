@@ -33,16 +33,17 @@ interface IFile;
 
 class jlib_decl StringBuffer
 {
+    enum { InternalBufferSize = 16 };
 public:
     StringBuffer();
     StringBuffer(String & value);
     StringBuffer(const char *value);
     StringBuffer(unsigned len, const char *value);
     StringBuffer(const StringBuffer & value);
-    inline ~StringBuffer() { free(buffer); }
+    StringBuffer(bool useInternal);
+    ~StringBuffer();
 
     inline size32_t length() const                      { return curLen; }
-    inline void     Release() const                     { delete this; }    // for consistency even though not link counted
     void            setLength(unsigned len);
     inline void     ensureCapacity(unsigned max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
     
@@ -53,7 +54,6 @@ public:
     StringBuffer &  append(const IAtom * value);
     StringBuffer &  append(unsigned len, const char * value);
     StringBuffer &  append(const char * value, int offset, int len);
-//  StringBuffer &  append(const unsigned char * value, int offset, int len);
     StringBuffer &  append(double value);
     StringBuffer &  append(float value);
     StringBuffer &  append(int value);
@@ -115,6 +115,7 @@ public:
     StringBuffer &  replaceString(const char* oldStr, const char* newStr);
     char *          reserve(size32_t size);
     char *          reserveTruncate(size32_t size);
+    void            setown(StringBuffer &other);
     StringBuffer &  stripChar(char oldChar);
     void            swapWith(StringBuffer &other);
     void setBuffer(size32_t buffLen, char * newBuff, size32_t strLen);
@@ -130,7 +131,6 @@ public:
         return clear().append(value.str());
     }
 
-
     StringBuffer &  appendlong(long value);
     StringBuffer &  appendulong(unsigned long value);
 private: // long depreciated
@@ -139,17 +139,26 @@ private: // long depreciated
     StringBuffer &  insert(int offset, long value);
 
 protected:
+    inline bool useInternal() const { return buffer == internalBuffer; }
     void init()
+    {
+        buffer = internalBuffer;
+        curLen = 0;
+        maxLen = InternalBufferSize;
+    }
+    void initNoInternal()
     {
         buffer = NULL;
         curLen = 0;
         maxLen = 0;
     }
+    void freeBuffer();
     void _insert(unsigned offset, size32_t insertLen);
     void _realloc(size32_t newLen);
 
 private:    
-    mutable char *  buffer;
+    char                internalBuffer[InternalBufferSize];
+    char *              buffer;
     size32_t            curLen;
     size32_t            maxLen;
 };
@@ -247,11 +256,14 @@ public:
     inline const char * get(void) const         { return text; }
     inline size32_t     length() const          { return text ? (size32_t)strlen(text) : 0; }
     inline bool isEmpty() const                 { return !text||!*text; } // faster than (length==0)
+    inline const char * str(void) const         { return text ? text : ""; } // safe form (doesn't return NULL)
     inline const char * sget(void) const        { return text ? text : ""; } // safe form of get (doesn't return NULL)
 
     void         set(const char * _text);
     void         setown(const char * _text);
     void         set(const char * _text, unsigned _len);
+    void         set(const StringBuffer & source);
+    void         setown(StringBuffer & source);
     void         toLowerCase();
     void         toUpperCase();
     
@@ -260,6 +272,17 @@ private:
     
 private:
     StringAttr &operator = (const StringAttr & from);
+};
+
+
+class jlib_decl StringAttrBuilder : public StringBuffer
+{
+public:
+    StringAttrBuilder(StringAttr & _target);
+    ~StringAttrBuilder();
+
+protected:
+    StringAttr & target;
 };
 
 class jlib_decl StringAttrAdaptor : public CInterface, implements IStringVal

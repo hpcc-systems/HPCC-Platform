@@ -59,6 +59,13 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
+static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+
+static void UNSUPPORTED(const char *feature)
+{
+    throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in v8embed plugin", feature);
+}
+
 static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
 
 static void typeError(const char *expected, const RtlFieldInfo *field)
@@ -182,8 +189,8 @@ public:
 protected:
     void pop()
     {
-        named = namedStack.pop();
-        idx = idxStack.pop();
+        named = namedStack.popGet();
+        idx = idxStack.popGet();
         row = stack.back();
         stack.pop_back();
     }
@@ -349,8 +356,8 @@ protected:
     }
     void pop(const RtlFieldInfo * field)
     {
-        inDataset = dsStack.pop();
-        idx = idxStack.pop();
+        inDataset = dsStack.popGet();
+        idx = idxStack.popGet();
         v8::Local<v8::Object> row = obj;
         obj = stack.back();
         stack.pop_back();
@@ -470,16 +477,29 @@ public:
         }
         context->Global()->Set(v8::String::New(name), array);
     }
+    virtual void bindFloatParam(const char *name, float val)
+    {
+        v8::HandleScope handle_scope;
+        context->Global()->Set(v8::String::New(name), v8::Number::New(val));
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         v8::HandleScope handle_scope;
         context->Global()->Set(v8::String::New(name), v8::Number::New(val));
+    }
+    virtual void bindSignedSizeParam(const char *name, int size, __int64 val)
+    {
+        bindSignedParam(name, val);
     }
     virtual void bindSignedParam(const char *name, __int64 val)
     {
         // MORE - might need to check does not overflow 32 bits? Or store as a real?
         v8::HandleScope handle_scope;
         context->Global()->Set(v8::String::New(name), v8::Integer::New(val));
+    }
+    virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
+    {
+        bindUnsignedParam(name, val);
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
@@ -911,9 +931,14 @@ public:
     V8JavascriptEmbedContext()
     {
     }
-    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
     {
-        assertex(!isImport);
+        return createFunctionContextEx(NULL, flags, options);
+    }
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
+    {
+        if (flags & EFimport)
+            UNSUPPORTED("IMPORT");
         if (!theFunctionContext)
         {
             theFunctionContext = new V8JavascriptEmbedFunctionContext;

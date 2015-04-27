@@ -52,6 +52,7 @@ extern IHqlExpression * projectCreateSetDataset(IHqlExpression * createsetExpr);
 extern IHqlExpression * mapInternalFunctionParameters(IHqlExpression * expr);
 
 extern bool mustInitializeField(IHqlExpression * field);
+extern bool worthGeneratingRowAsSingleActivity(IHqlExpression * expr);
 
 //Common types and expressions...
 extern ITypeInfo * boolType;

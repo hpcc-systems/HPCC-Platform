@@ -43,28 +43,28 @@ void WorkUnitErrorReceiver::initializeError(IWUException * exception, int errNo,
     exception->setTimeStamp(NULL);
 }
 
-IECLError * WorkUnitErrorReceiver::mapError(IECLError * error)
+IError * WorkUnitErrorReceiver::mapError(IError * error)
 {
     return LINK(error);
 }
 
-void WorkUnitErrorReceiver::report(IECLError* eclError)
+void WorkUnitErrorReceiver::report(IError* eclError)
 {
-    WUExceptionSeverity wuSeverity = ExceptionSeverityInformation;
+    ErrorSeverity wuSeverity = SeverityInformation;
     ErrorSeverity severity = eclError->getSeverity();
 
     switch (severity)
     {
     case SeverityIgnore:
         return;
-    case SeverityInfo:
+    case SeverityInformation:
         break;
     case SeverityWarning:
-        wuSeverity = ExceptionSeverityWarning;
+        wuSeverity = SeverityWarning;
         break;
     case SeverityError:
     case SeverityFatal:
-        wuSeverity = ExceptionSeverityError;
+        wuSeverity = SeverityError;
         break;
     }
 
@@ -81,7 +81,7 @@ size32_t WorkUnitErrorReceiver::errCount()
     unsigned count = 0;
     Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
     ForEach(*exceptions)
-        if (exceptions->query().getSeverity() == ExceptionSeverityError)
+        if (exceptions->query().getSeverity() == SeverityError)
             count++;
     return count;
 }
@@ -91,7 +91,7 @@ size32_t WorkUnitErrorReceiver::warnCount()
     unsigned count = 0;
     Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
     ForEach(*exceptions)
-        if (exceptions->query().getSeverity() == ExceptionSeverityWarning)
+        if (exceptions->query().getSeverity() == SeverityWarning)
             count++;
     return count;
 }
@@ -103,13 +103,17 @@ public:
     CompoundErrorReceiver(IErrorReceiver * _primary, IErrorReceiver * _secondary) { primary.set(_primary); secondary.set(_secondary); }
     IMPLEMENT_IINTERFACE;
 
-    virtual IECLError * mapError(IECLError * error)
+    virtual IError * mapError(IError * error)
     {
-        Owned<IECLError> mappedError = primary->mapError(error);
+        Owned<IError> mappedError = primary->mapError(error);
         assertex(mappedError == error); // should not expect any mapping below a compound.
         return mappedError.getClear();
     }
-    virtual void report(IECLError* err)
+    virtual void exportMappings(IWorkUnit * wu) const
+    {
+        // should not expect any mapping below a compound.
+    }
+    virtual void report(IError* err)
     {
         primary->report(err);
         secondary->report(err);

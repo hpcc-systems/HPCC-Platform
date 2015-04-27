@@ -39,6 +39,13 @@ define([
         defaultValue: "",
 
         //  Implementation  ---
+        reset: function () {
+            this.initalized = false;
+            this.loading = false;
+            this.defaultValue = "";
+            this.options = [];
+        },
+
         init: function (params) {
             if (this.initalized)
                 return;
@@ -59,15 +66,21 @@ define([
                 });
             }
             if (params.Groups === true) {
-                this.loadGroups();
+                this.loadClusterGroups();
+            } else if (params.SprayTargets === true) {
+                this.loadSprayTargets();
             } else if (params.DropZones === true) {
                 this.loadDropZones();
+            } else if (params.DropZoneFolders === true) {
+                this.loadDropZoneFolders();
             } else if (params.WUState === true) {
                 this.loadWUState();
             } else if (params.DFUState === true) {
                 this.loadDFUState();
             } else if (params.ECLSamples === true) {
                 this.loadECLSamples();
+            } else if (params.Logs === true) {
+                this.loadLogs(params);
             } else {
                 this.loadTargets();
             }
@@ -105,7 +118,7 @@ define([
         },
 
         _postLoad: function () {
-            if (this.defaultValue == "") {
+            if (this.defaultValue === "" && this.options.length) {
                 this.defaultValue = this.options[0].value;
             }
             this.set("value", this.defaultValue);
@@ -131,12 +144,62 @@ define([
             });
         },
 
-        loadGroups: function () {
+        loadDropZoneFolders: function () {
+            var context = this;
+            if (this._dropZoneTarget) {
+                FileSpray.FileList({
+                    request: {
+                        Netaddr: this._dropZoneTarget.machine.Netaddress,
+                        Path: this._dropZoneTarget.machine.Directory,
+                        OS: this._dropZoneTarget.machine.OS
+                    }
+                }).then(function (response) {
+                    if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
+                        var files = response.FileListResponse.files.PhysicalFileStruct;
+                        for (var i = 0; i < files.length; ++i) {
+                            if (files[i].isDir) {
+                                context.options.push({
+                                    label: files[i].name,
+                                    value: files[i].name
+                                });
+                            }
+                        }
+                        context._postLoad();
+                    }
+                });
+            }
+        },
+
+        loadClusterGroups: function () {
             var context = this;
             WsTopology.TpGroupQuery({
                 load: function (response) {
                     if (lang.exists("TpGroupQueryResponse.TpGroups.TpGroup", response)) {
                         var targetData = response.TpGroupQueryResponse.TpGroups.TpGroup;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            switch(targetData[i].Kind) {
+                                case "Thor":
+                                case "hthor":
+                                case "Roxie":
+                                    context.options.push({
+                                        label: targetData[i].Name,
+                                        value: targetData[i].Name
+                                    });
+                                break;
+                            }
+                        }
+                        context._postLoad();
+                    }
+                }
+            });
+        },
+
+        loadSprayTargets: function () {
+            var context = this;
+            FileSpray.GetSprayTargets({
+                load: function (response) {
+                    if (lang.exists("GetSprayTargetsResponse.GroupNodes.GroupNode", response)) {
+                        var targetData = response.GetSprayTargetsResponse.GroupNodes.GroupNode;
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].Name,
@@ -225,6 +288,43 @@ define([
                 });
             });
             context._postLoad();
+        },
+
+        loadLogs: function (params) {
+            var context = this;
+            this.set("options", []);
+            FileSpray.FileList({
+                request: {
+                    Mask: "*.log",
+                    Netaddr: params.params.Netaddress,
+                    OS: params.params.OS,
+                    Path: params.params.getLogDirectory()
+                }
+            }).then(function (response) {
+                if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
+                    var options = [];
+                    var targetData = response.FileListResponse.files.PhysicalFileStruct;
+                    var shortestLabelLen = 9999;
+                    var shortestLabel = "";
+                    for (var i = 0; i < targetData.length; ++i) {
+                        options.push({
+                            label: targetData[i].name,// + " " + targetData[i].filesize + " " + targetData[i].modifiedtime,
+                            value: targetData[i].name
+                        });
+                        if (shortestLabelLen > targetData[i].name.length) {
+                            shortestLabelLen = targetData[i].name.length;
+                            shortestLabel = targetData[i].name;
+                        }
+                    }
+                    options.sort(function (l, r) {
+                        return -l.label.localeCompare(r.label);
+                    });
+                    context.set("options", options);
+                    context.defaultValue = shortestLabel;
+                    context._value = shortestLabel;
+                }
+                context._postLoad();
+            });
         }
     });
 });

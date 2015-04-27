@@ -227,6 +227,8 @@ bool isSelectSortedTop(IHqlExpression * selectExpr)
     return false;
 }
 
+//---------------------------------------------------------------------------
+
 ITypeInfo * makeRowReferenceType(IHqlExpression * ds)
 {
     ITypeInfo * recordType = ds ? LINK(ds->queryRecordType()) : NULL;
@@ -452,4 +454,33 @@ bool mustInitializeField(IHqlExpression * field)
     if (hasLinkCountedModifier(field))
         return true;
     return false;
+}
+
+bool worthGeneratingRowAsSingleActivity(IHqlExpression * expr)
+{
+    loop
+    {
+        switch (expr->getOperator())
+        {
+        case no_left:
+        case no_right:
+        case no_activerow:
+        case no_createrow:
+        case no_getresult:
+            return true;
+        case no_select:
+            if (!isNewSelector(expr))
+                return true;
+            break;
+        case no_alias:
+        case no_projectrow:
+            break;
+        case no_if:
+            return worthGeneratingRowAsSingleActivity(expr->queryChild(1)) && worthGeneratingRowAsSingleActivity(expr->queryChild(2));
+        default:
+            //Do not generate no_getgraph result - better as separate activities
+            return false;
+        }
+        expr = expr->queryChild(0);
+    }
 }

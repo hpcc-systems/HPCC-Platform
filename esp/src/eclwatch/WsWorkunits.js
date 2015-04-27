@@ -127,6 +127,10 @@ define([
             });
             return all(requests);
         },
+        
+        WUListQueries: function (params) {
+            return ESPRequest.send("WsWorkunits", "WUListQueries", params);
+        },
 
         CreateQuerySetStore: function (options) {
             var store = new QuerySetStore(options);
@@ -230,12 +234,11 @@ define([
             return ESPRequest.send("WsWorkunits", "WUAction", {
                 request: request,
                 load: function (response) {
-                    arrayUtil.forEach(workunits, function (item, index) {
-                        if (item.refresh) { //  if action is delete then there will be no refresh
-                            item.refresh();
-                        }
-                    });
                     if (lang.exists("WUActionResponse.ActionResults.WUActionResult", response)) {
+                        var wuMap = {};
+                        arrayUtil.forEach(workunits, function (item, index) {
+                            wuMap[item.Wuid] = item;
+                        });
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
                             if (item.Result.indexOf("Failed:") === 0) {
                                 topic.publish("hpcc/brToaster", {
@@ -243,6 +246,14 @@ define([
                                     Source: "WsWorkunits.WUAction",
                                     Exceptions: [{Source: item.Action + " " + item.Wuid, Message: item.Result}]
                                 });
+                            } else {
+                                var wu = wuMap[item.Wuid];
+                                if (actionType === "delete" && item.Result === "Success") {
+                                    wu.set("StateID", 999);
+                                    wu.set("State", "deleted");
+                                } else if (wu.refresh) {
+                                    wu.refresh();
+                                }
                             }
                         });
                     }
@@ -259,12 +270,21 @@ define([
             });
         },
 
+        WUGetStats: function (params) {
+            return ESPRequest.send("WsWorkunits", "WUGetStats", params);
+        },
+
         //  Stub waiting for HPCC-10308
         visualisations: [
             { value: "DojoD3ScatterChart", label: "Scatter Chart" },
-            { value: "DojoD3BarChart", label: "Bar Chart" },
-            { value: "DojoD3PieChart", label: "Pie Chart" },
-            { value: "DojoD3DonutChart", label: "Donut Chart" },
+            { value: "DojoD32DChart C3_SCATTER", label: "Scatter C3 Chart" },
+            { value: "DojoD32DChart C3_PIE", label: "Pie Chart" },
+            { value: "DojoD32DChart C3_DONUT", label: "Donut Chart" },
+            { value: "DojoD32DChart C3_COLUMN", label: "Column Chart" },
+            { value: "DojoD32DChart C3_BAR", label: "Bar Chart" },
+            { value: "DojoD32DChart C3_LINE", label: "Line Chart" },
+            { value: "DojoD32DChart C3_STEP", label: "Step Chart" },
+            { value: "DojoD32DChart C3_AREA", label: "Area Chart" },
             { value: "DojoD3Choropleth", label: "Choropleth" },
             { value: "DojoD3CooccurrenceGraph", label: "Co-Occurrence Graph" },
             { value: "DojoD3ForceDirectedGraph", label: "Force Directed Graph" },

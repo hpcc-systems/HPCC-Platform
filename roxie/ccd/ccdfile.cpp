@@ -335,14 +335,14 @@ public:
             {
                 EXCLOG(MCoperatorError, E, "Read error");
                 E->Release();
-                DBGLOG("Failed to read length %d offset %"I64F"x file %s", len, pos, sources.item(currentIdx).queryFilename());
+                DBGLOG("Failed to read length %d offset %" I64F "x file %s", len, pos, sources.item(currentIdx).queryFilename());
                 currentIdx++;
                 setFailure();
             }
             _checkOpen();
             tries++;
             if (tries == MAX_READ_RETRIES)
-                throw MakeStringException(ROXIE_FILE_ERROR, "Failed to read length %d offset %"I64F"x file %s after %d attempts", len, pos, sources.item(currentIdx).queryFilename(), tries);
+                throw MakeStringException(ROXIE_FILE_ERROR, "Failed to read length %d offset %" I64F "x file %s after %d attempts", len, pos, sources.item(currentIdx).queryFilename(), tries);
         }
     }
 
@@ -467,7 +467,7 @@ public:
     virtual offset_t getSize() { return fileSize; }
     virtual CDateTime *queryDateTime() { return &fileDate; }
 
-    static int compareAccess(IInterface **L, IInterface **R)
+    static int compareAccess(IInterface * const *L, IInterface * const *R)
     {
         ILazyFileIO *LL = (ILazyFileIO *) *L;
         ILazyFileIO *RR = (ILazyFileIO *) *R;
@@ -790,7 +790,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         if ( (fileSize + minFreeDiskSpace) > freeDiskSpace)
         {
             StringBuffer err;
-            err.appendf("Insufficient disk space.  File %s needs %"I64F"d bytes, but only %"I64F"d remains, and %"I64F"d is needed as a reserve", targetFilename, sourceFile->size(), freeDiskSpace, minFreeDiskSpace);
+            err.appendf("Insufficient disk space.  File %s needs %" I64F "d bytes, but only %" I64F "d remains, and %" I64F "d is needed as a reserve", targetFilename, sourceFile->size(), freeDiskSpace, minFreeDiskSpace);
             IException *E = MakeStringException(ROXIE_DISKSPACE_ERROR, "%s", err.str());
             EXCLOG(MCoperatorError, E);
             E->Release();
@@ -989,7 +989,7 @@ public:
                         break;
                     if (todo.ordinality())
                     {
-                        ILazyFileIO *popped = &todo.pop();
+                        ILazyFileIO *popped = &todo.popGet();
                         if (popped->isAlive())
                         {
                             next.set(popped);
@@ -1183,7 +1183,7 @@ public:
                                 break;
                         }
                     }
-                    throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %"I64F"d %"I64F"d  Date = %s  %s", lfn, dfsSize, f->getSize(), modifiedDt.str(), fileDt.str());
+                    throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %" I64F "d %" I64F "d  Date = %s  %s", lfn, dfsSize, f->getSize(), modifiedDt.str(), fileDt.str());
                 }
                 else
                     return f.getClear();
@@ -1448,7 +1448,7 @@ public:
         if (totalSize == (offset_t)-1)
             totalSize = map[numParts-1].top;
         else if (totalSize != map[numParts-1].top)
-            throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file part sizes do not add up to expected total size (%"I64F"d vs %"I64F"d", map[numParts-1].top, totalSize);
+            throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file part sizes do not add up to expected total size (%" I64F "d vs %" I64F "d", map[numParts-1].top, totalSize);
     }
 
     CFilePartMap(const char *_fileName, IFileDescriptor &fdesc)
@@ -1479,7 +1479,7 @@ public:
         if (totalSize == (offset_t)-1)
             totalSize = map[numParts-1].top;
         else if (totalSize != map[numParts-1].top)
-            throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file part sizes do not add up to expected total size (%"I64F"d vs %"I64F"d", map[numParts-1].top, totalSize);
+            throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file part sizes do not add up to expected total size (%" I64F "d vs %" I64F "d", map[numParts-1].top, totalSize);
     }
 
     ~CFilePartMap()
@@ -1491,7 +1491,7 @@ public:
     {
         FilePartMapElement *part = (FilePartMapElement *) bsearch(&pos, map, numParts, sizeof(map[0]), compareParts);
         if (!part)
-            throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file position %"I64F"d in file %s out of range (max offset permitted is %"I64F"d)", pos, fileName.sget(), totalSize);
+            throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file position %" I64F "d in file %s out of range (max offset permitted is %" I64F "d)", pos, fileName.sget(), totalSize);
         return (part-map)+1;
     }
     virtual unsigned getNumParts() const
@@ -1565,7 +1565,7 @@ public:
     }
 
     virtual bool IsShared() const { return CInterface::IsShared(); };
-    PointerIArrayOf<IFileIO> files;
+    IPointerArrayOf<IFileIO> files;
     StringArray filenames;
     Int64Array bases;
     unsigned valid;
@@ -1655,7 +1655,7 @@ public:
 
 template <class X> class PerChannelCacheOf
 {
-    PointerIArrayOf<X> cache;
+    IPointerArrayOf<X> cache;
     IntArray channels;
 public:
     void set(X *value, unsigned channel)
@@ -1691,9 +1691,9 @@ protected:
     bool isSuper;
 
     StringArray subNames;
-    PointerIArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
-    PointerIArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
-    PointerIArrayOf<IDefRecordMeta> diskMeta;
+    IPointerArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
+    IPointerArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
+    IPointerArrayOf<IDefRecordMeta> diskMeta;
     IArrayOf<IDistributedFile> subDFiles;  // To make sure subfiles get locked too
     IArrayOf<IResolvedFile> subRFiles;  // To make sure subfiles get locked too
 
@@ -2374,7 +2374,7 @@ public:
         ROQ->removePendingCallback(callback);
     }
 private:
-    void deserializeFilePart(MemoryBuffer &serverData, PointerIArrayOf<IFileDescriptor> &files, unsigned fileNo, bool remote)
+    void deserializeFilePart(MemoryBuffer &serverData, IPointerArrayOf<IFileDescriptor> &files, unsigned fileNo, bool remote)
     {
         IArrayOf<IPartDescriptor> parts;
         deserializePartFileDescriptors(serverData, parts);
@@ -2734,7 +2734,8 @@ protected:
 
         f = open("test.buddy", _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
         val = 2;
-        write(f, &val, sizeof(int));
+        ssize_t numwritten = write(f, &val, sizeof(int));
+        CPPUNIT_ASSERT(numwritten == sizeof(int));
         close(f);
 
         // Reading it should still read 1...
@@ -2753,7 +2754,8 @@ protected:
         // And the data in the file should be 2
         f = open("test.local", _O_RDONLY);
         val = 0;
-        read(f, &val, sizeof(int));
+        ssize_t numread = read(f, &val, sizeof(int));
+        CPPUNIT_ASSERT(numread == sizeof(int));
         close(f);
         CPPUNIT_ASSERT(val==2);
 

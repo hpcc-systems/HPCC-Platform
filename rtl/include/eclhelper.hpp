@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      155
-#define MIN_ACTIVITY_INTERFACE_VERSION  155             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      157
+#define MIN_ACTIVITY_INTERFACE_VERSION  157             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -161,8 +161,8 @@ public:
     virtual void outputString(unsigned len, const char *field, const char *fieldname) = 0;
     virtual void outputBool(bool field, const char *fieldname) = 0;
     virtual void outputData(unsigned len, const void *field, const char *fieldname) = 0;
-    virtual void outputInt(__int64 field, const char *fieldname) = 0;
-    virtual void outputUInt(unsigned __int64 field, const char *fieldname) = 0;
+    virtual void outputInt(__int64 field, unsigned size, const char *fieldname) = 0;
+    virtual void outputUInt(unsigned __int64 field, unsigned size, const char *fieldname) = 0;
     virtual void outputReal(double field, const char *fieldname) = 0;
     virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) = 0;
     virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) = 0;
@@ -180,7 +180,6 @@ public:
     virtual void outputXmlns(const char *name, const char *uri) = 0;
     inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
 };
-
 
 interface IFieldProcessor : public IInterface
 {
@@ -381,11 +380,13 @@ public:
 //Core struct used for representing meta for a field.
 struct RtlFieldInfo
 {
-    inline RtlFieldInfo(IAtom * _name, const char * _xpath, const RtlTypeInfo * _type) : name(_name), xpath(_xpath), type(_type) {}
+    inline RtlFieldInfo(IAtom * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer = NULL)
+    : name(_name), xpath(_xpath), type(_type), initializer((const byte *) _initializer) {}
 
     IAtom * name;
     const char * xpath;
     const RtlTypeInfo * type;
+    const byte *initializer;
 
     inline bool isFixedSize() const 
     { 
@@ -568,12 +569,12 @@ interface ICodeContext : public IResourceContext
     virtual void setResultBool(const char *name, unsigned sequence, bool value) = 0;
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) = 0;
     virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0; 
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 value) = 0;
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) = 0;
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) = 0;
     virtual void setResultReal(const char * stepname, unsigned sequence, double value) = 0;
     virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) = 0;
     virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) = 0;
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value) = 0;
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) = 0;
     virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) = 0;
     virtual void setResultVarString(const char * name, unsigned sequence, const char * value) = 0;
     virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) = 0;
@@ -641,6 +642,10 @@ interface ICodeContext : public IResourceContext
     virtual IEngineContext *queryEngineContext() = 0;
     virtual char *getDaliServers() = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
+
+    virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) = 0;
 };
 
 
@@ -914,6 +919,8 @@ enum ThorActivityKind
     TAKunknowndenormalizegroup2,
     TAKunknowndenormalizegroup3,
     TAKlastdenormalizegroup,
+    TAKjsonwrite,
+    TAKjsonread,
 
     TAKlast
 };
@@ -1196,7 +1203,7 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual const char * queryRecordECL() = 0;
     virtual unsigned getFlags() = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * src, IBlobCreator * blobs, unsigned __int64 & filepos) = 0;   //NB: returns size
-    virtual const char * getDatasetName() = 0;
+    virtual const char * getDatasetName() = 0;   // Never used, left in to preserve VMT layout only
     virtual const char * getDistributeIndexName() = 0;
     virtual unsigned getKeyedSize() = 0;
     virtual unsigned getExpiryDays() = 0;
@@ -1566,6 +1573,7 @@ enum
 
     TAFstable           = 0x0002,
     TAFunstable         = 0x0004,
+    TAFspill            = 0x0008,
 };
 
 struct IHThorSortArg : public IHThorArg
@@ -1635,7 +1643,6 @@ enum {
     JFmanylookup                 = 0x00008000,
     JFparallel                   = 0x00010000,
     JFsequential                 = 0x00020000,
-    JFkeepsorted                 = 0x00040000,
     JFcountmatchabortlimit       = 0x00080000,
     JFreorderable                = 0x00100000,
     JFtransformmatchesleft       = 0x00200000,

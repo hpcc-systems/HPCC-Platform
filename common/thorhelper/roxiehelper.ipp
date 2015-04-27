@@ -57,21 +57,38 @@ enum TracingCategory
 {
     LOG_TRACING,
     LOG_ERROR,
-    LOG_TIMING,
-    LOG_STATISTICS,
     LOG_STATVALUES,
+    LOG_CHILDSTATS,
+    LOG_CHILDCOUNT,
 };
 
 class LogItem;
 interface IRoxieContextLogger : extends IContextLogger
 {
+    // Override base interface with versions that add prefix
+    // We could consider moving some or all of these down into IContextLogger
+    virtual void CTXLOGva(const char *format, va_list args) const
+    {
+        StringBuffer text, prefix;
+        getLogPrefix(prefix);
+        text.valist_appendf(format, args);
+        CTXLOGa(LOG_TRACING, prefix.str(), text.str());
+    }
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
+    {
+        StringBuffer prefix;
+        getLogPrefix(prefix);
+        CTXLOGaeva(E, file, line, prefix.str(), format, args);
+    }
+
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const = 0;
     virtual bool isIntercepted() const = 0;
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const = 0;
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 6, 7))) = 0;
+    void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 6, 7)));
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const = 0;
     virtual void CTXLOGl(LogItem *) const = 0;
     virtual bool isBlind() const = 0;
+    virtual const CRuntimeStatisticCollection &queryStats() const = 0;
 };
 
 //===================================================================================

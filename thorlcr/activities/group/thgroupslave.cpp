@@ -68,7 +68,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ActPrintLog(rolloverEnabled ? "GROUP: is global" : "GROUP: is local");
         eogNext = prevEog = eof = false;
         if (rolloverEnabled)
@@ -113,7 +113,7 @@ public:
                 }
             }
             writer.clear();
-            ActPrintLog("GROUP: %"RCPF"d records to send", collector->numRows());
+            ActPrintLog("GROUP: %" RCPF "d records to send", collector->numRows());
             Owned<IRowStream> strm = collector->getStream();
             rowServer.setown(createRowServer(this, strm, container.queryJob().queryJobComm(), mpTag));
         }
@@ -132,7 +132,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eogNext || eof)
         {
             eogNext = false;

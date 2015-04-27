@@ -140,7 +140,17 @@ void CThorCodeContextBase::getRowXML(size32_t & lenResult, char * & result, IOut
     convertRowToXML(lenResult, result, info, row, flags);
 }
 
+void CThorCodeContextBase::getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+{
+    convertRowToJSON(lenResult, result, info, row, flags);
+}
+
 const void * CThorCodeContextBase::fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
 {
     return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+}
+
+const void * CThorCodeContextBase::fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    return createRowFromJson(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
 }

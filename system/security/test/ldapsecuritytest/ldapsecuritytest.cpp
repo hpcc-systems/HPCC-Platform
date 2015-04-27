@@ -143,7 +143,7 @@ public:
                 access = m_secmgr->authorizeEx(m_rtype, *usr, m_resource.get());
             }
             time(&stop);
-            int span = stop - start;
+            int span = (int)(stop - start);
             total += span;
             if(mint == -1 || mint > span)
                 mint = span;

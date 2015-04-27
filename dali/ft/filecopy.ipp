@@ -242,6 +242,8 @@ protected:
     void insertHeaders();
     bool isAborting();
     void locateXmlHeader(IFileIO * io, unsigned headerSize, offset_t & xmlHeaderLength, offset_t & xmlFooterLength);
+    void locateJsonHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength);
+    void locateContentHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength);
     bool needToCalcOutput();
     unsigned numParallelConnections(unsigned limit);
     void performTransfer();

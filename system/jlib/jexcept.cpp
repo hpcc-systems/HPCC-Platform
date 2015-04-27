@@ -72,53 +72,53 @@ protected:
 };  
 
 
-IException *MakeStringExceptionVA(int code, const char *format, va_list args)
+IException *makeStringExceptionVA(int code, const char *format, va_list args)
 {
     StringBuffer eStr;
     eStr.limited_valist_appendf(1024, format, args);
     return new StringException(code, eStr.str());
 }
 
-IException *MakeStringException(int code,const char *format, ...)
+IException *makeStringExceptionV(int code,const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IException *ret = MakeStringExceptionVA(code, format, args);
+    IException *ret = makeStringExceptionVA(code, format, args);
     va_end(args);
     return ret;
 }
 
-IException jlib_decl *MakeStringExceptionDirect(int code,const char *why)
+IException jlib_decl *makeStringException(int code,const char *why)
 {
     return new StringException(code,why);
 }
 
-IException *MakeStringExceptionVA(MessageAudience aud, int code, const char *format, va_list args)
+IException *makeStringExceptionVA(MessageAudience aud, int code, const char *format, va_list args)
 {
     StringBuffer eStr;
     eStr.limited_valist_appendf(1024, format, args);
     return new StringException(code, eStr.str(), aud);
 }
 
-IException *MakeStringException(MessageAudience aud, int code, const char *format, ...)
+IException *makeStringExceptionV(MessageAudience aud, int code, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IException *ret = MakeStringExceptionVA(aud, code, format, args);
+    IException *ret = makeStringExceptionVA(aud, code, format, args);
     va_end(args);
     return ret;
 }
 
-IException jlib_decl *MakeStringExceptionDirect(MessageAudience aud,int code,const char *why)
+IException jlib_decl *makeStringException(MessageAudience aud,int code,const char *why)
 {
     return new StringException(code,why,aud);
 }
 
-void jlib_decl ThrowStringException(int code,const char *format, ...)
+void jlib_decl throwStringExceptionV(int code,const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IException *ret = MakeStringExceptionVA(code, format, args);
+    IException *ret = makeStringExceptionVA(code, format, args);
     va_end(args);
     throw ret;
 }
@@ -146,12 +146,17 @@ protected:
 };  
 
 
-IOSException *MakeOsException(int code)
+IOSException *makeOsException(int code)
 {
     return new OsException(code);
 }
 
-IOSException *MakeOsException(int code, const char *msg, ...)
+IOSException *makeOsException(int code, const char *msg)
+{
+    return new OsException(code, msg);
+}
+
+IOSException *makeOsExceptionV(int code, const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -188,12 +193,17 @@ protected:
 };  
 
 
-IErrnoException *MakeErrnoException(int errn)
+IErrnoException *makeErrnoException(int errn, const char *msg)
 {
-    return new ErrnoException(errn);
+    return new ErrnoException(errn, msg);
 }
 
-IErrnoException *MakeErrnoException(int errn, const char *msg, ...)
+IErrnoException *makeErrnoException(const char *msg)
+{
+    return new ErrnoException(-1, msg);
+}
+
+IErrnoException *makeErrnoExceptionV(int errn, const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -203,7 +213,7 @@ IErrnoException *MakeErrnoException(int errn, const char *msg, ...)
     return new ErrnoException(errn, eStr.str());
 }
 
-IErrnoException *MakeErrnoException(const char *msg, ...)
+IErrnoException *makeErrnoExceptionV(const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -213,12 +223,12 @@ IErrnoException *MakeErrnoException(const char *msg, ...)
     return new ErrnoException(-1, eStr.str());
 }
 
-IErrnoException *MakeErrnoException(MessageAudience aud, int errn)
+IErrnoException *makeErrnoException(MessageAudience aud, int errn, const char *msg)
 {
-    return new ErrnoException(errn, "", aud);
+    return new ErrnoException(errn, msg, aud);
 }
 
-IErrnoException *MakeErrnoException(MessageAudience aud, int errn, const char *msg, ...)
+IErrnoException *makeErrnoExceptionV(MessageAudience aud, int errn, const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -228,7 +238,7 @@ IErrnoException *MakeErrnoException(MessageAudience aud, int errn, const char *m
     return new ErrnoException(errn, eStr.str(), aud);
 }
 
-IErrnoException *MakeErrnoException(MessageAudience aud, const char *msg, ...)
+IErrnoException *makeErrnoExceptionV(MessageAudience aud, const char *msg, ...)
 {
     StringBuffer eStr;
     va_list args;
@@ -238,7 +248,7 @@ IErrnoException *MakeErrnoException(MessageAudience aud, const char *msg, ...)
     return new ErrnoException(-1, eStr.str(), aud);
 }
 
-const char* SerializeMessageAudience(MessageAudience ma)
+const char* serializeMessageAudience(MessageAudience ma)
 {
     const char* ret;
     switch(ma)
@@ -257,7 +267,7 @@ const char* SerializeMessageAudience(MessageAudience ma)
     return ret;
 }
 
-MessageAudience DeserializeMessageAudience(const char* text)
+MessageAudience deserializeMessageAudience(const char* text)
 {
     MessageAudience ma = MSGAUD_unknown;
     if (text && *text)
@@ -334,7 +344,7 @@ public:
                 StringBuffer msg;
                 msg.appendf("[%s] ",source);
                 e.errorMessage(msg);
-                array_.append(*MakeStringException(e.errorAudience(), e.errorCode(), "%s", msg.str()));
+                array_.append(*makeStringExceptionV(e.errorAudience(), e.errorCode(), "%s", msg.str()));
             }
             else
                 array_.append(*LINK(&e));
@@ -368,7 +378,7 @@ public:
             buffer.appendf("<Code>%d</Code>", exception.errorCode());
             
             if (indent) buffer.append("\n\t\t");
-            buffer.appendf("<Audience>%s</Audience>", SerializeMessageAudience( exception.errorAudience() ));
+            buffer.appendf("<Audience>%s</Audience>", serializeMessageAudience( exception.errorAudience() ));
             
             if (simplified)
             {
@@ -402,7 +412,7 @@ public:
             xml = wrapper.appendf("<Exceptions>%s</Exceptions>", xml).str();
         Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml);
         if (!pTree)
-            throw MakeStringException(-1, "Failed to deserialize IMultiException!");
+            throw makeStringException(-1, "Failed to deserialize IMultiException!");
         Owned<IPropertyTreeIterator> i = pTree->getElements("Exception");
         
         if (pTree->hasProp("Source"))
@@ -421,10 +431,10 @@ public:
         {
             IPropertyTree* pNode = &i->query();
             IException* pException = 
-                MakeStringExceptionDirect(
-                DeserializeMessageAudience(pNode->queryProp("Audience")), 
-                pNode->getPropInt("Code", -1), 
-                pNode->queryProp("Message"));
+                makeStringException(
+                   deserializeMessageAudience(pNode->queryProp("Audience")),
+                   pNode->getPropInt("Code", -1),
+                   pNode->queryProp("Message"));
             array_.append(*pException);
         }
     }   
@@ -461,7 +471,7 @@ private:
     mutable Mutex        m_mutex;
 };
 
-IMultiException *MakeMultiException(const char* source/*=NULL*/)
+IMultiException *makeMultiException(const char* source/*=NULL*/)
 {
     return new CMultiException(source);
 }
@@ -487,9 +497,21 @@ void userBreakpoint()
 #endif
 }
 
-void RaiseAssertException(const char *assertion, const char *file, unsigned line)
+void throwUnexpectedException(const char * file, unsigned line)
 {
-    PrintStackReport();
+    printStackReport();
+    throw makeStringExceptionV(9999, "Internal Error at %s(%d)", file, line);
+}
+
+void throwUnexpectedException(const char * where, const char * file, unsigned line)
+{
+    printStackReport();
+    throw makeStringExceptionV(9999, "Internal Error '%s' at %s(%d)", where, file, line);
+}
+
+void raiseAssertException(const char *assertion, const char *file, unsigned line)
+{
+    printStackReport();
     StringBuffer s;
     s.append("assert(");
     s.append(assertion);
@@ -515,12 +537,12 @@ void RaiseAssertException(const char *assertion, const char *file, unsigned line
 #endif
 #endif
 
-    throw MakeStringExceptionDirect(3000, s.toCharArray()); // 3000: internal error
+    throw makeStringException(3000, s.toCharArray()); // 3000: internal error
 }
 
-void RaiseAssertCore(const char *assertion, const char *file, unsigned line)
+void raiseAssertCore(const char *assertion, const char *file, unsigned line)
 {
-    PrintStackReport();
+    printStackReport();
     StringBuffer s;
     s.append("assert(");
     s.append(assertion);
@@ -976,35 +998,35 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
 #endif
     
     excsignal = signum;
-    s.appendf("SIG: %s(%d), accessing "I64X", IP="I64X, strsignal(signum),signum, (__int64)info->si_addr, ip);
+    s.appendf("SIG: %s(%d), accessing " I64X ", IP=" I64X, strsignal(signum),signum, (__int64)info->si_addr, ip);
     
     PROGLOG("================================================");
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
-    PROGLOG("Fault IP:  "I64X"", ip);
-    PROGLOG("Accessing: "I64X"", (unsigned __int64) info->si_addr);
+    PROGLOG("Fault IP:  " I64X "", ip);
+    PROGLOG("Accessing: " I64X "", (unsigned __int64) info->si_addr);
     PROGLOG("Registers:" );
-    PROGLOG("EAX:"I64X"  EBX:"I64X"  ECX:"I64X"  EDX:"I64X"  ESI:"I64X"  EDI:"I64X"",
+    PROGLOG("EAX:" I64X "  EBX:" I64X "  ECX:" I64X "  EDX:" I64X "  ESI:" I64X "  EDI:" I64X "",
 #ifdef __APPLE__
         (unsigned __int64) uc->uc_mcontext->__ss.__rax, (unsigned __int64)uc->uc_mcontext->__ss.__rbx, 
         (unsigned __int64) uc->uc_mcontext->__ss.__rcx, (unsigned __int64)uc->uc_mcontext->__ss.__rdx, 
         (unsigned __int64) uc->uc_mcontext->__ss.__rsi, (unsigned __int64)uc->uc_mcontext->__ss.__rdi);
-    PROGLOG( "CS:EIP:%04X:"I64X"", ((unsigned) uc->uc_mcontext->__ss.__cs)&0xffff, ip );
-    PROGLOG( "   ESP:"I64X"  EBP:"I64X"", sp, (unsigned __int64) uc->uc_mcontext->__ss.__rbp );  
+    PROGLOG( "CS:EIP:%04X:" I64X "", ((unsigned) uc->uc_mcontext->__ss.__cs)&0xffff, ip );
+    PROGLOG( "   ESP:" I64X "  EBP:" I64X "", sp, (unsigned __int64) uc->uc_mcontext->__ss.__rbp );
 #else
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RAX], (unsigned __int64)uc->uc_mcontext.gregs[REG_RBX], 
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RCX], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDX], 
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RSI], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDI] );
-    PROGLOG( "CS:EIP:%04X:"I64X"", ((unsigned) uc->uc_mcontext.gregs[REG_CSGSFS])&0xffff, ip );
-    PROGLOG( "   ESP:"I64X"  EBP:"I64X"", sp, (unsigned __int64) uc->uc_mcontext.gregs[REG_RBP] );
+    PROGLOG( "CS:EIP:%04X:" I64X "", ((unsigned) uc->uc_mcontext.gregs[REG_CSGSFS])&0xffff, ip );
+    PROGLOG( "   ESP:" I64X "  EBP:" I64X "", sp, (unsigned __int64) uc->uc_mcontext.gregs[REG_RBP] );
 #endif
     
     for (unsigned i=0;i<8;i++) {
         StringBuffer s;
-        s.appendf("Stack["I64X"]:",sp);
+        s.appendf("Stack[" I64X "]:",sp);
         for (unsigned j=0;j<8;j++) {
             __int64 v = *(size_t *)sp;
             sp += sizeof(unsigned);
-            s.appendf(" "I64X"",v);
+            s.appendf(" " I64X "",v);
         }
         PROGLOG( "%s",s.str());
     }
@@ -1152,7 +1174,7 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
 #endif
 
 #ifdef _EXECINFO_H
-    PrintStackReport();
+    printStackReport();
 #endif  
     StringBuffer threadlist;
     PROGLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
@@ -1211,7 +1233,7 @@ void jlib_decl *setSEHtoExceptionHandler(IExceptionHandler *handler)
     return ret;
 }
 
-void jlib_decl EnableSEHtoExceptionMapping()
+void jlib_decl enableSEHtoExceptionMapping()
 {
 #ifdef NOSEH
     return;
@@ -1236,7 +1258,7 @@ void jlib_decl EnableSEHtoExceptionMapping()
 }
 
 
-void  jlib_decl DisableSEHtoExceptionMapping()
+void  jlib_decl disableSEHtoExceptionMapping()
 {
 #ifdef NOSEH
     return;
@@ -1301,7 +1323,7 @@ IException * deserializeException(MemoryBuffer & in)
     StringAttr text;
     in.read(code);
     in.read(text);
-    return MakeStringException(code, "%s", text.get());
+    return makeStringExceptionV(code, "%s", text.get());
 }
 
 void jlib_decl serializeException(IException * e, MemoryBuffer & out)
@@ -1318,7 +1340,7 @@ void jlib_decl serializeException(IException * e, MemoryBuffer & out)
 }
 
 
-void PrintStackReport()
+void printStackReport()
 {
 #ifdef _WIN32
     unsigned onstack=1234;
@@ -1335,167 +1357,67 @@ void PrintStackReport()
     queryLogMsgManager()->flushQueue(10*1000);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
-#ifdef SIGNAL_TO_EXCEPTION
-
-/*static*/jmp_buf SignalToException::s_jmpbuf;
-/*static*/bool SignalToException::s_bUnixTrapHandlerSet = false;
-
-SignalToException::SignalToException()
-{ 
-    if (!s_bUnixTrapHandlerSet)
-        setUnixTrapHandler();
-    
-    memcpy(&m_old_jmpbuf,&s_jmpbuf,sizeof(jmp_buf)); 
-}
-
-SignalToException::~SignalToException()  
-{ 
-    memcpy(&s_jmpbuf,&m_old_jmpbuf,sizeof(jmp_buf)); 
-}
-
-
-/*static*/
-void SignalToException::UnixTrapHandler(int sig)
+class jlib_decl CError : public CInterfaceOf<IError>
 {
-    longjmp(SignalToException::s_jmpbuf, sig);
-}
-
-/*static*/
-void SignalToException::setUnixTrapHandler()
-{
-    struct sigaction action;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-    action.sa_handler = UnixTrapHandler;
-    
-    int signals[] = {SIGSEGV, SIGILL, SIGFPE, SIGPIPE, SIGSYS};
-    for (int i = 0; i < sizeof(signals)/sizeof(signals[0]); i++)
-        if ( sigaction(signals[i], &action, NULL) == -1)
-            perror("sigaction failed while setting UnixTrapHandler");
-        
-    s_bUnixTrapHandlerSet = true;
-}
-
-/*static*/
-void SignalToException::processSetJmpResult(int res)
-{
-    if (res != 0) 
-    {
-        StringBuffer buf("throwing SIG");
-        switch (res)
-        {
-        case SIGSEGV: buf.append("SEGV"); 
-            break;
-        case SIGILL : buf.append("ILL" ); 
-            break;
-        case SIGFPE : buf.append("FPE" ); 
-            break;
-        case SIGPIPE: buf.append("PIPE"); 
-            break;
-        case SIGSYS : buf.append("SYS" ); 
-            break;
-        default:      buf.append("NAL ").append(res); 
-            break;
-        }
-        buf.append(" as exception");
-        throw MakeStringException(res, "%s", buf.toCharArray());
-    }
-}
-
-#ifdef TEST_SIGNAL_TO_EXCEPTION
-
-int main(int argc, char**argv)
-{
-    
-    TRY 
-    {
-        TRY 
-        {
-            //generate SIGSEGV
-            int* p=0;
-            *p = 0;
-            cout << "Next stmt in inner block!" << endl;
-        }
-        CATCH(...)
-        {
-            cout << "inner catch (...)" << endl;
-        }
-        ENDCATCH;
-        
-        //generate SIGFPE
-        int p=0;
-        int q=2/p;
-        cout << "Next stmt in outer block!" << endl;
-    }
-    CATCH (char*)
-    {
-    }
-    AND_CATCH(...)
-    {
-        cout << "outer catch (...)" << endl;
-    }
-    END_CATCH
-        
-    return 0;
-}
-#endif //TEST_SIGNAL_TO_EXCEPTION
-#endif //SIGNAL_TO_EXCEPTION
-
-#ifdef _TEST
-
-void raise1()
-{
-    throw MakeStringException(-1,"test 1");
-}
-
-void raise2()
-{
-    throw MakeOsException(3);
-}
-
-class DefaultExceptionHandler
-{
-    unexpected_handler old;
 public:
-    static void handler()
-    {
-        try {
-            throw;
-        }
-        catch (IException *e) {
-            StringBuffer s;
-            e->errorMessage(s);
-            printf("Unhandled Exception (%d): %s\n",e->errorCode(),(const char *)s.toCharArray());
-            e->Release();
-        }   
-    }
-    DefaultExceptionHandler()  { old = set_terminate(handler); }
-    ~DefaultExceptionHandler() { set_terminate(old); }
-} _DefaultExceptionHandler;
+    CError(WarnErrorCategory _category,ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position);
 
-int main()
+    virtual int             errorCode() const { return no; }
+    virtual StringBuffer &  errorMessage(StringBuffer & ret) const { return ret.append(msg); }
+    virtual MessageAudience errorAudience() const { return MSGAUD_user; }
+    virtual const char* getFilename() const { return filename; }
+    virtual WarnErrorCategory getCategory() const { return category; }
+    virtual int getLine() const { return lineno; }
+    virtual int getColumn() const { return column; }
+    virtual int getPosition() const { return position; }
+    virtual StringBuffer& toString(StringBuffer&) const;
+    virtual ErrorSeverity getSeverity() const { return severity; }
+    virtual IError * cloneSetSeverity(ErrorSeverity _severity) const;
+
+protected:
+    ErrorSeverity severity;
+    WarnErrorCategory category;
+    int no;
+    StringAttr msg;
+    StringAttr filename;
+    int lineno;
+    int column;
+    int position;
+};
+
+CError::CError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position):
+  category(_category),severity(_severity), msg(_msg), filename(_filename)
 {
-    try {
-        raise1();
-    }
-    catch (IException *e) {
-        StringBuffer s;
-        e->errorMessage(s);
-        printf("exception %d '%s'\n",e->errorCode(),(const char *)s.toCharArray());
-        e->Release();
-    }
-    try {
-        raise2();
-    }
-    catch (IException *e) {
-        StringBuffer s;
-        e->errorMessage(s);
-        printf("exception %d '%s'\n",e->errorCode(),(const char *)s.toCharArray());
-        e->Release();
-    }
-    raise1();
-    return 0;
+    no = _no;
+    lineno = _lineno;
+    column = _column;
+    position = _position;
 }
 
-#endif
+
+StringBuffer& CError::toString(StringBuffer& buf) const
+{
+    buf.append(filename);
+
+    if(lineno && column)
+        buf.append('(').append(lineno).append(',').append(column).append(')');
+    buf.append(" : ");
+
+    buf.append(no).append(": ").append(msg);
+    return buf;
+}
+
+IError * CError::cloneSetSeverity(ErrorSeverity newSeverity) const
+{
+    return new CError(category, newSeverity,
+                         errorCode(), msg, filename,
+                         getLine(), getColumn(), getPosition());
+}
+
+IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos)
+{
+    return new CError(category,severity,errNo,msg,filename,lineno,column,pos);
+}
+

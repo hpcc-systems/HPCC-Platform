@@ -563,6 +563,8 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 payload += 4;
                 char *str;
 
+                pHttpHelper->setUrlPath(header);
+
                 // capture authentication token
                 if ((str = strstr(header, "Authorization: Basic ")) != NULL)
                     pHttpHelper->setAuthToken(str+21);
@@ -632,21 +634,22 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupF
     assertex(contentHead.length()==0 && contentTail.length()==0);
     if (mlFmt==MarkupFmt_JSON)
     {
-        contentHead.append("{");
-        contentTail.append("}");
+        contentHead.set("{");
+        contentTail.set("}");
     }
     else
     {
-        contentHead.append(
+        StringAttrBuilder headText(contentHead), tailText(contentTail);
+        headText.append(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
             "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
             "<soap:Body>");
         if (arrayMode)
         {
-            contentHead.append("<").append(queryName).append("ResponseArray>");
-            contentTail.append("</").append(queryName).append("ResponseArray>");
+            headText.append("<").append(queryName).append("ResponseArray>");
+            tailText.append("</").append(queryName).append("ResponseArray>");
         }
-        contentTail.append("</soap:Body></soap:Envelope>");
+        tailText.append("</soap:Body></soap:Envelope>");
     }
 }
 
@@ -905,7 +908,7 @@ void FlushingStringBuffer::encodeData(const void *data, unsigned len)
     else
     {
         const byte *field = (const byte *) data;
-        for (int i = 0; i < len; i++)
+        for (unsigned i = 0; i < len; i++)
         {
             append(hexchar[field[i] >> 4]);
             append(hexchar[field[i] & 0x0f]);
@@ -1123,6 +1126,17 @@ void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence
     }
 }
 
+void FlushingStringBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    s.append(value);
+}
+void FlushingStringBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    s.append(value);
+}
+
 void FlushingStringBuffer::incrementRowCount()
 {
     CriticalBlock b(crit);
@@ -1187,6 +1201,25 @@ void FlushingJsonBuffer::startScalar(const char *resultName, unsigned sequence)
         tail.set("}]}");
     }
 }
+
+void FlushingJsonBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    if (size < 7) //JavaScript only supports 53 significant bits
+        s.append(value);
+    else
+        s.append('"').append(value).append('"');
+}
+
+void FlushingJsonBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
+{
+    startScalar(resultName, sequence);
+    if (size < 7) //JavaScript doesn't support unsigned, and only supports 53 significant bits
+        s.append(value);
+    else
+        s.append('"').append(value).append('"');
+}
+
 //=====================================================================================================
 
 ClusterWriteHandler::ClusterWriteHandler(char const * _logicalName, char const * _activityType)
@@ -1459,10 +1492,42 @@ StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
     return out;
 }
 
-StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
+static const char *skipLfnForeign(const char *lfn)
+{
+    // NOTE: The leading ~ and any leading spaces have already been stripped at this point
+    const char *finger = lfn;
+    if (strnicmp(finger, "foreign", 7)==0)
+    {
+        finger += 7;
+        while (*finger == ' ')
+            finger++;
+        if (finger[0] == ':' && finger[1] == ':')
+        {
+            // foreign scope - need to strip off the ip and port (i.e. from here to the next ::)
+            finger += 2;  // skip ::
+            finger = strstr(finger, "::");
+            if (finger)
+            {
+                finger += 2;
+                while (*finger == ' ')
+                    finger++;
+                return finger;
+            }
+        }
+    }
+    return lfn;
+}
+
+StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix)
 {
     if (fname[0]=='~')
-        logicalName.append(fname+1);
+    {
+        while (*fname=='~' || *fname==' ')
+            fname++;
+        if (ignoreForeignPrefix)
+            fname = skipLfnForeign(fname);
+        logicalName.append(fname);
+    }
     else if (resolveLocally)
     {
         StringBuffer sb(fname);
@@ -1481,4 +1546,43 @@ StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fn
         logicalName.append(fname);
     }
     return logicalName;
+}
+
+//----------------------------------------------------------------------------------
+
+void IRoxieContextLogger::CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    CTXLOGaeva(E, file, line, prefix, format, args);
+    va_end(args);
+}
+
+void HttpHelper::gatherUrlParameters()
+{
+    const char *finger = strchr(urlPath, '?');
+    if (!finger)
+        return;
+    finger++;
+    while (*finger)
+    {
+        StringBuffer s, prop, val;
+        while (*finger && *finger != '&' && *finger != '=')
+            s.append(*finger++);
+        appendDecodedURL(prop, s.trim());
+        if (!*finger || *finger == '&')
+            val.set("1");
+        else
+        {
+            s.clear();
+            finger++;
+            while (*finger && *finger != '&')
+                s.append(*finger++);
+            appendDecodedURL(val, s.trim());
+        }
+        if (prop.length())
+            parameters->setProp(prop, val);
+        if (*finger)
+            finger++;
+    }
 }

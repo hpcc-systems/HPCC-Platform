@@ -42,6 +42,8 @@ set ( ESPSCM_SRCS
       ws_topology.ecm
       ws_workunits.ecm
       ws_packageprocess.ecm
+      ws_esdlconfig.ecm
+      ws_loggingservice.ecm
     )
 
 foreach ( loop_var ${ESPSCM_SRCS} )

@@ -74,7 +74,7 @@ void HttpStat::printStat(FILE* ofile)
         {
             fprintf(ofile, "Slowest round trip(millisecond):  %d\n", slowest);
             fprintf(ofile, "Fastest round trip(millisecond):  %d\n", fastest);
-            fprintf(ofile, "Average round trip(millisecond):  %"I64F"d\n", totaltime/numrequests);
+            fprintf(ofile, "Average round trip(millisecond):  %" I64F "d\n", totaltime/numrequests);
         }
 
         if(http_tracelevel >= 5 && ofile==stdout && isatty(1))
@@ -1138,7 +1138,7 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
     if(http_tracelevel >= 10)
         fprintf(m_logfile, "%s%s%s", sepstr, request.str(), sepstr);
 
-    __int64 start = msTick();
+    unsigned start = msTick();
 
     Owned<CSimpleSocket> sock = new CSimpleSocket(m_ssctx.get(), m_logfile);
     
@@ -1169,11 +1169,11 @@ int HttpClient::sendStressRequest(StringBuffer& request, HttpStat* stat)
         }
     }
     sock->close();
-    __int64 end = msTick();
+    unsigned end = msTick();
     int duration = end - start;
 
     if(http_tracelevel >= 5)
-        fprintf(m_logfile, "Roundtrip Time (milli-second): %d, Bytes Sent: %d, Bytes Received: %"I64F"d\n", duration, sent, total_len);
+        fprintf(m_logfile, "Roundtrip Time (milli-second): %d, Bytes Sent: %d, Bytes Received: %" I64F "d\n", duration, sent, total_len);
 
     if(stat)
     {
@@ -1461,7 +1461,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
     if(request_output)
         request_output->write(0, request.length(), request.str());
 
-    __int64 start1 = msTick();
+    unsigned start1 = msTick();
 
     SocketEndpoint ep;
     ep.set(m_host.str(), m_port);
@@ -1523,7 +1523,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
     socket->shutdown();
     socket->close();
 
-    __int64 end1 = msTick();
+    unsigned end1 = msTick();
 
     int duration = end1 - start1;
 

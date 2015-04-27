@@ -400,7 +400,7 @@ public:
             if ((kbs!=0)||(sdone!=0)||(stotal!=0)) {
                 str.append(" (");
                 if ((sdone!=0)||(stotal!=0)) {
-                   str.appendf("%"I64F"d/%"I64F"d%s",sdone,stotal,scale.str());
+                   str.appendf("%" I64F "d/%" I64F "d%s",sdone,stotal,scale.str());
                    if (kbs!=0)
                        str.append(' ');
                 }
@@ -1226,7 +1226,7 @@ public:
         StringBuffer path;
         StringBuffer dir;
         ForEachItemIn(i1,rmfn) {
-            RemoteFilename &rfn = rmfn.item(i1);
+            const RemoteFilename &rfn = rmfn.item(i1);
             rfn.getLocalPath(path.clear());
             const char *s=path.str();
             size32_t dirlen = 0;
@@ -1265,7 +1265,7 @@ public:
         setDirectory(dir.str());
         StringBuffer mask;
         ForEachItemIn(i2,rmfn) {                    // now set mask
-            RemoteFilename &rfn = rmfn.item(i2);
+            const RemoteFilename &rfn = rmfn.item(i2);
             rfn.getLocalPath(path.clear());
             const char *s=path.str()+dir.length();
             if (isPathSepChar(*s)&&dir.length())
@@ -2878,7 +2878,7 @@ class CDFUWorkUnitFactory : public CInterface, implements IDFUWorkUnitFactory, i
             if (ok)
                 break;
             if (i%10==9)
-                WARNLOG("CDFUWorkUnitFactory: Subscription(%d,%"I64F"d) busy %s",i,(__int64)atid,xpath?xpath:"");
+                WARNLOG("CDFUWorkUnitFactory: Subscription(%d,%" I64F "d) busy %s",i,(__int64)atid,xpath?xpath:"");
             CriticalUnblock unblock(proxylock);
             Sleep(i*10);
             if (i==99) 

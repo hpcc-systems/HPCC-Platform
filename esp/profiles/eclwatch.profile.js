@@ -59,20 +59,6 @@ var profile = {
         'put-selector',
         'xstyle',
         {
-            name: "d3",
-            location: "./d3",
-            trees: [
-                [".", ".", /(\/\.)|(~$)|(^((?!d3\.js).)*$)|(test|src|lib|bin)/]
-            ]
-        },
-        {
-            name: "topojson",
-            location: "./topojson",
-            trees: [
-                [".", ".", /(\/\.)|(~$)|(^((?!topojson\.js).)*$)|(test|examples|lib|bin)/]
-            ]
-        },
-        {
             name: "hpcc",
             location: "./eclwatch"
         },

@@ -52,16 +52,17 @@ class Shell:
         argsLog = [self.__hidePassw(i) for i in args if i is not None ]
         logging.debug("Shell _run CMD: " + " ". join(argsLog))
         process = Popen(
-            _args, stdout=kwargs.pop('stdout', PIPE),
-            stderr=kwargs.pop('stderr', PIPE),
-            close_fds=kwargs.pop('close_fds', True), **kwargs)
+            _args, stdout = PIPE, stderr = PIPE, close_fds = True, **kwargs)
         stdout, stderr = process.communicate()
         retCode = process.returncode
-        if retCode:
-            logging.debug("Shell _run retCode:: %d, stdout:'%s', stderr:'%s'",  retCode,  stdout,  stderr)
+        logging.debug("Shell _run retCode: %d",  retCode)
+        logging.debug("            stdout:'%s'",  stdout)
+        logging.debug("            stderr:'%s'",  stderr)
+        if retCode or ((len(stderr) > 0) and ('Error' in stderr)):
             exception = CalledProcessError(
                 process.returncode, repr(args))
             exception.output = ''.join(filter(None, [stdout, stderr]))
+            logging.debug("exception.output:'%s'",  exception.output)
             raise Error('1001', err=repr(exception.output))
         return stdout
 

@@ -19,11 +19,14 @@
 <xsl:import href="../docbook-xsl/eclipse/profile-eclipse.xsl"/>
 <xsl:param name="img.src.path">../</xsl:param>
 <xsl:param name="html.stylesheet">eclipsehelp.css</xsl:param>
+<xsl:param name="use.id.as.filename" select="1" />
 <xsl:param name="chapter.autolabel" select="0" />
 <xsl:param name="eclipse.plugin.id" select="ECLR.Eclipse.plugin" />
 <xsl:param name="eclipse.plugin.name" select="ECLR.for.Eclipse" />
 <xsl:param name="eclipse.plugin.provider" select="HPCC Systems" />
 <xsl:param name="section.autolabel" select="0" />
+<xsl:param name="chunk.section.depth" select="1" />
+<xsl:param name="toc.section.depth">1</xsl:param>
 <xsl:param name="variablelist.as.table" select="1" />
 <xsl:param name="generate.toc">book toc</xsl:param>
 

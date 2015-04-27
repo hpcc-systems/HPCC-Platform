@@ -1135,6 +1135,20 @@ const char * HqlCppInstance::queryLibrary(unsigned idx)
     return NULL;
 }
 
+const char * HqlCppInstance::queryObjectFile(unsigned idx)
+{
+    if (objectFiles.isItem(idx))
+        return objectFiles.item(idx).text;
+    return NULL;
+}
+
+const char * HqlCppInstance::querySourceFile(unsigned idx)
+{
+    if (sourceFiles.isItem(idx))
+        return sourceFiles.item(idx).text;
+    return NULL;
+}
+
 HqlStmts * HqlCppInstance::querySection(IAtom * section)
 {
     ForEachItemIn(idx, sections)
@@ -1146,7 +1160,7 @@ HqlStmts * HqlCppInstance::querySection(IAtom * section)
     return NULL;
 }
 
-void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inThor)
+void HqlCppInstance::addPlugin(const char *plugin, const char *version)
 {
     if (!plugin || !*plugin)
         return;
@@ -1160,10 +1174,6 @@ void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inT
 
         if (version && *version)
             p->setPluginVersion(version);
-        if (inThor)
-            p->setPluginThor(true);
-        else
-            p->setPluginHole(true);
     }
     if (!plugins)
         plugins.setown(createPTree("Plugins"));
@@ -1200,10 +1210,11 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
     helpers.append(*LINK(func));
 
     IHqlExpression * funcDef = func->queryChild(0);
-    StringBuffer libname, init, include;
+    StringBuffer libname, init, include, source;
     getAttribute(funcDef, libraryAtom, libname);
     getAttribute(funcDef, initfunctionAtom, init);
     getAttribute(funcDef, includeAtom, include);
+    getAttribute(funcDef, sourceAtom, source);
     if (init.length())
     {
         BuildCtx ctx(*this, initAtom);
@@ -1216,7 +1227,7 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
         StringBuffer plugin, version;
         getStringValue(plugin, pluginAttr->queryChild(0));
         getStringValue(version, pluginAttr->queryChild(1));
-        addPlugin(plugin.str(), version.str(), false);
+        addPlugin(plugin.str(), version.str());
         if (!libname.length())
         {
             getStringValue(libname, pluginAttr->queryChild(0));
@@ -1230,6 +1241,8 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
     }
     if (include.length())
         useInclude(include.str());
+    if (source.length())
+        useSourceFile(source);
     return true;
 }
 
@@ -1242,6 +1255,16 @@ void HqlCppInstance::useInclude(const char * include)
 void HqlCppInstance::useLibrary(const char * libname)
 {
     insertUniqueString(modules, libname);
+}
+
+void HqlCppInstance::useObjectFile(const char * objname)
+{
+    insertUniqueString(objectFiles, objname);
+}
+
+void HqlCppInstance::useSourceFile(const char * srcname)
+{
+    insertUniqueString(sourceFiles, srcname);
 }
 
 void HqlCppInstance::addHint(const char * hintXml, ICodegenContextCallback * ctxCallback)
@@ -1311,27 +1334,24 @@ void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallbac
     {
         bool flushText = workunit->getDebugValueBool("flushResourceAsText", false);
 
-        StringBuffer path, trailing;
-        splitFilename(filename, &path, &path, &trailing, &trailing);
-
-        StringBuffer ln;
-        ln.append(path).append(SharedObjectPrefix).append(trailing).append(LibraryExtension);
 #ifdef __64BIT__
-        // ARMFIX: Map all the uses of this property and make sure
-        // they're not used to mean x86_64 (it shouldn't, though)
         bool target64bit = workunit->getDebugValueBool("target64bit", true);
 #else
         bool target64bit = workunit->getDebugValueBool("target64bit", false);
 #endif
-        resources.flush(ln.str(), flushText, target64bit);
+        StringBuffer resname;
+        bool isObjectFile = resources.flush(resname, filename, flushText, target64bit);
 
         StringBuffer resTextName;
-        if (flushText && resources.queryWriteText(resTextName, ln))
+        if (flushText && resources.queryWriteText(resTextName, resname))
         {
             Owned<IWUQuery> query = workunit->updateQuery();
             associateLocalFile(query, FileTypeHintXml, resTextName, "Workunit resource text", 0);
         }
-        useLibrary(filename);
+        if (isObjectFile)
+            useObjectFile(resname);
+        else
+            useSourceFile(resname);
     }
 }
 
@@ -1375,7 +1395,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
             if (errs.errCount())
             {
                 StringBuffer errtext;
-                IECLError *first = errs.firstError();
+                IError *first = errs.firstError();
                 first->toString(errtext);
                 throw MakeStringException(HQLERR_FailedToLoadSystemModule, "%s @ %d:%d", errtext.str(), first->getColumn(), first->getLine());
             } 
@@ -1416,6 +1436,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     nextUid = 0;
     nextTypeId = 0;
     nextFieldId = 0;
+    curWfid = 0;
     code = (HqlCppInstance*)_code;
     xmlUsesContents = false;
 }
@@ -1610,7 +1631,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.finalizeAllRows, "finalizeAllRows", false),
         DebugOption(options.maxLocalRowSize , "maxLocalRowSize", MAX_LOCAL_ROW_SIZE),
         DebugOption(options.optimizeGraph,"optimizeGraph", true),
-        DebugOption(options.orderDiskFunnel,"orderDiskFunnel", true),
+        DebugOption(options.orderDiskFunnel,"orderDiskFunnel", false),
         DebugOption(options.alwaysAllowAllNodes,"alwaysAllowAllNodes", false),
         DebugOption(options.slidingJoins,"slidingJoins", false),
         DebugOption(options.foldOptimized,"foldOptimized", false),
@@ -1632,7 +1653,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.resourceMaxSockets, "resourceMaxSockets", 0),
         DebugOption(options.resourceMaxActivities, "resourceMaxActivities", 0),
         DebugOption(options.resourceMaxHeavy, "resourceMaxHeavy", 1),
-        DebugOption(options.resourceMaxDistribute, "resourceMaxDistribute", 2),
+        DebugOption(options.resourceMaxDistribute, "resourceMaxDistribute", 8),
         DebugOption(options.unlimitedResources,"unlimitedResources", false),
         DebugOption(options.filteredReadSpillThreshold, "filteredReadSpillThreshold", 999),
         DebugOption(options.allowThroughSpill,"allowThroughSpill", true),
@@ -1721,7 +1742,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.canLinkConstantRows,"canLinkConstantRows",true),
         DebugOption(options.checkAmbiguousRollupCondition,"checkAmbiguousRollupCondition",true),
         DebugOption(options.matchExistingDistributionForJoin,"matchExistingDistributionForJoin",true),
-        DebugOption(options.expandHashJoin,"expandHashJoin",false),
+        DebugOption(options.expandHashJoin,"expandHashJoin",true),
         DebugOption(options.traceIR,"traceIR",false),
         DebugOption(options.preserveCaseExternalParameter,"preserveCaseExternalParameter",true),
         DebugOption(options.optimizeParentAccess,"optimizeParentAccess",false),
@@ -1733,6 +1754,11 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
         DebugOption(options.noConditionalLinks,"noConditionalLinks",false),
         DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
+        DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
+        DebugOption(options.keyedJoinPreservesOrder,"keyedJoinPreservesOrder",true),
+        DebugOption(options.expandSelectCreateRow,"expandSelectCreateRow",false),
+        DebugOption(options.optimizeSortAllFields,"optimizeSortAllFields",true),
+        DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
     };
 
     //get options values from workunit
@@ -1865,9 +1891,16 @@ unsigned HqlCppTranslator::getOptimizeFlags() const
         optFlags |= HOOfoldconstantdatasets;
     if (options.optimizeMax)
         optFlags |= HOOexpensive;
+    if (options.expandSelectCreateRow)
+        optFlags  |= HOOexpandselectcreaterow;
     return optFlags;
 }
 
+
+void HqlCppTranslator::exportWarningMappings()
+{
+    globalOnWarnings->exportMappings(wu());
+}
 
 void HqlCppTranslator::overrideOptionsForLibrary()
 {
@@ -1981,6 +2014,8 @@ IHqlExpression * HqlCppTranslator::bindFunctionCall(IIdAtom * name, HqlExprArray
     OwnedHqlExpr function = needFunction(name);
     useFunction(function);
     assertex(function->getOperator() == no_funcdef);
+    IFunctionTypeExtra * funcTypeExtra = queryFunctionTypeExtra(function->queryType());
+    assertex(funcTypeExtra);
     IHqlExpression * body = function->queryChild(0);
 
     HqlExprArray bodyArgs;
@@ -1989,7 +2024,7 @@ IHqlExpression * HqlCppTranslator::bindFunctionCall(IIdAtom * name, HqlExprArray
     HqlExprArray funcArgs;
     funcArgs.append(*createValue(body->getOperator(), LINK(newType), bodyArgs));
     unwindChildren(funcArgs, function, 1);
-    ITypeInfo * funcType = makeFunctionType(LINK(newType), LINK(function->queryChild(1)), LINK(function->queryChild(2)));
+    ITypeInfo * funcType = makeFunctionType(LINK(newType), LINK(function->queryChild(1)), LINK(function->queryChild(2)), LINK(funcTypeExtra->queryAttributes()));
     OwnedHqlExpr newFunction = createValue(function->getOperator(), funcType, funcArgs);
     return bindFunctionCall(newFunction, args);
 }
@@ -2037,28 +2072,28 @@ bool HqlCppTranslator::getDebugFlag(const char * name, bool defValue)
     return wu()->getDebugValueBool(name, defValue);
 }
 
-void HqlCppTranslator::doReportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg)
+void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg)
 {
-    Owned<IECLError> warnError;
+    Owned<IError> warnError;
     if (!location)
         location = queryActiveActivityLocation();
-    ErrorSeverity severity = queryDefaultSeverity(category);
+    ErrorSeverity severity = (explicitSeverity == SeverityUnknown) ? queryDefaultSeverity(category) : explicitSeverity;
     if (location)
-        warnError.setown(createECLError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
+        warnError.setown(createError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
     else
-        warnError.setown(createECLError(category, severity, id, msg, NULL, 0, 0, 0));
+        warnError.setown(createError(category, severity, id, msg, NULL, 0, 0, 0));
 
     errorProcessor->report(warnError);
 }
 
-void HqlCppTranslator::reportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg, ...)
+void HqlCppTranslator::reportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg, ...)
 {
     StringBuffer s;
     va_list args;
     va_start(args, msg);
     s.valist_appendf(msg, args);
     va_end(args);
-    doReportWarning(category, location, id, s.str());
+    doReportWarning(category, explicitSeverity, location, id, s.str());
 }
 
 void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, const char * msg, ...)
@@ -2068,10 +2103,10 @@ void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, co
     va_start(args, msg);
     s.valist_appendf(msg, args);
     va_end(args);
-    doReportWarning(category, NULL, id, s.str());
+    doReportWarning(category, SeverityUnknown, NULL, id, s.str());
 }
 
-void HqlCppTranslator::addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * text, IHqlExpression * location)
+void HqlCppTranslator::addWorkunitException(ErrorSeverity severity, unsigned code, const char * text, IHqlExpression * location)
 {
     Owned<IWUException> msg = wu()->createException();
     msg->setExceptionSource("Code Generator");
@@ -2138,7 +2173,7 @@ void HqlCppTranslator::ThrowStringException(int code,const char *format, ...)
         va_start(args, format);
         errorMsg.valist_appendf(format, args);
         va_end(args);
-        throw createECLError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
+        throw createError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
     }
 
     va_list args;
@@ -2155,7 +2190,7 @@ void HqlCppTranslator::reportErrorDirect(IHqlExpression * location, int code,con
         ECLlocation loc;
         loc.extractLocationAttr(location);
         if (alwaysAbort)
-            throw createECLError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
+            throw createError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
         errorProcessor->reportError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
     }
     else
@@ -2457,7 +2492,8 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
         doBuildAssignToFromUnicode(ctx, target, expr);
         break;
     case no_toxml:
-        doBuildAssignToXml(ctx, target, expr);
+    case no_tojson:
+        doBuildAssignToXmlorJson(ctx, target, expr);
         break;
     case no_wuid:
         doBuildAssignWuid(ctx, target, expr);
@@ -2856,7 +2892,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprEvaluate(ctx, expr, tgt);
         return;
     case no_thor:
-        throwUnexpected();
+        throwUnexpectedX("THOR() annotation created in a scalar context");
 //      assertex(expr->queryType()->isScalar());
 //      buildExpr(ctx, expr->queryChild(0), tgt);
         return;
@@ -3140,6 +3176,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_eventextra:
     case no_loopcounter:
     case no_toxml:
+    case no_tojson:
         buildTempExpr(ctx, expr, tgt);
         return;
     case no_asstring:
@@ -5637,6 +5674,9 @@ void HqlCppTranslator::normalizeBoundExpr(BuildCtx & ctx, CHqlBoundExpr & bound)
 
 IHqlExpression * HqlCppTranslator::doBuildInternalFunction(IHqlExpression * funcdef)
 {
+    if (funcdef->queryChild(0)->getOperator() == no_external)
+        return LINK(funcdef);
+
     unsigned match = internalFunctions.find(*funcdef);
     if (match != NotFound)
         return LINK(&internalFunctionExternals.item(match));
@@ -5665,8 +5705,28 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     else
     {
         IHqlExpression * def = expr->queryBody()->queryFunctionDefinition();
-        assertex(def && def->getOperator() == no_funcdef);
-        funcdef.setown(doBuildInternalFunction(def));
+        assertex(def);
+        if (def->getOperator() == no_param)
+        {
+            ITypeInfo * type = def->queryType();
+            IFunctionTypeExtra * extra = queryFunctionTypeExtra(type);
+            IHqlExpression * params = (IHqlExpression *)extra->queryParameters();
+            IHqlExpression * defaults = (IHqlExpression *)extra->queryDefaults();
+            HqlExprArray attrs;
+            attrs.append(*LINK(params));
+            if (defaults)
+                attrs.append(*LINK(defaults));
+            attrs.append(*createAttribute(contextAtom));
+
+            ITypeInfo * returnType = type->queryChildType();
+            OwnedHqlExpr externalExpr = createExternalReference(def->queryId(), LINK(returnType), attrs);
+            funcdef.setown(createFunctionDefinition(def->queryId(), LINK(externalExpr), LINK(params), LINK(defaults), NULL));
+        }
+        else
+        {
+            assertex(def && def->getOperator() == no_funcdef);
+            funcdef.setown(doBuildInternalFunction(def));
+        }
     }
 
     IHqlExpression * external = funcdef->queryChild(0);
@@ -5870,7 +5930,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             if (curTarget->length)
                 args.append(*LINK(curTarget->length));
             args.append(*createValue(no_reference, curTarget->expr->getType(), LINK(curTarget->expr)));
-            if (hasLinkCountedModifier(retType) && hasNonNullRecord(retType) && getBoolAttribute(external, allocatorAtom, true))
+            if (hasLinkCountedModifier(retType) && getBoolAttribute(external, allocatorAtom, true))
                 args.append(*createRowAllocator(ctx, ::queryRecord(retType)));
 
             localBound.setFromTarget(*curTarget);
@@ -7364,7 +7424,7 @@ void HqlCppTranslator::doBuildAssignFormat(IIdAtom * func, BuildCtx & ctx, const
 
 //---------------------------------------------------------------------------
 
-void HqlCppTranslator::doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+void HqlCppTranslator::doBuildAssignToXmlorJson(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     IHqlExpression * row = expr->queryChild(0);
 
@@ -7372,7 +7432,8 @@ void HqlCppTranslator::doBuildAssignToXml(BuildCtx & ctx, const CHqlBoundTarget 
     args.append(*buildMetaParameter(row));
     args.append(*LINK(row));
     args.append(*getSizetConstant(XWFtrim|XWFopt|XWFnoindent));
-    OwnedHqlExpr call = bindFunctionCall(ctxGetRowXmlId, args);
+    node_operator op = expr->getOperator();
+    OwnedHqlExpr call = bindFunctionCall((op==no_tojson) ? ctxGetRowJsonId : ctxGetRowXmlId, args);
     buildExprAssign(ctx, target, call);
 }
 
@@ -7396,6 +7457,13 @@ void HqlCppTranslator::processCppBodyDirectives(IHqlExpression * expr)
                 getStringValue(libraryName, cur->queryChild(0));
                 if (libraryName.length())
                     useLibrary(libraryName.str());
+            }
+            else if (name == sourceAtom)
+            {
+                StringBuffer sourceName;
+                getStringValue(sourceName, cur->queryChild(0));
+                if (sourceName.length())
+                    code->useSourceFile(sourceName.str());
             }
         }
     }
@@ -7445,6 +7513,7 @@ IHqlExpression * getSimpleListIndex(BuildCtx & ctx, IHqlExpression * expr)
         return NULL;
     }
     OwnedHqlExpr folded = foldHqlExpression(index);
+    assertex(folded->queryValue());
     __int64 which = folded->queryValue()->getIntValue();
     if ((which > 0) && (which <= set->numChildren()))
         return LINK(set->queryChild((unsigned)which-1));
@@ -11588,38 +11657,57 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
 {
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     IHqlExpression * outofline = funcdef->queryChild(0);
+    IHqlExpression * formals = funcdef->queryChild(1);
     assertex(outofline->getOperator() == no_outofline);
     IHqlExpression * bodyCode = outofline->queryChild(0);
     IHqlExpression *language = queryAttributeChild(bodyCode, languageAtom, 0);
     bool isImport = bodyCode->hasAttribute(importAtom);
 
     funcctx.addQuotedCompound(proto);
+    funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+    funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
 
     HqlExprArray noargs;
     OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
     OwnedHqlExpr pluginPtr = createQuoted("Owned<IEmbedContext> __plugin", makeBoolType());  // Not really bool - at some point ECL may support without this aliasing...
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
     StringBuffer createParam;
-    createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContext(");
-    createParam.append(isImport ? "true" : "false");
-    StringBuffer attrParam;
+    createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContextEx(ctx,");
+    createParam.append(isImport ? "EFimport" : "EFembed");
+    if (returnType->getTypeCode()==type_void)
+        createParam.append("|EFnoreturn");
+    if (formals->numChildren()==0)
+        createParam.append("|EFnoparams");
+
+    HqlExprArray attrArgs;
     ForEachChild(idx, bodyCode)
     {
         IHqlExpression *child = bodyCode->queryChild(idx);
         if (child->isAttribute() && child->queryName() != languageAtom && child->queryName() != importAtom)
         {
-            attrParam.append(",");
+            StringBuffer attrParam;
+            if (attrArgs.ordinality())
+                attrParam.append(",");
             attrParam.append(child->queryName());
-            StringBuffer attrValue;
-            if (getStringValue(attrValue, child->queryChild(0)).length())
-            {
-                attrParam.append('=');
-                appendStringAsCPP(attrParam, attrValue.length(), attrValue.str(), true);
-            }
+
+            IHqlExpression * value = child->queryChild(0);
+            if (value)
+                attrParam.append("=");
+            attrArgs.append(*createConstant(attrParam));
+            if (value)
+                attrArgs.append(*ensureExprType(value, unknownStringType));
         }
     }
-    if (attrParam.length())
-        createParam.append(",\"").append(attrParam.str()+1).append('"');
+    if (attrArgs.length())
+    {
+        OwnedHqlExpr concat = createUnbalanced(no_concat, unknownStringType, attrArgs);
+        OwnedHqlExpr cast = ensureExprType(concat, unknownVarStringType);
+        OwnedHqlExpr folded = foldHqlExpression(cast);
+        CHqlBoundExpr bound;
+        buildExpr(funcctx, folded, bound);
+        createParam.append(",");
+        generateExprCpp(createParam, bound.expr);
+    }
     else
         createParam.append(",NULL");
     createParam.append(");");
@@ -11630,7 +11718,6 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     scriptArgs.append(*LINK(ctxVar));
     scriptArgs.append(*LINK(bodyCode->queryChild(0)));
     buildFunctionCall(funcctx, isImport ? importId : compileEmbeddedScriptId, scriptArgs);
-    IHqlExpression *formals = funcdef->queryChild(1);
     ForEachChild(i, formals)
     {
         HqlExprArray args;
@@ -11646,7 +11733,13 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         switch (paramType->getTypeCode())
         {
         case type_int:
-            bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
+            if (paramType->getSize()<8)
+            {
+                bindFunc = paramType->isSigned() ? bindSignedSizeParamId : bindUnsignedSizeParamId;
+                args.append(*createIntConstant(paramType->getSize()));
+            }
+            else
+                bindFunc = paramType->isSigned() ? bindSignedParamId : bindUnsignedParamId;
             break;
         case type_varstring:
             bindFunc = bindVStringParamId;
@@ -11655,7 +11748,10 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             bindFunc = bindStringParamId;
             break;
         case type_real:
-            bindFunc = bindRealParamId;
+            if (paramType->getSize()==4)
+                bindFunc = bindFloatParamId;
+            else
+                bindFunc = bindRealParamId;
             break;
         case type_boolean:
             bindFunc = bindBooleanParamId;
@@ -11790,8 +11886,11 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         funcctx.addQuotedCompound(proto);
         //MORE: Need to work out how to handle functions that require the context.
         //Need to create a class instead.
-        assertex(!outofline->hasAttribute(contextAtom));
-
+        if (functionBodyUsesContext(outofline))
+        {
+            funcctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+            funcctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
+        }
         OwnedHqlExpr newCode = replaceInlineParameters(funcdef, bodyCode);
         newCode.setown(foldHqlExpression(newCode));
         ITypeInfo * returnType = funcdef->queryType()->queryChildType();

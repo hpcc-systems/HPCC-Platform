@@ -21,3 +21,8 @@ interface=*
 use_epoll=true
 # allow kernel pagecache flushing where enabled (true/false)
 allow_pgcache_flush=true
+
+#enable SSL for dafilesrv remote file access
+#dfsUseSSL=false
+#dfsSSLCertFile=/certfilepath/certfile
+#dfsSSLPrivateKeyFile=/keyfilepath/keyfile

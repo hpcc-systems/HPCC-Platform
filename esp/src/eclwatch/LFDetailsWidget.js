@@ -299,16 +299,15 @@ define([
                 this.updateInput("CopySourceName", oldValue, newValue);
                 this.updateInput("CopyTargetName", oldValue, newValue);
             } else if (name === "Ecl" && newValue) {
-                this.setDisabled(this.id + "_Source", false);
-                this.setDisabled(this.id + "_DEF", false);
-                this.setDisabled(this.id + "_XML", false);
+                this.refreshActionState();
             } else if (name === "StateID") {
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                 domClass.remove(this.id + "StateIdImage");
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
+                domAttr.set(this.id + "Name", "innerHTML", this.logicalFile.Name + (this.logicalFile.isDeleted() ? " (" + this.i18n.Deleted + ")" : "" ));
                 this.refreshActionState();
             } else if (name === "Superfiles") {
-                this.setDisabled(this.id + "_FileBelongs", false);
+                this.refreshActionState();
             }
         },
 
@@ -330,11 +329,20 @@ define([
         },
 
         refreshActionState: function () {
-            registry.byId(this.id + "Save").set("disabled", this.logicalFile.isDeleted());
-            registry.byId(this.id + "Delete").set("disabled", this.logicalFile.isDeleted());
-            registry.byId(this.id + "CopyDropDown").set("disabled", this.logicalFile.isDeleted());
-            registry.byId(this.id + "RenameDropDown").set("disabled", this.logicalFile.isDeleted());
-            registry.byId(this.id + "DesprayDropDown").set("disabled", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "Save", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "Delete", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "CopyDropDown", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "RenameDropDown", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "DesprayDropDown", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "_Content", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "_Source", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
+            this.setDisabled(this.id + "_DEF", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
+            this.setDisabled(this.id + "_XML", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
+            this.setDisabled(this.id + "_FileBelongs", this.logicalFile.isDeleted() || !this.logicalFile.Superfiles);
+            this.setDisabled(this.id + "_FileParts", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "_Queries", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "_Workunit", this.logicalFile.isDeleted());
+            this.setDisabled(this.id + "_DFUWorkunit", this.logicalFile.isDeleted());
         }
     });
 });

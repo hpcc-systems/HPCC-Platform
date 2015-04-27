@@ -4,7 +4,7 @@
 <sect1 id="Constants">
   <title>Constants</title>
 
-  <sect2 id="String">
+  <sect2 id="Const_String">
     <title>String</title>
 
     <para>All string literals must be contained within single quotation marks

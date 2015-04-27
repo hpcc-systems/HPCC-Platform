@@ -58,7 +58,7 @@ public:
             if (queryname)
                 buffer.append(queryname);
             buffer.append("Response");
-            if (flags & WWV_INCL_NAMESPACES && ns.length())
+            if ((flags & WWV_INCL_NAMESPACES) && ns.length())
                 buffer.append(" xmlns=\"").append(ns.str()).append('\"');
             buffer.append('>');
         }
@@ -71,7 +71,7 @@ public:
     void appendResults(IConstWorkUnit *wu, const char *username, const char *pw)
     {
         StringBufferAdaptor resultXML(buffer);
-        getFullWorkUnitResultsXML(username, pw, wu, resultXML, WorkUnitXML_NoRoot, ExceptionSeverityError);
+        getFullWorkUnitResultsXML(username, pw, wu, resultXML, WorkUnitXML_NoRoot, SeverityError);
     }
 
     void appendSingleResult(IConstWorkUnit *wu, const char *resultname, const char *username, const char *pw)
@@ -264,15 +264,15 @@ class WuWebView : public CInterface,
 public:
     IMPLEMENT_IINTERFACE;
 
-    WuWebView(IConstWorkUnit &wu, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
-        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay)
+    WuWebView(IConstWorkUnit &wu, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
+        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target)
     {
         name.set(queryname);
         setWorkunit(wu);
     }
 
-    WuWebView(const char *wuid, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
-        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay)
+    WuWebView(const char *wuid, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
+        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target)
     {
         name.set(queryname);
         setWorkunit(wuid);
@@ -323,17 +323,18 @@ public:
 
 protected:
     SCMStringBuffer dllname;
+    SCMStringBuffer name;
     StringBuffer manifestDir;
     Owned<IConstWorkUnit> cw;
     Owned<ILoadedDllEntry> dll;
-    bool delayedDll;
     Owned<IPropertyTree> manifest;
-    SCMStringBuffer name;
-    bool mapEspDirectories;
-    bool manifestIncludePathsSet;
+    StringAttr target;
     StringAttr dir;
     StringAttr username;
     StringAttr pw;
+    bool mapEspDirectories;
+    bool manifestIncludePathsSet;
+    bool delayedDll;
 };
 
 IPropertyTree *WuWebView::ensureManifest()
@@ -479,13 +480,22 @@ void WuWebView::getResourceURLs(StringArray &urls, const char *prefix)
     SCMStringBuffer wuid;
     cw->getWuid(wuid);
     StringBuffer url(prefix);
-    urls.append(url.append("manifest/").append(wuid.str()));
+    url.append("manifest/");
+    if (target.length() && name.length())
+        url.appendf("query/%s/%s", target.get(), name.str());
+    else
+        url.append(wuid.str());
+    urls.append(url);
 
     Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Resource");
     ForEach(*iter)
     {
         IPropertyTree &res = iter->query();
-        url.set(prefix).append("res/").append(wuid.str());
+        url.set(prefix).append("res/");
+        if (target.length() && name.length())
+            url.appendf("query/%s/%s", target.get(), name.str());
+        else
+            url.append(wuid.str());
         if (res.hasProp("@ResourcePath"))
             urls.append(url.append(res.queryProp("@ResourcePath")));
         else if (res.hasProp("@filename"))
@@ -657,7 +667,7 @@ void WuWebView::renderResultsJSON(StringBuffer &out, const char *jsonp)
     responseName.append("Response");
     appendJSONName(out, responseName);
     StringBufferAdaptor json(out);
-    getFullWorkUnitResultsJSON(username, pw, cw, json, 0, ExceptionSeverityError);
+    getFullWorkUnitResultsJSON(username, pw, cw, json, 0, SeverityError);
     out.append("}");
     if (jsonp && *jsonp)
         out.append(");");
@@ -880,11 +890,11 @@ void WuWebView::addInputsFromXml(const char *xml)
     addInputsFromPTree(pt.get());
 }
 
-extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *queryname, const char *dir, bool mapEspDirectories)
+extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *target, const char *queryname, const char *dir, bool mapEspDirectories)
 {
     try
     {
-        return new WuWebView(wu, queryname, dir, mapEspDirectories);
+        return new WuWebView(wu, target, queryname, dir, mapEspDirectories);
     }
     catch (...)
     {
@@ -894,11 +904,11 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char 
     return NULL;
 }
 
-extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *queryname, const char *dir, bool mapEspDirectories)
+extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *target, const char *queryname, const char *dir, bool mapEspDirectories)
 {
     try
     {
-        return new WuWebView(wuid, queryname, dir, mapEspDirectories);
+        return new WuWebView(wuid, target, queryname, dir, mapEspDirectories);
     }
     catch (...)
     {
@@ -942,15 +952,14 @@ const char *mimeTypeFromFileExt(const char *ext)
     return "application/octet-stream";
 }
 
-extern WUWEBVIEW_API void getWuResourceByPath(const char *path, MemoryBuffer &mb, StringBuffer &mimetype)
+static void getQueryInfoFromPath(const char *&path, const char *op, StringBuffer &target, StringBuffer &queryname, StringBuffer &wuid)
 {
-    StringBuffer s, wuid, queryname;
+    StringBuffer s;
     nextPathNode(path, s);
-    if (strieq(s, "res"))
+    if (op && strieq(s, op))
         nextPathNode(path, s.clear());
     if (strieq(s, "query"))
     {
-        StringBuffer target;
         nextPathNode(path, target);
         if (!target.length())
             throw MakeStringException(WUWEBERR_TargetNotFound, "Target cluster required");
@@ -961,15 +970,55 @@ extern WUWEBVIEW_API void getWuResourceByPath(const char *path, MemoryBuffer &mb
         wuid.set(query->queryProp("@wuid"));
     }
     else
-    {
         wuid.swapWith(s);
-        queryname.set(wuid);
-    }
+}
+extern WUWEBVIEW_API void getWuResourceByPath(const char *path, MemoryBuffer &mb, StringBuffer &mimetype)
+{
+    StringBuffer wuid, target, queryname;
+    getQueryInfoFromPath(path, "res", target, queryname, wuid);
 
-    Owned<IWuWebView> web = createWuWebView(wuid, queryname, NULL, true);
+    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true);
     if (!web)
         throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Cannot open workunit");
     mimetype.append(mimeTypeFromFileExt(strrchr(path, '.')));
     if (!web->getResourceByPath(path, mb))
         throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Cannot open resource");
+}
+
+extern WUWEBVIEW_API void getWuManifestByPath(const char *path, StringBuffer &mf)
+{
+    StringBuffer wuid, target, queryname;
+    getQueryInfoFromPath(path, "manifest", target, queryname, wuid);
+
+    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true);
+    if (!web)
+        throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Cannot open workunit");
+    if (!web->getManifest(mf).length())
+        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Cannot open manifest");
+}
+
+extern WUWEBVIEW_API void getWuResourceUrlListByPath(const char *path, StringBuffer &fmt, StringBuffer &content, const char *prefix)
+{
+    StringBuffer wuid, target, queryname;
+    getQueryInfoFromPath(path, "resurls", target, queryname, wuid);
+    nextPathNode(path, fmt);
+    if (!fmt.length())
+        fmt.set("xml");
+
+    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true);
+    if (!web)
+        throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Cannot open workunit");
+    StringArray urls;
+    web->getResourceURLs(urls, prefix);
+
+    bool json = strieq(fmt, "json");
+    content.append(json ? "{\"url\": [" : "<ResourceUrls>");
+    ForEachItemIn(i, urls)
+    {
+        if (json)
+            appendJSONValue(content, NULL, urls.item(i));
+        else
+            appendXMLTag(content, "url", urls.item(i));
+    }
+    content.append(json ? "]}" : "</ResourceUrls>");
 }

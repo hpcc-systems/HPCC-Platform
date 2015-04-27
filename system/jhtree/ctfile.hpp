@@ -90,7 +90,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __int64 tstamp; /* update time stamp            b8x */
     __int64 rs3[3]; /* future use               c0x */
     __int64 fposOffset; /* amount by which file positions are biased        d8x */
-    __int64 fileSize; /* fileSize - used in the bias calculation e0x */
+    __int64 fileSize; /* fileSize - was once used in the bias calculation e0x */
     short nodeKeyLength; /* key length in intermediate level nodes e8x */
     unsigned short version; /* build version - to be updated if key format changes    eax*/
     short unused[2]; /* unused ecx */

@@ -34,7 +34,7 @@
 #define MEDIUMTIMEOUT 30000
 
 #include "jlib.hpp"
-#include "jarray.tpp"
+#include "jarray.hpp"
 #include "jexcept.hpp"
 #include "jhash.hpp"
 #include "jsuperhash.hpp"
@@ -200,12 +200,6 @@ public:
     CIOConnection(CGraphElementBase *_activity, unsigned _index) : activity(_activity), index(_index) { }
 };
 
-inline CIOConnection *Array__Member2Param(CIOConnection * src)         { return src; }
-inline void Array__Assign(CIOConnection * & dest, CIOConnection * src) { dest = src; }
-inline void Array__Destroy(CIOConnection * & next)                           { if (next) next->Release(); }
-inline CIOConnection * Array__Member2ParamPtr(CIOConnection * src)     { return src; }
-MAKEArrayOf(CIOConnection *, CIOConnection *, _CIOConnectionArray);
-
 class COwningSimpleIOConnection : public CIOConnection
 {
 public:
@@ -213,7 +207,7 @@ public:
     ~COwningSimpleIOConnection() { ::Release(activity); }
 };
 
-class CIOConnectionArray : public _CIOConnectionArray
+class CIOConnectionArray : public OwnedPointerArrayOf<CIOConnection>
 {
 public:
     CIOConnection *queryItem(unsigned i)
@@ -238,7 +232,7 @@ public:
 typedef SimpleHashTableOf<CGraphBase, graph_id> CGraphTableCopy;
 typedef OwningSimpleHashTableOf<CGraphBase, graph_id> CGraphTable;
 typedef CIArrayOf<CGraphBase> CGraphArray;
-typedef CopyCIArrayOf<CGraphBase> CGraphArrayCopy;
+typedef CICopyArrayOf<CGraphBase> CGraphArrayCopy;
 typedef IIteratorOf<CGraphBase> IThorGraphIterator;
 typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGraphArrayIterator;
 typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> CGraphArrayCopyIterator;
@@ -357,7 +351,7 @@ public:
 };
 
 typedef CIArrayOf<CGraphElementBase> CGraphElementArray;
-typedef CopyCIArrayOf<CGraphElementBase> CGraphElementArrayCopy;
+typedef CICopyArrayOf<CGraphElementBase> CGraphElementArrayCopy;
 typedef OwningSimpleHashTableOf<CGraphElementBase, activity_id> CGraphElementTable;
 typedef IIteratorOf<CGraphElementBase> IThorActivityIterator;
 typedef ArrayIIteratorOf<const CGraphElementArray, CGraphElementBase, IThorActivityIterator> CGraphElementArrayIterator;
@@ -455,12 +449,12 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual void setResultBool(const char *name, unsigned sequence, bool value) { ctx->setResultBool(name, sequence, value); }
         virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultData(name, sequence, len, data); }
         virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { ctx->setResultDecimal(stepname, sequence, len, precision, isSigned, val); }
-        virtual void setResultInt(const char *name, unsigned sequence, __int64 value) { ctx->setResultInt(name, sequence, value); }
+        virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { ctx->setResultInt(name, sequence, value, size); }
         virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultRaw(name, sequence, len, data); }
         virtual void setResultReal(const char * stepname, unsigned sequence, double value) { ctx->setResultReal(stepname, sequence, value); }
         virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { ctx->setResultSet(name, sequence, isAll, len, data, transformer); }
         virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { ctx->setResultString(name, sequence, len, str); }
-        virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value) { ctx->setResultUInt(name, sequence, value); }
+        virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { ctx->setResultUInt(name, sequence, value, size); }
         virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { ctx->setResultUnicode(name, sequence, len, str); }
         virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { ctx->setResultVarString(name, sequence, value); }
         virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { ctx->setResultVarUnicode(name, sequence, value); }
@@ -477,6 +471,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual char *getResultVarString(const char * name, unsigned sequence) { return ctx->getResultVarString(name, sequence); }
         virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { return ctx->getResultVarUnicode(name, sequence); }
         virtual unsigned getResultHash(const char * name, unsigned sequence) { return ctx->getResultHash(name, sequence); }
+        virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { return ctx->getExternalResultHash(wuid, name, sequence); }
         virtual const char *cloneVString(const char *str) const { return ctx->cloneVString(str); }
         virtual const char *cloneVString(size32_t len, const char *str) const { return ctx->cloneVString(len, str); }
         virtual char *getWuid() { return ctx->getWuid(); }
@@ -511,6 +506,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual void getResultDictionary(size32_t & tcount, byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
 
         virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToXML(lenResult, result, info, row, flags); }
+        virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToJSON(lenResult, result, info, row, flags); }
         virtual unsigned getGraphLoopCounter() const
         {
             return graph->queryLoopCounter();           // only called if value is valid
@@ -520,6 +516,10 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
         {
             return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+        }
+        virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+        {
+            return ctx->fromJson(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
         }
         virtual IEngineContext *queryEngineContext()
         {
@@ -763,6 +763,8 @@ protected:
     unsigned maxActivityCores, globalMemorySize;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
+    Owned<IPerfMonHook> perfmonhook;
+    size32_t oldNodeCacheMem;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -788,10 +790,12 @@ protected:
             removeAssociates(child);
         }
     }
+    void endJob();
 public:
     IMPLEMENT_IINTERFACE;
 
     CJobBase(const char *graphName);
+    virtual void beforeDispose();
     ~CJobBase();
     void clean();
     void init();
@@ -803,6 +807,7 @@ public:
     bool queryForceLogging(graph_id graphId, bool def) const;
     ITimeReporter &queryTimeReporter() { return *timeReporter; }
     const IContextLogger &queryContextLogger() const { return *logctx; }
+    virtual void startJob();
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     virtual CGraphBase *createGraph() = 0;
     void joinGraph(CGraphBase &graph);
@@ -867,6 +872,7 @@ public:
     mptag_t allocateMPTag();
     void freeMPTag(mptag_t tag);
     mptag_t deserializeMPTag(MemoryBuffer &mb);
+    StringBuffer &getOpt(const char *opt, StringBuffer &out);
     bool getOptBool(const char *opt, bool dft=false);
     int getOptInt(const char *opt, int dft=0);
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
@@ -966,6 +972,7 @@ public:
     virtual unsigned queryActivityId() { return (unsigned)container.queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
 
+    StringBuffer &getOpt(const char *prop, StringBuffer &out) const;
     bool getOptBool(const char *prop, bool defVal=false) const;
     int getOptInt(const char *prop, int defVal=0) const;
     unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }

@@ -189,7 +189,7 @@ public:
     virtual void main()
     {
         if (!sem.wait(timeout)) // feeling neglected, restarting..
-            abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000));
+            abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000), TEC_Idle, false);
     }
     void stop() { sem.signal(); }
 };
@@ -318,10 +318,9 @@ void CJobManager::run()
                 msg.read(cmd);
                 if (0 == stricmp("stop", cmd))
                 {
-                    setExitCode(0);
                     bool stopCurrentJob;
                     msg.read(stopCurrentJob);
-                    abortThor(NULL, stopCurrentJob);
+                    abortThor(NULL, TEC_Clean, stopCurrentJob);
                     break;
                 }
                 else
@@ -500,6 +499,8 @@ void CJobManager::run()
             workunit.setown(factory->openWorkUnit(wuid, false));
             if (!workunit) // check workunit is available and ready to run.
                 throw MakeStringException(0, "Could not locate workunit %s", wuid);
+            if (workunit->getCodeVersion() == 0)
+                throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
             if ((workunit->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (workunit->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION))
                 throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor requires version %d..%d", workunit->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
             allDone = doit(workunit, graphName, agentep);
@@ -646,7 +647,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     //GH->JCS Should this be using getEnvironmentFactory()->openEnvironment()?
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, MEDIUMTIMEOUT);
     if (checkThorNodeSwap(globals->queryProp("@name"),e?wuid:NULL,(unsigned)-1))
-        abortThor(e,false);
+        abortThor(e, TEC_Swap, false);
 }
 
 bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp)
@@ -654,8 +655,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
-        StringBuffer tsStr("Thor - ");
-        wu->setTimeStamp(tsStr.append(graphName).str(), GetCachedHostName(), "Started");
+        addTimeStamp(wu, SSTgraph, graphName, StWhenGraphStarted);
         updateWorkUnitLog(*wu);
     }
     Owned<IException> exception;
@@ -663,8 +663,10 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     workunit.forceReload();
     workunit.getWuid(wuid);
     const char *totalTimeStr = "Total thor time";
-    unsigned startTime = msTick();
-    unsigned totalTimeMs = workunit.getTimerDuration(totalTimeStr);
+    cycle_t startCycles = get_cycles_now();
+    unsigned __int64 totalTimeNs = 0;
+    unsigned __int64 totalThisTimeNs = 0;
+    getWorkunitTotalTime(&workunit, "thor", totalTimeNs, totalThisTimeNs);
 
     Owned<IConstWUQuery> query = workunit.getQuery(); 
     SCMStringBuffer soName;
@@ -739,15 +741,15 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         allDone = job->go();
 
         Owned<IWorkUnit> wu = &workunit.lock();
-        unsigned graphTimeMs = msTick()-startTime;
+        unsigned __int64 graphTimeNs = cycle_to_nanosec(get_cycles_now()-startCycles);
         StringBuffer graphTimeStr;
         formatGraphTimerLabel(graphTimeStr, graphName);
 
-        updateWorkunitTimeStat(wu, "thor", graphName, "time", graphTimeStr, milliToNano(graphTimeMs), 1, 0);
-        updateWorkunitTimeStat(wu, "thor", "workunit", "ThorTime", totalTimeStr, milliToNano(totalTimeMs+graphTimeMs), 1, 0);
+        updateWorkunitTimeStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs);
+        updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+graphTimeNs);
+        wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+graphTimeNs, 1, 0, StatsMergeReplace);
 
-        StringBuffer tsStr("Thor - ");
-        wu->setTimeStamp(tsStr.append(graphName).str(), GetCachedHostName(), "Finished");
+        addTimeStamp(wu, SSTgraph, graphName, StWhenGraphFinished);
         
         removeJob(*job);
     }
@@ -774,9 +776,9 @@ void setExitCode(int code) { exitCode = code; }
 int queryExitCode() { return exitCode; }
 
 static unsigned aborting = 99;
-void abortThor(IException *e, bool abortCurrentJob)
+void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
 {
-    if (-1 == queryExitCode()) setExitCode(1);
+    if (-1 == queryExitCode()) setExitCode(errCode);
     Owned<CJobManager> jM = ((CJobManager *)getJobManager());
     Owned<IException> _e;
     if (0 == aborting)
@@ -819,7 +821,7 @@ public:
             if (stopped) break;
             if (!verifyCovenConnection(pollDelay)) // use poll delay time for verify connection timeout
             {
-                abortThor(MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor"));
+                abortThor(MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor"), TEC_DaliDown);
                 break;
             }
         }
@@ -864,7 +866,7 @@ void thorMain(ILogMsgHandler *logHandler)
             if (ngname.length()) {
                 notify.setown(createMultiThorResourceMutex(ngname.str(),serverStatus));
                 setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
-                PROGLOG("Multi-Thor resource limit for %s set to %"I64F"d",ngname.str(),(__int64)multiThorMemoryThreshold);
+                PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",ngname.str(),(__int64)multiThorMemoryThreshold);
             }   
             else
                 multiThorMemoryThreshold = 0;

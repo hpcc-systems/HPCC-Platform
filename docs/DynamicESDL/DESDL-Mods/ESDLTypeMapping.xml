@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ESDL_Data_ECLTypeMapping">
+  <title><emphasis role="bold">ESDL, XSD, and ECL Type
+  Mapping</emphasis></title>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="3">
+        <colspec colwidth="86.75pt" />
+
+        <colspec colwidth="76.50pt" />
+
+        <colspec colwidth="140.00pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">ESDL</emphasis></entry>
+
+            <entry><emphasis role="bold">XSD</emphasis></entry>
+
+            <entry><emphasis role="bold">ECL</emphasis></entry>
+          </row>
+
+          <row>
+            <entry>Bool boolean</entry>
+
+            <entry>bool</entry>
+
+            <entry>boolean</entry>
+          </row>
+
+          <row>
+            <entry>Binary</entry>
+
+            <entry>Base64Binary</entry>
+
+            <entry>String (base64 encoded)</entry>
+          </row>
+
+          <row>
+            <entry>Float</entry>
+
+            <entry>float</entry>
+
+            <entry>REAL4</entry>
+          </row>
+
+          <row>
+            <entry>Double</entry>
+
+            <entry>double</entry>
+
+            <entry>REAL8</entry>
+          </row>
+
+          <row>
+            <entry>Int</entry>
+
+            <entry>int</entry>
+
+            <entry>INTEGER</entry>
+          </row>
+
+          <row>
+            <entry>Int64</entry>
+
+            <entry>long</entry>
+
+            <entry>INTEGER8</entry>
+          </row>
+
+          <row>
+            <entry>String</entry>
+
+            <entry>string</entry>
+
+            <entry>String</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+</sect2>

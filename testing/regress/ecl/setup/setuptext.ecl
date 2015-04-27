@@ -25,6 +25,7 @@ import $.TS;
 
 string OriginalTextFilesIp := '.' : STORED('OriginalTextFilesIp');
 string OriginalTextFilesPath := '' : STORED('OriginalTextFilesEclPath');
+boolean createMultiPart := (__PLATFORM__[1..4] = 'thor');
 
 EXPORT SetupText := FUNCTION
 
@@ -427,7 +428,7 @@ wordsAndAliases := merge(orderedWords, orderedAliases, sorted(doc, segment, wpos
 normalizedInversion := normalizeWordFormat(wordsAndAliases);
 
 doCreateSimpleIndex(boolean useLocal) := FUNCTION
-    Files := $.Files(__PLATFORM__, useLocal);
+    Files := $.Files(createMultiPart, useLocal);
     distributedWords := DISTRIBUTE(normalizedInversion, IF(doc > 6, 0, 1));
     
     RETURN sequential(
@@ -502,7 +503,7 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
 //have different characteristics.  Bible has ~74 "documents", encyclopedia has
 doCreateSearchIndex() := FUNCTION
     boolean useLocal := false;
-    Files := $.Files(__PLATFORM__, useLocal);
+    Files := $.Files(createMultiPart, useLocal);
     RETURN sequential(
         BUILD(bibleStream+encyclopediaStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex, OVERWRITE,
     #if (useLocal=true)

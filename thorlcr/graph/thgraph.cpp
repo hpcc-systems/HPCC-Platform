@@ -305,6 +305,7 @@ bool isDiskInput(ThorActivityKind kind)
     {
         case TAKcsvread:
         case TAKxmlread:
+        case TAKjsonread:
         case TAKdiskread:
         case TAKdisknormalize:
         case TAKdiskaggregate:
@@ -367,14 +368,14 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     xgmml->getProp("@id", helperName);
     helperFactory = (EclHelperFactory) queryJob().queryDllEntry().getEntry(helperName.str());
     if (!helperFactory)
-        throw MakeOsException(GetLastError(), "Failed to load helper factory method: %s (dll handle = %p)", helperName.str(), queryJob().queryDllEntry().getInstance());
+        throw makeOsExceptionV(GetLastError(), "Failed to load helper factory method: %s (dll handle = %p)", helperName.str(), queryJob().queryDllEntry().getInstance());
     alreadyUpdated = false;
     whichBranch = (unsigned)-1;
-    whichBranchBitSet.setown(createBitSet());
+    whichBranchBitSet.setown(createThreadSafeBitSet());
     newWhichBranch = false;
     isEof = false;
     log = true;
-    sentActInitData.setown(createBitSet());
+    sentActInitData.setown(createThreadSafeBitSet());
 }
 
 CGraphElementBase::~CGraphElementBase()
@@ -497,7 +498,7 @@ void CGraphElementBase::addInput(unsigned input, CGraphElementBase *inputAct, un
 
 void CGraphElementBase::connectInput(unsigned input, CGraphElementBase *inputAct, unsigned inputOutIdx)
 {
-    ActPrintLog("CONNECTING (id=%"ACTPF"d, idx=%d) to (id=%"ACTPF"d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
+    ActPrintLog("CONNECTING (id=%" ACTPF "d, idx=%d) to (id=%" ACTPF "d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
     while (connectedInputs.ordinality()<=input) connectedInputs.append(NULL);
     connectedInputs.replace(new COwningSimpleIOConnection(LINK(inputAct), inputOutIdx), input);
     while (inputAct->connectedOutputs.ordinality()<=inputOutIdx) inputAct->connectedOutputs.append(NULL);
@@ -620,6 +621,7 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             case TAKdiskwrite:
             case TAKcsvwrite:
             case TAKxmlwrite:
+            case TAKjsonwrite:
                 if (_shortCircuit) return true;
                 onCreate();
                 alreadyUpdated = checkUpdate();
@@ -885,6 +887,7 @@ bool isGlobalActivity(CGraphElementBase &container)
 // always global, but only co-ordinate init/done
         case TAKcsvwrite:
         case TAKxmlwrite:
+        case TAKjsonwrite:
         case TAKindexwrite:
         case TAKkeydiff:
         case TAKkeypatch:
@@ -1011,6 +1014,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKindexread:
         case TAKindexnormalize:
         case TAKxmlread:
+        case TAKjsonread:
         case TAKdiskexists:
         case TAKindexexists:
         case TAKchildexists:
@@ -2227,7 +2231,7 @@ public:
             stack.kill();
         else if (stack.ordinality())
         {
-            CopyCIArrayOf<CGraphExecutorGraphInfo> toMove;
+            CICopyArrayOf<CGraphExecutorGraphInfo> toMove;
             ForEachItemIn(s, stack)
             {
                 bool dependenciesDone = true;
@@ -2290,7 +2294,7 @@ public:
         {
             loop
             {
-                PROGLOG("Waiting on subgraph %"GIDPF"d", subGraph->queryGraphId());
+                PROGLOG("Waiting on subgraph %" GIDPF "d", subGraph->queryGraphId());
                 if (runningSem.wait(MEDIUMTIMEOUT) || job.queryAborted() || job.queryPausing())
                     break;
             }
@@ -2330,7 +2334,7 @@ public:
             if (running.ordinality()<limit)
             {
                 running.append(*LINK(graphInfo));
-                PROGLOG("Add: Launching graph thread for graphId=%"GIDPF"d", subGraph->queryGraphId());
+                PROGLOG("Add: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
                 PooledThreadHandle h = graphPool->start(graphInfo.getClear());
                 subGraph->poolThreadHandle = h;
             }
@@ -2370,7 +2374,7 @@ public:
                         toRun.remove(0);
                         running.append(*LINK(graphInfo));
                         CGraphBase *subGraph = graphInfo->subGraph;
-                        PROGLOG("Wait: Launching graph thread for graphId=%"GIDPF"d", subGraph->queryGraphId());
+                        PROGLOG("Wait: Launching graph thread for graphId=%" GIDPF "d", subGraph->queryGraphId());
                         added = true;
                         PooledThreadHandle h = graphPool->start(graphInfo.getClear());
                         subGraph->poolThreadHandle = h;
@@ -2425,25 +2429,11 @@ public:
     {
         traceLevel = 1;
     }
-    virtual void CTXLOG(const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGva(format, args);
-        va_end(args);
-    }
     virtual void CTXLOGva(const char *format, va_list args) const
     {
         StringBuffer ss;
         ss.valist_appendf(format, args);
         LOG(MCdebugProgress, thorJob, "%s", ss.str());
-    }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        logOperatorExceptionVA(E, file, line, format, args);
-        va_end(args);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
     {
@@ -2459,7 +2449,10 @@ public:
             ss.append(": ").valist_appendf(format, args);
         LOG(MCoperatorProgress, thorJob, "%s", ss.str());
     }
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
     }
     virtual unsigned queryTraceLevel() const
@@ -2486,6 +2479,7 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     slaveGroup.setown(jobGroup->remove(0));
     myrank = jobGroup->rank(queryMyNode());
     globalMemorySize = globals->getPropInt("@globalMemorySize"); // in MB
+    oldNodeCacheMem = 0;
 }
 
 void CJobBase::init()
@@ -2512,7 +2506,7 @@ void CJobBase::init()
     resumed = false;
 
     bool crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
-    bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", false));
+    bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
     unsigned memorySpillAt = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
     thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator));
 
@@ -2529,6 +2523,11 @@ void CJobBase::init()
     PROGLOG("%s", tracing.str());
     setLargeMemSize(largeMemSize);
     graphExecutor.setown(new CGraphExecutor(*this));
+}
+
+void CJobBase::beforeDispose()
+{
+    endJob();
 }
 
 CJobBase::~CJobBase()
@@ -2548,7 +2547,42 @@ CJobBase::~CJobBase()
     PROGLOG("Roxiemem stats: %s", memStatsStr.str());
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
-        PROGLOG("Heap usage : %"I64F"d bytes", (unsigned __int64)heapUsage);
+        PROGLOG("Heap usage : %" I64F "d bytes", (unsigned __int64)heapUsage);
+}
+
+void CJobBase::startJob()
+{
+    LOG(MCdebugProgress, thorJob, "New Graph started : %s", graphName.get());
+    ClearTempDirs();
+    unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
+    if (pinterval)
+    {
+        perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
+        startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
+    }
+    PrintMemoryStatusLog();
+    logDiskSpace();
+    unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);
+    if (keyNodeCacheMB)
+    {
+        oldNodeCacheMem = setNodeCacheMem(keyNodeCacheMB * 0x100000);
+        PROGLOG("Key node cache size set to: %d MB", keyNodeCacheMB);
+    }
+    unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
+    if (!keyFileCacheLimit)
+        keyFileCacheLimit = (querySlaves()+1)*2;
+    setKeyIndexCacheSize(keyFileCacheLimit);
+    PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
+}
+
+void CJobBase::endJob()
+{
+    stopPerformanceMonitor();
+    LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
+    clearKeyStoreCache(true);
+    if (oldNodeCacheMem)
+        setNodeCacheMem(oldNodeCacheMem);
+    PrintMemoryStatusLog();
 }
 
 bool CJobBase::queryForceLogging(graph_id graphId, bool def) const
@@ -2575,7 +2609,7 @@ IThorGraphIterator *CJobBase::getSubGraphs()
     return new CGraphTableIterator(subGraphs);
 }
 
-static void getGlobalDeps(CGraphBase &graph, CopyCIArrayOf<CGraphDependency> &deps)
+static void getGlobalDeps(CGraphBase &graph, CICopyArrayOf<CGraphDependency> &deps)
 {
     Owned<IThorActivityIterator> iter = graph.getIterator();
     ForEach(*iter)
@@ -2668,7 +2702,7 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
         CGraphElementBase &sourceActivity = sourceActivities.item(c);
         if (!childGraph.isGlobal())
         {
-            CopyCIArrayOf<CGraphDependency> globalChildGraphDeps;
+            CICopyArrayOf<CGraphDependency> globalChildGraphDeps;
             getGlobalDeps(childGraph, globalChildGraphDeps);
             ForEachItemIn(gcd, globalChildGraphDeps)
             {
@@ -2770,6 +2804,17 @@ mptag_t CJobBase::deserializeMPTag(MemoryBuffer &mb)
 }
 
 // these getX methods for property in workunit settings, then global setting, defaulting to provided 'dft' if not present
+StringBuffer &CJobBase::getOpt(const char *opt, StringBuffer &out)
+{
+    if (!opt || !*opt)
+        return out; // probably error
+    VStringBuffer gOpt("@%s", opt);
+    getWorkUnitValue(opt, out);
+    if (0 == out.length())
+        globals->getProp(gOpt, out);
+    return out;
+}
+
 bool CJobBase::getOptBool(const char *opt, bool dft)
 {
     if (!opt || !*opt)
@@ -3026,6 +3071,14 @@ void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
     cancelledReceive = true;
     if (receiving)
         container.queryJob().queryJobComm().cancel(rank, mpTag);
+}
+
+StringBuffer &CActivityBase::getOpt(const char *prop, StringBuffer &out) const
+{
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    if (!container.queryXGMML().getProp(path.toLowerCase().str(), out))
+        queryJob().getOpt(prop, out);
+    return out;
 }
 
 bool CActivityBase::getOptBool(const char *prop, bool defVal) const

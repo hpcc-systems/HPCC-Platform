@@ -353,12 +353,14 @@ public:
         case TAIarg:
         case TAIindexwritearg_1:
             return static_cast<IHThorIndexWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
 
     virtual unsigned getFlags()                             { return 0; }
-    virtual const char * getDatasetName()                   { return NULL; }
+    virtual const char * getDatasetName()                   { return NULL; }  // Never used, left in to keep VMT unchanged only
     virtual const char * getDistributeIndexName()           { return NULL; }
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
@@ -383,6 +385,8 @@ class CThorFirstNArg : public CThorArg, implements IHThorFirstNArg
         case TAIarg:
         case TAIfirstnarg_1:
             return static_cast<IHThorFirstNArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -404,6 +408,8 @@ class CThorChooseSetsArg : public CThorArg, implements IHThorChooseSetsArg
         case TAIarg:
         case TAIchoosesetsarg_1:
             return static_cast<IHThorChooseSetsArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -422,6 +428,8 @@ class CThorChooseSetsExArg : public CThorArg, implements IHThorChooseSetsExArg
         case TAIarg:
         case TAIchoosesetsexarg_1:
             return static_cast<IHThorChooseSetsExArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -441,6 +449,8 @@ class CThorDiskWriteArg : public CThorArg, implements IHThorDiskWriteArg
         case TAIarg:
         case TAIdiskwritearg_1:
             return static_cast<IHThorDiskWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -468,6 +478,8 @@ public:
         case TAIarg:
         case TAIpipereadarg_1:
             return static_cast<IHThorPipeReadArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -495,6 +507,8 @@ public:
         case TAIarg:
         case TAIpipewritearg_1:
             return static_cast<IHThorPipeWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -520,6 +534,8 @@ public:
         case TAIarg:
         case TAIpipethrougharg_1:
             return static_cast<IHThorPipeThroughArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -548,6 +564,8 @@ class CThorFilterArg : public CThorArg, implements IHThorFilterArg
         case TAIarg:
         case TAIfilterarg_1:
             return static_cast<IHThorFilterArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -569,6 +587,8 @@ class CThorFilterGroupArg : public CThorArg, implements IHThorFilterGroupArg
         case TAIarg:
         case TAIfiltergrouparg_1:
             return static_cast<IHThorFilterGroupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -591,6 +611,8 @@ class CThorGroupArg : public CThorArg, implements IHThorGroupArg
         case TAIarg:
         case TAIgrouparg_1:
             return static_cast<IHThorGroupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -609,6 +631,8 @@ class CThorDegroupArg : public CThorArg, implements IHThorDegroupArg
         case TAIarg:
         case TAIdegrouparg_1:
             return static_cast<IHThorDegroupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -627,6 +651,8 @@ class CThorIterateArg : public CThorArg, implements IHThorIterateArg
         case TAIarg:
         case TAIiteratearg_1:
             return static_cast<IHThorIterateArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -650,6 +676,8 @@ class CThorProcessArg : public CThorArg, implements IHThorProcessArg
         case TAIarg:
         case TAIprocessarg_1:
             return static_cast<IHThorProcessArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -671,6 +699,8 @@ class CThorProjectArg : public CThorArg, implements IHThorProjectArg
         case TAIarg:
         case TAIprojectarg_1:
             return static_cast<IHThorProjectArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -691,6 +721,8 @@ class CThorPrefetchProjectArg : public CThorArg, implements IHThorPrefetchProjec
         case TAIarg:
         case TAIprefetchprojectarg_1:
             return static_cast<IHThorPrefetchProjectArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -716,6 +748,8 @@ struct CThorFilterProjectArg : public CThorArg, implements IHThorFilterProjectAr
         case TAIarg:
         case TAIfilterprojectarg_1:
             return static_cast<IHThorFilterProjectArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -737,6 +771,8 @@ class CThorCountProjectArg : public CThorArg, implements IHThorCountProjectArg
         case TAIarg:
         case TAIcountprojectarg_1:
             return static_cast<IHThorCountProjectArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -757,6 +793,8 @@ class CThorNormalizeArg : public CThorArg, implements IHThorNormalizeArg
         case TAIarg:
         case TAInormalizearg_1:
             return static_cast<IHThorNormalizeArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -775,6 +813,8 @@ class CThorSelectNArg : public CThorArg, implements IHThorSelectNArg
         case TAIarg:
         case TAIselectnarg_1:
             return static_cast<IHThorSelectNArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -794,6 +834,8 @@ class CThorCombineArg : public CThorArg, implements IHThorCombineArg
         case TAIarg:
         case TAIcombinearg_1:
             return static_cast<IHThorCombineArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -814,6 +856,8 @@ class CThorCombineGroupArg : public CThorArg, implements IHThorCombineGroupArg
         case TAIarg:
         case TAIcombinegrouparg_1:
             return static_cast<IHThorCombineGroupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -834,6 +878,8 @@ class CThorRollupGroupArg : public CThorArg, implements IHThorRollupGroupArg
         case TAIarg:
         case TAIrollupgrouparg_1:
             return static_cast<IHThorRollupGroupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -852,6 +898,8 @@ class CThorRegroupArg : public CThorArg, implements IHThorRegroupArg
         case TAIarg:
         case TAIregrouparg_1:
             return static_cast<IHThorRegroupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -872,6 +920,8 @@ class CThorNullArg : public CThorArg, implements IHThorNullArg
         case TAIarg:
         case TAInullarg_1:
             return static_cast<IHThorNullArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -891,6 +941,8 @@ class CThorActionArg : public CThorArg, implements IHThorActionArg
         case TAIarg:
         case TAIactionarg_1:
             return static_cast<IHThorActionArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -913,6 +965,8 @@ class CThorLimitArg : public CThorArg, implements IHThorLimitArg
         case TAIarg:
         case TAIlimitarg_1:
             return static_cast<IHThorLimitArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -936,6 +990,8 @@ class CThorCreateRowLimitArg : public CThorArg, implements IHThorLimitArg, imple
             return static_cast<IHThorLimitArg *>(this);
         case TAIlimittransformextra_1:
             return static_cast<IHThorLimitTransformExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -958,6 +1014,8 @@ class CThorCatchArg : public CThorArg, implements IHThorCatchArg
         case TAIarg:
         case TAIcatcharg_1:
             return static_cast<IHThorCatchArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -982,6 +1040,8 @@ class CThorSplitArg : public CThorArg, implements IHThorSplitArg
         case TAIarg:
         case TAIsplitarg_1:
             return static_cast<IHThorSplitArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1003,6 +1063,8 @@ class CThorSpillArg : public CThorArg, implements IHThorSpillArg
         case TAIarg:
         case TAIdiskwritearg_1:
             return static_cast<IHThorDiskWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1031,6 +1093,8 @@ class CThorNormalizeChildArg : public CThorArg, implements IHThorNormalizeChildA
         case TAIarg:
         case TAInormalizechildarg_1:
             return static_cast<IHThorNormalizeChildArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1050,6 +1114,8 @@ class CThorNormalizeLinkedChildArg : public CThorArg, implements IHThorNormalize
         case TAIarg:
         case TAInormalizelinkedchildarg_1:
             return static_cast<IHThorNormalizeLinkedChildArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1069,6 +1135,8 @@ class CThorChildIteratorArg : public CThorArg, implements IHThorChildIteratorArg
         case TAIarg:
         case TAIchilditeratorarg_1:
             return static_cast<IHThorChildIteratorArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1088,6 +1156,8 @@ class CThorRawIteratorArg : public CThorArg, implements IHThorRawIteratorArg
         case TAIarg:
         case TAIrawiteratorarg_1:
             return static_cast<IHThorRawIteratorArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1107,6 +1177,8 @@ class CThorLinkedRawIteratorArg : public CThorArg, implements IHThorLinkedRawIte
         case TAIarg:
         case TAIlinkedrawiteratorarg_1:
             return static_cast<IHThorLinkedRawIteratorArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1126,6 +1198,8 @@ class CThorRollupArg : public CThorArg, implements IHThorRollupArg
         case TAIarg:
         case TAIrolluparg_1:
             return static_cast<IHThorRollupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1147,6 +1221,8 @@ class CThorDedupArg : public CThorArg, implements IHThorDedupArg
         case TAIarg:
         case TAIdeduparg_1:
             return static_cast<IHThorDedupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1171,6 +1247,8 @@ class CThorAggregateArg : public CThorArg, implements IHThorAggregateArg
         case TAIarg:
         case TAIaggregatearg_1:
             return static_cast<IHThorAggregateArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1251,6 +1329,8 @@ class CThorThroughAggregateArg : public CThorArg, implements IHThorThroughAggreg
             return static_cast<IHThorAggregateArg *>(this);
         case TAIthroughaggregateextra_1:
             return static_cast<IHThorThroughAggregateExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1273,6 +1353,8 @@ class CThorDistributionArg : public CThorArg, implements IHThorDistributionArg
         case TAIarg:
         case TAIdistributionarg_1:
             return static_cast<IHThorDistributionArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1291,6 +1373,8 @@ class CThorGroupAggregateArg : public CThorArg, implements IHThorGroupAggregateA
         case TAIarg:
         case TAIaggregatearg_1:
             return static_cast<IHThorGroupAggregateArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1314,6 +1398,8 @@ class CThorHashAggregateArg : public CThorArg, implements IHThorHashAggregateArg
             return static_cast<IHThorAggregateArg *>(this);
         case TAIhashaggregateextra_1:
             return static_cast<IHThorHashAggregateExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1336,6 +1422,8 @@ public:
         case TAIarg:
         case TAIinlinetablearg_1:
             return static_cast<IHThorInlineTableArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1361,6 +1449,8 @@ class CThorSampleArg : public CThorArg, implements IHThorSampleArg
         case TAIarg:
         case TAIsamplearg_1:
             return static_cast<IHThorSampleArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1379,6 +1469,8 @@ class CThorEnthArg : public CThorArg, implements IHThorEnthArg
         case TAIarg:
         case TAIentharg_1:
             return static_cast<IHThorEnthArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1397,6 +1489,8 @@ class CThorFunnelArg : public CThorArg, implements IHThorFunnelArg
         case TAIarg:
         case TAIfunnelarg_1:
             return static_cast<IHThorFunnelArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1418,6 +1512,8 @@ class CThorNonEmptyArg : public CThorArg, implements IHThorNonEmptyArg
         case TAIarg:
         case TAInonemptyarg_1:
             return static_cast<IHThorNonEmptyArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1436,6 +1532,8 @@ class CThorMergeArg : public CThorArg, implements IHThorMergeArg
         case TAIarg:
         case TAImergearg_1:
             return static_cast<IHThorMergeArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1460,6 +1558,8 @@ class CThorRemoteResultArg : public CThorArg, implements IHThorRemoteResultArg
         case TAIarg:
         case TAIremoteresultarg_1:
             return static_cast<IHThorRemoteResultArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1481,6 +1581,8 @@ class CThorApplyArg : public CThorArg, implements IHThorApplyArg
         case TAIarg:
         case TAIapplyarg_1:
             return static_cast<IHThorApplyArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1504,6 +1606,8 @@ class CThorSortArg : public CThorArg, implements IHThorSortArg, implements IHTho
             return static_cast<IHThorSortArg *>(this);
         case TAIalgorithm_1:
             return static_cast<IHThorAlgorithm *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1536,6 +1640,8 @@ class CThorTopNArg : public CThorArg, implements IHThorTopNArg
             return static_cast<IHThorSortArg *>(this);
         case TAItopnextra_1:
             return static_cast<IHThorTopNExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1569,6 +1675,8 @@ class CThorSubSortArg : public CThorArg, implements IHThorSubSortArg
             return static_cast<IHThorSortArg *>(this);
         case TAIsubsortextra_1:
             return static_cast<IHThorSubSortExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1599,6 +1707,8 @@ class CThorKeyedJoinArg : public CThorArg, implements IHThorKeyedJoinArg
             return static_cast<IHThorKeyedJoinBaseArg *>(this);
         case TAIfetchcontext_1:
             return static_cast<IHThorFetchContext *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1654,6 +1764,8 @@ class CThorJoinArg : public CThorArg, implements IHThorJoinArg
         case TAIarg:
         case TAIjoinbasearg_1:
             return static_cast<IHThorJoinBaseArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1703,6 +1815,8 @@ class CThorAllJoinArg : public CThorArg, implements IHThorAllJoinArg
         case TAIarg:
         case TAIalljoinarg_1:
             return static_cast<IHThorAllJoinArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1740,6 +1854,8 @@ class CThorHashJoinArg : public CThorArg, implements IHThorHashJoinArg
             return static_cast<IHThorJoinBaseArg *>(this);
         case TAIhashjoinextra_1:
             return static_cast<IHThorHashJoinExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1793,6 +1909,8 @@ class CThorKeyedDistributeArg : public CThorArg, implements IHThorKeyedDistribut
         case TAIarg:
         case TAIkeyeddistributearg_1:
             return static_cast<IHThorKeyedDistributeArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1819,6 +1937,8 @@ class CThorFetchArg : public CThorArg, implements IHThorFetchArg
             return static_cast<IHThorFetchContext *>(this);
         case TAIbinfetchextra_1:
             return static_cast<IHThorBinFetchExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1838,6 +1958,8 @@ class CThorWorkUnitWriteArg : public CThorArg, implements IHThorWorkUnitWriteArg
         case TAIarg:
         case TAIworkunitwritearg_1:
             return static_cast<IHThorWorkUnitWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1863,6 +1985,8 @@ class CThorXmlWorkunitWriteArg : public CThorArg, implements IHThorXmlWorkunitWr
         case TAIarg:
         case TAIxmlworkunitwritearg_1:
             return static_cast<IHThorXmlWorkunitWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1886,6 +2010,8 @@ class CThorDictionaryWorkUnitWriteArg : public CThorArg, implements IHThorDictio
         case TAIarg:
         case TAIdictionaryworkunitwritearg_1:
             return static_cast<IHThorDictionaryWorkUnitWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1909,6 +2035,8 @@ class CThorDictionaryResultWriteArg : public CThorArg, implements IHThorDictiona
         case TAIarg:
         case TAIdictionaryresultwritearg_1:
             return static_cast<IHThorDictionaryResultWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1929,6 +2057,8 @@ class CThorHashDistributeArg : public CThorArg, implements IHThorHashDistributeA
         case TAIarg:
         case TAIhashdistributearg_1:
             return static_cast<IHThorHashDistributeArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1952,6 +2082,8 @@ class CThorHashDedupArg : public CThorArg, implements IHThorHashDedupArg
         case TAIarg:
         case TAIhashdeduparg_1:
             return static_cast<IHThorHashDedupArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1972,6 +2104,8 @@ class CThorHashMinusArg : public CThorArg, implements IHThorHashMinusArg
         case TAIarg:
         case TAIhashminusarg_1:
             return static_cast<IHThorHashMinusArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -1992,6 +2126,8 @@ class CThorIfArg : public CThorArg, implements IHThorIfArg
         case TAIarg:
         case TAIifarg_1:
             return static_cast<IHThorIfArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2011,6 +2147,8 @@ class CThorCaseArg : public CThorArg, implements IHThorCaseArg
         case TAIarg:
         case TAIcasearg_1:
             return static_cast<IHThorCaseArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2031,6 +2169,8 @@ class CThorSequentialArg : public CThorArg, implements IHThorSequentialArg
         case TAIarg:
         case TAIsequentialarg_1:
             return static_cast<IHThorSequentialArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2051,6 +2191,8 @@ class CThorParallelArg : public CThorArg, implements IHThorParallelArg
         case TAIarg:
         case TAIparallelarg_1:
             return static_cast<IHThorParallelArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2071,6 +2213,8 @@ class CThorKeyDiffArg : public CThorArg, implements IHThorKeyDiffArg
         case TAIarg:
         case TAIkeydiffarg_1:
             return static_cast<IHThorKeyDiffArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2093,6 +2237,8 @@ class CThorKeyPatchArg : public CThorArg, implements IHThorKeyPatchArg
         case TAIarg:
         case TAIkeypatcharg_1:
             return static_cast<IHThorKeyPatchArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2115,6 +2261,8 @@ class CThorWorkunitReadArg : public CThorArg, implements IHThorWorkunitReadArg
         case TAIarg:
         case TAIworkunitreadarg_1:
             return static_cast<IHThorWorkunitReadArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2138,6 +2286,8 @@ class CThorLocalResultReadArg : public CThorArg, implements IHThorLocalResultRea
         case TAIarg:
         case TAIlocalresultreadarg_1:
             return static_cast<IHThorLocalResultReadArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2157,6 +2307,8 @@ class CThorLocalResultWriteArg : public CThorArg, implements IHThorLocalResultWr
         case TAIarg:
         case TAIlocalresultwritearg_1:
             return static_cast<IHThorLocalResultWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2179,6 +2331,8 @@ class CThorGraphLoopResultReadArg : public CThorArg, implements IHThorGraphLoopR
         case TAIarg:
         case TAIgraphloopresultreadarg_1:
             return static_cast<IHThorGraphLoopResultReadArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2198,6 +2352,8 @@ class CThorGraphLoopResultWriteArg : public CThorArg, implements IHThorGraphLoop
         case TAIarg:
         case TAIgraphloopresultwritearg_1:
             return static_cast<IHThorGraphLoopResultWriteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2221,6 +2377,8 @@ class CThorCsvWriteArg : public CThorArg, implements IHThorCsvWriteArg
             return static_cast<IHThorDiskWriteArg *>(this);
         case TAIcsvwriteextra_1:
             return static_cast<IHThorCsvWriteExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2252,6 +2410,8 @@ class CThorCsvFetchArg: public CThorArg, implements IHThorCsvFetchArg
             return static_cast<IHThorFetchContext *>(this);
         case TAIcsvfetchextra_1:
             return static_cast<IHThorCsvFetchExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2272,6 +2432,8 @@ class CThorXmlParseArg : public CThorArg, implements IHThorXmlParseArg
         case TAIarg:
         case TAIxmlparsearg_1:
             return static_cast<IHThorXmlParseArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2296,6 +2458,8 @@ class CThorXmlFetchArg : public CThorArg, implements IHThorXmlFetchArg
             return static_cast<IHThorFetchContext *>(this);
         case TAIxmlfetchextra_1:
             return static_cast<IHThorXmlFetchExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2320,6 +2484,8 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
             return static_cast<IHThorDiskWriteArg *>(this);
         case TAIxmlwriteextra_1:
             return static_cast<IHThorXmlWriteExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2355,6 +2521,8 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
         case TAIarg:
         case TAIsoapactionarg_1:
             return static_cast<IHThorSoapActionArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2394,8 +2562,9 @@ class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
             return static_cast<IHThorSoapActionArg *>(this);
         case TAIsoapcallextra_1:
             return static_cast<IHThorSoapCallExtra *>(this);
+        default:
+            break;
         }
-
         return NULL;
     }
     
@@ -2442,6 +2611,8 @@ class CThorParseArg : public CThorArg, implements IHThorParseArg
         case TAIarg:
         case TAIparsearg_1:
             return static_cast<IHThorParseArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2473,6 +2644,8 @@ protected:
             return static_cast<IHThorCompoundReadExtra *>(this);
         case TAIsourcelimittransformextra_1:
             return static_cast<IHThorSourceLimitTransformExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2508,6 +2681,8 @@ class CThorSteppedIndexReadArg : public CThorIndexReadArg, implements IHThorStep
         {
         case TAIsteppedsourceextra_1:
             return static_cast<IHThorSteppedSourceExtra *>(this);
+        default:
+            break;
         }
         return CThorIndexReadArg::selectInterface(which);
     }
@@ -2536,6 +2711,8 @@ class CThorIndexNormalizeArg : public CThorArg, implements IHThorIndexNormalizeA
             return static_cast<IHThorCompoundNormalizeExtra *>(this);
         case TAIsourcelimittransformextra_1:
             return static_cast<IHThorSourceLimitTransformExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2567,6 +2744,8 @@ class CThorIndexAggregateArg : public CThorArg, implements IHThorIndexAggregateA
             return static_cast<IHThorIndexReadBaseArg *>(this);
         case TAIcompoundaggregateextra_1:
             return static_cast<IHThorCompoundAggregateExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2598,6 +2777,8 @@ class CThorIndexCountArg : public CThorArg, implements IHThorIndexCountArg, impl
             return static_cast<IHThorCompoundCountExtra *>(this);
         case TAIsourcecountlimit_1:
             return static_cast<IHThorSourceCountLimit *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2639,6 +2820,8 @@ protected:
         case TAIrowaggregator_1:
         case TAIcompoundgroupaggregateextra_1:
             return static_cast<IHThorCompoundGroupAggregateExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2676,6 +2859,8 @@ class CThorDiskReadArg : public CThorArg, implements IHThorDiskReadArg, implemen
             return static_cast<IHThorCompoundReadExtra *>(this);
         case TAIsourcelimittransformextra_1:
             return static_cast<IHThorSourceLimitTransformExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2718,6 +2903,8 @@ class CThorDiskNormalizeArg : public CThorArg, implements IHThorDiskNormalizeArg
             return static_cast<IHThorCompoundNormalizeExtra *>(this);
         case TAIsourcelimittransformextra_1:
             return static_cast<IHThorSourceLimitTransformExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2748,6 +2935,8 @@ class CThorDiskAggregateArg : public CThorArg, implements IHThorDiskAggregateArg
             return static_cast<IHThorDiskReadBaseArg *>(this);
         case TAIcompoundaggregateextra_1:
             return static_cast<IHThorCompoundAggregateExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2778,6 +2967,8 @@ class CThorDiskCountArg : public CThorArg, implements IHThorDiskCountArg, implem
             return static_cast<IHThorCompoundCountExtra *>(this);
         case TAIsourcecountlimit_1:
             return static_cast<IHThorSourceCountLimit *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2811,6 +3002,8 @@ class CThorDiskGroupAggregateArg : public CThorArg, implements IHThorDiskGroupAg
         case TAIrowaggregator_1:
         case TAIcompoundgroupaggregateextra_1:
             return static_cast<IHThorCompoundGroupAggregateExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2843,6 +3036,8 @@ class CThorCsvReadArg: public CThorArg, implements IHThorCsvReadArg
         case TAIdiskreadbasearg_1:
         case TAIcsvreadarg_1:
             return static_cast<IHThorCsvReadArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2873,6 +3068,8 @@ class CThorXmlReadArg: public CThorArg, implements IHThorXmlReadArg
         case TAIdiskreadbasearg_1:
         case TAIxmlreadarg_1:
             return static_cast<IHThorXmlReadArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2902,6 +3099,8 @@ class CThorChildNormalizeArg : public CThorArg, implements IHThorChildNormalizeA
         case TAIarg:
         case TAIchildnormalizearg_1:
             return static_cast<IHThorChildNormalizeArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2921,6 +3120,8 @@ class CThorChildAggregateArg : public CThorArg, implements IHThorChildAggregateA
         case TAIarg:
         case TAIchildaggregatearg_1:
             return static_cast<IHThorChildAggregateArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2941,6 +3142,8 @@ class CThorChildGroupAggregateArg : public CThorArg, implements IHThorChildGroup
         case TAIarg:
         case TAIchildgroupaggregatearg_1:
             return static_cast<IHThorChildGroupAggregateBaseArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2965,6 +3168,8 @@ class CThorChildThroughNormalizeArg : public CThorArg, implements IHThorChildThr
         case TAIcompoundextra_1:
         case TAIcompoundnormalizeextra_1:
             return static_cast<IHThorCompoundNormalizeExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -2983,6 +3188,8 @@ class CThorLoopArg : public CThorArg, implements IHThorLoopArg
         case TAIarg:
         case TAIlooparg_1:
             return static_cast<IHThorLoopArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3011,6 +3218,8 @@ class CThorGraphLoopArg : public CThorArg, implements IHThorGraphLoopArg
         case TAIarg:
         case TAIgraphlooparg_1:
             return static_cast<IHThorGraphLoopArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3032,6 +3241,8 @@ class CThorRemoteArg : public CThorArg, implements IHThorRemoteArg
         case TAIarg:
         case TAIremotearg_1:
             return static_cast<IHThorRemoteArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3056,6 +3267,8 @@ class CThorLibraryCallArg : public CThorArg, implements IHThorLibraryCallArg
         case TAIarg:
         case TAIlibrarycallarg_1:
             return static_cast<IHThorLibraryCallArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3074,6 +3287,8 @@ class CThorNWayInputArg : public CThorArg, implements IHThorNWayInputArg
         case TAIarg:
         case TAInwayinputarg_1:
             return static_cast<IHThorNWayInputArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3093,6 +3308,8 @@ class CThorNWayGraphLoopResultReadArg : public CThorArg, implements IHThorNWayGr
         case TAIarg:
         case TAInwaygraphloopresultreadarg_1:
             return static_cast<IHThorNWayGraphLoopResultReadArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3115,6 +3332,8 @@ class CThorNWayMergeArg : public CThorArg, implements IHThorNWayMergeArg
             return static_cast<IHThorMergeArg *>(this);
         case TAInwaymergeextra_1:
             return static_cast<IHThorNWayMergeExtra *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3139,6 +3358,8 @@ class CThorNWayMergeJoinArg : public CThorArg, implements IHThorNWayMergeJoinArg
         case TAIarg:
         case TAInwaymergejoinarg_1:
             return static_cast<IHThorNWayMergeJoinArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3182,6 +3403,8 @@ class CThorNWaySelectArg : public CThorArg, implements IHThorNWaySelectArg
         case TAIarg:
         case TAInwayselectarg_1:
             return static_cast<IHThorNWaySelectArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3200,6 +3423,8 @@ class CThorSectionArg : public CThorArg, implements IHThorSectionArg
         case TAIarg:
         case TAIsectionarg_1:
             return static_cast<IHThorSectionArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3221,6 +3446,8 @@ class CThorSectionInputArg : public CThorArg, implements IHThorSectionInputArg
         case TAIarg:
         case TAIsectioninputarg_1:
             return static_cast<IHThorSectionInputArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3241,6 +3468,8 @@ class CThorWhenActionArg : public CThorArg, implements IHThorWhenActionArg
         case TAIarg:
         case TAIwhenactionarg_1:
             return static_cast<IHThorWhenActionArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }
@@ -3259,6 +3488,8 @@ class CThorStreamedIteratorArg : public CThorArg, implements IHThorStreamedItera
         case TAIarg:
         case TAIstreamediteratorarg_1:
             return static_cast<IHThorStreamedIteratorArg *>(this);
+        default:
+            break;
         }
         return NULL;
     }

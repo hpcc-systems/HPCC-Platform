@@ -16,6 +16,15 @@
 ############################################################################## */
 
 //nothor
+//version multiPart=false
+//version multiPart=true
+//version multiPart=true,useLocal=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+useLocal := #IFDEFINED(root.useLocal, false);
+
+//--- end of version configuration ---
 
 #option ('checkAsserts',false);
 import $.Common.TextSearch;
@@ -30,4 +39,4 @@ q1 := TextSearchQueries.SingleBatchQuery(SingleQuery);
 q1 := TextSearchQueries.WordTests;
 #end
 
-output(TextSearch.executeBatchAgainstWordIndex(q1, false, 'hthor', 0x00000200));           // 0x200 forces paranoid order checking on
+output(TextSearch.executeBatchAgainstWordIndex(q1, useLocal, multiPart, 0x00000200));           // 0x200 forces paranoid order checking on

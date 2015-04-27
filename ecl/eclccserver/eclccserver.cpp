@@ -205,14 +205,13 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 timings.findstr(ave, 5);
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
                 {
-                    section.insert(0, "eclcc: ");
-
-                    unsigned __int64 mval = atoi64(total); // in milliseconds
-                    unsigned __int64 umax = atoi64(max); // in microseconds
+                    unsigned __int64 nval = atoi64(total) * 1000000; // in milliseconds
+                    unsigned __int64 nmax = atoi64(max) * 1000; // in microseconds
                     unsigned __int64 cnt = atoi64(count);
-                    const char * wuScope = section.str(); // should be different
-                    const char * description = section.str();
-                    updateWorkunitTiming(workunit, "eclcc", wuScope, description, milliToNano(mval), cnt, umax*1000);
+                    const char * scope = section.str();
+                    StatisticScopeType scopeType = SSTcompilestage;
+                    StatisticKind kind = StTimeElapsed;
+                    workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, StatsMergeReplace);
                 }
             }
             else
@@ -232,18 +231,18 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                     err->setExceptionLineNo(atoi(line));
                     err->setExceptionColumn(atoi(col));
                     if (stricmp(errClass, "info")==0)
-                        err->setSeverity(ExceptionSeverityInformation);
+                        err->setSeverity(SeverityInformation);
                     else if (stricmp(errClass, "warning")==0)
-                        err->setSeverity(ExceptionSeverityWarning);
+                        err->setSeverity(SeverityWarning);
                     else
-                        err->setSeverity(ExceptionSeverityError);
+                        err->setSeverity(SeverityError);
                     err->setExceptionCode(atoi(errCode));
                     err->setExceptionMessage(errText);
                     err->setExceptionFileName(file); // any point if it just says stdin?
                 }
                 else
                 {
-                    err->setSeverity(retcode ? ExceptionSeverityError : ExceptionSeverityWarning);
+                    err->setSeverity(retcode ? SeverityError : SeverityWarning);
                     err->setExceptionMessage(errStr);
                     DBGLOG("%s", errStr);
                 }
@@ -257,9 +256,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         {
             //Allow eclcc-xx-<n> so that multiple values can be passed through for the same named debug symbol
             const char * start = option + (*option=='-' ? 1 : 6);
-            const char * dash = strchr(start, '-');     // position of second dash, if present
+            const char * dash = strrchr(start, '-');     // position of second dash, if present
             StringAttr optName;
-            if (dash)
+            if (dash && (dash != start))
                 optName.set(start, dash-start);
             else
                 optName.set(start);
@@ -279,14 +278,19 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 eclccCmd.appendf(" -I%s", value);
             else if (stricmp(optName, "libraryPath") == 0)
                 eclccCmd.appendf(" -L%s", value);
-            else if (stricmp(start, "-allow")==0 || stricmp(optName, "-allow")==0)
+            else if (stricmp(optName, "-allow")==0)
             {
                 if (isLocal)
                     throw MakeStringException(0, "eclcc-allow option can not be set per-workunit");  // for security reasons
-                eclccCmd.appendf(" -%s=%s", start, value);
+                eclccCmd.appendf(" -%s=%s", optName.get(), value);
+            }
+            else if (*optName == 'd')
+            {
+                //Short term work around for the problem that all debug names get lower-cased
+                eclccCmd.appendf(" -D%s=%s", optName.get()+1, value);
             }
             else
-                eclccCmd.appendf(" -%s=%s", start, value);
+                eclccCmd.appendf(" -%s=%s", optName.get(), value);
         }
         else if (strchr(option, '-'))
         {
@@ -310,6 +314,8 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             reportError("Workunit does not contain a query", 2);
             return false;
         }
+
+        addTimeStamp(workunit, SSTglobal, NULL, StWhenCompiled);
 
         SCMStringBuffer mainDefinition;
         SCMStringBuffer eclQuery;
@@ -339,6 +345,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         }
         eclccCmd.appendf(" -o%s", wuid);
         eclccCmd.appendf(" -platform=%s", target);
+        eclccCmd.appendf(" --component=%s", queryStatisticsComponentName());
 
         Owned<IStringIterator> debugValues = &workunit->getDebugValues();
         ForEach (*debugValues)
@@ -354,7 +361,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         }
         try
         {
-            unsigned time = msTick();
+            cycle_t startCycles = get_cycles_now();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
             Owned<AbortWaiter> abortWaiter = new AbortWaiter(pipe, workunit);
             eclccCmd.insert(0, eclccProgName);
@@ -402,9 +409,10 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 Owned<IWUQuery> query = workunit->updateQuery();
                 associateLocalFile(query, FileTypeDll, realdllfilename, "Workunit DLL", crc);
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
-                time = msTick()-time;
+
+                cycle_t elapsedCycles = get_cycles_now() - startCycles;
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
-                    updateWorkunitTimeStat(workunit, "eclccserver", "workunit", "create workunit", NULL, milliToNano(time), 1, 0);
+                    updateWorkunitTimeStat(workunit, SSTcompilestage, "compile", StTimeElapsed, NULL, cycle_to_nanosec(elapsedCycles));
 
                 workunit->commit();
                 return true;
@@ -473,7 +481,18 @@ public:
         clusterInfo.clear();
         workunit->setState(WUStateCompiling);
         workunit->commit();
-        bool ok = compile(wuid, clusterTypeString(platform, true), clusterName.str());
+        bool ok = false;
+        try
+        {
+            ok = compile(wuid, clusterTypeString(platform, true), clusterName.str());
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            addExceptionToWorkunit(workunit, SeverityError, "eclccserver", e->errorCode(), msg.str(), NULL, 0, 0);
+            e->Release();
+        }
         if (ok)
         {
             workunit->setState(WUStateCompiled);
@@ -740,6 +759,8 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
+    const char * processName = globals->queryProp("@name");
+    setStatisticsComponentName(SCTeclcc, processName, true);
     if (globals->getPropBool("@enableSysLog",true))
         UseSysLogForOperatorMessages();
 #ifndef _WIN32
@@ -761,7 +782,7 @@ int main(int argc, const char *argv[])
         initClientProcess(serverGroup, DCR_EclServer);
         openLogFile();
         SCMStringBuffer queueNames;
-        getEclCCServerQueueNames(queueNames, globals->queryProp("@name"));
+        getEclCCServerQueueNames(queueNames, processName);
         if (!queueNames.length())
             throw MakeStringException(0, "No clusters found to listen on");
         // The option has been renamed to avoid confusion with the similarly-named eclcc option, but

@@ -40,7 +40,7 @@ string          text{maxlength(10)};
 
 outRecord := RECORD
 unsigned        box;
-dataset(itemRecord) items{embedded};
+embedded dataset(itemRecord) items;
              END;
 
 outRecord t1(inRecord l, outRecord r) := TRANSFORM

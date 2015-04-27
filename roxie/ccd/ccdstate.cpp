@@ -142,7 +142,7 @@ public:
         if (now > goTime)
             return 0;
         else
-            return goTime - now;
+            return (unsigned)(goTime - now);
     }
 };
 
@@ -669,7 +669,7 @@ public:
     virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, wu, false);
+        expandLogicalFilename(fileName, _fileName, wu, false, !wu);
         if (traceLevel > 5)
             DBGLOG("lookupFileName %s", fileName.str());
 
@@ -690,7 +690,7 @@ public:
     virtual IRoxieWriteHandler *createFileName(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, wu, false);
+        expandLogicalFilename(fileName, _fileName, wu, false, false);
         Owned<IResolvedFile> resolved = lookupFile(fileName, false, false, true, true);
         if (!resolved)
             resolved.setown(resolveLFNusingDaliOrLocal(fileName, false, false, true, true, resolveLocally()));
@@ -765,8 +765,7 @@ typedef CResolvedPackage<CRoxiePackageNode> CRoxiePackage;
 IRoxiePackage *createRoxiePackage(IPropertyTree *p, IRoxiePackageMap *packages)
 {
     Owned<CRoxiePackage> pkg = new CRoxiePackage(p);
-    if (packages)
-        pkg->resolveBases(packages);
+    pkg->resolveBases(packages);
     return pkg.getClear();
 }
 
@@ -2214,7 +2213,7 @@ private:
                 Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx);
                 if (f)
                 {
-                    unsigned warnLimit = f->getWarnTimeLimit();
+                    unsigned warnLimit = f->queryOptions().warnTimeLimit;
                     reply.appendf("<QueryTimeWarning val='%d'/>", warnLimit);
                 }
             }
@@ -2492,7 +2491,7 @@ private:
                     ReadLockBlock readBlock(packageCrit);
                     shash = allQueryPackages->queryHash();
                 }
-                reply.appendf("<State hash='%"I64F"u' topologyHash='%"I64F"u'/>", shash, thash);
+                reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u'/>", shash, thash);
             }
             else if (stricmp(queryName, "control:resetindexmetrics")==0)
             {
@@ -2583,7 +2582,7 @@ private:
                     ReadLockBlock readBlock(packageCrit);
                     shash = allQueryPackages->queryHash();
                 }
-                reply.appendf("<State hash='%"I64F"u' topologyHash='%"I64F"u'/>", shash, thash);
+                reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u'/>", shash, thash);
             }
             else if (stricmp(queryName, "control:steppingEnabled")==0)
             {
@@ -2664,7 +2663,7 @@ private:
                 unsigned interval = control->getPropInt("@interval", 60000);
                 bool enable = control->getPropBool("@enable", true);
                 if (enable)
-                    startPerformanceMonitor(interval);
+                    startPerformanceMonitor(interval, PerfMonStandard, perfMonHook);
                 else
                     stopPerformanceMonitor();
             }
@@ -2686,11 +2685,11 @@ private:
             else if (stricmp(queryName, "control:timings")==0)
             {
                 reply.append("<Timings>");
-                timer->getTimings(reply);
+                queryActiveTimer()->getTimings(reply);
                 reply.append("</Timings>");
                 if (control->getPropBool("@reset", false))
                 {
-                    timer->reset();
+                    queryActiveTimer()->reset();
                 }
             }
             else if (stricmp(queryName, "control:topology")==0)

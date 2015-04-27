@@ -19,7 +19,7 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email> </para>
+      email to <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Please include <emphasis role="bold">Documentation
       Feedback</emphasis> in the subject line and reference the document name,
@@ -27,13 +27,13 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. </para>
+      of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products and services may be trademarks or registered
-      trademarks of their respective companies. </para>
+      trademarks of their respective companies.</para>
 
       <para>All names and example data used in this manual are fictitious. Any
       similarity to actual persons, living or dead, is purely
@@ -52,7 +52,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <!--corpname never prints-->
 
@@ -272,7 +272,7 @@
 
         <orderedlist>
           <listitem>
-            <para>Download the sample data file from the HPCC Systems
+            <para>Download the sample data file from the HPCC Systems<superscript>®</superscript>
             portal.</para>
 
             <para>The data file is available from links found on <ulink
@@ -549,7 +549,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Rt-Click on the <emphasis role="bold">My Files</emphasis>
+          <para>Right-click on the <emphasis role="bold">My Files</emphasis>
           folder in the Repository window, and select <emphasis
           role="bold">Insert Folder</emphasis> from the pop-up menu.</para>
 
@@ -589,7 +589,7 @@
         </listitem>
 
         <listitem>
-          <para>Rt-Click on the <emphasis
+          <para>Right-click on the <emphasis
           role="bold">Tutorial</emphasis><emphasis
           role="bold">YourName</emphasis>Folder, and select <emphasis
           role="bold">Insert File</emphasis> from the pop-up menu.</para>
@@ -687,7 +687,7 @@ END;    </programlisting> <figure>
 
         <orderedlist>
           <listitem>
-            <para>Rt-Click on the <emphasis
+            <para>Right-click on the <emphasis
             role="bold">Tutorial</emphasis><emphasis role="bold">YourName
             </emphasis>Folder, and select <emphasis role="bold">Insert
             File</emphasis> from the pop-up menu.</para>
@@ -800,6 +800,8 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
             <para><emphasis role="bold">Note: </emphasis>The modified portion
             is shown in <emphasis role="bold">bold</emphasis>.</para>
+
+            <para> </para>
           </listitem>
 
           <listitem>
@@ -837,7 +839,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
         </orderedlist>
       </sect2>
 
-      <sect2 id="Process_the_Data">
+      <sect2 id="Process_the_Data" role="brk">
         <title>Process the Data</title>
 
         <para>In this section, we will write code to convert the original data
@@ -846,7 +848,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
         <orderedlist>
           <listitem>
-            <para>Rt-Click on the <emphasis
+            <para>Right-click on the <emphasis
             role="bold">Tutorial</emphasis><emphasis role="bold">YourName
             </emphasis>Folder, and select Insert File from the pop-up
             menu.</para>

@@ -371,8 +371,7 @@ int main(int argc, char* argv[])
             UseSysLogForOperatorMessages();
         AddServers(auditDir.str());
         addAbortHandler(actionOnAbort);
-        Owned<IPerfMonHook> perfMonHook;
-        startPerformanceMonitor(serverConfig->getPropInt("Coven/@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000, PerfMonStandard, perfMonHook);
+        startPerformanceMonitor(serverConfig->getPropInt("Coven/@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000);
         StringBuffer absPath;
         StringBuffer dataPath;
         serverConfig->getProp("@dataPath",dataPath);

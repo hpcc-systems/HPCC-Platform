@@ -102,7 +102,7 @@ dir.parser() {
 }
 
 ## dir.getByName allows the user to pass the name of a directory from the <Directories/>
-## tag they would like to recive and in return sets $dir_return in the local scope
+## tag they would like to receive and in return sets $dir_return in the local scope
 ## to the array that has been requested.
 ##
 ## $1="<directory name>"
@@ -270,6 +270,10 @@ set_environmentvars() {
         echo "\$autodetectipscript=$autodetectipscript"
         echo
     fi
+
+    if [ -n "${umask}" ]; then
+        umask $umask
+    fi
 }
 
 
@@ -376,14 +380,6 @@ createRuntime() {
     chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
     dir.getByName mirror
     chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
-
-    # setting up ulimit for thor and other component which needs it.
-    ulimit -n 32768
-    ulimit -c unlimited
-    # for rtprio in Roxie
-    ulimit -Hr 4
-    # to enable, must also increase vm.nr_hugepages and/or vm.nr_overcommit_hugepages
-    ulimit -l unlimited
 }
 
 start_dafilesrv() {
@@ -398,8 +394,6 @@ start_dafilesrv() {
 
       noStatusCheck=1
       /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
-      ulimit -n 32768
-      ulimit -c unlimited
       startCmd ${compName} ${noStatusCheck}
       return $?
    else
@@ -416,32 +410,62 @@ startCmd() {
         echo "compName=$compName compPath=$compPath compProcessName=$compType"
     fi
 
+    # use less heap when threaded
+    export MALLOC_ARENA_MAX=8
+
     # Creating logfiles for component
     logDir=$log/${compName}
     logFile=$log/${compName}/${compName}_init.log
 
+
     if [ ${noStatusCheck} -ne 1 ]; then
-       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
-       RCSTART=$?
-       if [ ${RCSTART} -ne 0 ];then
-          if [ ${DEBUG} != "NO_DEBUG" ]; then
-              log_failure_msg "fixing orphan :: check_status code is ${RCSTART}"
-          fi
-          removePid ${PIDPATH}
-          unlock ${LOCKPATH}
-       else
-          if [ ${DEBUG} != "NO_DEBUG" ]; then
-              log_success_msg "Lock or Pid file already exists"
-          else
-              #Since component is already started but current script is failed till returning 0
-              log_success_msg "Already started"
-          fi
-          return ${RCSTART}
-       fi
+      check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+      RCSTART=$?
+      if [ ${RCSTART} -gt 1 ];then
+        # take care of failure message in check_status function
+        cleanup_component
+        removePid ${PIDPATH}
+        removePid ${COMPPIDPATH}
+        unlock ${LOCKPATH}
+      fi
+      if [ ${RCSTART} -eq 0 ]; then
+        #Since component is already started but current script is failed till returning 0
+        log_success_msg "Already Started"
+        return ${RCSTART}
+      fi
+    fi
+
+    limits=(
+      MIN_Hn_nofile="32768"
+      MIN_Hc_core="unlimited"
+      MIN_Hu_nproc="8192"
+      MIN_Hr_rtprio="4"
+      MIN_Hl_memlock="unlimited" )
+
+    local i=0
+    for element in "${limits[@]}"; do
+      flag="-${element:4:2}"
+      value=${element##*"="}
+
+      default_value=$( ulimit $flag )
+      if [[ "$value" != "unlimited" ]] && ([[ "$default_value" == "unlimited" ]] || [[ "$default_value" -gt "$value" ]]); then
+        _temp=${element%%"="*}
+        _temp="${_temp}=${default_value}"
+        limits[i]=$_temp
+      fi
+      flag="-${element:5:1}"
+      ulimit $flag ${limits[i]##*"="}
+      i=$((i+1))
+    done
+
+
+    UMASK_ARG=""
+    if [ -n "${umask}" ]; then
+        UMASK_ARG="--umask ${umask}"
     fi
 
     EXEC_COMMAND="${bin_path}/init_${compType} "
-    startcmd="${START_STOP_DAEMON} -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1"
+    startcmd="${START_STOP_DAEMON} -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1"
 
     issueTime=`date`
     logCommand="COMMAND:: $startcmd  ::Issued at $issueTime "
@@ -466,46 +490,37 @@ startCmd() {
     fi
     eval $startcmd
 
-    if strstr ${compType} "thor" ; then
-        sleep 15
-        WAITTIME=30
-    else
-        sleep 1
-        WAITTIME=5
+
+    local WAITTIME=120
+    local RCSTART=0
+    local COMPONENT_HAS_STARTED=0
+    local SENTINEL_CHECK=1
+
+    if [ ${compType} = "dafilesrv" ]; then
+      SENTINEL_CHECK=0
     fi
 
-    RCSTART=0
-    WAITEDLONGENOUGH=0
-    while [[ ${WAITEDLONGENOUGH} -lt ${WAITTIME} ]]
+    while [ ${WAITTIME} -gt 0 ]
     do
-        WAITEDLONGENOUGH=`expr ${WAITEDLONGENOUGH}+1`
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+        WAITTIME=`expr ${WAITTIME} - 1`
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
         RCSTART=$?
         if [ ${RCSTART} -eq 0 ]; then
           log_success_msg
           return 0;
+        elif [ ${RCSTART} -eq 2 ]; then
+          COMPONENT_HAS_STARTED=1
+        else
+          if [ ${COMPONENT_HAS_STARTED} -eq 1 ]; then
+            log_failure_msg "${compName} failed to start cleanly"
+            return 0;
+          fi
         fi
         sleep 1
     done
 
-    if [ $RCSTART -eq 1 ] || [ $RCSTART -eq 3 ];then
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "${compName} is not running, Pidfile exists"
-       else
-          log_failure_msg
-       fi
-    elif [ $RCSTART -eq 2 ];then
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "${compName} is not running, lockfile exists"
-       else
-          log_failure_msg
-       fi
-    else
-       if [ ${DEBUG} != "NO_DEBUG" ]; then
-          log_failure_msg "Failed : Could not bring up Component"
-       else
-          log_failure_msg
-       fi
+    if [ ${WAITTIME} -eq 0 ]; then
+        log_failure_msg "${compName} has timed out, but may still be starting"
     fi
 
     chmod 644 ${envfile}
@@ -529,7 +544,9 @@ stop_component() {
        else
           log_success_msg "Already stopped"
        fi
+       cleanup_component
        removePid ${PIDPATH}
+       removePid ${COMPPIDPATH}
        unlock ${LOCKPATH}
        return 0
     fi
@@ -541,39 +558,29 @@ stop_component() {
     fi
 
     eval $stopcmd
-    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
-    RESULT="$?"
 
-    if [ "${RESULT}" -eq 0 ] ; then
-        while [ 1 ]
-        do
-            check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
-            RCSTOP=$?
-            if [ ${RCSTOP} -ne 0 ] ; then
-               #Before exiting check whether init_<component> is still running or not
-                while [ 1 ]
-                do
-                   checkPid ${PIDPATH}
-                   if [ $__flagPid -eq 1 ];then
-                        checkPidExist ${PIDPATH}
-                        if [ $__pidExists -ne 1 ];then
-                            removePid ${PIDPATH}
-                            unlock ${LOCKPATH}
-                            log_success_msg
-                            return 0
-                        fi
-                    fi
-                    sleep 1
-                done
-            fi
+    RESULT=0
+    local counter=0
+    while [[ $RESULT -eq 0 && $counter -le 20 ]]; do
+        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+        RESULT=$?
+        ((counter++))
+        if [[ $RESULT -eq 0 ]]; then
             sleep 1
-       done
+        fi
+    done
+
+    if [[ $RESULT -ne 1 && $RESULT -ne 4 ]]; then
+        log_failure_msg
     else
-        removePid ${PIDPATH}
-        unlock ${LOCKPATH}
         log_success_msg
-        RCSTOP=0
     fi
+
+    removePid ${PIDPATH}
+    unlock ${LOCKPATH}
+
+    RCSTOP=0
+
     return ${RCSTOP}
 }
 
@@ -629,65 +636,39 @@ restart_component() {
        else
            echo "Component $compName was not running. Will start it now for you ...."
            removePid ${PIDPATH}
+           removePid ${COMPPIDPATH}
            unlock ${LOCKPATH}
        fi
          /etc/init.d/dafilesrv start 2>/dev/null
     else
-       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
        RCRESTART=$?
        if [ $RCRESTART -ne 0 ];then
            echo "Component $compName was not running. Will start it now for you ...."
            removePid ${PIDPATH}
+           removePid ${COMPPIDPATH}
            unlock ${LOCKPATH}
        else
            stop_component ${compName}
        fi
        start_component $compName
-       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
+       check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
        RCRESTART=$?
        return $RCRESTART
     fi
 }
 
 status_component() {
-  sentinelFileCheck=1;
-  if strstr ${compType} "thor" && [ ${foundThorSlave}  -eq 1 ];
-  then
-    STAT=0
-    for i in `ls -lrt ${pid}/${compName}_slave*.pid | awk -F" " '{print $NF}'`;
-    do
-      checkPid ${i}
-      comp_name=`echo $i | awk -F"${pid}/" '{print $2}' | awk -F"." '{print $1}'`
-      if [ $__flagPid -eq 1 ]; then
-         checkPidExist ${i}
-         getPid ${i}
-         if [ $__pidExists -eq 1 ];then
-             printf "%-15s ( pid %8s ) is running..." "${comp_name}" "${__pidValue}"
-             statForEach=0
-         else
-             printf "%-15s is stopped" "${comp_name}"
-             statForEach=3
-         fi
-      else
-         printf "%-15s is stopped" "${comp_name}"
-         statForEach=3
-      fi
-      STAT=$(( ${STAT} == 0 ? ${statForEach} : ${STAT} ))
-    echo ""
-    done
-   return ${STAT}
+  check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 1
+  RCSTATUS=$?
+  getPid ${COMPPIDPATH}
+  if [ ${RCSTATUS} -ne 0 ];then
+    printf "%-15s is stopped" "$compName"
   else
-    check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${sentinelFileCheck}
-    RCSTATUS=$?
-    getPid ${COMPPIDPATH}
-    if [ ${RCSTATUS} -ne 0 ];then
-        printf "%-15s is stopped" "$compName"
-    else
-        printf "%-15s ( pid %8s ) is running..." "${compName}" "${__pidValue}"
-    fi
-    echo ""
-    return ${RCSTATUS}
+    printf "%-15s ( pid %8s ) is running..." "${compName}" "${__pidValue}"
   fi
+  echo ""
+  return ${RCSTATUS}
 }
 
 
@@ -971,5 +952,70 @@ cluster_tools_init() {
    # workaround inconsistency of stat command
    cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
    [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
+}
 
+##
+## Cleanup component
+##
+cleanup_component() {
+
+  # used to get variables for frunssh
+  # Necessary for when we source in setvars, since we aren't using the start-stop-demon the $HOME will
+  # be set to /root or some other location, and not the appropriate directory, causing problems
+  # with $SSHidentityfile
+  set_environmentvars
+  HOME=${home}/${user}
+  instancedir=${runtime}/${compName}
+  if [ -e $instancedir/setvars ]; then
+    source $instancedir/setvars
+  fi
+
+  # grab the PID of our component, and in the case it doesn't exist, the pid of the init file (in case
+  # it somehow is still alive)
+  local cpidpath=${COMPPIDPATH}
+  if [ "${compType}" = "thor" ] && [ ! -f "${cpidpath}" ]; then
+    # if run_thor is sent a SIGKILL, the normal COMPPIDPATH file will no longer exist, we catch this and
+    # fall back to the {compName}_master.pid file that will still be available.
+    cpidpath=$( echo $cpidpath | sed 's/\.pid/_master.pid/' )
+  fi
+  getPid ${cpidpath}
+  local mpid=$__pidValue
+  if [ $mpid -eq 0 ]; then
+    getPid ${PIDPATH}
+    mpid=$__pidValue
+  fi
+
+  # start with SIGTERM and then follow up with SIGKILL if unsuccessful
+  if [ $mpid -ne 0 ] ; then
+    # use the mpid we collected to grab the group pid of the process, to kill off all siblings at once
+    local pgid=$( ps -p $mpid -o pid,pgid | grep $mpid | awk '{ print $2 }' )
+
+    kill -15 -$pgid
+    sleep 1
+    local WAITTIME=5
+    local RUNNING=1
+    while [[ ${WAITTIME} -gt 0 ]]; do
+      WAITTIME=`expr ${WAITTIME} - 1`
+      kill -0 -$pgid &> /dev/null
+      if [ $? -ne 0 ];then
+        if [ ${DEBUG} != "NO_DEBUG" ];then
+          echo "${compName} orphans cleaned up"
+        fi
+        RUNNING=0
+        break;
+      else
+        if [ ${DEBUG} != "NO_DEBUG" ]; then
+          echo "Waiting for ${compName} orphans to cleanup gracefully"
+        fi
+        sleep 1
+      fi
+    done
+
+    if [[ ${RUNNING} -eq 1 ]]; then
+      if [ ${DEBUG} != "NO_DEBUG" ]; then
+        echo "sending SIGKILL to ${compName} orphans"
+      fi
+      kill -9 -$pgid
+    fi
+  fi
 }

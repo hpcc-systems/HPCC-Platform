@@ -23,6 +23,7 @@ import os
 import traceback
 import re
 import tempfile
+import xml.etree.ElementTree as ET
 
 from ...util.util import isPositiveIntNum, getConfig
 
@@ -40,11 +41,10 @@ class ECLFile:
     wuid = None
     elapsTime = 0
     jobname = ''
+    aborted = False
     abortReason = ''
     taskId = -1
     ignoreResult=False
-    isDynamicSource=None
-    dynamicSource='test'
 
     def __del__(self):
         logging.debug("%3d. File destructor (file:%s).", self.taskId, self.ecl )
@@ -63,23 +63,37 @@ class ECLFile:
         self.baseEcl = os.path.basename(ecl)
         self.basename = os.path.splitext(self.baseEcl)[0]
         self.baseXml = self.basename + '.xml'
+        self.baseQueryXml = self.basename+'.queryxml'
         self.ecl = self.baseEcl
         self.xml_e = self.baseXml
         self.xml_r = self.baseXml
         self.xml_a = 'archive_' + self.baseXml
         self.jobname = self.basename
         self.diff = ''
+        self.aborted = False
         self.abortReason =''
         self.tags={}
         self.tempFile=None
+        self.paramD=[]
+        self.isVersions=False
+        self.version=''
+        self.versionId=0
+        self.timeout = 0
+        self.args = args
 
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
-        if 'publish' in args:
-            self.forcePublish=args.publish
+        if 'publish' in self.args:
+            self.forcePublish=self.args.publish
 
         self.optX =[]
-        self.optXHash={}
+
+        # The final set of stored variables are the union of queryxml, config and CLI
+        # The values in the queryxml file is the lowest precedence
+        # the relevant value in config file Params array it the middle and
+        # -X in the CLI is the highest.
+        self.optXHash=self.checkQueryxmlFile()
+
         self.config = getConfig()
         try:
             # Process definitions of stored input value(s) from config
@@ -129,6 +143,22 @@ class ECLFile:
         self.mergeHashToStrArray(self.optFHash,  self.optF)
         pass
 
+    def checkQueryxmlFile(self):
+        retHash = {}
+        path = os.path.join(self.dir_ec, self.baseQueryXml)
+        logging.debug("%3d. checkQueryxmlFile() checks path:'%s' ",  self.taskId,  path )
+        if os.path.isfile(path):
+            # we have defaults for stored variables in xml file.
+            tree = ET.parse(path)
+            root = tree.getroot()
+            for child in root:
+                key = '-X'+child.tag
+                val = child.text
+                retHash[key] = val
+            pass
+        logging.debug("%3d. checkQueryxmlFile() returns with %s stored parameter(s) ",  self.taskId,  len(retHash) )
+        return retHash
+
     def processKeyValPairs(self,  optArr,  optHash):
         for optStr in optArr:
             [key,  val] = optStr.split('=')
@@ -171,9 +201,11 @@ class ECLFile:
         return os.path.join(self.dir_r, self.xml_r)
 
     def getArchive(self):
-        logging.debug("%3d. getArchive (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
-        if self.isDynamicSource:
-            dynamicFilename='archive_' + self.basename + '_'+ self.dynamicSource+'.xml'
+        logging.debug("%3d. getArchive (isVersions:'%s')", self.taskId, self.isVersions )
+        if self.isVersions:
+            dynamicFilename='archive_' + self.basename
+            dynamicFilename+= '_v'+ str(self.versionId)
+            dynamicFilename += '.xml'
             return os.path.join(self.dir_a, dynamicFilename)
         else:
             return os.path.join(self.dir_a, self.xml_a)
@@ -182,17 +214,9 @@ class ECLFile:
         return os.path.join(self.dir_ec, self.ecl)
 
     def getRealEclSource(self):
-        logging.debug("%3d. getRealEclSource (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
-        if self.isDynamicSource:
-            # generate stub and return with it
-            self.tempFile = tempfile.NamedTemporaryFile(prefix='_temp',  suffix='.ecl', dir=self.dir_ec)
-            self.tempFile.write('import '+self.basename+';\n')
-            self.tempFile.write(self.basename+'.execute(source := \''+self.dynamicSource+'\');\n')
-            self.tempFile.flush()
-            # now return with the generated
-            return os.path.join(self.dir_ec, self.tempFile.name)
-        else:
-            return os.path.join(self.dir_ec, self.ecl)
+        logging.debug("%3d. getRealEclSource (isVersions:'%s')", self.taskId, self.isVersions )
+        logging.debug("%3d. return with '%s'", self.taskId, self.ecl)
+        return os.path.join(self.dir_ec, self.ecl)
 
     def getBaseEcl(self):
         return self.ecl
@@ -201,18 +225,18 @@ class ECLFile:
         return self.basename
 
     def getBaseEclRealName(self):
-        logging.debug("%3d. getBaseEclRealName (isDynamicSource:'%s')", self.taskId, self.isDynamicSource )
-        if self.isDynamicSource:
-            realName = self.basename + '.ecl ( source: ' + self.dynamicSource + ' )'
+        logging.debug("%3d. getBaseEclRealName (isVersions:'%s')", self.taskId, self.isVersions)
+        if self.isVersions:
+            realName = self.basename + '.ecl ( version: ' + self.getVersion()  + ' )'
         else:
             realName = self.getBaseEcl()
         return realName
 
     def getWuid(self):
-        return self.wuid
+        return self.wuid.strip()
 
     def setWuid(self,  wuid):
-        self.wuid = wuid
+        self.wuid = wuid.strip()
 
     def addResults(self, results, wuid):
         filename = self.getResults()
@@ -317,32 +341,68 @@ class ECLFile:
         logging.debug("%3d. testInClass() returns with: %s",  self.taskId,  retVal)
         return retVal
 
-    def testDynamicSource(self):
-        if self.isDynamicSource == None:
-            # Standard string has a problem with unicode characters
-            # use byte arrays and binary file open instead
-            tag = b'//dynamic:source'
-            logging.debug("%3d. testDynamicSource (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
-            self.isDynamicSource = self.__checkTag(tag)
-            logging.debug("%3d. testDynamicSource() returns with: %s",  self.taskId,  self.isDynamicSource)
-        return self.isDynamicSource
+    def testFail(self):
+        # Standard string has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = b'//fail'
+        logging.debug("%3d. testFail(ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+        retVal = self.__checkTag(tag)
+        logging.debug("%3d. testFail() returns with: %s",  self.taskId,  retVal)
+        return retVal
+
+    # Test (and read all) //version tag in the ECL file
+    def testVesion(self):
+        if self.isVersions == False and not self.args.noversion:
+            tag = b'//version'
+            logging.debug("%3d. testVesion (ecl:'%s', tag:'%s')", self.taskId, self.ecl, tag)
+            retVal = False
+            self.versions = []
+            eclText = open(self.getEcl(), 'rb')
+            for line in eclText:
+                if tag in line.lower():
+                    items = line.replace(tag, '').strip().replace('"', '')
+                    if '=' in items:
+                        self.versions.append(items)
+                        retVal = True
+                        self.isVersions = True
+                        pass
+        logging.debug("%3d. testVesion() returns with isVersions = '%s'", self.taskId,  self.isVersions)
+        return self.isVersions
+
+    # Return an array of all //version tag from the original ECL file
+    def getVersions(self):
+        return self.versions
+
+    # Return the //version tag parameters from the generated ECL
+    def getVersion(self):
+        return self.version
+
+    def setVersionId(self,  id):
+        self.versionId=id
 
     def getTimeout(self):
         timeout = 0
-        # Standard string has a problem with unicode characters
-        # use byte arrays and binary file open instead
-        tag = b'//timeout'
-        logging.debug("%3d. getTimeout (ecl:'%s', tag:'%s')", self.taskId,  self.ecl, tag)
-        eclText = open(self.getEcl(), 'rb')
-        for line in eclText:
-            if tag in line:
-                timeoutParts = line.split()
-                if len(timeoutParts) == 2:
-                    if (timeoutParts[1] == '-1') or isPositiveIntNum(timeoutParts[1]) :
-                        timeout = int(timeoutParts[1])
-                break
+        if  self.timeout == 0:
+            # Standard string has a problem with unicode characters
+            # use byte arrays and binary file open instead
+            tag = b'//timeout'
+            logging.debug("%3d. getTimeout (ecl:'%s', tag:'%s')", self.taskId,  self.ecl, tag)
+            eclText = open(self.getEcl(), 'rb')
+            for line in eclText:
+                if tag in line:
+                    timeoutParts = line.split()
+                    if len(timeoutParts) == 2:
+                        if (timeoutParts[1] == '-1') or isPositiveIntNum(timeoutParts[1]) :
+                            timeout = int(timeoutParts[1])
+                            self.timeout = timeout
+                    break
+        else:
+            timeout = self.timeout
         logging.debug("%3d. Timeout is :%d sec",  self.taskId,  timeout)
         return timeout
+
+    def setTimeout(self,  timeout):
+        self.timeout = timeout
 
     def testResults(self):
         d = difflib.Differ()
@@ -358,11 +418,14 @@ class ECLFile:
                 raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
             expected = open(expectedKeyPath, 'r').readlines()
             recieved = open(self.getResults(), 'r').readlines()
-            for line in difflib.unified_diff(expected,
-                                             recieved,
-                                             fromfile=self.xml_e,
-                                             tofile=self.xml_r):
-                self.diff += line
+            diffLines = ''
+            for line in difflib.unified_diff(expected, recieved, fromfile=self.xml_e, tofile=self.xml_r):
+                diffLines += str(line)
+            logging.debug("%3d. diffLines: " + diffLines,  self.taskId )
+            if len(diffLines) > 0:
+                self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
+                self.diff += diffLines
+            logging.debug("%3d. self.diff: '" + self.diff +"'",  self.taskId )
         except Exception as e:
             logging.debug( e, extra={'taskId':self.taskId})
             logging.debug("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
@@ -385,6 +448,10 @@ class ECLFile:
 
     def setAborReason(self,  reason):
         self.abortReason = reason
+        self.aborted = True
+
+    def isAborted(self):
+        return self.aborted
 
     def getAbortReason(self):
         return self.abortReason
@@ -408,10 +475,14 @@ class ECLFile:
     def getFParameters(self):
         return self.optF
 
-    def setDynamicSource(self,  source):
-        self.dynamicSource = source
-        self.isDynamicSource=True
+    # Set -D parameter(s) (and generate version string for logger)
+    def setDParameters(self,  param):
+        self.version = param.replace(',',  ', ')
+        param = '-D'+param.replace(',', ' -D')+''
+        self.paramD = param.split(' ')
+        self.isVersions = True
 
-    def getDynamicSource(self):
-        return self.dynamicSource
-
+    # Return the -D parameters
+    def getDParameters(self):
+        logging.debug("%3d. getDParameters (ecl:'%s', D parameters are:'%s')", self.taskId,  self.ecl, self.paramD)
+        return self.paramD

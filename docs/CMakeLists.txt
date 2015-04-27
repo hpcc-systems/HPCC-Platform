@@ -29,6 +29,8 @@ set (XML_CATALOG ${CMAKE_CURRENT_BINARY_DIR}/BuildTools/catalog.xml)
 set (DOC_VERSION "${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}")
 set (FO_XSL ${CMAKE_CURRENT_BINARY_DIR}/BuildTools/fo.xsl)
 set (VERSION_DIR ${CMAKE_CURRENT_BINARY_DIR}/)
+set (ECLIPSE_HTML_XSL ${CMAKE_CURRENT_BINARY_DIR}/BuildTools/EclipseHelp.xsl)
+set (ECL_REFERENCE_XML ${CMAKE_CURRENT_BINARY_DIR}/ECLReference/ECLReference.xml)
 
 
 if ( "${HPCC_MATURITY}" STREQUAL "release" )
@@ -47,10 +49,12 @@ add_subdirectory(resources)
 
 
 # Doc dirs to include.
+add_subdirectory(DynamicESDL)
 add_subdirectory(ECLLanguageReference)
 add_subdirectory(ECLProgrammersGuide)
-#add_subdirectory(ECLReference)
 add_subdirectory(ECLStandardLibraryReference)
+add_subdirectory(ECLReference)
+add_subdirectory(EclipseHelp)
 add_subdirectory(HPCCClientTools)
 add_subdirectory(HPCCCertify)
 add_subdirectory(HPCCDataHandling)
@@ -67,6 +71,11 @@ add_subdirectory(ECLPlayground)
 add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
+
+# Docs automation
+if (DOCS_AUTO)
+   add_subdirectory(Automation)
+endif()
 
 
 #WIP -  Docs

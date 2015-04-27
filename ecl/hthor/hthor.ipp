@@ -219,8 +219,8 @@ public:
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
     virtual unsigned queryOutputs() { return 1; }
-    virtual void updateProgress(IWUGraphProgress &progress) const;
-    virtual void updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph) const;
+    virtual void updateProgress(IStatisticGatherer &progress) const;
+    virtual void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const;
     unsigned __int64 queryProcessed() const { return processed; }
     virtual unsigned queryId() const { return activityId; }
     virtual ThorActivityKind getKind() const  { return kind; };
@@ -230,7 +230,7 @@ public:
     virtual bool isPassThrough();
 
 protected:
-    void updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const;
+    void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const;
 
 protected:
     ILocalEclGraphResults * resolveLocalQuery(__int64 graphId);
@@ -348,6 +348,8 @@ class CHThorXmlWriteActivity : public CHThorDiskWriteActivity
 {
     IHThorXmlWriteArg &helper;
     StringBuffer rowTag;
+    unsigned headerLength;
+    unsigned footerLength;
 
     virtual bool isOutputTransformed() { return true; }
     virtual void setFormat(IFileDescriptor * desc);
@@ -842,7 +844,7 @@ public:
     virtual void setInput(unsigned, IHThorInput *);
     virtual void ready();
     virtual void done();
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorSimpleActivityBase::updateProgress(progress);
         inputTrue->updateProgress(progress);
@@ -1270,7 +1272,7 @@ public:
     virtual bool isGrouped();
 
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorActivityBase::updateProgress(progress);
         if (input1)
@@ -1416,7 +1418,7 @@ public:
 
     //interface IHThorInput
     virtual const void * nextInGroup();
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorActivityBase::updateProgress(progress);
         if (input1)
@@ -1470,7 +1472,7 @@ public:
 
     //interface IHThorInput
     virtual const void * nextInGroup();
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorActivityBase::updateProgress(progress);
         if (input1)
@@ -1665,7 +1667,7 @@ public:
     virtual void setInput(unsigned, IHThorInput *);
 
     //interface IHThorInput
-    virtual void updateProgress(IWUGraphProgress &progress) const;
+    virtual void updateProgress(IStatisticGatherer &progress) const;
 };
 
 class CHThorCaseActivity : public CHThorMultiInputActivity
@@ -2161,6 +2163,9 @@ protected:
     unsigned __int64 localOffset;
     unsigned __int64 offsetOfPart;
     StringBuffer mangledHelperFileName;
+    StringAttr logicalFileName;
+    StringArray subfileLogicalFilenames;
+    Owned<ISuperFileDescriptor> superfile;
 
     void close();
     virtual void open();
@@ -2196,7 +2201,7 @@ public:
 //interface IFilePositionProvider
     virtual unsigned __int64 getFilePosition(const void * row);
     virtual unsigned __int64 getLocalFilePosition(const void * row);
-    virtual const char * queryLogicalFilename(const void * row) { return "MORE!"; }
+    virtual const char * queryLogicalFilename(const void * row) { return logicalFileName.get(); }
 };
 
 class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements IIndexReadContext
@@ -2294,6 +2299,7 @@ protected:
     CSVSplitter         csvSplitter;    
     unsigned __int64 limit;
     unsigned __int64 stopAfter;
+    size32_t maxRowSize;
 };
 
 class CHThorXmlReadActivity : public CHThorDiskReadBaseActivity, implements IXMLSelect
@@ -2665,7 +2671,7 @@ public:
 
     virtual void ready();
     virtual void done();
-    virtual void updateProgress(IWUGraphProgress &progress) const;
+    virtual void updateProgress(IStatisticGatherer &progress) const;
 
 protected:
     IMPLEMENT_IINTERFACE;
@@ -2688,8 +2694,8 @@ class CHThorLibraryCallActivity : public CHThorSimpleActivityBase
     Owned<IHThorGraphResults> results;
     ActivityState state;
     StringAttr libraryName;
+    StringAttr embeddedGraphName;
     unsigned interfaceHash;
-    bool embedded;
 
     CIArrayOf<LibraryCallOutput> outputs;
     Owned<IHThorBoundLoopGraph> libraryGraph;
@@ -2702,7 +2708,7 @@ public:
     IHThorGraphResult * getResultRows(unsigned whichOutput);
 
 protected:
-    void updateOutputProgress(IWUGraphProgress &progress, const LibraryCallOutput & output, unsigned __int64 numProcessed) const;
+    void updateOutputProgress(IStatisticGatherer &progress, const LibraryCallOutput & output, unsigned __int64 numProcessed) const;
 
 protected:
     virtual void ready();

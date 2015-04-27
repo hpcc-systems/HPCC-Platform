@@ -23,4 +23,4 @@ udecimal4   myfield;
 xd := DATASET('x',x,FLAT);
 
 
-OUTPUT(xd, {myfield*(unsigned8)1}, 'y.d00');
+OUTPUT(xd, {myfield*NOFOLD((unsigned8)1)}, 'y.d00');

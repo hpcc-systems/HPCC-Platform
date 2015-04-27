@@ -32,6 +32,7 @@ define([
 
     "hpcc/_Widget",
     "hpcc/GraphWidget",
+    "hpcc/JSGraphWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
     "hpcc/TimingTreeMapWidget",
@@ -54,13 +55,14 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
             registry, Dialog,
             entities,
-            _Widget, GraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
+            _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
             template) {
     return declare("GraphPageWidget", [_Widget], {
         templateString: template,
         baseClass: "GraphPageWidget",
         i18n: nlsHPCC,
 
+        graphType: dojoConfig.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
         borderContainer: null,
         rightBorderContainer: null,
         graphName: "",
@@ -359,6 +361,20 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (this.global._plugin) {
+                this.doInit(params);
+            } else {
+                this.global.on("ready", lang.hitch(this, function (evt) {
+                    this.doInit(params);
+                }));
+            }
+        },
+
+        doInit: function(params) {
+            if (this.global.version.major < 5) {
+                dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
+            }
+
             if (params.SafeMode && params.SafeMode != "false") {
                 this.overviewTabContainer.selectChild(this.widget.SubgraphsGridCP);
                 this.localTabContainer.selectChild(this.properties);
@@ -414,12 +430,6 @@ define([
                 },
                 hideHelp: true
             }, params));
-
-            this.global.on("ready", lang.hitch(this, function(evt) {
-                if (this.global.version.major < 5) {
-                    dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
-                }
-            }));
         },
 
         refreshData: function () {
@@ -437,7 +447,8 @@ define([
                 if (this.overview.depth.get("value") === -1) {
                     var newDepth = 0;
                     for (; newDepth < 5; ++newDepth) {
-                        if (this.global.getLocalisedXGMML([0], newDepth, this.overview.distance.get("value")) !== "") {
+                        var xgmml = this.global.getLocalisedXGMML([this.global.getItem(0)], newDepth, this.overview.distance.get("value"));
+                        if (xgmml !== "" && xgmml !== "<graph></graph>") {
                             break;
                         }
                     }

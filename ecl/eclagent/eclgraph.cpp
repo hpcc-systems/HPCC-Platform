@@ -140,6 +140,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKcsvwrite:
         return createCsvWriteActivity(agent, activityId, subgraphId, (IHThorCsvWriteArg &)arg, kind);
     case TAKxmlwrite:
+    case TAKjsonwrite:
         return createXmlWriteActivity(agent, activityId, subgraphId, (IHThorXmlWriteArg &)arg, kind);
     case TAKpipethrough:
         return createPipeThroughActivity(agent, activityId, subgraphId, (IHThorPipeThroughArg &)arg, kind);
@@ -256,6 +257,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKcsvread:
         return createCsvReadActivity(agent, activityId, subgraphId, (IHThorCsvReadArg &)arg, kind);
     case TAKxmlread:
+    case TAKjsonread:
         return createXmlReadActivity(agent, activityId, subgraphId, (IHThorXmlReadArg &)arg, kind);
     case TAKlocalresultread:
         return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, node->getPropInt("att[@name='_graphId']/@value"));
@@ -371,6 +373,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
     case TAKdiskwrite:
     case TAKcsvwrite:
     case TAKxmlwrite:
+    case TAKjsonwrite:
         {
             IHThorDiskWriteArg * helper = static_cast<IHThorDiskWriteArg *>(arg.get());
             filename.set(helper->getFileName());
@@ -578,6 +581,7 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
         case TAKdiskwrite:
         case TAKcsvwrite:
         case TAKxmlwrite:
+        case TAKjsonwrite:
             alreadyUpdated = alreadyUpToDate(agent);
             if (alreadyUpdated)
                 return false;
@@ -704,7 +708,7 @@ IHThorInput * EclGraphElement::queryOutput(unsigned idx)
     return activity ? activity->queryOutput(idx) : NULL;
 }
 
-void EclGraphElement::updateProgress(IWUGraphProgress &progress)
+void EclGraphElement::updateProgress(IStatisticGatherer &progress)
 {
     if(conditionalLink)
     {
@@ -766,6 +770,8 @@ EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph
     executed = false;
     created = false;
     numResults = 0;
+    startGraphTime = 0;
+    elapsedGraphCycles = 0;
 
     subgraphCodeContext.set(_agent.queryCodeContext());
     subgraphCodeContext.setContainer(this);
@@ -878,23 +884,26 @@ void EclSubGraph::updateProgress()
     if (!isChildGraph && agent->queryRemoteWorkunit())
     {
         Owned<IConstWUGraphProgress> graphProgress = parent.getGraphProgress();
-        Owned<IWUGraphProgress> progress = graphProgress->update();
-        updateProgress(*progress);
+        Owned<IWUGraphStats> progress = graphProgress->update(queryStatisticsComponentType(), queryStatisticsComponentName(), id);
+        IStatisticGatherer & stats = progress->queryStatsBuilder();
+        updateProgress(stats);
     }
 }
 
-void EclSubGraph::updateProgress(IWUGraphProgress &progress)
+void EclSubGraph::updateProgress(IStatisticGatherer &progress)
 {
-    if (!isChildGraph)
+    StatsSubgraphScope subgraph(progress, id);
+    if (startGraphTime)
+        progress.addStatistic(StWhenGraphStarted, startGraphTime);
+    if (elapsedGraphCycles)
+        progress.addStatistic(StTimeElapsed, cycle_to_nanosec(elapsedGraphCycles));
+    ForEachItemIn(idx, elements)
     {
-        ForEachItemIn(idx, elements)
-        {
-            EclGraphElement & cur = elements.item(idx);
-            cur.updateProgress(progress);
-        }
-        ForEachItemIn(i2, subgraphs)
-            subgraphs.item(i2).updateProgress(progress);
+        EclGraphElement & cur = elements.item(idx);
+        cur.updateProgress(progress);
     }
+    ForEachItemIn(i2, subgraphs)
+        subgraphs.item(i2).updateProgress(progress);
 }
 
 bool EclSubGraph::prepare(const byte * parentExtract, bool checkDependencies)
@@ -920,6 +929,7 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
         return;
     }
 
+    cycle_t startGraphCycles = get_cycles_now();
     ForEachItemIn(idx, elements)
     {
         EclGraphElement & cur = elements.item(idx);
@@ -945,6 +955,7 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
     ForEachItemIn(id, sinks)
         sinks.item(id).done();
 
+    elapsedGraphCycles += (get_cycles_now() - startGraphCycles);
     executed = true;
 }
 
@@ -963,7 +974,8 @@ void EclSubGraph::execute(const byte * parentExtract)
         return;
     }
 
-    unsigned startTime = msTick();
+    startGraphTime = getTimeStampNowValue();
+    cycle_t startGraphCycles = get_cycles_now();
     createActivities();
     if (debugContext)
         debugContext->checkBreakpoint(DebugStateGraphStart, NULL, parent.queryGraphName() );    //debug probes exist so we can now check breakpoints
@@ -977,19 +989,6 @@ void EclSubGraph::execute(const byte * parentExtract)
     {
         updateProgress();
         cleanupActivities();
-
-        {
-            unsigned elapsed = msTick()-startTime;
-
-            Owned<IWorkUnit> wu(agent->updateWorkUnit());
-            StringBuffer timerText;
-            formatGraphTimerLabel(timerText, parent.queryGraphName(), seqNo+1, id);
-
-            //graphn: id
-            StringBuffer wuScope;
-            formatGraphTimerScope(wuScope, parent.queryGraphName(), seqNo+1, id);
-            updateWorkunitTimeStat(wu, "eclagent", wuScope, "time", timerText.str(), milliToNano(elapsed), 1, 0);
-        }
     }
     agent->updateWULogfile();//Update workunit logfile name in case of rollover
 }
@@ -1220,7 +1219,15 @@ void EclGraph::execute(const byte * parentExtract)
         StringBuffer description;
         formatGraphTimerLabel(description, queryGraphName(), 0, 0);
 
-        updateWorkunitTimeStat(wu, "eclagent", queryGraphName(), "time", description.str(), milliToNano(elapsed), 1, 0);
+        unsigned __int64 totalTimeNs = 0;
+        unsigned __int64 totalThisTimeNs = 0;
+        unsigned __int64 elapsedNs = milliToNano(elapsed);
+        const char *totalTimeStr = "Total cluster time";
+        getWorkunitTotalTime(wu, "hthor", totalTimeNs, totalThisTimeNs);
+
+        updateWorkunitTimeStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs);
+        updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedNs);
+        wu->setStatistic(SCTsummary, "hthor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedNs, 1, 0, StatsMergeReplace);
     }
 
     if (run)
@@ -1278,12 +1285,16 @@ EclSubGraph * EclGraph::idToGraph(unsigned id)
 
 void EclGraph::updateLibraryProgress()
 {
+    //Check for old format embedded graph names, and don't update the stats if not the correct format
+    if (!MATCHES_CONST_PREFIX(queryGraphName(), GraphScopePrefix))
+        return;
+
     Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
-    Owned<IWUGraphProgress> progress = graphProgress->update();
     ForEachItemIn(idx, graphs)
     {
         EclSubGraph & cur = graphs.item(idx);
-        cur.updateProgress(*progress);
+        Owned<IWUGraphStats> progress = graphProgress->update(queryStatisticsComponentType(), queryStatisticsComponentName(), cur.id);
+        cur.updateProgress(progress->queryStatsBuilder());
     }
 }
 
@@ -1812,13 +1823,13 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
     }
 }
 
-IHThorGraphResults * EclAgent::executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, bool embedded, const byte * parentExtract)
+IHThorGraphResults * EclAgent::executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract)
 {
     Linked<EclGraph> savedGraph = activeGraph.get();
 
     try
     {
-        EclAgentQueryLibrary * library = loadEclLibrary(libraryName, expectedInterfaceHash, embedded);
+        EclAgentQueryLibrary * library = loadEclLibrary(libraryName, expectedInterfaceHash, embeddedGraphName);
 
         Owned<IHThorGraphResults> libraryResults = new GraphResults;
 

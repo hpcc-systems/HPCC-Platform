@@ -53,8 +53,6 @@
 
 #define NUMSLAVEPORTS       2
 #define DEFAULTCONNECTTIMEOUT 10000
-#define DEFAULT_OUT_BUFFER_SIZE 0x100000        // 1MB
-#define DEFAULT_IN_BUFFER_SIZE  0x100000*32  // 32MB input buffer
 #define DEFAULT_WRITEPOOLSIZE 16
 #define DISK_BUFFER_SIZE 0x10000 // 64K
 #define DEFAULT_TIMEOUT (1000*60*60)
@@ -64,16 +62,19 @@
 #pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
 #endif
 
+// JCSMORE should really use JLog trace levels and make configurable
 #ifdef _DEBUG
 #define HDSendPrintLog(M) PROGLOG(M)
 #define HDSendPrintLog2(M,P1) PROGLOG(M,P1)
 #define HDSendPrintLog3(M,P1,P2) PROGLOG(M,P1,P2)
 #define HDSendPrintLog4(M,P1,P2,P3) PROGLOG(M,P1,P2,P3)
+#define HDSendPrintLog5(M,P1,P2,P3,P4) PROGLOG(M,P1,P2,P3,P4)
 #else
 #define HDSendPrintLog(M)
 #define HDSendPrintLog2(M,P1)
 #define HDSendPrintLog3(M,P1,P2)
 #define HDSendPrintLog4(M,P1,P2,P3)
+#define HDSendPrintLog5(M,P1,P2,P3,P4)
 #endif
 
 class CDistributorBase : public CSimpleInterface, implements IHashDistributor, implements IExceptionHandler
@@ -96,6 +97,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     roxiemem::IRowManager *rowManager;
     Owned<ISmartRowBuffer> piperd;
 
+protected:
     /*
      * CSendBucket - a collection of rows destined for a particular destination target(slave)
      */
@@ -133,7 +135,12 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             for (unsigned i=0; i<c; i++)
                 dedupList.append(rows.item(i));
             rows.clear(); // NB: dedupList took ownership
-            dedupList.sort(*iCompare, owner.activity->queryMaxCores());
+
+            /* Relatively small sets and senders are parallel so use a single thread
+             * Using the default of a thread per core, would mean contention when all senders are sorting.
+             */
+            dedupList.sort(*iCompare, 1);
+
             OwnedConstThorRow prev;
             for (unsigned i = c; i>0;)
             {
@@ -160,19 +167,88 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         }
         unsigned queryDestination() const { return destination; }
         size32_t querySize() const { return total; }
-        bool serializeClear(MemoryBuffer &mb, size32_t limit) // returns true if sent all
+        size32_t serializeClear(MemoryBuffer &dstMb)
         {
-            CMemoryRowSerializer memSerializer(mb);
+            size32_t len = dstMb.length();
+            CMemoryRowSerializer memSerializer(dstMb);
             loop
             {
                 OwnedConstThorRow row = nextRow();
                 if (!row)
                     break;
                 owner.serializer->serialize(memSerializer, (const byte *)row.get());
-                if (mb.length()>=limit)
-                    return false;
             }
-            return true;
+            return dstMb.length()-len;
+        }
+        size32_t serializeCompressClear(MemoryBuffer &dstMb, ICompressor &compressor)
+        {
+            class CMemoryCompressedSerializer : implements IRowSerializerTarget
+            {
+                MemoryBuffer nested;
+                unsigned nesting;
+                ICompressor &compressor;
+            public:
+                CMemoryCompressedSerializer(ICompressor &_compressor) : compressor(_compressor)
+                {
+                    nesting = 0;
+                }
+                virtual void put(size32_t len, const void *ptr)
+                {
+                    if (nesting)
+                        nested.append(len, ptr);
+                    else
+                    {
+                        size32_t sz = compressor.write(ptr, len);
+                        dbgassertex(sz);
+                    }
+                }
+                virtual size32_t beginNested(size32_t count)
+                {
+                    nesting++;
+                    unsigned pos = nested.length();
+                    nested.append((size32_t)0);
+                    return pos;
+                }
+                virtual void endNested(size32_t sizePos)
+                {
+                    size32_t sz = nested.length()-(sizePos + sizeof(size32_t));
+                    nested.writeDirect(sizePos,sizeof(sz),&sz);
+                    nesting--;
+                    if (!nesting)
+                    {
+                        put(nested.length(), nested.toByteArray());
+                        nested.clear();
+                    }
+                }
+            } memSerializer(compressor);
+            size32_t compSz = 0;
+            size32_t dstPos = dstMb.length();
+            dstMb.append(compSz); // placeholder
+            void *dst = dstMb.reserve(owner.bucketSendSize * 2); // allow for worst case
+            compressor.open(dst, owner.bucketSendSize * 2);
+            loop
+            {
+                OwnedConstThorRow row = nextRow();
+                if (!row)
+                    break;
+                owner.serializer->serialize(memSerializer, (const byte *)row.get());
+            }
+            compressor.close();
+            compSz = compressor.buflen();
+            dstMb.writeDirect(dstPos, sizeof(compSz), &compSz);
+            dstMb.setLength(dstPos + sizeof(compSz) + compSz);
+            return sizeof(compSz) + compSz;
+        }
+        static void deserializeCompress(MemoryBuffer &mb, MemoryBuffer &out, IExpander &expander)
+        {
+            while (mb.remaining())
+            {
+                size32_t compSz;
+                mb.read(compSz);
+                unsigned outSize = expander.init(mb.readDirect(compSz));
+                void *buff = out.reserve(outSize);
+                expander.expand(buff);
+            }
         }
     // IRowStream impl.
         virtual const void *nextRow()
@@ -259,7 +335,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             }
             inline bool getSenderFinished() const
             {
-                return atomic_read(&senderFinished);
+                return atomic_read(&senderFinished) != 0;
             }
             inline void checkSenderFinished()
             {
@@ -301,13 +377,14 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             Owned<CSendBucket> _sendBucket;
             unsigned nextPending;
             CTarget *target;
-
+            Owned<ICompressor> compressor;
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CWriteHandler(CSender &_owner) : owner(_owner), distributor(_owner.owner)
             {
                 target = NULL;
+                compressor.setown(distributor.getCompressor());
             }
             void init(void *startInfo)
             {
@@ -322,18 +399,25 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 unsigned dest = sendBucket->queryDestination();
                 size32_t writerTotalSz = 0;
                 size32_t sendSz = 0;
-                MemoryBuffer mb;
+                CMessageBuffer msg;
+                size32_t rawSz = 0;
                 while (!owner.aborted)
                 {
                     writerTotalSz += sendBucket->querySize();
+                    rawSz += sendBucket->querySize();
                     owner.dedup(sendBucket); // conditional
 
                     if (owner.selfPush(dest))
+                    {
+                        HDSendPrintLog2("CWriteHandler, sending raw=%d to LOCAL", rawSz);
                         distributor.addLocal(sendBucket);
+                    }
                     else // remote
                     {
-                        bool wholeBucket = sendBucket->serializeClear(mb, distributor.bucketSendSize);
-                        sendSz = mb.length();
+                        if (compressor)
+                            sendSz += sendBucket->serializeCompressClear(msg, *compressor);
+                        else
+                            sendSz += sendBucket->serializeClear(msg);
                         // NB: buckets will typically be large enough already, if not check pending buckets
                         if (sendSz < distributor.bucketSendSize)
                         {
@@ -349,18 +433,10 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                                 continue; // NB: it will flow into else "remote" arm
                             }
                         }
-                        while (!owner.aborted)
-                        {
-                            // JCSMORE check if worth compressing
-                            CMessageBuffer msg;
-                            fastLZCompressToBuffer(msg, mb.length(), mb.bufferBase());
-                            mb.clear();
-                            target->send(msg);
-                            sendSz = 0;
-                            if (wholeBucket)
-                                break;
-                            wholeBucket = sendBucket->serializeClear(mb, distributor.bucketSendSize);
-                        }
+                        target->send(msg);
+                        sendSz = 0;
+                        rawSz = 0;
+                        msg.clear();
                     }
                     // see if others to process
                     // NB: this will never start processing a bucket for a destination which already has an active writer.
@@ -388,6 +464,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         mutable CriticalSection activeWritersLock;
         mutable SpinLock totalSzLock;
         SpinLock doDedupLock;
+        IPointerArrayOf<CSendBucket> buckets;
         UnsignedArray candidates;
         size32_t totalSz;
         bool senderFull, doDedup, aborted, initialized;
@@ -754,7 +831,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             owner.ActPrintLog("HDIST: calling closeWrite()");
             closeWrite();
 
-            owner.ActPrintLog("HDIST: Send loop %s %"RCPF"d rows sent", exception.get()?"aborted":"finished", totalSent);
+            owner.ActPrintLog("HDIST: Send loop %s %" RCPF "d rows sent", exception.get()?"aborted":"finished", totalSent);
         }
         void abort()
         {
@@ -783,7 +860,6 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         friend class CWriteHandler;
     };
 
-protected:
     IOutputRowDeserializer *deserializer;
 
     class cRecvThread: implements IThreaded
@@ -887,6 +963,8 @@ protected:
     unsigned candidateLimit;
     unsigned targetWriterLimit;
     StringAttr id; // for tracing
+    ICompressHandler *compressHandler;
+    StringBuffer compressOptions;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -900,13 +978,34 @@ public:
         iCompare = NULL;
         ihash = NULL;
         fixedEstSize = 0;
-        bucketSendSize = activity->getOptUInt(THOROPT_HDIST_BUCKET_SIZE, DEFAULT_OUT_BUFFER_SIZE);
+        bucketSendSize = activity->getOptUInt(THOROPT_HDIST_BUCKET_SIZE, DISTRIBUTE_DEFAULT_OUT_BUFFER_SIZE);
         istop = _istop;
-        inputBufferSize = activity->getOptUInt(THOROPT_HDIST_BUFFER_SIZE, DEFAULT_IN_BUFFER_SIZE);
+        inputBufferSize = activity->getOptUInt(THOROPT_HDIST_BUFFER_SIZE, DISTRIBUTE_DEFAULT_IN_BUFFER_SIZE);
         pullBufferSize = DISTRIBUTE_PULL_BUFFER_SIZE;
         selfstopped = false;
         pull = false;
         rowManager = activity->queryJob().queryRowManager();
+
+        StringBuffer compType;
+        activity->getOpt(THOROPT_HDIST_COMP, compType);
+        activity->getOpt(THOROPT_HDIST_COMPOPTIONS, compressOptions); // e.g. for key for AES compressor
+        if (compType.length())
+        {
+            if (0 == stricmp("NONE", compType))
+                compressHandler = NULL;
+            else
+            {
+                compressHandler = queryCompressHandler(compType);
+                if (NULL == compressHandler)
+                {
+                    compressHandler = queryDefaultCompressHandler();
+                    ActPrintLog("Unrecognised compressor type '%s', will use default", compType.str());
+                }
+            }
+        }
+        else
+            compressHandler = queryDefaultCompressHandler();
+        ActPrintLog("Using compressor: %s", compressHandler ? compressHandler->queryType() : "NONE");
 
         allowSpill = activity->getOptBool(THOROPT_HDIST_SPILL, true);
         if (allowSpill)
@@ -933,6 +1032,16 @@ public:
             ActPrintLog(e, "HDIST: CDistributor");
             e->Release();
         }
+    }
+
+    inline ICompressor *getCompressor()
+    {
+        return compressHandler ? compressHandler->getCompressor(compressOptions) : NULL;
+    }
+
+    inline IExpander *getExpander()
+    {
+        return compressHandler ? compressHandler->getExpander(compressOptions) : NULL;
     }
 
     size32_t rowMemSize(const void *row)
@@ -1039,6 +1148,7 @@ public:
             CThorStreamDeserializerSource rowSource;
             rowSource.setStream(stream);
             unsigned left=numnodes-1;
+            Owned<IExpander> expander = getExpander();
             while (left && !aborted)
             {
 #ifdef _FULL_TRACE
@@ -1052,7 +1162,15 @@ public:
 #endif
                 if (recvMb.length())
                 {
-                    try { fastLZDecompressToBuffer(tempMb.clear(),recvMb); }
+                    try
+                    {
+                        size32_t sz = recvMb.length();
+                        if (expander)
+                            CSendBucket::deserializeCompress(recvMb, tempMb.clear(), *expander);
+                        else
+                            tempMb.clear().swapWith(recvMb);
+                        HDSendPrintLog4("recvloop, blocksize=%d, deserializedSz=%d, from=%d", sz, tempMb.length(), n+1);
+                    }
                     catch (IException *e)
                     {
                         StringBuffer senderStr;
@@ -1408,6 +1526,7 @@ class CRowPullDistributor: public CDistributorBase
         ICompare *cmp;
         IEngineRowAllocator *allocator;
         IOutputRowDeserializer *deserializer;
+        Owned<IExpander> expander;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -1422,6 +1541,7 @@ class CRowPullDistributor: public CDistributorBase
                 Owned<ISerialStream> stream = createMemoryBufferSerialStream(bufs[node]);
                 dszs[node].setStream(stream);
             }
+            expander.setown(parent.getExpander()); // NB: must be created before this passed to createRowStreamMerger
             out.setown(createRowStreamMerger(numnodes, *this, cmp));
         }
 
@@ -1453,7 +1573,10 @@ class CRowPullDistributor: public CDistributorBase
             parent.recvBlock(mb,idx);
             if (mb.length()==0)
                 return NULL;
-            fastLZDecompressToBuffer(bufs[idx],mb);
+            if (expander)
+                CSendBucket::deserializeCompress(mb, bufs[idx], *expander);
+            else
+                bufs[idx].swapWith(mb);
             return nextRow(idx);
         }
 
@@ -1892,7 +2015,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         start(false);
     }
     void stop()
@@ -1925,7 +2048,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL); // careful not to call again in derivatives
+        ActivityTimer t(totalCycles, timeActivities); // careful not to call again in derivatives
         if (abortSoon||eofin) {
             eofin = true;
             return NULL;
@@ -2072,7 +2195,7 @@ public:
         }
         CMessageBuffer mb;
         mb.append(sz);
-        ActPrintLog(activity, "REDISTRIBUTE sending size %"I64F"d to master",sz);
+        ActPrintLog(activity, "REDISTRIBUTE sending size %" I64F "d to master",sz);
         if (!activity->queryContainer().queryJob().queryJobComm().send(mb, (rank_t)0, statstag)) {
             ActPrintLog(activity, "REDISTRIBUTE send to master failed");
             throw MakeStringException(-1, "REDISTRIBUTE send to master failed");
@@ -2149,16 +2272,16 @@ public:
         }
         for (i=0;i<n;i++) {
 #ifdef _DEBUG
-            ActPrintLog(activity, "after Node %d has %"I64F"d",i, insz[i]);
+            ActPrintLog(activity, "after Node %d has %" I64F "d",i, insz[i]);
 #endif
         }
         tot = 0;
         for (i=0;i<n;i++) {
             if (sizes[i]) {
                 if (i==self)
-                    ActPrintLog(activity, "Keep %"I64F"d local",sizes[i]);
+                    ActPrintLog(activity, "Keep %" I64F "d local",sizes[i]);
                 else
-                    ActPrintLog(activity, "Redistribute %"I64F"d to %d",sizes[i],i);
+                    ActPrintLog(activity, "Redistribute %" I64F "d to %d",sizes[i],i);
             }
             tot += sizes[i];
         }
@@ -2215,7 +2338,7 @@ public:
     {
         bool passthrough;
         {
-            ActivityTimer s(totalCycles, timeActivities, NULL);
+            ActivityTimer s(totalCycles, timeActivities);
             instrm.setown(partitioner->calc(this,inputs.item(0),passthrough));  // may return NULL
         }
         HashDistributeSlaveBase::start(passthrough);
@@ -2747,7 +2870,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         inputstopped = false;
         eos = lastEog = false;
         startInput(inputs.item(0));
@@ -2787,7 +2910,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos)
             return NULL;
         // bucket handlers, stream out non-duplicates (1st entry in HT)
@@ -3355,7 +3478,7 @@ public:
     void start()
     {
         HashDedupSlaveActivityBase::start();
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         Owned<IRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
         instrm.setown(distributor->connect(myRowIf, input, iHash, iCompare));
         input = instrm.get();
@@ -3438,7 +3561,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         inputLstopped = true;
         inputRstopped = true;
         leftdone = false;
@@ -3480,7 +3603,7 @@ public:
             {
                 case TAKhashjoin:
                     {
-                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & joinargs->getJoinFlags());
+                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & joinargs->getJoinFlags()) != 0);
                         bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                         joinhelper.setown(createJoinHelper(*this, joinargs, this, hintparallelmatch, hintunsortedoutput));
                     }
@@ -3551,7 +3674,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!eof) {
             OwnedConstThorRow row = joinhelper->nextRow();
             if (row) {
@@ -3592,10 +3715,10 @@ public:
 
 //===========================================================================
 
-CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, bool ordered)
+RowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, RowAggregator *localAggTable, mptag_t mptag, bool ordered)
 {
     Owned<IRowStream> strm;
-    Owned<CThorRowAggregator> globalAggTable = new CThorRowAggregator(activity, helperExtra, helper);
+    Owned<RowAggregator> globalAggTable = new RowAggregator(helperExtra, helper);
     globalAggTable->start(activity.queryRowAllocator());
     __int64 readCount = 0;
     if (ordered)
@@ -3604,12 +3727,12 @@ CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivi
         {
             CActivityBase &activity;
             IRowInterfaces *rowIf;
-            Linked<CThorRowAggregator> localAggregated;
+            Linked<RowAggregator> localAggregated;
             RtlDynamicRowBuilder outBuilder;
             size32_t node;
         public:
             IMPLEMENT_IINTERFACE;
-            CRowAggregatedStream(CActivityBase &_activity, IRowInterfaces *_rowIf, CThorRowAggregator *_localAggregated) : activity(_activity), rowIf(_rowIf), localAggregated(_localAggregated), outBuilder(_rowIf->queryRowAllocator())
+            CRowAggregatedStream(CActivityBase &_activity, IRowInterfaces *_rowIf, RowAggregator *_localAggregated) : activity(_activity), rowIf(_rowIf), localAggregated(_localAggregated), outBuilder(_rowIf->queryRowAllocator())
             {
                 node = activity.queryContainer().queryJob().queryMyRank();
             }
@@ -3666,10 +3789,10 @@ CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivi
     {
         class CRowAggregatedStream : public CInterface, implements IRowStream
         {
-            Linked<CThorRowAggregator> localAggregated;
+            Linked<RowAggregator> localAggregated;
         public:
             IMPLEMENT_IINTERFACE;
-            CRowAggregatedStream(CThorRowAggregator *_localAggregated) : localAggregated(_localAggregated)
+            CRowAggregatedStream(RowAggregator *_localAggregated) : localAggregated(_localAggregated)
             {
             }
             // IRowStream impl.
@@ -3701,7 +3824,7 @@ CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivi
     distributor->disconnect(true);
     distributor->join();
 
-    activity.ActPrintLog("HASHAGGREGATE: Read %"RCPF"d records to build hash table", readCount);
+    activity.ActPrintLog("HASHAGGREGATE: Read %" RCPF "d records to build hash table", readCount);
     StringBuffer str("HASHAGGREGATE: After distribution merge contains ");
     activity.ActPrintLog("%s", str.append(globalAggTable->elementCount()).append("entries").str());
     return globalAggTable.getClear();
@@ -3716,7 +3839,7 @@ class CHashAggregateSlave : public CSlaveActivity, public CThorDataLink, impleme
     IHThorHashAggregateArg *helper;
     IThorDataLink *input;
     mptag_t mptag;
-    Owned<CThorRowAggregator> localAggTable;
+    Owned<RowAggregator> localAggTable;
     bool eos;
     Owned<IHashDistributor> distributor;
 
@@ -3758,13 +3881,13 @@ public:
             mptag = container.queryJob().deserializeMPTag(data);
             ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
         }
+        localAggTable.setown(new RowAggregator(*helper, *helper));
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         input = inputs.item(0);
         startInput(input);
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
         doNextGroup(); // or local set if !grouped
         if (!container.queryGrouped())
             ActPrintLog("Table before distribution contains %d entries", localAggTable->elementCount());
@@ -3780,6 +3903,7 @@ public:
     void stop()
     {
         ActPrintLog("HASHAGGREGATE: stopping");
+        localAggTable->reset();
         stopInput(input);
         dataLinkStop();
     }
@@ -3791,7 +3915,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos) return NULL;
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();
         if (next)
@@ -3850,7 +3974,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         input = inputs.item(0);
         input->start();
         dataLinkStart();
@@ -3863,7 +3987,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow row = input->ungroupedNextRow();
         if (!row)
             return NULL;

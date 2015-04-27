@@ -27,23 +27,23 @@ source  ${INSTALL_DIR}/etc/init.d/init-functions
 source  ${INSTALL_DIR}/etc/init.d/export-path
 
 print_usage(){
-        echo
-        echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] [-n concurrent] [-s] [-S] {start|stop|restart|status|setup}"
-        echo "  -a|--action: HPCC service name. Either hpcc-init (default) or dafilesrv."
-        echo "  -c|--comp: HPCC component. For example, mydali, myroxie, mythor, etc."
-        echo "  -n|--concurrent: How many concurrent instances to run. The default is equal to the number of nodes present."
-        echo "  -S|--sequentially: For the command to run sequentially. i.e. one host a time. (overrides -n)"
-        echo "  -s|--save: Save the result to a file named by ip."
-        echo
-        end 1
+    echo
+    echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] [-n concurrent] [-s] [-S] {start|stop|stopall|restart|status|setup}"
+    echo "  -a|--action: HPCC service name. Either hpcc-init (default) or dafilesrv."
+    echo "  -c|--comp: HPCC component. For example, mydali, myroxie, mythor, etc."
+    echo "  -n|--concurrent: How many concurrent instances to run. The default is equal to the number of nodes present."
+    echo "  -S|--sequentially: For the command to run sequentially. i.e. one host a time. (overrides -n)"
+    echo "  -s|--save: Save the result to a file named by ip."
+    echo
+    end 1
 }
 
 getIPS(){
-    if [ -z "${comp}" ]; then
+    if [[ -z "${comp}" ]]; then
         IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -machines | awk -F, '{print \$1}'  | sort | uniq`
     else
         IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep -e "${comp}" | awk -F, '{ print \$3 }' | sort | uniq`
-        if [ -z "${IPS}" ]; then
+        if [[ -z "${IPS}" ]]; then
             log_failure_msg "Component ${comp} not found"
             print_usage
             end 1
@@ -52,134 +52,131 @@ getIPS(){
 }
 
 getDali(){
-        DIP=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep Dali | awk -F, '{print \$3}'  | sort | uniq`
+    DIP=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep Dali | awk -F, '{print \$3}'  | sort | uniq`
 }
 
 createIPListFile(){
-    _file=$1
-    echo "$IPS" > $_file
+    local _output=$1
+    echo "$IPS" > $_output
 }
 
 createIPListFileExcludeDIP(){
-  _file=$1
-  echo "$IPS" | grep -v $DIP  > $_file
+    local _input=$1
+    local _output=$2
+    grep -vwF "$DIP" $_input > $_output 2> /dev/null
 }
 
 doOneIP(){
-    _ip=$1
-    _action=$2
-    _cmd=$3
-    _comp=$4
+    local _ip=$1
+    local _action=$2
+    local _cmd=$3
+    local _comp=$4
 
-   if ping -c 1 -w 5 -n $_ip > /dev/null 2>&1; then
-       #echo "$_ip: Host is alive."
-       CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$_ip exit > /dev/null 2>&1; echo $?`"
-       if [ "$CAN_SSH" -eq 255 ]; then
-          echo "$_ip: Cannot SSH to host.";
-          return 1
-       else
-          hpccStatusFile=/tmp/hpcc_status_$$
+    if ping -c 1 -w 5 -n $_ip > /dev/null 2>&1; then
+        #echo "$_ip: Host is alive."
+        local CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$_ip exit > /dev/null 2>&1; echo $?`"
+        if [[ "$CAN_SSH" -eq 255 ]]; then
+            echo "$_ip: Cannot SSH to host.";
+            return 1
+        else
+            hpccStatusFile=/tmp/hpcc_status_$$
+            if [[ -z "${_comp}" ]]; then
+                local CMD="sudo /etc/init.d/$_action $_cmd"
+            else
+                local CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
+            fi
+            echo "$_ip: Running $CMD";
+            local CMD="$CMD | tee ${hpccStatusFile}"
 
-          if [ -z "${_comp}" ]; then
-              CMD="sudo /etc/init.d/$_action $_cmd"
-          else
-              CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
-          fi
-          echo "$_ip: Running $CMD";
-          CMD="$CMD | tee ${hpccStatusFile}"
+            ssh -i $home/$user/.ssh/id_rsa $user@$_ip $CMD;
+            scp -i $home/$user/.ssh/id_rsa $user@${_ip}:${hpccStatusFile} ${reportDir}/$_ip > /dev/null 2>&1
 
-          ssh -i $home/$user/.ssh/id_rsa $user@$_ip $CMD;
-          scp -i $home/$user/.ssh/id_rsa $user@${_ip}:${hpccStatusFile} ${reportDir}/$_ip > /dev/null 2>&1
-
-          CMD="rm -rf  $hpccStatusFile"
-          ssh -i $home/$user/.ssh/id_rsa $user@$_ip $CMD
-          rc=${PIPESTATUS[0]}
-          echo
-          return $rc
-
-       fi
-   else
-       echo "$_ip: Cannot Ping host? (Host Alive?)"
-       return 1
-   fi
+            local CMD="rm -rf  $hpccStatusFile"
+            ssh -i $home/$user/.ssh/id_rsa $user@$_ip $CMD
+            rc=${PIPESTATUS[0]}
+            echo
+            return $rc
+        fi
+    else
+        echo "$_ip: Cannot Ping host? (Host Alive?)"
+        return 1
+    fi
 }
 
 createScript(){
-    _scriptFile=$1
-    _action=$2
-    _cmd=$3
-    _comp=$4
-
-    hpccStatusFile=/tmp/hpcc_status_${dateTime}_$$
+    local _scriptFile=$1
+    local _action=$2
+    local _cmd=$3
+    local _comp=$4
+    local hpccStatusFile=/tmp/hpcc_status_${dateTime}_$$
 
     cat > $_scriptFile <<SCRIPTFILE
 #!/bin/bash
 IP=\$1
 if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
-     echo "\$IP: Host is alive."
-     CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
-     if [ "\$CAN_SSH" -eq 255 ]; then
-          echo "\$IP: Cannot SSH to host.";
-          exit 1
-     else
-          if [ -z "${_comp}" ]; then
-              CMD="sudo /etc/init.d/$_action $_cmd"
-          else
-              CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
-          fi
-          echo "\$IP: Running \$CMD";
-          CMD="\$CMD | tee $hpccStatusFile"
-          ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD;
-          rc=\${PIPESTATUS[0]}
+    echo "\$IP: Host is alive."
+    CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
+    if [[ "\$CAN_SSH" -eq 255 ]]; then
+        echo "\$IP: Cannot SSH to host.";
+        exit 1
+    else
+        if [[ -z "${_comp}" ]]; then
+            CMD="sudo /etc/init.d/$_action $_cmd"
+        else
+            CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
+        fi
+        echo "\$IP: Running \$CMD";
+        CMD="\$CMD | tee $hpccStatusFile"
+        ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD;
+        rc=\${PIPESTATUS[0]}
 
-          scp -i $home/$user/.ssh/id_rsa $user@\${IP}:${hpccStatusFile} ${reportDir}/\$IP
+        scp -i $home/$user/.ssh/id_rsa $user@\${IP}:${hpccStatusFile} ${reportDir}/\$IP
 
-          CMD="rm -rf  $hpccStatusFile"
-          ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD
-          exit \$rc
-     fi
+        CMD="rm -rf  $hpccStatusFile"
+        ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD
+        exit \$rc
+    fi
 else
-     echo "\$IP: Cannot Ping host? (Host Alive?)"
-     exit 1
+    echo "\$IP: Cannot Ping host? (Host Alive?)"
+    exit 1
 fi
 SCRIPTFILE
 
-     chmod +x $_scriptFile
-
-
+    chmod +x $_scriptFile
 }
 
 runScript() {
-    if [ "$RUN_CLUSTER_DISPLAY_OUTPUT" = "FALSE" ] && [ $hasPython -eq 1 ]; then
-        OPTIONS="${OPTIONS:+"$OPTIONS "}-n ${concurrent}"
+    if [[ "$RUN_CLUSTER_DISPLAY_OUTPUT" = "FALSE" ]] && [[ $hasPython -eq 1 ]]; then
+        OPTIONS="${OPTIONS} -n ${concurrent}"
         eval ${INSTALL_DIR}/sbin/cluster_script.py -f ${scriptFile} "$OPTIONS"
-        rc=$?
+        local rc=$?
     else
-        if [ $hasPython -eq 0 ]; then
+        if [[ $hasPython -eq 0 ]]; then
             echo ""
             echo "Cannot detect python version ${expected_python_version}+. Will run on the cluster hosts sequentially."
             echo ""
         fi
         run_cluster ${scriptFile} 0 $1
-        rc=$?
+        local rc=$?
     fi
-    rm -rf $scriptFile
+    rm -rf $scriptFile &>/dev/null
+    return $rc
 }
 
 doSetup() {
-     init setup
-     scriptFile=/tmp/${action}_setup_$$
-     createScript $scriptFile $action "setup" $comp
-     runScript
-     report "${action} setup"
+    init setup
+    scriptFile=/tmp/${action}_setup_$$
+    createScript $scriptFile $action "setup" $comp
+    runScript
+    report "${action} setup"
 }
 
 doStatus() {
-     init status
-     scriptFile=/tmp/${action}_status_$$
-     createScript $scriptFile $action "status" $comp
-     runScript
-     report "${action} status"
+    init status
+    scriptFile=/tmp/${action}_status_$$
+    createScript $scriptFile $action "status" $comp
+    runScript
+    report "${action} status"
 }
 
 doStop() {
@@ -187,38 +184,53 @@ doStop() {
     init stop
     scriptFile=/tmp/${action}_stop_$$
     createScript $scriptFile $action "stop" $comp
-    if [ -n "${comp}" ]; then
-        OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsFile"
+    if [[ -n "${comp}" ]]; then
+        OPTIONS="${DEFAULT_OPTIONS} -h $IPsFile"
         runScript $IPsFile
         report "${action} stop"
     else
-        OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsExcludeDIP"
-        runScript $IPsExcludeDIP
-        report "${action} stop" $DIP
-        doOneIP $DIP $action "stop" $comp
+        if [[ -e $IPsExcludeDIP ]]; then
+            OPTIONS="${DEFAULT_OPTIONS} -h $IPsExcludeDIP"
+            runScript $IPsExcludeDIP
+            report "${action} stop" $DIP
+        fi
+        for _dip in $DIP; do
+            doOneIP $_dip $action "stop" $comp || end 1
+        done
     fi
+}
+
+doStopall() {
+    action="hpcc-init"
+    doStop
+    action="dafilesrv"
+    doStop
 }
 
 
 doStart() {
     init start
-    if [ -n "${comp}" ]; then
-        startFile=$IPsFile
+    if [[ -n "${comp}" ]]; then
+        local startFile=$IPsFile
     else
-        doOneIP $DIP $action "start" $comp || end 1
-        startFile=$IPsExcludeDIP
+        for _dip in $DIP; do
+            doOneIP $_dip $action "start" $comp || end 1
+        done
+        local startFile=$IPsExcludeDIP
     fi
-    echo "$action start in the cluster ..."
-    scriptFile=/tmp/${action}_start_$$
-    createScript $scriptFile $action "start" $comp
-    OPTIONS="${OPTIONS:+"$OPTIONS "}-h $startFile"
-    runScript $startFile
-    if [ -n "${comp}" ]; then
-        report "${action} start"
-    else
-        report "${action} start" $DIP
+    if [[ -e $startFile ]]; then
+        echo "$action start in the cluster ..."
+        scriptFile=/tmp/${action}_start_$$
+        createScript $scriptFile $action "start" $comp
+        OPTIONS="${DEFAULT_OPTIONS} -h $startFile"
+        runScript $startFile
+        if [[ -n "${comp}" ]]; then
+            report "${action} start"
+        else
+            report "${action} start" $DIP
+        fi
+        [[ $rc -ne 0 ]] && end $rc
     fi
-    [ $rc -ne 0 ] && end $rc
 }
 
 init() {
@@ -227,9 +239,9 @@ init() {
     IPsFile=/tmp/ip_list_$$
     createIPListFile $IPsFile
     IPsExcludeDIP=/tmp/ip_list_exclude_dip_$$
-    createIPListFileExcludeDIP $IPsExcludeDIP
+    createIPListFileExcludeDIP $IPsFile $IPsExcludeDIP
 
-    if [ $concurrent -eq 0 ]; then
+    if [[ $concurrent -eq 0 ]]; then
         concurrent=$( wc -l $IPsFile | awk '{ print $1 }')
     fi
 
@@ -240,13 +252,12 @@ init() {
 }
 
 report() {
-    _title=$1
-    hostToSkip=$2
+    local _title=$1
+    local hostToSkip=$2
 
-    if [ "$RUN_CLUSTER_DISPLAY_OUTPUT" = "FALSE" ]; then
-        ls ${reportDir} | while read _host
-        do
-            [ "$_host" = "$hostToSkip" ] && continue
+    if [[ "$RUN_CLUSTER_DISPLAY_OUTPUT" = "FALSE" ]]; then
+        ls ${reportDir} | while read _host; do
+            [[ "$_host" = "$hostToSkip" ]] && continue
             echo "$_host $_title :"
             cat ${reportDir}/$_host | grep -v "ervice dafilesrv" | grep -v -e "^[[:space:]]*$"
             echo
@@ -256,16 +267,15 @@ report() {
 
 
 end() {
-   if [ $save -eq 1 ]
-   then
+    if [[ $save -eq 1 ]]; then
         echo "Cluster status is saved under $reportDir"
         echo
-   else
+    else
         rm -rf $reportDir
-   fi
-   [ -e "${IPsExcludeDIP}" ] &&  rm -rf ${IPsExcludeDIP}
-   [ -e "${IPsFile}" ] && rm -rf ${IPsFile}
-   exit $1
+    fi
+    [[ -e "${IPsExcludeDIP}" ]] &&  rm -rf ${IPsExcludeDIP}
+    [[ -e "${IPsFile}" ]] && rm -rf ${IPsFile}
+    exit $1
 }
 
 
@@ -276,11 +286,11 @@ end() {
 ############################################
 cluster_tools_init
 
-if [ "${USER}" != "root" ] && [ "${USER}" != "${user}" ]; then
-   echo ""
-   echo "The script must run as root, $user or sudo."
-   echo ""
-   exit 1
+if [[ "${USER}" != "root" ]] && [[ "${USER}" != "${user}" ]]; then
+    echo ""
+    echo "The script must run as root, $user or sudo."
+    echo ""
+    exit 1
 fi
 
 envfile=$configs/$environment
@@ -291,14 +301,14 @@ hasPython=0
 save=0
 expected_python_version=2.6
 is_python_installed $expected_python_version
-[ $? -eq 0 ] && hasPython=1
+[[ $? -eq 0 ]] && hasPython=1
 concurrent=0
 RUN_CLUSTER_DISPLAY_OUTPUT=FALSE
 
-OPTIONS="-e $configfile -s ${SECTION:-DEFAULT}"
+DEFAULT_OPTIONS="-e $configfile -s ${SECTION:-DEFAULT}"
 
 TEMP=`/usr/bin/getopt -o a:c:n:sSh --long help,comp:,action:,save,concurrent:,sequentially -n 'hpcc-run' -- "$@"`
-if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
+if [[ $? != 0 ]] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
 eval set -- "$TEMP"
 while true ; do
     case "$1" in
@@ -307,7 +317,7 @@ while true ; do
         -a|--action) action=$2
             shift 2 ;;
         -n|--concurrent)
-            if [ -n "$2" ] && [[ $2 =~ ^[1-9][0-9]*$ ]] && [ $concurrent -ne 1 ]; then
+            if [[ -n "$2" ]] && [[ $2 =~ ^[1-9][0-9]*$ ]] && [[ $concurrent -ne 1 ]]; then
                 concurrent=$2
             fi
             shift 2 ;;
@@ -327,7 +337,7 @@ done
 case "$action" in
     hpcc-init) ;;
     dafilesrv) ;;
-    *) if [ -z $action ]; then
+    *) if [[ -z $action ]]; then
             action="hpcc-init"
         else
             print_usage
@@ -343,6 +353,9 @@ for arg; do
             ;;
         stop)
             doStop
+            ;;
+        stopall)
+            doStopall
             ;;
         restart)
             doStop

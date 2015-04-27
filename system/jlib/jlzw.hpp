@@ -125,6 +125,21 @@ interface IPropertyTree;
 extern jlib_decl IPropertyTree *getBlockedFileDetails(IFile *file);
 
 
+interface ICompressHandler : extends IInterface
+{
+    virtual const char *queryType() const = 0;
+    virtual ICompressor *getCompressor(const char *options=NULL) = 0;
+    virtual IExpander *getExpander(const char *options=NULL) = 0;
+};
+extern jlib_decl void setDefaultCompressor(const char *type);
+extern jlib_decl ICompressHandler *queryCompressHandler(const char *type);
+extern jlib_decl ICompressHandler *queryDefaultCompressHandler();
+extern jlib_decl bool addCompressorHandler(ICompressHandler *handler); // returns true if added, false if already registered
+extern jlib_decl bool removeCompressorHandler(ICompressHandler *handler); // returns true if present and removed
+
+extern jlib_decl ICompressor *getCompressor(const char *type, const char *options=NULL);
+extern jlib_decl IExpander *getExpander(const char *type, const char *options=NULL);
+
 
 
 #define MIN_ROWCOMPRESS_RECSIZE 8

@@ -133,18 +133,22 @@ endif (APPLE OR WIN32)
 INCLUDE(InstallRequiredSystemLibraries)
 if ( PLATFORM )
     set(CPACK_PACKAGE_NAME "hpccsystems-platform")
-    set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-platform")
+    set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-platform-${projname}")
 else()
     set(CPACK_PACKAGE_NAME "hpccsystems-clienttools-${majorver}.${minorver}")
-    set(PACKAGE_FILE_NAME_PREFIX  "hpccsystems-clienttools")
+    set(PACKAGE_FILE_NAME_PREFIX  "hpccsystems-clienttools-${projname}")
 endif()
 SET(CPACK_PACKAGE_VERSION_MAJOR ${majorver})
 SET(CPACK_PACKAGE_VERSION_MINOR ${minorver})
-SET(CPACK_PACKAGE_VERSION_PATCH ${point}${stagever})
+SET(CPACK_PACKAGE_VERSION_PATCH ${point}-${stagever})
 set ( CPACK_PACKAGE_CONTACT "HPCCSystems <ossdevelopment@lexisnexis.com>" )
 set( CPACK_SOURCE_GENERATOR TGZ )
-set ( CPACK_RPM_PACKAGE_VERSION "${projname}")
-SET(CPACK_RPM_PACKAGE_RELEASE "${version}${stagever}")
+
+set ( CPACK_RPM_PACKAGE_VERSION "${version}" )
+SET(CPACK_RPM_PACKAGE_RELEASE "${stagever}")
+SET(CPACK_RPM_PACKAGE_VENDOR "HPCC Systems")
+SET(CPACK_PACKAGE_VENDOR "HPCC Systems")
+
 if ( ${ARCH64BIT} EQUAL 1 )
     set ( CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
 else( ${ARCH64BIT} EQUAL 1 )
@@ -175,20 +179,25 @@ elseif ( UNIX )
     message ( "-- Auto Detecting Packaging type")
     message ( "-- distro uses ${packageManagement}, revision is ${packageRevisionArch}" )
     if ( "${packageManagement}" STREQUAL "RPM" AND WITH_PLUGINS )
-        set ( CPACK_RPM_PACKAGE_VERSION "${projname}-with-plugins")
+        set ( CPACK_RPM_SPEC_MORE_DEFINE
+"%define _use_internal_dependency_generator 0
+%define __getdeps() while read file; do /usr/lib/rpm/rpmdeps -%{1} ${file}; done | /bin/sort -u
+%define __find_provides /bin/sh -c '%{__getdeps P}'
+%define __find_requires /bin/sh -c '%{__grep} -v libRembed.so | %{__getdeps R}'" )
+        set ( PACKAGE_FILE_NAME_PREFIX "${PACKAGE_FILE_NAME_PREFIX}-with-plugins")
     endif()
     if ( "${packageManagement}" STREQUAL "DEB" )
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}")
+        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}")
     elseif ( "${packageManagement}" STREQUAL "RPM" )
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}")
+        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}")
     else()
-        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}${CPACK_SYSTEM_NAME}")
+        set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}")
     endif ()
 endif ()
-MESSAGE ("-- Current release version is ${CPACK_PACKAGE_FILE_NAME}")
-set ( CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
+MESSAGE ( "-- Current release version is ${CPACK_PACKAGE_FILE_NAME}" )
+set( CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
 set( CPACK_SOURCE_GENERATOR TGZ )
-set(CPACK_SOURCE_IGNORE_FILES
+set( CPACK_SOURCE_IGNORE_FILES
         "~$"
         "\\\\.cvsignore$"
         "^${PROJECT_SOURCE_DIR}.*/CVS/"
@@ -255,7 +264,11 @@ if ( UNIX )
         else ( CLIENTTOOLS_ONLY )
             set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
         endif ( CLIENTTOOLS_ONLY )
-    
+
+        # Standard sections values:
+        # https://www.debian.org/doc/debian-policy/ch-archive.html/#s-subsections
+        SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+
     elseif ( "${packageManagement}" STREQUAL "RPM" )
         set ( CPACK_GENERATOR "${packageManagement}" )
         ###
@@ -267,10 +280,15 @@ if ( UNIX )
             set ( CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/postinst" )
             set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/prerm" )
             set ( CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/clienttools/install/postrm" )
+            set ( CPACK_RPM_PACKAGE_GROUP "development/libraries")
+            set ( CPACK_RPM_PACKAGE_SUMMARY "HPCC Systems Client Tools." )
         else ( CLIENTTOOLS_ONLY )
             set ( CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst" )
             set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm" )
             set ( CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
+            # Standard group names: http://fedoraroject.org/wiki/RPMGroups
+            set ( CPACK_RPM_PACKAGE_GROUP "development/system")
+            set ( CPACK_RPM_PACKAGE_SUMMARY "${PACKAGE_FILE_NAME_PREFIX}")
         endif ( CLIENTTOOLS_ONLY )
     else()
         message("WARNING: Unsupported package ${packageManagement}.")
@@ -288,12 +306,12 @@ if ( UNIX )
     set ( CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}" )
 endif ( UNIX )
 if ( PLATFORM )
+    set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PACKAGE_FILE_NAME_PREFIX}")
 else ( PLATFORM )
     if ( APPLE OR WIN32 )
-        set ( CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${CPACK_SYSTEM_NAME}" )
+        set ( CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${version}-${stagever}${CPACK_SYSTEM_NAME}" )
     endif()
     set ( CPACK_MONOLITHIC_INSTALL TRUE )
-    set ( CPACK_PACKAGE_VENDOR "HPCC Systems" )
     file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
         "HPCC Systems - Client Tools\r"
         "===========================\r\r"
@@ -319,7 +337,7 @@ else ( PLATFORM )
 
       file(STRINGS "${SIGN_DIRECTORY}/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
 
-      add_custom_target(SIGN 
+      add_custom_target(SIGN
           COMMAND signtool sign /f "${SIGN_DIRECTORY}/hpcc_code_signing.pfx"
 /p "${PFX_PASSWORD}" /t "http://timestamp.verisign.com/scripts/timstamp.dll"
 "${CMAKE_BINARY_DIR}/${PACKAGE_FILE_NAME_PREFIX}*.exe"

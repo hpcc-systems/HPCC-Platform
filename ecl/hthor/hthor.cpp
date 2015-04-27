@@ -72,7 +72,7 @@ IRowManager * queryRowManager()
 
 void throwOOMException(size_t size, char const * label)
 {
-    throw MakeStringException(0, "Out of Memory in hthor: trying to allocate %"I64F"u bytes for %s", (unsigned __int64) size, label);
+    throw MakeStringException(0, "Out of Memory in hthor: trying to allocate %" I64F "u bytes for %s", (unsigned __int64) size, label);
 }
 
 void * checked_malloc(size_t size, char const * label)
@@ -211,27 +211,25 @@ void CHThorActivityBase::done()
         input->done();
 }
 
-void CHThorActivityBase::updateProgress(IWUGraphProgress &progress) const
+void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
 {
     updateProgressForOther(progress, activityId, subgraphId);
     if (input)
         input->updateProgress(progress);
 }
 
-void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph) const
+void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const
 {
     updateProgressForOther(progress, otherActivity, otherSubgraph, 0, processed);
 }
 
-void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const
+void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const
 {
-    StringBuffer path;
-    path.append(otherActivity).append("_").append(whichOutput);
-    IPropertyTree &edge = progress.updateEdge(otherSubgraph, path.str());
-    edge.setPropInt64("@count", numProcessed);
-    edge.setPropBool("@started", true);
-    edge.setPropBool("@stopped", true);
-    edge.setPropInt64("@slaves", 1);
+    StatsEdgeScope scope(progress, otherActivity, whichOutput);
+    progress.addStatistic(StNumRowsProcessed, numProcessed);
+    progress.addStatistic(StNumStarted, 1);  // wrong for an activity in a subquery
+    progress.addStatistic(StNumStopped, 1);
+    progress.addStatistic(StNumSlaves, 1);  // MORE: A bit pointless for an hthor graph
 }
 
 ILocalEclGraphResults * CHThorActivityBase::resolveLocalQuery(__int64 graphId)
@@ -297,7 +295,7 @@ private:
     virtual void getTempFilename(StringAttr & out) const
     {
         StringBuffer buff;
-        agent.getTempfileBase(buff).appendf(".cluster_write_%p.%"I64F"d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
+        agent.getTempfileBase(buff).appendf(".cluster_write_%p.%" I64F "d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
         out.set(buff.str());
     }
 };
@@ -669,7 +667,7 @@ void CHThorDiskWriteActivity::publish()
     properties.setPropInt("@formatCrc", helper.getFormatCrc());
 
     StringBuffer lfn;
-    expandLogicalFilename(lfn, mangledHelperFileName.str(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+    expandLogicalFilename(lfn, mangledHelperFileName.str(), agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     CDfsLogicalFileName logicalName;
     if (agent.queryResolveFilesLocally())
         logicalName.allowOsPath(true);
@@ -880,7 +878,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 //=====================================================================================================
 
-CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), headerLength(0), footerLength(0)
 {
     OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
     if (!xmlpath)
@@ -898,12 +896,23 @@ void CHThorXmlWriteActivity::execute()
 {
     // Loop thru the results
     numRecords = 0;
+    StringBuffer header;
     OwnedRoxieString suppliedHeader(helper.getHeader());
-    const char *header = suppliedHeader;
-    if (!header) header = "<Dataset>\n";
-    diskout->write(strlen(header), header);
+    if (kind==TAKjsonwrite)
+    {
+        buildJsonHeader(header, suppliedHeader, rowTag);
+        headerLength = header.length();
+    }
+    else if (suppliedHeader)
+        header.set(suppliedHeader);
+    else
+        header.set("<Dataset>\n");
+    diskout->write(header.length(), header.str());
 
-    CommonXmlWriter xmlOutput(helper.getXmlFlags());
+    Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSON : WTStandard);
+    writer->outputBeginArray(rowTag); //need to set up the array
+    writer->clear(); //but not output it
+
     loop
     {
         OwnedConstRoxieRow nextrec(input->nextInGroup());
@@ -916,29 +925,44 @@ void CHThorXmlWriteActivity::execute()
 
         try
         {
-            xmlOutput.clear().outputBeginNested(rowTag, false);
-            helper.toXML((const byte *)nextrec.get(), xmlOutput);
-            xmlOutput.outputEndNested(rowTag);
+            writer->clear().outputBeginNested(rowTag, false);
+            helper.toXML((const byte *)nextrec.get(), *writer);
+            writer->outputEndNested(rowTag);
         }
         catch(IException * e)
         {
             throw makeWrappedException(e);
         }
 
-        diskout->write(xmlOutput.length(), xmlOutput.str());
+        diskout->write(writer->length(), writer->str());
         numRecords++;
     }
+
     OwnedRoxieString suppliedFooter(helper.getFooter());
-    const char *footer = suppliedFooter;
-    if (!footer) footer = "</Dataset>\n";
-    diskout->write(strlen(footer), footer);
+    StringBuffer footer;
+    if (kind==TAKjsonwrite)
+    {
+        buildJsonFooter(footer.newline(), suppliedFooter, rowTag);
+        footerLength=footer.length();
+    }
+    else if (suppliedFooter)
+        footer.append(suppliedFooter);
+    else
+        footer.append("</Dataset>");
+
+    diskout->write(footer.length(), footer);
 }
 
 void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
 {
     desc->queryProperties().setProp("@format","utf8n");
     desc->queryProperties().setProp("@rowTag",rowTag.str());
-    desc->queryProperties().setProp("@kind", "xml");
+    desc->queryProperties().setProp("@kind", (kind==TAKjsonwrite) ? "json" : "xml");
+    if (headerLength)
+        desc->queryProperties().setPropInt("@headerLength", headerLength);
+    if (footerLength)
+        desc->queryProperties().setPropInt("@footerLength", footerLength);
+
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
@@ -975,7 +999,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     incomplete = false;
     StringBuffer lfn;
     OwnedRoxieString fname(helper.getFileName());
-    expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+    expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     if (!agent.queryResolveFilesLocally())
     {
         Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
@@ -1025,17 +1049,6 @@ void CHThorIndexWriteActivity::execute()
 
     // Loop thru the results
     unsigned __int64 reccount = 0;
-    unsigned __int64 fileSize = 0;
-    OwnedRoxieString dsName(helper.getDatasetName());
-    if (dsName.get())
-    {
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(dsName,"IndexWrite::execute",false,false,true);
-        if (ldFile )
-        {
-            IDistributedFile * dFile = ldFile->queryDistributedFile();
-            fileSize = dFile ? dFile->queryAttributes().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
-        }
-    }
     unsigned int fileCrc = -1;
     file.setown(createIFile(filename.get()));
     {
@@ -1065,7 +1078,7 @@ void CHThorIndexWriteActivity::execute()
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
         size32_t keyMaxSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, fileSize, nodeSize, helper.getKeyedSize(), 0);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0);
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;
@@ -1207,7 +1220,7 @@ void CHThorIndexWriteActivity::execute()
     {
         dfile.setown(queryDistributedFileDirectory().createNew(desc));
         OwnedRoxieString fname(helper.getFileName());
-        expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+        expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
         dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(dfile, "HThor", "CREATED");
     }
@@ -3840,7 +3853,7 @@ void CHThorGroupSortActivity::createSorter()
     {
         StringBuffer sb;
         sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname.get());
-        agent.addWuException(sb.str(),0,ExceptionSeverityWarning,"hthor");
+        agent.addWuException(sb.str(),WRN_UnsupportedAlgorithm,SeverityWarning,"hthor");
         if((flags & TAFunstable) != 0)
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         else
@@ -5941,11 +5954,12 @@ void CHThorWorkUnitWriteActivity::execute()
 {
     unsigned flags = helper.getFlags();
     grouped = (POFgrouped & flags) != 0;
-    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", DALI_RESULT_LIMIT_DEFAULT);
+    // In absense of OPT_OUTPUTLIMIT check pre 5.2 legacy name OPT_OUTPUTLIMIT_LEGACY
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt(OPT_OUTPUTLIMIT, agent.queryWorkUnit()->getDebugValueInt(OPT_OUTPUTLIMIT_LEGACY, defaultDaliResultLimit));
     if (flags & POFmaxsize)
         outputLimit = helper.getMaxSize();
-    if (outputLimit>DALI_RESULT_OUTPUTMAX)
-        throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the current limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, DALI_RESULT_LIMIT_DEFAULT);
+    if (outputLimit>defaultDaliResultOutputMax)
+        throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the current limit is %d MB. A huge dali result usually indicates the ECL needs altering.", defaultDaliResultOutputMax, defaultDaliResultLimit);
     assertex(outputLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
     outputLimit *= 0x100000;
     MemoryBuffer rowdata;
@@ -6086,7 +6100,8 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
     }
     size32_t usedCount = rtlDictionaryCount(builder.getcount(), builder.queryrows());
 
-    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", DALI_RESULT_LIMIT_DEFAULT) * 0x100000;
+    // In absense of OPT_OUTPUTLIMIT check pre 5.2 legacy name OPT_OUTPUTLIMIT_LEGACY
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt(OPT_OUTPUTLIMIT, agent.queryWorkUnit()->getDebugValueInt(OPT_OUTPUTLIMIT_LEGACY, defaultDaliResultLimit)) * 0x100000;
     MemoryBuffer rowdata;
     CThorDemoRowSerializer out(rowdata);
     Owned<IOutputRowSerializer> serializer = input->queryOutputMeta()->createDiskSerializer(agent.queryCodeContext(), activityId);
@@ -6123,16 +6138,6 @@ CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, un
 void CHThorRemoteResultActivity::execute()
 {
     OwnedConstRoxieRow result(input->nextInGroup());
-#if 0
-    //This isn't correct - it can have a null input - at least until TAKaction is generated for that case.
-    if(!result)
-    {
-        char const * msg = "Remote Result activity had null input, not sending result";
-        WARNLOG(msg);
-        agent.addWuException(msg, 0, ExceptionSeverityWarning, "hthor");
-        return;
-    }
-#endif
     helper.sendResult(result);
 }
 
@@ -6293,7 +6298,7 @@ void CHThorMultiInputActivity::setInput(unsigned index, IHThorInput *_input)
     }
 }
 
-void CHThorMultiInputActivity::updateProgress(IWUGraphProgress &progress) const
+void CHThorMultiInputActivity::updateProgress(IStatisticGatherer &progress) const
 {
     CHThorSimpleActivityBase::updateProgress(progress);
     ForEachItemIn(idx, inputs)
@@ -7807,11 +7812,17 @@ void CHThorDiskReadBaseActivity::resolve()
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str());
         tempFileName.set(agent.queryTemporaryFile(mangledFilename.str()));
+        logicalFileName.set(tempFileName);
         gatherInfo(NULL);
     }
     else
     {
         ldFile.setown(agent.resolveLFN(mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
+        if ( mangledHelperFileName.charAt(0) == '~')
+            logicalFileName.set(mangledHelperFileName.str()+1);
+        else
+            logicalFileName.set(mangledHelperFileName.str());
+
         if (ldFile)
         {
             Owned<IFileDescriptor> fdesc;
@@ -7822,6 +7833,23 @@ void CHThorDiskReadBaseActivity::resolve()
             {
                 persistent = dFile->queryAttributes().getPropBool("@persistent");
                 dfsParts.setown(dFile->getIterator());
+                if (helper.getFlags() & TDRfilenamecallback)
+                {
+                    IDistributedSuperFile *super = dFile->querySuperFile();
+                    if (super)
+                    {
+                        unsigned numsubs = super->numSubFiles(true);
+                        unsigned s=0;
+                        for (; s<numsubs; s++)
+                        {
+                            IDistributedFile &subfile = super->querySubFile(s, true);
+                            subfileLogicalFilenames.append(subfile.queryLogicalName());
+                        }
+                        assertex(fdesc);
+                        superfile.set(fdesc->querySuperFileDescriptor());
+                        assertex(superfile);
+                    }
+                }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
                 if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
@@ -7833,7 +7861,7 @@ void CHThorDiskReadBaseActivity::resolve()
             StringBuffer buff;
             buff.appendf("Input file '%s' was missing but declared optional", mangledHelperFileName.str());
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+            agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
         }
     }
 }
@@ -7850,7 +7878,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
                 StringBuffer msg;
                 msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
                 WARNLOG("%s", msg.str());
-                agent.addWuException(msg.str(), 0, ExceptionSeverityWarning, "hthor");
+                agent.addWuException(msg.str(), WRN_MismatchGroupInfo, SeverityError, "hthor");
             }
         }
         else
@@ -7887,7 +7915,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
                 StringBuffer msg;
                 msg.append("Ignoring compression attribute on file ").append(mangledHelperFileName.str()).append(", which is not published as compressed");
                 WARNLOG("%s", msg.str());
-                agent.addWuException(msg.str(), 0, ExceptionSeverityWarning, "hthor");
+                agent.addWuException(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, "hthor");
                 compressed = true;
             }
         }
@@ -7952,11 +7980,17 @@ bool CHThorDiskReadBaseActivity::openNext()
               (!dfsParts&&(partNum<ldFile->numParts())))
         {
             IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
-
             unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
             //MORE: Order of copies should be optimized at this point....
             StringBuffer file, filelist;
             closepart();
+            if (dfsParts && superfile && curPart)
+            {
+                unsigned subfile;
+                unsigned lnum;
+                if (superfile->mapSubPart(partNum, subfile, lnum))
+                    logicalFileName.set(subfileLogicalFilenames.item(subfile));
+            }
             for (unsigned copy=0; copy < numCopies; copy++)
             {
                 RemoteFilename rfilename;
@@ -8552,7 +8586,7 @@ const void *CHThorDiskCountActivity::nextInGroup()
         {
             unsigned __int64 size = ldFile->getFileSize();
             if (size % fixedDiskRecordSize)
-                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, fixedDiskRecordSize);
+                throw MakeStringException(0, "Physical file %s has size %" I64F "d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, fixedDiskRecordSize);
             totalCount = size / fixedDiskRecordSize;
         }
     }
@@ -8685,6 +8719,7 @@ const void *CHThorDiskGroupAggregateActivity::nextInGroup()
 
 CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
+    maxRowSize = agent.queryWorkUnit()->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
 }
 
 CHThorCsvReadActivity::~CHThorCsvReadActivity()
@@ -8746,7 +8781,6 @@ const void *CHThorCsvReadActivity::nextInGroup()
         if (!inputstream->eos())
         {
             size32_t rowSize = 4096; // MORE - make configurable
-            size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
             size32_t thisLineLength;
             loop
             {
@@ -8939,7 +8973,10 @@ bool CHThorXmlReadActivity::openNext()
             inputfileiostream.setown(createIOStream(inputfileio));
 
         OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
-        xmlParser.setown(createXMLParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?ptr_noRoot:ptr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        if (kind==TAKjsonread)
+            xmlParser.setown(createJSONParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?ptr_noRoot:ptr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        else
+            xmlParser.setown(createXMLParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?ptr_noRoot:ptr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
         return true;
     }
     return false;
@@ -9531,7 +9568,7 @@ void LibraryCallOutput::done()
     result.clear();
 }
 
-void LibraryCallOutput::updateProgress(IWUGraphProgress &progress) const
+void LibraryCallOutput::updateProgress(IStatisticGatherer &progress) const
 {
     owner->updateOutputProgress(progress, *this, processed);
 }
@@ -9542,7 +9579,13 @@ CHThorLibraryCallActivity::CHThorLibraryCallActivity(IAgentContext &_agent, unsi
 {
     libraryName.set(node->queryProp("att[@name=\"libname\"]/@value"));
     interfaceHash = node->getPropInt("att[@name=\"_interfaceHash\"]/@value", 0);
-    embedded = node->getPropBool("att[@name=\"embedded\"]/@value", false) ;
+    bool embedded = node->getPropBool("att[@name=\"embedded\"]/@value", false) ;
+    if (embedded)
+    {
+        embeddedGraphName.set(node->queryProp("att[@name=\"graph\"]/@value"));
+        if (!embeddedGraphName)
+            embeddedGraphName.set(libraryName);
+    }
 
     Owned<IPropertyTreeIterator> iter = node->getElements("att[@name=\"_outputUsed\"]");
     ForEach(*iter)
@@ -9564,7 +9607,7 @@ IHThorGraphResult * CHThorLibraryCallActivity::getResultRows(unsigned whichOutpu
         if (libraryName.length() == 0)
             libraryName.setown(helper.getLibraryName());
         helper.createParentExtract(extractBuilder);
-        results.setown(agent.executeLibraryGraph(libraryName, interfaceHash, activityId, embedded, extractBuilder.getbytes()));
+        results.setown(agent.executeLibraryGraph(libraryName, interfaceHash, activityId, embeddedGraphName, extractBuilder.getbytes()));
     }
 
     return results->queryResult(whichOutput);
@@ -9577,7 +9620,7 @@ IHThorInput * CHThorLibraryCallActivity::queryOutput(unsigned idx)
     return &outputs.item(idx);
 }
 
-void CHThorLibraryCallActivity::updateOutputProgress(IWUGraphProgress &progress, const LibraryCallOutput & _output, unsigned __int64 numProcessed) const
+void CHThorLibraryCallActivity::updateOutputProgress(IStatisticGatherer &progress, const LibraryCallOutput & _output, unsigned __int64 numProcessed) const
 {
     LibraryCallOutput & output = const_cast<LibraryCallOutput &>(_output);
     updateProgressForOther(progress, activityId, subgraphId, outputs.find(output), numProcessed);
@@ -9673,7 +9716,7 @@ public:
         throwUnexpected();
     }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
 //      CHThorSimpleActivityBase::updateProgress(progress);
         ForEachItemIn(i, inputs)

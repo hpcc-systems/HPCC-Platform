@@ -149,9 +149,9 @@
           <title>ecl.ini</title>
 
           <para>Many options can be placed in a file called <emphasis
-          role="bold">ecl.ini</emphasis> in the local directory. Options that
-          do not change very often should be put in the ini file. For
-          example:</para>
+          role="bold">ecl.ini</emphasis> in the same directory as the
+          executable. Options that do not change very often should be put in
+          the ini file. For example:</para>
 
           <programlisting>eclWatchIP=10.150.50.12
 eclWatchPort=28010
@@ -3458,7 +3458,9 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
 
         <para>Examples:</para>
 
-        <programlisting>ecl getname -wu W20140516-111213</programlisting>
+        <programlisting>ecl getname -wu W20140516-111213
+ecl getname -wu W201407*
+</programlisting>
 
         <para></para>
 
@@ -3476,13 +3478,20 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                 </row>
 
                 <row>
+                  <entry>--wuid</entry>
+
+                  <entry>The WUID (Workunit ID)</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
                 </row>
 
                 <row>
-                  <entry>-wu</entry>
+                  <entry>--limit=&lt;limit&gt;</entry>
 
-                  <entry>The WUID (Workunit ID)</entry>
+                  <entry>This sets the result limit. This is useful when using
+                  wildcards in a request. (Default is 100)</entry>
                 </row>
 
                 <row>

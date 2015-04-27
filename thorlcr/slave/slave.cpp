@@ -62,7 +62,7 @@ ProcessSlaveActivity::~ProcessSlaveActivity()
     // NB: The activity thread should have already stopped,
     //     if it is still alive at job shutdown and cannot be joined then the thread is in an unknown state.
     if (!threaded.join(FATAL_ACTJOIN_TIMEOUT))
-        throw MakeThorFatal(NULL, TE_FailedToAbortSlaves, "Activity %"ACTPF"d failed to stop", container.queryId());
+        throw MakeThorFatal(NULL, TE_FailedToAbortSlaves, "Activity %" ACTPF "d failed to stop", container.queryId());
     ActPrintLog("AFTER ProcessSlaveActivity : joining process thread");
 }
 
@@ -88,7 +88,7 @@ void ProcessSlaveActivity::main()
             process();
             {
                 SpinBlock b(cycleLock);
-                totalCycles += get_cycles_now()-lastCycles;
+                totalCycles.totalCycles += get_cycles_now()-lastCycles;
                 lastCycles = 0; // signal not processing
             }
         }
@@ -131,7 +131,7 @@ void ProcessSlaveActivity::main()
             m.append("out of memory (std::bad_alloc)");
         else
             m.append("standard library exception (std::exception ").append(es.what()).append(")");
-        m.appendf(" in %"ACTPF"d",container.queryId());
+        m.appendf(" in %" ACTPF "d",container.queryId());
         ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "%s", m.str());
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "%s", m.str()));
     }
@@ -167,7 +167,7 @@ void ProcessSlaveActivity::serializeStats(MemoryBuffer &mb)
         if (lastCycles)
         {
             unsigned __int64 nowCycles = get_cycles_now();
-            totalCycles += nowCycles-lastCycles;
+            totalCycles.totalCycles += nowCycles-lastCycles;
             lastCycles = nowCycles; // time accounted for
         }
     }
@@ -659,10 +659,12 @@ public:
                 ret = createXmlParseSlave(this);
                 break;
             case TAKxmlread:
+            case TAKjsonread:
                 ret = createXmlReadSlave(this);
                 break;
             case TAKxmlwrite:
-                ret = createXmlWriteSlave(this);
+            case TAKjsonwrite:
+                ret = createXmlWriteSlave(this, kind);
                 break;
             case TAKmerge:
                 if (queryLocalOrGrouped())

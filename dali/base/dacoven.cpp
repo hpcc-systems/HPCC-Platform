@@ -290,6 +290,12 @@ public:
         return (coven.queryGroup().rank(ep)!=RANK_NULL);
     }
 
+    virtual void barrier(void)
+    {
+        assertex(comm);
+        return comm->barrier();
+    }
+
     virtual bool verifyConnection(rank_t rank, unsigned timeout=1000*60*5)
     {
         assertex(comm);
@@ -1021,7 +1027,6 @@ DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
         Owned<IGroup> group = createIGroup(1,&foreignnode); 
         foreign.setown(createCommunicator(group));
         foreign->sendRecv(mb,RANK_RANDOM,MPTAG_DALI_COVEN_REQUEST);
-        foreignnode.serialize(mb);
         mb.read(next);
         if ((next==0)&&mb.remaining())  // server exception
             throw deserializeException(mb);

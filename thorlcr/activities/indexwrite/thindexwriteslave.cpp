@@ -79,8 +79,6 @@ class IndexWriteSlaveActivity  : public ProcessSlaveActivity, public ISmartBuffe
     OwnedConstThorRow lastRow, firstRow;
     bool needFirstRow, enableTlkPart0, receivingTag2;
 
-    offset_t fileSize;
-
     unsigned replicateDone;
     Owned<IFile> existingTlkIFile;
     unsigned partCrc, tlkCrc;
@@ -136,7 +134,6 @@ public:
             partDesc.setown(deserializePartFileDescriptor(data));
         }
 
-        data.read(fileSize);
         data.read(singlePartKey);
         data.read(refactor);
         if (singlePartKey)
@@ -206,7 +203,7 @@ public:
         buildUserMetadata(metadata);                
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, fileSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount));
+        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount));
     }
 
 
@@ -472,7 +469,7 @@ public:
                 close(*partDesc, partCrc, isLocal && !buildTlk && 1 == node);
                 doStopInput();
 
-                ActPrintLog("INDEXWRITE: Wrote %"RCPF"d records", processed & THORDATALINK_COUNT_MASK);
+                ActPrintLog("INDEXWRITE: Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
 
                 if (buildTlk)
                 {
@@ -674,7 +671,7 @@ public:
         if (!sizeSignalled)
         {
             sizeSignalled = true;
-            ActPrintLog("finished input %"RCPF"d", finalcount);
+            ActPrintLog("finished input %" RCPF "d", finalcount);
         }
     }
 

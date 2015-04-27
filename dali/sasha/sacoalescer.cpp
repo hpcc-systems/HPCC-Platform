@@ -52,7 +52,7 @@ void coalesceDatastore(bool force)
         offset_t minDeltaSize = force?0:coalesceProps->getPropInt64("@minDeltaSize", DEFAULT_MINDELTASIZE);
 
         loop {
-            PROGLOG("COALESCER: dataPath=%s, backupPath=%s, minDeltaSize = %"I64F"dK", dataPath.str(), backupPath.str(), (unsigned __int64) minDeltaSize);
+            PROGLOG("COALESCER: dataPath=%s, backupPath=%s, minDeltaSize = %" I64F "dK", dataPath.str(), backupPath.str(), (unsigned __int64) minDeltaSize);
             unsigned configFlags = SH_External|SH_CheckNewDelta;
             configFlags |= coalesceProps->getPropBool("@recoverFromIncErrors", false) ? SH_RecoverFromIncErrors : 0;
             configFlags |= coalesceProps->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
@@ -75,7 +75,7 @@ void coalesceDatastore(bool force)
                         break;
                     offset_t dsz = deltaIFile->size();
                     if (minDeltaSize > dsz/1024) {
-                        PROGLOG("COALESCER: Delta size %"I64F"d less than minimum, exiting",dsz);
+                        PROGLOG("COALESCER: Delta size %" I64F "d less than minimum, exiting",dsz);
                         break;
                     }
                 }
@@ -91,7 +91,7 @@ void coalesceDatastore(bool force)
             OwnedIFile storeIFile = createIFile(storeFilename.str());
             if (storeIFile->exists())
             {
-                PROGLOG("Loading store: %s, size=%"I64F"d", storeFilename.str(), storeIFile->size());
+                PROGLOG("Loading store: %s, size=%" I64F "d", storeFilename.str(), storeIFile->size());
                 _root.setown(createPTreeFromXMLFile(storeFilename.str()));
                 PROGLOG("Loaded: %s", storeFilename.str());
             }
@@ -125,7 +125,7 @@ void coalesceDatastore(bool force)
             OwnedIFile detachedIFile = createIFile(detachPath.str());
             if (detachedIFile->exists() || iStoreHelper->detachCurrentDelta())
             {
-                PROGLOG("COALESCER: Loading delta: %s, size=%"I64F"d", detachName.str(), detachedIFile->size());
+                PROGLOG("COALESCER: Loading delta: %s, size=%" I64F "d", detachName.str(), detachedIFile->size());
                 bool noError;
                 Owned<IException> deltaE;
                 try { noError = iStoreHelper->loadDelta(detachName.str(), detachedIFile, root); }

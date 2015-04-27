@@ -168,6 +168,10 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             resp.setFirstName(user->getFirstName());
             resp.setLastName(user->getLastName());
             resp.setUsername(user->getName());
+
+            double version = context.getClientVersion();
+            if (version >= 1.01)
+                resp.setPasswordExpirationWarningDays(context.querySecManager()->getPasswordExpirationWarningDays());
         }
     }
     catch(IException* e)

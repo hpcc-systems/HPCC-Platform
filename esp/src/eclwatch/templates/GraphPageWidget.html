@@ -25,11 +25,11 @@
             <label id="${id}Warning"></label>
             <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
         </div>
-        <div id="${id}MainGraphWidget" data-dojo-props="region: 'center'" data-dojo-type="GraphWidget">
+        <div id="${id}MainGraphWidget" data-dojo-props="region: 'center'" data-dojo-type="${graphType}">
         </div>
         <div id="${id}RightBorderContainer" style="width: 33%; padding: 0px; overflow: hidden" data-dojo-props="region: 'right', splitter:true, minSize: 120" data-dojo-type="dijit.layout.BorderContainer">
             <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
-                <div id="${id}MiniGraphWidget" title="${i18n.Overview}" data-dojo-type="GraphWidget">
+                <div id="${id}MiniGraphWidget" title="${i18n.Overview}" data-dojo-type="${graphType}">
                 </div>
                 <div id="${id}SubgraphsGridCP" title="${i18n.Subgraphs}" style="padding: 0px; overflow: hidden" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}SubgraphsGrid">
@@ -47,14 +47,14 @@
                 </div>
             </div>
             <div id="${id}LocalTabContainer" style="height: 66%" data-dojo-props="region: 'bottom', splitter:true, minSize: 120, tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
-                <div id="${id}LocalGraphWidget" title="${i18n.Local}" data-dojo-type="GraphWidget">
+                <div id="${id}LocalGraphWidget" title="${i18n.Local}" data-dojo-type="${graphType}">
                 </div>
                 <div id="${id}Properties" title="${i18n.Properties}" data-dojo-type="dijit.layout.ContentPane">
                 </div>
             </div>
         </div>
     </div>
-    <div id="${id}GlobalGraphWidget" data-dojo-type="GraphWidget">
+    <div id="${id}GlobalGraphWidget" data-dojo-type="${graphType}">
     </div>
     <div id="${id}XGMMLDialog" title="${i18n.XGMML}" data-dojo-type="dijit.Dialog">
         <div class="dijitDialogPaneContentArea">

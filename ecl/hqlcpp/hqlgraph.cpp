@@ -449,7 +449,7 @@ void LogicalGraphCreator::endActivity()
 void LogicalGraphCreator::endSubGraph(bool nested)
 {
     subGraphs.pop();
-    subGraphId = savedGraphId.pop();
+    subGraphId = savedGraphId.popGet();
     if (!nested)
         restoreSubGraphs();
 }
@@ -629,6 +629,7 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
             {
             case no_csv:
             case no_xml:
+            case no_json:
                 temp.append(getOpString(expr->getOperator())).append(" ");
                 break;
             }
@@ -656,6 +657,8 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
                 temp.append("Output");
                 if (expr->hasAttribute(xmlAtom))
                     temp.append(" XML");
+                if (expr->hasAttribute(jsonAtom))
+                    temp.append(" JSON");
                 else if (expr->hasAttribute(csvAtom))
                     temp.append(" CSV");
                 queryExpandFilename(temp, filename);
@@ -788,7 +791,7 @@ LogicalGraphInfo * LogicalGraphCreator::queryExtra(IHqlExpression * expr)
 void LogicalGraphCreator::restoreSubGraphs()
 {
     subGraphs.kill();
-    unsigned level = savedLevels.pop();
+    unsigned level = savedLevels.popGet();
     while (saved.ordinality() != level)
         subGraphs.append(saved.popGet());
 }

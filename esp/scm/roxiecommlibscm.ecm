@@ -52,10 +52,14 @@ SCMinterface IRoxieCommunicationClient(IInterface)
 
     unsigned retrieveRoxieStateRevision();
     IPropertyTree *getRoxieBuildVersion();
+
+    IPropertyTree *sendRoxieControlAllNodes(const char *msg, bool allOrNothing);
+    IPropertyTree *sendRoxieControlAllNodes(ISocket *sock, const char *msg, bool allOrNothing, unsigned wait);
+    IPropertyTree *sendRoxieControlQuery(ISocket *sock, const char *msg, unsigned wait);
 };
 
 
-extern "C" ROXIECOMMLIB_API IRoxieCommunicationClient *createRoxieCommunicationClient(SocketEndpoint &roxieEP, unsigned roxieTimeout);
+extern "C" ROXIECOMMLIB_API IRoxieCommunicationClient *createRoxieCommunicationClient(const SocketEndpoint &roxieEP, unsigned roxieTimeout);
 
 
 

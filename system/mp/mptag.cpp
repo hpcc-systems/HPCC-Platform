@@ -56,7 +56,7 @@ public:
     {
         CriticalBlock block(crit);
         if (freedtags.length()>0)
-            return (mptag_t)(freedtags.pop());
+            return (mptag_t)(freedtags.popGet());
         if(counter>max)
             throw MakeStringException(MSGAUD_operator,-1,"Out of message tags");
         mptag_t t = (mptag_t)counter;

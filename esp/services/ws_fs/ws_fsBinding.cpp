@@ -309,7 +309,8 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
             getClusterGroupName(cluster, thorClusterGroupName);
             if (!thorClusterGroupName.length())
                 continue;
-            if (uniqueThorClusterGroupNames.getValue(thorClusterGroupName.str()))
+            bool* found = uniqueThorClusterGroupNames.getValue(thorClusterGroupName.str());
+            if (found && *found)
                 continue;
 
             uniqueThorClusterGroupNames.setValue(thorClusterGroupName.str(), true);

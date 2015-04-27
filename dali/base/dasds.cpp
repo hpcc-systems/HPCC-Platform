@@ -569,7 +569,7 @@ public:
             if (pos == NotFound)
             {
                 StringBuffer msg;
-                msg.append("ConnectionId=").appendf("%"I64F"x", connectionId).append(", xpath=").append(xpath).append(", sessionId=").appendf("%"I64F"x", sessionId).append(", mode=").append(mode).append(", timeout=");
+                msg.append("ConnectionId=").appendf("%" I64F "x", connectionId).append(", xpath=").append(xpath).append(", sessionId=").appendf("%" I64F "x", sessionId).append(", mode=").append(mode).append(", timeout=");
                 if (INFINITE == timeout)
                     msg.append("INFINITE");
                 else
@@ -608,7 +608,7 @@ public:
 
     void closed(SessionId id)
     {
-        LOG(MCwarning, unknownJob, "Connection (%"I64F"x) was leaked by exiting client (%"I64F"x) path=%s", connectionId, id, queryXPath());
+        LOG(MCwarning, unknownJob, "Connection (%" I64F "x) was leaked by exiting client (%" I64F "x) path=%s", connectionId, id, queryXPath());
         aborted(id);
         subsid=0;
     }
@@ -681,7 +681,7 @@ public:
 class CSubscriberContainer : public CSubscriberContainerBase
 {
     StringAttr xpath, fullXpath;
-    PointerIArrayOf<CQualifiers> qualifierStack;
+    IPointerArrayOf<CQualifiers> qualifierStack;
     bool sub, sendValue;
     unsigned depth;
 public:
@@ -810,6 +810,7 @@ public:
 };
 
 typedef IArrayOf<CSubscriberContainer> CSubscriberArray;
+typedef ICopyArrayOf<CSubscriberContainer> CSubscriberCopyArray;
 class CSubscriberContainerList : public CInterface, public CSubscriberArray
 {
 public:
@@ -986,7 +987,7 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
             char *headerPtr = (char *)header.bufferBase();
             sprintf(strNum, "%010u", ~crc);
             memcpy(headerPtr + deltaHeaderCrcOff, strNum, 10);
-            sprintf(strNum, "%016"I64F"X", fLen);
+            sprintf(strNum, "%016" I64F "X", fLen);
             memcpy(headerPtr + deltaHeaderSizeOff, strNum, 16);
             iFileIO->write(0, strlen(deltaHeader), headerPtr);
         }
@@ -1412,7 +1413,7 @@ class CLegacyBinaryFileExternal : public CExternalFile, implements IExternalHand
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLegacyBinaryFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("."EF_LegacyBinaryValue, dataPath, backupHandler) { }
+    CLegacyBinaryFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("." EF_LegacyBinaryValue, dataPath, backupHandler) { }
     virtual void resetAsExternal(IPropertyTree &tree)
     {
         tree.setProp(NULL, (char *)NULL);
@@ -1517,7 +1518,7 @@ class CBinaryFileExternal : public CExternalFile, implements IExternalHandler
 public:
     IMPLEMENT_IINTERFACE;
 
-    CBinaryFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("."EF_BinaryValue, dataPath, backupHandler) { }
+    CBinaryFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("." EF_BinaryValue, dataPath, backupHandler) { }
     virtual void resetAsExternal(IPropertyTree &tree)
     {
         tree.setProp(NULL, (char *)NULL);
@@ -1618,7 +1619,7 @@ class CXMLFileExternal : public CExternalFile, implements IExternalHandler
 public:
     IMPLEMENT_IINTERFACE;
 
-    CXMLFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("."EF_XML, dataPath, backupHandler) { }
+    CXMLFileExternal(const char *dataPath, CBackupHandler &backupHandler) : CExternalFile("." EF_XML, dataPath, backupHandler) { }
     virtual void resetAsExternal(IPropertyTree &_tree)
     {
         PTree &tree = *QUERYINTERFACE(&_tree, PTree);
@@ -2248,7 +2249,7 @@ CServerConnection::~CServerConnection()
 
 void CServerConnection::aborted(SessionId id)
 {
-    LOG(MCdebugInfo(100), unknownJob, "CServerConnection: connection aborted (%"I64F"x) sessId=%"I64F"x",connectionId, id);
+    LOG(MCdebugInfo(100), unknownJob, "CServerConnection: connection aborted (%" I64F "x) sessId=%" I64F "x",connectionId, id);
 #if 0 // JCSMORE - think this is ok, but concerned about deadlock, change later.
     Owned<CLCLockBlock> lockBlock = new CLCWriteLockBlock(((CCovenSDSManager &)manager).dataRWLock, readWriteTimeout, __FILE__, __LINE__);
     SDSManager->disconnect(connectionId, false);
@@ -2261,32 +2262,15 @@ void CServerConnection::aborted(SessionId id)
 ///////////////////
 enum IncCmd { None, PropDelete, AttrDelete, PropChange, PropNew, PropExisting, ChildEndMarker, PropRename, AttrChange };
 
-CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children, CPState _state)
-    : PTree(name, ipt_none, value, children), state(_state)
+CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children)
+    : PTree(name, ipt_none, value, children)
 {
     serverId = 0;
 }
 
-CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb, CPState _state)
-    : state(_state)
+CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb)
 {
     serverId = 0;
-}
-
-void CRemoteTreeBase::reset(unsigned _state, bool sub)
-{
-    state = _state;
-    serverId = 0;
-    if (sub)
-    {
-        IPropertyTreeIterator *iter = getElements("*");
-        ForEach(*iter)
-        {
-            CRemoteTreeBase &child = (CRemoteTreeBase &)iter->query();
-            child.reset(state, sub);
-        }
-        iter->Release();
-    }
 }
 
 void CRemoteTreeBase::deserializeRT(MemoryBuffer &src)
@@ -2319,165 +2303,6 @@ void CRemoteTreeBase::deserializeSelfRT(MemoryBuffer &mb)
     mb.read(_serverId);
     if (_serverId)
         setServerId(_serverId); // ignore deserializing 0 serverId (indicated new)
-}
-
-IPropertyTree *CRemoteTreeBase::collateData()
-{
-    ChangeInfo *changes = queryChanges();
-    struct ChangeTree
-    {
-        ChangeTree(IPropertyTree *donor=NULL) { ptree = LINK(donor); }
-        ~ChangeTree() { ::Release(ptree); }
-        inline void createTree() { assertex(!ptree); ptree = createPTree(RESERVED_CHANGE_NODE); }
-        inline IPropertyTree *queryTree() { return ptree; }
-        inline IPropertyTree *getTree() { return LINK(ptree); }
-        inline IPropertyTree *queryCreateTree()
-        {
-            if (!ptree)
-                ptree = createPTree(RESERVED_CHANGE_NODE);
-            return ptree;
-        }
-    private:
-        StringAttr name;
-        IPropertyTree *ptree;
-    } ct(changes?changes->tree:NULL);
-    if (changes) changes->tree.clear();
-
-    if (0 == serverId)
-    {
-        if (ct.queryTree())
-        {
-            ct.queryTree()->removeProp(ATTRDELETE_TAG);
-            ct.queryTree()->removeProp(ATTRCHANGE_TAG);
-            ct.queryTree()->removeProp(DELETE_TAG);
-        }
-        else
-            ct.createTree();
-        Owned<IAttributeIterator> iter = getAttributes();
-        if (iter->count())
-        {
-            IPropertyTree *t = createPTree();
-            ForEach(*iter)
-                t->setProp(iter->queryName(), queryProp(iter->queryName()));
-            ct.queryTree()->addPropTree(ATTRCHANGE_TAG, t);
-        }
-        ct.queryTree()->setPropBool("@new", true);
-    }
-    else
-    {
-        if (ct.queryTree())
-        {
-            Linked<IPropertyTree> ac = ct.queryTree()->queryPropTree(ATTRCHANGE_TAG);
-            if (ac)
-            {
-                ct.queryTree()->removeTree(ac);
-                Owned<IAttributeIterator> iter = ac->getAttributes();
-                IPropertyTree *t = createPTree();
-                ForEach(*iter)
-                    t->setProp(iter->queryName(), queryProp(iter->queryName()));
-                ct.queryTree()->addPropTree(ATTRCHANGE_TAG, t);
-            }
-        }
-    }
-    if ((CPS_Changed & state) || (0 == serverId && queryValue()))
-    {
-        ct.queryCreateTree()->setPropBool("@localValue", true);
-        if (queryValue())
-        {
-            bool binary=isBinary(NULL);
-            ((PTree *)ct.queryTree())->setValue(new CPTValue(queryValue()->queryValueRawSize(), queryValue()->queryValueRaw(), binary, true, isCompressed(NULL)), binary);
-        }
-        else
-            ((PTree *)ct.queryTree())->setValue(new CPTValue(0, NULL, false, true, false), false);
-    }
-    else if (CPS_PropAppend & state)
-    {
-        assertex(serverId);
-        IPropertyTree *pa = ct.queryTree()->queryPropTree(APPEND_TAG);
-        assertex(pa);
-        unsigned from = pa->getPropInt(NULL);
-        ct.queryTree()->removeTree(pa);
-        ct.queryCreateTree()->setPropBool("@appendValue", true);
-        MemoryBuffer mb;
-        bool binary=isBinary(NULL);
-        queryValue()->getValue(mb, true);
-        ((PTree *)ct.queryTree())->setValue(new CPTValue(mb.length()-from, mb.toByteArray()+from, binary), binary);
-    }
-
-    Owned<IPropertyTree> childTree;
-    Owned<IPropertyTreeIterator> _iter = getElements("*");
-    IPropertyTreeIterator *iter = _iter;
-    if (iter->first())
-    {
-        while (iter->isValid())
-        {
-            CRemoteTreeBase *child = (CRemoteTreeBase *) &iter->query();
-            childTree.setown(child->collateData());
-            if (childTree)
-            {
-                if (0 == child->queryServerId())
-                {
-                    if (CPS_InsPos & child->queryState())
-                    {
-                        int pos = findChild(child);
-                        assertex(NotFound != pos);
-                        childTree->setPropInt("@pos", pos+1);
-                    }
-                }
-                else
-                {
-                    int pos = findChild(child);
-                    assertex(NotFound != pos);
-                    childTree->setPropInt("@pos", pos+1);
-                    childTree->setPropInt64("@id", child->queryServerId());
-                }
-            }
-            if (childTree)
-                ct.queryCreateTree()->addPropTree(RESERVED_CHANGE_NODE, childTree.getClear());
-            iter->next();
-        }
-    }
-    if (ct.queryTree())
-        ct.queryTree()->setProp("@name", queryName());
-    return ct.getTree();
-}
-
-void CRemoteTreeBase::clearCommitChanges(MemoryBuffer *mb)
-{
-    class Cop : implements IIteratorOperator
-    {
-    public:
-        Cop(MemoryBuffer *_mb=NULL) : mb(_mb) { }
-        virtual bool applyTop(IPropertyTree &_tree)
-        {
-            CRemoteTreeBase &tree = (CRemoteTreeBase &) _tree;
-            tree.clearChanges();
-            if (tree.queryState())
-                tree.setState(0);
-            return true;
-        }
-        virtual bool applyChild(IPropertyTree &parent, IPropertyTree &child, bool &levelBreak)
-        {
-            CRemoteTreeBase &tree = (CRemoteTreeBase &) child;
-            if (mb && 0==tree.queryServerId())
-            {
-                __int64 serverId;
-                mb->read(serverId);
-                tree.setServerId(serverId);
-            }
-            return true;
-        }
-    private:
-        MemoryBuffer *mb;
-    } op(mb);
-
-    CIterationOperation iop(op);
-    iop.iterate(*this);
-}
-
-bool CRemoteTreeBase::queryStateChanges() const
-{
-    return false;
 }
 
 void CRemoteTreeBase::setServerId(__int64 _serverId)
@@ -2665,7 +2490,7 @@ public:
     virtual void setServerId(__int64 _serverId)
     {
         if (serverId && serverId != _serverId)
-            WARNLOG("Unexpected - client server id mismatch in %s, id=%"I64F"x", queryName(), _serverId);
+            WARNLOG("Unexpected - client server id mismatch in %s, id=%" I64F "x", queryName(), _serverId);
         CRemoteTreeBase::setServerId(_serverId);
     }
 
@@ -3375,7 +3200,7 @@ class CLockInfo : public CInterface, implements IInterface
                         if (lD->sessId != nodeSessId)
                         {
                             StringBuffer out("Removing stale connection session [");
-                            out.appendf("%"I64F"x], connectionId [%"I64F"x]", lD->sessId, * ((ConnectionId *) imap.getKey()));
+                            out.appendf("%" I64F "x], connectionId [%" I64F "x]", lD->sessId, * ((ConnectionId *) imap.getKey()));
                             out.append(" xpath [").append(xpath).append("]");
                             PROGLOG("%s", out.str());
                             querySessionManager().stopSession(lD->sessId, true);
@@ -3391,7 +3216,7 @@ class CLockInfo : public CInterface, implements IInterface
                                 StringBuffer out("Terminating connection session to ");
                                 out.append(nodeStr);
                                 out.append(" [");
-                                out.appendf("%"I64F"x], connectionId [%"I64F"x]", lD->sessId, * ((ConnectionId *) imap.getKey()));
+                                out.appendf("%" I64F "x], connectionId [%" I64F "x]", lD->sessId, * ((ConnectionId *) imap.getKey()));
                                 out.append(" xpath [").append(xpath).append("]");
                                 PROGLOG("%s", out.str());
                                 queryCoven().disconnect(node);
@@ -3839,7 +3664,7 @@ public:
                 time.set(tt);
                 StringBuffer timeStr;
                 time.getString(timeStr);
-                out.appendf("%-20s|%-16"I64F"x|%-16"I64F"x|%-8x|%s(%d ms)", querySessionManager().getClientProcessEndpoint(lD.sessId, sessEpStr).str(), lD.sessId, connId, lD.mode, timeStr.str(), lockedFor);
+                out.appendf("%-20s|%-16" I64F "x|%-16" I64F "x|%-8x|%s(%d ms)", querySessionManager().getClientProcessEndpoint(lD.sessId, sessEpStr).str(), lD.sessId, connId, lD.mode, timeStr.str(), lockedFor);
                 ++l;
                 if (l>=nlocks)
                     break;
@@ -4298,7 +4123,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                     if (0 == id)
                     {
                         StringBuffer str("Dali client passing sessionid=0 to connect (xpath=");
-                        str.append(xpath).append(", mode=").append(mode).append(", connectionId=").appendf("%"I64F"x", connectionId).append(")");
+                        str.append(xpath).append(", mode=").append(mode).append(", connectionId=").appendf("%" I64F "x", connectionId).append(")");
                         WARNLOG("%s", str.str());
                     }
                     mb.clear();
@@ -4354,7 +4179,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                             if (0 == id)
                             {
                                 StringBuffer str("Dali client passing sessionid=0 to multi connect (xpath=");
-                                str.append(xpath).append(", mode=").append(mode).append(", connectionId=").appendf("%"I64F"x", connectionId).append(")");
+                                str.append(xpath).append(", mode=").append(mode).append(", connectionId=").appendf("%" I64F "x", connectionId).append(")");
                                 WARNLOG("%s", str.str());
                             }
                             CRemoteConnection *conn = new CRemoteConnection(*SDSManager, connectionId, xpath, id, mode, timeout);
@@ -4987,7 +4812,7 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
         unsigned crc = crcPipeStream->queryCrc();
 
         if (crcValidation && crc != crcValidation)
-            LOG(MCoperatorWarning, unknownJob, "Error processing store %s - CRC ERROR (file size=%"I64F"d, validation crc=%x, calculated crc=%x)", storeFilename, iFileIOStore->size(), crcValidation, crc); // not fatal yet (maybe later)
+            LOG(MCoperatorWarning, unknownJob, "Error processing store %s - CRC ERROR (file size=%" I64F "d, validation crc=%x, calculated crc=%x)", storeFilename, iFileIOStore->size(), crcValidation, crc); // not fatal yet (maybe later)
     }
     catch (IException *e)
     {
@@ -5096,8 +4921,10 @@ public:
                         Owned<IJlibDateTime> nowTime = createDateTimeNow();
                         nowTime->setGmtDate(1970, 1, 1);
                         if (within24)
+                        {
                             if (!(nowTime->compare(*quietStartTime) >= 0 && nowTime->compare(*quietEndTime) <= 0))
                                 continue; // if outside quiet period within 0-24
+                        }
                         else if (nowTime->compare(*quietEndTime) > 0 && nowTime->compare(*quietStartTime) < 0)
                             continue; // if inside period excluded by quiet period
                     }
@@ -5202,7 +5029,7 @@ public:
         if (e>readWriteSlowTracing)
         {
             StringBuffer s("TIME: CUnlockCallback(write=");
-            s.append(lockedForWrite).append(",xpath=").append(xpath).append(", connectionId=").appendf("%"I64F"x", connectionId).append(") took ").append(e);
+            s.append(lockedForWrite).append(",xpath=").append(xpath).append(", connectionId=").appendf("%" I64F "x", connectionId).append(") took ").append(e);
             DBGLOG("%s", s.str());
             if (readWriteStackTracing)
                 PrintStackReport();
@@ -5528,14 +5355,14 @@ public:
                 {
                     pos = strlen(deltaHeader);
                     offset_t lastGood;
-                    if (sscanf(ptr+deltaHeaderSizeOff, "%"I64F"X", &lastGood))
+                    if (sscanf(ptr+deltaHeaderSizeOff, "%" I64F "X", &lastGood))
                     {
                         offset_t fSize = iFileIO->size();
                         if (fSize > lastGood)
                         {
-                            size32_t diff = fSize - lastGood;
-                            LOG(MCoperatorError, unknownJob, "Delta file '%s', has %d bytes of trailing data (possible power loss during save?), file size: %"I64F"d, last committed size: %"I64F"d", filename, diff, fSize, lastGood);
-                            LOG(MCoperatorError, unknownJob, "Resetting delta file '%s' to size: %"I64F"d", filename, lastGood);
+                            offset_t diff = fSize - lastGood;
+                            LOG(MCoperatorError, unknownJob, "Delta file '%s', has %" I64F "d bytes of trailing data (possible power loss during save?), file size: %" I64F "d, last committed size: %" I64F "d", filename, diff, fSize, lastGood);
+                            LOG(MCoperatorError, unknownJob, "Resetting delta file '%s' to size: %" I64F "d", filename, lastGood);
                             iFileIO->close();
                             backup(filename);
                             iFileIO.setown(iFile->open(IFOreadwrite));
@@ -6096,7 +5923,7 @@ void CCovenSDSManager::validateBackup()
         WARNLOG("Store backup file doesn't exist or differs, filename=%s", storeFilename.str());
 }
 
-static int uint64compare(unsigned __int64 *i1, unsigned __int64 *i2)
+static int uint64compare(unsigned __int64 const *i1, unsigned __int64 const *i2)
 {
     if (*i1==*i2) return 0;
     if (*i1<*i2) return -1;
@@ -6111,10 +5938,10 @@ public:
     unsigned __int64 num;
 };
 
-static int extNcompareFunc(CInterface **_itm1, CInterface **_itm2)
+static int extNcompareFunc(CInterface * const *_itm1, CInterface * const *_itm2)
 {
-    CLegacyFmtItem *itm1 = *(CLegacyFmtItem **)_itm1;
-    CLegacyFmtItem *itm2 = *(CLegacyFmtItem **)_itm2;
+    CLegacyFmtItem *itm1 = (CLegacyFmtItem *)*_itm1;
+    CLegacyFmtItem *itm2 = (CLegacyFmtItem *)*_itm2;
     if (itm1->num==itm2->num) return 0;
     if (itm1->num<itm2->num) return -1;
     return 1;
@@ -6969,7 +6796,7 @@ void CCovenSDSManager::commit(CRemoteConnection &connection, bool *disconnectDel
     if (!RTM_MODE(connection.queryMode(), RTM_INTERNAL))
         lockBlock.setown(new CLCWriteLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
 
-    CRemoteTreeBase *tree = (CRemoteTreeBase *) connection.queryRoot();
+    CClientRemoteTree *tree = (CClientRemoteTree *) connection.queryRoot();
 
     bool lazyFetch = connection.setLazyFetch(false);
     Owned<IPropertyTree> changeTree = tree->collateData();
@@ -7215,7 +7042,7 @@ void CCovenSDSManager::getExternalValueFromServerId(__int64 serverId, MemoryBuff
         if (index)
             getExternalValue(index, mb);
         else
-            WARNLOG("External file reference missing (node name='%s', id=%"I64F"d)", idTree->queryName(), serverId);
+            WARNLOG("External file reference missing (node name='%s', id=%" I64F "d)", idTree->queryName(), serverId);
     }
 }
 
@@ -7733,7 +7560,28 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                                     if (timeout)
                                     {
                                         if (tm.timedout(&remaining))
-                                            throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
+                                        {
+                                            Linked<CLockInfo> lockInfo;
+                                            VStringBuffer timeoutMsg("Failed to establish lock to %s, timeout whilst retrying connection to orphaned connection path", xpath);
+                                            ForEachItemIn(f, freeExistingLocks.existingLockTrees)
+                                            {
+                                                CServerRemoteTree &e = freeExistingLocks.existingLockTrees.item(f);
+                                                {
+                                                    CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
+                                                    CLockInfo *_lockInfo = queryLockInfo(e.queryServerId());
+                                                    if (_lockInfo)
+                                                    {
+                                                        if (!lockInfo)
+                                                            timeoutMsg.append(", existing lock info: ");
+                                                        timeoutMsg.newline();
+                                                        lockInfo.set(_lockInfo);
+                                                    }
+                                                }
+                                                if (lockInfo)
+                                                    lockInfo->getLockInfo(timeoutMsg);
+                                            }
+                                            throw MakeSDSException(SDSExcpt_LockTimeout, "%s", timeoutMsg.str());
+                                        }
                                     }
                                     else
                                         remaining = 0; // a timeout of 0 means fail immediately if locked
@@ -8020,7 +7868,7 @@ StringBuffer &formatConnectionInfo(MemoryBuffer &src, StringBuffer &out)
     unsigned timeout;
     bool established;
     src.read(connectionId).read(xpath).read(sessionId).read(mode).read(timeout).read(established);
-    out.append("ConnectionId=").appendf("%"I64F"x", connectionId).append(", xpath=").append(xpath).append(", sessionId=").appendf("%"I64F"x", sessionId).append(", mode=").append(mode).append(", timeout=");
+    out.append("ConnectionId=").appendf("%" I64F "x", connectionId).append(", xpath=").append(xpath).append(", sessionId=").appendf("%" I64F "x", sessionId).append(", mode=").append(mode).append(", timeout=");
     if (INFINITE == timeout)
         out.append("INFINITE");
     else
@@ -8035,7 +7883,7 @@ StringBuffer &formatSubscriberInfo(MemoryBuffer &src, StringBuffer &out)
     bool sub;
     StringAttr xpath;
     src.read(subscriptionId).read(sub).read(xpath);
-    out.append("SubscriptionId=").appendf("%"I64F"x", subscriptionId).append(", xpath=").append(xpath).append(", sub=").append(sub?"true":"false");
+    out.append("SubscriptionId=").appendf("%" I64F "x", subscriptionId).append(", xpath=").append(xpath).append(", sub=").append(sub?"true":"false");
     return out;
 }
 
@@ -8045,7 +7893,7 @@ StringBuffer &formatNodeSubscriberInfo(MemoryBuffer &src, StringBuffer &out)
     StringAttr xpath;
     unsigned nodeCount;
     src.read(subscriptionId).read(xpath).read(nodeCount);
-    out.append("SubscriptionId=").appendf("%"I64F"x", subscriptionId).append(", xpath=").append(xpath).append(", nodes=").append(nodeCount);
+    out.append("SubscriptionId=").appendf("%" I64F "x", subscriptionId).append(", xpath=").append(xpath).append(", nodes=").append(nodeCount);
     return out;
 }
 
@@ -8325,7 +8173,8 @@ public:
         INIT_NAMEDCOUNT;
         SDSManager->querySubscriberTable().getSubscribers(subs);
     }
-    bool match(const char *head, const char *path, bool &sub)
+    enum SubCommitType { subCommitNone, subCommitExact, subCommitBelow, subCommitAbove };
+    SubCommitType match(const char *head, const char *path)
     {
         bool wild = false;
         loop
@@ -8346,24 +8195,23 @@ public:
                 wild = true;
             }
             else if (*head != *path)
-                return false;
+                return subCommitNone;
             else
                 path++;
 
             head++;
             if ('\0' == *path)
             {
-                if (!wild && '/' != *(path-1) && '/' != *head) return false;
-                sub = true;
-                return true;
+                if ('\0' == *head)
+                    return subCommitExact; // absolute match
+                else if (!wild && '/' != *head) // e.g. change=/a/bc, subscriber=/a/b
+                    return subCommitNone;
+                return subCommitBelow; // e.g. change=/a/b/c, subscriber=/a/b
             }
             else 
             {
                 if ('\0' == *head)
-                {
-                    sub = false;
-                    return true;
-                }
+                    return subCommitAbove; // e.g. change=/a/b, subscriber=/a/b/c - not matched yet, but returning true keeps it from being pruned
             }
         }
     }
@@ -8377,20 +8225,45 @@ public:
         scan(*rootChanges, stack, pruned);
     }
 
-    bool prune(const char *xpath, bool &sub, CSubscriberArray &pruned)
+    bool prune(const char *xpath, CSubscriberCopyArray &candidates, CSubscriberArray &pruned)
     {
-        sub = false;
         ForEachItemInRev(s, subs)
         {
             CSubscriberContainer &subscriber = subs.item(s);
-            bool _sub; // false = (xpath NOT below subscriber), (true = xpath equals or is below subscriber)
-            if (subscriber.isUnsubscribed() || !match(xpath, subscriber.queryXPath(), _sub))
-            {
-                pruned.append(*LINK(&subscriber));
-                subs.remove(s);
-            }
+            SubCommitType subCommit;
+            if (subscriber.isUnsubscribed())
+                subCommit = subCommitNone;
             else
-                sub |= _sub;
+                subCommit = match(xpath, subscriber.queryXPath());
+            switch (subCommit)
+            {
+                case subCommitNone:
+                {
+                    pruned.append(*LINK(&subscriber));
+                    subs.remove(s);
+                    break;
+                }
+                case subCommitExact:
+                {
+                    candidates.append(subscriber);
+                    break;
+                }
+                case subCommitBelow: // e.g. change=/a/b/c, subscriber=/a/b
+                {
+                    if (!subscriber.querySub())
+                    {
+                        pruned.append(*LINK(&subscriber));
+                        subs.remove(s);
+                    }
+                    else
+                        candidates.append(subscriber);
+                    break;
+                }
+                case subCommitAbove: // e.g. change=/a/b, subscriber=/a/b/c
+                    break; // keep in subs, deeper changes may match
+                default:
+                    throwUnexpected();
+            }
         }
         return (subs.ordinality() > 0);
     }
@@ -8398,15 +8271,15 @@ public:
     // recurse down all matching subscription stubs while qualified
     void scanAll(PDState state, CBranchChange &changes, CPTStack &stack, CSubscriberArray &pruned)
     {
-        bool sub;
-        if (prune(xpath.str(), sub, pruned))
+        CSubscriberCopyArray candidates;
+        if (prune(xpath.str(), candidates, pruned))
         {
             MemoryBuffer notifyData;
-            if (sub)
+            if (candidates.ordinality())
             {
-                ForEachItemInRev(s, subs)
+                ForEachItemInRev(s, candidates)
                 {
-                    CSubscriberContainer &subscriber = subs.item(s);
+                    CSubscriberContainer &subscriber = candidates.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
                         if (subscriber.qualify(stack, true))
@@ -8418,7 +8291,7 @@ public:
                         else
                             pruned.append(*LINK(&subscriber));
                     }
-                    subs.remove(s);
+                    subs.zap(subscriber);
                 }
             }
             else
@@ -8449,9 +8322,7 @@ public:
                         CBranchChange &childChange = changes.children.item(c);
                         PushPop pp(stack, *childChange.tree);
                         size32_t parentLength = xpath.length();
-                        xpath.append(childChange.tree->queryName());
-                        if ('/' != xpath.charAt(xpath.length()-1))
-                            xpath.append('/');
+                        xpath.append('/').append(childChange.tree->queryName());
                         CSubscriberArray _pruned;
                         scanAll(state, childChange, stack, _pruned);
                         ForEachItemIn(i, _pruned) subs.append(*LINK(&_pruned.item(i)));
@@ -8466,17 +8337,17 @@ public:
 
     void scan(CBranchChange &changes, CPTStack &stack, CSubscriberArray &pruned)
     {
-        bool sub;
-        if (!prune(xpath.str(), sub, pruned))
+        CSubscriberCopyArray candidates;
+        if (!prune(xpath.str(), candidates, pruned))
             return;
-    
+
         PushPop pp(stack, *changes.tree);
         if (PDS_Deleted == (changes.local & PDS_Deleted))
         {
             scanAll(changes.local, changes, stack, pruned);
             return;
         }
-        else if (sub) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
+        else if (candidates.ordinality()) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
         {
             bool ret = false;
             // avoid notifying on PDS_Structure only, which signifies changes deeper down only
@@ -8484,9 +8355,9 @@ public:
             if (changes.state && changes.local && (changes.local != PDS_Structure))
             {
                 int lastSendValue = -1;
-                ForEachItemInRev(s, subs)
+                ForEachItemInRev(s, candidates)
                 {
-                    CSubscriberContainer &subscriber = subs.item(s);
+                    CSubscriberContainer &subscriber = candidates.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
                         if (subscriber.qualify(stack, false))
@@ -8514,41 +8385,20 @@ public:
                         else
                             pruned.append(*LINK(&subscriber));
                     }
-                    subs.remove(s);
-                }
-            }
-            else
-            {
-                // remove non-sub subcribers at this level
-                ForEachItemInRev(s, subs)
-                {
-                    CSubscriberContainer &subscriber = subs.item(s);
-                    unsigned subDepth = subscriber.queryDepth();
-                    unsigned stackDepth = stack.ordinality();
-                    if ((!subscriber.querySub() && subDepth==stackDepth) || 0 == changes.children.ordinality())
-                    {
-                        pruned.append(*LINK(&subscriber));
-                        subs.remove(s);
-                    }
+                    subs.zap(subscriber);
                 }
             }
         }
-
         ForEachItemIn(c, changes.children)
         {
             CBranchChange &childChanges = changes.children.item(c);
-
             size32_t parentLength = xpath.length();
-            xpath.append(childChanges.tree->queryName());
-            if ('/' != xpath.charAt(xpath.length()-1))
-                xpath.append('/');
-
+            xpath.append('/').append(childChanges.tree->queryName());
             CSubscriberArray pruned;
             scan(childChanges, stack, pruned);
             ForEachItemIn(i, pruned) subs.append(*LINK(&pruned.item(i)));
             if (0 == subs.ordinality())
                 break;
-
             xpath.setLength(parentLength);
         }
     }
@@ -9036,12 +8886,12 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
                     {
                         const char *pos = child.queryProp("@pos");
                         if (!pos)
-                            throw MakeStringException(0, "Missing position attribute in child reference, section end offset=%"I64F"d", sectionEndOffset);
+                            throw MakeStringException(0, "Missing position attribute in child reference, section end offset=%" I64F "d", sectionEndOffset);
                         StringBuffer xpath(name);
                         xpath.append('[').append(pos).append(']');
                         IPropertyTree *existingBranch = currentBranch.queryPropTree(xpath.str());
                         if (!existingBranch)
-                            throw MakeStringException(0, "Failed to locate delta change in %s, section end offset=%"I64F"d", xpath.str(), sectionEndOffset);
+                            throw MakeStringException(0, "Failed to locate delta change in %s, section end offset=%" I64F "d", xpath.str(), sectionEndOffset);
                         apply(child, *existingBranch);
                     }
                 }
@@ -9067,7 +8917,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
                 throw MakeStringException(0, "Failed to locate header xpath = %s", xpath);
             IPropertyTree *start = match.queryPropTree("Delta/T");
             if (!start)
-                throw MakeStringException(0, "Badly constructed delta format (missing Delta/T) in header path=%s, section end offset=%"I64F"d", xpath, endOffset);
+                throw MakeStringException(0, "Badly constructed delta format (missing Delta/T) in header path=%s, section end offset=%" I64F "d", xpath, endOffset);
             headerPath.set(xpath);
             apply(*start, *root);
         }
@@ -9130,7 +8980,7 @@ void LogRemoteConn(IRemoteConnection *conn)
     IPropertyTree *root = conn->queryRoot();
     CRemoteTreeBase *remotetree = root?QUERYINTERFACE(root,CRemoteTreeBase):NULL;
     unsigned rcount = remotetree?remotetree->getLinkCount()-1:((unsigned)-1);
-    PROGLOG("CONN(%x,%"I64F"x,%"I64F"x) path = '%s' mode = %x, link %d,%d", 
+    PROGLOG("CONN(%x,%" I64F "x,%" I64F "x) path = '%s' mode = %x, link %d,%d",
             (unsigned)(memsize_t)conn,
             (__int64)conbase->querySessionId(),
             (__int64)conbase->queryConnectionId(),

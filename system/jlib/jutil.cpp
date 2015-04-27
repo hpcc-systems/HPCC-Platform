@@ -27,6 +27,7 @@
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jprop.hpp"
+#include "jerror.hpp"
 #ifdef _WIN32
 #include <mmsystem.h> // for timeGetTime 
 #include <float.h> //for _isnan and _fpclass
@@ -47,6 +48,8 @@
 #include <cmath>
 #include "build-config.h"
 #endif
+
+#include "portlist.h"
 
 static SpinLock * cvtLock;
 
@@ -401,7 +404,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
         if (h == NULL)
         {
             StringBuffer dlErrorMsg(dlerror());
-            DBGLOG("Error loading %s: %s", name, dlErrorMsg.str());
+            DBGLOG("Warning: Could not load %s: %s", name, dlErrorMsg.str());
             if (raiseOnError)
             {
                 if (isCorruptDll(dlErrorMsg.str()))
@@ -1402,7 +1405,7 @@ void StringArray::sortAsciiReverse(bool nocase)
     PARENT::sort(nocase ? CCmp::revCompareNC : CCmp::revCompare);
 }
 
-void StringArray::sortCompare(int (*compare)(const char * * l, const char * * r))
+void StringArray::sortCompare(int (*compare)(const char * const * l, const char * const * r))
 {
     PARENT::sort(compare);
 }
@@ -1549,181 +1552,6 @@ static int exec(const char* _command)
 }
 #endif 
 
-bool callExternalProgram(const char *progname, const StringBuffer &input, StringBuffer &output, StringArray *env_in)
-{
-#ifdef _WIN32 
-    StringBuffer envp;
-    if (env_in)
-    {
-        ForEachItemIn(index, *env_in)
-            envp.append(env_in->item(index)).append('\0');
-    }
-    win32::ProcessPipe p(progname, envp.length() ? envp.str() : NULL);
-    p.Write(input.str(), input.length());
-    p.CloseWrite();
-
-    char buf[4096];
-    for(;;)
-    {
-        // Read program output
-        DWORD bread = (DWORD)p.Read(buf, sizeof(buf));
-        if(!bread)
-        {
-            break;
-        }
-        output.append(bread, buf);
-    }
-#else
-    struct Pipe
-    {
-        Pipe()
-        { 
-            p[0]=p[1]=-1;
-            if(pipe(p))
-                throw MakeStringException(-1,"Pipe create failed: %d",errno);
-        }
-
-        ~Pipe()
-        {
-            if(p[0]>=0)
-                close(p[0]);
-            if(p[1]>=0)
-                close(p[1]);
-        }
-
-        int Read(void *buf, size32_t nbyte)
-        {
-            return read(p[0],buf,nbyte);
-        }
-
-        int Write(const void *buf, size32_t nbyte)
-        {
-            return write(p[1],buf,nbyte);
-        }
-
-        void SetStdout()
-        {
-            if(p[1]!=STDOUT_FILENO)
-            {
-                if(dup2(p[1],STDOUT_FILENO)<0)
-                    throw MakeStringException(-1,"stdout failed: %d",errno);
-                close(p[1]);
-            }
-        }
-
-        void SetStdin()
-        {
-            if(p[0]!=STDIN_FILENO)
-            {
-                if(dup2(p[0],STDIN_FILENO)<0)
-                    throw MakeStringException(-1,"stdin failed: %d",errno);
-                close(p[0]);
-            }
-        }
-
-        void CloseRead()
-        {
-            close(p[0]);
-            p[0]=-1;
-        }
-
-        void CloseWrite()
-        {
-            close(p[1]);
-            p[1]=-1;
-        }
-
-        int p[2];
-    } pipe1, pipe2;
-    
-    struct ChildProc
-    {
-        ChildProc()
-        {
-            if((pid=fork())<0)
-                throw MakeStringException(-1,"Fork failed: %d",errno);
-        }
-        ~ChildProc()
-        {
-            if(!inChild())
-            {
-                for(;;)
-                {
-                    if(waitpid(pid,0,0)>=0)
-                        break;
-                    else if (errno==EINTR)
-                    {
-                    }
-                }
-            }
-        }
-        bool inChild()
-        {
-            return pid==0;
-        }
-        int pid;
-    } fchild;
-
-    if(fchild.inChild())
-    {
-        pipe1.CloseWrite();
-        pipe1.SetStdin();
-
-        pipe2.CloseRead();
-        pipe2.SetStdout();
-
-        if (env_in)
-        {
-            const char **envp = (const char **) alloca((env_in->ordinality()+1) * sizeof(const char *));
-            ForEachItemIn(index, *env_in)
-                envp[index]=env_in->item(index);
-            envp[env_in->ordinality()] = NULL;
-            execle(progname, progname, (const char *) NULL, (char * const *)envp);  // will not return, on success
-        }
-        else
-            execlp(progname, progname, (const char *) NULL);  // will not return, on success
-        _exit(EXIT_FAILURE); // must be _exit!!
-    }
-    else
-    {
-        pipe1.CloseRead();
-        pipe2.CloseWrite();
-        const char* data=input.str();
-        size32_t count=input.length();
-        for(;count>0;)
-        {
-            ssize_t w=pipe1.Write(data,count);
-            if(w<0)
-            {
-                if (errno!=EINTR)
-                    throw MakeStringException(-1,"Pipe write failed: %d",errno);
-            }
-            else
-            {
-                data+=w;
-                count-=w;
-            }
-        }
-        pipe1.CloseWrite();
-
-        char buf[4096];
-        for(;;)
-        {
-            int r=pipe2.Read(buf, sizeof(buf));
-            if(r>0)
-            {
-                output.append(r, buf);
-            }
-            else if(r==0)
-                break;
-            else if(errno!=EINTR)
-                throw MakeStringException(-1,"Pipe read failed: %d",errno); 
-        }
-    }
-#endif
-    return true;
-}
-
 //Calculate the greatest common divisor using Euclid's method
 unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 right)
 {
@@ -1744,6 +1572,13 @@ unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 r
     }
 }
 
+//The whole point of this function is to force memory to be accessed on the stack to avoid page faults.
+//Therefore disable the gcc warning.
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
+
 //In a separate module to stop optimizer removing the surrounding catch.
 void doStackProbe()
 {
@@ -1751,6 +1586,10 @@ void doStackProbe()
     const volatile byte * x = (const byte *)&local;
     byte forceload = x[-4096];
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 #ifdef _WIN32
 
@@ -1887,6 +1726,44 @@ static const char *findExtension(const char *fn)
     return ret;
 }
 
+unsigned runExternalCommand(StringBuffer &output, const char *cmd, const char *input)
+{
+    try
+    {
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        pipe->run(cmd, cmd, ".", input != NULL, true, true, 1024*1024);
+        if (input)
+        {
+            pipe->write(strlen(input), input);
+            pipe->closeInput();
+        }
+        char buf[1024];
+        while (true)
+        {
+            size32_t read = pipe->read(sizeof(buf), buf);
+            if (!read)
+                break;
+            output.append(read, buf);
+        }
+        int ret = pipe->wait();
+        StringBuffer error;
+        while (true)
+        {
+            size32_t read = pipe->readError(sizeof(buf), buf);
+            if (!read)
+                break;
+            error.append(read, buf);
+        }
+        return ret;
+    }
+    catch (IException *E)
+    {
+        E->Release();
+        output.clear();
+        return 255;
+    }
+}
+
 bool matchesMask(const char *fn, const char *mask, unsigned p, unsigned n)
 {
     StringBuffer match;
@@ -1991,7 +1868,7 @@ public:
     void impersonate()
     {
         if (!ImpersonateLoggedOnUser(usertoken))
-            throw MakeOsException(GetLastError());
+            throw makeOsException(GetLastError());
     }
 
     void revert()
@@ -2049,14 +1926,18 @@ public:
     {
         saveuid = geteuid();
         savegid = getegid();
-        setegid(gid);
-        seteuid(uid);
+        if (setegid(gid) == -1)
+            throw makeOsException(errno, "Failed to set effective group id");
+        if (seteuid(uid) == -1)
+            throw makeOsException(errno, "Failed to set effective user id");
     }
 
     void revert()
     {
-        seteuid(saveuid);
-        setegid(savegid);
+        if (seteuid(saveuid) == -1)
+            throw makeOsException(errno, "Failed to restore effective group id");
+        if (setegid(savegid) == -1)
+            throw makeOsException(errno, "Failed to restore effective user id");
     }
 
     const char *username()
@@ -2353,7 +2234,7 @@ StringBuffer jlib_decl passwordInput(const char* prompt, StringBuffer& passwd)
     if (term!=stdin)
         fclose(term);
     if (err)
-        throw MakeOsException(err);
+        throw makeOsException(err);
 #endif
     return passwd;
 }
@@ -2415,6 +2296,65 @@ IPropertyTree *getHPCCEnvironment(const char *configFileName)
         }
     }
     return NULL;
+}
+
+jlib_decl bool querySecuritySettings(bool *          _useSSL,
+                                     unsigned short *_port,
+                                     const char * *  _certificate,
+                                     const char * *  _privateKey)
+{
+    static CriticalSection securitySettingsCrit;
+    static bool useSSL = false;
+    static StringAttr certificate;
+    static StringAttr privateKey;
+    static bool retrieved = false;
+
+    if (!retrieved)
+    {
+        CriticalBlock b(securitySettingsCrit);
+        if (!retrieved)
+        {
+            try
+            {
+                StringBuffer configFileSpec;
+#ifndef _WIN32
+                configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
+#endif
+                Owned<IProperties> conf = createProperties(configFileSpec.str(), true);
+                useSSL = conf->getPropBool("dfsUseSSL", false);
+                if (useSSL)
+                {
+                    certificate.set(conf->queryProp("dfsSSLCertFile"));
+                    privateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
+                }
+                retrieved = true;
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "Error processing environment.conf\n");
+                throwUnexpected();
+            }
+        }
+    }
+    if (retrieved)
+    {
+        if (_useSSL)
+            *_useSSL = useSSL;
+        if (_port)
+            *_port = useSSL ? SECURE_DAFILESRV_PORT : DAFILESRV_PORT;
+        if (_certificate)
+            *_certificate = certificate.get();
+        if (_privateKey)
+            *_privateKey = privateKey.get();
+    }
+    else
+    {
+        if (_useSSL)
+            *_useSSL = false;
+        if (_port)
+            *_port = DAFILESRV_PORT;
+    }
+    return retrieved;
 }
 
 static IPropertyTree *getOSSdirTree()
@@ -2647,7 +2587,7 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
                     }
                     if (c) {
                         if (argc==256) 
-                            throw MakeStringException(-1,"parseCommandLine: too many arguments");
+                            throw makeStringException(-1, "parseCommandLine: too many arguments");
                         arg[argc] = 0;
                     }
                 }

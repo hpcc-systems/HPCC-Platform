@@ -69,7 +69,6 @@
 #define FETCHKEY_HEADER_SIZE (sizeof(offset_t)+sizeof(void *))
 #define DEFAULTMAXRESULTPULLPOOL 1
 #define DEFAULTFREEQSIZE 10
-#define DEFAULT_KJ_PRESERVES_ORDER 1
 #define LOWTHROTTLE_GRANULARITY 10
 
 class CJoinGroup;
@@ -532,7 +531,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     CPartDescriptorArray indexParts, dataParts;
     Owned<IKeyIndexSet> tlkKeySet, partKeySet;
     IThorDataLink *input;
-    bool preserveGroups, preserveOrder, eos, inputStopped, needsDiskRead, atMostProvided, dataRemote;
+    bool preserveGroups, preserveOrder, eos, inputStopped, needsDiskRead, atMostProvided, remoteDataFiles;
     unsigned joinFlags, abortLimit, parallelLookups, freeQSize, filePartTotal;
     size32_t fixedRecordSize;
     CJoinGroupPool *pool;
@@ -546,8 +545,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     OwnedConstThorRow defaultRight;
     unsigned portbase, node;
     IArrayOf<IDelayedFile> fetchFiles;
-    FPosTableEntry *fPosToNodeMap; // maps fpos->node for all parts of logical file
-    FPosTableEntry *fPosToLocalPartMap; // maps fpos->local part #
+    FPosTableEntry *localFPosToNodeMap; // maps fpos->local part #
+    FPosTableEntry *globalFPosToNodeMap; // maps fpos->node for all parts of file. If file is remote, localFPosToNodeMap will have all parts
     unsigned pendingGroups, superWidth;
     Semaphore pendingGroupSem;
     CriticalSection pendingGroupCrit, statCrit, lookupCrit;
@@ -629,7 +628,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                 try
                 {
                     unsigned endRequestsCount = owner.container.queryJob().querySlaves();
-                    Owned<IBitSet> endRequests = createBitSet(); // NB: verification only
+                    Owned<IBitSet> endRequests = createThreadSafeBitSet(); // NB: verification only
                     while (!aborted)
                     {
                         rank_t sender;
@@ -736,7 +735,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                     rank_t sender;
                     CMessageBuffer msg;
                     unsigned endRequestsCount = owner.container.queryJob().querySlaves();
-                    Owned<IBitSet> endRequests = createBitSet(); // NB: verification only
+                    Owned<IBitSet> endRequests = createThreadSafeBitSet(); // NB: verification only
 
                     Owned<IRowInterfaces> fetchDiskRowIf = createRowInterfaces(owner.helper->queryDiskRecordSize(),owner.queryActivityId(),owner.queryCodeContext());
                     while (!aborted)
@@ -800,13 +799,13 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                         if (isLocalFpos(fpos))
                                             localFpos = getLocalFposOffset(fpos);
                                         else
-                                            localFpos = fpos-owner.fPosToLocalPartMap[0].base;
+                                            localFpos = fpos-owner.localFPosToNodeMap[0].base;
                                         break;
                                     }
                                     default:
                                     {
                                         // which of multiple parts this slave is dealing with.
-                                        FPosTableEntry *result = (FPosTableEntry *)bsearch(&fpos, owner.fPosToLocalPartMap, files, sizeof(FPosTableEntry), partLookup);
+                                        FPosTableEntry *result = (FPosTableEntry *)bsearch(&fpos, owner.localFPosToNodeMap, files, sizeof(FPosTableEntry), partLookup);
                                         if (isLocalFpos(fpos))
                                             localFpos = getLocalFposOffset(fpos);
                                         else
@@ -902,8 +901,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             blockRequestsAt = NEWFETCHPRBLOCKMEMLIMIT<perRowMin ? 1 : (NEWFETCHPRBLOCKMEMLIMIT / perRowMin);
             assertex(blockRequestsAt<=maxRequests);
 
-            requestMpTag = (mptag_t)owner.tags.pop();
-            resultMpTag = (mptag_t)owner.tags.pop();
+            requestMpTag = (mptag_t)owner.tags.popGet();
+            resultMpTag = (mptag_t)owner.tags.popGet();
             requestProcessor = new CKeyedFetchRequestProcessor(owner, owner.container.queryJob().queryJobComm(), requestMpTag, resultMpTag); // remote receive of fetch fpos'
             resultProcessor = new CKeyedFetchResultProcessor(owner, owner.container.queryJob().queryJobComm(), resultMpTag); // asynchronously receiving results back
 
@@ -950,19 +949,19 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                 totalSz = 0;
             }
             unsigned dstNode;
-            if (owner.dataRemote)
+            if (owner.remoteDataFiles)
                 dstNode = owner.node; // JCSMORE - do directly
             else
             {
                 if (1 == owner.filePartTotal)
-                    dstNode = owner.fPosToNodeMap[0].index;
+                    dstNode = owner.globalFPosToNodeMap[0].index;
                 else if (isLocalFpos(fpos))
                     dstNode = getLocalFposPart(fpos);
                 else
                 {
-                    const void *result = bsearch(&fpos, owner.fPosToNodeMap, owner.filePartTotal, sizeof(FPosTableEntry), slaveLookup);
+                    const void *result = bsearch(&fpos, owner.globalFPosToNodeMap, owner.filePartTotal, sizeof(FPosTableEntry), slaveLookup);
                     if (!result)
-                        throw MakeThorException(TE_FetchOutOfRange, "FETCH: Offset not found in offset table; fpos=%"I64F"d", fpos);
+                        throw MakeThorException(TE_FetchOutOfRange, "FETCH: Offset not found in offset table; fpos=%" I64F "d", fpos);
                     dstNode = ((FPosTableEntry *)result)->index;
                 }
             }
@@ -1584,10 +1583,10 @@ public:
         additionalStats = 0;
         lastSeeks = lastScans = 0;
         onFailTransform = localKey = keyHasTlk = false;
-        dataRemote = false;
+        remoteDataFiles = false;
         fetchHandler = NULL;
-        fPosToNodeMap = NULL;
-        fPosToLocalPartMap = NULL;
+        globalFPosToNodeMap = NULL;
+        localFPosToNodeMap = NULL;
 
 #ifdef TRACE_USAGE
         unsigned it=0;
@@ -1600,8 +1599,8 @@ public:
     }
     ~CKeyedJoinSlave()
     {
-        delete [] fPosToNodeMap;
-        delete [] fPosToLocalPartMap;
+        delete [] globalFPosToNodeMap;
+        delete [] localFPosToNodeMap;
         while (doneGroups.ordinality())
         {
             CJoinGroup *jg = doneGroups.dequeue();
@@ -1816,8 +1815,8 @@ public:
         rowLimit = (rowcount_t)helper->getRowLimit();
         additionalStats = 5; // (seeks, scans, accepted, prefiltered, postfiltered)
         needsDiskRead = helper->diskAccessRequired();
-        fPosToNodeMap = NULL;
-        fPosToLocalPartMap = NULL;
+        globalFPosToNodeMap = NULL;
+        localFPosToNodeMap = NULL;
         fetchHandler = NULL;
         filePartTotal = 0;
 
@@ -1921,21 +1920,16 @@ public:
             }
             if (needsDiskRead)
             {
+                data.read(remoteDataFiles); // if true, all fetch parts will be serialized
                 unsigned numDataParts;
                 data.read(numDataParts);
-                size32_t offsetMapSz = 0;
                 if (numDataParts)
                 {
                     deserializePartFileDescriptors(data, dataParts);
-                    RemoteFilename rfn;
-                    dataParts.item(0).getFilename(0, rfn);
-                    if (!rfn.queryIP().ipequals(container.queryJob().queryJobGroup().queryNode(0).endpoint()))
-                        dataRemote = true;
-
-                    fPosToLocalPartMap = new FPosTableEntry[numDataParts];
+                    localFPosToNodeMap = new FPosTableEntry[numDataParts];
                     unsigned f;
                     FPosTableEntry *e;
-                    for (f=0, e=&fPosToLocalPartMap[0]; f<numDataParts; f++, e++)
+                    for (f=0, e=&localFPosToNodeMap[0]; f<numDataParts; f++, e++)
                     {
                         IPartDescriptor &part = dataParts.item(f);
                         e->base = part.queryProperties().getPropInt64("@offset");
@@ -1943,13 +1937,22 @@ public:
                         e->index = f; // NB: index == which local part in dataParts
                     }
                 }
-                data.read(filePartTotal);
-                if (filePartTotal)
+                if (remoteDataFiles) // global offset map not needed if remote and have all fetch parts inc. map (from above)
                 {
-                    data.read(offsetMapSz);
-                    fPosToNodeMap = new FPosTableEntry[filePartTotal];
-                    const void *offsetMapBytes = (FPosTableEntry *)data.readDirect(offsetMapSz);
-                    memcpy(fPosToNodeMap, offsetMapBytes, offsetMapSz);       
+                    if (numDataParts)
+                        filePartTotal = numDataParts;
+                }
+                else
+                {
+                    data.read(filePartTotal);
+                    if (filePartTotal)
+                    {
+                        size32_t offsetMapSz = 0;
+                        data.read(offsetMapSz);
+                        globalFPosToNodeMap = new FPosTableEntry[filePartTotal];
+                        const void *offsetMapBytes = (FPosTableEntry *)data.readDirect(offsetMapSz);
+                        memcpy(globalFPosToNodeMap, offsetMapBytes, offsetMapSz);
+                    }
                 }
                 unsigned encryptedKeyLen;
                 void *encryptedKey;
@@ -1977,11 +1980,13 @@ public:
                 fetchOutputRowIf.setown(createRowInterfaces(fetchOutputMeta,queryActivityId(),queryCodeContext()));
 
                 fetchHandler = new CKeyedFetchHandler(*this);
+
+                FPosTableEntry *fPosToNodeMap = globalFPosToNodeMap ? globalFPosToNodeMap : localFPosToNodeMap;
                 unsigned c;
                 for (c=0; c<filePartTotal; c++)
                 {
                     FPosTableEntry &e = fPosToNodeMap[c];
-                    ActPrintLog("Table[%d] : base=%"I64F"d, top=%"I64F"d, slave=%d", c, e.base, e.top, e.index);
+                    ActPrintLog("Table[%d] : base=%" I64F "d, top=%" I64F "d, slave=%d", c, e.base, e.top, e.index);
                 }
                 unsigned i=0;
                 for(; i<dataParts.ordinality(); i++)
@@ -2031,7 +2036,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         assertex(inputs.ordinality() == 1);
 
         eos = false;
@@ -2039,7 +2044,7 @@ public:
         startInput(input);
         inputHelper = LINK(input->queryFromActivity()->queryContainer().queryHelper());
         inputStopped = false;
-        preserveOrder = ((joinFlags & JFkeepsorted) != 0) || (container.queryJob().getWorkUnitValueInt("kj_always_preserve_order", DEFAULT_KJ_PRESERVES_ORDER) != 0);
+        preserveOrder = ((joinFlags & JFreorderable) == 0);
         preserveGroups = input->isGrouped();
         ActPrintLog("KJ: parallelLookups=%d, freeQSize=%d, preserveGroups=%s, preserveOrder=%s", parallelLookups, freeQSize, preserveGroups?"true":"false", preserveOrder?"true":"false");
 
@@ -2120,7 +2125,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon && !eos)
         {
             loop
@@ -2302,7 +2307,7 @@ public:
                         CJoinGroup *jg = lookupRowResult->jg;
                         if (lookupRowResult->eog)
                         {
-                            jg->noteCandidates(lookupRowResult->fpos); // fpos holds candidates for end of group
+                            jg->noteCandidates((unsigned)lookupRowResult->fpos); // fpos holds candidates for end of group
                             jg->noteEndCandidate(); // any onFail transform will be done when dequeued
                             if (!onFailTransform) // unless going to transform later, check and abort now if necessary.
                                 checkAbortLimit(jg);

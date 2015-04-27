@@ -37,10 +37,12 @@ Persists changed?
 
 #include "workunit.hpp"
 #include "agentctx.hpp"
+#include "enginecontext.hpp"
 #include "portlist.h"
 
 #include "jio.hpp"
 #include "jmisc.hpp"
+#include "jstring.hpp"
 #include "dasess.hpp"
 #include "dasds.hpp"
 #include "dautils.hpp"
@@ -112,7 +114,9 @@ static const char * EclDefinition =
                             " unsigned8 value;"
                             " unsigned8 count;"
                             " unsigned8 maxValue;"
+                            " string creatorType;"
                             " string creator;"
+                            " string scopeType;"
                             " string scope;"
                             " string name;"
                             " string description;"
@@ -142,7 +146,7 @@ static const char * EclDefinition =
 "  dataset(WsFileRead) WorkunitFilesRead(const varstring wuid) : c,context,entrypoint='wsWorkunitFilesRead'; \n"
 "  dataset(WsFileWritten) WorkunitFilesWritten(const varstring wuid) : c,context,entrypoint='wsWorkunitFilesWritten'; \n"
 "  dataset(WsTiming) WorkunitTimings(const varstring wuid) : c,context,entrypoint='wsWorkunitTimings'; \n"
-"  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, boolean includeActivities = false) : c,context,entrypoint='wsWorkunitStatistics'; \n"
+"  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, boolean includeActivities = false, const varstring _filter = '') : c,context,entrypoint='wsWorkunitStatistics'; \n"
     
 "END;";
 
@@ -196,12 +200,33 @@ static void getSashaNodes(SocketEndpointArray &epa)
 }
 
 
+static IWorkUnitFactory * getWorkunitFactory(ICodeContext * ctx)
+{
+    IEngineContext *engineCtx = ctx->queryEngineContext();
+    if (engineCtx && !engineCtx->allowDaliAccess())
+    {
+        Owned<IException> e = MakeStringException(-1, "wokunitservices cannot access Dali in this context - this normally means it is being called from a thor slave");
+        EXCLOG(e, NULL);
+        throw e.getClear();
+    }
+
+    //MORE: These should really be set up correctly - probably should be returned from IEngineContext
+    ISecManager *secmgr = NULL;
+    ISecUser *secuser = NULL;
+    return getWorkUnitFactory(secmgr, secuser);
+}
+
+static IConstWorkUnit * getWorkunit(ICodeContext * ctx, const char * wuid)
+{
+    Owned<IWorkUnitFactory> wuFactory = getWorkunitFactory(ctx);
+    return wuFactory->openWorkUnit(wuid, false);
+}
+
 static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
 {
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     StringAttr wuid;
     wuid.setown(ctx->getWuid());
-    return factory->openWorkUnit(wuid, false);
+    return getWorkunit(ctx, wuid);
 }
 
 static IWorkUnit * updateWorkunit(ICodeContext * ctx)
@@ -693,42 +718,33 @@ WORKUNITSERVICES_API void wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & 
 
 WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid )
 {
-    unsigned tmp;
+    Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
     MemoryBuffer mb;
-    Owned<IPropertyTree> st = getWorkUnitBranch(ctx,wuid,"Statistics");
-    if (st)
+    if (wu)
     {
-        Owned<IPropertyTreeIterator> iter = st->getElements("Statistic[@unit=\"ns\"]");
-        ForEach(*iter) {
-            IPropertyTree &item = iter->query();
-            if (&item==NULL)
-                continue; // paranoia
-            tmp = (unsigned)item.getPropInt("@count");
+        StatisticsFilter filter;
+        filter.setScopeDepth(1, 2);
+        filter.setMeasure(SMeasureTimeNs);
+
+        SCMStringBuffer desc;
+        unsigned tmp;
+        Owned<IConstWUStatisticIterator> iter = &wu->getStatistics(&filter);
+        ForEach(*iter)
+        {
+            IConstWUStatistic & cur = iter->query();
+
+            unsigned __int64 value = cur.getValue();
+            unsigned __int64 count = cur.getCount();
+            unsigned __int64 max = cur.getMax();
+            cur.getDescription(desc, true);
+
+            tmp = (unsigned)count;
             mb.append(sizeof(tmp),&tmp);
-            tmp = (unsigned)(item.getPropInt64("@value") / 1000000);
+            tmp = (unsigned)(value / 1000000);
             mb.append(sizeof(tmp),&tmp);
-            tmp = (unsigned)item.getPropInt("@max");
+            tmp = (unsigned)max;
             mb.append(sizeof(tmp),&tmp);
-            varAppend(mb, 64, item, "@desc");
-        }
-    }
-    else
-    {
-        Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"Timings");
-        if (pt) {
-            Owned<IPropertyTreeIterator> iter = pt->getElements("Timing");
-            ForEach(*iter) {
-                IPropertyTree &item = iter->query();
-                if (&item==NULL)
-                    continue; // paranoia
-                tmp = (unsigned)item.getPropInt("@count");
-                mb.append(sizeof(tmp),&tmp);
-                tmp = (unsigned)item.getPropInt("@duration");
-                mb.append(sizeof(tmp),&tmp);
-                tmp = (unsigned)item.getPropInt("@max");
-                mb.append(sizeof(tmp),&tmp);
-                varAppend(mb, 64, item, "@name");
-            }
+            varAppend(mb, desc.str());
         }
     }
     __lenResult = mb.length();
@@ -739,8 +755,8 @@ WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __len
 class StreamedStatistics : public CInterfaceOf<IRowStream>
 {
 public:
-    StreamedStatistics(IEngineRowAllocator * _resultAllocator, IPropertyTreeIterator * _iter)
-    : resultAllocator(_resultAllocator),iter(_iter)
+    StreamedStatistics(IConstWorkUnit * _wu, IEngineRowAllocator * _resultAllocator, IConstWUStatisticIterator * _iter)
+    : wu(_wu), resultAllocator(_resultAllocator),iter(_iter)
     {
     }
 
@@ -749,33 +765,30 @@ public:
         if (!iter || !iter->isValid())
             return NULL;
 
-        IPropertyTree & cur = iter->query();
-        unsigned __int64 value = cur.getPropInt64("@value", 0);
-        unsigned __int64 count = cur.getPropInt64("@count", 0);
-        unsigned __int64 max = cur.getPropInt64("@max", 0);
-        const char * uid = cur.queryProp("@name");
-        const char * sep1 = strchr(uid, ';');
-        const char * scope = sep1+1;
-        const char * sep2 = strchr(scope, ';');
-        const char * name = sep2+1;
-        const char * desc = cur.queryProp("@desc");
-        const char * unit = cur.queryProp("@unit");
-        if (!desc) desc = "";
+        IConstWUStatistic & cur = iter->query();
 
-        size32_t lenComponent = sep1-uid;
-        size32_t lenScope = sep2-scope;
-        size32_t lenName = strlen(name);
-        size32_t lenUnit = strlen(unit);
+        unsigned __int64 value = cur.getValue();
+        unsigned __int64 count = cur.getCount();
+        unsigned __int64 max = cur.getMax();
+        StatisticCreatorType creatorType = cur.getCreatorType();
+        cur.getCreator(creator);
+        StatisticScopeType scopeType = cur.getScopeType();
+        cur.getScope(scope);
+        cur.getDescription(description, true);
+        StatisticMeasure measure = cur.getMeasure();
+        StatisticKind kind = cur.getKind();
 
         MemoryBuffer mb;
         mb.append(sizeof(value),&value);
         mb.append(sizeof(count),&count);
         mb.append(sizeof(max),&max);
-        varAppend(mb, lenComponent, uid);
-        varAppend(mb, lenScope, scope);
-        varAppend(mb, lenName, name);
-        varAppend(mb, desc);
-        varAppend(mb, unit);
+        varAppend(mb, queryCreatorTypeName(creatorType));
+        varAppend(mb, creator.str());
+        varAppend(mb, queryScopeTypeName(scopeType));
+        varAppend(mb, scope.str());
+        varAppend(mb, queryStatisticName(kind));
+        varAppend(mb, description.str());
+        varAppend(mb, queryMeasureName(measure));
 
         size32_t len = mb.length();
         size32_t newSize;
@@ -793,23 +806,25 @@ public:
 
 
 protected:
+    Linked<IConstWorkUnit> wu;
     Linked<IEngineRowAllocator> resultAllocator;
-    Linked<IPropertyTreeIterator> iter;
+    Linked<IConstWUStatisticIterator> iter;
+    SCMStringBuffer creator;
+    SCMStringBuffer scope;
+    SCMStringBuffer description;
 };
 
-WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities)
+WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities, const char * filterText)
 {
-    MemoryBuffer mb;
-    Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"Statistics");
-    Owned<IPropertyTreeIterator> iter;
-    if (pt)
-    {
-        iter.setown(pt->getElements("Statistic"));
-
-        //MORE - it includeActivities create an iterator over the progress information, and create a union iterator.
-        iter->first();
-    }
-    return new StreamedStatistics(allocator, iter);
+    Owned<IConstWorkUnit> wu = getWorkunit(ctx, wuid);
+    if (!wu)
+        return createNullRowStream();
+    //Filter needs to be allocated because the iterator outlasts it.
+    Owned<StatisticsFilter> filter = new StatisticsFilter(filterText);
+    if (!includeActivities)
+        filter->setScopeDepth(1, 2);
+    Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(filter);
+    return new StreamedStatistics(wu, allocator, stats);
 }
 
 

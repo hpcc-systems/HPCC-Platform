@@ -75,7 +75,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         count = 0;
         eof = nextPut = false;
         inrowif.set(::queryRowInterfaces(inputs.item(0)));
@@ -128,7 +128,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         loop {
             if (eof || abortSoon)
                 break;
@@ -214,7 +214,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         loop {
             if (eof || abortSoon)
                 break;
@@ -299,7 +299,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         eof = !container.queryLocalOrGrouped() && !firstNode();
         count = 0;
         dataLinkStart();
@@ -310,7 +310,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!eof) {
             if (count==0)
                 eof = !helper->first();
@@ -357,7 +357,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         dataLinkStart();
         dohere = container.queryLocalOrGrouped() || firstNode();
     }
@@ -367,7 +367,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (dohere) {
             OwnedConstThorRow row;
             row.set(helper->next()); // needs linking allegedly
@@ -435,7 +435,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof || abortSoon)
             return NULL;
         assertex(rows);

@@ -66,7 +66,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ActPrintLog("COUNTPROJECT: Is Local");
         input.set(inputs.item(0));
         anyThisGroup = false;
@@ -75,7 +75,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         while (!abortSoon)
         {
             OwnedConstThorRow row(input->nextRow());
@@ -150,7 +150,7 @@ private:
     {
         if (haveLocalCount()) // if local total count known, send total now
         {
-            ActPrintLog("COUNTPROJECT: row count pre-known to be %"RCPF"d", localRecCount);
+            ActPrintLog("COUNTPROJECT: row count pre-known to be %" RCPF "d", localRecCount);
             sendCount(prevRecCount + localRecCount);
         }
         else
@@ -167,7 +167,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ActPrintLog( "COUNTPROJECT: Is Global");
         first = true;
         prevRecCount = 0;
@@ -197,7 +197,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (first) 
         {
             first = false;
@@ -227,7 +227,7 @@ public:
             prevRecCountSem.wait();
             if (!abortSoon)
             {
-                ActPrintLog("count is %"RCPF"d", localRecCount);
+                ActPrintLog("count is %" RCPF "d", localRecCount);
                 sendCount(prevRecCount + localRecCount);
             }
         }

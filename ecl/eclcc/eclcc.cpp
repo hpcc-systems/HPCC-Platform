@@ -49,6 +49,8 @@
 #include "build-config.h"
 #include "rmtfile.hpp"
 
+#include "reservedwords.hpp"
+
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
@@ -213,6 +215,7 @@ public:
     FILE * errout;
     Owned<IPropertyTree> srcArchive;
     Owned<IPropertyTree> generatedMeta;
+    Owned<IPropertyTree> globalDependTree;
     bool legacyImport;
     bool legacyWhen;
     bool fromArchive;
@@ -244,6 +247,7 @@ public:
         optGenerateMeta = false;
         optGenerateDepend = false;
         optIncludeMeta = false;
+        optKeywords = false;
         optLegacyImport = false;
         optLegacyWhen = false;
         optShared = false;
@@ -269,6 +273,7 @@ public:
         defaultAllowed = true;
     }
 
+    bool printKeywordsToXml();
     bool parseCommandLineOptions(int argc, const char* argv[]);
     void loadOptions();
     void loadManifestOptions();
@@ -299,6 +304,7 @@ protected:
     void processFile(EclCompileInstance & info);
     void processReference(EclCompileInstance & instance, const char * queryAttributePath);
     void processBatchFiles();
+    void processDefinitions(EclRepositoryArray & repositories);
     void reportCompileErrors(IErrorReceiver & errorProcessor, const char * processName);
     void setDebugOption(const char * name, bool value);
     void usage();
@@ -327,16 +333,20 @@ protected:
     StringBuffer cclogFilename;
     StringAttr optLogfile;
     StringAttr optIniFilename;
-    StringAttr optManifestFilename;
     StringAttr optOutputDirectory;
     StringAttr optOutputFilename;
     StringAttr optQueryRepositoryReference;
+    StringAttr optComponentName;
     FILE * batchLog;
+
+    StringAttr optManifestFilename;
+    StringArray resourceManifestFiles;
 
     IFileArray inputFiles;
     StringArray inputFileNames;
     StringArray applicationOptions;
     StringArray debugOptions;
+    StringArray definitions;
     StringArray warningMappings;
     StringArray compileOptions;
     StringArray linkOptions;
@@ -360,6 +370,7 @@ protected:
     bool optGenerateMeta;
     bool optGenerateDepend;
     bool optIncludeMeta;
+    bool optKeywords;
     bool optWorkUnit;
     bool optNoCompile;
     bool optNoLogFile;
@@ -423,6 +434,10 @@ static int doMain(int argc, const char *argv[])
     EclCC processor(argc, argv);
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;
+
+    if (processor.printKeywordsToXml())
+        return 0;
+
     try
     {
         if (!processor.processFiles())
@@ -452,6 +467,7 @@ int main(int argc, const char *argv[])
     setTerminateOnSEH(true);
     InitModuleObjects();
     queryStderrLogMsgHandler()->setMessageFields(0);
+
     // Turn logging down (we turn it back up if -v option seen)
     Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
@@ -481,6 +497,8 @@ void EclCC::loadManifestOptions()
 {
     if (!optManifestFilename)
         return;
+    resourceManifestFiles.append(optManifestFilename);
+
     Owned<IPropertyTree> mf = createPTreeFromXMLFile(optManifestFilename);
     IPropertyTree *ecl = mf->queryPropTree("ecl");
     if (ecl)
@@ -701,6 +719,26 @@ void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * pr
 
 //=========================================================================================
 
+void gatherResourceManifestFilenames(EclCompileInstance & instance, StringArray &filenames)
+{
+    IPropertyTree *tree = (instance.archive) ? instance.archive.get() : instance.globalDependTree.get();
+    if (!tree)
+        return;
+    Owned<IPropertyTreeIterator> iter = tree->getElements((instance.archive) ? "Module/Attribute" : "Attribute");
+    ForEach(*iter)
+    {
+        StringBuffer filename(iter->query().queryProp("@sourcePath"));
+        if (filename.length())
+        {
+            getFullFileName(filename, true).append(".manifest");
+            if (filenames.contains(filename))
+                continue;
+            if (checkFileExists(filename))
+                filenames.append(filename);
+        }
+    }
+}
+
 void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver & errorProcessor, const char * outputFile)
 {
     StringBuffer processName(outputFile);
@@ -719,8 +757,9 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 if (!optShared)
                     wu->setDebugValueInt("standAloneExe", 1, true);
                 EclGenerateTarget target = optWorkUnit ? EclGenerateNone : (optNoCompile ? EclGenerateCpp : optShared ? EclGenerateDll : EclGenerateExe);
-                if (optManifestFilename)
-                    generator->addManifest(optManifestFilename);
+                gatherResourceManifestFilenames(instance, resourceManifestFiles);
+                ForEachItemIn(i, resourceManifestFiles)
+                    generator->addManifest(resourceManifestFiles.item(i));
                 if (instance.srcArchive)
                 {
                     generator->addManifestFromArchive(instance.srcArchive);
@@ -732,7 +771,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
                 {
-                    Owned<ICppCompiler> compiler = createCompiler(processName.toCharArray());
+                    Owned<ICppCompiler> compiler = createCompiler(processName.str());
                     compiler->setSaveTemps(optSaveTemps);
 
                     bool compileOk = true;
@@ -780,15 +819,18 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 }
             }
         }
-        catch (IException * e)
+        catch (IException * _e)
         {
-            if (e->errorCode() != HQLERR_ErrorAlreadyReported)
+            Owned<IException> e = _e;
+            unsigned errCode = e->errorCode();
+            if (errCode != HQLERR_ErrorAlreadyReported)
             {
                 StringBuffer exceptionText;
                 e->errorMessage(exceptionText);
-                errorProcessor.reportError(ERR_INTERNALEXCEPTION, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
+                if (errCode == 0)
+                    errCode = ERR_INTERNALEXCEPTION;
+                errorProcessor.reportError(errCode, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
             }
-            e->Release();
         }
 
         try
@@ -1043,7 +1085,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     bool withinRepository = (queryAttributePath && *queryAttributePath);
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
     size32_t prevErrs = errorProcessor.errCount();
-    unsigned startTime = msTick();
+    cycle_t startCycles = get_cycles_now();
     const char * sourcePathname = queryContents ? queryContents->querySourcePath()->str() : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
@@ -1054,6 +1096,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(instance.dataServer, instance.archive);
+        if (!instance.archive)
+            parseCtx.globalDependTree.setown(createPTree(ipt_none)); //to locate associated manifests, keep separate from user specified MetaOptions
         if (optGenerateMeta || optIncludeMeta)
         {
             HqlParseContext::MetaOptions options;
@@ -1076,6 +1120,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         }
 
         parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
+        bool exportDependencies = instance.wu->getDebugValueBool("exportDependencies",false);
+        if (exportDependencies)
+            parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
         try
         {
@@ -1131,13 +1178,33 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             if (instance.query && !syntaxChecking && !optGenerateMeta && !optEvaluateResult)
                 instance.query.setown(convertAttributeToQuery(instance.query, ctx));
 
-            instance.stats.parseTime = msTick()-startTime;
+            unsigned __int64 parseTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
+            instance.stats.parseTime = (unsigned)nanoToMilli(parseTimeNs);
 
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-                updateWorkunitTimeStat(instance.wu, "eclcc", "workunit", "parse time", NULL, milliToNano(instance.stats.parseTime), 1, 0);
+                updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile:parseTime", StTimeElapsed, NULL, parseTimeNs);
+
+            if (exportDependencies)
+            {
+                StringBuffer dependenciesName;
+                if (instance.outputFilename && !streq(instance.outputFilename, "-"))
+                    addNonEmptyPathSepChar(dependenciesName.append(optOutputDirectory)).append(instance.outputFilename);
+                else
+                    dependenciesName.append(DEFAULT_OUTPUTNAME);
+                dependenciesName.append(".dependencies.xml");
+
+                Owned<IWUQuery> query = instance.wu->updateQuery();
+                associateLocalFile(query, FileTypeXml, dependenciesName, "Dependencies", 0);
+
+                saveXML(dependenciesName.str(), parseCtx.nestedDependTree);
+            }
+
 
             if (optIncludeMeta || optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getMetaTree());
+
+            if (parseCtx.globalDependTree)
+                instance.globalDependTree.set(parseCtx.globalDependTree);
 
             if (optEvaluateResult && !errorProcessor.errCount() && instance.query)
                 evaluateResult(instance);
@@ -1206,11 +1273,53 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         }
     }
 
-    unsigned totalTime = msTick() - startTime;
-    instance.stats.generateTime = totalTime - instance.stats.parseTime;
+    unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
+    instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
+    //MORE: This is done too late..
     if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-        updateWorkunitTimeStat(instance.wu, "eclcc", "workunit", "totalTime", NULL, milliToNano(totalTime), 1, 0);
+        updateWorkunitTimeStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 }
+
+void EclCC::processDefinitions(EclRepositoryArray & repositories)
+{
+    ForEachItemIn(iDef, definitions)
+    {
+        const char * definition = definitions.item(iDef);
+        StringAttr name;
+        StringBuffer value;
+        const char * eq = strchr(definition, '=');
+        if (eq)
+        {
+            name.set(definition, eq-definition);
+            value.append(eq+1);
+        }
+        else
+        {
+            name.set(definition);
+            value.append("true");
+        }
+        value.append(";");
+
+        StringAttr module;
+        const char * attr;
+        const char * dot = strrchr(name, '.');
+        if (dot)
+        {
+            module.set(name, dot-name);
+            attr = dot+1;
+        }
+        else
+        {
+            module.set("");
+            attr = name;
+        }
+
+        //Create a repository with just that attribute.
+        Owned<IFileContents> contents = createFileContentsFromText(value, NULL);
+        repositories.append(*createSingleDefinitionEclRepository(module, attr, contents));
+    }
+}
+
 
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
 {
@@ -1222,6 +1331,20 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     {
         IPropertyTree &item = iter->query();
         instance.wu->setDebugValue(item.queryProp("@name"), item.queryProp("@value"), true);
+    }
+
+    //Mainly for testing...
+    Owned<IPropertyTreeIterator> iterDef = archiveTree->getElements("Definition");
+    ForEach(*iterDef)
+    {
+        IPropertyTree &item = iterDef->query();
+        const char * name = item.queryProp("@name");
+        const char * value = item.queryProp("@value");
+        StringBuffer definition;
+        definition.append(name);
+        if (value)
+            definition.append('=').append(value);
+        definitions.append(definition);
     }
 
     const char * queryText = archiveTree->queryProp("Query");
@@ -1256,6 +1379,8 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         archiveCollection.setown(createArchiveEclCollection(archiveTree));
 
     EclRepositoryArray repositories;
+    //Items first in the list have priority -Dxxx=y overrides all
+    processDefinitions(repositories);
     repositories.append(*LINK(pluginsRepository));
     if (archiveTree->getPropBool("@useLocalSystemLibraries", false)) // Primarily for testing.
         repositories.append(*LINK(libraryRepository));
@@ -1293,6 +1418,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     }
 
     repositories.append(*createRepository(archiveCollection));
+
     instance.dataServer.setown(createCompoundRepository(repositories));
 
     //Ensure classes are not linked by anything else
@@ -1359,6 +1485,8 @@ void EclCC::processFile(EclCompileInstance & instance)
             expandedSourceName.append(curFilename);
 
         EclRepositoryArray repositories;
+        //Items first in the list have priority -Dxxx=y overrides all
+        processDefinitions(repositories);
         repositories.append(*LINK(pluginsRepository));
         repositories.append(*LINK(libraryRepository));
         if (bundlesRepository)
@@ -1505,8 +1633,9 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                 option->setProp("@value", valueStr.str());
                 instance.archive->addPropTree("Option", option.getClear());
             }
-            if (optManifestFilename)
-                addManifestResourcesToArchive(instance.archive, optManifestFilename);
+            gatherResourceManifestFilenames(instance, resourceManifestFiles);
+            ForEachItemIn(i, resourceManifestFiles)
+                addManifestResourcesToArchive(instance.archive, resourceManifestFiles.item(i));
 
             outputXmlToOutputFile(instance, instance.archive);
         }
@@ -1578,8 +1707,9 @@ bool EclCC::generatePrecompiledHeader()
         ERRLOG("Cannot find eclinclude4.hpp");
         return false;
     }
-    Owned<ICppCompiler> compiler = createCompiler("eclinclude4.hpp", foundPath, NULL);
+    Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, NULL);
     compiler->setDebug(true);  // a precompiled header with debug can be used for no-debug, but not vice versa
+    compiler->addSourceFile("eclinclude4.hpp");
     compiler->setPrecompileHeader(true);
     if (compiler->compile())
     {
@@ -1677,7 +1807,7 @@ bool EclCC::processFiles()
     if (logTimings)
     {
         StringBuffer s;
-        fprintf(stderr, "%s", defaultTimer->getTimings(s).str());
+        fprintf(stderr, "%s", queryActiveTimer()->getTimings(s).str());
     }
     return ok;
 }
@@ -1703,7 +1833,7 @@ void EclCompileInstance::logStats()
         memsize_t peakVm, peakResident;
         getPeakMemUsage(peakVm, peakResident);
         //Stats: added as a prefix so it is easy to grep, and a comma so can be read as a csv list.
-        DBGLOG("Stats:,parse,%u,generate,%u,peakmem,%u,xml,%"I64F"u,cpp,%"I64F"u",
+        DBGLOG("Stats:,parse,%u,generate,%u,peakmem,%u,xml,%" I64F "u,cpp,%" I64F "u",
                 stats.parseTime, stats.generateTime, (unsigned)(peakResident / 0x100000),
                 (unsigned __int64)stats.xmlSize, (unsigned __int64)stats.cppSize);
     }
@@ -1789,6 +1919,10 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             else
                 deniedPermissions.append(tempArg);
         }
+        else if (iter.matchFlag(tempArg, "-D"))
+        {
+            definitions.append(tempArg);
+        }
         else if (iter.matchFlag(optArchive, "-E"))
         {
         }
@@ -1823,6 +1957,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchPathFlag(includeLibraryPath, "-I"))
+        {
+        }
+        else if (iter.matchFlag(optKeywords, "--keywords"))
         {
         }
         else if (iter.matchFlag(tempArg, "-L"))
@@ -1883,6 +2020,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optGenerateHeader, "-pch"))
+        {
+        }
+        else if (iter.matchOption(optComponentName, "--component"))
         {
         }
         else if (iter.matchFlag(optSaveQueryText, "-q"))
@@ -1988,13 +2128,18 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         return false;
     }
 
+    if (optComponentName.length())
+        setStatisticsComponentName(SCTeclcc, optComponentName, false);
+    else
+        setStatisticsComponentName(SCTeclcc, "eclcc", false);
+
     // Option post processing follows:
     if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend || optShowPaths)
         optNoCompile = true;
 
     loadManifestOptions();
 
-    if (inputFileNames.ordinality() == 0)
+    if (inputFileNames.ordinality() == 0 && !optKeywords)
     {
         if (optGenerateHeader || optShowPaths || (!optBatchMode && optQueryRepositoryReference))
             return true;
@@ -2059,15 +2204,18 @@ const char * const helpText[] = {
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",
     "!   -checkVersion Enable/disable ecl version checking from archives",
+    "!   --component   Set the name of the component this is executing on behalf of",
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
+    "!   -Dname=value  Override the definition of a global attribute 'name'",
     "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
     "!   --deny=str    Disallow use of named feature",
     "    -help, --help Display this message",
     "    -help -v      Display verbose help message",
     "!   -internal     Run internal tests",
     "!   -legacy       Use legacy import and when semantics (deprecated)",
+    "!   --keywords    Outputs the list of ECL reserved words to ECLKeywords.xml",
     "!   -legacyimport Use legacy import semantics (deprecated)",
     "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
@@ -2097,9 +2245,12 @@ const char * const helpText[] = {
     "! -fapplyInstantEclTransformations Limit non file outputs with a CHOOSEN",
     "! -fapplyInstantEclTransformationsLimit Number of records to limit to",
     "! -fcheckAsserts          Check ASSERT() statements",
+    "! -fexportDependencies    Generate information about inter-definition dependencies",
     "! -fmaxCompileThreads     Number of compiler instances to compile the c++",
     "! -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
     "! -fpickBestEngine        Allow simple thor queries to be passed to thor",
+    "! -freportCppWarnings     Report warnings from c++ compilation",
+    "! -fsaveCppTempFiles      Retain the generated c++ files",
     "! -fshowActivitySizeInGraph Show estimates of generated c++ size in the graph",
     "! -fshowMetaInGraph       Add distribution/sort orders to the graph",
     "! -fshowRecordCountInGraph Show estimates of record counts in the graph",
@@ -2233,7 +2384,7 @@ protected:
     Semaphore & fileReady;
 };
 
-int compareFilenames(IInterface * * pleft, IInterface * * pright)
+int compareFilenames(IInterface * const * pleft, IInterface * const * pright)
 {
     IFile * left = static_cast<IFile *>(*pleft);
     IFile * right = static_cast<IFile *>(*pright);
@@ -2322,4 +2473,11 @@ void EclCC::processBatchFiles()
     batchLog = NULL;
 }
 
+bool EclCC::printKeywordsToXml()
+{
+    if(!optKeywords)
+        return false;
 
+    ::printKeywordsToXml();
+    return true;
+}

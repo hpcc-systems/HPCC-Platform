@@ -130,7 +130,7 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             out.append("sid=unknown ");
         else
-            out.appendf("sid=%"I64F"u ", sysInfo.querySessionID());
+            out.appendf("sid=%" I64F "u ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -143,14 +143,14 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("job=unknown ");
         else
-            out.appendf("job=%"I64F"u ", jobInfo.queryJobID());
+            out.appendf("job=%" I64F "u ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             out.append("usr=unknown ");
         else
-            out.appendf("usr=%"I64F"u ", jobInfo.queryUserID());
+            out.appendf("usr=%" I64F "u ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         out.appendf("cmp=%u ", component);
@@ -296,7 +296,7 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             out.append("      unknown        ");
         else
-            out.appendf("%20"I64F"u ", sysInfo.querySessionID());
+            out.appendf("%20" I64F "u ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -309,14 +309,14 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("unknown ");
         else
-            out.appendf("%7"I64F"u ", jobInfo.queryJobID());
+            out.appendf("%7" I64F "u ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             out.append("unknown ");
         else
-            out.appendf("%7"I64F"u ", jobInfo.queryUserID());
+            out.appendf("%7" I64F "u ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         out.appendf("%6u ", component);
@@ -410,7 +410,7 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "sid=unknown ");
         else
-            fprintf(handle, "sid=%"I64F"u ", sysInfo.querySessionID());
+            fprintf(handle, "sid=%" I64F "u ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -423,14 +423,14 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "job=unknown ");
         else
-            fprintf(handle, "job=%"I64F"u ", jobInfo.queryJobID());
+            fprintf(handle, "job=%" I64F "u ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "usr=unknown ");
         else
-            fprintf(handle, "usr=%"I64F"u ", jobInfo.queryUserID());
+            fprintf(handle, "usr=%" I64F "u ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         fprintf(handle, "cmp=%u ", component);
@@ -491,7 +491,7 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "SessionID=\"unknown\" ");
         else
-            fprintf(handle, "SessionID=\"%"I64F"u\" ", sysInfo.querySessionID());
+            fprintf(handle, "SessionID=\"%" I64F "u\" ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -507,14 +507,14 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "JobID=\"unknown\" ");
         else
-            fprintf(handle, "JobID=\"%"I64F"u\" ", jobInfo.queryJobID());
+            fprintf(handle, "JobID=\"%" I64F "u\" ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "UserID=\"unknown\" ");
         else
-            fprintf(handle, "UserID=\"%"I64F"u\" ", jobInfo.queryUserID());
+            fprintf(handle, "UserID=\"%" I64F "u\" ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         fprintf(handle, "Component=\"%6u\" ", component);
@@ -570,7 +570,7 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "       unknown       ");
         else
-            fprintf(handle, "%20"I64F"u ", sysInfo.querySessionID());
+            fprintf(handle, "%20" I64F "u ", sysInfo.querySessionID());
     }
     if(fields & MSGFIELD_node)
     {
@@ -584,14 +584,14 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "unknown ");
         else
-            fprintf(handle, "%7"I64F"u ", jobInfo.queryJobID());
+            fprintf(handle, "%7" I64F "u ", jobInfo.queryJobID());
     }
     if(fields & MSGFIELD_user)
     {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "unknown ");
         else
-            fprintf(handle, "%7"I64F"u ", jobInfo.queryUserID());
+            fprintf(handle, "%7" I64F "u ", jobInfo.queryUserID());
     }
     if(fields & MSGFIELD_component)
         fprintf(handle, "%6u ", component);
@@ -2334,7 +2334,7 @@ bool CSysLogEventLogger::win32Report(unsigned eventtype, unsigned category, unsi
                 if (res>0) 
                     copyFile(path,src);
                 else
-                    throw MakeOsException(GetLastError());
+                    throw makeOsException(GetLastError());
             }
         }
         catch (IException *e)
@@ -2540,6 +2540,24 @@ void SysLogMsgHandler::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("handler", handlerTree);
 }
 
+// Default implementations of the functions in IContextLogger interface
+
+void IContextLogger::CTXLOG(const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    CTXLOGva(format, args);
+    va_end(args);
+}
+
+void IContextLogger::logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    logOperatorExceptionVA(E, file, line, format, args);
+    va_end(args);
+}
+
 class DummyLogCtx : implements IContextLogger
 {
 public:
@@ -2547,33 +2565,11 @@ public:
     virtual void Link() const {}
     virtual bool Release() const { return false; }
 
-    virtual void CTXLOG(const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGva(format, args);
-        va_end(args);
-    }
     virtual void CTXLOGva(const char *format, va_list args) const
     {
         StringBuffer ss;
         ss.valist_appendf(format, args);
         DBGLOG("%s", ss.str());
-    }
-    virtual void CTXLOGa(unsigned activityId, const char *text) const
-    {
-        DBGLOG("[%d] %s", activityId, text);
-    }
-    virtual StringBuffer &getLogPrefix(StringBuffer &ret) const 
-    {
-        return ret;
-    }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
-    {
-        va_list args;
-        va_start(args, format);
-        logOperatorExceptionVA(E, file, line, format, args);
-        va_end(args);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
     {
@@ -2589,11 +2585,10 @@ public:
             ss.append(": ").valist_appendf(format, args);
         LOG(MCoperatorProgress, unknownJob, "%s", ss.str());
     }
-    virtual bool isIntercepted() const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
-        return false;
     }
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
     }
     virtual unsigned queryTraceLevel() const

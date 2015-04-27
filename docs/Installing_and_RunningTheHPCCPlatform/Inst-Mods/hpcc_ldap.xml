@@ -282,7 +282,7 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Rt-click on the table below computers and select <emphasis
+        <para>Right-click on the table below computers and select <emphasis
         role="bold">New </emphasis>from the pop up menu.</para>
 
         <para><graphic fileref="../../images/LDAP_001.jpg"
@@ -347,15 +347,32 @@
 
     <orderedlist numeration="arabic">
       <listitem>
-        <para>Rt-click on <emphasis role="bold">Navigator</emphasis> Pane and
-        choose <emphasis role="bold">New Components</emphasis> from the pop up
-        menu, then choose <emphasis role="bold">ldapServer</emphasis> from the
-        pop-up menu. <graphic fileref="../../images/LDAP_003.jpg"
+        <para>Right-click on <emphasis role="bold">Navigator</emphasis> Pane
+        and choose <emphasis role="bold">New Components</emphasis> from the
+        pop-up menu, then choose <emphasis role="bold">ldapServer</emphasis>
+        from the pop-up menu. <graphic fileref="../../images/LDAP_003.jpg"
         vendor="configmgrSS" /></para>
 
-        <para><emphasis role="bold">Note</emphasis>: The ldapServer component
-        is merely a definition that specifies an existing LDAP server. It does
-        not install one.</para>
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png" /></entry>
+
+                  <entry><emphasis role="bold">Note</emphasis>: The ldapServer
+                  component is merely a definition that specifies an existing
+                  LDAP server. It does not install one.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
       </listitem>
 
       <listitem>
@@ -368,8 +385,8 @@
         vendor="configmgrSS" /><orderedlist numeration="loweralpha">
             <listitem>
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
-              Rt-click on the table on the right hand side, choose <emphasis
-              role="bold">Add Instances…</emphasis></para>
+              Right-click on the table on the right hand side, choose
+              <emphasis role="bold">Add Instances…</emphasis></para>
 
               <para>The <emphasis role="bold">Select computers</emphasis>
               dialog appears.</para>
@@ -393,6 +410,22 @@
               <para>Fill in the <emphasis role="bold">Attributes</emphasis>
               tab with the appropriate settings from your existing LDAP
               Server.</para>
+            </listitem>
+
+            <listitem>
+              <para>Choose the LDAP server type from the serverType attribute
+              drop box.</para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>NOTE:</term>
+
+                    <listitem>
+                      <para>Support for OpenLDAP has been deprecated. The
+                      option is included only for legacy purposes.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
             </listitem>
 
             <listitem>
@@ -454,7 +487,7 @@
             </listitem>
 
             <listitem>
-              <para>For each ESP Service binding, edit the <emphasis
+              <para>For the ESP Service bindings, add the <emphasis
               role="bold">resourcesBasedn</emphasis> and <emphasis
               role="bold">workunitsBasedn</emphasis> to match your LDAP server
               settings.</para>
@@ -515,13 +548,13 @@
             <listitem>
               <para>On the <emphasis role="bold">RoxieCluster</emphasis> page
               on the right hand side, select the <emphasis
-              role="bold">Options</emphasis> tab.</para>
+              role="bold">LDAP</emphasis> tab.</para>
             </listitem>
 
             <listitem>
-              <para>Scroll down to the <emphasis
-              role="bold">ldapUser</emphasis> field and verify that there is a
-              "<emphasis>roxie</emphasis>" user.</para>
+              <para>Locate the <emphasis role="bold">ldapUser</emphasis> field
+              and verify that there is a "<emphasis>roxie</emphasis>"
+              user.</para>
             </listitem>
 
             <listitem>
@@ -562,29 +595,44 @@
   <sect2>
     <title>Installing the Default Admin user</title>
 
-    <para>After enabling your configuration for LDAP security, you need to run
-    the <emphasis role="bold">initldap</emphasis> utility that installs the
-    initial security components and the default users.</para>
+    <para>After enabling your configuration for LDAP security, you must copy
+    your environment file to the /etc/HPCCSystems directory. See the section
+    <link linkend="configuring-a-multi-node-system"><emphasis>Configuring a
+    Multi-Node System</emphasis></link> for more info about configuring your
+    system. With the correct environment.xml file in place, you must then run
+    the <emphasis role="bold">initldap</emphasis> utility that initializes the
+    security components and the default users.</para>
 
     <sect3>
       <title>The initldap Utility</title>
 
-      <para>The initldap utility is used to create the HPCC Administrator's
-      user account and the HPCC OUs. The initldap utility uses the settings in
-      the LDAPServer component(s) in the environment.xml bound to the
-      configured ESPs.</para>
+      <para>The initldap utility creates the HPCC Administrator's user account
+      and the HPCC OUs for a newly defined LDAP server. The initldap utility
+      extracts these settings from the LDAPServer component(s) in the
+      environment.xml bound to the configured ESPs.</para>
 
-      <para>Once you complete your configuration, (add the LDAPServer
-      components and distribute your environment.xml file) you must then run
-      the <emphasis role="bold">initldap</emphasis> utility.</para>
+      <para>You run the <emphasis role="bold">initldap</emphasis> utility once
+      you complete your configuration with LDAP components enabled and have
+      distributed your environment.xml file to all nodes.</para>
 
       <programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting>
 
       <para>The <emphasis role="bold">initldap</emphasis> utility prompts you
       for LDAP Administrator credentials. Enter the appropriate values when
-      prompted. The initldap utility uses those values to initialize the LDAP
-      server and create the HPCC System User. It also creates all of the
-      required OUs.</para>
+      prompted. </para>
+
+      <para>The following example of initldap for a 389DirectoryServer
+      deployment. </para>
+
+      <para><programlisting>Enter the '389DirectoryServer' LDAP Admin User name on '10.123.456.78'...Directory Manager        
+Enter the LDAP Admin user 'Directory Manager' password...********
+
+Ready to initialize HPCC LDAP Environment, using the following settings
+       LDAP Server     : 10.123.456.78
+       LDAP Type       : 389DirectoryServer
+       HPCC Admin User : HPCCAdmin389
+Proceed?  y/n 
+</programlisting></para>
     </sect3>
 
     <sect3>

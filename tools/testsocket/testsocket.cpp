@@ -41,6 +41,7 @@ bool manyResults = false;
 bool sendFileAfterQuery = false;
 bool doLock = false;
 bool roxieLogMode = false;
+bool rawOnly = false;
 
 StringBuffer sendFileName;
 StringAttr queryNameOverride;
@@ -82,7 +83,7 @@ void showMessage(const char * text)
     {
         if (echoResults)
             fwrite(text, strlen(text), 1, stdout);
-        if (saveResults)
+        if (saveResults && trace != NULL)
             fwrite(text, strlen(text), 1, trace);
     }
 }
@@ -236,7 +237,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
             case '-':
                 if (echoResults)
                     fputs("Error:", stdout);
-                if (saveResults)
+                if (saveResults && trace != NULL)
                     fputs("Error:", trace);
                 break;
             case 'D':
@@ -535,13 +536,27 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     {
         endtime = get_cycles_now();
         CriticalBlock b(traceCrit);
-        fprintf(trace, "query: %s\n", query);
-        if (saveResults)
-            fprintf(trace, "result: %s\n", result.str());
 
-        if (showTiming)
-            fprintf(trace, "Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
-        fputs("----------------------------------------------------------------------------\n", trace);
+        if (trace != NULL)
+        {
+            if (rawOnly == false)
+            {
+                fprintf(trace, "query: %s\n", query);
+
+                if (saveResults)
+                    fprintf(trace, "result: %s\n", result.str());
+            }
+            else
+            {
+                fprintf(trace, "%s", result.str());
+            }
+
+            if (showTiming && rawOnly == false)
+            {
+                fprintf(trace, "Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
+                fputs("----------------------------------------------------------------------------\n", trace);
+            }
+        }
     }
 
     if (!persistConnections)
@@ -598,6 +613,7 @@ void usage(int exitCode)
     printf("  -maxLineSize <n> set maximum query line length\n");
     printf("  -n        multiple results - keep going until socket closes\n");
     printf("  -o        set output filename\n");
+    printf("  -or       set output filename for raw output\n");
     printf("  -persist  use persistant connection\n");
     printf("  -pr <text>add a prefix to the query\n");
     printf("  -q        quiet - don't echo query\n");
@@ -719,6 +735,12 @@ int main(int argc, char **argv)
             outputName.set(argv[arg+1]);
             arg+=2;
         }
+        else if (stricmp(argv[arg], "-or") == 0)
+        {
+            rawOnly = true;
+            outputName.set(argv[arg+1]);
+            arg+=2;
+        }
         else if (stricmp(argv[arg], "-persist") == 0)
         {
             persistConnections = true;
@@ -801,6 +823,12 @@ int main(int argc, char **argv)
 
     int ret = 0;
     trace = fopen(outputName, "w");
+
+    if (trace == NULL)
+    {
+        printf("Can't open %s for writing\n", outputName.str());
+    }
+
     __int64 starttime,endtime;
     starttime = get_cycles_now();
     if (arg < argc || fromStdIn)
@@ -926,10 +954,19 @@ int main(int argc, char **argv)
     endtime = get_cycles_now();
     if (!justResults)
     {
-        fprintf(trace, "Total Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
-        fputs("----------------------------------------------------------------------------\n", trace);
+        if (rawOnly == false)
+        {
+            if (trace != NULL)
+            {
+                fprintf(trace, "Total Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
+                fputs("----------------------------------------------------------------------------\n", trace);
+            }
+        }
     }
-    fclose(trace);
+    if (trace != NULL)
+    {
+        fclose(trace);
+    }
     
 #ifdef _DEBUG
     releaseAtoms();

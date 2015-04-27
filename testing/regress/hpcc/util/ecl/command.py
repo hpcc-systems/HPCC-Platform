@@ -39,6 +39,7 @@ class ECLcmd(Shell):
         args.append('-fpickBestEngine=false')
         args.append('--target=' + cluster)
         args.append('--cluster=' + cluster)
+        args.append('--wait='+str(eclfile.getTimeout()*1000))
 
         server = kwargs.pop('server', False)
         if server:
@@ -73,9 +74,12 @@ class ECLcmd(Shell):
 
             args.append("--name=" + name)
 
+            args = args + eclfile.getDParameters()
+
             args = args + eclfile.getStoredInputParameters()
 
             args.append(eclfile.getArchive())
+
         data = ""
         wuid = "N/A"
         state = ""
@@ -110,8 +114,9 @@ class ECLcmd(Shell):
             logging.error("------" + err + "------")
             raise err
         finally:
+            res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
+            logging.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), wuid, state, data)
             if wuid ==  'N/A':
-                res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
                 logging.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
                 wuid = res['wuid']
                 if res['result'] != "OK":
@@ -126,11 +131,15 @@ class ECLcmd(Shell):
                     test = False
                     eclfile.diff = 'Error'
             else:
-                if queryWuid(eclfile.getJobname(), eclfile.getTaskId())['state'] == 'aborted':
-                    eclfile.diff = eclfile.ecl+'\n\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
+                if (res['state'] == 'aborted') or eclfile.isAborted():
+                    eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
+                    eclfile.diff += '\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
                     test = False
                 elif eclfile.getIgnoreResult():
-                    logging.debug("%3d. Ignore result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEcl())
+                    logging.debug("%3d. Ignore result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
+                    test = True
+                elif eclfile.testFail():
+                    logging.debug("%3d. Fail is the expected result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
                     test = True
                 elif eclfile.testNoKey():
                     # keyfile comparaison disabled with //nokey tag
@@ -138,8 +147,13 @@ class ECLcmd(Shell):
                         #output generation disabled with //nooutput tag
                         eclfile.diff = '-'
                     else:
-                        eclfile.diff = 'Output of '+eclfile.ecl +' test is:\n'+ data
+                        eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
+                        eclfile.diff += data
                     test = True
+                elif (res['state'] == 'failed') and ('error' in data):
+                    eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
+                    eclfile.diff += data
+                    test = False
                 else:
                     test = eclfile.testResults()
             report.addResult(eclfile)

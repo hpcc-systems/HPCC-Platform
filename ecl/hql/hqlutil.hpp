@@ -57,9 +57,9 @@ extern HQL_API IHqlExpression * queryLastNonAttribute(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * recorhqlutid, unsigned & idx);
 extern HQL_API void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpression * expr);
 
-extern HQL_API int compareSymbolsByName(IInterface * * pleft, IInterface * * pright);
-extern HQL_API int compareScopesByName(IInterface * * pleft, IInterface * * pright);
-extern HQL_API int compareAtoms(IInterface * * pleft, IInterface * * pright);
+extern HQL_API int compareSymbolsByName(IInterface * const * pleft, IInterface * const * pright);
+extern HQL_API int compareScopesByName(IInterface * const * pleft, IInterface * const * pright);
+extern HQL_API int compareAtoms(IInterface * const * pleft, IInterface * const * pright);
 extern HQL_API IHqlExpression * getSizetConstant(unsigned size);
 extern HQL_API IHqlExpression * createIntConstant(__int64 val);
 extern HQL_API IHqlExpression * createUIntConstant(unsigned __int64 val);
@@ -91,6 +91,7 @@ extern HQL_API unsigned getFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned getFlatFieldCount(IHqlExpression * expr);
 extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
 extern HQL_API bool isTrivialSelectN(IHqlExpression * expr);
+
 extern HQL_API IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int64 topNlimit);
 
 extern HQL_API IHqlExpression * queryAttributeChild(IHqlExpression * expr, IAtom * name, unsigned idx);
@@ -110,6 +111,7 @@ extern HQL_API bool isValidXmlRecord(IHqlExpression * expr);
 extern HQL_API bool matchesConstantValue(IHqlExpression * expr, __int64 test);
 extern HQL_API bool matchesBoolean(IHqlExpression * expr, bool test);
 extern HQL_API bool matchesConstantString(IHqlExpression * expr, const char * text, bool ignoreCase);
+extern HQL_API void getHintNameValue(IHqlExpression * attr, StringBuffer &name, StringBuffer &value);
 extern HQL_API bool getBoolValue(IHqlExpression * expr, bool dft);
 extern HQL_API __int64 getIntValue(IHqlExpression * expr, __int64 dft = 0);
 extern HQL_API StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft = NULL);
@@ -186,6 +188,7 @@ extern HQL_API bool isConstantTransform(IHqlExpression * transform);
 extern HQL_API bool isConstantDataset(IHqlExpression * expr);
 extern HQL_API bool isConstantDictionary(IHqlExpression * expr);
 extern HQL_API bool isSimpleTransformToMergeWith(IHqlExpression * expr);
+extern HQL_API bool isSimpleTransform(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryUncastExpr(IHqlExpression * expr);
 extern HQL_API bool areConstant(const HqlExprArray & args);
 extern HQL_API bool getFoldedConstantText(StringBuffer& ret, IHqlExpression * expr);
@@ -194,6 +197,8 @@ extern HQL_API IHqlExpression * createTransformForField(IHqlExpression * field, 
 extern HQL_API IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType);
 extern HQL_API bool splitResultValue(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * value);
 
+//Is 'expr' really dependent on a parameter - expr->isFullyBound() can give false negatives.
+extern HQL_API bool isDependentOnParameter(IHqlExpression * expr);
 
 inline void extendConditionOwn(SharedHqlExpr & cond, node_operator op, IHqlExpression * r)
 {
@@ -296,7 +301,7 @@ protected:
     void addFilenameRead(IHqlExpression * expr);
     void addFilenameWrite(IHqlExpression * expr);
     void addRefDependency(IHqlExpression * expr);
-    void addResultRead(IHqlExpression * seq, IHqlExpression * name, bool isGraphResult);
+    void addResultRead(IHqlExpression * wuid, IHqlExpression * seq, IHqlExpression * name, bool isGraphResult);
     void addResultWrite(IHqlExpression * seq, IHqlExpression * name, bool isGraphResult);
     IHqlExpression * getNormalizedFilename(IHqlExpression * filename);
 
@@ -552,7 +557,8 @@ public:
 public:
     ErrorSeverityMapper(IErrorReceiver & errorProcessor);
 
-    virtual IECLError * mapError(IECLError * error);
+    virtual IError * mapError(IError * error);
+    virtual void exportMappings(IWorkUnit * wu) const;
 
     bool addCommandLineMapping(const char * mapping);
     bool addMapping(const char * category, const char * value);
@@ -624,8 +630,9 @@ extern HQL_API bool debugFindFirstDifference(IHqlExpression * left, IHqlExpressi
 extern HQL_API void debugTrackDifference(IHqlExpression * expr);
 
 extern HQL_API StringBuffer & convertToValidLabel(StringBuffer &out, const char * in, unsigned inlen);
-extern HQL_API bool arraysSame(CIArray & left, CIArray & right);
-extern HQL_API bool arraysSame(Array & left, Array & right);
+
+extern HQL_API bool arraysSame(HqlExprArray & left, HqlExprArray & right);
+extern HQL_API bool arraysSame(HqlExprCopyArray & left, HqlExprCopyArray & right);
 extern HQL_API bool isFailAction(IHqlExpression * expr);
 extern HQL_API bool isFailureGuard(IHqlExpression * expr);
 
@@ -648,6 +655,7 @@ extern HQL_API IHqlExpression * createSizeof(IHqlExpression * expr);
 extern HQL_API bool allParametersHaveDefaults(IHqlExpression * function);
 extern HQL_API bool expandMissingDefaultsAsStoreds(HqlExprArray & args, IHqlExpression * function);
 
+extern HQL_API bool createConstantField(MemoryBuffer & target, IHqlExpression * field, IHqlExpression * value);
 extern HQL_API bool createConstantRow(MemoryBuffer & target, IHqlExpression * transform);
 extern HQL_API bool createConstantNullRow(MemoryBuffer & target, IHqlExpression * record);
 extern HQL_API IHqlExpression * createConstantRowExpr(IHqlExpression * transform);
@@ -664,7 +672,7 @@ extern HQL_API IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive,
 extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, const char * name);
 extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, const char * name);
 
-extern HQL_API IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
+extern HQL_API IError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
 extern HQL_API IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext & ctx, bool reportError);
 extern HQL_API IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx);
 extern HQL_API StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix = NULL);
@@ -729,6 +737,6 @@ protected:
 };
 
 extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch);
-extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLErrorArray & warnings);
+extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IErrorArray & warnings);
 
 #endif

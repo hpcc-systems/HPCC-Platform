@@ -116,6 +116,11 @@ public:
         assertex(atr_type==t_defineid);
         return defineid;
     }
+    inline IIdAtom * queryId() const
+    {
+        assertex(atr_type==t_catom);
+        return cname;
+    }
     
     /* getters */
     inline IFileContents * getContents()
@@ -424,6 +429,7 @@ public:
     void checkFieldnameValid(const attribute &errpos, IIdAtom * name);
     void checkList(attribute &atr);
     void checkScalar(attribute &atr);
+    void checkSensibleId(const attribute & attr, IIdAtom * id);
     void checkUseLocation(const attribute & errpos);
     void checkCosort(IHqlExpression * sortlist, IHqlExpression * partition, const attribute & ea);
     ITypeInfo * checkPromoteNumeric(attribute &a1, bool extendPrecision);
@@ -457,7 +463,7 @@ public:
     void checkIndexFieldType(IHqlExpression * cur, bool isPayload, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordType(IHqlExpression * record, unsigned numPayloadFields, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordTypes(IHqlExpression * index, const attribute & errpos);
-    void reportIndexFieldType(IHqlExpression * expr, bool isPayload, const attribute & errpos);
+    void reportInvalidIndexFieldType(IHqlExpression * expr, bool isPayload, const attribute & errpos);
     void reportUnsupportedFieldType(ITypeInfo * type, const attribute & errpos);
     void checkCaseForDuplicates(HqlExprArray & exprs, attribute &err);
     void checkOnFailRecord(IHqlExpression * expr, attribute & errpos);
@@ -473,6 +479,7 @@ public:
     IHqlExpression * createLocationAttr(const attribute & errpos);
     IHqlExpression * createSortExpr(node_operator op, attribute & dsAttr, const attribute & orderAttr, HqlExprArray & args);
     IHqlExpression * createIffDataset(IHqlExpression * record, IHqlExpression * value);
+    IHqlExpression * createSetRange(attribute & array, attribute & range);
 
     bool isSingleValuedExpressionList(const attribute & attr);
     bool convertAllToAttribute(attribute &atr);
@@ -567,7 +574,7 @@ public:
     void doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
     void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
-    void reportMacroExpansionPosition(IECLError * warning, HqlLex * lexer);
+    void reportMacroExpansionPosition(IError * warning, HqlLex * lexer);
     void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
 
     // Don't use overloading: va_list is the same as char*!!
@@ -581,8 +588,9 @@ public:
 
     // interface IErrorReceiver
     virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
-    virtual void report(IECLError * error);
-    virtual IECLError * mapError(IECLError * error);
+    virtual void report(IError * error);
+    virtual IError * mapError(IError * error);
+    virtual void exportMappings(IWorkUnit * wu) const;
     void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual size32_t errCount();
     virtual size32_t warnCount();
@@ -661,9 +669,9 @@ public:
     void enterType(const attribute &errpos, bool isParameteried);
     void leaveType(const YYSTYPE & errpos);
     void checkRecordTypesMatch(IHqlExpression *ds1, IHqlExpression *ds2, const attribute & errpos);
-    int checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const attribute &atr, unsigned maxFields = (unsigned)-1);
-    bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const attribute &atr);
-    IHqlExpression * checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const attribute & errpos, bool rightIsRow);
+    int checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const ECLlocation & errPos, unsigned maxFields = (unsigned)-1);
+    bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const ECLlocation & errPos);
+    IHqlExpression * checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const ECLlocation & errPos, bool rightIsRow);
     void ensureMapToRecordsMatch(OwnedHqlExpr & recordExpr, HqlExprArray & args, const attribute & errpos, bool isRow);
     void checkRecordIsValid(const attribute &atr, IHqlExpression *record);
     void checkValidRecordMode(IHqlExpression * dataset, attribute & atr, attribute & modeatr);
@@ -711,8 +719,8 @@ protected:
     void checkNotAlreadyDefined(IIdAtom * name, IHqlScope * scope, const attribute & idattr);
     void checkNotAlreadyDefined(IIdAtom * name, const attribute & idattr);
     void checkBuildIndexFilenameFlags(IHqlExpression * dataset, attribute & flags);
-    IHqlExpression * createBuildFileFromTable(IHqlExpression * table, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos);
-    IHqlExpression * createBuildIndexFromIndex(attribute & indexAttr, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos);
+    IHqlExpression * createBuildFileFromTable(IHqlExpression * table, const HqlExprArray & createBuildFileFromTable, IHqlExpression * filename, attribute & errpos);
+    IHqlExpression * createBuildIndexFromIndex(attribute & indexAttr, attribute & flagsAttr, attribute & errpos);
     void checkOutputRecord(attribute & errpos, bool outerLevel);
     void checkSoapRecord(attribute & errpos);
     IHqlExpression * checkOutputRecord(IHqlExpression *record, const attribute & errpos, bool & allConstant, bool outerLevel);
@@ -752,7 +760,7 @@ protected:
     void checkSizeof(ITypeInfo* expr, attribute& errpos, bool isDataset = false);
     void normalizeStoredNameExpression(attribute & a);
     void checkPatternFailure(attribute & attr);
-    void checkDistributer(attribute & err, HqlExprArray & args);
+    void checkDistributer(const ECLlocation & errPos, HqlExprArray & args);
     IHqlExpression * createScopedSequenceExpr();
     IHqlExpression * createPatternOr(HqlExprArray & args, const attribute & errpos);
     IHqlExpression * mapAlienArg(IHqlSimpleScope * scope, IHqlExpression * expr);
@@ -763,7 +771,7 @@ protected:
     bool isAborting() { return errorDisabled; }
     IIdAtom * fieldMapTo(IHqlExpression* expr, IIdAtom * name);
     IIdAtom * fieldMapFrom(IHqlExpression* expr, IIdAtom * name);
-    bool requireLateBind(IHqlExpression* funcdef, Array& actuals);
+    bool requireLateBind(IHqlExpression* funcdef, const HqlExprArray & actuals);
     IHqlExpression* createDefJoinTransform(IHqlExpression* left,IHqlExpression* right,attribute& errpos, IHqlExpression * seq, IHqlExpression * flags);
     IHqlExpression * createRowAssignTransform(const attribute & srcAttr, const attribute & tgtAttr, const attribute & seqAttr);
     IHqlExpression * createClearTransform(IHqlExpression * record, const attribute & errpos);
@@ -840,7 +848,7 @@ protected:
     bool expandingMacroPosition;
     unsigned m_maxErrorsAllowed;
 
-    IECLErrorArray pendingWarnings;
+    IErrorArray pendingWarnings;
     Linked<ISourcePath> sourcePath;
     IIdAtom * moduleName;
     IIdAtom * current_id;
@@ -954,7 +962,7 @@ protected:
     void checkDistribution(attribute &errpos, IHqlExpression *newExpr, bool ignoreGrouping);
     void checkMergeInputSorted(attribute &atr, bool isLocal);
     void checkGrouped(attribute & atr);
-    void checkRegrouping(attribute & atr, HqlExprArray & args);
+    void checkRegrouping(const ECLlocation & errPos, HqlExprArray & args);
     void checkRecordsMatch(attribute & atr, HqlExprArray & args);
 
     IHqlExpression * transformRecord(IHqlExpression *dataset, IAtom * targetCharset, const attribute & errpos);
@@ -1093,11 +1101,11 @@ class HqlLex
     private:
         static void doEnterEmbeddedMode(yyscan_t yyscanner);
         void declareXmlSymbol(const YYSTYPE & errpos, const char *name);
-        StringBuffer &lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &value);
+        bool lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &value);
         void setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *value, bool append);
         IIterator *getSubScopes(const YYSTYPE & errpos, const char *name, bool doAll);
         IXmlScope *queryTopXmlScope();
-        IXmlScope *ensureTopXmlScope(const YYSTYPE & errpos);
+        IXmlScope *ensureTopXmlScope();
 
         IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
         void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));

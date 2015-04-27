@@ -25,8 +25,10 @@
 
 project( eclcc ) 
 
-set (    SRCS 
-         eclcc.cpp 
+set (    SRCS
+         reservedwords.hpp
+         reservedwords.cpp
+         eclcc.cpp
     )
 
 include_directories ( 

@@ -92,7 +92,7 @@
                 <link rel="stylesheet" type="text/css" href="/esp/files/gen_form.css"/>
                 <script type="text/javascript" src="/esp/files/req_array.js"/>
                 <script type="text/javascript" src="/esp/files/hashtable.js"/>
-                <script type="text/javascript" src="/esp/files/gen_form.js"/>
+                <script type="text/javascript" src="/esp/files/gen_form_wsecl.js"/>
                 <script type="text/javascript"><xsl:text disable-output-escaping="yes">
                 <![CDATA[
   var isIE = (navigator.appName == "Microsoft Internet Explorer");
@@ -114,7 +114,7 @@
                         <xsl:text disable-output-escaping="yes"><![CDATA[ + "<table id='"+newId+"'> </table></hr>"]]></xsl:text>
                     </xsl:if>
                     <xsl:text disable-output-escaping="yes"><![CDATA[
-       + "<input type='hidden' id='"+newId+"_ItemCt' name='"+newId+".itemcount' value='0' />"
+       + "<input type='hidden' id='"+newId+"_ItemCt' name='"+newId+".itemcount!' value='0' />"
           + "&nbsp;<input type='button' id='"+newId+"_AddBtn' onclick='appendRow(\""+newId+"\",\""+itemName+"\",get_"+typeName+"_Item)' value='Add' /> "
           + "<input type='button' id='"+newId+"_RvBtn' onclick='removeRow(\""+newId+"\",-1)' value='Delete' disabled='true' />" ]]></xsl:text>
                     <xsl:if test="not($useTableBorder)">
@@ -1169,6 +1169,9 @@ function switchInputForm()
                 </xsl:variable>
                 <xsl:variable name="inputRows">
                     <xsl:choose>
+                        <xsl:when test="$annot/@formRows">
+                            <xsl:value-of select="$annot/@formRows"/>
+                        </xsl:when>
                         <xsl:when test="$maxoccurs='unbounded'">
                             <xsl:number value="4"/>
                         </xsl:when>

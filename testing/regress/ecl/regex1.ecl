@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('globalFold', false)
+#option ('globalFold', false);
 
 namesRecord := 
             RECORD

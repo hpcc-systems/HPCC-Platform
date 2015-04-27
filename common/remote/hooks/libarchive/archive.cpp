@@ -184,7 +184,11 @@ public:
         archive_read_support_compression_bzip2(archive);
 #else
         archive_read_support_format_all(archive);
+#if (ARCHIVE_VERSION_NUMBER >= 3000000)
+        archive_read_support_filter_all(archive);
+#else
         archive_read_support_compression_all(archive);
+#endif
 #endif
         int retcode = archive_read_open_filename(archive, container, 10240);
         if (retcode == ARCHIVE_OK)
@@ -204,7 +208,11 @@ public:
     }
     ~ArchiveFileIO()
     {
+#if (ARCHIVE_VERSION_NUMBER >= 3000000)
+        archive_read_free(archive);
+#else
         archive_read_finish(archive);
+#endif
     }
 
     virtual size32_t read(offset_t pos, size32_t len, void * _data)
@@ -214,7 +222,7 @@ public:
             throw MakeStringException(0, "Only sequential access to contained file %s supported", fullName.get());
         byte *data = (byte *) _data;
         size32_t lenRequested = len;
-        while (len > 0 & pos < fileSize)
+        while (len > 0 && pos < fileSize)
         {
             if (pos >= curPos+curBuffSize)
             {
@@ -486,7 +494,11 @@ public:
         archive_read_support_compression_bzip2(archive);
 #else
         archive_read_support_format_all(archive);
+#if (ARCHIVE_VERSION_NUMBER >= 3000000)
+        archive_read_support_filter_all(archive);
+#else
         archive_read_support_compression_all(archive);
+#endif
 #endif
         int retcode = archive_read_open_filename(archive, container, 10240);
         if (retcode == ARCHIVE_OK)
@@ -522,7 +534,11 @@ public:
             }
             archive_entry_free(entry);
         }
+#if (ARCHIVE_VERSION_NUMBER >= 3000000)
+        archive_read_free(archive);
+#else
         archive_read_finish(archive);
+#endif
         return next();
     }
 

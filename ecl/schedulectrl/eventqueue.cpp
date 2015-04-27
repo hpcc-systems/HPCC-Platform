@@ -306,7 +306,7 @@ int CScheduleTimer::run()
             nowdt.setNow();
             if(nextdt > nowdt)
             {
-                long time = 1000*(nextdt.getSimple()-nowdt.getSimple());
+                unsigned time = (unsigned)(1000*(nextdt.getSimple()-nowdt.getSimple()));
                 waiter.wait(time);
             }
             nowdt.setNow();

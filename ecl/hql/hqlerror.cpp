@@ -32,7 +32,7 @@ ErrorSeverity getSeverity(IAtom * name)
     if (name == ignoreAtom)
         return SeverityIgnore;
     if (name == logAtom)
-        return SeverityInfo;
+        return SeverityInformation;
     return SeverityUnknown;
 }
 
@@ -41,7 +41,7 @@ ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
     if (category == CategoryError)
         return SeverityFatal;
     if (category == CategoryInformation)
-        return SeverityInfo;
+        return SeverityInformation;
     if (category == CategoryMistake)
         return SeverityError;
     return SeverityWarning;
@@ -79,6 +79,8 @@ WarnErrorCategory getCategory(const char * category)
         return CategoryUnusual;
     if (strieq(category, "unexpected"))
         return CategoryUnexpected;
+    if (strieq(category, "cpp"))
+        return CategoryCpp;
     return CategoryUnknown;
 }
 
@@ -89,89 +91,24 @@ ErrorSeverity getCheckSeverity(IAtom * name)
     return severity;
 }
 
-
-//---------------------------------------------------------------------------------------------------------------------
-
-class HQL_API CECLError : public CInterfaceOf<IECLError>
-{
-public:
-    CECLError(WarnErrorCategory _category,ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position);
-
-    virtual int             errorCode() const { return no; }
-    virtual StringBuffer &  errorMessage(StringBuffer & ret) const { return ret.append(msg); }
-    virtual MessageAudience errorAudience() const { return MSGAUD_user; }
-    virtual const char* getFilename() const { return filename; }
-    virtual WarnErrorCategory getCategory() const { return category; }
-    virtual int getLine() const { return lineno; }
-    virtual int getColumn() const { return column; }
-    virtual int getPosition() const { return position; }
-    virtual StringBuffer& toString(StringBuffer&) const;
-    virtual ErrorSeverity getSeverity() const { return severity; }
-    virtual IECLError * cloneSetSeverity(ErrorSeverity _severity) const;
-
-protected:
-    ErrorSeverity severity;
-    WarnErrorCategory category;
-    int no;
-    StringAttr msg;
-    StringAttr filename;
-    int lineno;
-    int column;
-    int position;
-};
-
-CECLError::CECLError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position):
-  category(_category),severity(_severity), msg(_msg), filename(_filename)
-{
-    no = _no;
-    lineno = _lineno;
-    column = _column;
-    position = _position;
-}
-
-
-StringBuffer& CECLError::toString(StringBuffer& buf) const
-{
-    buf.append(filename);
-
-    if(lineno && column)
-        buf.append('(').append(lineno).append(',').append(column).append(')');
-    buf.append(" : ");
-
-    buf.append(no).append(": ").append(msg);
-    return buf;
-}
-
-IECLError * CECLError::cloneSetSeverity(ErrorSeverity newSeverity) const
-{
-    return new CECLError(category, newSeverity,
-                         errorCode(), msg, filename,
-                         getLine(), getColumn(), getPosition());
-}
-
-extern HQL_API IECLError *createECLError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos)
-{
-    return new CECLError(category,severity,errNo,msg,filename,lineno,column,pos);
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 
 void IErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
 {
-    Owned<IECLError> err = createECLError(errNo,msg,filename,lineno,column,position);
+    Owned<IError> err = createError(errNo,msg,filename,lineno,column,position);
     report(err);
 }
 
 void IErrorReceiver::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int position)
 {
     ErrorSeverity severity = queryDefaultSeverity(category);
-    Owned<IECLError> warn = createECLError(category, severity,warnNo,msg,filename,lineno,column,position);
+    Owned<IError> warn = createError(category, severity,warnNo,msg,filename,lineno,column,position);
     report(warn);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void ErrorReceiverSink::report(IECLError* error)
+void ErrorReceiverSink::report(IError* error)
 {
     switch (error->getSeverity())
     {
@@ -189,7 +126,7 @@ void ErrorReceiverSink::report(IECLError* error)
 
 
 
-void MultiErrorReceiver::report(IECLError* error)
+void MultiErrorReceiver::report(IError* error)
 {
     ErrorReceiverSink::report(error);
 
@@ -203,25 +140,25 @@ StringBuffer& MultiErrorReceiver::toString(StringBuffer& buf)
 {
     ForEachItemIn(i, msgs)
     {
-        IECLError* error=item(i);
+        IError* error=item(i);
         error->toString(buf);
         buf.append('\n');
     }
     return buf;
 }
 
-IECLError *MultiErrorReceiver::firstError()
+IError *MultiErrorReceiver::firstError()
 {
     ForEachItemIn(i, msgs)
     {
-        IECLError* error = item(i);
+        IError* error = item(i);
         if (isError(error->getSeverity()))
             return error;
     }
     return NULL;
 }
 
-extern HQL_API void reportErrors(IErrorReceiver & receiver, IECLErrorArray & errors)
+extern HQL_API void reportErrors(IErrorReceiver & receiver, IErrorArray & errors)
 {
     ForEachItemIn(i, errors)
         receiver.report(&errors.item(i));
@@ -237,7 +174,7 @@ public:
         f = _f;
     }
 
-    virtual void report(IECLError* error)
+    virtual void report(IError* error)
     {
         ErrorReceiverSink::report(error);
 
@@ -247,7 +184,7 @@ public:
         {
         case SeverityIgnore:
             return;
-        case SeverityInfo:
+        case SeverityInformation:
             severityText = "info";
             break;
         case SeverityWarning:
@@ -286,10 +223,10 @@ extern HQL_API IErrorReceiver *createFileErrorReceiver(FILE *f)
 
 class HQL_API ThrowingErrorReceiver : public ErrorReceiverSink
 {
-    virtual void report(IECLError* error);
+    virtual void report(IError* error);
 };
 
-void ThrowingErrorReceiver::report(IECLError* error)
+void ThrowingErrorReceiver::report(IError* error)
 {
     throw error;
 }
@@ -320,7 +257,7 @@ void reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, 
     if (errors)
         errors->reportError(errNo, msg.str(), loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
     else
-        throw createECLError(errNo, msg.str(), loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
+        throw createError(errNo, msg.str(), loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
 }
 
 void reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...)
@@ -335,9 +272,9 @@ void reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, co
 class ErrorInserter : public IndirectErrorReceiver
 {
 public:
-    ErrorInserter(IErrorReceiver & _prev, IECLError * _error) : IndirectErrorReceiver(_prev), error(_error) {}
+    ErrorInserter(IErrorReceiver & _prev, IError * _error) : IndirectErrorReceiver(_prev), error(_error) {}
 
-    virtual void report(IECLError* error)
+    virtual void report(IError* error)
     {
         if (isError(error->getSeverity()))
             flush();
@@ -355,7 +292,7 @@ protected:
     }
 
 protected:
-    Linked<IECLError> error;
+    Linked<IError> error;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -365,9 +302,9 @@ class AbortingErrorReceiver : public IndirectErrorReceiver
 public:
     AbortingErrorReceiver(IErrorReceiver & _prev) : IndirectErrorReceiver(_prev) {}
 
-    virtual void report(IECLError* error)
+    virtual void report(IError* error)
     {
-        Owned<IECLError> mappedError = prevErrorProcessor->mapError(error);
+        Owned<IError> mappedError = prevErrorProcessor->mapError(error);
         prevErrorProcessor->report(mappedError);
         if (isError(mappedError->getSeverity()))
             throw MakeStringExceptionDirect(HQLERR_ErrorAlreadyReported, "");
@@ -386,7 +323,7 @@ class DedupingErrorReceiver : public IndirectErrorReceiver
 public:
     DedupingErrorReceiver(IErrorReceiver & _prev) : IndirectErrorReceiver(_prev) {}
 
-    virtual void report(IECLError* error)
+    virtual void report(IError* error)
     {
         if (errors.contains(*error))
             return;
@@ -395,7 +332,7 @@ public:
     }
 
 private:
-    Array errors;
+    IArray errors;
 };
 
 IErrorReceiver * createDedupingErrorReceiver(IErrorReceiver & prev)
@@ -420,14 +357,14 @@ void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * ecl
             else if (minor != LANGUAGE_VERSION_MINOR)
             {
                 VStringBuffer msg("Mismatch in minor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
-                Owned<IECLError> warning = createECLError(CategoryUnexpected, SeverityInfo, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
+                Owned<IError> warning = createError(CategoryUnexpected, SeverityInformation, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
                 errors.setown(new ErrorInserter(*errors, warning));
             }
             else if (subminor != LANGUAGE_VERSION_SUB)
             {
                 //This adds the warning if any other warnings occur.
                 VStringBuffer msg("Mismatch in subminor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
-                Owned<IECLError> warning = createECLError(CategoryUnexpected, SeverityInfo, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
+                Owned<IError> warning = createError(CategoryUnexpected, SeverityInformation, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
                 errors.setown(new ErrorInserter(*errors, warning));
             }
         }

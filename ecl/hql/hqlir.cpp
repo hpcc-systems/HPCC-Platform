@@ -639,6 +639,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,catchds);
     EXPAND_CASE(no,file_logicalname);
     EXPAND_CASE(no,toxml);
+    EXPAND_CASE(no,tojson);
     EXPAND_CASE(no,sectioninput);
     EXPAND_CASE(no,forcegraph);
     EXPAND_CASE(no,eventextra);
@@ -648,6 +649,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,definesideeffect);
     EXPAND_CASE(no,callsideeffect);
     EXPAND_CASE(no,fromxml);
+    EXPAND_CASE(no,fromjson);
     EXPAND_CASE(no,actionlist);
     EXPAND_CASE(no,preservemeta);
     EXPAND_CASE(no,normalizegroup);
@@ -840,7 +842,7 @@ public:
 public:
     exprid_t expr;
     const char * name;
-    IECLError * warning;
+    IError * warning;
     IPropertyTree * tree;
     unsigned value;
     unsigned line;
@@ -1126,13 +1128,16 @@ class TextIRBuilder : public CInterfaceOf<IEclBuilder>
         Definition(const char * prefix, id_t _id, bool expandInline) : id(_id)
         {
             if (!expandInline)
-                idText.append("%").append(prefix).append(id);
+            {
+                StringAttrBuilder s(idText);
+                s.append("%").append(prefix).append(id);
+            }
         }
 
         inline bool expandInline() const { return idText.length() == 0; }
 
     public:
-        StringBuffer idText;
+        StringAttr idText;
         id_t id;
     };
 
@@ -1322,7 +1327,7 @@ public:
             }
         case annotate_warning:
             {
-                IECLError * warning = info.warning;
+                IError * warning = info.warning;
                 StringBuffer msg;
                 warning->errorMessage(msg);
                 const char * filename = warning->getFilename();
@@ -1743,7 +1748,7 @@ protected:
     }
 
 protected:
-    Array values;
+    IArray values;
     HqlExprArray results;
 };
 
@@ -1783,7 +1788,7 @@ protected:
     id_t doProcessAnnotation(IHqlExpression * expr);
 
 protected:
-    CopyArray types;
+    ICopyArray types;
     UnsignedArray typeIds;
     unsigned seq;
 };

@@ -141,6 +141,7 @@ define([
             var protectedCheckbox = registry.byId(this.id + "Protected");
             var context = this;
             this.wu.update({
+                Scope: dom.byId(context.id + "Scope").value,
                 Description: dom.byId(context.id + "Description").value,
                 Jobname: dom.byId(context.id + "Jobname").value,
                 Protected: protectedCheckbox.get("value")
@@ -344,6 +345,7 @@ define([
                 dom.byId(this.id + "ProtectedImage").src = this.wu.getProtectedImage();
             } else if (name === "Jobname") {
                 this.updateInput("Jobname2", oldValue, newValue);
+                this.summaryWidget.set("tooltip", newValue);
             } else if (name === "WorkflowCount" && newValue) {
                 this.widget._Workflows.set("title", this.i18n.Workflows + " (" + newValue + ")");
                 this.setDisabled(this.widget._Workflows.id, false);
@@ -431,8 +433,11 @@ define([
                 this.refreshActionState();
             } else if (name === "hasCompleted") {
                 this.checkIfComplete();
+            } else if (name === "Scope" && newValue) {
+                domClass.remove("scopeOptional", "hidden");
+                domClass.add("scopeOptional", "show");
             }
-            if (name === "changedCount" && newValue > 0) {
+            if (name === "__hpcc_changedCount" && newValue > 0) {
                 var getInt = function (item) {
                     if (item)
                         return item;

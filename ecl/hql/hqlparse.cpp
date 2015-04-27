@@ -1057,7 +1057,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
     StringBuffer buf;
     toXML(data, buf, 0);
     if (toXml)
-        ensureTopXmlScope(returnToken)->loadXML(buf.str(), exportname->getAtomNamePtr());
+        ensureTopXmlScope()->loadXML(buf.str(), exportname->getAtomNamePtr());
     else
         setXmlSymbol(returnToken, exportname->getAtomNamePtr(), buf.str(), false);
     data->Release();
@@ -1219,7 +1219,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
     }
 
     ::Release(forLoop);
-    forLoop = new CDummyScopeIterator(ensureTopXmlScope(returnToken));
+    forLoop = new CDummyScopeIterator(ensureTopXmlScope());
     forFilter.clear();
     forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
     loopTimes = 0;
@@ -1408,9 +1408,7 @@ void resetLexerUniqueNames() { gUniqueId = 0; }
 
 void HqlLex::declareUniqueName(const char *name, const char * pattern)
 {
-    IXmlScope *top = queryTopXmlScope();
-    if (!top)
-        top = xmlScope = createXMLScope();
+    IXmlScope *top = ensureTopXmlScope();
 
     StringBuffer value;
     if (!top->getValue(name,value))
@@ -1537,7 +1535,7 @@ void HqlLex::doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int ex
 
     StringBuffer in;
     in.append(len, text);
-    lookupXmlSymbol(errpos, in.str(), out);
+    bool matched = lookupXmlSymbol(errpos, in.str(), out);
     if (stringify)
     {
         char *expanded = (char *) malloc(out.length()*2 + 3); // maximum it could be (might be a bit big for alloca)
@@ -1580,7 +1578,12 @@ void HqlLex::doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int ex
             pushText(out.str());
         }
         else
+        {
+            //Don't report errors accessing attributes, but do complain about missing symbols
+            if (!matched && (*text != '@'))
+                reportError(errpos, WRN_UNRESOLVED_SYMBOL, "Symbol %%%s not resolved", text);
             pushText(" 0");
+        }
     }
 }
 
@@ -1980,7 +1983,6 @@ void HqlLex::reportWarning(WarnErrorCategory category, const YYSTYPE & returnTok
 }
 
 //====================================== XML DB =============================================
-
 IXmlScope *HqlLex::queryTopXmlScope()
 {
     IXmlScope *top = NULL;
@@ -1996,33 +1998,38 @@ IXmlScope *HqlLex::queryTopXmlScope()
     return top;
 }
 
-IXmlScope *HqlLex::ensureTopXmlScope(const YYSTYPE & errpos)
+IXmlScope *HqlLex::ensureTopXmlScope()
 {
     IXmlScope *top = queryTopXmlScope();
     if (!top)
-    {
-    	reportError(errpos, ERR_XML_NOSCOPE, "No XML scope active");
-
-    	// recovery: create a default XML scope
-    	top = xmlScope = ::loadXML("<xml></xml>");
-    }
-
+    	top = xmlScope = createXMLScope();
     return top;
 }
 
-StringBuffer &HqlLex::lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &ret)
+ bool HqlLex::lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &ret)
 {
     if (*name==0)
         name=NULL;
 
-    IXmlScope *top = ensureTopXmlScope(errpos);
-    top->getValue(name, ret);
-    return ret;
+    IXmlScope *top = ensureTopXmlScope();
+    bool idFound = top->getValue(name, ret);
+    if (idFound)
+        return true;
+
+    HqlLex * lexer = parentLex;
+    while (lexer && !idFound)
+    {
+    	if (lexer->xmlScope)
+            idFound = lexer->xmlScope->getValue(name, ret);
+    	lexer = lexer->parentLex;
+    }
+
+    return idFound;
 }
 
 void HqlLex::setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *value, bool append)
 {
-    IXmlScope *top = ensureTopXmlScope(errpos);
+    IXmlScope *top = ensureTopXmlScope();
     bool ok;
     if (append)
         ok = top->appendValue(name, value);
@@ -2039,7 +2046,7 @@ void HqlLex::setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *
 
 void HqlLex::declareXmlSymbol(const YYSTYPE & errpos, const char *name)
 {
-    IXmlScope *top = ensureTopXmlScope(errpos);
+    IXmlScope *top = ensureTopXmlScope();
     if (!top->declareValue(name))
     {
         StringBuffer msg("Symbol has already been declared: ");
@@ -2050,7 +2057,7 @@ void HqlLex::declareXmlSymbol(const YYSTYPE & errpos, const char *name)
 
 IIterator *HqlLex::getSubScopes(const YYSTYPE & errpos, const char *name, bool doAll)
 {
-    IXmlScope *top = ensureTopXmlScope(errpos);
+    IXmlScope *top = ensureTopXmlScope();
     return top->getScopes(name, doAll);
 }
 
@@ -2094,7 +2101,7 @@ void HqlLex::loadXML(const YYSTYPE & errpos, const char *name, const char * chil
         }
 
         // recovery: create a default XML scope
-        xmlScope = ::loadXML("<xml></xml>");
+        xmlScope = createXMLScope();
     }
 }
 

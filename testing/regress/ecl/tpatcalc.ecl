@@ -82,7 +82,7 @@ resultsRecord extractResults(infile l, attrRecord attr) :=
         TRANSFORM
             SELF := l;
             SELF := attr;
-            SELF.exprText := MATCHTEXT;
+            SELF.exprText := MATCHTEXT();
             SELF.value3 := MATCHROW(e0[3]).value;
         END;
             

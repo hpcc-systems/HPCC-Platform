@@ -854,11 +854,23 @@ public:
         vval.assign(cval, cval+len);
         R[name] = vval;
     }
+    virtual void bindFloatParam(const char *name, float val)
+    {
+        R[name] = val;
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         R[name] = val;
     }
+    virtual void bindSignedSizeParam(const char *name, int size, __int64 val)
+    {
+        R[name] = (long int) val;
+    }
     virtual void bindSignedParam(const char *name, __int64 val)
+    {
+        R[name] = (long int) val;
+    }
+    virtual void bindUnsignedSizeParam(const char *name, int size, unsigned __int64 val)
     {
         R[name] = (long int) val;
     }
@@ -1068,7 +1080,11 @@ private:
 class REmbedContext: public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
+    virtual IEmbedFunctionContext *createFunctionContext(unsigned flags, const char *options)
+    {
+        return createFunctionContextEx(NULL, flags, options);
+    }
+    virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
     {
         return new REmbedFunctionContext(*queryGlobalState()->R, options);
     }

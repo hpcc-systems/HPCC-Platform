@@ -83,7 +83,9 @@ static const char * EclDefinition =
 "  SET OF STRING SplitWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slSplitWords'; \n"
 "  STRING CombineWords(set of string src, const string _separator) : c, pure,entrypoint='slCombineWords'; \n"
 "  UNSIGNED4 StringToDate(const string src, const varstring format) : c, pure,entrypoint='slStringToDate'; \n"
+"  UNSIGNED4 StringToTimeOfDay(const string src, const varstring format) : c, pure,entrypoint='slStringToTimeOfDay'; \n"
 "  UNSIGNED4 MatchDate(const string src, set of varstring formats) : c, pure,entrypoint='slMatchDate'; \n"
+"  UNSIGNED4 MatchTimeOfDay(const string src, set of varstring formats) : c, pure,entrypoint='slMatchTimeOfDay'; \n"
 "  STRING FormatDate(UNSIGNED4 date, const varstring format) : c, pure,entrypoint='slFormatDate'; \n"
 "  STRING StringRepeat(const string src, unsigned4 n) : c, pure,entrypoint='slStringRepeat'; \n"
 "END;";
@@ -1320,7 +1322,7 @@ STRINGLIB_API void STRINGLIB_CALL slCombineWords(size32_t & __lenResult, void * 
 
 //--------------------------------------------------------------------------------------------------------------------
 
-inline bool readValue(unsigned & value, size32_t & _offset, size32_t lenStr, const char * str, unsigned max)
+inline bool readValue(unsigned & value, size32_t & _offset, size32_t lenStr, const char * str, unsigned max, bool spaceIsZero = false)
 {
     unsigned total = 0;
     unsigned offset = _offset;
@@ -1332,6 +1334,8 @@ inline bool readValue(unsigned & value, size32_t & _offset, size32_t lenStr, con
         char next = str[offset+i];
         if (next >= '0' && next <= '9')
             total = total * 10 + (next - '0');
+    	else if (next == ' ' && spaceIsZero)
+            total = total * 10;
         else
             break;
     }
@@ -1384,6 +1388,44 @@ static const char * simple_strptime(size32_t lenStr, const char * str, const cha
         {
             switch (*curFormat++)
             {
+            // Recursive cases
+            case 'F':
+            	{
+            		const char*	newPtr = simple_strptime(lenStr-offset, str+offset, "%Y-%m-%d", tm);
+            		
+            		if (!newPtr)
+            			return NULL;
+            		offset = newPtr - str;
+            	}
+            	break;
+            case 'D':
+            	{
+            		const char*	newPtr = simple_strptime(lenStr-offset, str+offset, "%m/%d/%y", tm);
+            		
+            		if (!newPtr)
+            			return NULL;
+            		offset = newPtr - str;
+            	}
+            	break;
+            case 'R':
+            	{
+            		const char*	newPtr = simple_strptime(lenStr-offset, str+offset, "%H:%M", tm);
+            		
+            		if (!newPtr)
+            			return NULL;
+            		offset = newPtr - str;
+            	}
+            	break;
+            case 'T':
+            	{
+            		const char*	newPtr = simple_strptime(lenStr-offset, str+offset, "%H:%M:%S", tm);
+            		
+            		if (!newPtr)
+            			return NULL;
+            		offset = newPtr - str;
+            	}
+            	break;
+            // Non-recursive cases
             case 't':
                 while ((offset < lenStr) && isspace(src[offset]))
                     offset++;
@@ -1408,6 +1450,11 @@ static const char * simple_strptime(size32_t lenStr, const char * str, const cha
                     return NULL;
                 tm->tm_mday = value;
                 break;
+            case 'e':
+                if (!readValue(value, offset, lenStr, str, 2, true) || (value < 1) || (value > 31))
+                    return NULL;
+                tm->tm_mday = value;
+                break;
             case 'b':
             case 'B':
             case 'h':
@@ -1417,6 +1464,11 @@ static const char * simple_strptime(size32_t lenStr, const char * str, const cha
                 break;
             case 'H':
                 if (!readValue(value, offset, lenStr, str, 2)|| (value > 24))
+                    return NULL;
+                tm->tm_hour = value;
+                break;
+            case 'k':
+                if (!readValue(value, offset, lenStr, str, 2, true)|| (value > 24))
                     return NULL;
                 tm->tm_hour = value;
                 break;
@@ -1457,11 +1509,19 @@ inline unsigned makeDate(const tm & tm)
     return (tm.tm_year + 1900) * 10000 + (tm.tm_mon + 1) * 100 + tm.tm_mday;
 }
 
+
+inline unsigned makeTimeOfDay(const tm & tm)
+{
+    return (tm.tm_hour * 10000) + (tm.tm_min * 100) + tm.tm_sec;
+}
+
 inline void extractDate(tm & tm, unsigned date)
 {
     tm.tm_year = (date / 10000) - 1900;
     tm.tm_mon = ((date / 100) % 100) - 1;
     tm.tm_mday = (date % 100);
+    // To proper initialisation of tm
+    mktime(&tm);
 }
 
 STRINGLIB_API unsigned STRINGLIB_CALL slStringToDate(size32_t lenS, const char * s, const char * fmtin)
@@ -1473,18 +1533,46 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringToDate(size32_t lenS, const char *
     return 0;
 }
 
+STRINGLIB_API unsigned STRINGLIB_CALL slStringToTimeOfDay(size32_t lenS, const char * s, const char * fmtin)
+{
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+    if (simple_strptime(lenS, s, fmtin, &tm))
+        return makeTimeOfDay(tm);
+    return 0;
+}
+
 
 STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s, bool isAllFormats, unsigned lenFormats, const void * _formats)
 {
     struct tm tm;
-    memset(&tm, 0, sizeof(tm));
 
     const char * formats = (const char *)_formats;
     for (unsigned off=0; off < lenFormats; )
     {
         const char * curFormat = formats+off;
+        
+        memset(&tm, 0, sizeof(tm));
         if (simple_strptime(lenS, s, curFormat, &tm))
             return makeDate(tm);
+        off += strlen(curFormat) + 1;
+    }
+    return 0;
+}
+
+
+STRINGLIB_API unsigned STRINGLIB_CALL slMatchTimeOfDay(size32_t lenS, const char * s, bool isAllFormats, unsigned lenFormats, const void * _formats)
+{
+    struct tm tm;
+
+    const char * formats = (const char *)_formats;
+    for (unsigned off=0; off < lenFormats; )
+    {
+        const char * curFormat = formats+off;
+        
+        memset(&tm, 0, sizeof(tm));
+        if (simple_strptime(lenS, s, curFormat, &tm))
+            return makeTimeOfDay(tm);
         off += strlen(curFormat) + 1;
     }
     return 0;

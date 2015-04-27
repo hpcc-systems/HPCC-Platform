@@ -39,6 +39,8 @@ typedef unsigned short UChar;
 
 interface ITypeInfo;
 interface IValue;
+interface IHqlExpression;
+interface IHqlScope;
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define type_bigendianint       type_swapint
@@ -199,6 +201,8 @@ public:
     virtual unsigned getCrc() = 0;      // must be run independant.
     virtual typemod_t queryModifier() = 0;
     virtual IInterface * queryModifierExtra() = 0;
+    virtual IHqlExpression * castToExpression() = 0; // Here to avoid dynamic casts
+    virtual IHqlScope * castToScope() = 0;
 
     inline bool isBoolean() const { return getTypeCode() == type_boolean; }
 
@@ -208,8 +212,9 @@ private:
 
 interface IFunctionTypeExtra : public IInterface
 {
-    virtual IInterface * queryParameters() = 0;
-    virtual IInterface * queryDefaults() = 0;
+    virtual IInterface * queryParameters() const = 0;
+    virtual IInterface * queryDefaults() const = 0;
+    virtual IInterface * queryAttributes() const = 0;
 };
 
 interface IEnumeratedTypeBuilder : public IInterface
@@ -250,7 +255,7 @@ extern DEFTYPE_API ITypeInfo *makeRowType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeSetType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeTransformType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeSortListType(ITypeInfo *basetype);
-extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * args, IInterface * defaults);
+extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * args, IInterface * defaults, IInterface * attrs);
 
 extern DEFTYPE_API ITypeInfo * makePointerType(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeArrayType(ITypeInfo * basetype, unsigned size=0);
@@ -408,7 +413,7 @@ protected:
     IntArray stringSizes;
     IntArray decimalSizes;
     UnsignedArray nesting;
-    CopyArray setTypes;
+    ICopyArray setTypes;
     unsigned optionalNesting;
     bool addHeader;
 };

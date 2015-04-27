@@ -70,11 +70,9 @@ MODULE_EXIT()
 }
 
 #define HASHONE(hash, c)        { hash *= 0x01000193; hash ^= c; }      // Fowler/Noll/Vo Hash... seems to work pretty well, and fast
-#define USE_FNV
 
 unsigned hashc( const unsigned char *k, unsigned length, unsigned initval)
 {
-#ifdef USE_FNV
     unsigned hash = initval;        // ^_rotl(length,2)??
     unsigned char c;
     while (length >= 8)
@@ -96,46 +94,36 @@ unsigned hashc( const unsigned char *k, unsigned length, unsigned initval)
     case 1: c = (*k++); HASHONE(hash, c);
     }
     return hash;
-#else
-   register unsigned a,b,c,len;
+}
 
-   /* Set up the internal state */
-   len = length;
-   a = b = 0x9e3779b9;  /* the golden ratio; an arbitrary value */
-   c = initval;         /* the previous hash value */
+template <typename T>
+inline unsigned doHashValue( T value, unsigned initval)
+{
+    //The values returned from this function are only consistent with those from hashn() if running on little endian architecture
+    unsigned hash = initval;
+    unsigned char c;
+    for (unsigned i=0; i < sizeof(T); i++)
+    {
+        c = (byte)value;
+        value >>= 8;
+        HASHONE(hash, c);
+    }
+    return hash;
+}
 
-   /*---------------------------------------- handle most of the key */
-   while (len >= 12)
-   {
-      a += GETWORD(k,0);
-      b += GETWORD(k,4);
-      c += GETWORD(k,8);
-      mix(a,b,c);
-      k += 12; len -= 12;
-   }
+unsigned hashvalue( unsigned value, unsigned initval)
+{
+    return doHashValue(value, initval);
+}
 
-   /*------------------------------------- handle the last 11 bytes */
-   c += length;
-   switch(len)              /* all the case statements fall through */
-   {
-   case 11: c+=GETBYTE3(7);
-   case 10: c+=GETBYTE2(7);
-   case 9 : c+=GETBYTE1(7);
-      /* the first byte of c is reserved for the length */
-   case 8 : b+=GETBYTE3(4);
-   case 7 : b+=GETBYTE2(4);
-   case 6 : b+=GETBYTE1(4);
-   case 5 : b+=GETBYTE0(4);
-   case 4 : a+=GETBYTE3(0);
-   case 3 : a+=GETBYTE2(0);
-   case 2 : a+=GETBYTE1(0);
-   case 1 : a+=GETBYTE0(0);
-     /* case 0: nothing left to add */
-   }
-   mix(a,b,c);
-   /*-------------------------------------------- report the result */
-   return c;
-#endif
+unsigned hashvalue( unsigned __int64 value, unsigned initval)
+{
+    return doHashValue(value, initval);
+}
+
+unsigned hashvalue( const void * value, unsigned initval)
+{
+    return doHashValue((memsize_t)value, initval);
 }
 
 #define GETWORDNC(k,n) ((GETBYTE0(n)+GETBYTE1(n)+GETBYTE2(n)+GETBYTE3(n))&0xdfdfdfdf)
@@ -143,7 +131,6 @@ unsigned hashc( const unsigned char *k, unsigned length, unsigned initval)
 
 unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval)
 {
-#ifdef USE_FNV
     unsigned hash = initval;
     unsigned char c;
     while (length >= 8)
@@ -165,47 +152,6 @@ unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval)
     case 1: c = (*k++)&0xdf; HASHONE(hash, c);
     }
     return hash;
-#else
-
-   register unsigned a,b,c,len;
-
-   /* Set up the internal state */
-   len = length;
-   a = b = 0x9e3779b9;  /* the golden ratio; an arbitrary value */
-   c = initval;         /* the previous hash value */
-
-   /*---------------------------------------- handle most of the key */
-   while (len >= 12)
-   {
-      a += GETWORDNC(k,0);
-      b += GETWORDNC(k,4);
-      c += GETWORDNC(k,8);
-      mix(a,b,c);
-      k += 12; len -= 12;
-   }
-
-   /*------------------------------------- handle the last 11 bytes */
-   c += length;
-   switch(len)              /* all the case statements fall through */
-   {
-   case 11: c+=GETBYTE3(7)&0xdf;
-   case 10: c+=GETBYTE2(7)&0xdf;
-   case 9 : c+=GETBYTE1(7)&0xdf;
-      /* the first byte of c is reserved for the length */
-   case 8 : b+=GETBYTE3(4)&0xdf;
-   case 7 : b+=GETBYTE2(4)&0xdf;
-   case 6 : b+=GETBYTE1(4)&0xdf;
-   case 5 : b+=GETBYTE0(4)&0xdf;
-   case 4 : a+=GETBYTE3(0)&0xdf;
-   case 3 : a+=GETBYTE2(0)&0xdf;
-   case 2 : a+=GETBYTE1(0)&0xdf;
-   case 1 : a+=GETBYTE0(0)&0xdf;
-     /* case 0: nothing left to add */
-   }
-   mix(a,b,c);
-   /*-------------------------------------------- report the result */
-   return c;
-#endif
 }
 
 
@@ -376,11 +322,9 @@ BlockHash:
       else
         h = hashc(bp,ksize,h);
    }
-#ifdef USE_FNV
       //Strings that only differ by a single character don't generate hashes very far apart without this
    h *= 0x01000193;
    //h = ((h << 7) ^ (h >> 25));
-#endif
    return h;
 }
 

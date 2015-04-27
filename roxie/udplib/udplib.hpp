@@ -48,7 +48,6 @@ interface IMessagePacker : extends IInterface
     virtual void putBuffer(const void *buf, unsigned len, bool variable) = 0;
     virtual void flush(bool last_message = false) = 0;
     virtual bool dataQueued() = 0;
-    virtual void abort() = 0;
     virtual void sendMetaInfo(const void *buf, unsigned len) = 0;
 
     virtual unsigned size() const = 0;  // Total amount written via putBuffer plus any overhead from record length prefixes
@@ -104,10 +103,12 @@ interface ISendManager : extends IInterface
     virtual bool dataQueued(ruid_t ruid, unsigned sequence, unsigned destNodeIndex) = 0;
     virtual bool abortData(ruid_t ruid, unsigned sequence, unsigned destNodeIndex) = 0;
     virtual bool allDone() = 0;
+    virtual void writeOwn(unsigned destNodeIndex, roxiemem::DataBuffer *buffer, unsigned len, unsigned queue) = 0;  // NOTE: takes ownership of the DataBuffer
 };
 
 extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size, unsigned maxSlotsPerSender, unsigned myNodeIndex);
 extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, unsigned maxRetryData, TokenBucket *rateLimiter, unsigned myNodeIndex);
+extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, unsigned _destNode, unsigned _sourceNode, unsigned _msgSeq, unsigned _queue);
 
 extern UDPLIB_API const IpAddress &getNodeAddress(unsigned index);
 extern UDPLIB_API unsigned addRoxieNode(const char *ipString);

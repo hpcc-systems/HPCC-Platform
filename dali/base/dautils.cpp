@@ -1924,7 +1924,7 @@ public:
     CPECacheElem(const char *owner, ISortedElementsTreeFilter *_postFilter)
         : CTimedCacheItem(owner), postFilter(_postFilter), postFiltered(0)
     {
-        passesFilter.setown(createBitSet());
+        passesFilter.setown(createThreadSafeBitSet());
     }
     ~CPECacheElem()
     {
@@ -2404,7 +2404,7 @@ public:
     }
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-//      PrintLog("Notification(%"I64F"x) of %s - flags = %d",(__int64) id, xpath, flags);
+//      PrintLog("Notification(%" I64F "x) of %s - flags = %d",(__int64) id, xpath, flags);
         sem.signal();
     }
 };

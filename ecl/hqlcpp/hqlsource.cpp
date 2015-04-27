@@ -1551,6 +1551,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
                 leftCursor = translator.bindCsvTableCursor(subctx, dataset, "Left", no_left, querySelSeq(expr), true, queryCsvTableEncoding(tableExpr));
                 break;
             case no_xml:
+            case no_json:
                 leftCursor = translator.bindXmlTableCursor(subctx, dataset, "xmlLeft", no_left, querySelSeq(expr), true);
                 break;
             default:
@@ -1807,7 +1808,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     StringBuffer graphLabel;
     graphLabel.append(getActivityText(activityKind));
 
-    if ((activityKind == TAKdiskread) || (activityKind == TAKcsvread) || (activityKind == TAKxmlread))
+    if ((activityKind == TAKdiskread) || (activityKind == TAKcsvread) || (activityKind == TAKxmlread) || (activityKind == TAKjsonread))
     {
         graphLabel.clear();
         if (expr != tableExpr)
@@ -6988,7 +6989,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
     node_operator modeType = mode->getOperator();
     StringBuffer s;
 
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKxmlread, expr, "XmlRead");
+    ThorActivityKind kind = (modeType == no_json) ? TAKjsonread : TAKxmlread;
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, "XmlRead");
 
     buildActivityFramework(instance);
 
@@ -7048,6 +7050,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTable(BuildCtx & ctx, IHqlExpr
     case no_csv:
         return doBuildActivityDiskRead(ctx, expr);
     case no_xml:
+    case no_json:
         return doBuildActivityXmlRead(ctx, expr);
     default:
         UNIMPLEMENTED;
@@ -7126,6 +7129,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
             break;
         }
     case no_xml:
+    case no_json:
         {
             // virtual const char * getXmlIteratorPath()
             translator.doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryRealChild(tableExpr->queryChild(2), 0));
@@ -7166,6 +7170,7 @@ void FetchBuilder::buildTransform(IHqlExpression * expr)
         transformCtx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     case no_xml:
+    case no_json:
         transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * xmlLeft, const void * _right, unsigned __int64 _fpos)");
         transformCtx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;

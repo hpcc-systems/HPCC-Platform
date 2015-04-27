@@ -15,9 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-
-#include <stdio.h>
-
+#include "platform.h"
 #include "jarray.hpp"
 #include "jdebug.hpp"
 #include "jhash.hpp"
@@ -165,11 +163,15 @@ public:
     inline void removekey(AttrStr *a,bool nc)
     {
         if (a->linkcount!=(unsigned short)-1)
+        {
             if (--(a->linkcount)==0) 
+            {
                 if (nc)
                     htnc.remove((AttrStrNC *)a);
                 else
                     htc.remove((AttrStrC *)a);
+            }
+        }
     }
 
     inline void removeval(AttrStr *a)
@@ -209,7 +211,7 @@ MODULE_EXIT()
 }
 
 
-static int comparePropTrees(IInterface **ll, IInterface **rr)
+static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
 {
     IPropertyTree *l = (IPropertyTree *) *ll;
     IPropertyTree *r = (IPropertyTree *) *rr;
@@ -752,7 +754,7 @@ private:
         return false;
     }
 
-    Array iters;
+    IArray iters;
     IPropertyTreeIterator *currentIter;
     IPropertyTree *current;
     unsigned cp, iterCount;
@@ -1760,7 +1762,8 @@ IPropertyTree *PTree::setPropTree(const char *xpath, IPropertyTree *val)
         if (branch == this)
         {   
             IPropertyTree *_val = ownPTree(val);
-            PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+            dbgassertex(QUERYINTERFACE(_val, PTree));
+            PTree *__val = static_cast<PTree *>(_val);
             __val->setName(prop);
             addingNewElement(*_val, ANE_SET);
             if (!checkChildren()) createChildMap();
@@ -1785,7 +1788,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
             if (!*x++)
             {
                 IPropertyTree *_val = ownPTree(val);
-                PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+                dbgassertex(QUERYINTERFACE(_val, PTree));
+                PTree *__val = static_cast<PTree *>(_val);
                 __val->setName(xpath);
                 addingNewElement(*_val, -1);
                 if (checkChildren())
@@ -1794,7 +1798,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                     if (child)
                     {
                         __val->setParent(this);
-                        PTree *tree = QUERYINTERFACE(child, PTree); assertex(tree);
+                        dbgassertex(QUERYINTERFACE(child, PTree));
+                        PTree *tree = static_cast<PTree *>(child);
                         if (tree->value && tree->value->isArray())
                             tree->value->addElement(_val);
                         else
@@ -1803,7 +1808,7 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                             array->addElement(LINK(child));
                             array->addElement(_val);
                             IPropertyTree *container = create(xpath, array);
-                            PTree *_tree = QUERYINTERFACE(child, PTree); assertex(_tree); _tree->setParent(this);
+                            tree->setParent(this);
                             children->replace(xpath, container);
                         }
                         return _val;
@@ -1832,13 +1837,15 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                     throw MakeIPTException(-1, "addPropTree: qualifier unmatched %s", xpath);
             }
             IPropertyTree *_val = ownPTree(val);
-            PTree *__val = QUERYINTERFACE(_val, PTree); assertex(__val);
+            dbgassertex(QUERYINTERFACE(_val, PTree));
+            PTree *__val = static_cast<PTree *>(_val);
             __val->setName(path);
             addingNewElement(*_val, pos);
             if (child)
             {
                 __val->setParent(this);
-                PTree *tree = QUERYINTERFACE(child, PTree); assertex(tree);
+                dbgassertex(QUERYINTERFACE(child, PTree));
+                PTree *tree = static_cast<PTree *>(child);
                 if (tree->value && tree->value->isArray())
                 {
                     if (-1 == pos)
@@ -2010,7 +2017,7 @@ StringBuffer &PTree::getName(StringBuffer &ret) const
     return ret;
 }
 
-MAKEPointerArray(AttrValue, AttrArray);
+typedef CopyReferenceArrayOf<AttrValue> AttrArray;
 IAttributeIterator *PTree::getAttributes(bool sorted) const
 {
     class CAttributeIterator : public CInterface, implements IAttributeIterator
@@ -2082,7 +2089,7 @@ IAttributeIterator *PTree::getAttributes(bool sorted) const
     public:
         IMPLEMENT_IINTERFACE;
 
-        static int compareAttrs(AttrValue **ll, AttrValue **rr)
+        static int compareAttrs(AttrValue * const *ll, AttrValue * const *rr)
         {
             return stricmp((*ll)->key->get(), (*rr)->key->get());
         };
@@ -4697,7 +4704,7 @@ class CPullXMLReader : public CXMLReaderBase<X>, implements IPullPTreeReader
         StringBuffer tagText;
         bool binary, base64;
     };
-    CopyCIArrayOf<CStateInfo> stack, freeStateInfo;
+    CICopyArrayOf<CStateInfo> stack, freeStateInfo;
 
     CStateInfo *stateInfo;
 
@@ -4799,7 +4806,7 @@ public:
                 startOffset = curOffset-2;
                 if (freeStateInfo.ordinality())
                 {
-                    stateInfo = &freeStateInfo.pop();
+                    stateInfo = &freeStateInfo.popGet();
                     stateInfo->reset();
                 }
                 else
@@ -4951,7 +4958,7 @@ public:
                                     while (t != tb && isspace(*(--t)));
                                     mark.setLength((size32_t)(t-tb+1));
                                 }
-                            }   
+                            }
                             stateInfo->tagText.ensureCapacity(mark.length());
                             _decodeXML(r, mark.toCharArray(), stateInfo->tagText);
                         }
@@ -5493,7 +5500,10 @@ static void writeJSONValueToStream(IIOStream &out, const char *val, bool &delimi
     if (hidden)
         writeCharsNToStream(out, '*', strlen(val));
     else
-        writeStringToStream(out, val);
+    {
+        StringBuffer s;
+        writeStringToStream(out, encodeJSON(s, val));
+    }
     writeCharToStream(out, '"');
 }
 
@@ -6577,12 +6587,12 @@ public:
                     readChild(tagName.str(), true);
                     break;
                 case '{':  //treat unnamed objects like we're in a noroot array
-                    readObject("__item__");
+                    readObject("__object__");
                     break;
                 case '[':  //treat unnamed arrays like we're in a noroot array
-                    iEvent->beginNode("__item__", curOffset);
+                    iEvent->beginNode("__array__", curOffset);
                     readArray("__item__");
-                    iEvent->endNode("__item__", 0, "", false, curOffset);
+                    iEvent->endNode("__array__", 0, "", false, curOffset);
                     break;
                 default:
                     expecting("{[ or \"");
@@ -6665,7 +6675,7 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
         const char *wnsTag;
         unsigned childCount;
     };
-    CopyCIArrayOf<CStateInfo> stack, freeStateInfo;
+    CICopyArrayOf<CStateInfo> stack, freeStateInfo;
 
     CStateInfo *stateInfo;
 
@@ -6735,7 +6745,7 @@ public:
             stateInfo->childCount++;
         if (freeStateInfo.ordinality())
         {
-            stateInfo = &freeStateInfo.pop();
+            stateInfo = &freeStateInfo.popGet();
             stateInfo->reset();
         }
         else
@@ -6765,11 +6775,11 @@ public:
         }
     }
 
-    inline const char *arrayItemName()
+    inline const char *arrayItemName(const char *defaultName)
     {
         if (stack.ordinality()>1)
             return stateInfo->wnsTag;
-        return "__item__";
+        return defaultName;
     }
 
     bool arrayItem(offset_t offset)
@@ -6787,18 +6797,18 @@ public:
         case '{':
             state=objAttributes;
             readNext();
-            beginNode(arrayItemName(), offset, elementTypeObject);
+            beginNode(arrayItemName("__object__"), offset, elementTypeObject);
             break;
         case '[':
             state=valueStart;
             readNext();
-            beginNode(arrayItemName(), offset, elementTypeArray, true);
+            beginNode(arrayItemName("__array__"), offset, elementTypeArray, true);
             break;
         default:
             state=valueStart;
             ptElementType type = readValue(value.clear());
             readNext();
-            beginNode(arrayItemName(), offset, type, true);
+            beginNode(arrayItemName("__item__"), offset, type, true);
             stateInfo->tagText.swapWith(value);
             break;
         }
@@ -6845,8 +6855,10 @@ public:
     }
     bool rootNext()
     {
-        if (!noRoot || !checkReadNext() || !checkSkipWS())
+        if (!noRoot)
             return false;
+        if (!checkReadNext() || !checkSkipWS())
+            return true;
         if (','!=nextChar)
             expecting(",");
         return true;
@@ -6897,7 +6909,7 @@ public:
 
     virtual bool next()
     {
-        skipWS();
+        checkSkipWS();
         switch (state)
         {
             case headerStart:
@@ -6918,12 +6930,12 @@ public:
                     case '{':
                         state=objAttributes;
                         readNext();
-                        beginNode("__root__", curOffset, elementTypeObject);
+                        beginNode("__object__", curOffset, elementTypeObject);
                         break;
                     case '[':
                         state=valueStart;
                         readNext();
-                        beginNode("__root__", curOffset, elementTypeArray);
+                        beginNode("__array__", curOffset, elementTypeArray);
                         break;
                     default:
                         expecting("{ or [");

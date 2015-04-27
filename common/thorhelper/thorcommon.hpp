@@ -21,12 +21,20 @@
 #include "jiface.hpp"
 #include "jcrc.hpp"
 #include "jsort.hpp"
+#include "jdebug.hpp"
 #include "eclhelper.hpp"
 #include "thorhelper.hpp"
 #include "thorxmlwrite.hpp"
 
-#define DALI_RESULT_OUTPUTMAX 2000 // MB
-#define DALI_RESULT_LIMIT_DEFAULT 10 // MB
+static unsigned const defaultDaliResultOutputMax = 2000; // MB
+static unsigned const defaultDaliResultLimit = 10; // MB
+static unsigned const defaultMaxCsvRowSize = 10; // MB
+
+
+#define OPT_OUTPUTLIMIT_LEGACY    "outputLimit"             // OUTPUT Mb limit (legacy property name, renamed to outputLimitMb in 5.2)
+#define OPT_OUTPUTLIMIT           "outputLimitMb"           // OUTPUT Mb limit                                                               (default = 10 [MB])
+#define OPT_MAXCSVROWSIZE         "maxCsvRowSizeMb"         // Upper limit on csv read line size                                             (default = 10 [MB])
+
 
 class THORHELPER_API CSizingSerializer : implements IRowSerializerTarget
 {
@@ -126,39 +134,106 @@ extern THORHELPER_API void testDiskSort();
 
 
 #define TIME_ACTIVITIES
-interface IActivityTimer : extends IInterface
+class ActivityTimeAccumulator
 {
-    virtual unsigned __int64 getCyclesAdjustment() const = 0;
+    friend class ActivityTimer;
+public:
+    ActivityTimeAccumulator()
+    {
+        startCycles = 0;
+        totalCycles = 0;
+        endCycles = 0;
+        firstRow = 0;
+        firstExitCycles = 0;
+    }
+public:
+    cycle_t startCycles; // Wall clock time of first entry to this activity
+    cycle_t totalCycles; // Time spent in this activity
+    cycle_t endCycles;   // Wall clock time of last entry to this activity
+    unsigned __int64 firstRow; // Timestamp of first row (nanoseconds since epoch)
+    cycle_t firstExitCycles;    // Wall clock time of first exit from this activity
+
+    // Return the total amount of time (in nanoseconds) spent in this activity (first entry to last exit)
+    inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
+    // Return the total amount of time (in nanoseconds) spent in the first call of this activity (first entry to first exit)
+    inline unsigned __int64 latency() const { return cycle_to_nanosec(firstExitCycles-startCycles); }
+
+    void addStatistics(IStatisticGatherer & builder) const
+    {
+        if (totalCycles)
+        {
+            builder.addStatistic(StWhenFirstRow, firstRow);
+            builder.addStatistic(StTimeElapsed, elapsed());
+            builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
+            builder.addStatistic(StTimeFirstExecute, latency());
+        }
+    }
 };
+
 #ifdef TIME_ACTIVITIES
 #include "jdebug.hpp"
+
 class ActivityTimer
 {
     unsigned __int64 startCycles;
-    unsigned __int64 &accumulator;
+    ActivityTimeAccumulator &accumulator;
 protected:
     const bool enabled;
-    IActivityTimer *iActivityTimer;
+    bool isFirstRow;
 public:
-    inline ActivityTimer(unsigned __int64 &_accumulator, const bool _enabled, IActivityTimer *_iActivityTimer) : accumulator(_accumulator), enabled(_enabled), iActivityTimer(_iActivityTimer)
+    ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
+    : accumulator(_accumulator), enabled(_enabled), isFirstRow(false)
     {
         if (enabled)
         {
             startCycles = get_cycles_now();
-            if (iActivityTimer)
-                startCycles -= iActivityTimer->getCyclesAdjustment();
+            if (!accumulator.firstRow)
+            {
+                isFirstRow = true;
+                accumulator.startCycles = startCycles;
+                accumulator.firstRow = getTimeStampNowValue();
+            }
         }
         else
             startCycles = 0;
     }
 
-    inline ~ActivityTimer()
+    ~ActivityTimer()
     {
         if (enabled)
         {
-            unsigned __int64 elapsedCycles = get_cycles_now() - startCycles;
-            if (iActivityTimer)
-                elapsedCycles -= iActivityTimer->getCyclesAdjustment();
+            cycle_t nowCycles = get_cycles_now();
+            accumulator.endCycles = nowCycles;
+            cycle_t elapsedCycles = nowCycles - startCycles;
+            accumulator.totalCycles += elapsedCycles;
+            if (isFirstRow)
+                accumulator.firstExitCycles = nowCycles;
+        }
+    }
+};
+
+class SimpleActivityTimer
+{
+    cycle_t startCycles;
+    cycle_t &accumulator;
+protected:
+    const bool enabled;
+public:
+    inline SimpleActivityTimer(cycle_t &_accumulator, const bool _enabled)
+    : accumulator(_accumulator), enabled(_enabled)
+    {
+        if (enabled)
+            startCycles = get_cycles_now();
+        else
+            startCycles = 0;
+    }
+
+    inline ~SimpleActivityTimer()
+    {
+        if (enabled)
+        {
+            cycle_t nowCycles = get_cycles_now();
+            cycle_t elapsedCycles = nowCycles - startCycles;
             accumulator += elapsedCycles;
         }
     }
@@ -166,7 +241,11 @@ public:
 #else
 struct ActivityTimer
 {
-    inline ActivityTimer(unsigned __int64 &_accumulator, const bool _enabled, IActivityTimer *_iActivityTimer) { }
+    inline ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled) { }
+};
+struct SimpleActivityTimer
+{
+    inline SimpleActivityTimer(unsigned __int64 &_accumulator, const bool _enabled) { }
 };
 #endif
 
@@ -193,9 +272,9 @@ public:
     {
         ctx->setResultDecimal(stepname, sequence, len, precision, isSigned, val);
     }
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 value)
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size)
     {
-        ctx->setResultInt(name, sequence, value);
+        ctx->setResultInt(name, sequence, value, size);
     }
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data)
     {
@@ -213,9 +292,9 @@ public:
     {
         ctx->setResultString(name, sequence, len, str);
     }
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value)
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size)
     {
-        ctx->setResultUInt(name, sequence, value);
+        ctx->setResultUInt(name, sequence, value, size);
     }
     virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str)
     {
@@ -280,6 +359,10 @@ public:
     virtual unsigned getResultHash(const char * name, unsigned sequence)
     {
         return ctx->getResultHash(name, sequence);
+    }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence)
+    {
+        return ctx->getExternalResultHash(wuid, name, sequence);
     }
     virtual char *getWuid()
     {
@@ -417,9 +500,17 @@ public:
     {
         convertRowToXML(lenResult, result, info, row, flags);
     }
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+    {
+        convertRowToJSON(lenResult, result, info, row, flags);
+    }
     virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
     {
         return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+    }
+    virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+    {
+        return ctx->fromJson(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
     }
     virtual IEngineContext *queryEngineContext()
     {

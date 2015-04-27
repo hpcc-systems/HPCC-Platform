@@ -89,7 +89,7 @@ protected:
 public:
     CLoopActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
-        loopCounterProgress.setown(new CThorStats("loopCounter-"));
+        loopCounterProgress.setown(new CThorStats(StNumIterations));
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
         loopGraph = NULL;
@@ -144,11 +144,12 @@ public:
         mb.read(loopCounter);
         loopCounterProgress->set(node, loopCounter);
     }
-    virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
+    virtual void getActivityStats(IStatisticGatherer & stats)
     {
-        CMasterActivity::getXGMML(progress, node);
-        loopCounterProgress->getXGMML(node, false);
+        CMasterActivity::getActivityStats(stats);
+        loopCounterProgress->getStats(stats, false);
     }
+
 };
 
 
@@ -163,7 +164,7 @@ class CLoopActivityMaster : public CLoopActivityMasterBase
         // similar to sync, but continiously listens for messages from slaves
         // slave only sends if above threashold, or if was at threshold and non empty
         // this routine is here to spot when all are whirling around processing nothing for > threshold
-        Owned<IBitSet> emptyIterations = createBitSet();
+        Owned<IBitSet> emptyIterations = createThreadSafeBitSet();
         unsigned loopEnds = 0;
         unsigned nodes = container.queryJob().querySlaves();
         unsigned n = nodes;

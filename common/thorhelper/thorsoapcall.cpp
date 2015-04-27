@@ -83,8 +83,8 @@ class Url : public CInterface, implements IInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    StringBuffer method;
-    StringBuffer host;
+    StringAttr method;
+    StringAttr host;
     unsigned port;
     StringBuffer path;
     StringBuffer userPasswordPair;
@@ -155,7 +155,7 @@ public:
         {
             *p = 0;
             p += 3; // skip past the colon-slash-slash
-            method.append(urltext);
+            method.set(urltext);
             urltext = p;
         }
         else
@@ -179,7 +179,7 @@ public:
 
             port = atoi(p);
 
-            host.append(urltext);
+            host.set(urltext);
 
             if ((p = strchr(p, '/')) != NULL)
                 path.append(p);
@@ -201,15 +201,22 @@ public:
                 *p = 0;
                 p++;
 
-                host.append(urltext);
+                host.set(urltext);
                 path.append("/").append(p);
             }
             else
             {
-                host.append(urltext);
+                host.set(urltext);
                 path.append("/");
             }
         }
+        // While the code below would make some sense, there is code that relies on being able to use invalid IP addresses and catching the
+        // errors that result via ONFAIL.
+#if 0
+        IpAddress ipaddr(host);
+        if ( ipaddr.isNull())
+            throw MakeStringException(-1, "Invalid IP address %s", host.str());
+#endif
     }
 };
 
@@ -738,18 +745,18 @@ public:
         logUserMsg = (flags & SOAPFlogusermsg) != 0;
 
         double dval = helper->getTimeout(); // In seconds, but may include fractions of a second...
-        if (dval == -1.0) //not provided
+        if (dval < 0.0) //not provided, or out of range
             timeoutMS = 300*1000; // 300 second default
         else if (dval == 0)
             timeoutMS = WAIT_FOREVER;
         else
-            timeoutMS = dval * 1000;
+            timeoutMS = (unsigned)(dval * 1000);
 
         dval = helper->getTimeLimit();
         if (dval <= 0.0)
             timeLimitMS = WAIT_FOREVER;
         else
-            timeLimitMS = dval * 1000;
+            timeLimitMS = (unsigned)(dval * 1000);
 
         if (wscType == STsoap)
         {
@@ -1224,7 +1231,7 @@ int CWSCHelperThread::run()
                 {
                     if (master->aborted) {
                         while (inputRows.ordinality() > 0)
-                            master->rowProvider->releaseRow(inputRows.pop());
+                            master->rowProvider->releaseRow(inputRows.popGet());
                         return 0;
                     }
                     const void *r = master->rowProvider->getNextRow();
@@ -1244,7 +1251,7 @@ int CWSCHelperThread::run()
             }
 
             while (inputRows.ordinality() > 0)
-                master->rowProvider->releaseRow(inputRows.pop());
+                master->rowProvider->releaseRow(inputRows.popGet());
         }
     }
 
@@ -1385,14 +1392,20 @@ private:
         else
             assertex(false);
 
-        request.append("Host: ").append(url.host).append(":").append(url.port).append("\r\n");//http 1.1
         if (master->wscType == STsoap)
         {
+            request.append("Host: ").append(url.host).append(":").append(url.port).append("\r\n");//http 1.1
             request.append(CONTENT_LENGTH).append(xmlWriter.length()).append("\r\n\r\n");
             request.append(xmlWriter.str());//add SOAP xml content
         }
         else
+        {
+            request.append("Host: ").append(url.host);//http 1.1
+            if (url.port != 80) //default port?
+                request.append(":").append(url.port);
+            request.append("\r\n");//http 1.1
             request.append("\r\n");//httpcall
+        }
 
         if (soapTraceLevel > 6 || master->logXML)
             master->logctx.CTXLOG("%s: request(%s)", master->wscCallTypeText(), request.str());
@@ -1720,8 +1733,8 @@ public:
         while (!master->aborted)
         {
             Owned<ISocket> socket;
-            unsigned startTime, endTime;
-            startTime = msTick();
+            cycle_t startCycles, endCycles;
+            startCycles = get_cycles_now();
             loop 
             {
                 try
@@ -1809,9 +1822,11 @@ public:
                 {
                     throw MakeStringException(-1, "Zero length response in processQuery");
                 }
-                endTime = msTick();
+                endCycles = get_cycles_now();
+                __int64 elapsedNs = cycle_to_nanosec(endCycles-startCycles);
+                master->logctx.noteStatistic(StTimeSoapcall, elapsedNs);
                 checkTimeLimitExceeded(&remainingMS);
-                ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider(endTime-startTime, master->flags&SOAPFencoding?true:false);
+                ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider((unsigned)nanoToMilli(elapsedNs), master->flags&SOAPFencoding?true:false);
                 processResponse(url, response, meta);
                 delete meta;
                 break;

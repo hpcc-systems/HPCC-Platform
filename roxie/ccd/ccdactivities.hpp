@@ -46,11 +46,12 @@ interface IActivityFactory : extends IInterface
     virtual ThorActivityKind getKind() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const = 0;
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
 };
 
 interface IRoxieSlaveActivity : extends IInterface
 {
-    virtual bool process() = 0;
+    virtual IMessagePacker *process() = 0;
     virtual bool check() = 0;
     virtual void abort() = 0;
     virtual IRoxieQueryPacket *queryPacket() const = 0;
@@ -65,7 +66,6 @@ interface ISlaveActivityFactory : extends IActivityFactory
     virtual StringBuffer &toString(StringBuffer &ret) const = 0;
     virtual const char *queryQueryName() const = 0;
     virtual void addChildQuery(unsigned id, ActivityArray *childQuery) = 0;
-    virtual void noteStatistics(const StatsCollector &stats) = 0;
 };
 
 typedef const void * cvp;

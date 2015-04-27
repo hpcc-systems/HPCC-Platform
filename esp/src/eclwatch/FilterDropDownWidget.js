@@ -100,8 +100,10 @@ define([
         },
 
         toObject: function () {
-            var retVal = domForm.toObject(this.filterForm.id);
-            return retVal;
+            if (this.filterDropDown.get("disabled")) {
+                return {};
+            }
+            return domForm.toObject(this.filterForm.id);
         },
 
         init: function (params) {
@@ -115,6 +117,10 @@ define([
 
         close: function (event) {
             this.filterDropDown.closeDropDown();
+        },
+        
+        disable: function(disable) {
+            this.filterDropDown.set("disabled", disable);
         },
 
         refreshState: function () {

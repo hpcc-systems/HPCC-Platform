@@ -22,6 +22,7 @@ define([
     "dojo/_base/Deferred",
     "dojo/store/Observable",
     "dojo/Stateful",
+    "dojo/topic",
 
     "dojox/xml/parser",
 
@@ -30,7 +31,7 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit"
-], function (declare, arrayUtil, lang, i18n, nlsHPCC, Deferred, Observable, Stateful,
+], function (declare, arrayUtil, lang, i18n, nlsHPCC, Deferred, Observable, Stateful, topic,
         parser,
         WsWorkunits, WsEcl, ESPRequest, ESPUtil, ESPWorkunit) {
 
@@ -61,7 +62,7 @@ define([
             storeItem.updateData(item);
             if (!this._watched[id]) {
                 var context = this;
-                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
                         context.notify(storeItem, id);
                     }
@@ -101,6 +102,7 @@ define([
     });
 
     var Query = declare([ESPUtil.Singleton], {
+        i18n: nlsHPCC,
         constructor: function (args) {
             this.inherited(arguments);
             if (args) {
@@ -150,6 +152,25 @@ define([
             }
             return deferred.promise;
         },
+        showResetQueryStatsResponse: function (responses) {
+            var sv = "Error";
+            var msg = "Invalid response";
+            if (lang.exists("WUQuerySetQueryActionResponse.Results", responses[0])) {
+                var result = responses[0].WUQuerySetQueryActionResponse.Results.Result[0];
+                if (result.Success === 0) {
+                    msg = this.i18n.Exception + ": code=" + result.Code + " message=" + result.Message;
+                }
+                else {
+                    sv = "Message";
+                    msg = result.Message;
+                }
+            }
+            topic.publish("hpcc/brToaster", {
+                Severity: sv,
+                Source: "WsWorkunits.WUQuerysetQueryAction",
+                Exceptions: [{ Source: "ResetQueryStats", Message: msg }]
+            });
+        },
         doAction: function (action) {
             var context = this;
             return WsWorkunits.WUQuerysetQueryAction([{
@@ -158,6 +179,8 @@ define([
                 Name: this.Name
             }], action).then(function (responses) {
                 context.refresh();
+                if (action === "ResetQueryStats")
+                    context.showResetQueryStatsResponse(responses);
                 return response;
             });
         },
@@ -167,15 +190,22 @@ define([
         setActivated: function (activated) {
             return this.doAction(activated ? "Activate" : "Deactivate");
         },
+        doReset: function () {
+            return this.doAction("ResetQueryStats");
+        },
         doDelete: function () {
             return this.doAction("Delete");
         }
     });
 
     return {
-        Get: function (QuerySetId, Id) {
+        Get: function (QuerySetId, Id, data) {
             var store = new Store();
-            return store.get(QuerySetId + ":" + Id);
+            var retVal = store.get(QuerySetId + ":" + Id);
+            if (data) {
+                retVal.updateData(data);
+            }
+            return retVal;
         },
 
         GetFromRequestXML: function (QuerySetId, requestXml) {

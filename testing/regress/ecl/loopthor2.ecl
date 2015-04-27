@@ -15,19 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
-
-#option ('newChildQueries', true)
-
-export namesRecord := 
+namesRecord :=
             RECORD
 string20        surname;
 string10        forename;
 integer2        age := 25;
             END;
 
-export namesTable := dataset('x',namesRecord,FLAT);
-export namesTable2 := dataset([
+namesTable := dataset('x',namesRecord,FLAT);
+namesTable2 := dataset([
         {'Halliday','Gavin',31},
         {'Halliday','Liz',30},
         {'Salter','Abi',10},
@@ -35,24 +31,24 @@ export namesTable2 := dataset([
 
 two := 2 : stored('two');
 
-export namesRecord thetf(namesRecord l, namesRecord r) := TRANSFORM
+namesRecord thetf(namesRecord l, namesRecord r) := TRANSFORM
  SELF.age := r.age + l.age;
  SELF := l;
 END;
 
-export dostuff1(DATASET(namesRecord) ds) := FUNCTION
+dostuff1(DATASET(namesRecord) ds) := FUNCTION
  sds := SORT(ds, surname);
  ta := ITERATE(sds, thetf(LEFT,RIGHT));
  RETURN ta;
 END;
 
-export dostuff2(DATASET(namesRecord) ds) := FUNCTION
+dostuff2(DATASET(namesRecord) ds) := FUNCTION
  sds := SORT(ds, forename);
  ta := ITERATE(sds, thetf(LEFT,RIGHT));
  RETURN ta;
 END;
 
-export dostuff3(DATASET(namesRecord) ds) := FUNCTION
+dostuff3(DATASET(namesRecord) ds) := FUNCTION
  ddd := DEDUP(ds, forename);
  sds := SORT(ddd, surname, age);
  ta := ITERATE(sds, thetf(LEFT,RIGHT));
@@ -65,7 +61,7 @@ doit(DATASET(namesRecord) ds) := FUNCTION
 END;
 
 
-export matches(dataset(namesRecord) ds, unsigned anum = 38) := MODULE
+matches(dataset(namesRecord) ds, unsigned anum = 38) := MODULE
 
   lhs := dostuff1(ds);
   _rhs := dostuff2(ds);

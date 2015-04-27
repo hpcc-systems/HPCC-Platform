@@ -87,6 +87,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_CHECK_DFS "--check-dfs"
 #define ECLOPT_UPDATE_DFS "--update-dfs"
 #define ECLOPT_GLOBAL_SCOPE "--global-scope"
+#define ECLOPT_DELETE_FILES "--delete"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
@@ -145,6 +146,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_MANIFEST_DASH "-manifest"
 #define ECLOPT_LEGACY "--legacy"
 #define ECLOPT_LEGACY_DASH "-legacy"
+#define ECLOPT_DEBUG "--debug"
+#define ECLOPT_DEBUG_DASH "-g"
 
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
@@ -158,6 +161,7 @@ bool extractEclCmdOption(bool & option, IProperties * globals, const char * envN
 bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval);
 
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
+void addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValue> &values);
 
 enum eclObjParameterType
 {
@@ -241,7 +245,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1)
+    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1), optDebug(false)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -256,11 +260,13 @@ public:
             "   --ecl-only             Send ecl text to hpcc without generating archive\n"
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
             "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
+            "   -Dname=value           Override the definition of a global attribute 'name'\n"
             " eclcc options:\n"
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
             "   --manifest             Specify path to manifest file\n"
             "   --legacy               Use legacy import semantics (deprecated)\n"
+            "   --debug, -g            Enable debug symbols in generated code\n"
         );
     }
 public:
@@ -272,9 +278,11 @@ public:
     StringAttr optAttributePath;
     StringAttr optSnapshot;
     IArrayOf<IEspNamedValue> debugValues;
+    IArrayOf<IEspNamedValue> definitions;
     unsigned optResultLimit;
     bool optNoArchive;
     bool optLegacy;
+    bool optDebug;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon

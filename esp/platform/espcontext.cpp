@@ -418,7 +418,7 @@ public:
         m_traceValues.append(str.str());
     }
 
-    virtual void addTraceSummaryValue(const char *name, int value)
+    virtual void addTraceSummaryValue(const char *name, __int64 value)
     {
         StringBuffer str;
         if (name && *name)
@@ -767,9 +767,10 @@ void setCFD(const char* cfd)
     g_cfd.clear();
     if(cfd&&*cfd)
         g_cfd.append(cfd);
-
     g_cfd.trim();
-    if(g_cfd.length() > 0)
+    if (g_cfd.length())
+        makeAbsolutePath(g_cfd, true);
+    if (g_cfd.length())
     {
         char lastChar = g_cfd.charAt(g_cfd.length() - 1);
         if(lastChar != PATHSEPCHAR && lastChar != '/')

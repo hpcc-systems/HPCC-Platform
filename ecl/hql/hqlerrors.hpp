@@ -18,14 +18,7 @@
 #define _HQLERRORS_HPP_
 
 
-/* Error severity: obsoleted */
-
-#define ERR_SEMANTIC                1    /* no resulting expression tree */
-#define ERR_SYNTACTIC               2    /* there is an expression tree, but should not be executed */
-#define ERR_FATAL                   3    /* fatal error: unrecoverable error */
-
 ///////////////////////////////////////////////////////////////////////////////
-/* Warning numbers */
 
 #define WRN_MACROEXPANSION          1001 /* error in macro (see error following this warning) */
 #define WRN_LOCALNONDIST            1004 /* LOCAL specified on dataset that is not distributed */
@@ -73,8 +66,10 @@
 #define WRN_RECORDMANYFIELDS        1049
 #define WRN_RESERVED_FUTURE         1050 /* Identifier likely to be reserved in future versions */
 #define WRN_SILLY_EXISTS            1051
+#define WRN_INT_OR_RANGE_EXPECTED   1052 /* Integer or integer range (i.e. 2..3) expected when real detected */
+#define WRN_UNRESOLVED_SYMBOL       1053
 
-//#define ECL_WARN_END          1100
+//Do not define any warnings > 1099 - use the range below instead
 
 ///////////////////////////////////////////////////////////////////////////////
 /* Error numbers */
@@ -425,6 +420,12 @@
 #define ERR_BAD_JOINGROUP_FIELD     2393
 #define ERR_CANNOT_ACCESS_CONTAINER 2394
 #define ERR_RESULT_IGNORED_SCOPE    2395
+#define ERR_INDEX_DEPEND_DATASET    2396
+#define ERR_DUBIOUS_NAME            2397
+#define ERR_DUPLICATE_FILENAME      2398
+#define ERR_DUPLICATE_SOURCE        2399
+
+#define ERR_CPP_COMPILE_ERROR       2999
 
 #define ERR_ASSERTION_FAILS         100000
 
@@ -476,6 +477,7 @@
 #define HQLERR_AtmostLegacyMismatch             3134
 #define HQLERR_PropertyArgumentNotConstant      3135
 #define HQLERR_InvalidErrorCategory             3136
+#define HQLERR_MultipleHashWebserviceCalls      3137
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -514,6 +516,7 @@
 #define HQLERR_AtmostLegacyMismatch_Text        "Legacy JOIN condition on field[1..*] should be included in the optional fields"
 #define HQLERR_PropertyArgumentNotConstant_Text "The argument to attribute '%s' must be a constant"
 #define HQLERR_InvalidErrorCategory_Text        "Unrecognised ONWARNING category '%s'"
+#define HQLERR_MultipleHashWebserviceCalls_Text "#webservice can only be called once"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

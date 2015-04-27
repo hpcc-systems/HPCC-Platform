@@ -69,13 +69,13 @@ void checkMultiThorMemoryThreshold(bool inc)
         memsize_t used = 0; // JCSMORE - might work via callback in new scheme
         if (MTlocked) {
             if (used<MTthreshold/2) {
-                DBGLOG("Multi Thor threshold lock released: %"I64F"d",(offset_t)used);
+                DBGLOG("Multi Thor threshold lock released: %" I64F "d",(offset_t)used);
                 MTlocked = false;
                 MTthresholdnotify->give(used);
             }
         }
         else if (used>MTthreshold) {
-            DBGLOG("Multi Thor threshold  exceeded: %"I64F"d",(offset_t)used);
+            DBGLOG("Multi Thor threshold  exceeded: %" I64F "d",(offset_t)used);
             if (!MTthresholdnotify->take(used)) {
                 throw createOutOfMemException(-9,
                     1024,  // dummy value
@@ -173,15 +173,15 @@ StringBuffer &getRecordString(const void *key, IOutputRowSerializer *serializer,
 
 //====
 
+// NB: rows are transferred into derivatives of CSpillableStreamBase and read or spilt, but are never written to
 class CSpillableStreamBase : public CSimpleInterface, implements roxiemem::IBufferedRowCallback
 {
 protected:
     CActivityBase &activity;
     IRowInterfaces *rowIf;
-    bool preserveNulls, ownsRows, useCompression;
+    bool preserveNulls, ownsRows, useCompression, spillPriority;
     CThorSpillableRowArray rows;
     OwnedIFile spillFile;
-    Owned<IRowStream> spillStream;
 
     bool spillRows()
     {
@@ -197,22 +197,26 @@ protected:
 
         VStringBuffer spillPrefixStr("SpillableStream(%d)", SPILL_PRIORITY_SPILLABLE_STREAM); // const for now
         rows.save(*spillFile, useCompression, spillPrefixStr.str()); // saves committed rows
+        rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         return true;
     }
-
+    void clearSpillingCallback()
+    {
+        activity.queryJob().queryRowManager()->removeRowBuffer(this);
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSpillableStreamBase(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls)
-        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf, _preserveNulls), preserveNulls(_preserveNulls)
+    CSpillableStreamBase(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriorirty)
+        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf, _preserveNulls), preserveNulls(_preserveNulls), spillPriority(_spillPriorirty)
     {
+    	assertex(inRows.isFlushed());
         rows.swap(inRows);
         useCompression = false;
     }
     ~CSpillableStreamBase()
     {
-        activity.queryJob().queryRowManager()->removeRowBuffer(this);
-        spillStream.clear();
+        clearSpillingCallback();
         if (spillFile)
             spillFile->remove();
     }
@@ -220,7 +224,7 @@ public:
 // IBufferedRowCallback
     virtual unsigned getSpillCost() const
     {
-        return SPILL_PRIORITY_SPILLABLE_STREAM;
+        return spillPriority;
     }
     virtual bool freeBufferedRows(bool critical)
     {
@@ -262,8 +266,8 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
             CThorArrayLockBlock block(owner->rows);
             if (owner->spillFile) // i.e. has spilt
             {
+                owner->clearSpillingCallback();
                 assertex(((offset_t)-1) != outputOffset);
-                owner->rows.kill(); // no longer needed, frees pointer array
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (owner->preserveNulls)
                     rwFlags |= rw_grouped;
@@ -272,7 +276,10 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
                 return spillStream->nextRow();
             }
             else if (pos == owner->rows.numCommitted())
+            {
+                owner->clearSpillingCallback();
                 return NULL;
+            }
             return owner->rows.get(pos++);
         }
         virtual void stop() { }
@@ -291,8 +298,8 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls)
-        : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls)
+    CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority)
+        : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
     {
         activity.queryJob().queryRowManager()->addRowBuffer(this);
     }
@@ -303,6 +310,7 @@ public:
             CThorArrayLockBlock block(rows);
             if (spillFile)
             {
+                clearSpillingCallback();
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (preserveNulls)
                     rwFlags |= rw_grouped;
@@ -318,12 +326,13 @@ class CSpillableStream : public CSpillableStreamBase, implements IRowStream
 {
     rowidx_t pos, numReadRows, granularity;
     const void **readRows;
+    Owned<IRowStream> spillStream;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSpillableStream(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls)
-        : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls)
+    CSpillableStream(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority)
+        : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
     {
         useCompression = activity.getOptBool(THOROPT_COMPRESS_SPILLS, true);
         pos = numReadRows = 0;
@@ -336,6 +345,7 @@ public:
     }
     ~CSpillableStream()
     {
+        spillStream.clear();
         while (pos < numReadRows)
         {
             ReleaseThorRow(readRows[pos++]);
@@ -353,7 +363,7 @@ public:
             CThorArrayLockBlock block(rows);
             if (spillFile)
             {
-                rows.kill(); // no longer needed, frees pointer array
+                clearSpillingCallback();
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (preserveNulls)
                     rwFlags |= rw_grouped;
@@ -362,13 +372,17 @@ public:
                 spillStream.setown(createRowStream(spillFile, rowIf, rwFlags));
                 return spillStream->nextRow();
             }
-            rowidx_t fetch = rows.numCommitted();
-            if (0 == fetch)
+            rowidx_t available = rows.numCommitted();
+            if (0 == available)
                 return NULL;
-            if (fetch >= granularity)
-                fetch = granularity;
+            rowidx_t fetch = (available >= granularity) ? granularity : available;
             // consume 'fetch' rows
             rows.readBlock(readRows, fetch);
+            if (available == fetch)
+            {
+                clearSpillingCallback();
+                rows.kill();
+            }
             numReadRows = fetch;
             pos = 0;
         }
@@ -546,7 +560,7 @@ inline bool CThorExpandingRowArray::_ensure(rowidx_t requiredRows, unsigned maxS
         if (!resizeRowTable((void **)rows, capacity, true, callback, maxSpillCost)) // callback will reset capacity
         {
             if (throwOnOom)
-                throw MakeActivityException(&activity, 0, "Out of memory, allocating row array, had %"RIPF"d, trying to allocate %"RIPF"d elements", ordinality(), requiredRows);
+                throw MakeActivityException(&activity, 0, "Out of memory, allocating row array, had %" RIPF "d, trying to allocate %" RIPF "d elements", ordinality(), requiredRows);
             return false;
         }
     }
@@ -557,7 +571,7 @@ inline bool CThorExpandingRowArray::_ensure(rowidx_t requiredRows, unsigned maxS
         if (!resizeRowTable(stableTable, capacity, false, callback, maxSpillCost))
         {
             if (throwOnOom)
-                throw MakeActivityException(&activity, 0, "Out of memory, resizing stable row array, trying to allocate %"RIPF"d elements", currentMaxRows);
+                throw MakeActivityException(&activity, 0, "Out of memory, resizing stable row array, trying to allocate %" RIPF "d elements", currentMaxRows);
             return false;
         }
         // NB: If allocation of stableTable fails, 'rows' has expanded, but maxRows has not
@@ -632,6 +646,7 @@ void CThorExpandingRowArray::compact()
         }
     }
     numRows = freeFinger-rows;
+    // JCSMORE - this may be a good time to call IRowManager::compactRows
 }
 
 void CThorExpandingRowArray::kill()
@@ -1196,7 +1211,7 @@ void CThorSpillableRowArray::sort(ICompare &compare, unsigned maxCores)
     }
 }
 
-static int callbackSortRev(IInterface **cb2, IInterface **cb1)
+static int callbackSortRev(IInterface * const *cb2, IInterface * const *cb1)
 {
     rowidx_t i2 = ((IWritePosCallback *)(*cb2))->queryRecordNumber();
     rowidx_t i1 = ((IWritePosCallback *)(*cb1))->queryRecordNumber();
@@ -1211,7 +1226,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %"RIPF"d rows", tracingPrefix, n);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %" RIPF "d rows", tracingPrefix, n);
 
     if (useCompression)
         assertex(0 == writeCallbacks.ordinality()); // incompatible
@@ -1231,7 +1246,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
         ForEachItemIn(c, writeCallbacks)
             cbCopy.append(writeCallbacks.item(c));
         cbCopy.sort(callbackSortRev);
-        nextCB = &cbCopy.pop();
+        nextCB = &cbCopy.popGet();
         nextCBI = nextCB->queryRecordNumber();
     }
     Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags);
@@ -1251,7 +1266,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
                     nextCB->filePosition(writer->getPosition());
                     if (cbCopy.ordinality())
                     {
-                        nextCB = &cbCopy.pop();
+                        nextCB = &cbCopy.popGet();
                         nextCBI = nextCB->queryRecordNumber();
                     }
                     else
@@ -1273,7 +1288,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const c
     firstRow += n;
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
-    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, bytes = %"I64F"d", tracingPrefix, (__int64)bytesWritten);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, bytes = %" I64F "d", tracingPrefix, (__int64)bytesWritten);
     return n;
 }
 
@@ -1331,6 +1346,13 @@ void CThorSpillableRowArray::transferFrom(CThorExpandingRowArray &src)
     commitRows = numRows;
 }
 
+void CThorSpillableRowArray::transferFrom(CThorSpillableRowArray &src)
+{
+    CThorArrayLockBlock block(*this);
+    CThorExpandingRowArray::transferFrom(src);
+    commitRows = numRows;
+}
+
 void CThorSpillableRowArray::swap(CThorSpillableRowArray &other)
 {
     CThorArrayLockBlock block(*this);
@@ -1375,9 +1397,10 @@ void CThorSpillableRowArray::transferRowsCopy(const void **outRows, bool takeOwn
     }
 }
 
-IRowStream *CThorSpillableRowArray::createRowStream()
+IRowStream *CThorSpillableRowArray::createRowStream(unsigned spillPriority)
 {
-    return new CSpillableStream(activity, *this, rowIf, allowNulls);
+    assertex(rowIf);
+    return new CSpillableStream(activity, *this, rowIf, allowNulls, spillPriority);
 }
 
 
@@ -1387,7 +1410,7 @@ class CThorRowCollectorBase : public CSimpleInterface, implements roxiemem::IBuf
 protected:
     CActivityBase &activity;
     CThorSpillableRowArray spillableRows;
-    PointerIArrayOf<CFileOwner> spillFiles;
+    IPointerArrayOf<CFileOwner> spillFiles;
     Owned<IOutputRowSerializer> serializer;
     RowCollectorSpillFlags diskMemMix;
     rowcount_t totalRows;
@@ -1415,7 +1438,7 @@ protected:
         StringBuffer tempPrefix, tempName;
         if (iCompare)
         {
-            ActPrintLog(&activity, "Sorting %"RIPF"d rows", spillableRows.numCommitted());
+            ActPrintLog(&activity, "Sorting %" RIPF "d rows", spillableRows.numCommitted());
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
             ActPrintLog(&activity, "Sort took: %f", ((float)timer.elapsedMs())/1000);
@@ -1543,10 +1566,10 @@ protected:
                     return NULL;
                 }
                 if (!shared)
-                    instrms.append(*spillableRows.createRowStream()); // NB: stream will take ownership of rows in spillableRows
+                    instrms.append(*spillableRows.createRowStream(spillPriority)); // NB: stream will take ownership of rows in spillableRows
                 else
                 {
-                    spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, preserveGrouping));
+                    spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, preserveGrouping, spillPriority));
                     instrms.append(*spillableRowSet->createRowStream());
                 }
             }
@@ -1647,6 +1670,12 @@ public:
         spillableRows.transferFrom(src);
         enableSpillingCallback();
     }
+    virtual void transferRowsIn(CThorSpillableRowArray &src)
+    {
+        reset();
+        spillableRows.transferFrom(src);
+        enableSpillingCallback();
+    }
     virtual void setup(ICompare *_iCompare, StableSortFlag _stableSort, RowCollectorSpillFlags _diskMemMix, unsigned _spillPriority)
     {
         iCompare = _iCompare;
@@ -1687,9 +1716,10 @@ public:
 enum TRLGroupFlag { trl_ungroup, trl_preserveGrouping, trl_stopAtEog };
 class CThorRowLoader : public CThorRowCollectorBase, implements IThorRowLoader
 {
-    IRowStream *load(IRowStream *in, const bool &abort, TRLGroupFlag grouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage)
+    IRowStream *load(IRowStream *in, const bool &abort, TRLGroupFlag grouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool doReset)
     {
-        reset();
+        if (doReset)
+            reset();
         enableSpillingCallback();
         setPreserveGrouping(trl_preserveGrouping == grouping);
         while (!abort)
@@ -1726,6 +1756,7 @@ public:
     virtual unsigned overflowScale() const { return CThorRowCollectorBase::overflowScale(); }
     virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort) { CThorRowCollectorBase::transferRowsOut(dst, sort); }
     virtual void transferRowsIn(CThorExpandingRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
+    virtual void transferRowsIn(CThorSpillableRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50)
     {
         CThorRowCollectorBase::setup(iCompare, stableSort, diskMemMix, spillPriority);
@@ -1733,14 +1764,14 @@ public:
     virtual void ensure(rowidx_t max) { CThorRowCollectorBase::ensure(max); }
     virtual void setOptions(unsigned options)  { CThorRowCollectorBase::setOptions(options); }
 // IThorRowLoader
-    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage)
+    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool doReset)
     {
         assertex(!iCompare || !preserveGrouping); // can't sort if group preserving
-        return load(in, abort, preserveGrouping?trl_preserveGrouping:trl_ungroup, allMemRows, memUsage);
+        return load(in, abort, preserveGrouping?trl_preserveGrouping:trl_ungroup, allMemRows, memUsage, doReset);
     }
-    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows, memsize_t *memUsage)
+    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool doReset)
     {
-        return load(in, abort, trl_stopAtEog, allMemRows, memUsage);
+        return load(in, abort, trl_stopAtEog, allMemRows, memUsage, doReset);
     }
 };
 
@@ -1776,6 +1807,7 @@ public:
     virtual unsigned overflowScale() const { return CThorRowCollectorBase::overflowScale(); }
     virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort) { CThorRowCollectorBase::transferRowsOut(dst, sort); }
     virtual void transferRowsIn(CThorExpandingRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
+    virtual void transferRowsIn(CThorSpillableRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
     virtual void setup(ICompare *iCompare, StableSortFlag stableSort, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50)
     {
         CThorRowCollectorBase::setup(iCompare, stableSort, diskMemMix, spillPriority);
@@ -2012,7 +2044,7 @@ public:
     CThorAllocator(memsize_t memSize, unsigned memorySpillAt, IContextLogger &_logctx, roxiemem::RoxieHeapFlags _defaultFlags) : logctx(_logctx), defaultFlags(_defaultFlags)
     {
         allocatorMetaCache.setown(createRowAllocatorCache(this));
-        rowManager.setown(roxiemem::createRowManager(memSize, NULL, logctx, allocatorMetaCache, false));
+        rowManager.setown(roxiemem::createRowManager(memSize, NULL, logctx, allocatorMetaCache, false, true));
         rowManager->setMemoryLimit(memSize, 0==memorySpillAt ? 0 : memSize/100*memorySpillAt);
         const bool paranoid = false;
         if (paranoid)
@@ -2392,11 +2424,4 @@ public:
 IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t sz)
 {
     return new COutputMetaWithExtra(meta, sz);
-}
-
-
-
-IPerfMonHook *createThorMemStatsPerfMonHook(IPerfMonHook *chain)
-{
-    return LINK(chain);
 }

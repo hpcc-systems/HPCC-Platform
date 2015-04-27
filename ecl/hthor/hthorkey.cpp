@@ -28,7 +28,6 @@
 
 #define MAX_FETCH_LOOKAHEAD 1000
 #define IGNORE_FORMAT_CRC_MISMATCH_WHEN_NO_METADATA
-#define DEFAULT_KJ_PRESERVES_ORDER 1
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
@@ -282,13 +281,13 @@ public:
     virtual bool outputToFile(const char *) { return false; } 
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorActivityBase::updateProgress(progress);
-        IPropertyTree &node = progress.updateNode(subgraphId, activityId);
-        setProgress(node, "postfiltered", queryPostFiltered());
-        setProgress(node, "seeks", querySeeks());
-        setProgress(node, "scans", queryScans());
+        StatsActivityScope scope(progress, activityId);
+        progress.addStatistic(StNumPostFiltered, queryPostFiltered());
+        progress.addStatistic(StNumIndexSeeks, querySeeks());
+        progress.addStatistic(StNumIndexScans, queryScans());
     }
 
     virtual unsigned querySeeks() const
@@ -372,7 +371,7 @@ protected:
 
 //for layout translation
     Owned<IRecordLayoutTranslator> layoutTrans;
-    PointerIArrayOf<IRecordLayoutTranslator> layoutTransArray;
+    IPointerArrayOf<IRecordLayoutTranslator> layoutTransArray;
     bool gotLayoutTrans;
 };
 
@@ -702,7 +701,7 @@ void CHThorIndexReadActivityBase::getLayoutTranslators()
                 StringBuffer buff;
                 buff.append("Using record layout translation to correct layout mismatch on reading index ").append(f.queryLogicalName());
                 WARNLOG("%s", buff.str());
-                agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+                agent.addWuException(buff.str(), WRN_UseLayoutTranslation, SeverityWarning, "hthor");
             }
             layoutTransArray.append(layoutTrans.getClear());
         } while(superIterator->next());
@@ -715,7 +714,7 @@ void CHThorIndexReadActivityBase::getLayoutTranslators()
             StringBuffer buff;
             buff.append("Using record layout translation to correct layout mismatch on reading index ").append(df->queryLogicalName());
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+            agent.addWuException(buff.str(), WRN_UseLayoutTranslation, SeverityWarning, "hthor");
         }
     }
 }
@@ -1081,7 +1080,7 @@ extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, 
         StringBuffer buff;
         buff.append("Skipping OPT index read of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1263,7 +1262,7 @@ extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_ag
         StringBuffer buff;
         buff.append("Skipping OPT index normalize of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1381,7 +1380,7 @@ extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_ag
         StringBuffer buff;
         buff.append("Skipping OPT index aggregate of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullAggregateActivity(_agent, _activityId, _subgraphId, arg, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1487,7 +1486,7 @@ extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent,
         StringBuffer buff;
         buff.append("Skipping OPT index count of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullCountActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1599,7 +1598,7 @@ extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext
         StringBuffer buff;
         buff.append("Skipping OPT index group aggregate of nonexistent file ").append(lfn);
         WARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1838,7 +1837,7 @@ public:
                     else
                         expectedSize = props.getPropInt64("@size", -1);
                     if(thissize != expectedSize && expectedSize != -1)
-                        throw MakeStringException(0, "File size mismatch: file %s was supposed to be %"I64F"d bytes but appears to be %"I64F"d bytes", ifile->queryFilename(), expectedSize, thissize); 
+                        throw MakeStringException(0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", ifile->queryFilename(), expectedSize, thissize); 
                     if(blockcompressed)
                         rawFile.setown(createCompressedFileReader(ifile,eexp));
                     else
@@ -1934,7 +1933,7 @@ protected:
         offset_t partsize = part->queryAttributes().getPropInt64("@size", -1);
         if (partsize==-1)
         {
-            MTIME_SECTION(timer, "Fetch remote file size");
+            MTIME_SECTION(queryActiveTimer(), "Fetch remote file size");
             unsigned numCopies = part->numCopies();
             for (unsigned copy=0; copy < numCopies; copy++)
             {
@@ -2019,7 +2018,7 @@ public:
     {
         PARTHANDLER * part = binsearch(rp, parts, numParts, this);
         if(!part)
-            throw MakeStringException(1002, "FETCH: file position %"I64F"d out of range", rp);
+            throw MakeStringException(1002, "FETCH: file position %" I64F "d out of range", rp);
         part->addRow(new REQUEST(left, rp, seq));
     }
 
@@ -2218,7 +2217,7 @@ public:
                 StringBuffer buff;
                 buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
                 WARNLOG("%s", buff.str());
-                agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+                agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
             }
         }
         inputThread.setown(new InputHandler(this));
@@ -2483,7 +2482,7 @@ public:
             StringBuffer buff;
             buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+            agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
         }
             
         csvSplitter.init(_arg.getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
@@ -3398,7 +3397,7 @@ public:
     { 
         CHThorThreadedActivityBase::ready(); 
 
-        preserveOrder = ((helper.getJoinFlags() & JFkeepsorted) != 0) || agent.queryWorkUnit()->getDebugValueBool("__hthor_kj_always_preserve_order", DEFAULT_KJ_PRESERVES_ORDER);
+        preserveOrder = ((helper.getJoinFlags() & JFreorderable) == 0);
         preserveGroups = helper.queryOutputMeta()->isGrouped();
         needsDiskRead = helper.diskAccessRequired();
         extractJoinFields = ((helper.getJoinFlags() & JFextractjoinfields) != 0);
@@ -3930,7 +3929,7 @@ public:
             StringBuffer buff;
             buff.append("Skipping OPT keyed join against nonexistent file ").append(lfn);
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
+            agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
         }
         CHThorThreadedActivityBase::start();
     }
@@ -4010,15 +4009,15 @@ public:
         helper.onLimitExceeded();
     }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {
         CHThorThreadedActivityBase::updateProgress(progress);
-        IPropertyTree &node = progress.updateNode(subgraphId, activityId);
-        setProgress(node, "prefiltered", atomic_read(&prefiltered));
-        setProgress(node, "postfiltered", atomic_read(&postfiltered));
-        setProgress(node, "skips", atomic_read(&skips));
-        setProgress(node, "seeks", seeks);
-        setProgress(node, "scans", scans);
+        StatsActivityScope scope(progress, activityId);
+        progress.addStatistic(StNumPreFiltered, atomic_read(&prefiltered));
+        progress.addStatistic(StNumPostFiltered, atomic_read(&postfiltered));
+        progress.addStatistic(StNumIndexSkips, atomic_read(&skips));
+        progress.addStatistic(StNumIndexSeeks, seeks);
+        progress.addStatistic(StNumIndexScans, scans);
     }
 
 protected:
@@ -4072,14 +4071,6 @@ protected:
     {
         if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
             ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), f, false, true);
-    }
-
-    virtual void warn(char const * msg)
-    {
-        StringBuffer buff;
-        buff.append(msg).append(" for index ").append(dFile->queryLogicalName());
-        WARNLOG("%s", buff.str());
-        agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
     }
 
     virtual void fail(char const * msg)

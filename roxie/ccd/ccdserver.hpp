@@ -79,6 +79,7 @@ public:
     unsigned graphid;
 
     StringAttr libraryName;
+    StringAttr embeddedGraphName;
     unsigned interfaceHash;
     bool embedded;
 };
@@ -178,6 +179,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void serializeSkipInfo(MemoryBuffer &out, unsigned seekLen, const void *rawSeek, unsigned numFields, const void * seek, const SmartStepExtra &stepExtra) const = 0;
     virtual ThorActivityKind getKind() const = 0;
     virtual const IRoxieContextLogger &queryLogCtx() const = 0;
+    virtual void mergeStats(MemoryBuffer &stats) = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory
@@ -198,7 +200,8 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual IOutputMetaData *queryOutputMeta() const = 0;
     virtual IHThorArg &getHelper() const = 0;
     virtual IRoxieServerActivity *createFunction(IHThorArg &helper, IProbeManager *_probeManager) const = 0;
-    virtual void noteProcessed(unsigned idx, unsigned processed, unsigned __int64 totalCycles, unsigned __int64 localCycles) const = 0;
+    virtual void noteProcessed(unsigned idx, unsigned processed) const = 0;
+    virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, const ActivityTimeAccumulator &totalCycles, cycle_t localCycles) const = 0;
     virtual void onCreateChildQueries(IRoxieSlaveContext *ctx, IHThorArg *colocalArg, IArrayOf<IActivityGraph> &childGraphs) const = 0;
     virtual void createChildQueries(IArrayOf<IActivityGraph> &childGraphs, IRoxieServerActivity *parentActivity, IProbeManager *_probeManager, const IRoxieContextLogger &_logctx) const = 0;
     virtual void noteStarted() const = 0;
@@ -209,8 +212,8 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual bool isGraphInvariant() const = 0;
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
     virtual IDefRecordMeta *queryActivityMeta() const = 0;
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const = 0;
     virtual unsigned numInputs() const = 0;
+    virtual const StatisticsMapping &queryStatsMapping() const = 0;
 };
 interface IGraphResult : public IInterface
 {
@@ -340,7 +343,7 @@ extern IRoxieServerActivityFactory *createRoxieServerRollupActivityFactory(unsig
 extern IRoxieServerActivityFactory *createRoxieServerNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
 extern IRoxieServerActivityFactory *createRoxieServerNormalizeChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
 extern IRoxieServerActivityFactory *createRoxieServerNormalizeLinkedChildActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
-extern IRoxieServerActivityFactory *createRoxieServerSortActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
+extern IRoxieServerActivityFactory *createRoxieServerSortActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode);
 extern IRoxieServerActivityFactory *createRoxieServerThroughSpillActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
 extern IRoxieServerActivityFactory *createRoxieServerSplitActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
 extern IRoxieServerActivityFactory *createRoxieServerPipeReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);

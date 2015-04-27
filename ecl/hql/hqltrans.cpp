@@ -968,10 +968,17 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
         }
     case no_select:
         {
+            IHqlExpression * ds = expr->queryChild(0);
             IHqlExpression * field = expr->queryChild(1);
-            OwnedHqlExpr newDs = transform(expr->queryChild(0));
+            OwnedHqlExpr newDs = transform(ds);
+            if (newDs == ds)
+                return LINK(expr);
+
             children.append(*LINK(newDs));
-            children.append(*lookupNewSelectedField(newDs, field));
+            if (ds->queryRecord() == newDs->queryRecord())
+                children.append(*LINK(field));
+            else
+                children.append(*lookupNewSelectedField(newDs, field));
             break;
         }
     }
@@ -2483,12 +2490,12 @@ void NestedHqlTransformer::beginNestedScope()
 
 void NestedHqlTransformer::endNestedScope()
 {
-    unsigned prevTransforms = depthStack.pop();
-    unsigned prevSelectors = depthStack.pop();
+    unsigned prevTransforms = depthStack.popGet();
+    unsigned prevSelectors = depthStack.popGet();
 
     while (savedSelectors.ordinality() != prevSelectors)
     {
-        IHqlExpression & cur = savedSelectors.pop();
+        IHqlExpression & cur = savedSelectors.popGet();
         NewHqlTransformer::setTransformedSelector(&cur, NULL);
     }
 
@@ -2497,7 +2504,7 @@ void NestedHqlTransformer::endNestedScope()
         OwnedHqlExpr prev = &savedTransformedValue.popGet();
         if (prev == savedNull)
             prev.clear();
-        IHqlExpression & cur = savedTransformed.pop();
+        IHqlExpression & cur = savedTransformed.popGet();
         NewHqlTransformer::setTransformed(&cur, prev);
     }
 }
@@ -2552,6 +2559,7 @@ bool onlyTransformOnce(IHqlExpression * expr)
     case no_thor:
     case no_csv:
     case no_xml:
+    case no_json:
     case no_list:
         return (expr->numChildren() == 0);
     case no_select:
@@ -4621,45 +4629,6 @@ void verifySplitConsistency(IHqlExpression * expr)
     SplitterVerifier checker;
     checker.analyse(expr, 0);
 }
-
-//---------------------------------------------------------------------------
-
-static HqlTransformerInfo globalToParameterTransformerInfo("GlobalToParameterTransformer");
-class GlobalToParameterTransformer : public QuickHqlTransformer
-{
-public:
-    GlobalToParameterTransformer(HqlExprArray & _parameters, HqlExprArray & _defaults) 
-        : QuickHqlTransformer(globalToParameterTransformerInfo, NULL), parameters(_parameters), defaults(_defaults)
-    {}
-
-    virtual IHqlExpression * createTransformedBody(IHqlExpression * expr);
-
-protected:
-    HqlExprArray & parameters;
-    HqlExprArray & defaults;
-};
-
-IHqlExpression * GlobalToParameterTransformer::createTransformedBody(IHqlExpression * expr)
-{
-    if (expr->getOperator() != no_colon)
-        return QuickHqlTransformer::createTransformedBody(expr);
-
-    StringBuffer paramName;
-    paramName.append("_implicit_hidden_").append(parameters.ordinality());
-    HqlExprArray attrs;
-    attrs.append(*createAttribute(_hidden_Atom));
-    IHqlExpression * param = createParameter(createIdAtom(paramName.str()), parameters.ordinality(), expr->getType(), attrs);
-    parameters.append(*param);
-    defaults.append(*LINK(expr));
-    return LINK(param);
-}
-
-IHqlExpression * convertWorkflowToImplicitParmeters(HqlExprArray & parameters, HqlExprArray & defaults, IHqlExpression * expr)
-{
-    GlobalToParameterTransformer transformer(parameters, defaults);
-    return transformer.transform(expr);
-}
-
 
 //---------------------------------------------------------------------------
 

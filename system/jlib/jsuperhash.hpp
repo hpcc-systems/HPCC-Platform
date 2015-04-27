@@ -42,8 +42,10 @@ public:
     void             reinit(unsigned initsize);
     void             kill(void);
     inline unsigned  count() const { return tablecount; }
+    inline unsigned  ordinality() const { return tablecount; }
     inline memsize_t queryMem() const { return tablesize * sizeof(void *); } // hash table table memory size
     void *           next(const void *et) const;
+    void             ensure(unsigned mincount);
 
 #ifdef TRACE_HASH
     void dumpStats();
@@ -57,6 +59,7 @@ protected:
     void             addNew(void * et); //use this when you are sure the key does not already exist in the table (saves some needless matching)
     void             addNew(void * donor, unsigned hash);
     void *           addOrFind(void *);
+    void *           addOrFindExact(void * donor);
     inline void *    find(const void * param) const { return table[doFind(param)]; }
     inline void *    find(unsigned hashcode, const void * param) const { return table[doFind(hashcode, param)]; }
     void *           findElement(unsigned hashcode, const void * searchE) const;
@@ -79,6 +82,7 @@ private:
     unsigned         doFindExact(const void *) const;
     void             doKill(void);
     void             expand();
+    void             expand(unsigned newsize);
     void             note_searchlen(int) const;
 
     virtual void     onAdd(void *et) = 0;
@@ -98,6 +102,7 @@ protected:
 #ifdef TRACE_HASH
     mutable int      search_tot;
     mutable int      search_num;
+    mutable int      search_max;
 #endif
 };
 
@@ -113,8 +118,12 @@ class SuperHashTableOf : public SuperHashTable
       { return SuperHashTable::replace(&et); }
     inline ET *      addOrFind(ET & et)
       { return static_cast<ET *>(SuperHashTable::addOrFind(&et)); }
+    inline ET *      addOrFindExact(ET & et)
+      { return static_cast<ET *>(SuperHashTable::addOrFindExact(&et)); }
     inline ET *      find(const FP * fp) const
       { return static_cast<ET *>(SuperHashTable::find(fp)); }
+    inline ET *      next(const ET * et) const
+      { return static_cast<ET *>(SuperHashTable::next(et)); }
     inline ET *      find(unsigned hashCode, const FP * fp) const
       { return static_cast<ET *>(SuperHashTable::find(hashCode, fp)); }
     inline ET *      findExact(const ET & et) const
@@ -207,6 +216,43 @@ class SuperHashIteratorOf : public SuperHashIterator
     SuperHashIteratorOf(const SuperHashTable & _table, bool linkTable=true) : SuperHashIterator(_table, linkTable) {}
     ET &             query()
       { return *(static_cast<ET *>(queryPointer())); }
+};
+
+template <class ET, typename INTERFACE, bool LINKTABLE>
+class SuperHashIIteratorOf : public CInterfaceOf<INTERFACE>
+{
+  public:
+    SuperHashIIteratorOf(const SuperHashTable & _table) : table(_table) { cur = NULL; if (LINKTABLE) table.Link(); }
+    ~SuperHashIIteratorOf() { if (LINKTABLE) table.Release(); }
+
+    virtual bool     first(void)
+    {
+        cur = table.next(NULL);
+        return cur != NULL;
+    }
+    virtual bool     isValid(void)
+    {
+        return cur != NULL;
+    }
+    virtual bool     next(void)
+    {
+        if (cur) cur = table.next(cur);
+        return (cur != NULL);
+    }
+    virtual ET & query()
+    {
+        assertex(cur);
+        return *(static_cast<ET *>(cur));
+    }
+    virtual ET & get()
+    {
+        assertex(cur);
+        return OLINK(*(static_cast<ET *>(cur)));
+    }
+
+private:
+    const SuperHashTable & table;
+    void*            cur;
 };
 
 template <class ET>

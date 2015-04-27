@@ -31,8 +31,7 @@
 #include <time.h>
 #include <dirent.h>
 #include <utime.h>
-
-
+#include <sys/syscall.h>
 #include <sys/vfs.h>
 #include <sys/mman.h>
 #include <sys/sendfile.h>
@@ -287,7 +286,7 @@ bool WindowsCreateDirectory(const char * path)
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
                              // retrying improves chance of success
             ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME))) 
-            throw MakeOsException(err,"WindowsCreateDirectory %s", path);
+            throw makeOsExceptionV(err,"WindowsCreateDirectory %s", path);
         //PROGLOG("Retrying(%d) WindowsCreateDirectory %s, err=%d",retry,filename,err);
         Sleep(retry*100); 
     }
@@ -602,7 +601,7 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
     {   
         DWORD err = GetLastError();
         if ((IFOread!=mode) || ((err!=ERROR_FILE_NOT_FOUND) && (err!=ERROR_PATH_NOT_FOUND)))
-            throw MakeOsException(err,"CFile::open %s (%x, %x)", filename.get(), mode, share);
+            throw makeOsExceptionV(err,"CFile::open %s (%x, %x)", filename.get(), mode, share);
         return NULLFILE;
     }
 #else
@@ -634,7 +633,7 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
     if (handle == -1)
     {
         if ((IFOread!=mode) || (errno != ENOENT))
-            throw MakeErrnoException(errno, "CFile::open %s", filename.get());
+            throw makeErrnoExceptionV(errno, "CFile::open %s", filename.get());
         return NULLFILE;
     }
     // check not a directory (compatible with windows)
@@ -644,12 +643,12 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
         int err = errno;
         close(handle);
         handle = NULLFILE;
-        throw MakeErrnoException(err, "CFile::open fstat %s", filename.get());
+        throw makeErrnoExceptionV(err, "CFile::open fstat %s", filename.get());
     }
     if (S_ISDIR(info.st_mode)) {
         close(handle);
         handle = NULLFILE;
-        throw MakeErrnoException(EISDIR, "CFile::open %s", filename.get());
+        throw makeErrnoExceptionV(EISDIR, "CFile::open %s", filename.get());
     }
 
 #ifdef CFILEIOTRACE
@@ -701,7 +700,7 @@ bool CFile::remove()
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
                              // retrying improves chance of success
             ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME))) 
-            throw MakeOsException(err,"CFile::remove %s", filename.get());
+            throw makeOsExceptionV(err, "CFile::remove %s", filename.get());
         //PROGLOG("Retrying(%d) DeleteFile %s, err=%d",retry,filename,err);
         Sleep(retry*100); 
     }
@@ -716,7 +715,7 @@ bool CFile::remove()
             return true;
     }
     if (ENOENT!=errno)
-        throw MakeErrnoException("CFile::remove %s", filename.get());
+        throw makeErrnoExceptionV("CFile::remove %s", filename.get());
     return false;
 #endif
 }
@@ -741,7 +740,7 @@ void CFile::rename(const char *newname)
             dst = rfn.getLocalPath(path.clear()).str();
     }
     if (-1 == ::rename(filename, dst)) 
-        throw MakeErrnoException("CFile::rename(%s, %s)", filename.get(),dst);
+        throw makeErrnoExceptionV("CFile::rename(%s, %s)", filename.get(),dst);
     filename.set(path);
 }
 
@@ -765,13 +764,13 @@ void CFile::move(const char *newname)
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
                              // retrying improves chance of success
             ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME))) 
-            throw MakeOsException(err,"CFile::move(%s, %s)", filename.get(), newname);
+            throw makeOsExceptionV(err, "CFile::move(%s, %s)", filename.get(), newname);
         Sleep(retry*100); 
     }
 #else
     int ret=::rename(filename.get(),newname);
     if (ret==-1)
-        throw MakeErrnoException("CFile::move(%s, %s)", filename.get(), newname);
+        throw makeErrnoExceptionV("CFile::move(%s, %s)", filename.get(), newname);
 #endif
     filename.set(newname);
 }
@@ -888,7 +887,7 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
         StringBuffer s;
         s.append("copyFile target=").append(target->queryFilename()).append(" source=").append(queryFilename()).append("; read/write failure").append(": ");
         e->errorMessage(s);
-        IException *e2 = MakeOsException(e->errorCode(), "%s", s.str());
+        IException *e2 = makeOsExceptionV(e->errorCode(), "%s", s.str());
         e->Release();
         throw e2;
     }
@@ -908,12 +907,12 @@ void CFile::setReadOnly(bool ro)
     {
         DWORD err = GetLastError();
         if ( (err!=ERROR_FILE_NOT_FOUND) && (err!=ERROR_PATH_NOT_FOUND) )
-            throw MakeOsException(err, "CFile::setReadOnly %s", filename.get());
+            throw makeOsExceptionV(err, "CFile::setReadOnly %s", filename.get());
     }
 #else
     struct stat info;
     if (stat(filename, &info) != 0)
-        throw MakeErrnoException("CFile::setReadOnly() %s", filename.get());
+        throw makeErrnoExceptionV("CFile::setReadOnly() %s", filename.get());
     // not sure correct but consistant with isReadOnly
     if (ro)
         info.st_mode &= ~(S_IWUSR|S_IWGRP|S_IWOTH);
@@ -955,13 +954,13 @@ bool CFile::setCompression(bool set)
 #ifdef _WIN32
     DWORD attr=::GetFileAttributes(filename.get());
     if(attr==-1)
-        throw MakeOsException(::GetLastError(), "CFile::setCompression %s", filename.get());
+        throw makeOsExceptionV(::GetLastError(), "CFile::setCompression %s", filename.get());
     if (((attr & FILE_ATTRIBUTE_COMPRESSED) != 0) == set)
         return true;
 
     HANDLE handle=::CreateFile(filename.get(),GENERIC_READ|GENERIC_WRITE,0,NULL,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,NULL);
     if(handle==INVALID_HANDLE_VALUE)
-        throw MakeOsException(::GetLastError(), "CFile::setCompression %s", filename.get());
+        throw makeOsExceptionV(::GetLastError(), "CFile::setCompression %s", filename.get());
 
     USHORT compression=set ? COMPRESSION_FORMAT_DEFAULT : COMPRESSION_FORMAT_NONE;
     DWORD bytes;
@@ -972,7 +971,7 @@ bool CFile::setCompression(bool set)
     }
     DWORD err=::GetLastError();
     ::CloseHandle(handle);
-    throw MakeOsException(err, "CFile::setCompression %s", filename.get());
+    throw makeOsExceptionV(err, "CFile::setCompression %s", filename.get());
 #else
     return false;
 #endif
@@ -985,7 +984,7 @@ offset_t CFile::compressedSize()
     if(lo==INVALID_FILE_SIZE && (err=::GetLastError())!=NO_ERROR)
     {
         if ( (err!=ERROR_FILE_NOT_FOUND) && (err!=ERROR_PATH_NOT_FOUND) )
-            throw MakeOsException(err,"CFile::compressedSize %s", filename.get());
+            throw makeOsExceptionV(err,"CFile::compressedSize %s", filename.get());
         return -1;
     }
     return makeint64(hi,lo);
@@ -1011,15 +1010,17 @@ public:
         locked = false;
 #ifdef _WIN32
         handle=::CreateFile(file->queryFilename(),GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,NULL,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,NULL);
-        if(handle==INVALID_HANDLE_VALUE) {
+        if(handle==INVALID_HANDLE_VALUE)
+        {
             handle = NULLFILE;
-            throw MakeOsException(GetLastError(),"CDiscretionaryFileLock::openhandle %s", file->queryFilename());
+            throw makeOsExceptionV(GetLastError(), "CDiscretionaryFileLock::openhandle %s", file->queryFilename());
         }
 #else
         handle = _lopen(file->queryFilename(), O_RDONLY, 0);
-        if (handle == -1) {
+        if (handle == -1)
+        {
             handle = NULLFILE;
-            throw MakeErrnoException(errno, "CDiscretionaryFileLock::openhandle %s",file->queryFilename());
+            throw makeErrnoExceptionV(errno, "CDiscretionaryFileLock::openhandle %s", file->queryFilename());
         }
 #endif
     }
@@ -1033,7 +1034,7 @@ public:
         if (cfileio)
             handle = cfileio->queryHandle();
         if (handle==NULLFILE)
-            throw MakeStringException(-1,"CDiscretionaryFileLock - invalid parameter"); 
+            throw makeStringException(-1, "CDiscretionaryFileLock - invalid parameter");
     }
     ~CDiscretionaryFileLock()
     {
@@ -1078,7 +1079,7 @@ public:
             
             DWORD err = ::GetLastError();
             if (err!=ERROR_LOCK_VIOLATION) 
-                throw MakeOsException(err, "CDiscretionaryFileLock::lock");
+                throw makeOsException(err, "CDiscretionaryFileLock::lock");
 #else
             if (setShareLock(handle,exclusive?IFSHnone:IFSHread))
                 break;
@@ -1107,7 +1108,7 @@ public:
             OVERLAPPED overlapped;
             memset(&overlapped,0,sizeof(overlapped));
             if (!UnlockFileEx(handle,0,1,0,&overlapped)) 
-                throw MakeOsException(::GetLastError(), "CDiscretionaryFileLock::unlockhandle");
+                throw makeOsException(::GetLastError(), "CDiscretionaryFileLock::unlockhandle");
 #else
             setShareLock(handle,IFSHfull);
 #endif
@@ -1565,7 +1566,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         virtual size32_t read(offset_t pos, size32_t len, void * data)
         {
             if (pos>sz)
-                throw MakeStringException(-1, "CMemoryBufferIO: read beyond end of buffer pos=%"I64F"d, len=%d, buffer length=%d", pos, len, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: read beyond end of buffer pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
             if (pos+len > sz)
                 len = (size32_t)(sz-pos);
             memcpy(data, (byte *)buffer+pos, len);
@@ -1577,7 +1578,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         {
             assertex(!readOnly);
             if (pos+len>sz)
-                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, writing beyond buffer, pos=%"I64F"d, len=%d, buffer length=%d", pos, len, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, writing beyond buffer, pos=%" I64F "d, len=%d, buffer length=%d", pos, len, mb.length());
             memcpy((byte *)buffer+pos, data, len);
             return len;
         }
@@ -1586,7 +1587,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
         virtual void setSize(offset_t size)
         {
             if (size > mb.length())
-                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size %"I64F"d beyond end of buffer, buffer length=%d", size, mb.length());
+                throw MakeStringException(-1, "CMemoryBufferIO: UNIMPLEMENTED, setting size %" I64F "d beyond end of buffer, buffer length=%d", size, mb.length());
             mb.setLength((size32_t)size);
         }
 
@@ -1646,7 +1647,7 @@ class jlib_decl CSequentialFileIO : public CFileIO
     void checkPos(const char *fn,offset_t _pos)
     {
         if (_pos!=pos)
-            throw MakeStringException(-1, "CSequentialFileIO %s out of sequence (%"I64F"d,%"I64F"d)",fn,pos,_pos);
+            throw MakeStringException(-1, "CSequentialFileIO %s out of sequence (%" I64F "d,%" I64F "d)",fn,pos,_pos);
     }
 
 public:
@@ -1671,7 +1672,7 @@ public:
             DWORD err = GetLastError();
             if (err==ERROR_BROKEN_PIPE)  // windows returns this at end of pipe
                 return 0;
-            throw MakeOsException(GetLastError(),"CSequentialFileIO::read"); 
+            throw makeOsException(GetLastError(),"CSequentialFileIO::read");
         }
         size32_t ret = (size32_t)numRead;
 #else
@@ -1688,20 +1689,21 @@ public:
         size32_t ret;
 #ifdef _WIN32
         DWORD numWritten;
-        if (!WriteFile(file,data,len,&numWritten,NULL))
-            throw MakeOsException(GetLastError(),"CSequentialFileIO::write");
+        if (!WriteFile(file, data, len, &numWritten, NULL))
+            throw makeOsException(GetLastError(), "CSequentialFileIO::write");
         if (numWritten != len)
-            throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CSequentialFileIO::write");
-        ret = (size32_t)numWritten;
+            throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CSequentialFileIO::write");
+        ret = (size32_t) numWritten;
 #else
         ret = ::write(file,data,len);
-        if (ret==(size32_t)-1) {
+        if (ret==(size32_t)-1)
+        {
             PrintStackReport();
-            ERRLOG("errno(%d): %"I64F"d %u",errno,pos,len);
-            throw MakeErrnoException(errno,"CFileIO::write");
+            ERRLOG("errno(%d): %" I64F "d %u",errno,pos,len);
+            throw makeErrnoException(errno, "CFileIO::write");
         }
         if (ret<len)
-            throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CSequentialFileIO::write");
+            throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CSequentialFileIO::write");
 #endif
         pos += ret;
         return ret;
@@ -1800,7 +1802,7 @@ void CFileIO::close()
     if (file != NULLFILE)
     {
         if (!CloseHandle(file))
-            throw MakeOsException(GetLastError(),"CFileIO::close");
+            throw makeOsException(GetLastError(),"CFileIO::close");
     }
     file = NULLFILE;
 }
@@ -1808,7 +1810,7 @@ void CFileIO::close()
 void CFileIO::flush()
 {
     if (!FlushFileBuffers(file))
-        throw MakeOsException(GetLastError(),"CFileIO::flush");
+        throw makeOsException(GetLastError(),"CFileIO::flush");
 }
 
 offset_t CFileIO::size()
@@ -1818,7 +1820,7 @@ offset_t CFileIO::size()
     if (pos.LowPart==-1) {
         DWORD err = GetLastError();
         if (err!=0)     
-            throw MakeOsException(err,"CFileIO::size");
+            throw makeOsException(err,"CFileIO::size");
     }
     return pos.QuadPart;
 }
@@ -1831,7 +1833,7 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
     DWORD numRead;
     setPos(pos);
     if (ReadFile(file,data,len,&numRead,NULL) == 0)
-        throw MakeOsException(GetLastError(),"CFileIO::read");
+        throw makeOsException(GetLastError(),"CFileIO::read");
     return (size32_t)numRead;
 }
 
@@ -1849,9 +1851,9 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
     DWORD numWritten;
     setPos(pos);
     if (!WriteFile(file,data,len,&numWritten,NULL))
-        throw MakeOsException(GetLastError(),"CFileIO::write");
+        throw makeOsException(GetLastError(),"CFileIO::write");
     if (numWritten != len)
-        throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::write");
+        throw makeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::write");
     return (size32_t)numWritten;
 }
 
@@ -1861,7 +1863,7 @@ void CFileIO::setSize(offset_t pos)
     CriticalBlock procedure(cs);
     setPos(pos);
     if (!SetEndOfFile(file))
-        throw MakeOsException(GetLastError(), "CFileIO::setSize");
+        throw makeOsException(GetLastError(), "CFileIO::setSize");
 }
 
 #else
@@ -1923,7 +1925,7 @@ void CFileIO::close()
 #endif
         }
         if (::close(file) < 0)
-            throw MakeErrnoException(errno,"CFileIO::close");
+            throw makeErrnoException(errno, "CFileIO::close");
         file=NULLFILE;
     }
 }
@@ -1936,7 +1938,7 @@ void CFileIO::flush()
 #else
     if (fdatasync(file) != 0)
 #endif
-        throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::flush");
+        throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CFileIO::flush");
 #ifdef POSIX_FADV_DONTNEED
     if (extraFlags & IFEnocache)
         posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
@@ -1991,11 +1993,10 @@ static void sync_file_region(int fd, offset_t offset, offset_t nbytes)
 size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
     size32_t ret = pwrite(file,data,len,pos);
-    if (ret==(size32_t)-1) {
-        throw MakeErrnoException(errno,"CFileIO::write");
-    }
+    if (ret==(size32_t)-1)
+        throw makeErrnoException(errno, "CFileIO::write");
     if (ret<len)
-        throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::write");
+        throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CFileIO::write");
     if ( (extraFlags & IFEnocache) && (ret > 0) )
     {
         if (atomic_add_and_read(&bytesWritten, ret) >= PGCFLUSH_BLKSIZE)
@@ -2015,7 +2016,7 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 void CFileIO::setSize(offset_t pos)
 {
     if (0 != ftruncate(file, pos))
-        throw MakeErrnoException(errno, "CFileIO::setSize");
+        throw makeErrnoException(errno, "CFileIO::setSize");
 }
 #endif
 
@@ -2128,7 +2129,7 @@ public:
                         CriticalBlock block(parent->cs);
                         parent->results.zap(*this,true); // don't delete as array does not own
                         parent = NULL;
-                        throw MakeOsException(err,"CFileAsyncResult::getResult");
+                        throw makeOsException(err,"CFileAsyncResult::getResult");
                     }
                     value = 0;
                 }
@@ -2141,7 +2142,7 @@ public:
         }
         ret = value;
         if (value<wrsize)
-            throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileAsyncResult::getResult");
+            throw makeOsException(DISK_FULL_EXCEPTION_CODE,"CFileAsyncResult::getResult");
         return true;
     }
 };
@@ -2161,7 +2162,7 @@ void CFileAsyncIO::close()
     if (file != NULLFILE)
     {
         if (!CloseHandle(file))
-            throw MakeOsException(GetLastError(),"CFileAsyncIO::close");
+            throw makeOsException(GetLastError(),"CFileAsyncIO::close");
     }
     file = NULLFILE;
 }
@@ -2173,7 +2174,7 @@ offset_t CFileAsyncIO::size()
     if (pos.LowPart==-1) {
         DWORD err = GetLastError();
         if (err!=0)     
-            throw MakeOsException(GetLastError(),"CFileAsyncIO::size");
+            throw makeOsException(GetLastError(),"CFileAsyncIO::size");
     }
     return pos.QuadPart;
 }
@@ -2200,7 +2201,7 @@ void CFileAsyncIO::setSize(offset_t size)
     tempPos.QuadPart = size; 
     tempPos.LowPart = SetFilePointer(file, tempPos.LowPart, &tempPos.HighPart, FILE_BEGIN);
     if (!SetEndOfFile(file))
-        throw MakeOsException(GetLastError(), "CFileIO::setSize");
+        throw makeOsException(GetLastError(), "CFileIO::setSize");
 }
 
 
@@ -2219,7 +2220,7 @@ IFileAsyncResult *CFileAsyncIO::readAsync(offset_t pos, size32_t len, void * dat
             results.append(*res);
         }
         else
-            throw MakeOsException(GetLastError(),"CFileIO::readAsync");
+            throw makeOsException(GetLastError(),"CFileIO::readAsync");
     }   
     else {
         res->value = val; // won't need to wait
@@ -2234,7 +2235,7 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
     if (WriteFile(file,data,len,&val,&res->overlapped) == 0) {
         int err = GetLastError();
         if (err != ERROR_IO_PENDING)
-            throw MakeOsException(GetLastError(),"CFileIO::writeAsync");
+            throw makeOsException(GetLastError(),"CFileIO::writeAsync");
         CriticalBlock block(cs);
         res->parent = this;
         results.append(*res);
@@ -2287,10 +2288,10 @@ public:
                 if (aio_errno != EINPROGRESS)
                 {
                     if (aio_errno)
-                        throw MakeErrnoException(aio_errno,"CFileAsyncResult::getResult");
+                        throw makeErrnoException(aio_errno, "CFileAsyncResult::getResult");
                     value = aio_return(&cb);
                     if (value<wrsize)
-                        throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileAsyncResult::getResult");
+                        throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CFileAsyncResult::getResult");
                     break;
                 }
                 if (!wait)
@@ -2330,7 +2331,7 @@ void CFileAsyncIO::close()
     {
         aio_cancel(file,NULL);
         if (_lclose(file) < 0)
-            throw MakeErrnoException(errno, "CFileAsyncIO::close");
+            throw makeErrnoException(errno, "CFileAsyncIO::close");
     }
     file=NULLFILE;
 }
@@ -2350,7 +2351,7 @@ size32_t CFileAsyncIO::read(offset_t pos, size32_t len, void * data)
     _llseek(file,pos,SEEK_SET);
     size32_t ret = _lread(file,data,len);
     if (ret==(size32_t)-1)
-        throw MakeErrnoException(errno,"CFileAsyncIO::read");
+        throw makeErrnoException(errno, "CFileAsyncIO::read");
     return ret;
 
 }
@@ -2361,7 +2362,7 @@ size32_t CFileAsyncIO::write(offset_t pos, size32_t len, const void * data)
     _llseek(file,pos,SEEK_SET);
     size32_t ret = _lwrite(file,data,len);
     if (ret==(size32_t)-1)
-        throw MakeErrnoException(errno,"CFileAsyncIO::write");
+        throw makeErrnoException(errno, "CFileAsyncIO::write");
     return ret;
 }
 
@@ -2369,7 +2370,7 @@ void CFileAsyncIO::setSize(offset_t pos)
 {
     CriticalBlock procedure(cs);
     if ((file != NULLFILE)&&(0 != ftruncate(file, pos)))
-        throw MakeErrnoException(errno, "CFileIO::setSize");
+        throw makeErrnoException(errno, "CFileIO::setSize");
 }
 
 IFileAsyncResult *CFileAsyncIO::readAsync(offset_t pos, size32_t len, void * data)
@@ -2385,7 +2386,7 @@ IFileAsyncResult *CFileAsyncIO::readAsync(offset_t pos, size32_t len, void * dat
 
     int retval = aio_read(&(res->cb));
     if (retval==-1)
-        throw MakeErrnoException(errno,"CFileAsyncIO::readAsync");
+        throw makeErrnoException(errno, "CFileAsyncIO::readAsync");
     return res;
 }
 
@@ -2404,7 +2405,7 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
 
     int retval = aio_write(&(res->cb));
     if (retval==-1)
-        throw MakeErrnoException(errno,"CFileAsyncIO::writeAsync");
+        throw makeErrnoException(errno, "CFileAsyncIO::writeAsync");
     return res;
 }
 
@@ -3726,7 +3727,7 @@ class CDirectoryDifferenceIterator : public CIArrayOf<CDirEntry>, extends CInter
 
     
     
-    static int compare(CInterface **_a, CInterface **_b)
+    static int compare(CInterface * const *_a, CInterface * const *_b)
     {
         CDirEntry *a = *(CDirEntry **)_a;
         CDirEntry *b = *(CDirEntry **)_b;
@@ -4410,7 +4411,7 @@ StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
 
 bool RemoteFilename::isLocal() const
 {
-    if (ep.port&&(ep.port!=DAFILESRV_PORT))
+    if (ep.port&&(ep.port!=DAFILESRV_PORT && ep.port!=SECURE_DAFILESRV_PORT))
         return false;  // treat non-dafilesrv port as remote
     return ep.isLocal() || ep.isNull();
 }
@@ -4857,21 +4858,21 @@ void RemoteMultiFilename::setIp(const IpAddress & ip)
 {
     ep.ipset(ip);
     ForEachItem(i)
-        item(i).setIp(ip);
+        element(i).setIp(ip);
 }
 
 void RemoteMultiFilename::setEp(const SocketEndpoint & _ep)
 {
     ep.set(_ep);
     ForEachItem(i)
-        item(i).setEp(_ep);
+        element(i).setEp(_ep);
 }
 
 void RemoteMultiFilename::setPort(unsigned short port)
 {
     ep.port = port;
     ForEachItem(i)
-        item(i).setPort(port);
+        element(i).setPort(port);
 }
 
 void RemoteMultiFilename::set(const RemoteMultiFilename & other)
@@ -5057,7 +5058,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
         {
             OwnedIFile iFile = createIFile(relpath);
             if (!iFile->exists())
-                throw MakeStringException(-1, "makeAbsolutePath: could not resolve absolute path for %s", relpath);
+                throw makeStringExceptionV(-1, "makeAbsolutePath: could not resolve absolute path for %s", relpath);
         }
         return out.append(relpath); // if remote then already should be absolute
     }
@@ -5068,12 +5069,12 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
         relpath = ".";
     DWORD res = GetFullPathName(relpath, sizeof(rPath), rPath, &filepart);
     if (0 == res)
-        throw MakeOsException(GetLastError(), "makeAbsolutePath: could not resolve absolute path for %s", relpath);
+        throw makeOsExceptionV(GetLastError(), "makeAbsolutePath: could not resolve absolute path for %s", relpath);
     else if (mustExist)
     {
         OwnedIFile iFile = createIFile(rPath);
         if (!iFile->exists())
-            throw MakeStringException(-1, "makeAbsolutePath: could not resolve absolute path for %s", rPath);
+            throw makeStringExceptionV(-1, "makeAbsolutePath: could not resolve absolute path for %s", rPath);
     }
     out.append(rPath);
 #else
@@ -5081,7 +5082,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
     if (mustExist)
     {
         if (!realpath(relpath, rPath))
-            throw MakeErrnoException(errno, "makeAbsolutePath: could not resolve absolute path for %s", relpath);
+            throw makeErrnoExceptionV(errno, "makeAbsolutePath: could not resolve absolute path for %s", relpath);
         out.append(rPath);
     }
     else
@@ -5443,7 +5444,7 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
         filename.append("uniq");
     if (!ext || !*ext)
         ext = "tmp";
-    filename.appendf("_%"I64F"x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
+    filename.appendf("_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
     OwnedIFile iFile = createIFile(filename.str());
     IFileIO *iFileIO = NULL;
     unsigned attempts = 5; // max attempts
@@ -5461,7 +5462,7 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
         if (0 == --attempts)
             break;
         t += getRandom();
-        filename.clear().appendf("uniq_%"I64F"x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
+        filename.clear().appendf("uniq_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
         iFile.setown(createIFile(filename.str()));
     }
     return NULL;
@@ -5534,7 +5535,7 @@ public:
         StringBuffer locations;
         Owned<IException> exc;
         ForEachItemIn(copy,copies) {
-            RemoteFilename &rfn = copies.item(copy);
+            const RemoteFilename &rfn = copies.item(copy);
             try {
                 OwnedIFile iFile = createIFile(rfn);
                 if (iFile->exists())
@@ -5800,7 +5801,7 @@ class CIoSerialStream: public CSerialStreamBase
     virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
     {
         if (lastpos!=pos)
-            throw MakeStringException(-1,"CIoSerialStream: non-sequential read (%"I64F"d,%"I64F"d)",lastpos,pos);
+            throw MakeStringException(-1,"CIoSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
         size32_t rd = io->read(max_size,ptr);
         lastpos = pos+rd;
         return rd;
@@ -5832,7 +5833,7 @@ class CSocketSerialStream: public CSerialStreamBase
     virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
     {
         if (lastpos!=pos)
-            throw MakeStringException(-1,"CSocketSerialStream: non-sequential read (%"I64F"d,%"I64F"d)",lastpos,pos);
+            throw MakeStringException(-1,"CSocketSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
         size32_t size_read;
         socket->readtms(ptr, 0, max_size, size_read, timeout); 
         lastpos = pos+size_read;
@@ -5864,7 +5865,7 @@ class CSimpleReadSerialStream: public CSerialStreamBase
     virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
     {
         if (lastpos!=pos)
-            throw MakeStringException(-1,"CSimpleReadSerialStream: non-sequential read (%"I64F"d,%"I64F"d)",lastpos,pos);
+            throw MakeStringException(-1,"CSimpleReadSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
         size32_t rd = input->read(max_size, ptr);
         lastpos += rd;
         return rd;
@@ -6236,14 +6237,14 @@ public:
             hmap = CreateFileMapping(hfile,NULL,writeaccess?PAGE_READWRITE:PAGE_READONLY,0, 0, NULL);
             if (!hmap) {
                 DWORD err = GetLastError();
-                throw MakeOsException(err,"CMemoryMappedFile::reinit");
+                throw makeOsException(err,"CMemoryMappedFile::reinit");
             }
         }
         li.QuadPart = realofs; 
         ptr = (byte *) MapViewOfFile(hmap, writeaccess?(FILE_MAP_READ|FILE_MAP_WRITE):FILE_MAP_READ, li.HighPart, li.LowPart, mapsz);
         if (!ptr) {
             DWORD err = GetLastError();
-            throw MakeOsException(err,"CMemoryMappedFile::reinit");
+            throw makeOsException(err,"CMemoryMappedFile::reinit");
         }
 #elif defined (_linux__)
         ptr = (byte *) mmap(NULL, mapsz, writeaccess?(PROT_READ|PROT_WRITE):PROT_READ, MAP_SHARED|MAP_NORESERVE, hfile, realofs);
@@ -6321,7 +6322,7 @@ size32_t SendFile(ISocket *target, IFileIO *fileio,offset_t start,size32_t len)
                     return (size32_t)sent;
                 int err = errno;
                 if ((err!=EINVAL)&&(err!=ENOSYS))
-                    throw MakeOsException(err,"sendfile");
+                    throw makeOsException(err, "sendfile");
 #else
                 UNIMPLEMENTED;
 #endif
@@ -6482,7 +6483,7 @@ class CLazyFileIOCache: public CInterface, implements IFileIOCache
 {
     CriticalSection sect;
     unsigned max;
-    PointerIArrayOf<CCachedFileIO> cache;
+    IPointerArrayOf<CCachedFileIO> cache;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -6611,7 +6612,7 @@ extern jlib_decl void removeSentinelFile(IFile * sentinelFile)
                 StringBuffer s;
                 EXCLOG(E, s.appendf("Failed to remove sentinel file %s", sentinelFile->queryFilename()).str());
                 E->Release();
-                throw MakeOsException(errno, "removeSentinelFile - file cannot be removed.");
+                throw makeOsException(errno, "removeSentinelFile - file cannot be removed.");
             }
         }
     }
@@ -6632,7 +6633,7 @@ extern jlib_decl void writeSentinelFile(IFile * sentinelFile)
             StringBuffer s;
             EXCLOG(E, s.appendf("Failed to create sentinel file %s for rerun from script", sentinelFile->queryFilename()).str());
             E->Release();
-            throw MakeOsException(errno, "writeSentinelFile - file not created.");
+            throw makeOsException(errno, "writeSentinelFile - file not created.");
         }
     }
 }

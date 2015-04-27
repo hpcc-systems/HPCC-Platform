@@ -192,6 +192,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_regex_find:
     case no_regex_replace:
     case no_toxml:
+    case no_tojson:
 
 //Boolean operators:
     case no_eq:
@@ -394,6 +395,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_executewhen:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_xmlparse:
     case no_normalizegroup:
     case no_owned_ds:
@@ -513,6 +515,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_joined:
     case no_any:
     case no_xml:
+    case no_json:
     case no_distributer:
     case no_keyed:
     case no_sortpartition:
@@ -800,6 +803,14 @@ public:
         {
         case no_field:
             {
+                //Remove the default value before transforming to avoid waste when processing before the expression tree is normalized
+                if (queryRealChild(expr, 0))
+                {
+                    HqlExprArray children;
+                    unwindChildren(children, expr, 1);
+                    OwnedHqlExpr plain = expr->clone(children);
+                    return transform(plain);
+                }
                 if (expr->hasAttribute(_linkCounted_Atom))
                 {
                     OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
@@ -2354,12 +2365,15 @@ bool HqlRowCountInfo::extractHint(IHqlExpression * hint)
 void HqlRowCountInfo::getText(StringBuffer & text) const
 {
     min->queryValue()->generateECL(text);
-    text.append("..");
-    if (max->queryValue())
-        max->queryValue()->generateECL(text);
-    else
-        text.append("?");
-    text.append("[").append(magnitudeText[magnitude]).append("]");
+    if (min != max)
+    {
+        text.append("..");
+        if (max->queryValue())
+            max->queryValue()->generateECL(text);
+        else
+            text.append("?");
+        text.append("[").append(magnitudeText[magnitude]).append("]");
+    }
 }
 
 void HqlRowCountInfo::limitMin(__int64 value)

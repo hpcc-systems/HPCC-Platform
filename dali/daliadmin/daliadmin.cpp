@@ -119,6 +119,8 @@ void usage(const char *exe)
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
+  printf("  stats <workunit> [<creator-type> <creator> <scope-type> <scope> <kind>]\n"
+         "                                  -- dump the statistics for a workunit\n");
   printf("  workunit <workunit> [true]      -- dump workunit xml, if 2nd parameter equals true, will also include progress data\n");
   printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
   printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
@@ -1194,7 +1196,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
                 root->removeTree(sub);
             }
             else if (sub->getPropInt64("@recordCount")||sub->getPropInt64("@size"))
-                ERRLOG("FAIL Empty Superfile %s contains non-empty Attr sz=%"I64F"d rc=%"I64F"d",lname.get(),sub->getPropInt64("@recordCount"),sub->getPropInt64("@size"));
+                ERRLOG("FAIL Empty Superfile %s contains non-empty Attr sz=%" I64F "d rc=%" I64F "d",lname.get(),sub->getPropInt64("@recordCount"),sub->getPropInt64("@size"));
 
         }
     }
@@ -1433,18 +1435,18 @@ static void dfscompratio (const char *lname, IUserDescriptor *user)
         if (size==(offset_t)-1)
             out.appendf("size not known");
         else if (compressed) {
-            out.appendf("expanded size %"I64F"d, ",size);
+            out.appendf("expanded size %" I64F "d, ",size);
             offset_t csize = getCompressedSize(file);
             if (csize==(offset_t)-1)
                 out.append("compressed size unknown");
             else {
-                out.appendf("compressed size %"I64F"d",csize);
+                out.appendf("compressed size %" I64F "d",csize);
                 if (csize)
                     out.appendf(", Ratio %.2f:1 (%%%d)",(float)size/csize,(unsigned)(csize*100/size));
             }
         }
         else
-            out.appendf("not compressed, size %"I64F"d",size);
+            out.appendf("not compressed, size %" I64F "d",size);
     }
     else
         out.appendf("File %s not found",lname);
@@ -1769,7 +1771,7 @@ static void workunittimings(const char *wuid)
             {
                 if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0))
                 {
-                    unsigned time = (iter->query().getPropInt64("@value") / 1000000);
+                    unsigned time = (unsigned)(iter->query().getPropInt64("@value") / 1000000);
                     displayGraphTiming(name.str(), time);
                 }
             }
@@ -2052,11 +2054,11 @@ struct CTreeItem : public CInterface
     String *tail;
     CTreeItem *parent;
     unsigned index;
-    unsigned startOffset;
-    unsigned endOffset;
-    unsigned adjust;
+    offset_t startOffset;
+    offset_t endOffset;
+    offset_t adjust;
     bool supressidx;
-    CTreeItem(CTreeItem *_parent, String *_tail, unsigned _index, unsigned _startOffset)
+    CTreeItem(CTreeItem *_parent, String *_tail, unsigned _index, offset_t _startOffset)
     {
         parent = LINK(_parent);
         startOffset = _startOffset;
@@ -2080,8 +2082,8 @@ struct CTreeItem : public CInterface
         if ((index!=0)||tail->IsShared())
             xpath.append('[').append(index+1).append(']');
     }
-    unsigned size() { return endOffset?(endOffset-startOffset):0; }
-    unsigned adjustedSize(bool &adjusted) { adjusted = (adjust!=0); return size()-adjust; }
+    offset_t size() { return endOffset?(endOffset-startOffset):0; }
+    offset_t adjustedSize(bool &adjusted) { adjusted = (adjust!=0); return size()-adjust; }
 };
 
 class CXMLSizesParser : public CInterface
@@ -2098,11 +2100,18 @@ class CXMLSizesParser : public CInterface
         unsigned limit;
         __int64 totalSize;
 
-        static int _sortF(CInterface **_left, CInterface **_right)
+        static int _sortF(CInterface * const *_left, CInterface * const *_right)
         {
             CTreeItem **left = (CTreeItem **)_left;
             CTreeItem **right = (CTreeItem **)_right;
-            return ((*right)->size() - (*left)->size());
+            offset_t leftSize = (*left)->size();
+            offset_t rightSize = (*right)->size();
+            if (rightSize > leftSize)
+                return +1;
+            else if (rightSize < leftSize)
+                return -1;
+            else
+                return 0;
         }
     public:
 
@@ -2143,7 +2152,7 @@ class CXMLSizesParser : public CInterface
             assertex(tos);
             tos->endOffset = endOffset;
             bool adjusted;
-            unsigned sz = tos->adjustedSize(adjusted);
+            offset_t sz = tos->adjustedSize(adjusted);
             if (sz>=limit)
             {
                 CTreeItem *parent = tos->parent;
@@ -2168,7 +2177,7 @@ class CXMLSizesParser : public CInterface
                 CTreeItem &match = arr.item(m);
                 StringBuffer xpath;
                 match.getXPath(xpath);
-                printf("xpath=%s, size=%d\n", xpath.str(), match.size());
+                printf("xpath=%s, size=%" I64F "d\n", xpath.str(), match.size());
             }
         }
         void printResultTree()
@@ -2179,14 +2188,14 @@ class CXMLSizesParser : public CInterface
             ForEachItemIn(i, arr) {
                 CTreeItem &item = arr.item(i);
                 bool adjusted;
-                unsigned sz = item.adjustedSize(adjusted);
+                offset_t sz = item.adjustedSize(adjusted);
                 if (sz>=limit) {
                     res.clear();
                     item.getXPath(res);
                     if (adjusted)
                         res.append(" (rest)");
                     res.padTo(40);
-                    res.appendf(" %10d(%5.2f%%)",sz,((float)sz*100.0)/(float)totalSize);
+                    res.appendf(" %10" I64F "d(%5.2f%%)",sz,((float)sz*100.0)/(float)totalSize);
                     printf("%s\n",res.str());
                 }
             }
@@ -2396,10 +2405,10 @@ static void unlock(const char *pattern)
         mb.read(success);
         StringBuffer connectionInfo;
         if (!success)
-            PROGLOG("Lock %"I64F"x not found",connectionId);
+            PROGLOG("Lock %" I64F "x not found",connectionId);
         else {
             mb.read(connectionInfo);
-            PROGLOG("Lock %"I64F"x successfully removed: %s", connectionId, connectionInfo.str());
+            PROGLOG("Lock %" I64F "x successfully removed: %s", connectionId, connectionInfo.str());
         }
     }
 }
@@ -2409,6 +2418,89 @@ static void dumpWorkunit(const char *wuid, bool includeProgress)
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
     exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress);
+}
+
+static void dumpProgress(const char *wuid, const char * graph)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    if (!workunit)
+        return;
+    Owned<IConstWUGraphProgress> progress = workunit->getGraphProgress(graph);
+    if (!progress)
+        return;
+    Owned<IPropertyTree> tree = progress->getProgressTree();
+    saveXML("stdout:", tree);
+}
+
+static const char * checkDash(const char * s)
+{
+    //Supplying * on the command line is a pain because it needs quoting. Allow - instead.
+    if (streq(s, ".") || streq(s, "-"))
+        return "*";
+    return s;
+}
+static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    if (!workunit)
+        return;
+
+    StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
+    Owned<IConstWUStatisticIterator> stats = &workunit->getStatistics(&filter);
+    printf("<Statistics>\n");
+    ForEach(*stats)
+    {
+        IConstWUStatistic & cur = stats->query();
+        StringBuffer xml;
+        SCMStringBuffer curCreator;
+        SCMStringBuffer curScope;
+        SCMStringBuffer curDescription;
+        SCMStringBuffer curFormattedValue;
+
+        StatisticCreatorType curCreatorType = cur.getCreatorType();
+        StatisticScopeType curScopeType = cur.getScopeType();
+        StatisticMeasure curMeasure = cur.getMeasure();
+        StatisticKind curKind = cur.getKind();
+        unsigned __int64 value = cur.getValue();
+        unsigned __int64 count = cur.getCount();
+        unsigned __int64 max = cur.getMax();
+        unsigned __int64 ts = cur.getTimestamp();
+        cur.getCreator(curCreator);
+        cur.getScope(curScope);
+        cur.getDescription(curDescription, false);
+        cur.getFormattedValue(curFormattedValue);
+
+        if (curCreatorType != SCTnone)
+            xml.append("<ctype>").append(queryCreatorTypeName(curCreatorType)).append("</ctype>");
+        if (curCreator.length())
+            xml.append("<creator>").append(curCreator.str()).append("</creator>");
+        if (curScopeType != SSTnone)
+            xml.append("<stype>").append(queryScopeTypeName(curScopeType)).append("</stype>");
+        if (curScope.length())
+            xml.append("<scope>").append(curScope.str()).append("</scope>");
+        if (curMeasure != SMeasureNone)
+            xml.append("<unit>").append(queryMeasureName(curMeasure)).append("</unit>");
+        if (curKind != StKindNone)
+            xml.append("<kind>").append(queryStatisticName(curKind)).append("</kind>");
+        xml.append("<rawvalue>").append(value).append("</rawvalue>");
+        xml.append("<value>").append(curFormattedValue).append("</value>");
+        if (count != 1)
+            xml.append("<count>").append(count).append("</count>");
+        if (max)
+            xml.append("<max>").append(value).append("</max>");
+        if (ts)
+        {
+            xml.append("<ts>");
+            formatStatistic(xml, ts, SMeasureTimestampUs);
+            xml.append("</ts>");
+        }
+        if (curDescription.length())
+            xml.append("<desc>").append(curDescription.str()).append("</desc>");
+        printf("<stat>%s</stat>\n", xml.str());
+    }
+    printf("</Statistics>\n");
 }
 
 static void wuidCompress(const char *match, const char *type, bool compress)
@@ -2935,6 +3027,16 @@ int main(int argc, char* argv[])
                     else if (stricmp(cmd,"holdlock")==0) {
                         CHECKPARAMS(2,2);
                         holdlock(params.item(1), params.item(2), userDesc);
+                    }
+                    else if (stricmp(cmd, "progress") == 0) {
+                        CHECKPARAMS(2,2);
+                        dumpProgress(params.item(1), params.item(2));
+                    }
+                    else if (stricmp(cmd, "stats") == 0) {
+                        CHECKPARAMS(1,6);
+                        while (params.ordinality() < 7)
+                            params.append("*");
+                        dumpStats(params.item(1), params.item(2), params.item(3), params.item(4), params.item(5), params.item(6));
                     }
                     else
                         ERRLOG("Unknown command %s",cmd);

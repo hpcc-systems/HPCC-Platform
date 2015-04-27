@@ -29,7 +29,6 @@
 class IndexWriteActivityMaster : public CMasterActivity
 {
     rowcount_t recordsProcessed;
-    offset_t fileSize;
     Owned<IFileDescriptor> fileDesc;
     bool buildTlk, isLocal, singlePartKey;
     StringArray clusters;
@@ -159,26 +158,6 @@ public:
                 props.setProp("@modified", existingTlk->queryAttributes().queryProp("@modified"));
         }
         
-        StringBuffer datasetName;
-        fileSize = 0;
-        OwnedRoxieString dname(helper->getDatasetName());
-        if (dname)
-        {
-            if (dname[0] == '~')
-                datasetName.append(dname+1);
-            else
-            {               
-                datasetName.append(container.queryJob().queryScope());
-                if (datasetName.length())
-                    datasetName.append("::");
-                datasetName.append(dname);
-            }
-
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(datasetName.str(), container.queryJob().queryUserDescriptor());
-            if (df)
-                fileSize = df->queryAttributes().getPropInt64("@size", 0);
-        }
-
         // Fill in some logical file properties here
         IPropertyTree &props = fileDesc->queryProperties();
 #if 0   // not sure correct record size to put in yet
@@ -214,7 +193,6 @@ public:
         else
             dst.append(false);
 
-        dst.append(fileSize);
         dst.append(singlePartKey);
         dst.append(refactor);
         if (!singlePartKey)
@@ -345,15 +323,17 @@ public:
         mb.read(repPerc);
         replicateProgress->set(node, repPerc);
     }
-    virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
+    virtual void getActivityStats(IStatisticGatherer & stats)
     {
-        CMasterActivity::getXGMML(progress, node);
+        CMasterActivity::getActivityStats(stats);
         if (publishReplicatedDone)
         {
             replicateProgress->processInfo();
-            replicateProgress->addAttribute(node, "replicatedPercentage", replicateProgress->queryAverage());
+            //GC->JCS An average of percentages doesn't give you a very accurate answer..
+            stats.addStatistic(StPerReplicated, replicateProgress->queryAverage() * 10000);
         }
     }
+
 };
 
 CActivityBase *createIndexWriteActivityMaster(CMasterGraphElement *container)

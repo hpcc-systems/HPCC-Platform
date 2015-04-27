@@ -71,6 +71,7 @@ public:
     virtual void onClose();
     virtual bool fetchRowData(MemoryBuffer & out, __int64 offset);
     virtual bool isIndex() { return false; }
+    virtual bool isWorkunitResult() const { return false; }
 
 protected:
     size32_t getCopyLength();
@@ -132,6 +133,8 @@ class WorkunitDiskDataSource : public DirectDiskDataSource
 {
 public:
     WorkunitDiskDataSource(const char * _logicalName, IConstWUResult * _wuResult, const char * _wuid, const char * _username, const char * _password);
+
+    virtual bool isWorkunitResult() const { return true; }
 
     virtual bool init();
 };

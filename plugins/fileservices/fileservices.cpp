@@ -72,7 +72,7 @@ static const char * EclDefinition =
 "  varstring CmdProcess(const varstring prog, const varstring src) : c,action,entrypoint='fsCmdProcess'; \n"
 "  string CmdProcess2(const varstring prog, const string src) : c,action,entrypoint='fsCmdProcess2'; \n"
 "  SprayFixed(const varstring sourceIP, const varstring sourcePath, integer4 recordSize, const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false,boolean compress=false, boolean failIfNoSourceFile=false) : c,action,context,entrypoint='fsSprayFixed'; \n"
-"  SprayVariable(const varstring sourceIP, const varstring sourcePath, integer4 sourceMaxRecordSize=8192, const varstring sourceCsvSeparate='\\\\,', const varstring sourceCsvTerminate='\\\\n,\\\\r\\\\n', const varstring sourceCsvQuote='\"', const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false,boolean compress=false,const varstring sourceCsvEscape='', boolean failIfNoSourceFile=false, boolean recordStructurePresent=false, boolean quotedTerminator=true) : c,action,context,entrypoint='fsSprayVariable_v4'; \n"
+"  SprayVariable(const varstring sourceIP, const varstring sourcePath, integer4 sourceMaxRecordSize=8192, const varstring sourceCsvSeparate='\\\\,', const varstring sourceCsvTerminate='\\\\n,\\\\r\\\\n', const varstring sourceCsvQuote='\"', const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false,boolean compress=false,const varstring sourceCsvEscape='', boolean failIfNoSourceFile=false, boolean recordStructurePresent=false, boolean quotedTerminator=true, const varstring encoding='ascii') : c,action,context,entrypoint='fsSprayVariable_v5'; \n"
 "  SprayXml(const varstring sourceIP, const varstring sourcePath, integer4 sourceMaxRecordSize=8192, const varstring sourceRowTag, const varstring sourceEncoding='utf8', const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false,boolean compress=false, boolean failIfNoSourceFile=false) : c,action,context,entrypoint='fsSprayXml'; \n"
 "  Despray(const varstring logicalName, const varstring destinationIP, const varstring destinationPath, integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false) : c,action,context,entrypoint='fsDespray'; \n"
 "  Copy(const varstring sourceLogicalName, const varstring destinationGroup, const varstring destinationLogicalName, const varstring sourceDali='', integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false, boolean asSuperfile=false, boolean compress=false, boolean forcePush=false, integer4 transferBufferSize=0) : c,action,context,entrypoint='fsCopy'; \n"
@@ -270,7 +270,7 @@ StringBuffer & constructLogicalName(ICodeContext * ctx, const char * partialLogi
     return constructLogicalName(wu, partialLogicalName, result);
 }
 
-static void WUmessage(ICodeContext *ctx, WUExceptionSeverity sev, const char *fn, const char *msg)
+static void WUmessage(ICodeContext *ctx, ErrorSeverity sev, const char *fn, const char *msg)
 {
     StringBuffer s("fileservices");
     if (fn)
@@ -323,7 +323,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer uname;
     PrintLog("Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
-    if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction))
+    if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction, INFINITE, true))
     {
         StringBuffer s("DeleteLogicalFile ('");
         s.append(lfn);
@@ -331,7 +331,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
             s.append("') added to transaction");
         else
             s.append("') done");
-        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
         AuditMessage(ctx,"DeleteLogicalFile",lfn.str());
 
     }
@@ -445,14 +445,14 @@ FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, c
         queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),udesc,transaction);
         StringBuffer s("RenameLogicalFile ('");
         s.append(lfn).append(", '").append(nlfn).append("') done");
-        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
         AuditMessage(ctx,"RenameLogicalFile",lfn.str(),nlfn.str());
     }
     catch (IException *e)
     {
         StringBuffer s;
         e->errorMessage(s);
-        WUmessage(ctx,ExceptionSeverityWarning,"RenameLogicalFile",s.str());
+        WUmessage(ctx,SeverityWarning,"RenameLogicalFile",s.str());
         throw e;
      }
 }
@@ -463,7 +463,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmail(ICodeContext * ctx, const ch
     StringArray warnings;
     sendEmail( to, subject, body, mailServer, port, sender, &warnings);
     ForEachItemIn(i,warnings)
-        WUmessage(ctx, ExceptionSeverityWarning, "SendEmail", warnings.item(i));
+        WUmessage(ctx, SeverityWarning, "SendEmail", warnings.item(i));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender)
@@ -471,7 +471,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText(ICodeContext * ctx
     StringArray warnings;
     sendEmailAttachText(to, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings);
     ForEachItemIn(i,warnings)
-        WUmessage(ctx, ExceptionSeverityWarning, "SendEmailAttachText", warnings.item(i));
+        WUmessage(ctx, SeverityWarning, "SendEmailAttachText", warnings.item(i));
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx, const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender)
@@ -479,7 +479,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx
     StringArray warnings;
     sendEmailAttachData(to, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, &warnings);
     ForEachItemIn(i,warnings)
-        WUmessage(ctx, ExceptionSeverityWarning, "SendEmailAttachData", warnings.item(i));
+        WUmessage(ctx, SeverityWarning, "SendEmailAttachData", warnings.item(i));
 }
 
 
@@ -489,7 +489,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsCmdProcess(const char *prog, const c
     StringBuffer in, out;
     in.append(src);
 
-    callExternalProgram(prog, in, out);
+    runExternalCommand(out, prog, in);
 
     return CTXSTRDUP(parentCtx, out.str());
 }
@@ -500,7 +500,7 @@ FILESERVICES_API void FILESERVICES_CALL fsCmdProcess2(unsigned & tgtLen, char * 
     StringBuffer in, out;
     in.append(srcLen, src);
 
-    callExternalProgram(prog, in, out);
+    runExternalCommand(out, prog, in);
 
     tgtLen = out.length();
     tgt = (char *)CTXDUP(parentCtx, out.str(), out.length());
@@ -544,8 +544,8 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             RemainingLabel.append(wuScope).append(" (Remaining) ");
 
             //MORE: I think this are intended to replace the timing information, but will currently combine
-            updateWorkunitTimeStat(wu, "fileservices", wuScope, "elapsed", ElapsedLabel, milliToNano(time.elapsed()), 1, 0);
-            updateWorkunitTimeStat(wu, "fileservices", wuScope, "remaining", RemainingLabel, milliToNano(dfuwu.getSecsLeft()*1000), 1, 0);
+            updateWorkunitTimeStat(wu, SSTdfuworkunit, wuScope, StTimeElapsed, ElapsedLabel, milliToNano(time.elapsed()));
+            updateWorkunitTimeStat(wu, SSTdfuworkunit, wuScope, StTimeRemaining, RemainingLabel, milliToNano(dfuwu.getSecsLeft()*1000));
             wu->setApplicationValue(label, dfuwu.getID(), dfuwu.getSummaryMessage(), true);
             wu->commit();
         }
@@ -585,7 +585,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             {   //  Add warning of DFU Abort Request - should this be information  ---
                 StringBuffer s("DFU Workunit Abort Requested for ");
                 s.append(wuid);
-                WUmessage(ctx,ExceptionSeverityWarning,"blockUntilComplete",s.str());
+                WUmessage(ctx,SeverityWarning,"blockUntilComplete",s.str());
             }
 
             wu->setState(WUStateAborting);
@@ -677,7 +677,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayFixed(ICodeContext *ctx, const
     return wuid.detach();
 }
 
-static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * sourceCsvEscape, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile, bool recordStructurePresent, bool quotedTerminator)
+static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * sourceCsvEscape, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile, bool recordStructurePresent, bool quotedTerminator, const char * encoding)
 {
     PrintLog("Spray:  %s", destinationLogicalName);
 
@@ -693,7 +693,7 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
     req->setSourceIP(sourceIP);
     req->setSourcePath(sourcePath);
     req->setSourceMaxRecordSize(sourceMaxRecordSize);
-    req->setSourceFormat(DFUff_csv);
+    req->setSourceFormat(CDFUfileformat::decode(encoding));
     req->setSourceCsvSeparate(sourceCsvSeparate);
     req->setSourceCsvTerminate(sourceCsvTerminate);
     req->setSourceCsvQuote(sourceCsvQuote);
@@ -739,42 +739,52 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
 
 FILESERVICES_API void FILESERVICES_CALL fsSprayVariable(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile)
 {
-    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, NULL, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, false, true));
+    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, NULL, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, false, true, "ascii"));
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfSprayVariable(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, bool failIfNoSourceFile)
 {
-    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, NULL, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, false, true);
+    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, NULL, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, false, true, "ascii");
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSprayVariable2(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, const char * csvEscape, bool failIfNoSourceFile)
 {
-    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, false, true));
+    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, false, true, "ascii"));
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfSprayVariable2(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, const char * csvEscape, bool failIfNoSourceFile)
 {
-    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, false, true);
+    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, false, true, "ascii");
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSprayVariable_v3(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, const char * csvEscape, bool failIfNoSourceFile, bool recordStructurePresent)
 {
-    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, true));
+    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, true, "ascii"));
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfSprayVariable_v3(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, const char * csvEscape, bool failIfNoSourceFile, bool recordStructurePresent)
 {
-    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, true);
+    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, true, "ascii");
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsSprayVariable_v4(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, const char * csvEscape, bool failIfNoSourceFile, bool recordStructurePresent, bool quotedTerminator)
 {
-    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, quotedTerminator));
+    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, quotedTerminator, "ascii"));
 }
 
 FILESERVICES_API char * FILESERVICES_CALL fsfSprayVariable_v4(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, const char * csvEscape, bool failIfNoSourceFile, bool recordStructurePresent, bool quotedTerminator)
 {
-    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, quotedTerminator);
+    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, quotedTerminator, "ascii");
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsSprayVariable_v5(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, const char * csvEscape, bool failIfNoSourceFile, bool recordStructurePresent, bool quotedTerminator, const char * encoding)
+{
+    CTXFREE(parentCtx, implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding));
+}
+
+FILESERVICES_API char * FILESERVICES_CALL fsfSprayVariable_v5(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int sourceMaxRecordSize, const char * sourceCsvSeparate, const char * sourceCsvTerminate, const char * sourceCsvQuote, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite, bool replicate, bool compress, const char * csvEscape, bool failIfNoSourceFile, bool recordStructurePresent, bool quotedTerminator, const char * encoding)
+{
+    return implementSprayVariable(ctx, sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, csvEscape, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, overwrite, replicate, compress, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding);
 }
 
 
@@ -1079,7 +1089,7 @@ static void CheckNotInTransaction(ICodeContext *ctx, const char *fn)
     if (transaction->active()) {
         StringBuffer s("Operation not part of transaction : ");
         s.append(fn);
-        WUmessage(ctx,ExceptionSeverityWarning,fn,s.str());
+        WUmessage(ctx,SeverityWarning,fn,s.str());
     }
 }
 
@@ -1094,7 +1104,7 @@ FILESERVICES_API void FILESERVICES_CALL fsCreateSuperFile(ICodeContext *ctx, con
     StringBuffer s("CreateSuperFile ('");
     s.append(lsfn).append("') done");
     AuditMessage(ctx,"CreateSuperFile",lsfn.str());
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
 }
 
 FILESERVICES_API bool FILESERVICES_CALL fsSuperFileExists(ICodeContext *ctx, const char *lsuperfn)
@@ -1123,7 +1133,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, con
     } else {
         s.append(" file not found");
     }
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     if (found)
         AuditMessage(ctx,"DeleteSuperFile",lsfn.str());
 }
@@ -1195,7 +1205,7 @@ FILESERVICES_API void FILESERVICES_CALL fslStartSuperFileTransaction(ICodeContex
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
     transaction->start();
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,"StartSuperFileTransaction");
+    WUmessage(ctx,SeverityInformation,NULL,"StartSuperFileTransaction");
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsAddSuperFile(IGlobalCodeContext *gctx, const char *lsuperfn,const char *_lfn,unsigned atpos,bool addcontents, bool strict)
@@ -1250,7 +1260,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
         s.append("trans");
     else
         s.append("done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"AddSuperFile",lsfn.str(),lfn.str());
 }
 
@@ -1291,7 +1301,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
         s.append("trans");
     else
         s.append("done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"RemoveSuperFile",lsfn.str(),lfn.str());
 }
 
@@ -1330,7 +1340,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveOwnedSubFiles(ICodeContext *ctx
         s.append("trans");
     else
         s.append("done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"RemoveOwnedSubFiles",lsfn.str());
 }
 
@@ -1369,7 +1379,7 @@ FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, cons
         s.append("trans");
     else
         s.append("done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"SwapSuperFile",lsfn1.str(),lsfn2.str());
 }
 
@@ -1406,7 +1416,7 @@ FILESERVICES_API void FILESERVICES_CALL fslFinishSuperFileTransaction(ICodeConte
             s.append("rollback");
         else
             s.append("commit");
-        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
     }
     else {
         StringBuffer s("Invalid FinishSuperFileTransaction ");
@@ -1415,7 +1425,7 @@ FILESERVICES_API void FILESERVICES_CALL fslFinishSuperFileTransaction(ICodeConte
         else
             s.append("done");
         s.append(", transaction not active");
-        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+        WUmessage(ctx,SeverityInformation,NULL,s.str());
     }
 }
 
@@ -1464,12 +1474,12 @@ FILESERVICES_API char *  FILESERVICES_CALL fslWaitDfuWorkunit(ICodeContext *ctx,
     setServerAccess(server, wu);
     StringBuffer s("Waiting for DFU Workunit ");
     s.append(wuid);
-    WUmessage(ctx,ExceptionSeverityInformation,"WaitDfuWorkunit",s.str());
+    WUmessage(ctx,SeverityInformation,"WaitDfuWorkunit",s.str());
     StringBuffer state;
     wu.clear();
     blockUntilComplete("WaitDfuWorkunit", server, ctx, wuid, timeout, &state);
     s.clear().append("Finished waiting for DFU Workunit ").append(wuid).append(" state=").append(state.str());
-    WUmessage(ctx,ExceptionSeverityInformation,"WaitDfuWorkunit",s.str());
+    WUmessage(ctx,SeverityInformation,"WaitDfuWorkunit",s.str());
     return state.detach();
 }
 
@@ -1489,7 +1499,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAbortDfuWorkunit(ICodeContext *ctx, c
     Linked<IClientAbortDFUWorkunitResponse> abortResp = server.AbortDFUWorkunit(abortReq);
     StringBuffer s("DFU Workunit Abort Requested for ");
     s.append(wuid);
-    WUmessage(ctx,ExceptionSeverityInformation,"AbortDfuWorkunit",s.str());
+    WUmessage(ctx,SeverityInformation,"AbortDfuWorkunit",s.str());
 }
 
 FILESERVICES_API void  FILESERVICES_CALL fsMonitorLogicalFileName(ICodeContext *ctx, const char *eventname, const char *_lfn,int shotcount, const char * espServerIpPort)
@@ -1515,7 +1525,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorLogicalFileName(ICodeContex
     StringBuffer res(result->getWuid());
     StringBuffer s("MonitorLogicalFileName ('");
     s.append(lfn).append("'): ").append(res);
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     wu.clear();
     if (res.length()!=0)
         blockUntilComplete("MonitorLogicalFileName",server,ctx,res.str(),1000*60*60,NULL,true);
@@ -1545,7 +1555,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorFile(ICodeContext *ctx, con
     StringBuffer res(result->getWuid());
     StringBuffer s("MonitorFile (");
     s.append(ip).append(", '").append(filename).append("'): '").append(res);
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     wu.clear();
     if (res.length()!=0)
         blockUntilComplete("MonitorFile",server,ctx,res.str(),1000*60*60,NULL,true);
@@ -1966,7 +1976,7 @@ FILESERVICES_API void FILESERVICES_CALL fsAddFileRelationship(ICodeContext * ctx
     queryDistributedFileDirectory().addFileRelationship(pfn.str(),sfn.str(),primflds,secflds,kind,cardinality,payload,ctx->queryUserDescriptor(), description);
     StringBuffer s("AddFileRelationship('");
     s.append(pfn.str()).append("','").append(sfn.str()).append("','").append(primflds?primflds:"").append("','").append(secflds?secflds:"").append("','").append(kind?kind:"").append("') done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
 
 }
 
@@ -2139,7 +2149,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,c
     file->move(topath);
     StringBuffer s("MoveExternalFile ('");
     s.append(location).append(',').append(frompath).append(',').append(topath).append(") done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"MoveExternalFile",frompath,topath);
 }
 
@@ -2157,7 +2167,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile(ICodeContext * ctx
     file->remove();
     StringBuffer s("DeleteExternalFile ('");
     s.append(location).append(',').append(path).append(") done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"DeleteExternalFile",path);
 }
 
@@ -2181,7 +2191,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext 
     file->createDirectory();
     StringBuffer s("CreateExternalDirectory ('");
     s.append(location).append(',').append(path).append(") done");
-    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    WUmessage(ctx,SeverityInformation,NULL,s.str());
     AuditMessage(ctx,"CreateExternalDirectory",path);
 }
 
@@ -2318,7 +2328,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const c
         void info(const char *msg)
         {
             if (ctx&&(++limit<100))
-                WUmessage(ctx,ExceptionSeverityInformation,NULL,msg);
+                WUmessage(ctx,SeverityInformation,NULL,msg);
         }
         void err(const char *msg)
         {

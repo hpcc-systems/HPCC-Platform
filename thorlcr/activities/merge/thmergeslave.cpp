@@ -82,13 +82,13 @@ public:
             bufpos += bufsize;
             if (rank==parent->queryContainer().queryJob().queryJobComm().queryGroup().rank()) {
 #ifdef _FULL_TRACE
-                ::ActPrintLog(parent, "Merge cRemoteStream::load, get chunk from node %d (local) pos = %"I64F"d",rank,bufpos);
+                ::ActPrintLog(parent, "Merge cRemoteStream::load, get chunk from node %d (local) pos = %" I64F "d",rank,bufpos);
 #endif
                 bufsize = parent->getRows(rank-1,bufpos,rows);
             }
             else {
 #ifdef _FULL_TRACE
-                ::ActPrintLog(parent, "Merge cRemoteStream::load, get chunk from node %d tag %d (remote) pos = %"I64F"d",rank,tag,bufpos);
+                ::ActPrintLog(parent, "Merge cRemoteStream::load, get chunk from node %d tag %d (remote) pos = %" I64F "d",rank,tag,bufpos);
 #endif
                 CMessageBuffer mb;
                 mb.append(bufpos);
@@ -149,7 +149,7 @@ public:
                     offset_t pos;
                     mb.read(pos);
 #ifdef _FULL_TRACE
-                    ::ActPrintLog(parent, "Merge cProvider Received request from %d pos = %"I64F"d",sender,pos);
+                    ::ActPrintLog(parent, "Merge cProvider Received request from %d pos = %" I64F "d",sender,pos);
 #endif
                     ThorRowQueue rows;
                     size32_t sz = parent->getRows(sender-1, pos, rows);
@@ -229,7 +229,7 @@ public:
             }
 #endif
 
-            ActPrintLog("Merge: partitionpos[%d] = %"I64F"d",i,partitionpos[i]);
+            ActPrintLog("Merge: partitionpos[%d] = %" I64F "d",i,partitionpos[i]);
         }
         delete [] intertags;
         provider.init(this,queryRowSerializer(),intertag);
@@ -282,14 +282,14 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ForEachItemIn(i, inputs) {
             IThorDataLink * input = inputs.item(i);
             try {
                 startInput(input); 
             }
             catch (CATCHALL) {
-                ActPrintLog("MERGE(%"ACTPF"d): Error starting input %d", container.queryId(), i);
+                ActPrintLog("MERGE(%" ACTPF "d): Error starting input %d", container.queryId(), i);
                 ForEachItemIn(s, streams)
                     streams.item(s).stop();
                 throw;
@@ -375,7 +375,7 @@ public:
             if (!r)
                 break;
             if (pos+l>end) {
-                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "overrun in GlobalMergeSlaveActivity::getRows(%u,%"I64F"d,%"I64F"d)",l,rs->getOffset(),end);
+                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "overrun in GlobalMergeSlaveActivity::getRows(%u,%" I64F "d,%" I64F "d)",l,rs->getOffset(),end);
                 break; // don't think should happen
             }
             len = l;
@@ -435,14 +435,14 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ForEachItemIn(i, inputs) {
             IThorDataLink * input = inputs.item(i);
             try { 
                 startInput(input); 
             }
             catch (CATCHALL) {
-                ActPrintLog("MERGE(%"ACTPF"d): Error starting input %d", container.queryId(), i);
+                ActPrintLog("MERGE(%" ACTPF "d): Error starting input %d", container.queryId(), i);
                 ForEachItemIn(s, streams)
                     streams.item(s).stop();
                 throw;
@@ -472,7 +472,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!abortSoon) {
             OwnedConstThorRow row = out->nextRow();
             if (row) {
@@ -565,7 +565,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow ret = merger.nextRow();
         if (ret)
         {
@@ -581,7 +581,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow ret = merger.nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {

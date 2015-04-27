@@ -18,22 +18,23 @@
 import Std.File AS FileServices;
 import $;
 
-C := $.files(__PLATFORM__, false);
+boolean createMultiPart := (__PLATFORM__[1..4] = 'thor');
+Files := $.Files(createMultiPart, false);
 
-C.DG_OutRec norm1(C.DG_OutRec l, integer cc) := transform
-  self.DG_firstname := C.DG_Fnames[cc];
+Files.DG_OutRec norm1(Files.DG_OutRec l, integer cc) := transform
+  self.DG_firstname := Files.DG_Fnames[cc];
   self := l;
   end;
-DG_Norm1Recs := normalize( C.DG_BlankSet, 4, norm1(left, counter));
+DG_Norm1Recs := normalize( Files.DG_BlankSet, 4, norm1(left, counter));
 
-C.DG_OutRec norm2(C.DG_OutRec l, integer cc) := transform
-  self.DG_lastname := C.DG_Lnames[cc];
+Files.DG_OutRec norm2(Files.DG_OutRec l, integer cc) := transform
+  self.DG_lastname := Files.DG_Lnames[cc];
   self := l;
   end;
 DG_Norm2Recs := normalize( DG_Norm1Recs, 4, norm2(left, counter));
 
-C.DG_OutRec norm3(C.DG_OutRec l, integer cc) := transform
-  self.DG_Prange := C.DG_Pranges[cc];
+Files.DG_OutRec norm3(Files.DG_OutRec l, integer cc) := transform
+  self.DG_Prange := Files.DG_Pranges[cc];
   self := l;
   end;
 DG_Norm3Recs := normalize( DG_Norm2Recs, 4, norm3(left, counter));
@@ -49,51 +50,54 @@ DG_OutputRecs SeqParent(DG_OutputRecs l, integer c) := transform
   end;
 DG_ParentRecs := project( DG_OutputRecs, SeqParent(left, counter));
 
-C.DG_OutRecChild GenChildren(DG_OutputRecs l) := transform
+Files.DG_OutRecChild GenChildren(DG_OutputRecs l) := transform
   self.DG_ChildID := 0;
   self := l;
   end;
-DG_ChildRecs1 := normalize(DG_ParentRecs, C.DG_MaxChildren, GenChildren(left));
+DG_ChildRecs1 := normalize(DG_ParentRecs, Files.DG_MaxChildren, GenChildren(left));
 
-C.DG_OutRecChild SeqChildren(C.DG_OutRecChild l, integer cc) := transform
+Files.DG_OutRecChild SeqChildren(Files.DG_OutRecChild l, integer cc) := transform
   self.DG_ChildID := cc-1;
   self := l;
   end;
 DG_ChildRecs := project( DG_ChildRecs1, SeqChildren(left, counter));
-output(DG_ParentRecs,,C.DG_ParentFileOut,overwrite);
-output(DG_ChildRecs,,C.DG_ChildFileOut,overwrite);
-fileServices.AddFileRelationship( C.DG_ParentFileOut, C.DG_ChildFileOut, 'DG_ParentID', 'DG_ParentID', 'link', '1:M', false);
-C.DG_OutRecChild GenGrandChildren(C.DG_OutRecChild l) := transform
+output(DG_ParentRecs,,Files.DG_ParentFileOut,overwrite);
+output(DG_ChildRecs,,Files.DG_ChildFileOut,overwrite);
+fileServices.AddFileRelationship( Files.DG_ParentFileOut, Files.DG_ChildFileOut, 'DG_ParentID', 'DG_ParentID', 'link', '1:M', false);
+Files.DG_OutRecChild GenGrandChildren(Files.DG_OutRecChild l) := transform
   self := l;
   end;
-DG_GrandChildRecs := normalize( DG_ChildRecs, C.DG_MaxGrandChildren, GenGrandChildren(left));
-output(DG_GrandChildRecs,,C.DG_GrandChildFileOut,overwrite);
-fileServices.AddFileRelationship( C.DG_ChildFileOut, C.DG_GrandChildFileOut, 'DG_ParentID', 'DG_ParentID', 'link', '1:M', false);
+DG_GrandChildRecs := normalize( DG_ChildRecs, Files.DG_MaxGrandChildren, GenGrandChildren(left));
+output(DG_GrandChildRecs,,Files.DG_GrandChildFileOut,overwrite);
+fileServices.AddFileRelationship( Files.DG_ChildFileOut, Files.DG_GrandChildFileOut, 'DG_ParentID', 'DG_ParentID', 'link', '1:M', false);
 
 //output data files
 
 //***************************************************************************
 
-output(DG_ParentRecs,,C.DG_FileOut+'CSV',CSV,overwrite);
-fileServices.AddFileRelationship( C.DG_ParentFileOut, C.DG_FileOut+'CSV', '', '', 'view', '1:1', false);
-output(DG_ParentRecs,,C.DG_FileOut+'XML',XML,overwrite);
-fileServices.AddFileRelationship( C.DG_ParentFileOut, C.DG_FileOut+'XML', '', '', 'view', '1:1', false);
-EvensFilter := DG_ParentRecs.DG_firstname in [C.DG_Fnames[2],C.DG_Fnames[4],C.DG_Fnames[6],C.DG_Fnames[8],
-                                              C.DG_Fnames[10],C.DG_Fnames[12],C.DG_Fnames[14],C.DG_Fnames[16]];
+output(DG_ParentRecs,,Files.DG_FileOut+'CSV',CSV,overwrite);
+fileServices.AddFileRelationship( Files.DG_ParentFileOut, Files.DG_FileOut+'CSV', '', '', 'view', '1:1', false);
+output(DG_ParentRecs,,Files.DG_FileOut+'XML',XML,overwrite);
+fileServices.AddFileRelationship( Files.DG_ParentFileOut, Files.DG_FileOut+'XML', '', '', 'view', '1:1', false);
+EvensFilter := DG_ParentRecs.DG_firstname in [Files.DG_Fnames[2],Files.DG_Fnames[4],Files.DG_Fnames[6],Files.DG_Fnames[8],
+                                              Files.DG_Fnames[10],Files.DG_Fnames[12],Files.DG_Fnames[14],Files.DG_Fnames[16]];
 
 SEQUENTIAL(
-    PARALLEL(output(DG_ParentRecs,,C.DG_FileOut+'FLAT',overwrite),
-             output(DG_ParentRecs(EvensFilter),,C.DG_FileOut+'FLAT_EVENS',overwrite)),
-    PARALLEL(buildindex(C.DG_IndexFile,overwrite),
-             buildindex(C.DG_IndexFileEvens,overwrite))
+    PARALLEL(output(DG_ParentRecs,,Files.DG_FileOut+'FLAT',overwrite),
+             output(DG_ParentRecs(EvensFilter),,Files.DG_FileOut+'FLAT_EVENS',overwrite)),
+    PARALLEL(buildindex(Files.DG_NormalIndexFile,overwrite),
+             buildindex(Files.DG_NormalIndexFileEvens,overwrite),
+             buildindex(Files.DG_TransIndexFile,overwrite),
+             buildindex(Files.DG_TransIndexFileEvens,overwrite),
+             buildindex(Files.DG_KeyedIndexFile,overwrite))
     );
 
-    fileServices.AddFileRelationship( __nameof__(C.DG_FlatFile), __nameof__(C.DG_IndexFile), '', '', 'view', '1:1', false);
-    fileServices.AddFileRelationship( __nameof__(C.DG_FlatFile), __nameof__(C.DG_IndexFile), '__fileposition__', 'filepos', 'link', '1:1', true);
-    fileServices.AddFileRelationship( __nameof__(C.DG_FlatFileEvens), __nameof__(C.DG_IndexFileEvens), '', '', 'view', '1:1', false);
-    fileServices.AddFileRelationship( __nameof__(C.DG_FlatFileEvens), __nameof__(C.DG_IndexFileEvens), '__fileposition__', 'filepos', 'link', '1:1', true);
+    fileServices.AddFileRelationship( __nameof__(Files.DG_FlatFile), __nameof__(Files.DG_NormalIndexFile), '', '', 'view', '1:1', false);
+    fileServices.AddFileRelationship( __nameof__(Files.DG_FlatFile), __nameof__(Files.DG_NormalIndexFile), '__fileposition__', 'filepos', 'link', '1:1', true);
+    fileServices.AddFileRelationship( __nameof__(Files.DG_FlatFileEvens), __nameof__(Files.DG_NormalIndexFileEvens), '', '', 'view', '1:1', false);
+    fileServices.AddFileRelationship( __nameof__(Files.DG_FlatFileEvens), __nameof__(Files.DG_NormalIndexFileEvens), '__fileposition__', 'filepos', 'link', '1:1', true);
 
-C.DG_VarOutRec Proj1(C.DG_OutRec L) := TRANSFORM
+Files.DG_VarOutRec Proj1(Files.DG_OutRec L) := TRANSFORM
   SELF := L;
   SELF.ExtraField := IF(self.DG_Prange<=10,
                         trim(self.DG_lastname[1..self.DG_Prange]+self.DG_firstname[1..self.DG_Prange],all),
@@ -102,38 +106,22 @@ END;
 DG_VarOutRecs := PROJECT(DG_ParentRecs,Proj1(LEFT));
 
 sequential(
-  output(DG_VarOutRecs,,C.DG_FileOut+'VAR',overwrite),
-  buildindex(C.DG_VarIndex, overwrite),
-  buildindex(C.DG_VarVarIndex, overwrite),
-  fileServices.AddFileRelationship( __nameof__(C.DG_VarFile), __nameof__(C.DG_VarIndex), '', '', 'view', '1:1', false),
-  fileServices.AddFileRelationship( __nameof__(C.DG_VarFile), __nameof__(C.DG_VarIndex), '__fileposition__', '__filepos', 'link', '1:1', true),
-  fileServices.AddFileRelationship( __nameof__(C.DG_VarFile), __nameof__(C.DG_VarVarIndex), '', '', 'view', '1:1', false),
-  fileServices.AddFileRelationship( __nameof__(C.DG_VarFile), __nameof__(C.DG_VarVarIndex), '__fileposition__', '__filepos', 'link', '1:1', true)
+  output(DG_VarOutRecs,,Files.DG_FileOut+'VAR',overwrite),
+  buildindex(Files.DG_NormalVarIndex, overwrite),
+  buildindex(Files.DG_TransVarIndex, overwrite),
+  fileServices.AddFileRelationship( __nameof__(Files.DG_VarFile), __nameof__(Files.DG_NormalVarIndex), '', '', 'view', '1:1', false),
+  fileServices.AddFileRelationship( __nameof__(Files.DG_VarFile), __nameof__(Files.DG_NormalVarIndex), '__fileposition__', '__filepos', 'link', '1:1', true),
 );
 
-
-
-C.DG_MemFileRec t_u2(C.DG_MemFileRec l, integer c) := transform self.u2 := c-2; self := l; END;
-C.DG_MemFileRec t_u3(C.DG_MemFileRec l, integer c) := transform self.u3 := c-2; self := l; END;
-C.DG_MemFileRec t_bu2(C.DG_MemFileRec l, integer c) := transform self.bu2 := c-2; self := l; END;
-C.DG_MemFileRec t_bu3(C.DG_MemFileRec l, integer c) := transform self.bu3 := c-2; self := l; END;
-C.DG_MemFileRec t_i2(C.DG_MemFileRec l, integer c) := transform self.i2 := c-2; self := l; END;
-C.DG_MemFileRec t_i3(C.DG_MemFileRec l, integer c) := transform self.i3 := c-2; self := l; END;
-C.DG_MemFileRec t_bi2(C.DG_MemFileRec l, integer c) := transform self.bi2 := c-2; self := l; END;
-C.DG_MemFileRec t_bi3(C.DG_MemFileRec l, integer c) := transform self.bi3 := c-2; self := l; END;
-
-n_blank := dataset([{0,0,0,0, 0,0,0,0}],C.DG_MemFileRec);
-
-n_u2 := NORMALIZE(n_blank, 4, t_u2(left, counter));
-n_u3 := NORMALIZE(n_u2, 4, t_u3(left, counter));
-
-n_bu2 := NORMALIZE(n_u3, 4, t_bu2(left, counter));
-n_bu3 := NORMALIZE(n_bu2, 4, t_bu3(left, counter));
-
-n_i2 := NORMALIZE(n_bu3, 4, t_i2(left, counter));
-n_i3 := NORMALIZE(n_i2, 4, t_i3(left, counter));
-
-n_bi2 := NORMALIZE(n_i3, 4, t_bi2(left, counter));
-n_bi3 := NORMALIZE(n_bi2, 4, t_bi3(left, counter));
-
-output(n_bi3,,C.DG_MemFileName,overwrite);
+//Optionally Create local versions of the indexes.
+LocalFiles := $.Files(createMultiPart, TRUE);
+IF (createMultiPart,
+    PARALLEL(
+        buildindex(LocalFiles.DG_NormalIndexFile,overwrite,NOROOT),
+        buildindex(LocalFiles.DG_NormalIndexFileEvens,overwrite,NOROOT),
+        buildindex(LocalFiles.DG_TransIndexFile,overwrite,NOROOT),
+        buildindex(LocalFiles.DG_TransIndexFileEvens,overwrite,NOROOT),
+        buildindex(LocalFiles.DG_NormalVarIndex, overwrite,NOROOT);
+        buildindex(LocalFiles.DG_TransVarIndex, overwrite,NOROOT);
+   )
+);

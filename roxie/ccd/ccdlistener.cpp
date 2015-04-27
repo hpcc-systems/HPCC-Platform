@@ -170,7 +170,7 @@ public:
         try
         {
             IPropertyTree &request = requestArray.item(idx);
-            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, true, logctx, xmlReadFlags, querySetName);
+            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, httpHelper.getTrim(), logctx, xmlReadFlags, querySetName);
             ctx->process();
             ctx->flush(idx);
             CriticalBlock b(crit);
@@ -1138,21 +1138,21 @@ public:
     {
         Owned <IRoxieDaliHelper> daliHelper = connectToDali();
         Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
-        daliHelper->noteWorkunitRunning(wuid.get(), true);
-        if (!wu)
-            throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
-        SCMStringBuffer target;
-        wu->getClusterName(target);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         Owned<IQueryFactory> queryFactory;
         try
         {
+            checkWorkunitVersionConsistency(wu);
+            daliHelper->noteWorkunitRunning(wuid.get(), true);
+            if (!wu)
+                throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
             queryFactory.setown(createServerQueryFactoryFromWu(wu));
         }
         catch (IException *E)
         {
             reportException(wu, E, *logctx);
-            throw E;
+            daliHelper->noteWorkunitRunning(wuid.get(), false);
+            throw;
         }
 #ifndef _DEBUG
         catch(...)
@@ -1194,7 +1194,7 @@ public:
             }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
-            priority = queryFactory->getPriority();
+            priority = queryFactory->queryOptions().priority;
             switch (priority)
             {
             case 0: loQueryStats.noteActive(); break;
@@ -1205,10 +1205,7 @@ public:
             Owned<IRoxieServerContext> ctx = queryFactory->createContext(wu, logctx);
             try
             {
-                {
-                    MTIME_SECTION(logctx.queryTimer(), "Process");
-                    ctx->process();
-                }
+                ctx->process();
                 memused = ctx->getMemoryUsage();
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(false);
@@ -1241,11 +1238,12 @@ public:
         unsigned elapsed = msTick() - qstart;
         noteQuery(failed, elapsed, priority);
         queryFactory->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, 0);
-        if (logctx.queryTraceLevel() > 2)
-            logctx.dumpStats();
         if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
-            logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory %d Mb priority %d slavesreply %d", wuid.get(), elapsed, memused, priority, slavesReplyLen);
-        logctx.flush(true, false);
+        {
+            StringBuffer s;
+            logctx.getStats(s);
+            logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d%s", wuid.get(), elapsed, memused, priority, slavesReplyLen, s.str());
+        }
     }
 
 private:
@@ -1660,7 +1658,7 @@ readAnother:
                         if (queryFactory)
                         {
                             queryFactory->checkSuspended();
-                            bool stripWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (ptr_ignoreWhiteSpace & defaultXmlReadFlags));
+                            bool stripWhitespace = queryFactory->queryOptions().stripWhitespaceFromStoredDataset;
                             stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
                             PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
                                                                                (stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none));
@@ -1730,7 +1728,7 @@ readAnother:
                                 logctx.setTraceLevel(queryXml->getPropInt("@traceLevel", traceLevel));
                             }
 
-                            priority = queryFactory->getPriority();
+                            priority = queryFactory->queryOptions().priority;
                             switch (priority)
                             {
                             case 0: loQueryStats.noteActive(); break;
@@ -1877,12 +1875,13 @@ readAnother:
             queryFactory->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, bytesOut);
             queryFactory.clear();
         }
-        if (logctx.queryTraceLevel() > 2)
-            logctx.dumpStats();
         if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
             if (queryName.get())
-                logctx.CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory %d Mb priority %d slavesreply %d resultsize %d continue %d", queryName.get(), uid, peerStr.str(), elapsed, memused, priority, slavesReplyLen, bytesOut, continuationNeeded);
-
+            {
+                StringBuffer s;
+                logctx.getStats(s);
+                logctx.CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid, peerStr.str(), elapsed, memused, priority, slavesReplyLen, bytesOut, continuationNeeded, s.str());
+            }
         if (continuationNeeded)
         {
             rawText.clear();
@@ -1890,7 +1889,6 @@ readAnother:
         }
         else
         {
-            logctx.flush(true, false);
             try
             {
                 if (client && !isHTTP && !isStatus)

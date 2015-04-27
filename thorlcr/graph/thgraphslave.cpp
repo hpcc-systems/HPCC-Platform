@@ -115,7 +115,6 @@ public:
 CSlaveActivity::CSlaveActivity(CGraphElementBase *_container) : CActivityBase(_container)
 {
     data = NULL;
-    totalCycles = 0;
 }
 
 CSlaveActivity::~CSlaveActivity()
@@ -289,7 +288,7 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
 
 unsigned __int64 CSlaveActivity::queryTotalCycles() const
 {
-    return totalCycles;
+    return totalCycles.totalCycles;
 }
 
 void CSlaveActivity::serializeStats(MemoryBuffer &mb)
@@ -383,7 +382,7 @@ void CSlaveGraph::recvStartCtx()
         CMessageBuffer msg;
 
         if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
-            throw MakeStringException(0, "Error receiving startCtx data for graph: %"GIDPF"d", graphId);
+            throw MakeStringException(0, "Error receiving startCtx data for graph: %" GIDPF "d", graphId);
         deserializeStartContexts(msg);
     }
 }
@@ -414,7 +413,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
         {
 
             if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
-                throw MakeStringException(0, "Error receiving actinit data for graph: %"GIDPF"d", graphId);
+                throw MakeStringException(0, "Error receiving actinit data for graph: %" GIDPF "d", graphId);
             replyTag = msg.getReplyTag();
             msg.read(len);
         }
@@ -575,7 +574,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
             CMessageBuffer msg;
             // nothing changed if rerunning, unless conditional branches different
             if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
-                throw MakeStringException(0, "Error receiving createctx data for graph: %"GIDPF"d", graphId);
+                throw MakeStringException(0, "Error receiving createctx data for graph: %" GIDPF "d", graphId);
             try
             {
                 size32_t len;
@@ -928,12 +927,12 @@ public:
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
     virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); } 
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 value) { throwUnexpected(); }
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { throwUnexpected(); }
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
     virtual void setResultReal(const char * stepname, unsigned sequence, double value) { throwUnexpected(); }
     virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { throwUnexpected(); }
     virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { throwUnexpected(); }
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value) { throwUnexpected(); }
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { throwUnexpected(); }
     virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { throwUnexpected(); }
     virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { throwUnexpected(); }
     virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { throwUnexpected(); }
@@ -952,6 +951,7 @@ public:
     virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
 
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { throwUnexpected(); }
 
     virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source)
     {
@@ -959,7 +959,7 @@ public:
         Owned<IThorException> e = MakeThorException(code, "%s", text);
         e->setOrigin(source);
         e->setAction(tea_warning);
-        e->setSeverity((WUExceptionSeverity)severity);
+        e->setSeverity((ErrorSeverity)severity);
         job.fireException(e);
     }
     virtual unsigned getNodes() { return job.queryJobGroup().ordinality()-1; }
@@ -1001,7 +1001,7 @@ public:
         Owned<IThorException> e = MakeThorException(code, "%s", text);
         e->setAssert(filename, lineno, column);
         e->setOrigin("user");
-        e->setSeverity(ExceptionSeverityError);
+        e->setSeverity(SeverityError);
         if (!isAbort)
             e->setAction(tea_warning);
         job.fireException(e);
@@ -1100,29 +1100,16 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     querySo.setown(createDllEntry(_querySo, false, NULL));
     codeCtx = new CThorCodeContextSlave(*this, *querySo, *userDesc, slavemptag);
     tmpHandler.setown(createTempHandler(true));
-    startJob();
 }
 
 CJobSlave::~CJobSlave()
 {
     graphExecutor->wait();
-    endJob();
 }
 
 void CJobSlave::startJob()
 {
-    LOG(MCdebugProgress, thorJob, "New Graph started : %s", graphName.get());
-    ClearTempDirs();
-    unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
-    if (pinterval)
-        startPerformanceMonitor(pinterval);
-    if (pinterval)
-    {
-        perfmonhook.setown(createThorMemStatsPerfMonHook());
-        startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
-    }
-    PrintMemoryStatusLog();
-    logDiskSpace();
+    CJobBase::startJob();
     unsigned minFreeSpace = (unsigned)getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
     if (minFreeSpace)
     {
@@ -1135,27 +1122,6 @@ void CJobSlave::startJob()
             throw MakeThorException(TE_NotEnoughFreeSpace, "Node %s has %u MB(s) of available disk space, specified minimum for this job: %u MB(s)", ep.getUrlStr(s).str(), (unsigned) freeSpace / 0x100000, minFreeSpace);
         }
     }
-    unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);
-    if (keyNodeCacheMB)
-    {
-        oldNodeCacheMem = setNodeCacheMem(keyNodeCacheMB * 0x100000);
-        PROGLOG("Key node cache size set to: %d MB", keyNodeCacheMB);
-    }
-    unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
-    if (!keyFileCacheLimit)
-        keyFileCacheLimit = (querySlaves()+1)*2;
-    setKeyIndexCacheSize(keyFileCacheLimit);
-    PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
-}
-
-void CJobSlave::endJob()
-{
-    stopPerformanceMonitor();
-    LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
-    clearKeyStoreCache(true);
-    if (oldNodeCacheMem)
-        setNodeCacheMem(oldNodeCacheMem);
-    PrintMemoryStatusLog();
 }
 
 __int64 CJobSlave::getWorkUnitValueInt(const char *prop, __int64 defVal) const
@@ -1407,7 +1373,7 @@ public:
 class CFileCache : public CInterface, implements IThorFileCache
 {
     OwningStringSuperHashTableOf<CLazyFileIO> files;
-    CopyCIArrayOf<CLazyFileIO> openFiles;
+    CICopyArrayOf<CLazyFileIO> openFiles;
     unsigned limit, purgeN;
     CriticalSection crit;
 
@@ -1433,7 +1399,7 @@ class CFileCache : public CInterface, implements IThorFileCache
     {
         // will be ordered oldest first.
         unsigned count = 0;
-        CopyCIArrayOf<CLazyFileIO> toClose;
+        CICopyArrayOf<CLazyFileIO> toClose;
         ForEachItemIn(o, openFiles)
         {
             CLazyFileIO &lFile = openFiles.item(o);

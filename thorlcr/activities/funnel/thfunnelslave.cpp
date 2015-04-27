@@ -76,10 +76,6 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
             bool started = false;
             try
             {
-                { 
-                    CriticalBlock b(stopCrit);
-                    if (stopping) return;
-                }
                 if (funnel.startInputs)
                 {
                     IThorDataLink *_input = QUERYINTERFACE(input.get(), IThorDataLink);
@@ -118,7 +114,7 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
                 funnel.fireException(e);
                 e->Release();
             }
-            ActPrintLog(&funnel.activity.queryContainer(), "%s: Read %"I64F"d records", idStr.get(), readThisInput);
+            ActPrintLog(&funnel.activity.queryContainer(), "%s: Read %" I64F "d records", idStr.get(), readThisInput);
         }
     };
 
@@ -154,14 +150,14 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CParallelFunnel(CActivityBase &_activity, IRowStream **instreams, unsigned numstreams, const bool &_aborted) : activity(_activity)
+    CParallelFunnel(CActivityBase &_activity, IRowStream **instreams, unsigned numstreams) : activity(_activity)
     {
         startInputs = false;
         unsigned n = 0;
         while (n<numstreams) oinstreams.append(*LINK(instreams[n++]));
         init();
     }
-    CParallelFunnel(CActivityBase &_activity, IThorDataLink **instreams, unsigned numstreams, bool _startInputs, const bool &_aborted) : activity(_activity)
+    CParallelFunnel(CActivityBase &_activity, IThorDataLink **instreams, unsigned numstreams, bool _startInputs) : activity(_activity)
     {
         startInputs = _startInputs;
         unsigned n = 0;
@@ -195,7 +191,12 @@ public:
     {
         CriticalBlock b(crit);
         if (!exception.get())
+        {
             exception.set(e);
+
+            // nextRow() can be blocked on rows.dequeue(), abort needs to abort the SimpleInterThreadQueueOf
+            rows.stop();
+        }
         return true;
     }
     void informEos(unsigned input)
@@ -211,7 +212,7 @@ public:
     }
 
 // IRowStream impl.
-    void stop()
+    virtual void stop()
     {
         ForEachItemIn(h, inputHandlers)
         {
@@ -241,8 +242,7 @@ public:
         if (exception)
             throw exception.getClear();
     }
-
-    const void *nextRow()
+    virtual const void *nextRow()
     {
         if (exception)
             throw exception.getClear();
@@ -269,14 +269,14 @@ friend class CInputHandler;
 };
 
 
-IRowStream *createParallelFunnel(CActivityBase &activity, IRowStream **instreams, unsigned numstreams, const bool &aborted)
+IRowStream *createParallelFunnel(CActivityBase &activity, IRowStream **instreams, unsigned numstreams)
 {
-    return new CParallelFunnel(activity, instreams, numstreams, aborted);
+    return new CParallelFunnel(activity, instreams, numstreams);
 }
 
-IRowStream *createParallelFunnel(CActivityBase &activity, IThorDataLink **instreams, unsigned numstreams, bool startInputs, const bool &aborted)
+IRowStream *createParallelFunnel(CActivityBase &activity, IThorDataLink **instreams, unsigned numstreams, bool startInputs)
 {
-    return new CParallelFunnel(activity, instreams, numstreams, startInputs, aborted);
+    return new CParallelFunnel(activity, instreams, numstreams, startInputs);
 }
 
 
@@ -291,125 +291,86 @@ class FunnelSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
     IThorDataLink *current;
     unsigned currentMarker;
-    bool grouped, *eog, eogNext;
+    bool grouped, *eog, eogNext, parallel;
     rowcount_t readThisInput;
     unsigned stopped;
+    Owned<IRowStream> parallelOutput;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
 
     FunnelSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
         grouped = false;
         eog = NULL;
+        current = NULL;
+        currentMarker = 0;
+        eogNext = false;
+        readThisInput = 0;
+        stopped = true;
+        parallel = false;
     }
-
     ~FunnelSlaveActivity()
     {
         if (eog) delete [] eog;
     }
-
-    void init(bool _grouped, bool parallel)
-    {
-        grouped = _grouped;
-        if (grouped || !parallel)
-            appendOutputLinked(this);
-        else
-        {
-            class CDataLink : public CSimpleInterface, public CThorDataLink
-            {
-                Owned<IRowStream> out;
-                FunnelSlaveActivity &activity;
-                const bool &abortSoon;
-                PointerIArrayOf<IThorDataLink> &inputs;
-            public:
-                IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-                CDataLink(FunnelSlaveActivity &_activity, PointerIArrayOf<IThorDataLink> &_inputs, const bool &_abortSoon) 
-                    : CThorDataLink(&_activity), activity(_activity), inputs(_inputs), abortSoon(_abortSoon)
-                {
-                }
-                ~CDataLink()
-                {
-                }
-                virtual bool isGrouped() { return false; }
-                virtual void start()
-                {
-                    ActivityTimer s(activity.getTotalCyclesRef(), activity.queryTimeActivities(), NULL);
-                    out.setown(createParallelFunnel(activity, inputs.getArray(), inputs.ordinality(), true, abortSoon));
-                    dataLinkStart();
-                }
-                const void *nextRow()
-                {
-                    ActivityTimer t(activity.getTotalCyclesRef(), activity.queryTimeActivities(), NULL);
-                    OwnedConstThorRow row = out->nextRow();
-                    if (row)
-                    {
-                        dataLinkIncrement();
-                        return row.getClear();
-                    }
-                    return NULL;
-                }
-                virtual void stop()
-                {
-                    out->stop();
-                    out.clear();
-                    dataLinkStop();
-                }
-                virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
-                {
-                    initMetaInfo(info);
-                    calcMetaInfoSize(info, inputs.getArray(), inputs.ordinality());
-                }
-            };
-            appendOutput(new CDataLink(*this, inputs, abortSoon));
-        }
-        ActPrintLog("FUNNEL mode = %s, grouped=%s", parallel?"PARALLEL":"ORDERED", grouped?"GROUPED":"UNGROUPED");
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
-        bool parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
-        init(container.queryGrouped(), parallel);
+        parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
+        grouped = container.queryGrouped();
+        appendOutputLinked(this);
+        ActPrintLog("FUNNEL mode = %s, grouped=%s", parallel?"PARALLEL":"ORDERED", grouped?"GROUPED":"UNGROUPED");
     }
-    void start()
+    virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
-        eogNext = false;
-        stopped = 0;
-        if (grouped)
+        ActivityTimer s(totalCycles, timeActivities);
+        if (!grouped && parallel)
+            parallelOutput.setown(createParallelFunnel(*this, inputs.getArray(), inputs.ordinality(), true));
+        else
         {
-            if (eog)
-                delete [] eog;
-            eog = new bool[inputs.ordinality()];
-            unsigned i;
-            for (i=0; i<inputs.ordinality(); i++) eog[i] = false;
-        }
-        current = NULL;
-        currentMarker = 0;
-        readThisInput = 0;
-        ForEachItemIn(i, inputs)
-        {
-            IThorDataLink * input = inputs.item(i);
-            try { startInput(input); }
-            catch (CATCHALL)
+            eogNext = false;
+            stopped = 0;
+            if (grouped)
             {
-                ActPrintLog("FUNNEL(%"ACTPF"d): Error staring input %d", container.queryId(), i);
-                throw;
+                if (eog)
+                    delete [] eog;
+                eog = new bool[inputs.ordinality()];
+                unsigned i;
+                for (i=0; i<inputs.ordinality(); i++) eog[i] = false;
             }
-            if (!current) current = input;
+            current = NULL;
+            currentMarker = 0;
+            readThisInput = 0;
+            ForEachItemIn(i, inputs)
+            {
+                IThorDataLink * input = inputs.item(i);
+                try { startInput(input); }
+                catch (CATCHALL)
+                {
+                    ActPrintLog("FUNNEL(%" ACTPF "d): Error staring input %d", container.queryId(), i);
+                    throw;
+                }
+                if (!current) current = input;
+            }
         }
         dataLinkStart();
     }
-
-    void stop()
+    virtual void stop()
     {
-        current = NULL;
-        unsigned i = stopped;
-        for (;i<inputs.ordinality(); i++)
-            stopInput(inputs.item(i));
-        stopped = 0;
+        if (parallelOutput)
+        {
+            parallelOutput->stop();
+            parallelOutput.clear();
+        }
+        else
+        {
+            current = NULL;
+            unsigned i = stopped;
+            for (;i<inputs.ordinality(); i++)
+                stopInput(inputs.item(i));
+            stopped = 0;
+        }
         dataLinkStop();
     }
     const void * groupedNext()
@@ -430,7 +391,7 @@ public:
             eog[currentMarker] = true;
             loop
             {
-                ActPrintLog("FUNNEL: Read %"RCPF"d records from input %d", readThisInput, currentMarker);
+                ActPrintLog("FUNNEL: Read %" RCPF "d records from input %d", readThisInput, currentMarker);
                 if (currentMarker + 1 < inputs.ordinality())
                 {
                     readThisInput = 0;
@@ -458,11 +419,19 @@ public:
         dataLinkIncrement();
         return row.getClear();
     }
-
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
-        if (current)
+        ActivityTimer t(totalCycles, timeActivities);
+        if (parallelOutput)
+        {
+            OwnedConstThorRow row = parallelOutput->nextRow();
+            if (row)
+            {
+                dataLinkIncrement();
+                return row.getClear();
+            }
+        }
+        else if (current)
         {
             if (grouped)
                 return groupedNext();
@@ -476,7 +445,7 @@ public:
             }
             loop
             {
-                ActPrintLog("FUNNEL: Read %"RCPF"d records from input %d", readThisInput, currentMarker);
+                ActPrintLog("FUNNEL: Read %" RCPF "d records from input %d", readThisInput, currentMarker);
                 if (currentMarker + 1 < inputs.ordinality())
                 {
                     readThisInput = 0;
@@ -503,16 +472,12 @@ public:
         }
         return NULL;
     }
-
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
         calcMetaInfoSize(info, inputs.getArray(), inputs.ordinality());
     }
-
     virtual bool isGrouped() { return grouped; }
-
-friend class CDataLink;
 };
 
 /////
@@ -549,7 +514,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         eogNext = false;
         ForEachItemIn(i, inputs)
         {
@@ -557,7 +522,7 @@ public:
             try { startInput(input); }
             catch (CATCHALL)
             {
-                ActPrintLog("COMBINE(%"ACTPF"d): Error staring input %d", container.queryId(), i);
+                ActPrintLog("COMBINE(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                 throw;
             }
         }
@@ -571,7 +536,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         loop {
             bool eog = false;
             bool err = false;
@@ -621,7 +586,6 @@ public:
         initMetaInfo(info);
         // TBD I think this should say max out = lhs set.
     }
-friend class CDataLink;
 };
 
 
@@ -652,7 +616,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         curinput = 0;
         eogNext = false;
         ForEachItemIn(i, inputs)
@@ -661,7 +625,7 @@ public:
             try { startInput(input); }
             catch (CATCHALL)
             {
-                ActPrintLog("REGROUP(%"ACTPF"d): Error staring input %d", container.queryId(), i);
+                ActPrintLog("REGROUP(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                 throw;
             }
         }
@@ -675,7 +639,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         unsigned n = inputs.ordinality();
         loop {
             if (curinput==n) {
@@ -698,7 +662,6 @@ public:
         calcMetaInfoSize(info, inputs.getArray(), inputs.ordinality());
     }
     virtual bool isGrouped() { return true; }
-friend class CDataLink;
 };
 
 /////
@@ -771,7 +734,7 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         curinput = 0;
         anyThisGroup = anyThisInput = eogNext = false;
         ForEachItemIn(i, inputs)
@@ -780,7 +743,7 @@ public:
             try { startInput(input); }
             catch (CATCHALL)
             {
-                ActPrintLog("NONEMPTY(%"ACTPF"d): Error staring input %d", container.queryId(), i);
+                ActPrintLog("NONEMPTY(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                 throw;
             }
         }
@@ -795,7 +758,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eoi) 
             return NULL; 
         if (eogNext) { 
@@ -852,7 +815,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
 
         startInput(inputs.item(0));
 
@@ -898,7 +861,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!selectedInput)
             return NULL;
         OwnedConstThorRow ret = selectedInput->nextRow();
@@ -924,7 +887,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (!selectedInput)
             return NULL;
         return selectedInput->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -973,7 +936,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         bool selectionIsAll;
         size32_t selectionLen;
         rtlDataAttr selection;

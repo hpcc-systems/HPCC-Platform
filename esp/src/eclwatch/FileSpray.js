@@ -145,7 +145,7 @@ define([
                 OS: row.Linux === "true" ? 2 : 0
             });
             lang.mixin(row, {
-                calculatedID: row.NetAddress,
+                calculatedID: row.NetAddress+row.Name,
                 displayName: row.Name,
                 type: "dropzone",
                 partialPath: "",
@@ -173,6 +173,14 @@ define([
             });
         }
     });
+
+    var LogFileStore = declare([ESPRequest.Store], {
+        service: "FileSpray",
+        action: "FileList",
+        responseQualifier: "FileListResponse.files.PhysicalFileStruct",
+        idProperty: ""
+    });
+
 
     return {
         States: {
@@ -372,6 +380,9 @@ define([
                 }
                 return response; 
             });
+        },
+        GetSprayTargets: function(params) {
+            return ESPRequest.send("FileSpray", "GetSprayTargets", params);
         }
     };
 });

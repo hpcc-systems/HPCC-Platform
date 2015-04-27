@@ -306,6 +306,7 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
     return true;
 }
 
+/*
 //GH: MORE - this whole class looks as if it is unused, and should be deleted.  If that is not true the
 //following function needs to be rewritten to take into account the statistics
 bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
@@ -313,22 +314,20 @@ bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
     try{
 
         IPropertyTree* timingTree = XMLStructure.addPropTree("Timings", createPTree(ipt_caseInsensitive));
-        Owned<IStringIterator> times = &wu.getTimers();
-        ForEach(*times)
+        Owned<IConstWUStatisticIterator> stats = &wu.getStatistics(NULL, NULL, "Time*");
+        ForEach(*stats)
         {
-            SCMStringBuffer name;
-            times->str(name);
+            IConstWUStatistic & cur = stats->query();
+            SCMStringBuffer description;
+            cur.getDescription(description);
             SCMStringBuffer value;
-            unsigned count = wu.getTimerCount(name.str());
-            unsigned duration = wu.getTimerDuration(name.str());
+            unsigned count = cur.getCount();
+            unsigned __int64 duration = cur.getValue();
             StringBuffer fd;
-            formatDuration(fd, duration);
-            for (unsigned i = 0; i < name.length(); i++)
-                if (name.s.charAt(i)=='_') 
-                    name.s.setCharAt(i, ' ');
+            formatDuration(fd, nanoToMilli(duration));
 
             IPropertyTree* Timer = timingTree->addPropTree("Timer", createPTree(ipt_caseInsensitive));
-            Timer->setProp("Name",name.str());
+            Timer->setProp("Name",description.str());
             Timer->setProp("Value",fd.str());
             Timer->setPropInt("Count",count);
         }
@@ -345,6 +344,7 @@ bool CWUXMLInfo::buildXmlTimimgList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
 
     return true;
 }
+*/
 
 bool CWUXMLInfo::buildXmlLogList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
 {

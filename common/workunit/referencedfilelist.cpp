@@ -127,7 +127,11 @@ public:
     ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize)
     : flags(_flags), pkgid(_pkgid), noDfsResolution(noDfs), calcFileSize(calcSize), fileSize(0), numParts(0)
     {
-        logicalName.set(skipForeign(lfn, &daliip)).toLowerCase();
+        {
+            //Scope ensures strings are assigned
+            StringAttrBuilder logicalNameText(logicalName), daliipText(daliip);
+            logicalNameText.set(skipForeign(lfn, &daliipText)).toLowerCase();
+        }
         if (daliip.length())
             flags |= RefFileForeign;
         else
@@ -140,7 +144,7 @@ public:
 
     void reset()
     {
-        flags &= RefSubFile;
+        flags &= (RefSubFile | RefFileIndex | RefFileForeign | RefFileSuper | RefSubFile | RefFileInPackage);
     }
 
     IPropertyTree *getRemoteFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
@@ -157,7 +161,7 @@ public:
     virtual unsigned getFlags() const {return flags;}
     virtual const SocketEndpoint &getForeignIP(SocketEndpoint &ep) const
     {
-        if (flags & RefFileForeign && daliip.length())
+        if ((flags & RefFileForeign) && daliip.length())
             ep.set(daliip.str());
         else
             ep.set(NULL);
@@ -176,10 +180,10 @@ public:
     }
 
 public:
-    StringBuffer logicalName;
+    StringAttr logicalName;
     StringAttr pkgid;
-    StringBuffer daliip;
-    StringBuffer filePrefix;
+    StringAttr daliip;
+    StringAttr filePrefix;
     StringAttr fileSrcCluster;
     __int64 fileSize;
     unsigned numParts;
@@ -291,7 +295,13 @@ void ReferencedFile::processRemoteFileTree(IPropertyTree *tree, const char *srcC
         {
             Owned<IPropertyTreeIterator> it = tree->getElements("SubFile");
             ForEach(*it)
-                subfiles->append(it->query().queryProp("@name"));
+            {
+                const char *lfn = it->query().queryProp("@name");
+                StringBuffer foreignLfn;
+                if (flags & RefFileForeign)
+                    lfn = foreignLfn.append("foreign::").append(this->daliip).append("::").append(lfn).str();
+                subfiles->append(lfn);
+            }
         }
     }
     else if (srcCluster && *srcCluster)
@@ -330,7 +340,7 @@ IPropertyTree *ReferencedFile::getRemoteFileTree(IUserDescriptor *user, INode *r
     StringBuffer remoteLFN;
     if (remotePrefix && *remotePrefix)
         remoteLFN.append(remotePrefix).append("::").append(logicalName);
-    return queryDistributedFileDirectory().getFileTree(remoteLFN.length() ? remoteLFN : logicalName, user, remote, WF_LOOKUP_TIMEOUT, false, false);
+    return queryDistributedFileDirectory().getFileTree(remoteLFN.length() ? remoteLFN.str() : logicalName.str(), user, remote, WF_LOOKUP_TIMEOUT, false, false);
 }
 
 IPropertyTree *ReferencedFile::getSpecifiedOrRemoteFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix)
@@ -347,7 +357,8 @@ IPropertyTree *ReferencedFile::getSpecifiedOrRemoteFileTree(IUserDescriptor *use
     Owned<IPropertyTree> fileTree = getRemoteFileTree(user, remote, remotePrefix);
     if (!fileTree)
         return NULL;
-    remote->endpoint().getUrlStr(daliip);
+    StringAttrBuilder daliipText(daliip);
+    remote->endpoint().getUrlStr(daliipText);
     filePrefix.set(remotePrefix);
     return fileTree.getClear();
 }
@@ -612,7 +623,7 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
                 continue;
             ThorActivityKind kind = (ThorActivityKind) node.getPropInt("att[@name='_kind']/@value", TAKnone);
             //not likely to be part of roxie queries, but for forward compatibility:
-            if(kind==TAKdiskwrite || kind==TAKindexwrite || kind==TAKcsvwrite || kind==TAKxmlwrite)
+            if(kind==TAKdiskwrite || kind==TAKindexwrite || kind==TAKcsvwrite || kind==TAKxmlwrite || kind==TAKjsonwrite)
                 continue;
             if (node.getPropBool("att[@name='_isSpill']/@value") ||
                 node.getPropBool("att[@name='_isTransformSpill']/@value"))

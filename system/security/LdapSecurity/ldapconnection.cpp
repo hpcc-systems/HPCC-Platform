@@ -154,6 +154,7 @@ class CLdapConfig : public CInterface, implements ILdapConfig
 {
 private:
     LdapServerType       m_serverType; 
+    StringAttr           m_cfgServerType;//LDAP Server type name (ActiveDirectory, Fedora389, etc)
 
     Owned<IPropertyTree> m_cfg;
 
@@ -192,9 +193,30 @@ public:
         int version = LDAP_VERSION3;
         ldap_set_option( NULL, LDAP_OPT_PROTOCOL_VERSION, &version);
 
-        m_serverType = ACTIVE_DIRECTORY;
-
         m_cfg.set(cfg);
+
+        //Check for LDAP Server type in config
+        m_serverType = LDAPSERVER_UNKNOWN;
+        m_cfgServerType.set(cfg->queryProp(".//@serverType"));
+        if (m_cfgServerType.length())
+        {
+            if (0 == stricmp(m_cfgServerType, "ActiveDirectory"))
+                m_serverType = ACTIVE_DIRECTORY;
+            else if (0 == stricmp(m_cfgServerType, "389DirectoryServer"))//uses iPlanet style ACI
+                m_serverType = OPEN_LDAP;
+            else if (0 == stricmp(m_cfgServerType, "OpenLDAP"))
+                m_serverType = OPEN_LDAP;
+            else if (0 == stricmp(m_cfgServerType, "Fedora389"))
+                m_serverType = OPEN_LDAP;
+            else if (0 == stricmp(m_cfgServerType, "iPlanet"))
+                m_serverType = IPLANET;
+            else
+                throw MakeStringException(-1, "Unknown LDAP serverType '%s' specified",m_cfgServerType.get());
+        }
+        else
+        {
+            DBGLOG("LDAP serverType not specified, will try to deduce");
+        }
 
         StringBuffer hostsbuf;
         cfg->getProp(".//@ldapAddress", hostsbuf);
@@ -381,6 +403,11 @@ public:
     virtual LdapServerType getServerType()
     {
         return m_serverType;
+    }
+
+    virtual const char * getCfgServerType() const
+    {
+        return m_cfgServerType.get();
     }
 
     virtual const char* getSdFieldName()
@@ -1167,6 +1194,8 @@ public:
                 {
                     user.setFullName(m_ldapconfig->getSysUserCommonName());
                     user.setAuthenticateStatus(AS_AUTHENTICATED);
+                    if (m_ldapconfig->getServerType() != ACTIVE_DIRECTORY)
+                        return true;
                     sysUser = true;
                 }
                 else
@@ -1380,7 +1409,7 @@ public:
                 {
                     //This path is typical if running ESP on Windows. We have no way
                     //to determine if password entered is valid but expired
-                    if (user.getPasswordDaysRemaining() == -1)
+                    if (user.getPasswordDaysRemaining() == scPasswordExpired)
                     {
                         DBGLOG("LDAP: Password Expired(2) for user %s", username);
                         user.setAuthenticateStatus(AS_PASSWORD_EXPIRED);
@@ -2716,12 +2745,12 @@ public:
             m_ldapconfig->getLdapHost(server);
             fullserver.append(server.str());
             LPWSTR whost = (LPWSTR)alloca((fullserver.length() +1) * sizeof(WCHAR));
-            ConvertCToW(whost, fullserver.str());
+            ConvertCToW((unsigned short *)whost, fullserver.str());
 
             LPWSTR wusername = (LPWSTR)alloca((strlen(username) + 1) * sizeof(WCHAR));
-            ConvertCToW(wusername, username);
+            ConvertCToW((unsigned short *)wusername, username);
             LPWSTR wnewpasswd = (LPWSTR)alloca((strlen(newPassword) + 1) * sizeof(WCHAR));
-            ConvertCToW(wnewpasswd, newPassword);
+            ConvertCToW((unsigned short *)wnewpasswd, newPassword);
             usriSetPassword.usri1003_password  = wnewpasswd;
             nStatus = NetUserSetInfo(whost, wusername,  1003, (LPBYTE)&usriSetPassword, NULL);
 
@@ -4933,17 +4962,6 @@ private:
             DBGLOG("Error updating password for %s",username);
             throw MakeStringException(-1, "Error updating password for %s",username);
         }
-
-        //Add tempfile scope for this user (spill, paused and checkpoint
-        //will be created under this user specific scope)
-        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
-        resName.append("::").append(tmpuser->getName());
-        Owned<ISecResource> resource = new CLdapSecResource(resName.str());
-        if (!addResource(RT_FILE_SCOPE, *tmpuser, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE)))
-        {
-            DBGLOG("Error adding temp file scope %s",resName.str());
-            throw MakeStringException(-1, "Error adding temp file scope %s",resName.str());
-        }
     }
 
 
@@ -5123,6 +5141,16 @@ private:
             }
         }
 
+        //Add tempfile scope for this user (spill, paused and checkpoint
+        //will be created under this user specific scope)
+        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
+        resName.append("::").append(username);
+        Owned<ISecResource> resource = new CLdapSecResource(resName.str());
+        if (!addResource(RT_FILE_SCOPE, user, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE)))
+        {
+            throw MakeStringException(-1, "Error adding temp file scope %s",resName.str());
+        }
+
         return true;
     }
 
@@ -5165,7 +5193,7 @@ private:
 
 int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)
 {
-    stype = LDAPSERVER_UNKNOWN;
+    LdapServerType deducedSType = LDAPSERVER_UNKNOWN;
     LDAP* ld = LdapInit("ldap", ldapserver, ldapport, 636); 
     if(ld == NULL)
     {
@@ -5225,24 +5253,38 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
                     }
                 }
                 else if(*curdn != '\0' && strcmp(curdn, "o=NetscapeRoot") == 0)
-                    stype = IPLANET;
+                {
+                    PROGLOG("Deduced LDAP Server Type 'iPlanet'");
+                    deducedSType = IPLANET;
+                }
                 i++;
             }
             
             if(domainDN.length() == 0)
                 domainDN.append(onedn.str());
 
-            if(stype == LDAPSERVER_UNKNOWN)
+            if (deducedSType == LDAPSERVER_UNKNOWN)
             {
                 if(i <= 1)
-                    stype = OPEN_LDAP;
+                {
+                    PROGLOG("Deduced LDAP Server Type 'OpenLDAP'");
+                    deducedSType = OPEN_LDAP;
+                }
                 else
-                    stype = ACTIVE_DIRECTORY;
+                {
+                    PROGLOG("Deduced LDAP Server Type 'Active Directory'");
+                    deducedSType = ACTIVE_DIRECTORY;
+                }
             }
         }
     }
     ldap_msgfree(msg);
     ldap_unbind(ld);
+
+    if (stype == LDAPSERVER_UNKNOWN)
+        stype = deducedSType;
+    else if (deducedSType != stype)
+        WARNLOG("Ignoring deduced LDAP Server Type, does not match config LDAPServerType");
 
     return err;
 }

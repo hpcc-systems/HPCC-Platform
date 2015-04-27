@@ -49,7 +49,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         anyThisGroup = false;
         eogNext = false;    
         count = 0;
@@ -67,7 +67,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         loop {
             if(abortSoon)
                 break;          
@@ -144,7 +144,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         RtlDynamicRowBuilder r(rightAllocator);
         size32_t sz = helper->createInitialRight(r);  
         firstright.setown(r.finalizeRowClear(sz));
@@ -162,7 +162,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         loop {
             if(abortSoon)
                 break;          

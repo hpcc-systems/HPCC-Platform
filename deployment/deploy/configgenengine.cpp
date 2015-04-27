@@ -330,7 +330,7 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
     }
     catch (...)
     {
-        throw MakeErrnoException("Error creating file list for process %s", m_name.get());
+        throw makeErrnoExceptionV("Error creating file list for process %s", m_name.get());
     }
 
     m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, NULL);
@@ -376,13 +376,13 @@ void CConfigGenEngine::createFakePlugins(StringBuffer& destFilePath) const
     StringBuffer tmpoutbuf("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Plugins/>");
 
     if (m_instances.ordinality() > 1 && strcmp(m_process.queryName(), XML_TAG_ESPPROCESS))
-        destFilePath.replaceString("@temp"PATHSEPSTR, m_cachePath);
+        destFilePath.replaceString("@temp" PATHSEPSTR, m_cachePath);
     else
     {
         char tempPath[_MAX_PATH];
         getTempPath(tempPath, sizeof(tempPath), m_name);
         ensurePath(tempPath);
-        destFilePath.replaceString("@temp"PATHSEPSTR, tempPath);
+        destFilePath.replaceString("@temp" PATHSEPSTR, tempPath);
     }
 
     Owned<IFile> pTargetFile = createIFile(destFilePath.str());

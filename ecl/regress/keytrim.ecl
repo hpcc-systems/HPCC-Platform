@@ -19,7 +19,7 @@
 //d := dataset('~local::rkc::person', { string15 f1, qstring15 f2, data15 f3, unicode15 f4, unsigned8 filepos{virtual(fileposition)} }, flat);
 d := dataset('~local::rkc::person', { string15 f1, qstring15 f2, data15 f3, varstring15 f4, unsigned8 filepos{virtual(fileposition)} }, flat);
 
-i := index(d, { d } ,'\\home\\person.name_first.key');
+i := index(d, { f1, f2 }, { d } ,'\\home\\person.name_first.key');
 
 
 string15 searchStrInStr := 'Gavin' : stored('searchStrInStr');

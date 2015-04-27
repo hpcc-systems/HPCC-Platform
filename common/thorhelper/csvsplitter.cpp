@@ -264,7 +264,6 @@ void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned c
         cur += matchLen;
     }
 
-done:
     memcpy(internalBuffer + internalOffset, lastCopied, cur-lastCopied);
     internalOffset += (cur-lastCopied);
     lengths[curColumn] = (size32_t)(internalBuffer + internalOffset - data[curColumn]);

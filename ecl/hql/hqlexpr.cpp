@@ -158,9 +158,11 @@ static IHqlExpression * cachedNullRecord;
 static IHqlExpression * cachedNullRowRecord;
 static IHqlExpression * cachedOne;
 static IHqlExpression * cachedLocalAttribute;
+static IHqlExpression * cachedContextAttribute;
 static IHqlExpression * constantTrue;
 static IHqlExpression * constantFalse;
 static IHqlExpression * defaultSelectorSequenceExpr;
+static IHqlExpression * dummyVirtualSeq;
 static IHqlExpression * newSelectAttrExpr;
 static IHqlExpression * recursiveExpr;
 static IHqlExpression * processingMarker;
@@ -237,9 +239,11 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     cachedNullRowRecord = createRecord(nonEmptyAttr);
     cachedOne = createConstant(1);
     cachedLocalAttribute = createAttribute(localAtom);
+    cachedContextAttribute = createAttribute(contextAtom);
     constantTrue = createConstant(createBoolValue(true));
     constantFalse = createConstant(createBoolValue(false));
     defaultSelectorSequenceExpr = createAttribute(_selectorSequence_Atom);
+    dummyVirtualSeq =  createSequence(no_attr, makeNullType(), _virtualSeq_Atom, 0);
     newSelectAttrExpr = createExprAttribute(newAtom);
     recursiveExpr = createAttribute(recursiveAtom);
     processingMarker = createValue(no_processing, makeNullType());
@@ -250,6 +254,9 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
 }
 MODULE_EXIT()
 {
+#ifdef TRACE_HASH
+    exprCache->dumpStats();
+#endif
     for (unsigned i=0; i<=8; i++)
     {
         ::Release(nullIntValue[i][0]);
@@ -261,10 +268,12 @@ MODULE_EXIT()
     processingMarker->Release();
     recursiveExpr->Release();
     newSelectAttrExpr->Release();
+    dummyVirtualSeq->Release();
     defaultSelectorSequenceExpr->Release();
     constantFalse->Release();
     constantTrue->Release();
     blank->Release();
+    cachedContextAttribute->Release();
     cachedLocalAttribute->Release();
     cachedOne->Release();
     cachedActiveTableExpr->Release();
@@ -328,9 +337,9 @@ MODULE_EXIT()
 #ifdef GATHER_LINK_STATS
 static void showStats()
 {
-    printf("Links = %"I64F"d(%"I64F"d) releases = %"I64F"d(%"I64F"d)\n", numLinks, numTransformerLinks, numReleases, numTransformerReleases);
-    printf("Create Links = %"I64F"d releases = %"I64F"d\n", numCreateLinks, numCreateReleases);
-    printf("setExtra = %"I64F"d setExtraSame = %"I64F"d setExtraUnlinked = %"I64F"d\n", numSetExtra, numSetExtraSame, numSetExtraUnlinked);
+    printf("Links = %" I64F "d(%" I64F "d) releases = %" I64F "d(%" I64F "d)\n", numLinks, numTransformerLinks, numReleases, numTransformerReleases);
+    printf("Create Links = %" I64F "d releases = %" I64F "d\n", numCreateLinks, numCreateReleases);
+    printf("setExtra = %" I64F "d setExtraSame = %" I64F "d setExtraUnlinked = %" I64F "d\n", numSetExtra, numSetExtraSame, numSetExtraUnlinked);
     printf("numLocks = %d nestedLocks = %d maxNested=%d nestedLockExtra = %d\n", numLocks, numNestedLocks, maxNestedLocks, numNestedExtra);
 }
 
@@ -705,10 +714,10 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
         setDefinitionText(attr, "", contents);
     }
 
+    ISourcePath * sourcePath = contents->querySourcePath();
+
     if (checkBeginMeta())
     {
-        ISourcePath * sourcePath = contents->querySourcePath();
-
         IPropertyTree * attr = metaTree->addPropTree("Source", createPTree("Source"));
         setFullNameProp(attr, "@name", scope->queryFullName(), name->str());
         attr->setProp("@sourcePath", sourcePath->str());
@@ -720,6 +729,7 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
         IPropertyTree * attr = globalDependTree->addPropTree("Attribute", createPTree("Attribute"));
         attr->setProp("@module", scope->queryFullName());
         attr->setProp("@name", name->str());
+        attr->setProp("@sourcePath", sourcePath->str());
         //attr->setPropInt("@flags", symbol->getObType());  MORE
     }
 }
@@ -938,9 +948,14 @@ void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpressio
             const char * moduleName = parentScope->queryFullName();
             if (moduleName)
             {
-                IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
-                depend->setProp("@module", moduleName);
-                depend->setProp("@name", expr->queryName()->str());
+                VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, expr->queryName()->str());
+
+                if (!curAttrTree->queryPropTree(xpath.str()))
+                {
+                    IPropertyTree * depend = curAttrTree->addPropTree("Depend", createPTree());
+                    depend->setProp("@module", moduleName);
+                    depend->setProp("@name", expr->queryName()->str());
+                }
             }
         }
     }
@@ -1095,6 +1110,7 @@ const char *getOpString(node_operator op)
     case no_flat: return "FLAT";
     case no_csv: return "CSV";
     case no_xml: return "XML";
+    case no_json: return "JSON";
 
     case no_when: return "WHEN";
     case no_priority: return "PRIORITY";
@@ -1462,6 +1478,7 @@ const char *getOpString(node_operator op)
     case no_merge_pending: return "no_merge_pending";
     case no_merge_nomatch: return "no_merge_nomatch";
     case no_toxml: return "TOXML";
+    case no_tojson: return "TOJSON";
     case no_catchds: return "CATCH";
     case no_readspill: return "no_readspill";
     case no_writespill: return "no_writespill";
@@ -1473,6 +1490,7 @@ const char *getOpString(node_operator op)
     case no_executewhen: return "WHEN";
     case no_callsideeffect: return "no_callsideeffect";
     case no_fromxml: return "FROMXML";
+    case no_fromjson: return "FROMJSON";
     case no_preservemeta: return "order-tracking";
     case no_normalizegroup: return "NORMALIZE";
     case no_indirect: return "no_indirect";
@@ -1850,6 +1868,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_definesideeffect:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_dataset_from_transform:
         return childdataset_none;
     case no_group:
@@ -2258,6 +2277,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_definesideeffect:
     case no_callsideeffect:
     case no_fromxml:
+    case no_fromjson:
     case no_dataset_from_transform:
         return 0;
     case no_delayedselect:
@@ -2573,6 +2593,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_commonspill:
     case no_readspill:
     case no_fromxml:
+    case no_fromjson:
     case no_normalizegroup:
     case no_cogroup:
     case no_dataset_alias:
@@ -3940,13 +3961,14 @@ IHqlSimpleScope * CHqlExpression::querySimpleScope()
     return NULL; 
 }
 
-#define HASHFIELD(p) hashcode = hashc((unsigned char *) &p, sizeof(p), hashcode)
+#define HASHFIELD(p) hashcode = hashvalue(p, hashcode)
 
 void CHqlExpression::setInitialHash(unsigned typeHash)
 {
     hashcode = op+typeHash;
     unsigned kids = operands.ordinality();
-    hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
+    if (kids)
+        hashcode = hashc((const unsigned char *)operands.getArray(), kids * sizeof(IHqlExpression *), hashcode);
 }
 
 void CHqlExpression::sethash()
@@ -4369,6 +4391,7 @@ IHqlExpression *CHqlExpression::queryRecord()
 }
 
 //== Commoning up code.... ==
+#if (defined(GATHER_LINK_STATS) || defined(DEBUG_TRACK_INSTANCEID))
 void CHqlExpression::Link(void) const
 { 
 #ifdef GATHER_LINK_STATS
@@ -4390,6 +4413,7 @@ bool CHqlExpression::Release(void) const
     CHECK_EXPR_SEQID(2);
     return Parent::Release();
 }
+#endif
 
 
 void CHqlExpression::beforeDispose()
@@ -4406,7 +4430,9 @@ void CHqlExpression::beforeDispose()
 #endif
     if (infoFlags & HEFobserved)
     {
+#ifdef HQLEXPR_MULTI_THREADED
         CriticalBlock block(*exprCacheCS);
+#endif
         if (infoFlags & HEFobserved)
             exprCache->removeExact(this);
     }
@@ -4457,7 +4483,9 @@ IHqlExpression * CHqlExpression::commonUpExpression()
 
     IHqlExpression * match;
     {
+#ifdef HQLEXPR_MULTI_THREADED
         CriticalBlock block(*exprCacheCS);
+#endif
         match = exprCache->addOrFind(*this);
 #ifndef GATHER_COMMON_STATS
         if (match == this)
@@ -4700,7 +4728,7 @@ inline void addUniqueTable(HqlExprCopyArray & array, IHqlExpression * ds)
         array.append(*ds);
 }
 
-inline void addHiddenTable(HqlExprCopyArray & array, IHqlExpression * ds, IHqlExpression * selSeq)
+inline void addHiddenTable(HqlExprCopyArray & array, IHqlExpression * ds)
 {
 #if defined(GATHER_HIDDEN_SELECTORS)
     if (array.find(*ds) == NotFound)
@@ -4710,11 +4738,30 @@ inline void addHiddenTable(HqlExprCopyArray & array, IHqlExpression * ds, IHqlEx
 
 inline void addActiveTable(HqlExprCopyArray & array, IHqlExpression * ds)
 {
-    //left.subfield  should be reduced the base cursor
+    //Sometimes the "dataset" passed in happens to be a no_select of a row field from a dataset.
+    //We need to record the root selector/cursor, so ensure we have that.
     ds = queryDatasetCursor(ds);
 
 //  This test is valid once the tree is normalized, but now this can be called on a parse tree.
 //  assertex(ds == ds->queryNormalizedSelector());          
+    node_operator dsOp = ds->getOperator();
+    if (dsOp != no_self && dsOp != no_selfref)
+        addUniqueTable(array, ds->queryNormalizedSelector());
+}
+
+
+inline void addUniqueTable(UsedExpressionHashTable & array, IHqlExpression * ds)
+{
+    array.addOrFindExact(*ds);
+}
+
+inline void addActiveTable(UsedExpressionHashTable & array, IHqlExpression * ds)
+{
+    //left.subfield  should be reduced the base cursor
+    ds = queryDatasetCursor(ds);
+
+//  This test is valid once the tree is normalized, but now this can be called on a parse tree.
+//  assertex(ds == ds->queryNormalizedSelector());
     node_operator dsOp = ds->getOperator();
     if (dsOp != no_self && dsOp != no_selfref)
         addUniqueTable(array, ds->queryNormalizedSelector());
@@ -4732,8 +4779,17 @@ CUsedTables::CUsedTables()
 
 CUsedTables::~CUsedTables()
 {
-    if (numTables > 1)
+    if (numTables == 1)
+    {
+        if (numActiveTables == 0)
+            tables.single->Release();
+    }
+    else if (numTables != 0)
+    {
+        for (unsigned i=numActiveTables; i < numTables; i++)
+            tables.multi[i]->Release();
         delete [] tables.multi;
+    }
 }
 
 
@@ -4819,6 +4875,7 @@ void CUsedTables::set(HqlExprCopyArray & activeTables, HqlExprCopyArray & newTab
         else
         {
             tables.single = &newTables.item(0);
+            tables.single->Link();
         }
     }
     else if (numTables != 0)
@@ -4827,7 +4884,10 @@ void CUsedTables::set(HqlExprCopyArray & activeTables, HqlExprCopyArray & newTab
         for (unsigned i1=0; i1 < numActiveTables; i1++)
             multi[i1] = &activeTables.item(i1);
         for (unsigned i2=numActiveTables; i2 < numTables; i2++)
+        {
             multi[i2] = &newTables.item(i2-numActiveTables);
+            multi[i2]->Link();
+        }
         tables.multi = multi;
     }
 }
@@ -4846,9 +4906,16 @@ void CUsedTablesBuilder::addNewTable(IHqlExpression * expr)
     addUniqueTable(newScopeTables, expr);
 }
 
-void CUsedTablesBuilder::addHiddenTable(IHqlExpression * expr, IHqlExpression * selSeq)
+void CUsedTablesBuilder::addHiddenSelector(IHqlExpression * expr)
 {
-    ::addHiddenTable(newScopeTables, expr, selSeq);
+#if defined(GATHER_HIDDEN_SELECTORS)
+    //expr is always a newly created selector.  If this expression isn't shared, then it will not be used anywhere else
+    //in the expression tree, so don't add it.
+    if (!static_cast<CHqlExpression *>(expr)->IsShared())
+        return;
+
+    addUniqueTable(newScopeTables, expr);
+#endif
 }
 
 void CUsedTablesBuilder::addActiveTable(IHqlExpression * expr)
@@ -4858,16 +4925,22 @@ void CUsedTablesBuilder::addActiveTable(IHqlExpression * expr)
 
 void CUsedTablesBuilder::cleanupProduction()
 {
-    ForEachItemInRev(i, inScopeTables)
+    HqlExprCopyArray toRemove;
+    SuperHashIteratorOf<IHqlExpression> iter(inScopeTables);
+    ForEach(iter)
     {
-        switch (inScopeTables.item(i).getOperator())
+        IHqlExpression & cur = iter.query();
+        switch (cur.getOperator())
         {
         case no_matchattr:
         case no_matchrow:
-            inScopeTables.remove(i);
+            toRemove.append(cur);
             break;
         }
     }
+
+    ForEachItemIn(i, toRemove)
+        inScopeTables.remove(&toRemove.item(i));
 }
 
 void CUsedTablesBuilder::removeParent(IHqlExpression * expr)
@@ -4884,15 +4957,6 @@ void CUsedTablesBuilder::removeParent(IHqlExpression * expr)
             break;
         expr = root->queryChild(0);
         removeActive(expr->queryNormalizedSelector());
-    }
-}
-
-void CUsedTablesBuilder::removeActiveRecords()
-{
-    ForEachItemInRev(i, inScopeTables)
-    {
-        if (inScopeTables.item(i).isRecord())
-            inScopeTables.remove(i);
     }
 }
 
@@ -4920,6 +4984,40 @@ void CUsedTablesBuilder::removeRows(IHqlExpression * expr, IHqlExpression * left
     default:
         throwUnexpectedOp(rowsSide);
     }
+}
+
+void CUsedTablesBuilder::removeActiveRecords()
+{
+    HqlExprCopyArray toRemove;
+    SuperHashIteratorOf<IHqlExpression> iter(inScopeTables);
+    ForEach(iter)
+    {
+        IHqlExpression & cur = iter.query();
+        if (cur.isRecord())
+            toRemove.append(cur);
+    }
+
+    ForEachItemIn(i, toRemove)
+        inScopeTables.remove(&toRemove.item(i));
+}
+
+inline void expand(HqlExprCopyArray & target, const UsedExpressionHashTable & source)
+{
+    SuperHashIteratorOf<IHqlExpression> iter(source);
+    ForEach(iter)
+    {
+        IHqlExpression & cur = iter.query();
+        target.append(cur);
+    }
+}
+
+void CUsedTablesBuilder::set(CUsedTables & tables)
+{
+    HqlExprCopyArray inTables;
+    HqlExprCopyArray newTables;
+    expand(inTables, inScopeTables);
+    expand(newTables, newScopeTables);
+    tables.set(inTables, newTables);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -5036,10 +5134,10 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
         break;
     case childdataset_datasetleft:
         {
+            cacheChildrenTablesUsed(used, 1, max);
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-            cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
             used.removeParent(ds);
             used.removeRows(this, left, NULL);
@@ -5057,73 +5155,72 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             }
             if (!ignoreInputs)
                 cacheChildrenTablesUsed(used, 0, 1);
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
             break;
         }
     case childdataset_left:
         { 
+            cacheChildrenTablesUsed(used, 1, max);
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-            cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
             used.removeRows(this, left, NULL);
 
             if (!ignoreInputs)
                 cacheChildrenTablesUsed(used, 0, 1);
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
             break;
         }
     case childdataset_same_left_right:
     case childdataset_nway_left_right:
         {
+            cacheChildrenTablesUsed(used, 1, max);
+
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
-            cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
             used.removeActive(right);
             used.removeRows(this, left, right);
 
             if (!ignoreInputs)
                 cacheChildrenTablesUsed(used, 0, 1);
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-            used.addHiddenTable(right, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
+            used.addHiddenSelector(right);
             break;
         }
     case childdataset_top_left_right:
         {
+            cacheChildrenTablesUsed(used, 1, max);
+
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
-            cacheChildrenTablesUsed(used, 1, max);
             used.removeParent(ds);
             used.removeActive(left);
             used.removeActive(right);
             used.removeRows(this, left, right);
             cacheChildrenTablesUsed(used, 0, 1);
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-            used.addHiddenTable(right, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
+            used.addHiddenSelector(right);
             break;
         }
     case childdataset_leftright: 
         {
+            cacheChildrenTablesUsed(used, 2, max);
+
             IHqlExpression * leftDs = queryChild(0);
             IHqlExpression * rightDs = queryChild(1);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, leftDs, selSeq);
             OwnedHqlExpr right = createSelector(no_right, rightDs, selSeq);
-            cacheChildrenTablesUsed(used, 2, max);
             used.removeActive(right);
             used.removeRows(this, left, right);
             if (op == no_normalize)
@@ -5140,10 +5237,9 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
                 if (!ignoreInputs)
                     cacheChildrenTablesUsed(used, 0, 2);
             }
-#ifdef GATHER_HIDDEN_SELECTORS
-            used.addHiddenTable(left, selSeq);
-            used.addHiddenTable(right, selSeq);
-#endif
+
+            used.addHiddenSelector(left);
+            used.addHiddenSelector(right);
             break;
         }
         break;
@@ -5725,7 +5821,11 @@ void CHqlField::onCreateField()
     case type_groupedtable:
         typeExpr = queryRecord();
 #ifdef _DEBUG
-        assertex(!recordRequiresLinkCount(typeExpr) || hasAttribute(_linkCounted_Atom));
+        if (typeExpr && !hasAttribute(_linkCounted_Atom))
+        {
+            OwnedHqlExpr unadornedRecord = getUnadornedRecordOrField(typeExpr->queryRecord());
+            assertex(!recordRequiresLinkCount(unadornedRecord));
+        }
 #endif
         break;
     }
@@ -5743,8 +5843,7 @@ bool CHqlField::equals(const IHqlExpression & r) const
 {
     if (CHqlExpression::equals(r))
     {
-        const CHqlField *fr = QUERYINTERFACE(&r, const CHqlField);
-        if (fr && fr->id==id)
+        if (id == r.queryId())
             return true;
     }
     return false;
@@ -7108,7 +7207,7 @@ bool isImport(IHqlExpression * expr)
     return symbol && ((symbol->getSymbolFlags() & ob_import) != 0);
 }
 
-IECLError * queryAnnotatedWarning(const IHqlExpression * expr)
+IError * queryAnnotatedWarning(const IHqlExpression * expr)
 {
     assertex(expr->getAnnotationKind() == annotate_warning);
     const CHqlWarningAnnotation * cast = static_cast<const CHqlWarningAnnotation *>(expr);
@@ -7338,7 +7437,7 @@ bool CHqlAnnotationExtraBase::equals(const IHqlExpression & other) const
 //  if (!areMatchingPTrees(doc, cast->doc))
 //      return false;
 
-CHqlWarningAnnotation::CHqlWarningAnnotation(IHqlExpression *_body, IECLError * _ownedWarning)
+CHqlWarningAnnotation::CHqlWarningAnnotation(IHqlExpression *_body, IError * _ownedWarning)
 : CHqlAnnotationExtraBase(_body, _ownedWarning)
 {
 }
@@ -7350,12 +7449,12 @@ IHqlExpression * CHqlWarningAnnotation::cloneAnnotation(IHqlExpression * newbody
     return createWarningAnnotation(LINK(newbody), LINK(queryWarning()));
 }
 
-IHqlExpression * CHqlWarningAnnotation::createWarningAnnotation(IHqlExpression * _ownedBody, IECLError * _ownedWarning)
+IHqlExpression * CHqlWarningAnnotation::createWarningAnnotation(IHqlExpression * _ownedBody, IError * _ownedWarning)
 {
     return (new CHqlWarningAnnotation(_ownedBody, _ownedWarning))->closeExpr();
 }
 
-IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IECLError * _ownedWarning)
+IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IError * _ownedWarning)
 {
     return CHqlWarningAnnotation::createWarningAnnotation(_ownedBody, _ownedWarning);
 }
@@ -7699,13 +7798,27 @@ IHqlExpression * createFunctionDefinition(IIdAtom * id, IHqlExpression * value, 
     return createFunctionDefinition(id, args);
 }
 
+bool functionBodyUsesContext(IHqlExpression * body)
+{
+    //All functions are assumed to require the context, unless it is an external c++ function without a context attr
+    switch (body->getOperator())
+    {
+    case no_external:
+        return (body->queryAttribute(contextAtom) != NULL);
+    default:
+        return true;
+    }
+}
+
 IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
 {
     IHqlExpression * body = &args.item(0);
     IHqlExpression * formals = &args.item(1);
     IHqlExpression * defaults = args.isItem(2) ? &args.item(2) : NULL;
+    OwnedHqlExpr attrs;
+    if (functionBodyUsesContext(body))
+        attrs.set(cachedContextAttribute);
 
-#if 1
     //This is a bit of a waste of time, but need to improve assignableFrom for a function type to ignore the uids.
     QuickExpressionReplacer defaultReplacer;
     HqlExprArray normalized;
@@ -7722,11 +7835,7 @@ IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
     OwnedHqlExpr newFormals = formals->clone(normalized);
     OwnedHqlExpr newDefaults = defaults ? defaultReplacer.transform(defaults) : NULL;
 
-    ITypeInfo * type = makeFunctionType(body->getType(), newFormals.getClear(), newDefaults.getClear());
-#else
-    ITypeInfo * type = makeFunctionType(body->getType(), LINK(formals), LINK(defaults));
-#endif
-
+    ITypeInfo * type = makeFunctionType(body->getType(), newFormals.getClear(), newDefaults.getClear(), attrs.getClear());
     return createNamedValue(no_funcdef, type, id, args);
 }
 
@@ -7833,7 +7942,7 @@ void CHqlScope::throwRecursiveError(IIdAtom * searchName)
 
     StringBuffer msg("Definition of ");
     msg.append(*searchName).append(" contains a recursive dependency");
-    throw createECLError(ERR_RECURSIVE_DEPENDENCY, msg.toCharArray(), filename, 0, 0, 1);
+    throw createError(ERR_RECURSIVE_DEPENDENCY, msg.toCharArray(), filename, 0, 0, 1);
 }
 
 inline bool namesMatch(const char * lName, const char * rName)
@@ -8028,7 +8137,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     {
         StringBuffer msg("Definition for ");
         msg.append(*searchName).append(" contains no text");
-        throw createECLError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
+        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
     }
 
     OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(processingMarker), ob_exported);
@@ -8054,7 +8163,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
             resolved->removeSymbol(searchName);
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
         msg.append(*searchName);
-        throw createECLError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
+        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
     }
 
     //Preserve ob_sandbox etc. annotated on the original definition, but not on the parsed code.
@@ -9227,7 +9336,7 @@ IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lo
         const char * filename = parentCtx->sourcePath->str();
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
         msg.append(*searchName);
-        throw createECLError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, oldSymbol->getStartLine(), oldSymbol->getStartColumn(), 1);
+        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, oldSymbol->getStartLine(), oldSymbol->getStartColumn(), 1);
     }
 
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
@@ -9637,8 +9746,8 @@ bool CHqlVariable::equals(const IHqlExpression & r) const
 {
     if (CHqlExpression::equals(r))
     {
-        assertex(QUERYINTERFACE(&r, const CHqlVariable) == (const CHqlVariable *) &r);
-        const CHqlVariable *c = (const CHqlVariable *) &r;
+        dbgassertex(QUERYINTERFACE(&r, const CHqlVariable) == (const CHqlVariable *) &r);
+        const CHqlVariable *c = static_cast<const CHqlVariable *>(&r);
         return strcmp(name, c->name) == 0;
     }
     return false;
@@ -9685,7 +9794,7 @@ bool CHqlAttribute::equals(const IHqlExpression &r) const
 void CHqlAttribute::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = hashc((unsigned char *) &name, sizeof(name), hashcode);
+    HASHFIELD(name);
 }
 
 IHqlExpression *CHqlAttribute::clone(HqlExprArray & args)
@@ -9757,8 +9866,8 @@ IInterface * CHqlUnknown::queryUnknownExtra()
 void CHqlUnknown::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = hashc((unsigned char *) &name, sizeof(name), hashcode);
-    hashcode = hashc((unsigned char *) &extra, sizeof(extra), hashcode);
+    HASHFIELD(name);
+    HASHFIELD(extra);
 }
 
 IHqlExpression *CHqlUnknown::clone(HqlExprArray &newkids)
@@ -9801,8 +9910,8 @@ bool CHqlSequence::equals(const IHqlExpression &r) const
 void CHqlSequence::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = hashc((unsigned char *) &name, sizeof(name), hashcode);
-    hashcode = hashc((unsigned char *) &seq, sizeof(seq), hashcode);
+    HASHFIELD(name);
+    HASHFIELD(seq);
 }
 
 IHqlExpression *CHqlSequence::clone(HqlExprArray &newkids)
@@ -10245,7 +10354,7 @@ extern IHqlExpression *createEnumType(ITypeInfo * _type, IHqlScope *_scope)
 void CHqlTemplateFunctionContext::sethash() 
 { 
     CHqlExpression::sethash(); 
-    hashcode = hashc((unsigned char *) context, sizeof(context), hashcode); 
+    HASHFIELD(context);
 }
 
 //==============================================================================================================
@@ -10346,9 +10455,9 @@ extern IHqlExpression *createValueF(node_operator op, ITypeInfo *type, ...)
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
         if (!parm)
             break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
+
+        dbgassertex(QUERYINTERFACE(parm, IHqlExpression));
+
         if (parm->getOperator() == no_comma)
         {
             parm->unwindList(children, no_comma);
@@ -10359,15 +10468,6 @@ extern IHqlExpression *createValueF(node_operator op, ITypeInfo *type, ...)
     }
     va_end(args);
     return CHqlExpressionWithType::makeExpression(op, type, children);
-}
-
-extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, unsigned num, IHqlExpression * * args)
-{
-    IHqlExpression * expr = createOpenValue(op, type);
-    unsigned index;
-    for (index = 0; index < num; index++)
-        expr->addOperand(args[index]);
-    return expr->closeExpr();
 }
 
 extern HQL_API IHqlExpression * createValueFromCommaList(node_operator op, ITypeInfo * type, IHqlExpression * argsExpr)
@@ -10383,21 +10483,20 @@ extern HQL_API IHqlExpression * createValueFromCommaList(node_operator op, IType
 
 extern HQL_API IHqlExpression * createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args)
 {
-    ForEachItemIn(idx, args)
-        args.item(idx).Link();
-    HqlExprArray & castArgs = const_cast<HqlExprArray &>(args);
-    IHqlExpression * * exprList = static_cast<IHqlExpression * *>(castArgs.getArray());
-    return createValue(op, type, args.ordinality(), exprList);
+    return createValueSafe(op, type, args, 0, args.ordinality());
 }
 
 extern HQL_API IHqlExpression * createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args, unsigned from, unsigned max)
 {
     assertex(from <= args.ordinality() && max <= args.ordinality() && from <= max);
+    IHqlExpression * expr = createOpenValue(op, type);
     for (unsigned idx=from; idx < max; idx++)
-        args.item(idx).Link();
-    HqlExprArray & castArgs = const_cast<HqlExprArray &>(args);
-    IHqlExpression * * exprList = static_cast<IHqlExpression * *>(castArgs.getArray());
-    return createValue(op, type, max-from, exprList + from);
+    {
+        IHqlExpression & cur = args.item(idx);
+        cur.Link();
+        expr->addOperand(&cur);
+    }
+    return expr->closeExpr();
 }
 
 extern IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1)
@@ -10561,9 +10660,9 @@ extern IHqlExpression *createDatasetF(node_operator op, ...)
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
         if (!parm)
             break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
+
+        dbgassertex(QUERYINTERFACE(parm, IHqlExpression));
+
         if (parm->getOperator() == no_comma)
         {
             parm->unwindList(children, no_comma);
@@ -10873,14 +10972,32 @@ struct CallExpansionContext
 extern IHqlExpression * expandFunctionCall(CallExpansionContext & ctx, IHqlExpression * call);
 
 
+//#define TRACE_BINDING
 static HqlTransformerInfo parameterBindTransformerInfo("ParameterBindTransformer");
 class ParameterBindTransformer : public QuickHqlTransformer
 {
 public:
-    ParameterBindTransformer(CallExpansionContext & _ctx) 
+    ParameterBindTransformer(CallExpansionContext & _ctx, IHqlExpression * _call)
     : QuickHqlTransformer(parameterBindTransformerInfo, _ctx.errors), 
-      ctx(_ctx)
+      ctx(_ctx), call(_call)
     {
+        depth = 0;
+        maxDepth = 0;
+    }
+    ~ParameterBindTransformer()
+    {
+#ifdef TRACE_BINDING
+        if (maxDepth > 200)
+        {
+            printf("Bind max(%u): ", maxDepth);
+            printf("%s(", call->queryId()->str());
+            ForEachChild(i, call)
+            {
+                printf("%s:%p ", getOpString(call->queryChild(i)->getOperator()), call->queryChild(i));
+            }
+            printf(")\n");
+        }
+#endif
     }
 
     IHqlExpression * createExpandedCall(IHqlExpression * call);
@@ -10893,7 +11010,16 @@ protected:
         if (expr->isFullyBound() && !containsCall(expr, ctx.forceOutOfLineExpansion))
             return LINK(expr);
 
+#ifdef TRACE_BINDING
+        depth++;
+        if (depth > maxDepth)
+            maxDepth = depth;
+        IHqlExpression * ret = QuickHqlTransformer::createTransformed(expr);
+        depth--;
+        return ret;
+#else
         return QuickHqlTransformer::createTransformed(expr);
+#endif
     }
 
     virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
@@ -11026,6 +11152,9 @@ protected:
 
 protected:
     CallExpansionContext & ctx;
+    IHqlExpression * call;
+    unsigned depth;
+    unsigned maxDepth;
 };
 
 
@@ -11067,7 +11196,12 @@ IHqlExpression * ParameterBindTransformer::createBoundBody(IHqlExpression *funcd
         case no_outofline:
             {
                 if (ctx.forceOutOfLineExpansion)
+                {
+                    //No arguments to the function => transforming will do nothing
+                    if (actuals.ordinality() == 0)
+                        return LINK(body->queryChild(0));
                     return transform(body->queryChild(0));
+                }
 
                 HqlExprArray args;
                 args.append(*LINK(body));
@@ -11076,11 +11210,19 @@ IHqlExpression * ParameterBindTransformer::createBoundBody(IHqlExpression *funcd
                 break;
             }
         default:
+            //No arguments to the function => transforming will do nothing
+            if (actuals.ordinality() == 0)
+                return LINK(body);
             return transform(body);
         }
     }
     else
-        newFuncdef.setown(transform(funcdef));
+    {
+        if (actuals.ordinality() == 0)
+            newFuncdef.set(funcdef);
+        else
+            newFuncdef.setown(transform(funcdef));
+    }
 
     HqlExprArray clonedActuals;
     appendArray(clonedActuals, actuals);
@@ -11096,7 +11238,8 @@ IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression * c
     while (actuals.ordinality() && actuals.tos().isAttribute())
         actuals.pop();
 
-    return createExpandedCall(call->queryBody()->queryFunctionDefinition(), actuals);
+    IHqlExpression * funcdef = call->queryBody()->queryFunctionDefinition();
+    return createExpandedCall(funcdef, actuals);
 }
 
 IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression *funcdef, const HqlExprArray & resolvedActuals)
@@ -11380,20 +11523,42 @@ static IHqlExpression * createNormalizedCall(IHqlExpression *funcdef, const HqlE
 
 inline IHqlExpression * expandFunctionalCallBody(CallExpansionContext & ctx, IHqlExpression * call)
 {
-    ParameterBindTransformer binder(ctx);
+    ParameterBindTransformer binder(ctx, call);
     return binder.createExpandedCall(call);
 }
+
+static IHqlExpression * normalizeTrailingAttributes(IHqlExpression * call)
+{
+    unsigned num = call->numChildren();
+    if (num == 0)
+        return LINK(call);
+
+    IHqlExpression * last = call->queryChild(num-1);
+    if (!last->isAttribute())
+        return LINK(call);
+
+    if (last->queryName() != _virtualSeq_Atom)
+        return LINK(call);
+
+    HqlExprArray actuals;
+    unwindChildren(actuals, call);
+    actuals.pop();
+    actuals.append(*LINK(dummyVirtualSeq));
+    return call->clone(actuals);
+}
+
 
 static IHqlExpression * cachedExpandFunctionCallBody(CallExpansionContext & ctx, IHqlExpression * call)
 {
     if (ctx.functionCache)
     {
-        CHqlCachedBoundFunction *cache2 = new CHqlCachedBoundFunction(call, ctx.forceOutOfLineExpansion);
+        OwnedHqlExpr normalizedCall = normalizeTrailingAttributes(call);
+        CHqlCachedBoundFunction *cache2 = new CHqlCachedBoundFunction(normalizedCall, ctx.forceOutOfLineExpansion);
         Owned<CHqlCachedBoundFunction> cache = static_cast<CHqlCachedBoundFunction *>(cache2->closeExpr());
         if (cache->bound)
             return LINK(cache->bound);
 
-        IHqlExpression *ret = expandFunctionalCallBody(ctx, call);
+        IHqlExpression *ret = expandFunctionalCallBody(ctx, normalizedCall);
 
         cache->bound.set(ret);
         ctx.functionCache->append(*cache.getClear());
@@ -11595,9 +11760,9 @@ extern IHqlExpression *createRowF(node_operator op, ...)
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
         if (!parm)
             break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
+
+        dbgassertex(QUERYINTERFACE(parm, IHqlExpression));
+
         if (parm->getOperator() == no_comma)
         {
             parm->unwindList(children, no_comma);
@@ -11658,6 +11823,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
     case no_typetransfer:
     case no_createrow:
     case no_fromxml:
+    case no_fromjson:
         {
             IHqlExpression & transform = args.item(0);
             type = makeRowType(LINK(transform.queryRecordType()));
@@ -11902,6 +12068,8 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*createAttribute(actionAtom));
     if (body->getInfoFlags() & HEFcontextDependentException)
         attrs.append(*createAttribute(contextSensitiveAtom));
+    if (functionBodyUsesContext(body))
+        attrs.append(*LINK(cachedContextAttribute));
 
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
     OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);
@@ -13301,7 +13469,6 @@ extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquer
 
 //==============================================================================================================
 
-//MAKEValueArray(byte, ByteArray);
 typedef UnsignedArray DepthArray;
 
 struct TransformTrackingInfo
@@ -13322,7 +13489,7 @@ static TransformTrackingInfo transformExtraState[NUM_PARALLEL_TRANSFORMS+1];
 static bool isActiveMask[NUM_PARALLEL_TRANSFORMS+1];
 
 #if NUM_PARALLEL_TRANSFORMS==1
-unsigned threadActiveExtraIndex=1;
+const unsigned threadActiveExtraIndex=1;
 #else
 #ifdef _WIN32
 __declspec(thread) unsigned threadActiveExtraIndex;
@@ -13488,19 +13655,19 @@ void TransformTrackingInfo::lock()
 
 void TransformTrackingInfo::unlock()
 {
-    unsigned transformStackLevel = transformStackMark.pop();
+    unsigned transformStackLevel = transformStackMark.popGet();
     while (transformStack.ordinality() > transformStackLevel)
     {
-        CHqlExpression * expr = (CHqlExpression *)transformStack.pop();
+        CHqlExpression * expr = (CHqlExpression *)transformStack.popGet();
         unsigned oldDepth = 0;
         IInterface * extra = NULL;
         if (curTransformDepth > 1)
         {
-            oldDepth = depthStack.pop();
+            oldDepth = depthStack.popGet();
             if (oldDepth & TRANSFORM_DEPTH_SAVE_MATCH_EXPR)
                 extra = expr;
             else if (oldDepth)
-                extra = (IInterface *)transformStack.pop();
+                extra = (IInterface *)transformStack.popGet();
         }
         expr->resetTransformExtra(extra, oldDepth);
         expr->Release();
@@ -13508,6 +13675,7 @@ void TransformTrackingInfo::unlock()
     curTransformDepth--;
 }
 
+#if NUM_PARALLEL_TRANSFORMS!=1
 static void ensureThreadExtraIndex()
 {
     {
@@ -13539,6 +13707,7 @@ static void releaseExtraIndex()
     threadActiveExtraIndex = 0;
     transformSemaphore->signal();
 }
+#endif
 
 extern HQL_API void lockTransformMutex()
 {
@@ -14613,6 +14782,13 @@ bool preservesValue(ITypeInfo * after, IHqlExpression * expr)
     return (recastValue->compare(value) == 0);
 }
 
+bool castPreservesValue(IHqlExpression * expr)
+{
+    dbgassertex(isCast(expr));
+    return preservesValue(expr->queryType(), expr->queryChild(0));
+}
+
+
 static const unsigned UNLIMITED_REPEAT = (unsigned)-1;
 
 unsigned getRepeatMin(IHqlExpression * expr)
@@ -15111,7 +15287,7 @@ IHqlExpression * queryExpression(ITypeInfo * type)
     ITypeInfo * indirect = queryModifier(type, typemod_indirect);
     if (indirect)
         return static_cast<IHqlExpression *>(indirect->queryModifierExtra());
-    return QUERYINTERFACE(queryUnqualifiedType(type), IHqlExpression);
+    return queryUnqualifiedType(type)->castToExpression();
 }
 
 IHqlExpression * queryExpression(IHqlDataset * ds)
@@ -15123,7 +15299,7 @@ IHqlExpression * queryExpression(IHqlDataset * ds)
 IHqlScope * queryScope(ITypeInfo * type)
 {
     if (!type) return NULL;
-    return QUERYINTERFACE(queryUnqualifiedType(type), IHqlScope);
+    return queryUnqualifiedType(type)->castToScope();
 }
 
 IHqlRemoteScope * queryRemoteScope(IHqlScope * scope)

@@ -31,8 +31,10 @@ class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     bool _isHttp;
+    StringAttr urlPath;
     StringAttr authToken;
     StringAttr contentType;
+    Owned<IProperties> parameters;
 private:
     inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
     {
@@ -44,22 +46,35 @@ private:
         if (len)
             s.set(v, len);
     }
+    void gatherUrlParameters();
+
 public:
     IMPLEMENT_IINTERFACE;
-    HttpHelper() { _isHttp = false; };
-    bool isHttp() { return _isHttp; };
-    void setIsHttp(bool __isHttp) { _isHttp = __isHttp; };
-    const char *queryAuthToken() { return authToken.sget(); };
+    HttpHelper() { _isHttp = false; parameters.setown(createProperties(true));}
+    bool isHttp() { return _isHttp; }
+    bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
+    void setIsHttp(bool __isHttp) { _isHttp = __isHttp; }
+    const char *queryAuthToken() { return authToken.sget(); }
     inline void setAuthToken(const char *v)
     {
         setHttpHeaderValue(authToken, v, false);
     };
-    const char *queryContentType() { return contentType.sget(); };
+    const char *queryContentType() { return contentType.sget(); }
     inline void setContentType(const char *v)
     {
         setHttpHeaderValue(contentType, v, true);
     };
+    inline void setUrlPath(const char *v)
+    {
+        const char *end = strstr(v, " HTTP");
+        if (end)
+        {
+            urlPath.set(v, end - v);
+            gatherUrlParameters();
+        }
+    }
     TextMarkupFormat queryContentFormat(){return (strieq(queryContentType(), "application/json")) ? MarkupFmt_JSON : MarkupFmt_XML;}
+    IProperties *queryUrlParameters(){return parameters;}
 };
 
 //========================================================================================= 
@@ -90,8 +105,8 @@ protected:
     bool httpMode;
     bool heartbeat;
     TextMarkupFormat mlFmt;
-    StringBuffer contentHead;
-    StringBuffer contentTail;
+    StringAttr contentHead;
+    StringAttr contentTail;
     PointerArray queued;
     UnsignedArray lengths;
     unsigned sent;
@@ -164,6 +179,8 @@ public:
     virtual void *getPayload(size32_t &length);
     virtual void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
     virtual void startScalar(const char *resultName, unsigned sequence);
+    virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size);
+    virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size);
     virtual void incrementRowCount();
 };
 
@@ -180,6 +197,8 @@ public:
     void encodeData(const void *data, unsigned len);
     void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
     void startScalar(const char *resultName, unsigned sequence);
+    virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size);
+    virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size);
 };
 
 inline const char *getFormatName(TextMarkupFormat fmt)
@@ -248,6 +267,6 @@ private:
 
 THORHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags);
 THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in);
-THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally);
+THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix);
 
 #endif // ROXIEHELPER_HPP

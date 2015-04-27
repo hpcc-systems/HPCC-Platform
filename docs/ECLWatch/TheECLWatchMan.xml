@@ -29,8 +29,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para> </para>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -48,7 +48,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems</corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -236,7 +236,7 @@
       please see the ECL Language reference. A copy of which can be found
       online at <ulink
       url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
-      on the HPCC Systems web site.</para>
+      on the HPCC Systems<superscript>®</superscript> web site.</para>
 
       <!--***NOTE: Be sure to UPDATE these images when they find a home in ECLWATCH***-->
     </sect1>
@@ -341,6 +341,14 @@
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                   xpointer="Spray_XML"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
+ 
+
+ 
+
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="Spray_JSON"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+               
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                   xpointer="Spray_Variable"
@@ -576,7 +584,7 @@
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/ECLWA460.jpg" />
+            <imagedata fileref="images/ECLWA460.jpg" vendor="eclwatchSS" />
           </imageobject>
         </mediaobject>
       </figure></para>
@@ -589,6 +597,99 @@
     <para>There are also some system administration type links such as, Users,
     Groups, Permissions, and Resources. These links allow you to perform some
     system administration tasks through ECL watch.</para>
+
+    <sect1>
+      <title>Topology</title>
+
+      <para>The Topology page provides a visual tree display with information
+      about your clusters, services, and nodes.</para>
+
+      <para>Click on the <emphasis role="bold">Topology</emphasis> link from
+      the Operations navigation sub-menu to access the topology page.</para>
+
+      <para><figure>
+          <title>Topology Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA463.jpg" vendor="ECLWatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <sect2 id="TopologyTargets">
+        <title>Targets</title>
+
+        <para>The <emphasis role="bold">Targets</emphasis> Action button
+        displays your clusters by type.</para>
+
+        <para>Click on the arrow to the left of the Cluster folder/object to
+        expand. The expanded view displays.</para>
+
+        <para><figure>
+            <title>Expanded View</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA464.jpg" vendor="ECLWatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure>The expanded view displays the objects and nodes in the
+        selected container. Select the node or object to display more
+        information or to access the logs. The Summary, Configuration, and Log
+        tabs on the left side of the page display the relevant information for
+        the selected component.</para>
+      </sect2>
+
+      <sect2 id="TopologyServices">
+        <title>Services</title>
+
+        <para>Press the <emphasis role="bold">Services</emphasis> Action
+        button to display information on the various services running on your
+        cluster.</para>
+
+        <para>Click on the arrow to the left of the service you wish to
+        expand. The expanded view displays.</para>
+
+        <para><figure>
+            <title>Expanded Services</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA465.jpg" vendor="ECLWatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The services view provides a service oriented tree view that
+        provides access to the services. Expand the tree, and select the
+        component to view the Summary, Configuration, or Logs tabs for the
+        selected component.</para>
+      </sect2>
+
+      <sect2>
+        <title>Machines</title>
+
+        <para>Press the <emphasis role="bold">Machines</emphasis> Action
+        button for more information on the various machines or nodes running
+        in your cluster(s).</para>
+
+        <para><figure>
+            <title>Machines View</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA466.jpg" vendor="ECLWatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The <emphasis role="bold">Machines</emphasis> action button
+        opens a node oriented view of the tree. Expand the nodes to see the
+        services on each node. Select the component to view the Summary,
+        Configuration, or Logs tabs for that selected component.</para>
+      </sect2>
+    </sect1>
 
     <sect1>
       <title>Disk Usage</title>
@@ -667,6 +768,97 @@
     </sect1>
   </chapter>
 
+  <chapter id="Plug-Ins_for_ECLWatch">
+    <title>Plug-ins</title>
+
+    <para>You can add functionality to ECL Watch with plug-ins. You can
+    integrate certain plug-ins into the ECL Watch interface. After you install
+    an approved plug-in, the plug-in icon displays in the navigation bar at
+    the top of the ECL Watch page. Click on the plug-in icon to view the
+    plug-ins page in ECL Watch. <figure>
+        <title>ECL Watch Plug-in icon</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWaPlug.jpg" vendor="VM_welcome" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <sect1 id="Ganglia_in_ECLWatch">
+      <title>Ganglia in ECL Watch</title>
+
+      <para>With the HPCC Systems<superscript>®</superscript>
+      Ganglia-monitoring plug-in installed, you can view the Ganglia
+      statistics and graphs through the ECL Watch interface. The default
+      monitoring displays several key statistics, but you can customize and
+      configure the views.</para>
+
+      <figure>
+        <title>Ganglia in ECL Watch</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GAN051.jpg" vendor="VM_welcome" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <sect2 id="Customize_Monitoring" role="brk">
+        <title>Customize Monitoring</title>
+
+        <para>The default Ganglia page has a tab for Custom Monitoring where
+        you can easily add custom monitoring components. <figure>
+            <title>Ganglia Custom Monitoring</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWa481.jpg" vendor="VM_welcome" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>To customize the monitoring page;</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Select the <emphasis role="bold">Custom
+              Monitoring</emphasis> tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Metrics</emphasis>
+              button.</para>
+            </listitem>
+
+            <listitem>
+              <para>Use the drop menus to display the various graphing
+              utilities.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para><figure>
+            <title>Customize the Metrics</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWa482.jpg" vendor="VM_welcome" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </sect2>
+
+      <sect2>
+        <title>Installing Ganglia in ECL Watch</title>
+
+        <para>In order to use Ganglia in ECL Watch, you need to have Ganglia
+        installed on your HPCC System. For details on installing Ganglia for
+        ECL Watch, refer to the <emphasis>HPCC Monitoring and
+        Reporting</emphasis> manual.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
   <chapter id="Account_Info">
     <title>Advanced Menu</title>
 
@@ -713,10 +905,10 @@
       to help in the transition.</para>
 
       <para>The <emphasis role="bold">Additional Resources</emphasis> link
-      opens a tab to the HPCC Systems download page, where you can browse and
-      download additional HPCC resources: documentation, white papers,
-      training videos, wiki pages, the red book and other HPCC related source
-      code.</para>
+      opens a tab to the HPCC Systems<superscript>®</superscript> download
+      page, where you can browse and download additional HPCC resources:
+      documentation, white papers, training videos, wiki pages, the red book
+      and other HPCC related source code.</para>
 
       <para>The <emphasis role="bold">Release Notes</emphasis> link opens a
       tab with the relevant release notes for the version of HPCC that you are
@@ -843,17 +1035,18 @@
     <title>Resources</title>
 
     <para>The resources link can be found under the Operations Icon link. The
-    resources link in ECL Watch provides a link to the HPCC Systems web
-    portal. Visit the HPCC Systems Web Portal at <ulink
+    resources link in ECL Watch provides a link to the HPCC
+    Systems<superscript>®</superscript> web portal. Visit the HPCC
+    Systems<superscript>®</superscript> Web Portal at <ulink
     url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for software
     updates, plug-ins, support, documentation, and more. This is where you can
     find resources useful for running and maintaining HPCC on the web
     portal.</para>
 
-    <para>You can also get to the resources link on the HPCC Systems web
-    portal page, by clicking on the <emphasis role="bold">Additional
-    Resources</emphasis> link found on the sub-menu of at the top right hand
-    side of navigation bar.</para>
+    <para>You can also get to the resources link on the HPCC
+    Systems<superscript>®</superscript> web portal page, by clicking on the
+    <emphasis role="bold">Additional Resources</emphasis> link found on the
+    sub-menu of at the top right hand side of navigation bar.</para>
 
     <para>ECL Watch provides a link to the HPCC portal's download page: <ulink
     url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.

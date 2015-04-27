@@ -675,7 +675,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
 {
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, _expr->queryChild(0));
 
-    unsigned startTime = msTick();
+    cycle_t startCycles = get_cycles_now();
     OwnedHqlExpr expr = optimizeParse(_expr);
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKparse, expr, "Parse");
@@ -685,7 +685,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     buildInstancePrefix(instance);
 
     //This will become conditional on the flags....
-    unsigned startPrepareTime = msTick();
+    cycle_t startPrepareCycles = get_cycles_now();
     ITimeReporter * reporter = options.addTimingToWorkunit ? timeReporter : NULL;
     if (expr->hasAttribute(tomitaAtom))
         nlpParse = createTomitaContext(expr, code->workunit, options, reporter);
@@ -716,17 +716,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     doBuildParseSearchText(instance->startctx, expr);
     doBuildParseValidators(instance->nestedctx, expr);
     doBuildParseExtra(instance->startctx, expr);
-    updateTimer("workunit;Generate PARSE: Prepare", msTick()-startPrepareTime);
+    noteFinishedTiming("compile:generate PARSE:prepare", startPrepareCycles);
     
     MemoryBuffer buffer;
-    unsigned startCompileTime = msTick();
+    cycle_t startCompileCycles = get_cycles_now();
     nlpParse->compileSearchPattern();
     nlpParse->queryParser()->serialize(buffer);
     if (nlpParse->isGrammarAmbiguous())
         WARNING1(CategoryEfficiency, HQLWRN_GrammarIsAmbiguous, instance->activityId);
 
     doBuildParseCompiled(instance->classctx, buffer);
-    updateTimer("workunit;Generate PARSE: Compile", msTick()-startCompileTime);
+    noteFinishedTiming("compile:generate PARSE:compile", startCompileCycles);
 
     nlpParse->buildProductions(*this, instance->classctx, instance->startctx);
 
@@ -759,7 +759,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     nlpParse = NULL;
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
-    updateTimer("workunit;Generate PARSE", msTick()-startTime);
+    noteFinishedTiming("compile:generate PARSE", startCycles);
 
     return instance->getBoundActivity();
 }

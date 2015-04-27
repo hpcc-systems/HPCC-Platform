@@ -179,7 +179,7 @@ interface IPTArrayValue
     virtual void deserialize(MemoryBuffer &src) = 0;
 };
 
-class CPTArray : implements IPTArrayValue, private Array
+class CPTArray : implements IPTArrayValue, private IArray
 {
 public:
     virtual bool isArray() const { return true; }

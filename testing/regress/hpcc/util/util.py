@@ -21,9 +21,11 @@ import argparse
 import platform
 import logging
 import os
+import subprocess
 
 from ..common.error import Error
 from ..common.shell import Shell
+from ..common.config import Config
 
 def isPositiveIntNum(string):
     for i in range(0,  len(string)):
@@ -140,17 +142,21 @@ import subprocess
 
 def getRealIPAddress():
     ipAddress = '127.0.0.1'
+    found = False
     try:
-        result = subprocess.Popen("ifconfig",  shell=False,  bufsize=8192,  stdout=subprocess.PIPE).stdout.read()
-        ethernetFound=False
+        proc = subprocess.Popen(['ip', '-o', '-4', 'addr', 'show'], shell=False,  bufsize=8192, stdout=subprocess.PIPE, stderr=None)
+        result = proc.communicate()[0]
         results = result.split('\n')
         for line in results:
-            if 'Ethernet' in line:
-                ethernetFound=True
-
-            if ethernetFound and 'inet addr' in line:
+            if 'scope global' in line:
                 items = line.split()
-                ipAddress = items[1].split(':')[1]
+                ipAddress = items[3].split('/')[0]
+                found = True
+                break;
+        if not found:
+            for line in results:
+                items = line.split()
+                ipAddress = items[3].split('/')[0]
                 break;
     except  OSError:
         pass
@@ -174,3 +180,80 @@ def checkClusters(clusters,  targetSet):
                 raise Error("4000")
 
     return  targetClusters
+
+def isLocalIP(ip):
+    retVal=False
+    if '127.0.0.1' == ip:
+        retVal = True
+    elif ip == getRealIPAddress():
+        retVal = True
+
+    return retVal
+
+def checkHpccStatus(targets):
+    # Check HPCC Systems status on all local/remote target
+    isLocal = False
+    isLocalChecked = False
+    isIpChecked={}
+    config = getConfig()
+    for target in targets:
+        ip = config.IpAddress[target]
+
+        if not ip in isIpChecked:
+            isIpChecked[ip] = False
+
+        isLocal = isLocalIP(ip)
+        if isIpChecked[ip] or (isLocal and isLocalChecked):
+            continue
+
+        try:
+            if isLocal:
+                # There is no remote version (yet)
+                myProc = subprocess.Popen(["ecl --version"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+                result = myProc.stdout.read() + myProc.stderr.read()
+                results = result.split('\n')
+                for line in results:
+                    if 'not found' in line:
+                        err = Error("6000")
+                        logging.error("%s. %s:'%s'" % (1,  err,  line))
+                        raise  err
+                        break
+
+            myProc = subprocess.Popen("ecl getname --wuid 'W*' --limit=5 --server="+ip,  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+            result  = myProc.stdout.read() + myProc.stderr.read()
+            results = result.split('\n')
+            for line in results:
+                if "Error connecting" in line:
+                    if isLocal:
+                        err = Error("6001")
+                        logging.error("%s. %s:'%s local %s target!'" % (1,  err,  line,  target))
+                        raise (err)
+                    else:
+                        err = Error("6004")
+                        logging.error("%s. %s:'%s remote %s target!'" % (1,  err,  line,  target))
+                        raise (err)
+                    break
+
+                if "command not found" in line:
+                    err = Error("6002")
+                    logging.error("%s. %s:'%s'" % (1,  err,  line))
+                    raise (err)
+                    break
+
+            if isLocal:
+                isLocalChecked = True
+
+            isIpChecked[ip] = True
+
+        except  OSError:
+            err = Error("6002")
+            logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+            raise Error(err)
+
+        except ValueError:
+            err = Error("6003")
+            logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+            raise Error(err)
+
+        finally:
+            pass

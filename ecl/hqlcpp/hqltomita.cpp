@@ -1454,7 +1454,7 @@ inline int compareLRItem(HqlLRItem * left, HqlLRItem * right)
     return 0;
 }
 
-int compareLRItem(CInterface * * left, CInterface * * right) 
+int compareLRItem(CInterface * const * left, CInterface * const * right)
 { 
     return compareLRItem((HqlLRItem *)*left, (HqlLRItem *)*right);
 }
@@ -1630,7 +1630,7 @@ static inline int compareState(HqlLRState * left, HqlLRState * right)
     return left->items.compare(right->items);
 }
 
-static int compareState(CInterface * * left, CInterface * * right) 
+static int compareState(CInterface * const * left, CInterface * const * right)
 { 
     return compareState((HqlLRState *)*left, (HqlLRState *)*right);
 }

@@ -92,7 +92,7 @@ extern void putStatsValue(StringBuffer &reply, const char *statName, const char 
 {
     if (val)
     {
-        reply.appendf("   <att name='%s' type='%s' value='%"I64F"d'/>\n", statName, statType, val);
+        reply.appendf("   <att name='%s' type='%s' value='%" I64F "d'/>\n", statName, statType, val);
     }
 }
 
@@ -101,7 +101,8 @@ CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFac
     subgraphId(_subgraphId),
     queryFactory(_queryFactory),
     helperFactory(_helperFactory),
-    kind(_kind)
+    kind(_kind),
+    mystats(allStatistics)  // We COULD cut down this list but it would complicate the structure, and we do actually track more in the factory than in the activity
 {
     if (helperFactory)
     {
@@ -155,7 +156,7 @@ public:
 
     bool getEnableFieldTranslation() const
     {
-        return queryFactory.getEnableFieldTranslation();
+        return queryFactory.queryOptions().enableFieldTranslation;
     }
 
     const char *queryQueryName() const
@@ -168,6 +169,11 @@ public:
         return CActivityFactory::queryChildQuery(idx, id);
     }
 
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    {
+        CActivityFactory::mergeStats(from);
+    }
+
     virtual unsigned queryId() const
     {
         return CActivityFactory::queryId();
@@ -178,10 +184,6 @@ public:
         return CActivityFactory::getKind();
     }
 
-    virtual void noteStatistics(const StatsCollector &fromStats)
-    {
-        CActivityFactory::noteStatistics(fromStats);
-    }
     virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const
     {
         CActivityFactory::getEdgeProgressInfo(idx, edge);
@@ -198,22 +200,19 @@ public:
     {
         CActivityFactory::getActivityMetrics(reply);
     }
-    IRoxieSlaveContext *createSlaveContext(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
+    IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return queryFactory.createSlaveContext(logctx, packet);
+        return queryFactory.createSlaveContext(logctx, packet, childQueries.length()!=0);
     }
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {
         if (datafile)
             addXrefFileInfo(reply, datafile);
     }
-    IRoxieSlaveContext *createChildQueries(IHThorArg *colocalArg, IArrayOf<IActivityGraph> &childGraphs, IProbeManager *_probeManager, SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
+    void createChildQueries(IArrayOf<IActivityGraph> &childGraphs, IHThorArg *colocalArg, IProbeManager *_probeManager, IRoxieSlaveContext *queryContext, const SlaveContextLogger &logctx) const
     {
-        if (!childQueries.length())
-            logctx.setDebuggerActive(false);
-        if (meta.needsDestruct() || meta.needsSerializeDisk() || childQueries.length())
+        if (childQueries.length())
         {
-            Owned<IRoxieSlaveContext> queryContext = queryFactory.createSlaveContext(logctx, packet);
             ForEachItemIn(idx, childQueries)
             {
                 if (!_probeManager) // MORE - the probeAllRows is a hack!
@@ -223,9 +222,7 @@ public:
                 queryContext->noteChildGraph(childQueryIndexes.item(idx), childGraph);
                 childGraph->onCreate(queryContext, colocalArg);             //NB: onCreate() on helper for activities in child graph are delayed, otherwise this would go wrong.
             }
-            return queryContext.getClear();
         }
-        return NULL;
     }
 
     Owned<const IResolvedFile> datafile;
@@ -290,7 +287,7 @@ protected:
 class CRoxieSlaveActivity : public CInterface, implements IRoxieSlaveActivity, implements ICodeContext
 {
 protected:
-    SlaveContextLogger &logctx; 
+    SlaveContextLogger &logctx;
     Linked<IRoxieQueryPacket> packet;
     mutable Owned<IRoxieSlaveContext> queryContext; // bit of a hack but easier than changing the ICodeContext callback interface to remove const
     const CSlaveActivityFactory *basefactory;
@@ -332,18 +329,15 @@ protected:
 
     virtual void onCreate()
     {
+        queryContext.setown(basefactory->createSlaveContext(logctx, packet));
 #ifdef _DEBUG
         // MORE - need to consider debugging....
         if (probeAllRows)
-        {
             probeManager.setown(createProbeManager());
-            queryContext.setown(basefactory->createChildQueries(basehelper, childGraphs, probeManager, logctx, packet));
-        }
-        else
+        basefactory->createChildQueries(childGraphs, basehelper, probeManager, queryContext, logctx);
+#else
+        basefactory->createChildQueries(childGraphs, basehelper, NULL, queryContext, logctx);
 #endif
-            queryContext.setown(basefactory->createChildQueries(basehelper, childGraphs, NULL, logctx, packet));
-        if (!queryContext)
-            queryContext.setown(basefactory->createSlaveContext(logctx, packet));
         if (meta.needsSerializeDisk())
             serializer.setown(meta.createDiskSerializer(queryContext->queryCodeContext(), basefactory->queryId()));
         if (needsRowAllocator())
@@ -369,7 +363,7 @@ protected:
     {
     }
 
-    CRoxieSlaveActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_factory) 
+    CRoxieSlaveActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_factory)
         : logctx(_logctx), packet(_packet), basefactory(_factory)
     {
         allowFieldTranslation = _factory->getEnableFieldTranslation();
@@ -378,9 +372,9 @@ protected:
         if (resent)
             resentInfo.setBuffer(packet->getContinuationLength(), (void *) packet->queryContinuationData(), false);
         basehelper = _hFactory();
-        aborted = false;
         lastPartNo.partNo = 0xffff;
         lastPartNo.fileNo = 0xffff;
+        aborted = false;
         isOpt = false;
         variableFileName = false;
         meta.set(basehelper->queryOutputMeta());
@@ -388,6 +382,7 @@ protected:
 
     ~CRoxieSlaveActivity()
     {
+        basefactory->mergeStats(logctx.queryStats());
         ::Release(basehelper);
     }
 
@@ -426,8 +421,8 @@ public:
             StringBuffer s;
             logctx.CTXLOG("Aborting running activity: %s", packet->queryHeader().toString(s).str());
         }
-        logctx.requestAbort();
-        aborted = true; 
+        aborted = true;
+        logctx.abort();
         if (queryContext)
         {
             Owned<IException> E = MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
@@ -449,6 +444,7 @@ public:
         Owned<IMessagePacker> output = ROQ->createOutputStream(header, false, logctx);
         output->flush(true);
         aborted = true;
+        logctx.abort();
     }
 
     virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal)
@@ -472,12 +468,12 @@ public:
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
     virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); } 
-    virtual void setResultInt(const char *name, unsigned sequence, __int64 value) { throwUnexpected(); }
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { throwUnexpected(); }
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
     virtual void setResultReal(const char * stepname, unsigned sequence, double value) { throwUnexpected(); }
     virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { throwUnexpected(); }
     virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { throwUnexpected(); }
-    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value) { throwUnexpected(); }
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { throwUnexpected(); }
     virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { throwUnexpected(); }
     virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { throwUnexpected(); }
     virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { throwUnexpected(); }
@@ -542,6 +538,7 @@ public:
     }
 
     virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { throwUnexpected(); }
 
     // Not yet thought about these....
 
@@ -603,9 +600,17 @@ public:
     {
         convertRowToXML(lenResult, result, info, row, flags);
     }
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
+    {
+        convertRowToJSON(lenResult, result, info, row, flags);
+    }
     const void * fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
     {
         return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+    }
+    const void * fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+    {
+        return createRowFromJson(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
     }
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual IWorkUnit *updateWorkUnit() const { throwUnexpected(); }
@@ -831,7 +836,6 @@ protected:
     CriticalSection pcrit;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieDiskReadBaseActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, 
         unsigned _parallelPartNo, unsigned _numParallel, bool _forceUnkeyed)
@@ -930,30 +934,25 @@ public:
 
     virtual void abort() 
     {
-        aborted = true; 
+        CRoxieSlaveActivity::abort();
         CriticalBlock p(pcrit);
         if (processor)
             processor->abort();
     }
 
-    virtual bool process()
+    virtual IMessagePacker *process()
     {
-        MTIME_SECTION(timer, "CRoxieDiskReadBaseActivity::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieDiskReadBaseActivity::process");
         atomic_inc(&diskReadStarted);
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         doProcess(output);
         helper->setCallback(NULL);
-        logctx.flush(true, aborted);
         if (aborted)
-        {
-            output->abort();
-            return false;
-        }
+            return NULL;
         else
         {
-            output->flush(true);
             atomic_inc(&diskReadCompleted);
-            return true;
+            return output.getClear();
         }
     }
 
@@ -1024,7 +1023,7 @@ class CRoxieCsvReadActivity;
 class CRoxieXmlReadActivity;
 IInMemoryFileProcessor *createKeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool resent);
 IInMemoryFileProcessor *createUnkeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool variableDisk, IDirectReader *reader);
-IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *reader, bool _skipHeader, const IResolvedFile *datafile);
+IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *reader, bool _skipHeader, const IResolvedFile *datafile, size32_t maxRowSize);
 IInMemoryFileProcessor *createXmlRecordProcessor(CRoxieXmlReadActivity &owner, IDirectReader *reader);
 
 class CRoxieDiskReadActivity : public CRoxieDiskReadBaseActivity
@@ -1035,7 +1034,6 @@ protected:
     IHThorDiskReadArg *helper;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieDiskReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, false)
@@ -1078,12 +1076,12 @@ public:
 protected:
     IHThorCsvReadArg *helper;
     const IResolvedFile *datafile;
+    size32_t maxRowSize;
 
 public:
-    IMPLEMENT_IINTERFACE;
-    CRoxieCsvReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory,
-                          const CSlaveActivityFactory *_aFactory, IInMemoryIndexManager *_manager, const IResolvedFile *_datafile)
-        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, true), datafile(_datafile)
+    CRoxieCsvReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
+                          IInMemoryIndexManager *_manager, const IResolvedFile *_datafile, size32_t _maxRowSize)
+        : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, true), datafile(_datafile), maxRowSize(_maxRowSize)
     {
         onCreate();
         helper = (IHThorCsvReadArg *) basehelper;
@@ -1102,7 +1100,7 @@ public:
                     createCsvRecordProcessor(*this,
                                              manager->createReader(readPos, parallelPartNo, numParallel),
                                              packet->queryHeader().channel==1 && !resent,
-                                             varFileInfo ? varFileInfo.get() : datafile));
+                                             varFileInfo ? varFileInfo.get() : datafile, maxRowSize));
         }
         unsigned __int64 rowLimit = helper->getRowLimit();
         unsigned __int64 stopAfter = helper->getChooseNLimit();
@@ -1126,7 +1124,6 @@ protected:
     IHThorXmlReadArg *helper;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieXmlReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, true)
@@ -1183,17 +1180,23 @@ public:
 
 class CRoxieCsvReadActivityFactory : public CRoxieDiskBaseActivityFactory
 {
+    size32_t maxRowSize;
+
 public:
     IMPLEMENT_IINTERFACE;
 
     CRoxieCsvReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CRoxieDiskBaseActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
+        maxRowSize = defaultMaxCsvRowSize * 1024 * 1024;
+        IConstWorkUnit *workunit = _queryFactory.queryWorkUnit();
+        if (workunit)
+            maxRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
     }
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieCsvReadActivity(logctx, packet, helperFactory, this, manager, datafile);
+        return new CRoxieCsvReadActivity(logctx, packet, helperFactory, this, manager, datafile, maxRowSize);
     }
 
     virtual StringBuffer &toString(StringBuffer &s) const
@@ -1501,12 +1504,13 @@ protected:
     Owned<IDirectReader> reader;
     bool skipHeader;
     const IResolvedFile *datafile;
+    size32_t maxRowSize;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CsvRecordProcessor(CRoxieCsvReadActivity &_owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *_datafile)
-      : RecordProcessor(NULL), owner(_owner), reader(_reader), datafile(_datafile)
+    CsvRecordProcessor(CRoxieCsvReadActivity &_owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *_datafile, size32_t _maxRowSize)
+      : RecordProcessor(NULL), owner(_owner), reader(_reader), datafile(_datafile), maxRowSize(_maxRowSize)
     {
         helper = _owner.helper;
         skipHeader = _skipHeader;
@@ -1543,7 +1547,6 @@ public:
                 break;
             }
             size32_t rowSize = 4096; // MORE - make configurable
-            size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
             size32_t thisLineLength;
             loop
             {
@@ -1553,7 +1556,7 @@ public:
                 if (thisLineLength < rowSize || avail < rowSize)
                     break;
                 if (rowSize == maxRowSize)
-                    throw MakeStringException(0, "Row too big");
+                    throw MakeStringException(0, "File contained a line of length greater than %d bytes.", maxRowSize);
                 if (rowSize >= maxRowSize/2)
                     rowSize = maxRowSize;
                 else
@@ -1682,9 +1685,9 @@ protected:
     Owned<IDirectReader> reader;
 };
 
-IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *datafile)
+IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *datafile, size32_t maxRowSize)
 {
-    return new CsvRecordProcessor(owner, _reader, _skipHeader, datafile);
+    return new CsvRecordProcessor(owner, _reader, _skipHeader, datafile, maxRowSize);
 }
 
 IInMemoryFileProcessor *createXmlRecordProcessor(CRoxieXmlReadActivity &owner, IDirectReader *_reader)
@@ -1722,7 +1725,6 @@ protected:
     IHThorDiskNormalizeArg *helper;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieDiskNormalizeActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, false)
@@ -1967,7 +1969,6 @@ protected:
     IHThorDiskCountArg *helper;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieDiskCountActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, 1, false)
@@ -2236,7 +2237,6 @@ protected:
     IHThorDiskAggregateArg *helper;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieDiskAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager,
         unsigned _parallelPartNo, unsigned _numParallel, bool _forceUnkeyed)
@@ -2278,8 +2278,7 @@ protected:
     Owned<IOutputRowDeserializer> deserializer;
 
 public:
-    IMPLEMENT_IINTERFACE;
-    CParallelRoxieActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_factory, unsigned _numParallel) 
+    CParallelRoxieActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_factory, unsigned _numParallel)
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _factory), numParallel(_numParallel)
     {
         assertex(numParallel > 1);
@@ -2312,7 +2311,7 @@ public:
     virtual void doProcess(IMessagePacker * output) = 0;
     virtual void processRow(CDummyMessagePacker &output) = 0;
 
-    virtual bool process()
+    virtual IMessagePacker *process()
     {
         if (numParallel == 1)
         {
@@ -2320,7 +2319,7 @@ public:
         }
         else
         {
-            MTIME_SECTION(timer, "CParallelRoxieActivity::process");
+            MTIME_SECTION(queryActiveTimer(), "CParallelRoxieActivity::process");
             atomic_inc(&diskReadStarted);
             Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
             class casyncfor: public CAsyncFor
@@ -2352,20 +2351,14 @@ public:
             } afor(parts, *this);
             afor.For(numParallel, numParallel);
             //for (unsigned i = 0; i < numParallel; i++) afor.Do(i); // use this instead of line above to make them serial - handy for debugging!
-            logctx.flush(true, aborted);
             if (aborted)
-            {
-                output->abort();
-                return false;
-            }
+                return NULL;
             else
             {
                 doProcess(output);
-                output->flush(true);
                 atomic_inc(&diskReadCompleted);
-                return true;
+                return output.getClear();
             }
-            return true;
         }
     }
 };
@@ -2377,7 +2370,6 @@ protected:
     IHThorDiskAggregateArg *helper;
     OwnedConstRoxieRow finalRow;
 public:
-    IMPLEMENT_IINTERFACE;
     CParallelRoxieDiskAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, unsigned _numParallel) :
         CParallelRoxieActivity(_logctx, _packet, _hFactory, _aFactory, _numParallel)
@@ -2724,7 +2716,6 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieDiskGroupAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager,
         unsigned partNo, unsigned numParts, bool _forceUnkeyed)
@@ -2771,8 +2762,7 @@ protected:
     Owned<IRowManager> rowManager;
 
 public:
-    IMPLEMENT_IINTERFACE;
-    CParallelRoxieDiskGroupAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory, 
+    CParallelRoxieDiskGroupAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, unsigned _numParallel) :
         CParallelRoxieActivity(_logctx, _packet, _hFactory, _aFactory, _numParallel),
         helper((IHThorDiskGroupAggregateArg *) basehelper),
@@ -3087,7 +3077,7 @@ public:
             OwnedRoxieString indexName(helper->getFileName());
             datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
         }
     }
 };
@@ -3219,7 +3209,6 @@ protected:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieIndexActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
         : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory), 
         factory(_aFactory),
@@ -3259,7 +3248,7 @@ public:
             if (logctx.queryTraceLevel() > 10)
             {
                 logctx.CTXLOG("%d seek rows provided. mismatch(%d) readahead(%d) onlyfirst(%d)", numSeeks,
-                             (int)stepExtra.returnMismatches(), (int)stepExtra.readAheadManyResults(), (int)stepExtra.onlyReturnFirstSeekMatch());
+                       (int)stepExtra.returnMismatches(), (int)stepExtra.readAheadManyResults(), (int)stepExtra.onlyReturnFirstSeekMatch());
 
                 if (logctx.queryTraceLevel() > 15)
                 {
@@ -3321,8 +3310,6 @@ public:
             siLen = si.length() - sizeof(siLen);
             si.writeDirect(0, sizeof(siLen), &siLen);
             output->sendMetaInfo(si.toByteArray(), si.length());
-            logctx.flush(true, aborted);
-            output->flush(true);
             return true;
         }
         else
@@ -3399,7 +3386,6 @@ protected:
     IHThorCompoundReadExtra * readHelper;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieIndexReadActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, _steppingOffset)
     {
@@ -3447,9 +3433,9 @@ public:
             steppingRow = NULL;
     }
 
-    virtual bool process()
+    virtual IMessagePacker *process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexReadActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexReadActivity ::process");
         unsigned __int64 keyedLimit = readHelper->getKeyedLimit();
         unsigned __int64 limit = readHelper->getRowLimit();
 
@@ -3458,7 +3444,7 @@ public:
             if (!checkLimit(keyedLimit))
             {
                 limitExceeded(true); 
-                return true;
+                return NULL;
             }
 
         }
@@ -3494,8 +3480,8 @@ public:
                         keyprocessed++;
                         if ((keyedLimit != (unsigned __int64) -1) && keyprocessed > keyedLimit)
                         {
-                            logctx.noteStatistic(STATS_ACCEPTED, keyprocessed-keyprocessedBefore, 1);
-                            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                            logctx.noteStatistic(StNumIndexAccepted, keyprocessed-keyprocessedBefore);
+                            logctx.noteStatistic(StNumIndexRejected, skipped);
                             limitExceeded(true);
                             break;
                         }
@@ -3545,18 +3531,16 @@ public:
                                 processed++;
                                 if (limit && processed > limit)
                                 {
-                                    logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     limitExceeded(false); 
                                     break;
                                 }
                                 if (processed > stopAfter)
                                 {
-                                    logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
-                                    logctx.flush(true, false);
-                                    output->flush(true);
-                                    return true;
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
+                                    return output.getClear();
                                 }
                                 rowBuilder.writeToOutput(transformedSize, true);
 
@@ -3596,9 +3580,9 @@ public:
                                 logctx.CTXLOG("Indexread returning partial result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
                             if (sendContinuation(output))
                             {
-                                logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                logctx.noteStatistic(STATS_REJECTED, skipped, 1);
-                                return true;
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, skipped);
+                                return output.getClear();
                             }
                             else
                             {
@@ -3625,15 +3609,13 @@ public:
                 if (steppingOffset)
                     logctx.CTXLOG("Indexread return: steppingOffset %d, steppingRow %p, stepExtra.returnMismatches() %d",steppingOffset, steppingRow, (int) stepExtra.returnMismatches());
             }
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
-        logctx.flush(true, aborted);
         if (aborted)
-            output->abort();
+            return NULL;
         else
-            output->flush(true);
-        return !aborted;
+            return output.getClear();
     }
 
     virtual IIndexReadActivityInfo *queryIndexReadActivity() 
@@ -3711,7 +3693,6 @@ protected:
     IHThorCompoundNormalizeExtra * normalizeHelper;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieIndexNormalizeActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, 0) //MORE - stepping?
     {
@@ -3726,9 +3707,9 @@ public:
         return ret.appendf("IndexNormalize %u", packet->queryHeader().activityId);
     }
 
-    virtual bool process()
+    virtual IMessagePacker *process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexNormalizeActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexNormalizeActivity ::process");
         unsigned __int64 keyedLimit = normalizeHelper->getKeyedLimit(); 
         unsigned __int64 rowLimit = normalizeHelper->getRowLimit();
 
@@ -3737,7 +3718,7 @@ public:
             if (!checkLimit(keyedLimit))
             {
                 limitExceeded(true); 
-                return true;
+                return NULL;
             }
 
         }
@@ -3765,8 +3746,8 @@ public:
                     keyprocessed++;
                     if (keyedLimit && processed > keyedLimit)
                     {
-                        logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                        logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                        logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                        logctx.noteStatistic(StNumIndexRejected, skipped);
                         limitExceeded(true);
                         break;
                     }
@@ -3783,18 +3764,16 @@ public:
                                 processed++;
                                 if (processed > rowLimit)
                                 {
-                                    logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
                                     limitExceeded(false); 
                                     break;
                                 }
                                 if (processed > stopAfter)
                                 {
-                                    logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
-                                    logctx.flush(true, aborted);
-                                    output->flush(true);
-                                    return true;
+                                    logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                    logctx.noteStatistic(StNumIndexRejected, skipped);
+                                    return output.getClear();
                                 }
 
                                 totalSizeSent += rowBuilder.writeToOutput(transformedSize, true);
@@ -3806,9 +3785,9 @@ public:
                         {
                             if (sendContinuation(output))
                             {
-                                logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                logctx.noteStatistic(STATS_REJECTED, skipped, 1);
-                                return true;
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, skipped);
+                                return output.getClear();
                             }
                             else
                                 continuationFailed = true;
@@ -3825,15 +3804,13 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
-        logctx.flush(true, aborted);
         if (aborted)
-            output->abort();
+            return NULL;
         else
-            output->flush(true);
-        return !aborted;
+            return output.getClear();
     }
 };
 
@@ -3877,7 +3854,6 @@ protected:
     unsigned __int64 keyedLimit;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieIndexCountActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, 0)
     {
@@ -3900,9 +3876,9 @@ public:
         return ret.appendf("IndexCount %u", packet->queryHeader().activityId);
     }
 
-    virtual bool process()
+    virtual IMessagePacker *process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexCountActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexCountActivity ::process");
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         unsigned skipped = 0;
 
@@ -3964,14 +3940,13 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
         if (aborted)
-            output->abort();
+            return NULL;
         else
-            output->flush(true);
-        return !aborted;
+            return output.getClear();
     }
 };
 
@@ -4011,7 +3986,6 @@ protected:
     IHThorCompoundAggregateExtra * aggregateHelper;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieIndexAggregateActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, 0)
     {
@@ -4024,9 +3998,9 @@ public:
         return ret.appendf("IndexAggregate %u", packet->queryHeader().activityId);
     }
 
-    virtual bool process()
+    virtual IMessagePacker *process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexAggregateActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexAggregateActivity ::process");
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
         OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
@@ -4064,15 +4038,13 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+            logctx.noteStatistic(StNumIndexRejected, skipped);
         }
-        logctx.flush(true, aborted);
         if (aborted)
-            output->abort();
+            return NULL;
         else
-            output->flush(true);
-        return !aborted;
+            return output.getClear();
     }
 };
 
@@ -4173,9 +4145,9 @@ public:
         }
     }
 
-    virtual bool process()
+    virtual IMessagePacker *process()
     {
-        MTIME_SECTION(timer, "CRoxieIndexGroupAggregateActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieIndexGroupAggregateActivity ::process");
         Owned<IRowManager> rowManager = roxiemem::createRowManager(0, NULL, logctx, NULL, true); // MORE - should not really use default limits
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
@@ -4248,15 +4220,12 @@ public:
         results.reset();
         if (tlk) // a very early abort can mean it is NULL....
         {
-            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-            logctx.noteStatistic(STATS_REJECTED, 0, 1);
+            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
         }
-        logctx.flush(true, aborted);
         if (aborted)
-            output->abort();
+            return NULL;
         else
-            output->flush(true);
-        return !aborted;
+            return output.getClear();
     }
 };
 
@@ -4344,7 +4313,6 @@ protected:
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData) = 0;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieFetchActivityBase(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory)
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory), factory(_aFactory)
     {
@@ -4369,7 +4337,7 @@ public:
         varFiles.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
     }
 
-    virtual bool process();
+    virtual IMessagePacker *process();
     virtual StringBuffer &toString(StringBuffer &ret) const
     {
         return ret.appendf("Fetch %u", packet->queryHeader().activityId);
@@ -4377,9 +4345,9 @@ public:
     virtual void setPartNo(bool filechanged);
 };
 
-bool CRoxieFetchActivityBase::process()
+IMessagePacker *CRoxieFetchActivityBase::process()
 {
-    MTIME_SECTION(timer, "CRoxieFetchActivityBase::process");
+    MTIME_SECTION(queryActiveTimer(), "CRoxieFetchActivityBase::process");
     Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     unsigned accepted = 0;
     unsigned rejected = 0;
@@ -4414,25 +4382,23 @@ bool CRoxieFetchActivityBase::process()
             accepted++;
             if (accepted > rowLimit)
             {
-                logctx.noteStatistic(STATS_DISK_SEEKS, accepted+rejected, 1);
-                logctx.noteStatistic(STATS_ACCEPTED, accepted, 1);
-                logctx.noteStatistic(STATS_REJECTED, rejected, 1);
+                logctx.noteStatistic(StNumDiskSeeks, accepted+rejected);
+                logctx.noteStatistic(StNumDiskAccepted, accepted);
+                logctx.noteStatistic(StNumDiskRejected, rejected);
                 limitExceeded();
-                return true;
+                return NULL;
             }
         }
         else
             rejected++;
     }
-    logctx.noteStatistic(STATS_DISK_SEEKS, accepted+rejected, 1);
-    logctx.noteStatistic(STATS_ACCEPTED, accepted, 1);
-    logctx.noteStatistic(STATS_REJECTED, rejected, 1);
-    logctx.flush(true, aborted);
+    logctx.noteStatistic(StNumDiskSeeks, accepted+rejected);
+    logctx.noteStatistic(StNumDiskAccepted, accepted);
+    logctx.noteStatistic(StNumDiskRejected, rejected);
     if (aborted)
-        output->abort();
+        return NULL;
     else
-        output->flush(true);
-    return !aborted;
+        return output.getClear();
 }
 
 class CRoxieFetchActivity : public CRoxieFetchActivityBase
@@ -4470,11 +4436,12 @@ IRoxieSlaveActivity *CRoxieFetchActivityFactory::createActivity(SlaveContextLogg
 
 class CRoxieCSVFetchActivity : public CRoxieFetchActivityBase
 {
-    CSVSplitter csvSplitter;    
+    CSVSplitter csvSplitter;
+    size32_t maxRowSize;
 
 public:
-    CRoxieCSVFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory, unsigned _maxColumns)
-        : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory)
+    CRoxieCSVFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory, unsigned _maxColumns, size32_t _maxRowSize)
+        : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory), maxRowSize(_maxRowSize)
     {
         const char * quotes = NULL;
         const char * separators = NULL;
@@ -4504,7 +4471,6 @@ public:
         IHThorCsvFetchArg *h = (IHThorCsvFetchArg *) helper;
         rawStream->reset(pos);
         size32_t rowSize = 4096; // MORE - make configurable
-        size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
         loop
         {
             size32_t avail;
@@ -4512,7 +4478,7 @@ public:
             if (csvSplitter.splitLine(avail, (const byte *)peek) < rowSize || avail < rowSize)
                 break;
             if (rowSize == maxRowSize)
-                throw MakeStringException(0, "Row too big");
+                throw MakeStringException(0, "File contained a line of length greater than %d bytes.", maxRowSize);
             if (rowSize >= maxRowSize/2)
                 rowSize = maxRowSize;
             else
@@ -4531,7 +4497,6 @@ class CRoxieXMLFetchActivity : public CRoxieFetchActivityBase, implements IXMLSe
 
 public:
     IMPLEMENT_IINTERFACE;
-
     CRoxieXMLFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory, unsigned _streamBufferSize)
         : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory),
           streamBufferSize(_streamBufferSize)
@@ -4545,7 +4510,7 @@ public:
         {
             while(!lastMatch)
             if(!parser->next())
-                throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %"I64F"d", pos);
+                throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %" I64F "d", pos);
             IHThorXmlFetchArg *h = (IHThorXmlFetchArg *) helper;
             unsigned thisSize = h->transform(rowBuilder, lastMatch, inputData, rawpos);
             lastMatch.clear();
@@ -4555,7 +4520,7 @@ public:
         catch (IException *E)
         {
             ::Release(E);
-            throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %"I64F"d", pos);
+            throw MakeStringException(ROXIE_RECORD_FETCH_ERROR, "XML parse error at position %" I64F "d", pos);
         }
     }
 
@@ -4584,6 +4549,7 @@ void CRoxieFetchActivityBase::setPartNo(bool filechanged)
 class CRoxieCSVFetchActivityFactory : public CRoxieFetchActivityFactory
 {
     unsigned maxColumns;
+    size32_t maxRowSize;
 
 public:
     CRoxieCSVFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -4593,11 +4559,15 @@ public:
         maxColumns = helper->getMaxColumns();
         ICsvParameters *csvInfo = helper->queryCsvParameters();
         assertex(!csvInfo->queryEBCDIC());
+        maxRowSize = defaultMaxCsvRowSize * 1024 * 1024;
+        IConstWorkUnit *workunit = _queryFactory.queryWorkUnit();
+        if (workunit)
+            maxRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
     }
 
     virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return new CRoxieCSVFetchActivity(logctx, packet, helperFactory, this, maxColumns);
+        return new CRoxieCSVFetchActivity(logctx, packet, helperFactory, this, maxColumns, maxRowSize);
     }
 };
 
@@ -4658,7 +4628,7 @@ public:
             OwnedRoxieString indexFileName(helper->getIndexFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
         }
     }
 
@@ -4688,7 +4658,6 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
     unsigned inputDone;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieKeyedJoinIndexActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinIndexActivityFactory *_aFactory)
         : factory(_aFactory), CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory)
     {
@@ -4764,7 +4733,7 @@ public:
         return helper->getIndexFileName();
     }
 
-    virtual bool process();
+    virtual IMessagePacker *process();
     virtual StringBuffer &toString(StringBuffer &ret) const
     {
         return ret.appendf("KeyedJoinIndex %u", packet->queryHeader().activityId);
@@ -4787,9 +4756,9 @@ IRoxieSlaveActivity *CRoxieKeyedJoinIndexActivityFactory::createActivity(SlaveCo
     return new CRoxieKeyedJoinIndexActivity(logctx, packet, helperFactory, this);
 }
 
-bool CRoxieKeyedJoinIndexActivity::process()
+IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
 {
-    MTIME_SECTION(timer, "CRoxieKeyedJoinIndexActivity::process");
+    MTIME_SECTION(queryActiveTimer(), "CRoxieKeyedJoinIndexActivity::process");
     Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     IOutputMetaData *joinFieldsMeta = helper->queryJoinFieldsRecordSize();
     Owned<IEngineRowAllocator> joinFieldsAllocator = getRowAllocator(joinFieldsMeta, basefactory->queryId());
@@ -4850,12 +4819,12 @@ bool CRoxieKeyedJoinIndexActivity::process()
                 {
                     candidateCount = atmost+1;
                     if (logctx.queryTraceLevel() > 5)
-                        logctx.CTXLOG("Pre-aborting since candidate count is at least %"I64F"d", precount);
+                        logctx.CTXLOG("Pre-aborting since candidate count is at least %" I64F "d", precount);
                 }
                 else
                 {
                     if (logctx.queryTraceLevel() > 10)
-                        logctx.CTXLOG("NOT Pre-aborting since candidate count is %"I64F"d", precount);
+                        logctx.CTXLOG("NOT Pre-aborting since candidate count is %" I64F "d", precount);
                     tlk->reset(false);
                 }
             }
@@ -4887,10 +4856,10 @@ bool CRoxieKeyedJoinIndexActivity::process()
                                 StringBuffer s;
                                 logctx.CTXLOG("limit exceeded for %s", packet->queryHeader().toString(s).str());
                             }
-                            logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                            logctx.noteStatistic(STATS_REJECTED, rejected, 1);
+                            logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                            logctx.noteStatistic(StNumIndexRejected, rejected);
                             limitExceeded();
-                            return true;
+                            return NULL;
                         }
                         unsigned totalSize = 0;
                         if (helper->diskAccessRequired())
@@ -4926,11 +4895,9 @@ bool CRoxieKeyedJoinIndexActivity::process()
                                 siLen = si.length() - sizeof(siLen);
                                 si.writeDirect(0, sizeof(siLen), &siLen);
                                 output->sendMetaInfo(si.toByteArray(), si.length());
-                                logctx.flush(true, aborted);
-                                output->flush(true);
-                                logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-                                logctx.noteStatistic(STATS_REJECTED, rejected, 1);
-                                return true;
+                                logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+                                logctx.noteStatistic(StNumIndexRejected, rejected);
+                                return output.getClear();
                             }
                             else
                                 continuationFailed = true;
@@ -4966,15 +4933,13 @@ bool CRoxieKeyedJoinIndexActivity::process()
     }
     if (tlk)
     {
-        logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
-        logctx.noteStatistic(STATS_REJECTED, rejected, 1);
+        logctx.noteStatistic(StNumIndexAccepted, processed-processedBefore);
+        logctx.noteStatistic(StNumIndexRejected, rejected);
     }
-    logctx.flush(true, aborted);
     if (aborted)
-        output->abort();
+        return NULL;
     else
-        output->flush(true);
-    return !aborted;
+        return output.getClear();
 }
 
 //================================================================================================
@@ -5042,7 +5007,6 @@ class CRoxieKeyedJoinFetchActivity : public CRoxieSlaveActivity
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieKeyedJoinFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinFetchActivityFactory *_aFactory)
         : factory(_aFactory), 
           CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory)
@@ -5070,7 +5034,7 @@ public:
         varFiles.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
     }
 
-    virtual bool process();
+    virtual IMessagePacker *process();
 
     virtual StringBuffer &toString(StringBuffer &ret) const
     {
@@ -5078,9 +5042,9 @@ public:
     }
 };
 
-bool CRoxieKeyedJoinFetchActivity::process()
+IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
 {
-    MTIME_SECTION(timer, "CRoxieKeyedJoinFetchActivity::process");
+    MTIME_SECTION(queryActiveTimer(), "CRoxieKeyedJoinFetchActivity::process");
     // MORE - where we are returning everything there is an optimization or two to be had
     Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
     unsigned processed = 0;
@@ -5128,11 +5092,11 @@ bool CRoxieKeyedJoinFetchActivity::process()
             processed++;
             if (processed > rowLimit)
             {
-                logctx.noteStatistic(STATS_DISK_SEEKS, processed+skipped, 1);
-                logctx.noteStatistic(STATS_ACCEPTED, processed, 1);
-                logctx.noteStatistic(STATS_REJECTED, skipped, 1);
+                logctx.noteStatistic(StNumDiskSeeks, processed+skipped);
+                logctx.noteStatistic(StNumDiskAccepted, processed);
+                logctx.noteStatistic(StNumDiskRejected, skipped);
                 limitExceeded();
-                return true;
+                return NULL;
             }
         }
         else
@@ -5147,29 +5111,13 @@ bool CRoxieKeyedJoinFetchActivity::process()
         }
         inputData += inputSize;
     }
-    logctx.noteStatistic(STATS_DISK_SEEKS, processed+skipped, 1);
-    logctx.noteStatistic(STATS_ACCEPTED, processed, 1);
-    logctx.noteStatistic(STATS_REJECTED, skipped, 1);
-    logctx.flush(true, aborted);
+    logctx.noteStatistic(StNumDiskSeeks, processed+skipped);
+    logctx.noteStatistic(StNumDiskAccepted, processed);
+    logctx.noteStatistic(StNumDiskRejected, skipped);
     if (aborted)
-    {
-        output->abort();
-        if (logctx.queryTraceLevel() > 5)
-        {
-            StringBuffer s;
-            logctx.CTXLOG("CRoxieKeyedJoinFetchActivity aborted: %s", packet->queryHeader().toString(s).str());
-        }
-    }
+        return NULL;
     else
-    {
-        output->flush(true);
-        if (logctx.queryTraceLevel() > 5)
-        {
-            StringBuffer s;
-            logctx.CTXLOG("CRoxieKeyedJoinFetchActivity completed: %d records returned(%d bytes), %d skipped: %s", processed, totalSizeSent, skipped, packet->queryHeader().toString(s).str());
-        }
-    }
-    return !aborted;
+        return output.getClear();
 }
 
 IRoxieSlaveActivity *CRoxieKeyedJoinFetchActivityFactory::createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
@@ -5193,7 +5141,6 @@ protected:
     unsigned remoteId;
 
 public:
-    IMPLEMENT_IINTERFACE;
     CRoxieRemoteActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CSlaveActivityFactory *_aFactory, unsigned _remoteId)
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory), 
         remoteId(_remoteId)
@@ -5218,9 +5165,9 @@ public:
         throwUnexpected();
     }
 
-    virtual bool process()
+    virtual IMessagePacker *process()
     {
-        MTIME_SECTION(timer, "CRoxieRemoteActivity ::process");
+        MTIME_SECTION(queryActiveTimer(), "CRoxieRemoteActivity ::process");
 
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         unsigned __int64 rowLimit = remoteHelper->getRowLimit();
@@ -5282,12 +5229,10 @@ public:
             throw;
         }
 
-        logctx.flush(true, aborted);
         if (aborted)
-            output->abort();
+            return NULL;
         else
-            output->flush(true);
-        return !aborted;
+            return output.getClear();
     }
 
     virtual void setPartNo(bool filechanged)
@@ -5358,7 +5303,7 @@ public:
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
                     indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit()));
                     if (indexfile)
-                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
                 }
                 if (fileName && !allFilesDynamic)
                 {

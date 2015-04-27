@@ -496,7 +496,10 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
             ForEachItemIn(i,primaryThorProcesses)
             {
                 const char *thorProcess = primaryThorProcesses.item(i);
-                if (uniqueProcesses.getValue(thorProcess))
+                if (!thorProcess || !*thorProcess)
+                    continue;
+                bool* found = uniqueProcesses.getValue(thorProcess);
+                if (found && *found)
                     continue;
                 uniqueProcesses.setValue(thorProcess, true);
                 addXRefNode(thorProcess, pXRefNodeTree);

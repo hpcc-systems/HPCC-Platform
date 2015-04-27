@@ -91,7 +91,7 @@ StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *co
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
-    res.appendf("activity(%s, %"ACTPF"d)",activityKindStr(container->getKind()), container->queryId());
+    res.appendf("activity(%s, %" ACTPF "d)",activityKindStr(container->getKind()), container->queryId());
     if (0 != (flags & thorlog_ecl))
     {
         StringBuffer ecltext;
@@ -168,7 +168,7 @@ void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnu
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
-    res.appendf("graph(%s, %"GIDPF"d)", graph->queryJob().queryGraphName(), graph->queryGraphId());
+    res.appendf("graph(%s, %" GIDPF "d)", graph->queryJob().queryGraphName(), graph->queryGraphId());
 }
 
 void GraphPrintLogArgs(CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
@@ -218,11 +218,11 @@ protected:
     bool notified;
     unsigned line, column;
     StringAttr file, origin;
-    WUExceptionSeverity severity;
+    ErrorSeverity severity;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     CThorException(LogMsgAudience _audience,int code, const char *str) 
-        : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), node(0), line(0), column(0), severity(ExceptionSeverityInformation), kind(TAKnone), notified(false) { };
+        : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), node(0), line(0), column(0), severity(SeverityInformation), kind(TAKnone), notified(false) { };
     CThorException(MemoryBuffer &mb)
     {
         mb.read((unsigned &)action);
@@ -238,6 +238,8 @@ public:
         mb.read(column);
         mb.read((int &)severity);
         mb.read(origin);
+        if (0 == origin.length()) // simpler to clear serialized 0 length terminated string here than check on query
+            origin.clear();
         size32_t sz;
         mb.read(sz);
         if (sz)
@@ -253,7 +255,7 @@ public:
     void getAssert(StringAttr &_file, unsigned &_line, unsigned &_column) { _file.set(file); _line = line; _column = column; }
     const char *queryOrigin() { return origin; }
     const char *queryMessage() { return msg; }
-    WUExceptionSeverity querySeverity() { return severity; }
+    ErrorSeverity querySeverity() { return severity; }
     bool queryNotified() const { return notified; }
     MemoryBuffer &queryData() { return data; }
     void setNotified() { notified = true; }
@@ -267,7 +269,7 @@ public:
     void setMessage(const char *_msg) { msg.set(_msg); }
     void setAssert(const char *_file, unsigned _line, unsigned _column) { file.set(_file); line = _line; column = _column; }
     void setOrigin(const char *_origin) { origin.set(_origin); }
-    void setSeverity(WUExceptionSeverity _severity) { severity = _severity; }
+    void setSeverity(ErrorSeverity _severity) { severity = _severity; }
 
 // IException
     int errorCode() const { return errorcode; }
@@ -288,9 +290,9 @@ public:
             }
             if (node)
             {
-                str.append("SLAVE ");
+                str.appendf("SLAVE #%d [", node);
                 queryClusterGroup().queryNode(node).endpoint().getUrlStr(str);
-                str.append(": ");
+                str.append("]: ");
             }
         }
         str.append(msg);
@@ -407,7 +409,7 @@ IThorException *MakeActivityWarning(CActivityBase *activity, int code, const cha
     va_start(args, format);
     IThorException *e = _MakeActivityException(activity->queryContainer(), code, format, args);
     e->setAction(tea_warning);
-    e->setSeverity(ExceptionSeverityWarning);
+    e->setSeverity(SeverityWarning);
     va_end(args);
     return e;
 }
@@ -418,7 +420,7 @@ IThorException *MakeActivityWarning(CActivityBase *activity, IException *e, cons
     va_start(args, format);
     IThorException *e2 = _MakeActivityException(activity->queryContainer(), e, format, args);
     e2->setAction(tea_warning);
-    e2->setSeverity(ExceptionSeverityWarning);
+    e2->setSeverity(SeverityWarning);
     va_end(args);
     return e2;
 }
@@ -452,7 +454,7 @@ IThorException *MakeActivityWarning(CGraphElementBase *container, int code, cons
     va_start(args, format);
     IThorException *e = _MakeActivityException(*container, code, format, args);
     e->setAction(tea_warning);
-    e->setSeverity(ExceptionSeverityWarning);
+    e->setSeverity(SeverityWarning);
     va_end(args);
     return e;
 }
@@ -463,7 +465,7 @@ IThorException *MakeActivityWarning(CGraphElementBase *container, IException *e,
     va_start(args, format);
     IThorException *e2 = _MakeActivityException(*container, e, format, args);
     e2->setAction(tea_warning);
-    e2->setSeverity(ExceptionSeverityWarning);
+    e2->setSeverity(SeverityWarning);
     va_end(args);
     return e2;
 }
@@ -724,11 +726,11 @@ const LogMsgJobInfo thorJob(UnknownJob, UnknownUser); // may be improved later
 void ensureDirectoryForFile(const char *fName)
 {
     if (!recursiveCreateDirectoryForFile(fName))
-        throw MakeOsException(GetLastError(), "Failed to create directory for file: %s", fName);
+        throw makeOsExceptionV(GetLastError(), "Failed to create directory for file: %s", fName);
 }
 
 // Not recommended to be used from slaves as tend to be one or more trying at same time.
-void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, WUExceptionSeverity severity)
+void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity)
 {
     LOG(MCwarning, thorJob, e, "Reporting exception to WU");
     Owned<IWorkUnit> wu = &workunit.lock();
@@ -742,8 +744,9 @@ void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, WUExcepti
         if (te)
         {
             we->setSeverity(te->querySeverity());
-            if (te->queryOrigin())
-                we->setExceptionSource(te->queryOrigin());
+            if (!te->queryOrigin()) // will have an origin if from slaves already
+                te->setOrigin("master");
+            we->setExceptionSource(te->queryOrigin());
             StringAttr file;
             unsigned line, column;
             te->getAssert(file, line, column);
@@ -1228,4 +1231,41 @@ void logDiskSpace()
     const char *tempDir = globals->queryProp("@thorTempDirectory");
     diskSpaceMsg.append(tempDir).append(" = ").append(getFreeSpace(tempDir)/0x100000).append(" MB");
     PROGLOG("%s", diskSpaceMsg.str());
+}
+
+IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMonHook *chain)
+{
+    class CPerfMonHook : public CSimpleInterfaceOf<IPerfMonHook>
+    {
+        CJobBase &job;
+        int maxLevel;
+        Linked<IPerfMonHook> chain;
+    public:
+        CPerfMonHook(CJobBase &_job, unsigned _maxLevel, IPerfMonHook *_chain) : chain(_chain), maxLevel(_maxLevel), job(_job)
+        {
+        }
+        virtual void processPerfStats(unsigned processorUsage, unsigned memoryUsage, unsigned memoryTotal, unsigned __int64 firstDiskUsage, unsigned __int64 firstDiskTotal, unsigned __int64 secondDiskUsage, unsigned __int64 secondDiskTotal, unsigned threadCount)
+        {
+            if (chain)
+                chain->processPerfStats(processorUsage, memoryUsage, memoryTotal, firstDiskUsage,firstDiskTotal, secondDiskUsage, secondDiskTotal, threadCount);
+        }
+        virtual StringBuffer &extraLogging(StringBuffer &extra)
+        {
+            if (chain)
+                return chain->extraLogging(extra);
+            return extra;
+        }
+        virtual void log(int level, const char *msg)
+        {
+            PROGLOG("%s", msg);
+            if ((maxLevel != -1) && (level <= maxLevel)) // maxLevel of -1 means disabled
+            {
+                Owned<IThorException> e = MakeThorException(TE_KERN, "%s", msg);
+                e->setSeverity(SeverityAlert);
+                e->setAction(tea_warning);
+                job.fireException(e);
+            }
+        }
+    };
+    return new CPerfMonHook(job, maxLevel, chain);
 }

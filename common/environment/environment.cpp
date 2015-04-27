@@ -329,7 +329,7 @@ class CEnvironmentFactory : public CInterface,
 {
 public:
     IMPLEMENT_IINTERFACE;
-    MAKEValueArray(SubscriptionId, SubscriptionIDs);
+    typedef ArrayOf<SubscriptionId> SubscriptionIDs;
     SubscriptionIDs subIDs;
     Mutex mutex;
     Owned<CSdsSubscription> subscription;
@@ -803,7 +803,7 @@ public:
 class CConstProcessInfo : public CConstEnvBase, implements IConstProcessInfo
 {
     IArrayOf<IConstInstanceInfo> w;
-    CArrayIterator it;
+    CArrayIteratorOf<IInterface, IIterator> it;
 public:
     IMPLEMENT_IINTERFACE;
     IMPLEMENT_ICONSTENVBASE;
@@ -822,7 +822,8 @@ public:
     IConstInstanceInfo & query() { return (IConstInstanceInfo &) it.query();}
     virtual IConstInstanceInfo * getInstance(const char *domain)
     {
-        for (int pass=0; pass<2; pass++) 
+        for (int pass=0; pass<2; pass++)
+        {
             ForEachItemIn(idx, w)
             {
                 Owned<IConstMachineInfo> m = w.item(idx).getMachine();
@@ -842,6 +843,7 @@ public:
                     }
                 }
             }
+        }
         return NULL;
     }
 };

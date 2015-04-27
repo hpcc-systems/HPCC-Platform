@@ -24,7 +24,7 @@ import glob
 
 from ..util.ecl.file import ECLFile
 from ..common.error import Error
-from ..util.util import checkClusters
+from ..util.util import checkClusters, getConfig
 
 class Suite:
     def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir, args, isSetup=False,  fileList = None):
@@ -41,16 +41,8 @@ class Suite:
         self.logDir = logDir
         self.exclude = []
         self.publish = []
-        self.isDynamicSource=False
-        if args.dynamic != 'None':
-            self.isDynamicSource=True
-            self.dynamicSources=args.dynamic[0].replace('source=', '').replace('\'','').split(',')
-            self.dynamicSources=checkClusters(self.dynamicSources,  "Dynamic source")
-            pass
 
-        # If there are some temprary files left, then remove them
-        for file in glob.glob(self.dir_ec+'/_tmp*.ecl'):
-            os.unlink(file)
+        self.cleanUp()
 
         self.buildSuite(args, isSetup, fileList)
 
@@ -98,6 +90,7 @@ class Suite:
                     skipResult = eclfile.testSkip(self.name)
 
                 if not skipResult['skip']:
+                    exclude=False
                     exclusionReason=''
                     if isSetup:
                         exclude = eclfile.testExclusion('setup')
@@ -111,7 +104,7 @@ class Suite:
                             excluded = eclfile.testInClass(classExcluded)
                         exclude = (not included )  or excluded
                         exclusionReason=' class member excluded'
-                    else:
+                    if not exclude:
                         exclude = eclfile.testExclusion(self.name)
                         exclusionReason=' ECL excluded'
 
@@ -126,19 +119,44 @@ class Suite:
                     self.publish.append(eclfile.getBaseEcl())
 
     def addFileToSuite(self, eclfile):
-        if eclfile.testDynamicSource() and self.isDynamicSource:
-            # going through the source lists
+        haveVersions = eclfile.testVesion()
+        if haveVersions and not self.args.noversion:
             basename = eclfile.getEcl()
-            for source in self.dynamicSources:
-                # generates ECLs based on sources
-                eclfile = ECLFile(basename, self.dir_a, self.dir_ex,
-                                  self.dir_r,  self.name, self.args)
-                eclfile.setDynamicSource(source)
-                # add newly generated ECL to suite
-                self.suite.append(eclfile)
+            files=[]
+            versions = eclfile.getVersions()
+            versionId = 1
+            for version in versions:
+                if 'no'+self.name in version:
+                    # Exclude it from this target
+                    pass
+                else:
+                    # Remove exclusion key(s) from version string
+                    config = getConfig();
+                    for cluster in config.Clusters:
+                        version = version.replace(',no'+str(cluster), '')
+
+                    files.append({'basename':basename, 'version':version,  'id':versionId })
+                    versionId += 1
+                pass
             pass
+
+            # We have a list of  different versions
+            # generate ECLs to suite
+            for file in files:
+                generatedEclFile = ECLFile(basename, self.dir_a, self.dir_ex,
+                                 self.dir_r,  self.name, self.args)
+
+                generatedEclFile.setDParameters(file['version'])
+                generatedEclFile.setVersionId(file['id'])
+
+                # add newly generated ECL to suite
+                self.suite.append(generatedEclFile)
+
+            # Clean-up, the original eclfile object not necessary anymore
+            eclfile.close()
         else:
             self.suite.append(eclfile)
+        pass
 
     def testPublish(self, ecl):
         if ecl in self.publish:
@@ -160,6 +178,12 @@ class Suite:
     def getSuiteName(self):
         return self.name
 
+    def cleanUp(self):
+        # If there are some temporary files left, then remove them
+        for file in glob.glob(self.dir_ec+'/_temp*.ecl'):
+            os.unlink(file)
+
     def close(self):
         for ecl in self.suite:
             ecl.close()
+        self.cleanUp()

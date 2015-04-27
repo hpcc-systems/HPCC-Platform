@@ -51,6 +51,21 @@ size32_t getMaxRequestEntityLength(EclCmdCommon &cmd)
     return config->getPropInt("Software[1]/EspProcess[1]/EspProtocol[@type='http_protocol'][1]/@maxRequestEntityLength");
 }
 
+void expandDefintionsAsDebugValues(const IArrayOf<IEspNamedValue> & definitions, IArrayOf<IEspNamedValue> & debugValues)
+{
+    ForEachItemIn(i, definitions)
+    {
+        IEspNamedValue &item = definitions.item(i);
+        const char *name = item.getName();
+        const char *value = item.getValue();
+
+        StringBuffer passThroughName;
+        passThroughName.append("eclcc-D").append(name).append("-").append(i);
+        addNamedValue(passThroughName, value, debugValues);
+    }
+
+}
+
 bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
 {
     bool useCompression = false;
@@ -119,6 +134,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         req->setQueryMainDefinition(cmd.optAttributePath);
     if (cmd.optSnapshot.length())
         req->setSnapshot(cmd.optSnapshot);
+    expandDefintionsAsDebugValues(cmd.definitions, cmd.debugValues);
     if (cmd.debugValues.length())
     {
         req->setDebugValues(cmd.debugValues);
@@ -458,7 +474,7 @@ public:
             "   -dp, --delete-prev     Delete previously active query\n"
             "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
-            "   --no-files             Do not copy files referenced by query\n"
+            "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
             "   --update-dfs           Update local DFS info if remote DALI has changed\n"
@@ -591,6 +607,7 @@ public:
             req->setInput(optInput.get());
         req->setExceptionSeverity(optExceptionSeverity); //throws exception if invalid value
 
+        expandDefintionsAsDebugValues(definitions, debugValues);
         if (debugValues.length())
             req->setDebugValues(debugValues);
         if (variables.length())
@@ -948,7 +965,7 @@ private:
 class EclCmdGetName : public EclCmdCommon
 {
 public:
-    EclCmdGetName()
+    EclCmdGetName() : optListLimit(100)
     {
         optObj.accept = eclObjWuid;
     }
@@ -968,6 +985,10 @@ public:
             {
                 optObj.type = eclObjWuid;
                 retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
+            {
                 continue;
             }
             if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
@@ -990,6 +1011,10 @@ public:
             return 0;
 
         req->setWuid(optName.get());
+
+        if (optListLimit)
+            req->setCount(optListLimit);
+
         Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
 
         if (!resp->getCount_isNull())
@@ -1011,13 +1036,16 @@ public:
             "\n"
             "ecl getname --wuid <WUID>\n"
             "\n"
-            "   WUID                   workunit ID\n",
+            "   WUID                   workunit ID\n"
+            " Options:\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n",
             stdout);
         EclCmdCommon::usage();
     }
 private:
     StringAttr         optName;
     EclObjectParameter optObj;
+    unsigned int       optListLimit;
 };
 
 class EclCmdGetWuid : public EclCmdCommon

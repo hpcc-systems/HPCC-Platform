@@ -115,7 +115,7 @@ protected:
                 return getLocalFposPart(fpos);
             const void *result = bsearch(&fpos, offsetTable, count, sizeof(FPosTableEntry), slaveLookup);
             if (!result)
-                throw MakeThorException(TE_FetchOutOfRange, "FETCH: Offset not found in offset table; fpos=%"I64F"d", fpos);
+                throw MakeThorException(TE_FetchOutOfRange, "FETCH: Offset not found in offset table; fpos=%" I64F "d", fpos);
             return ((FPosTableEntry *)result)->index;
         }
     } *fposHash;
@@ -140,7 +140,7 @@ public:
         for (c=0; c<offsetCount; c++)
         {
             FPosTableEntry &e = offsetTable[c];
-            ActPrintLog(&owner, "Table[%d] : base=%"I64F"d, top=%"I64F"d, slave=%d", c, e.base, e.top, e.index);
+            ActPrintLog(&owner, "Table[%d] : base=%" I64F "d, top=%" I64F "d, slave=%d", c, e.base, e.top, e.index);
         }
         files = parts.ordinality();
         if (files)
@@ -358,7 +358,7 @@ public:
 // IThorDataLink impl.
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         class CKeyFieldExtractBase : public CSimpleInterface, implements IRowStream
         {
         protected:
@@ -471,7 +471,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon)
             return NULL;
 

@@ -487,10 +487,10 @@ int CEspHttpServer::processRequest()
     catch (...)
     {
         StringBuffer content_type;
-        unsigned len = m_request->getContentLength();
+        __int64 len = m_request->getContentLength();
         DBGLOG("Unknown Exception - processing request");
-        DBGLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
-        if (len)
+        DBGLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %" I64F "d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
+        if (len > 0)
             m_request->logMessage(LOGCONTENT, "HTTP request content received:\n");
         return 0;
     }
@@ -637,7 +637,7 @@ inline void make_env_var(StringArray &env, StringBuffer &var, const char *name, 
     env.append(var.clear().append(name).append('=').append(value).str());
 }
 
-inline void make_env_var(StringArray &env, StringBuffer &var, const char *name, int value)
+inline void make_env_var(StringArray &env, StringBuffer &var, const char *name, __int64 value)
 {
     env.append(var.clear().append(name).append('=').append(value).str());
 }
@@ -653,210 +653,123 @@ bool skipHeader(const char *name)
     return false;
 }
 
-typedef enum _cgi_resp_state
+static void httpGetFile(CHttpRequest* request, CHttpResponse* response, const char *urlpath, const char *filepath)
 {
-    cgi_resp_hname,
-    cgi_resp_hval,
-    cgi_resp_body
-} cgi_resp_state;
+    StringBuffer mimetype, etag, lastModified;
+    MemoryBuffer content;
+    bool modified = true;
+    request->getHeader("If-None-Match", etag);
+    request->getHeader("If-Modified-Since", lastModified);
 
-
-int CEspHttpServer::onRunCGI(CHttpRequest* request, CHttpResponse* response, const char *path)
-{
-    char cwd[1024];
-    if (!GetCurrentDirectory(1024, cwd)) {
-        ERRLOG("onRunCGI: Current directory path too big, setting local path to null");
-        cwd[0] = 0;
-    }
-    StringBuffer docRoot(cwd);
-    docRoot.append("/files");
-    StringBuffer script(docRoot);
-    script.append("/").append(path);
-
-    StringArray env;
-    StringBuffer var;
-
-    make_env_var(env, var, "SERVER_SOFTWARE", "ESP/1.0");
-    make_env_var(env, var, "GATEWAY_INTERFACE", "CGI/1.1");
-    make_env_var(env, var, "SERVER_PROTOCOL", "HTTP/1.0");
-    make_env_var(env, var, "DOCUMENT_ROOT", docRoot);
-    make_env_var(env, var, "SCRIPT_FILENAME", script);
-    make_env_var(env, var, "REQUEST_METHOD", request->queryMethod());
-    make_env_var(env, var, "PATH", getenv("PATH"));
-    make_env_var(env, var, "QUERY_STRING", request->queryParamStr());
-    make_env_var(env, var, "REDIRECT_STATUS", 1);
-
-    ISocket *sock=request->getSocket();
-    if (sock)
+    if (httpContentFromFile(filepath, mimetype, content, modified, lastModified, etag))
     {
-        char sname[512]={0};
-        int sport = sock->name(sname, 512);
-        SocketEndpoint ep;
-        sock->getPeerEndpoint(ep);
-        StringBuffer ipstr;
-        ep.getIpText(ipstr);
-        make_env_var(env, var, "REMOTE_ADDRESS", ipstr.str());
-        make_env_var(env, var, "REMOTE_PORT", ep.port);
-        make_env_var(env, var, "SERVER_PORT", sport);
+        response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), mimetype.str(), content);
     }
-
-    IEspContext *ctx=request->queryContext();
-    if (ctx)
+    else
     {
-        StringBuffer userstr(ctx->queryUserId());
-        if (userstr.length())
-            make_env_var(env, var, "REMOTE_USER", userstr);
+        DBGLOG("Get File %s: file not found", filepath);
+        response->setStatus(HTTP_STATUS_NOT_FOUND);
     }
-    make_env_var(env, var, "REQUEST_URI", request->queryPath());
-    make_env_var(env, var, "SCRIPT_NAME", request->queryPath());
-    
-
-    StringBuffer hostIpStr;
-    queryHostIP().getIpText(hostIpStr);
-    
-    make_env_var(env, var, "SERVER_ADDR", hostIpStr);
-    make_env_var(env, var, "SERVER_NAME", hostIpStr);
-    
-    if (!stricmp(request->queryMethod(), "POST"))
-    {
-        if (request->getContentLength())
-        {
-            StringBuffer type;
-            make_env_var(env, var, "CONTENT_TYPE", request->getContentType(type).str());
-            make_env_var(env, var, "CONTENT_LENGTH", request->getContentLength());
-        }
-    }
-
-    make_env_var(env, var, "SCRIPT_FILENAME", script);
-
-    StringArray &headers=request->queryHeaders();
-    ForEachItemIn(iheader, headers)
-    {
-        const char* header = headers.item(iheader);
-        if (header)
-        {
-            const char* colon = strchr(header, ':');
-            if(colon)
-            {
-                StringBuffer hname(colon-header, header);
-                hname.toUpperCase().replace('-','_');
-                if (!skipHeader(hname.str()))
-                {
-                    const char *finger=colon+1;
-                    while (*finger==' ') finger++;
-                    StringBuffer hstr;
-                    hstr.append(("HTTP_")).append(hname).append('=').append(finger);
-                    env.append(hstr.str());
-                    DBGLOG("%s", hstr.str());
-                }
-            }
-        }
-    }
-    
-    make_env_var(env, var, "XXX", "222 Running the script => ");
-
-    StringBuffer in;
-    StringBuffer out;
-    callExternalProgram("php-cgi.exe", in, out, &env);
-    const char *start=out.str();
-    cgi_resp_state rstate=cgi_resp_hname;
-
-    StringBuffer hname;
-    StringBuffer hval;
-    const char *finger;
-    for(finger=start; *finger!=0 && rstate!=cgi_resp_body; finger++)
-    {
-        switch (*finger)
-        {
-        case ':':
-            if (rstate==cgi_resp_hname)
-                rstate=cgi_resp_hval;
-            else if (rstate==cgi_resp_hval)
-                hval.append(':');
-            break;
-        case '\r':
-            if (!strncmp(finger, "\r\n\r\n", 4))
-            {
-                finger+=3;
-                rstate=cgi_resp_body;
-            }
-            else
-            {
-                if (hname.length() && hval.length())
-                {
-                    if (!stricmp(hname.str(), "content-type"))
-                        response->setContentType(strchr(hval.str(), '/') ? hval.str() : "text/html");
-                    else
-                        response->setHeader(hname.str(), hval.str());
-                }
-                hname.clear();
-                hval.clear();
-                rstate=cgi_resp_hname;
-            }
-            break;
-
-        case '\n':
-            if (finger[1]=='\n')
-            {
-                finger++;
-                rstate=cgi_resp_body;
-            }
-            else
-            {
-                if (hname.length() && hval.length())
-                {
-                    if (!stricmp(hname.str(), "content-type"))
-                        response->setContentType(strchr(hval.str(), '/') ? hval.str() : "text/html");
-                    else
-                        response->setHeader(hname.str(), hval.str());
-                }
-                hname.clear();
-                hval.clear();
-                rstate=cgi_resp_hname;
-            }
-            break;
-        default:
-            if (rstate==cgi_resp_hname)
-                hname.append(*finger);
-            else if (rstate==cgi_resp_hval)
-                hval.append(*finger);
-            break;
-        }
-    }
-
-    response->setContent(out.length()-(finger-start), finger);
     response->send();
-    return 0;
 }
 
-int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, const char *path)
+static void httpGetDirectory(CHttpRequest* request, CHttpResponse* response, const char *urlpath, const char *dirpath, bool top, const StringBuffer &tail)
 {
-        if (!request || !response || !path)
-            return -1;
-        
-        int pathlen=strlen(path);
-        if (pathlen>5 && !stricmp(path+pathlen-4, ".php"))
-            return onRunCGI(request, response, path);
-        
-        StringBuffer mimetype, etag, lastModified;
-        MemoryBuffer content;
-        bool modified = true;
-        request->getHeader("If-None-Match", etag);
-        request->getHeader("If-Modified-Since", lastModified);
+    Owned<IPropertyTree> tree = createPTree("directory", ipt_none);
+    tree->setProp("@path", urlpath);
+    Owned<IDirectoryIterator> dir = createDirectoryIterator(dirpath, NULL);
+    ForEach(*dir)
+    {
+        IPropertyTree *entry = tree->addPropTree(dir->isDir() ? "directory" : "file", createPTree(ipt_none));
+        StringBuffer s;
+        entry->setProp("name", dir->getName(s));
+        if (!dir->isDir())
+            entry->setPropInt64("size", dir->getFileSize());
+        CDateTime cdt;
+        dir->getModifiedTime(cdt);
+        entry->setProp("modified", cdt.getString(s.clear(), false));
+    }
 
-        StringBuffer filepath(getCFD());
-        filepath.append("files/");
-        filepath.append(path);
-        if (httpContentFromFile(filepath.str(), mimetype, content, modified, lastModified, etag))
+    const char *fmt = request->queryParameters()->queryProp("format");
+    StringBuffer out;
+    StringBuffer contentType;
+    if (!fmt || strieq(fmt,"html"))
+    {
+        contentType.set("text/html");
+        out.append("<!DOCTYPE html><html><body>");
+        if (!top)
+            out.appendf("<a href='%s'>..</a><br/>", tail.length() ? "." : "..");
+
+        Owned<IPropertyTreeIterator> it = tree->getElements("*");
+        ForEach(*it)
         {
-            response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), mimetype.str(), content);
+            IPropertyTree &e = it->query();
+            const char *href=e.queryProp("name");
+            if (tail.length())
+                out.appendf("<a href='%s/%s'>%s</a><br/>", tail.str(), href, href);
+            else
+                out.appendf("<a href='%s'>%s</a><br/>", href, href);
         }
-        else
+        out.append("</body></html>");
+    }
+    else if (strieq(fmt, "json"))
+    {
+        contentType.set("application/json");
+        toJSON(tree, out);
+    }
+    else if (strieq(fmt, "xml"))
+    {
+        contentType.set("application/xml");
+        toXML(tree, out);
+    }
+    response->setStatus(HTTP_STATUS_OK);
+    response->setContentType(contentType);
+    response->setContent(out);
+    response->send();
+}
+
+int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, const char *urlpath)
+{
+        if (!request || !response || !urlpath)
+            return -1;
+
+        StringBuffer ext;
+        StringBuffer tail;
+        splitFilename(urlpath, NULL, NULL, &tail, &ext);
+
+        bool top = !urlpath || !*urlpath;
+        StringBuffer httpPath;
+        request->getPath(httpPath).str();
+        if (httpPath.charAt(httpPath.length()-1)=='/')
+            tail.clear();
+        else if (top)
+            tail.set("./files");
+
+        StringBuffer basedir(getCFD());
+        basedir.append("files/");
+
+        StringBuffer fullpath;
+        makeAbsolutePath(urlpath, basedir.str(), fullpath);
+        if (*urlpath && strncmp(basedir, fullpath, basedir.length()))
         {
-            DBGLOG("Get File %s: file not found", filepath.str());
+            DBGLOG("Get File %s: attempted access outside of %s", urlpath, basedir.str());
             response->setStatus(HTTP_STATUS_NOT_FOUND);
+            response->send();
+            return 0;
         }
-        response->send();
+
+        if (!checkFileExists(fullpath) && !checkFileExists(fullpath.toUpperCase()) && !checkFileExists(fullpath.toLowerCase()))
+        {
+            DBGLOG("Get File %s: file not found", urlpath);
+            response->setStatus(HTTP_STATUS_NOT_FOUND);
+            response->send();
+            return 0;
+        }
+
+        if (isDirectory(fullpath))
+            httpGetDirectory(request, response, urlpath, fullpath, top, tail);
+        else
+            httpGetFile(request, response, urlpath, fullpath);
         return 0;
 }
 

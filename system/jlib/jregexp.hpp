@@ -103,6 +103,7 @@ bool jlib_decl WildMatch(const char *src, int srclen, const char *pat, int patle
 bool jlib_decl WildMatch(const char *src, const char *pat, bool nocase=false);
 bool jlib_decl WildMatchReplace(const char *src, const char *pat, const char *repl, bool nocase, StringBuffer &out);
 bool jlib_decl SoundexMatch(const char *src, const char *pat);
+bool jlib_decl containsWildcard(const char * pattern);
 
 
 class jlib_decl StringMatcher

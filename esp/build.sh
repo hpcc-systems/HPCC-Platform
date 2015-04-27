@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echoerr() { echo "$@" 1>&2; }
 
 set -e
 
@@ -26,7 +27,7 @@ rm -rf "$DISTDIR"
 echo " Done"
 
 if [ ! -d "$TOOLSDIR" ]; then
-    echo "Can't find Dojo build tools -- did you initialise submodules? (git submodule update --init --recursive)"
+    echoerr "ERROR:  Can't find Dojo build tools -- did you initialise submodules? (git submodule update --init --recursive)"
     exit 1
 fi
 
@@ -39,12 +40,16 @@ perl -pe "
   s/<\!--.*?-->//g;                          # Strip comments
   s/\s+/ /g;                                 # Collapse white-space" > "$DISTDIR/stub.htm"
 
+echo "Building: $SRCDIR/Visualization"
+cd "$SRCDIR/Visualization/"
+./build.sh "$DISTDIR/Visualization/widgets"
+
 cd "$TOOLSDIR"
 
-if which java > /dev/null; then
-    java -Xms256m -Xmx256m  -cp ../shrinksafe/js.jar:../closureCompiler/compiler.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main  ../../dojo/dojo.js baseUrl=../../dojo load=build --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
+if which node >/dev/null; then
+    node ../../dojo/dojo.js baseUrl=../../dojo load=build --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
 else
-    echo "Need Java to build!"
+    echoerr "ERROR:  node.js is required to build - see https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager"
     exit 1
 fi
 

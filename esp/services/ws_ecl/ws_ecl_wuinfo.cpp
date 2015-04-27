@@ -37,82 +37,162 @@ IConstWorkUnit *WsEclWuInfo::ensureWorkUnit()
     if (wu)
         return wu;
     Owned<IWorkUnitFactory> wf = getWorkUnitFactory();
-    wu.setown(wf->openWorkUnit(wuid.sget(), false));
+    wu.setown(wf->openWorkUnit(wuid.str(), false));
     if (!wu)
-        throw MakeStringException(-1, "Could not open workunit: %s", wuid.sget());
+        throw MakeStringException(-1, "Could not open workunit: %s", wuid.str());
     if (isLibrary(wu))
-        throw MakeStringException(-1, "%s/%s %s is a library", qsetname.sget(), queryname.sget(), wuid.sget());
+        throw MakeStringException(-1, "%s/%s %s is a library", qsetname.str(), queryname.str(), wuid.str());
     return wu;
+}
+
+void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *resultSetFactory, IConstWUResult &var, unsigned hashWebserviceSeq=0)
+{
+    Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
+    StringAttr noinput;
+    if (var.getResultFieldOpt("noinput", StringAttrAdaptor(noinput)).length() && strToBool(noinput.length(), noinput.get()))  //developer specified not to show field on form
+        return;
+
+    SCMStringBuffer varname;
+    var.getResultName(varname);
+    int seq = var.getResultSequence();
+
+    WUResultFormat fmt = var.getResultFormat();
+
+    SCMStringBuffer eclschema;
+    var.getResultEclSchema(eclschema);
+
+    StringBuffer width, height, fieldSeq;
+    var.getResultFieldOpt("fieldwidth", StringBufferAdaptor(width));
+    var.getResultFieldOpt("fieldheight", StringBufferAdaptor(height));
+    if (hashWebserviceSeq)
+        fieldSeq.append(hashWebserviceSeq);
+    else
+        var.getResultFieldOpt("sequence", StringBufferAdaptor(fieldSeq));
+
+    SCMStringBuffer s;
+    Owned<IPropertyTree> part = createPTree("part");
+    if (!var.isResultScalar())
+    {
+        meta->getXmlSchema(s, false);
+        part->setProp("@name", varname.str());
+        part->setProp("@type", "tns:XmlDataset");
+        if (fieldSeq.length())
+            part->setProp("@sequence", fieldSeq);
+    }
+    else
+    {
+        meta->getColumnEclType(s, 0);
+        DisplayType dt = meta->getColumnDisplayType(0);
+        StringAttr ptype;
+        switch (dt)
+        {
+        case TypeBoolean:
+            ptype.set("xsd:boolean");
+            break;
+        case TypeInteger:
+            ptype.set("xsd:integer");
+            break;
+        case TypeUnsignedInteger:
+            ptype.set("xsd:integer");
+            break;
+        case TypeReal:
+            ptype.set("xsd:real");
+            break;
+        case TypeSet:
+            ptype.set("tns:EspStringArray");
+            break;
+        case TypeDataset:
+        case TypeData:
+            ptype.set("tns:XmlDataSet");
+            break;
+        case TypeUnicode:
+        case TypeString:
+            ptype.set("xsd:string");
+            break;
+        case TypeUnknown:
+        case TypeBeginIfBlock:
+        case TypeEndIfBlock:
+        case TypeBeginRecord:
+        default:
+            ptype.set("xsd:string");
+            break;
+        }
+        part->setProp("@name", varname.str());
+        part->setProp("@type", ptype.str());
+        if (width.length())
+            part->setProp("@width", width);
+        if (height.length())
+            part->setProp("@height", height);
+        if (fieldSeq.length())
+            part->setProp("@sequence", fieldSeq);
+    }
+    parts.append(*part.getClear());
+}
+
+int orderMatchingSequence(IPropertyTree * left, IPropertyTree * right)
+{
+    if (!right->hasProp("@name"))
+        return -1;
+    if (!left->hasProp("@name"))
+        return 1;
+    return stricmp(left->queryProp("@name"), right->queryProp("@name"));
+}
+
+int orderParts(IInterface * const * pLeft, IInterface * const * pRight)
+{
+    IPropertyTree * left = (IPropertyTree *)*pLeft;
+    IPropertyTree * right = (IPropertyTree *)*pRight;
+    bool hasLeftSeq = left->hasProp("@sequence");
+    bool hasRightSeq = right->hasProp("@sequence");
+    if (hasLeftSeq && hasRightSeq)
+    {
+        int rightSeq = right->getPropInt("@sequence");
+        int leftSeq = left->getPropInt("@sequence");
+        if (rightSeq == leftSeq)
+            return orderMatchingSequence(left, right);  //fields with same sequence alphabetical within sequence
+        return leftSeq - rightSeq;
+    }
+    if (hasRightSeq)
+        return 1;
+    if (hasLeftSeq)
+        return -1;
+    return orderMatchingSequence(left, right);  //fields without sequence alphabetical AFTER sequenced fields
 }
 
 bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
 {
     if (strieq(name, "SOAP"))
     {
-        out.appendf("<message name=\"%s\">", queryname.sget());
-        IConstWUResultIterator &vars = ensureWorkUnit()->getVariables();
-        Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, password));
-        ForEach(vars)
+        out.appendf("<message name=\"%s\">", queryname.str());
+        Owned<IResultSetFactory> resultSetFactory = getResultSetFactory(username, password);
+        Owned<IConstWUWebServicesInfo> wsinfo = ensureWorkUnit()->getWebServicesInfo();
+        StringArray fields;
+        if (wsinfo)
         {
-            IConstWUResult &var = vars.query();
-            SCMStringBuffer varname;
-            var.getResultName(varname);
-            int seq = var.getResultSequence();
-
-            WUResultFormat fmt = var.getResultFormat();
-
-            SCMStringBuffer eclschema;
-            var.getResultEclSchema(eclschema);
-
-            SCMStringBuffer s;
-            Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
-
-            if (!var.isResultScalar())
+            SCMStringBuffer fieldList;
+            wsinfo->getText("fields", fieldList);
+            if (fieldList.length())
+                fields.appendListUniq(fieldList.str(), ",");
+        }
+        IArrayOf<IPropertyTree> parts;
+        if (fields.length())
+        {
+            ForEachItemIn(i, fields)
             {
-                meta->getXmlSchema(s, false);
-                out.appendf("<part name=\"%s\" type=\"tns:XmlDataSet\" />", varname.str());
-            }
-            else
-            {
-                meta->getColumnEclType(s, 0);
-                DisplayType dt = meta->getColumnDisplayType(0);
-                StringAttr ptype;
-                switch (dt)
-                {
-                case TypeBoolean:
-                    ptype.set("xsd:boolean");
-                    break;
-                case TypeInteger:
-                    ptype.set("xsd:integer");
-                    break;
-                case TypeUnsignedInteger:
-                    ptype.set("xsd:integer");
-                    break;
-                case TypeReal:
-                    ptype.set("xsd:real");
-                    break;
-                case TypeSet:
-                    ptype.set("tns:EspStringArray");
-                    break;
-                case TypeDataset:
-                case TypeData:
-                    ptype.set("tns:XmlDataSet");
-                    break;
-                case TypeUnicode:
-                case TypeString:
-                    ptype.set("xsd:string");
-                    break;
-                case TypeUnknown:
-                case TypeBeginIfBlock:
-                case TypeEndIfBlock:
-                case TypeBeginRecord:
-                default:
-                    ptype.set("xsd:string");
-                    break;
-                }
-                out.appendf("<part name=\"%s\" type=\"%s\" />", varname.str(), ptype.sget());
+                Owned<IConstWUResult> var = wu->getVariableByName(fields.item(i));
+                if (var)
+                    appendVariableParmInfo(parts, resultSetFactory, *var, i+1);
             }
         }
+        else
+        {
+            Owned<IConstWUResultIterator> vars = &ensureWorkUnit()->getVariables();
+            ForEach(*vars)
+                appendVariableParmInfo(parts, resultSetFactory, vars->query());
+        }
+        parts.sort(orderParts);
+        ForEachItemIn(i, parts)
+            toXML(&parts.item(i), out);
         out.append("</message>");
     }
 

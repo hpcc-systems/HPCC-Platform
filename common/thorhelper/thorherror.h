@@ -27,7 +27,9 @@
 
 //Errors with associated text
 #define THORCERR_InvalidXmlFromXml          (THORHELPER_ERROR_START + 50)
-
 #define THORCERR_InvalidXmlFromXml_Text     "Invalid xml passed to FROMXML"
+
+#define THORCERR_InvalidJsonFromJson          (THORHELPER_ERROR_START + 55)
+#define THORCERR_InvalidJsonFromJson_Text     "Invalid json passed to FROMJSON"
 
 #endif

@@ -15,7 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
+//class=textsearch
 //nothor
+//version multiPart=false
+//version multiPart=true
+
+import ^ as root;
+multiPart := #IFDEFINED(root.multiPart, false);
+
+//--- end of version configuration ---
 
 #option ('checkAsserts',false);
 import $.Setup.TS;
@@ -51,7 +59,7 @@ q1 := dataset([
             ], TextSearch.queryInputRecord);
 
 boolean useLocal := false;
-Files := Setup.Files('hthor', useLocal);
+Files := Setup.Files(multiPart, useLocal);
 searchIndex := Files.getSearchIndex();
 p := project(q1, TextSearch.doBatchExecute(searchIndex, LEFT, useLocal, 0x00000200));
 output(p);

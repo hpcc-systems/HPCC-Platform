@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+ 
+     <sect2 id="ESDL_Attributes_max_ver">
+       <title><emphasis role="bold">max_ver</emphasis></title>
+ 
+       <para>The max_ver attribute allows you to define the maximum (latest)
+       version where a field is visible. Requests using a later version will
+       not have access to the field.</para>
+ 
+       <para><emphasis role="bold">Example:</emphasis></para>
+ 
+       <programlisting> [max_ver("1.04")] bool IsValid;   </programlisting>
+     </sect2>
+

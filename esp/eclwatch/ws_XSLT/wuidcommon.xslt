@@ -193,21 +193,23 @@
               <xsl:value-of select="Owner"/>
             </td>
           </tr>
-          <tr>
-            <td class="eclwatch entryprompt">
-              Scope:
-            </td>
-            <td>
-              <xsl:choose>
-                <xsl:when test="State='running'">
-                  <input type="text" name="Scope" value="{Scope}" size="40" disabled="disabled"/>
-                </xsl:when>
-                <xsl:otherwise>
-                  <input type="text" name="Scope" value="{Scope}" size="40"/>
-                </xsl:otherwise>
-              </xsl:choose>
-            </td>
-          </tr>
+          <xsl:if test="$SecMethod='LdapSecurity'">
+            <tr>
+              <td class="eclwatch entryprompt">
+                Scope:
+              </td>
+              <td>
+                <xsl:choose>
+                  <xsl:when test="State='running'">
+                    <input type="text" name="Scope" value="{Scope}" size="40" disabled="disabled"/>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <input type="text" name="Scope" value="{Scope}" size="40"/>
+                  </xsl:otherwise>
+                </xsl:choose>
+              </td>
+            </tr>
+          </xsl:if>
           <tr>
               <td colspan="2">
                 <div style="border:1px solid grey;">
@@ -390,6 +392,30 @@
               <xsl:if test="count(Exceptions/ECLException[Severity='Info'])">
                 <table id="InfoContent" class="wusectiontable">
                   <xsl:apply-templates select="Exceptions/ECLException[Severity='Info']"/>
+                </table>
+              </xsl:if>
+            </div>
+          </div>
+        </p>
+      </xsl:if>
+      
+      <xsl:if test="AlertCount &gt; 0">
+        <p>
+          <div>
+            <div id="HdrAlert" class="wugroup">
+              <div class="WuGroupHdrLeft">
+                <A href="javascript:void(0)" onclick="toggleElement('Alert');" id="explinkalert" class="wusectionexpand">
+                  Alert: (<xsl:value-of select="AlertCount"/>)
+                </A>
+              </div>
+            </div>
+            <div id="Alert" class="wusectioncontent">
+              <xsl:if test="count(Exceptions/ECLException[Severity='Alert'])=0">
+                <span class="loading">&nbsp;&nbsp;Loading...</span>
+              </xsl:if>
+              <xsl:if test="count(Exceptions/ECLException[Severity='Alert'])">
+                <table id="AlertContent" class="wusectiontable">
+                  <xsl:apply-templates select="Exceptions/ECLException[Severity='Alert']"/>
                 </table>
               </xsl:if>
             </div>
@@ -807,6 +833,7 @@
               <input type="hidden" id="ProblemDescription" name="ProblemDescription" value=""/>
               <input type="hidden" id="WhatChanged" name="WhatChanged" value=""/>
               <input type="hidden" id="WhereSlow" name="WhereSlow" value=""/>
+              <input type="hidden" id="Password" name="Password" value=""/>
               <input type="button" name="Type" value="Save" class="sbutton" onclick="updateWorkunit('{$wuid}');">
                         <xsl:if test="number(AccessFlag) &lt; 7">
                           <xsl:attribute name="disabled">disabled</xsl:attribute>

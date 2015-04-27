@@ -300,7 +300,11 @@ enum
     NTFselectorOriginal     = 0x0002,
 };
 
-class HQL_API ANewTransformInfo : implements CInterfaceOf<IInterface> 
+
+//Unless we start using tbb or something similar to parallelise transformations
+//[which would be tricky because queryTransformExtra() assumes single threaded access]
+//all Link() and Release() calls must be from the same thread => this can be lightweight
+class HQL_API ANewTransformInfo : implements CSingleThreadSimpleInterfaceOf<IInterface>
 {
 public:
     ANewTransformInfo(IHqlExpression * _original);
@@ -876,54 +880,6 @@ public:
     MapOwnedToOwned<IHqlExpression, IHqlExpression> map;
 };
 
-class SlowScopeMapping
-{
-public:
-    inline IHqlExpression * getValue(IHqlExpression * key)
-    {
-        if (!key)
-            return nullValue;
-        unsigned match = find(key);
-        if (match != NotFound)
-            return &values.item(match);
-        return NULL;
-    }
-    inline void setValue(IHqlExpression * key, IHqlExpression * value)
-    {
-        if (!key)
-        {
-            nullValue.set(value);
-            return;
-        }
-        unsigned match = find(key);
-        if (match == NotFound)
-        {
-            keys.append(OLINK(*key));
-            values.append(OLINK(*value));
-        }
-        else
-            values.replace(OLINK(*value), match);
-    }
-    inline unsigned find(IHqlExpression * key)
-    {
-        IHqlExpression * * head = keys.getArray();
-        unsigned max = keys.ordinality();
-        for (unsigned i=0; i < max; i++)
-            if (head[i] == key)
-                return i;
-        return NotFound;
-        for (unsigned i=0; i < max; i++)
-            if (&keys.item(i) == key)
-                return i;
-        return NotFound;
-    }
-
-public:
-    HqlExprAttr nullValue;
-    HqlExprArray keys;
-    HqlExprArray values;
-};
-
 class HQL_API MergingTransformInfo : public AMergingTransformInfo
 {
     typedef FastScopeMapping MAPPINGCLASS;
@@ -1085,7 +1041,7 @@ struct ScopeSuspendInfo
 {
     CIArrayOf<ScopeInfo> scope;
     CIArrayOf<ScopeInfo> saved;
-    PointerIArrayOf<IHqlExpression> savedI;
+    IPointerArrayOf<IHqlExpression> savedI;
 };
 
 class HQL_API ScopedTransformer : public NewHqlTransformer

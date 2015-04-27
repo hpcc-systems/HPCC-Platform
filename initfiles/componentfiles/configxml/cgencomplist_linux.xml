@@ -300,4 +300,7 @@
             path="componentfiles/configxml"
             processName="PluginProcess"
             schema="plugin.xsd"/>
+  <Component name="DynamicESDL" processName='EspService' schema='esdlsvcengine.xsd' deployable='no'>
+   <File name="@temp/esp_service_DynamicESDL.xsl" method="esp_service_module"/>
+  </Component>
 </Components>

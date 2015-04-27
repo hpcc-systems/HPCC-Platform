@@ -69,7 +69,7 @@ define([
             storeItem.updateData(item);
             if (!this._watched[id]) {
                 var context = this;
-                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
                         context.notify(storeItem, id);
                     }
@@ -163,7 +163,7 @@ define([
             }
             if (!this.hasCompleted) {
                 var context = this;
-                this.watch("changedCount", function (name, oldValue, newValue) {
+                this.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue && newValue) {
                         if (callback) {
                             callback(context);
@@ -312,9 +312,13 @@ define([
             return obj && obj.isInstanceOf && obj.isInstanceOf(Workunit);
         },
 
-        Get: function (wuid) {
+        Get: function (wuid, data) {
             var store = new Store();
-            return store.get(wuid);
+            var retVal = store.get(wuid);
+            if (data) {
+                retVal.updateData(data);
+            }
+            return retVal;
         },
 
         CreateWUQueryStore: function (options) {

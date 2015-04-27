@@ -20,7 +20,6 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/_base/Deferred",
-    "dojo/aspect",
     "dojo/has",
     "dojo/dom",
     "dojo/dom-construct",
@@ -29,12 +28,14 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/store/util/QueryResults",
+    "dojo/Evented",
 
     "dijit/registry",
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
 
     "hpcc/_Widget",
+    "hpcc/ESPUtil",
 
     "dojo/text!../templates/GraphWidget.html",
 
@@ -43,9 +44,9 @@ define([
     "dijit/form/Button",
     "dijit/form/NumberSpinner"
     
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
             registry, BorderContainer, ContentPane,
-            _Widget,
+            _Widget, ESPUtil,
             template) {
 
     var GraphStore = declare("GraphStore", [Memory], {
@@ -263,7 +264,7 @@ define([
                                         this.graphViewHistory.getLatest().navigateTo(this);
                                     }
                                     deferred.resolve("Layout Complete.");
-                                    this.refreshRootState(context.selectedGlobalIDs);
+                                    this.refreshRootState(context.rootGlobalIDs);
                                 };
                                 if (this.svg) {
                                     targetGraphWidget.startCachedLayout(this.svg);
@@ -278,7 +279,7 @@ define([
                             targetGraphWidget.setSelectedAsGlobalID(context.selectedGlobalIDs);
                             targetGraphWidget.setMessage("");
                             deferred.resolve("XGMML Did Not Change.");
-                            targetGraphWidget.refreshRootState(context.selectedGlobalIDs);
+                            targetGraphWidget.refreshRootState(context.rootGlobalIDs);
                         }
                     }));
                 }));
@@ -296,6 +297,7 @@ define([
 
         constructor: function (sourceGraphWidget) {
             this.sourceGraphWidget = sourceGraphWidget;
+            this.historicPos = 0;
             this.history = [];
             this.index = {};
         },
@@ -488,7 +490,7 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
-                this._isPluginInstalled = this.isPluginInstalled();
+                this._isPluginInstalled = dojoConfig.isPluginInstalled();
                 this.createPlugin();
                 this.watchStyleChange();
             },
@@ -748,24 +750,6 @@ define([
                             domConstruct.create("br", null, place);
                         }
                     }
-                }
-            },
-
-            isPluginInstalled: function () {
-                if (this.isIE || this.isIE11) {
-                    try {
-                        var o = new ActiveXObject("HPCCSystems.HPCCSystemsGraphViewControl.1");
-                        o = null;
-                        return true;
-                    } catch (e) { }
-                    return false;
-                } else {
-                    for (var i = 0, p = navigator.plugins, l = p.length; i < l; i++) {
-                        if (p[i].name.indexOf("HPCCSystemsGraphViewControl") > -1) {
-                            return true;
-                        }
-                    }
-                    return false;
                 }
             },
 
@@ -1049,40 +1033,19 @@ define([
             },
 
             watchStyleChange: function () {
-                //  Prevent control from being "hidden" as it gets destroyed on Chrome/FF/(Maybe IE11?)
-                var watchList = [];
-                var context = this;
-                var domNode = this.domNode;
-
-                //  There are many places that may cause the plugin to be hidden, the possible places are calculated by walking the hierarchy upwards. 
-                while (domNode) {
-                    if (domNode.id) {
-                        watchList[domNode.id] = false;
-                    }
-                    domNode = domNode.parentElement;
-                }
-
-                //  Hijack the dojo style class replacement call and monitor for elements in our watchList. 
-                aspect.around(domClass, "replace", function (origFunc) {
-                    return function (node, addStyle, removeStyle) {
-                        if (node.firstChild && (node.firstChild.id in watchList)) {
-                            if (addStyle == "dijitHidden") {
-                                watchList[node.firstChild.id] = true;
-                                dojo.style(node, "width", "1px");
-                                dojo.style(node, "height", "1px");
-                                dojo.style(node.firstChild, "width", "1px");
-                                dojo.style(node.firstChild, "height", "1px");
-                                return;
-                            } else if (addStyle == "dijitVisible" && watchList[node.firstChild.id] == true) {
-                                watchList[node.firstChild.id] = false;
-                                dojo.style(node, "width", "100%");
-                                dojo.style(node, "height", "100%");
-                                dojo.style(node.firstChild, "width", "100%");
-                                dojo.style(node.firstChild, "height", "100%");
-                                return;
-                            }
-                        }
-                        return origFunc(node, addStyle, removeStyle);
+                ESPUtil.MonitorVisibility(this, function (visibility, node) {
+                    if (visibility) {
+                        dojo.style(node, "width", "100%");
+                        dojo.style(node, "height", "100%");
+                        dojo.style(node.firstChild, "width", "100%");
+                        dojo.style(node.firstChild, "height", "100%");
+                        return true;
+                    } else {
+                        dojo.style(node, "width", "1px");
+                        dojo.style(node, "height", "1px");
+                        dojo.style(node.firstChild, "width", "1px");
+                        dojo.style(node.firstChild, "height", "1px");
+                        return true;
                     }
                 });
             },
@@ -1174,7 +1137,9 @@ define([
 
             registerEvent: function (evt, func) {
                 if (this.hasPlugin()) {
-                    if (this.isIE11) {
+                    if (this._plugin instanceof Evented) {
+                        this._plugin.on(evt, func);
+                    } else if (this.isIE11) {
                         this._plugin["on" + evt] = func;
                     } else if (this._plugin.attachEvent !== undefined) {
                         return this._plugin.attachEvent("on" + evt, func);
@@ -1188,7 +1153,6 @@ define([
             refreshActionState: function () {
                 this.setDisabled(this.id + "Previous", !this.graphViewHistory.hasPrevious(), "iconLeft", "iconLeftDisabled");
                 this.setDisabled(this.id + "Next", !this.graphViewHistory.hasNext(), "iconRight", "iconRightDisabled");
-                var selection = this.getSelection();
                 this.setDisabled(this.id + "SyncSelection", !this.getSelection().length, "iconSync", "iconSyncDisabled");
             },
 

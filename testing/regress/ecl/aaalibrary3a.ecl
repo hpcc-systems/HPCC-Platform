@@ -20,8 +20,8 @@
 //nothorlcr
 //publish
 
-#option ('targetService', 'aaaLibrary3a')
-#option ('createServiceAlias', true)
+#option ('targetService', 'aaaLibrary3a');
+#option ('createServiceAlias', true);
 
 //Example of nested 
 namesRecord := 

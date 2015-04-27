@@ -2072,9 +2072,19 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         source->setMaxRecordSize(req.getSourceMaxRecordSize());
         source->setFormat((DFUfileformat)req.getSourceFormat());
 
-        // if rowTag specified, it means it's xml format, otherwise it's csv
-        const char* rowtag = req.getSourceRowTag();
-        if(rowtag != NULL && *rowtag != '\0')
+        StringBuffer rowtag;
+        if (req.getIsJSON())
+        {
+            const char *srcRowPath = req.getSourceRowPath();
+            if (!srcRowPath || *srcRowPath != '/')
+                rowtag.append("/");
+            rowtag.append(srcRowPath);
+        }
+        else
+            rowtag.append(req.getSourceRowTag());
+
+        // if rowTag specified, it means it's xml or json format, otherwise it's csv
+        if(rowtag.length())
         {
             source->setRowTag(rowtag);
             options->setKeepHeader(true);
@@ -3180,6 +3190,88 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
 
         resp.setFirstColumn("File");
         resp.setDFUActionResults(results);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+void CFileSprayEx::appendGroupNode(IArrayOf<IEspGroupNode>& groupNodes, const char* nodeName, const char* clusterType,
+    bool replicateOutputs)
+{
+    Owned<IEspGroupNode> node = createGroupNode();
+    node->setName(nodeName);
+    node->setClusterType(clusterType);
+    if (replicateOutputs)
+        node->setReplicateOutputs(replicateOutputs);
+    groupNodes.append(*node.getClear());
+}
+
+bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRequest &req, IEspGetSprayTargetsResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
+
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> environment = factory->openEnvironment();
+        Owned<IPropertyTree> root = &environment->getPTree();
+        if (!root)
+            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
+
+        IArrayOf<IEspGroupNode> sprayTargets;
+        //Fetch all the group names for all the thor instances (and dedup them)
+        BoolHash uniqueThorClusterGroupNames;
+        Owned<IPropertyTreeIterator> it = root->getElements("Software/ThorCluster");
+        ForEach(*it)
+        {
+            IPropertyTree& cluster = it->query();
+
+            StringBuffer thorClusterGroupName;
+            getClusterGroupName(cluster, thorClusterGroupName);
+            if (!thorClusterGroupName.length())
+                continue;
+
+            bool* found = uniqueThorClusterGroupNames.getValue(thorClusterGroupName.str());
+            if (!found || !*found)
+                appendGroupNode(sprayTargets, thorClusterGroupName.str(), "thor", cluster.getPropBool("@replicateOutputs", false));
+        }
+
+        //Fetch all the group names for all the hthor instances
+        it.setown(root->getElements("Software/EclAgentProcess"));
+        ForEach(*it)
+        {
+            IPropertyTree &cluster = it->query();
+            const char* name = cluster.queryProp("@name");
+            if (!name || !*name)
+                continue;
+
+            unsigned ins = 0;
+            Owned<IPropertyTreeIterator> insts = cluster.getElements("Instance");
+            ForEach(*insts)
+            {
+                const char *na = insts->query().queryProp("@netAddress");
+                if (!na || !*na)
+                    continue;
+
+                SocketEndpoint ep(na);
+                if (ep.isNull())
+                    continue;
+
+                ins++;
+                VStringBuffer gname("hthor__%s", name);
+                if (ins>1)
+                    gname.append('_').append(ins);
+
+                appendGroupNode(sprayTargets, gname.str(), "hthor", false);
+            }
+        }
+
+        resp.setGroupNodes(sprayTargets);
     }
     catch(IException* e)
     {   

@@ -23,7 +23,6 @@
    <xsl:variable name="cluster" select="/WUQueryResponse/Cluster"/>
    <xsl:variable name="roxiecluster" select="/WUQueryResponse/RoxieCluster"/>
    <xsl:variable name="state" select="/WUQueryResponse/State"/>
-   <xsl:variable name="totalThorTime" select="/WUQueryResponse/TotalThorTime"/>
    <xsl:variable name="pagesize" select="/WUQueryResponse/PageSize"/>
    <xsl:variable name="pagestartfrom" select="/WUQueryResponse/PageStartFrom"/>
    <xsl:variable name="start" select="/WUQueryResponse/StartDate"/>
@@ -326,18 +325,18 @@
                                </xsl:otherwise>
                            </xsl:choose>
                 <xsl:choose>
-                  <xsl:when test="$sortby='ThorTime' and $descending &lt; 1">
-                    <th style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('ThorTime', 1)">
-                      Total Thor Time<img src="/esp/files_/img/upsimple.png" width="10" height="10"></img>
+                  <xsl:when test="$sortby='ClusterTime' and $descending &lt; 1">
+                    <th style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('ClusterTime', 1)">
+                      Total Cluster Time<img src="/esp/files_/img/upsimple.png" width="10" height="10"></img>
                     </th>
                   </xsl:when>
-                  <xsl:when test="$sortby='ThorTime'">
-                    <th style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('ThorTime', 0)">
-                      Total Thor Time<img src="/esp/files_/img/downsimple.png" width="10" height="10"></img>
+                  <xsl:when test="$sortby='ClusterTime'">
+                    <th style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('ClusterTime', 0)">
+                      Total Cluster Time<img src="/esp/files_/img/downsimple.png" width="10" height="10"></img>
                     </th>
                   </xsl:when>
                   <xsl:otherwise>
-                    <th style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('ThorTime', 0)">Total Thor Time</th>
+                    <th style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('ClusterTime', 0)">Total Cluster Time</th>
                   </xsl:otherwise>
                 </xsl:choose>
                            </xsl:otherwise>
@@ -471,12 +470,12 @@
          <td>
             <xsl:choose>
                 <xsl:when test="not(string-length($archived))">
-                    <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}&amp;&amp;IncludeExceptions=0&amp;IncludeGraphs=0&amp;IncludeSourceFiles=0&amp;IncludeResults=0&amp;IncludeVariables=0&amp;IncludeTimers=0&amp;IncludeDebugValues=0&amp;IncludeApplicationValues=0&amp;IncludeWorkflows&amp;SuppressResultSchemas=1')">
+                    <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}&amp;IncludeExceptions=0&amp;IncludeGraphs=0&amp;IncludeSourceFiles=0&amp;IncludeResults=0&amp;IncludeVariables=0&amp;IncludeTimers=0&amp;IncludeDebugValues=0&amp;IncludeApplicationValues=0&amp;IncludeWorkflows=0&amp;SuppressResultSchemas=1')">
                        <xsl:value-of select="Wuid"/>
                     </a>
                 </xsl:when>
                 <xsl:otherwise>
-                    <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}&amp;{$basicquery}&amp;IncludeExceptions=0&amp;IncludeGraphs=0&amp;IncludeSourceFiles=0&amp;IncludeResults=0&amp;IncludeVariables=0&amp;IncludeTimers=0&amp;IncludeDebugValues=0&amp;IncludeApplicationValues=0&amp;IncludeWorkflows&amp;SuppressResultSchemas=1')">
+                    <a href="javascript:go('/WsWorkunits/WUInfo?Wuid={Wuid}&amp;Type=archived workunits&amp;IncludeExceptions=0&amp;IncludeGraphs=0&amp;IncludeSourceFiles=0&amp;IncludeResults=0&amp;IncludeVariables=0&amp;IncludeTimers=0&amp;IncludeDebugValues=0&amp;IncludeApplicationValues=0&amp;IncludeWorkflows=0&amp;SuppressResultSchemas=1')">
                         <xsl:value-of select="Wuid"/>
                     </a>
                 </xsl:otherwise>
@@ -720,53 +719,7 @@
          </td>
         <xsl:if test="not(string-length($archived))">
         <td>
-          <xsl:choose>
-            <xsl:when test="string-length(TotalThorTime) and not(string-length($totalThorTime)) and not(string-length($archived))">
-              <xsl:choose>
-                <xsl:when test="string-length($filters)">
-                  <xsl:choose>
-                    <xsl:when test="string-length($sortby) and $descending &lt; 1">
-                      <a href="javascript:go('/WsWorkunits/WUQuery?{$filters}&amp;TotalThorTime={TotalThorTime}&amp;Sortby={$sortby}')">
-                        <xsl:value-of select="TotalThorTime"/>
-                      </a>
-                    </xsl:when>
-                    <xsl:when test="string-length($sortby)">
-                      <a href="javascript:go('/WsWorkunits/WUQuery?{$filters}&amp;TotalThorTime={TotalThorTime}&amp;Sortby={$sortby}&amp;Descending=1')">
-                        <xsl:value-of select="TotalThorTime"/>
-                      </a>
-                    </xsl:when>
-                    <xsl:otherwise>
-                      <a href="javascript:go('/WsWorkunits/WUQuery?{$filters}&amp;TotalThorTime={TotalThorTime}')">
-                        <xsl:value-of select="TotalThorTime"/>
-                      </a>
-                    </xsl:otherwise>
-                  </xsl:choose>
-                </xsl:when>
-                <xsl:otherwise>
-                  <xsl:choose>
-                    <xsl:when test="string-length($sortby) and $descending &lt; 1">
-                      <a href="javascript:go('/WsWorkunits/WUQuery?TotalThorTime={TotalThorTime}&amp;Sortby={$sortby}')">
-                        <xsl:value-of select="TotalThorTime"/>
-                      </a>
-                    </xsl:when>
-                    <xsl:when test="string-length($sortby)">
-                      <a href="javascript:go('/WsWorkunits/WUQuery?TotalThorTime={TotalThorTime}&amp;Sortby={$sortby}&amp;Descending=1')">
-                        <xsl:value-of select="TotalThorTime"/>
-                      </a>
-                    </xsl:when>
-                    <xsl:otherwise>
-                      <a href="javascript:go('/WsWorkunits/WUQuery?TotalThorTime={TotalThorTime}')">
-                        <xsl:value-of select="TotalThorTime"/>
-                      </a>
-                    </xsl:otherwise>
-                  </xsl:choose>
-                </xsl:otherwise>
-              </xsl:choose>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="TotalThorTime"/>
-            </xsl:otherwise>
-          </xsl:choose>
+         <xsl:value-of select="TotalClusterTime"/>
         </td>
         </xsl:if>
       </tr>

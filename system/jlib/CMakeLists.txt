@@ -83,7 +83,6 @@ set (    SRCS
 set (    INCLUDES
         jaio.hpp
         jarray.hpp
-        jarray.tpp
         jatomic.hpp
         javahash.hpp
         javahash.tpp
@@ -97,7 +96,6 @@ set (    INCLUDES
         jelogtype.hpp
         jencrypt.hpp
         jerror.hpp
-        jerrorrange.hpp
         jexcept.hpp
         jfile.hpp
         jfile.ipp

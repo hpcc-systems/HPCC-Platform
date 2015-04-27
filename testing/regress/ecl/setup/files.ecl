@@ -14,19 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+
 //skip type==setup TBD
 
 import $.TS;
 
 //define constants
-EXPORT files(string platform, boolean useLocal) := module
-SHARED DG_GenFlat           := true;   //TRUE gens FlatFile
-SHARED DG_GenChild          := true;   //TRUE gens ChildFile
-SHARED DG_GenGrandChild     := true;   //TRUE gens GrandChildFile
-SHARED DG_GenIndex          := true;   //TRUE gens FlatFile AND the index
-SHARED DG_GenCSV            := true;   //TRUE gens CSVFile
-SHARED DG_GenXML            := true;   //TRUE gens XMLFile
-SHARED DG_GenVar            := true;   //TRUE gens VarFile only IF MaxField >= 3
+EXPORT files(boolean multiPart, boolean useLocal, boolean useTranslation = false) := module
 
 EXPORT DG_MaxField          := 3;    // maximum number of fields to use building the data records
 EXPORT DG_MaxChildren       := 3;    //maximum (1 to n) number of child recs
@@ -40,26 +34,39 @@ SHARED useLayoutTrans := false;
 SHARED useVarIndex := false;
 
 #if (useDynamic=true)
-VarString EmptyString := '' : STORED('dummy');
-EXPORT  filePrefix := platform + EmptyString;
+SHARED STRING EmptyString := '' : STORED('dummy');
 #option ('allowVariableRoxieFilenames', 1);
 #else
-EXPORT  filePrefix := platform;
+SHARED STRING EmptyString := '';
 #end
 
+EXPORT STRING filePrefix := MAP(
+        multiPart => 'multi',
+        'single') + EmptyString;
+
+//Yuk cannot use MAP because that creates a string6        
+EXPORT STRING indexPrefix := IF(multiPart AND useLocal, 'local', 
+                             IF(multiPart, 'multi',
+                             'single')) + EmptyString;
+        
 EXPORT DG_FileOut           := '~REGRESS::' + filePrefix + '::DG_';
+EXPORT DG_IndexOut           := '~REGRESS::' + indexPrefix + '::DG_';
 EXPORT DG_ParentFileOut     := '~REGRESS::' + filePrefix + '::DG_Parent.d00';
 EXPORT DG_ChildFileOut      := '~REGRESS::' + filePrefix + '::DG_Child.d00';
 EXPORT DG_GrandChildFileOut := '~REGRESS::' + filePrefix + '::DG_GrandChild.d00';
 EXPORT DG_FetchFileName     := '~REGRESS::' + filePrefix + '::C.DG_FetchFile';
 EXPORT DG_FetchFilePreloadName := '~REGRESS::' + filePrefix + '::C.DG_FetchFilePreload';
 EXPORT DG_FetchFilePreloadIndexedName := '~REGRESS::' + filePrefix + '::C.DG_FetchFilePreloadIndexed';
-EXPORT DG_FetchIndex1Name   := '~REGRESS::' + filePrefix + '::DG_FetchIndex1';
-EXPORT DG_FetchIndex2Name   := '~REGRESS::' + filePrefix + '::DG_FetchIndex2';
-EXPORT DG_FetchIndexDiffName:= '~REGRESS::' + filePrefix + '::DG_FetchIndexDiff';
-EXPORT DG_MemFileName       := '~REGRESS::' + filePrefix + '::DG_MemFile';
-EXPORT DG_IntegerDatasetName:= '~REGRESS::' + filePrefix + '::DG_IntegerFile';
-EXPORT DG_IntegerIndexName  := '~REGRESS::' + filePrefix + '::DG_IntegerIndex';
+EXPORT DG_FetchIndex1Name   := '~REGRESS::' + indexPrefix + '::DG_FetchIndex1';
+EXPORT DG_FetchTransIndexName   := '~REGRESS::' + indexPrefix + '::DG_FetchTransIndex';
+EXPORT DG_FetchIndexDiffName:= '~REGRESS::' + indexPrefix + '::DG_FetchIndexDiff';
+EXPORT DG_KeyDiffIndex1Name   := '~REGRESS::' + indexPrefix + '::DG_KeyDiffIndex1';
+EXPORT DG_KeyDiffIndex2Name   := '~REGRESS::' + indexPrefix + '::DG_KeyDiffIndex2';
+
+EXPORT DG_DsFilename        := '~REGRESS::' + filePrefix + '::SerialLibraryDs';
+EXPORT DG_DictFilename      := '~REGRESS::' + filePrefix + '::SerialLibraryDict';
+EXPORT DG_DictKeyFilename   := '~REGRESS::' + indexPrefix + '::SerialLibraryKeyDict';
+EXPORT DG_BookKeyFilename   := '~REGRESS::' + indexPrefix + '::SerialBookKey';
 
 //record structures
 EXPORT DG_FetchRecord := RECORD
@@ -74,24 +81,21 @@ EXPORT DG_FetchFile   := DATASET(DG_FetchFileName,{DG_FetchRecord,UNSIGNED8 __fi
 EXPORT DG_FetchFilePreload := PRELOAD(DATASET(DG_FetchFilePreloadName,{DG_FetchRecord,UNSIGNED8 __filepos {virtual(fileposition)}},FLAT));
 EXPORT DG_FetchFilePreloadIndexed := PRELOAD(DATASET(DG_FetchFilePreloadIndexedName,{DG_FetchRecord,UNSIGNED8 __filepos {virtual(fileposition)}},FLAT),1);
 
-#IF (useLayoutTrans=false)
-  #IF (useVarIndex=true)
-    EXPORT DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex1Name);
-    EXPORT DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex2Name);
-  #ELSE
-    EXPORT DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{state ,__filepos},DG_FetchIndex1Name);
-    EXPORT DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname},{state, __filepos}, DG_FetchIndex2Name);
-  #END
-#ELSE
- // Declare all indexes such that layout translation is required... Used at run-time only, not at setup time...
-  #IF (useVarIndex=true)
-    EXPORT DG_FetchIndex1 := INDEX(DG_FetchFile,{Fname,Lname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex1Name);
-    EXPORT DG_FetchIndex2 := INDEX(DG_FetchFile,{Fname,Lname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex2Name);
-  #ELSE
-    EXPORT DG_FetchIndex1 := INDEX(DG_FetchFile,{Fname,Lname},{state ,__filepos},DG_FetchIndex1Name);
-    EXPORT DG_FetchIndex2 := INDEX(DG_FetchFile,{Fname,Lname},{state, __filepos}, DG_FetchIndex2Name);
-  #END
-#END
+//The standard version of the index
+
+
+EXPORT DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield {blob}:= fname, __filepos},DG_FetchIndex1Name);
+
+//These versions of the index are only used for KEYDIFF
+EXPORT DG_KeyDiffIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield := fname, __filepos},DG_KeyDiffIndex1Name);
+EXPORT DG_KeyDiffIndex2 := INDEX(DG_KeyDiffIndex1, DG_KeyDiffIndex2Name);
+
+//This version is used for testing reading from a file requiring translation 
+EXPORT DG_FetchTransIndex := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield {blob}:= fname, __filepos},DG_FetchTransIndexName);
+
+indexName := IF(useTranslation, __nameof__(DG_FetchTransIndex), __nameof__(DG_FetchIndex1));
+EXPORT DG_FetchIndex := INDEX(DG_FetchIndex1,indexName);
+
 EXPORT DG_OutRec := RECORD
     unsigned4  DG_ParentID;
     string10  DG_firstname;
@@ -120,35 +124,19 @@ EXPORT DG_BlankSet := dataset([{0,'','',0}],DG_OutRec);
 EXPORT DG_FlatFile      := DATASET(DG_FileOut+'FLAT',{DG_OutRec,UNSIGNED8 filepos{virtual(fileposition)}},FLAT);
 EXPORT DG_FlatFileEvens := DATASET(DG_FileOut+'FLAT_EVENS',{DG_OutRec,UNSIGNED8 filepos{virtual(fileposition)}},FLAT);
 
-EXPORT DG_indexFile      := INDEX(DG_FlatFile,
-    RECORD
-#if(useLayoutTrans=false)
-      DG_firstname;
-      DG_lastname;
-#else
-      DG_lastname;
-      DG_firstname;
-#end
-    END,
-     RECORD
-      DG_Prange;
-      filepos
-    END,DG_FileOut+'INDEX');
+EXPORT DG_NormalIndexFile      := INDEX(DG_FlatFile, { DG_firstname, DG_lastname }, { DG_Prange, filepos }, DG_IndexOut+'INDEX');
+EXPORT DG_NormalIndexFileEvens := INDEX(DG_FlatFileEvens, { DG_firstname; DG_lastname; }, { DG_Prange, filepos } ,DG_IndexOut+'INDEX_EVENS');
 
-EXPORT DG_indexFileEvens := INDEX(DG_FlatFileEvens,
-    RECORD
-#if(useLayoutTrans=false)
-      DG_firstname;
-      DG_lastname;
-#else
-      DG_lastname;
-      DG_firstname;
-#end
-    END,
-    RECORD
-      DG_Prange;
-      filepos
-    END,DG_FileOut+'INDEX_EVENS');
+EXPORT DG_TransIndexFile      := INDEX(DG_FlatFile, { DG_lastname, DG_firstname }, { DG_Prange, filepos }, DG_IndexOut+'TRANS_INDEX');
+EXPORT DG_TransIndexFileEvens := INDEX(DG_FlatFileEvens, { DG_lastname, DG_firstname }, { DG_Prange, filepos } ,DG_IndexOut+'TRANS_INDEX_EVENS');
+
+indexName := IF(useTranslation, __nameof__(DG_TransIndexFile), __nameof__(DG_NormalIndexFile));
+EXPORT DG_indexFile      := INDEX(DG_NormalIndexFile, indexName);
+
+indexName := IF(useTranslation, __nameof__(DG_TransIndexFileEvens), __nameof__(DG_NormalIndexFileEvens));
+EXPORT DG_indexFileEvens := INDEX(DG_NormalIndexFileEvens, indexName);
+
+EXPORT DG_KeyedIndexFile      := INDEX(DG_FlatFile, { DG_firstname, DG_lastname, DG_Prange}, { filepos }, DG_IndexOut+'KEYED_INDEX');
 
 EXPORT DG_CSVFile   := DATASET(DG_FileOut+'CSV',DG_OutRec,CSV);
 EXPORT DG_XMLFile   := DATASET(DG_FileOut+'XML',DG_OutRec,XML);
@@ -159,24 +147,12 @@ EXPORT DG_VarOutRecPlus := RECORD
 END;
 
 EXPORT DG_VarFile   := DATASET(DG_FileOut+'VAR',DG_VarOutRecPlus,FLAT);
-EXPORT DG_VarIndex  := INDEX(DG_VarFile,{
-#if(useLayoutTrans=false)
-      DG_firstname;
-      DG_lastname;
-#else
-      DG_lastname;
-      DG_firstname;
-#end
-__filepos},DG_FileOut+'VARINDEX');
-EXPORT DG_VarVarIndex  := INDEX(DG_VarFile,{
-#if(useLayoutTrans=false)
-      DG_firstname;
-      DG_lastname;
-#else
-      DG_lastname;
-      DG_firstname;
-#end
-__filepos},{ string temp_blob1 := TRIM(ExtraField); string10000 temp_blob2 {blob} := ExtraField },DG_FileOut+'VARVARINDEX');
+
+EXPORT DG_NormalVarIndex  := INDEX(DG_VarFile, { DG_firstname; DG_lastname; __filepos } ,DG_IndexOut+'VARINDEX');
+EXPORT DG_TransVarIndex  := INDEX(DG_VarFile, { DG_lastname; DG_firstname; __filepos } ,DG_IndexOut+'TRANS_VARINDEX');
+
+indexName := IF(useTranslation, __nameof__(DG_TransVarIndex), __nameof__(DG_NormalVarIndex));
+EXPORT DG_VarIndex  := INDEX(DG_NormalVarIndex, indexName);
 
 EXPORT DG_ParentFile  := DATASET(DG_ParentFileOut,{DG_OutRec,UNSIGNED8 filepos{virtual(fileposition)}},FLAT);
 EXPORT DG_ChildFile   := DATASET(DG_ChildFileOut,{DG_OutRecChild,UNSIGNED8 filepos{virtual(fileposition)}},FLAT);
@@ -202,26 +178,9 @@ EXPORT SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','A
 
 //----------------------------- Text search definitions ----------------------------------
 
-EXPORT NameWordIndex() := '~REGRESS::' + filePrefix + '::wordIndex' + IF(useLocal, '_Local', '');
-EXPORT NameSearchIndex      := '~REGRESS::' + filePrefix + '::searchIndex';
+EXPORT NameWordIndex() := '~REGRESS::' + indexPrefix + '::wordIndex' + IF(useLocal, '_Local', '');
+EXPORT NameSearchIndex      := '~REGRESS::' + indexPrefix + '::searchIndex';
 EXPORT getWordIndex() := INDEX(TS.textSearchIndex, NameWordIndex());
 EXPORT getSearchIndex() := INDEX(TS.textSearchIndex, NameSearchIndex);
-
-//----------------------------- End of text search definitions --------------------------
-
-
-
-EXPORT DG_MemFileRec := RECORD
-    unsigned2 u2;
-    unsigned3 u3;
-    big_endian unsigned2 bu2;
-    big_endian unsigned3 bu3;
-    integer2 i2;
-    integer3 i3;
-    big_endian integer2 bi2;
-    big_endian integer3 bi3;
-END;
-
-EXPORT DG_MemFile := DATASET(DG_MemFileName,DG_MemFileRec,FLAT);
 
 END;

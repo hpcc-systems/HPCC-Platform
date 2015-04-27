@@ -887,15 +887,3 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
     return new CSeqPartHandler(partHandler, partDescs, grouped);
 }
 
-// CThorRowAggregator impl.
-
-AggregateRowBuilder &CThorRowAggregator::addRow(const void * row)
-{
-    return RowAggregator::addRow(row);
-}
-
-void CThorRowAggregator::mergeElement(const void * otherElement)
-{
-    RowAggregator::mergeElement(otherElement);
-}
-

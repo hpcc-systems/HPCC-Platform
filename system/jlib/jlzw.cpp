@@ -698,23 +698,26 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
     out.append(true);
     out.append((size32_t)0);
 
-    size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
-    Owned<ICompressor> compressor = createLZWCompressor();
-    void *newData = out.reserve(newSize);
-    compressor->open(newData, newSize);
-    if (len>=32 && compressor->write(src, len)==len)
+    if (len >= 32)
     {
-        compressor->close();
-        size32_t compressedLen = compressor->buflen();
-        out.setWritePos(originalLength + sizeof(bool));
-        out.append(compressedLen);
-        out.setWritePos(originalLength + sizeof(bool) + sizeof(size32_t) + compressedLen);
+        size32_t newSize = len * 4 / 5; // Copy if compresses less than 80% ...
+        Owned<ICompressor> compressor = createLZWCompressor();
+        void *newData = out.reserve(newSize);
+        compressor->open(newData, newSize);
+        if (compressor->write(src, len)==len)
+        {
+            compressor->close();
+            size32_t compressedLen = compressor->buflen();
+            out.setWritePos(originalLength + sizeof(bool));
+            out.append(compressedLen);
+            out.setWritePos(originalLength + sizeof(bool) + sizeof(size32_t) + compressedLen);
+            return;
+        }
     }
-    else // all or don't compress
-    {
-        out.setWritePos(originalLength);
-        appendToBuffer(out, len, src);
-    }
+    
+    // all or don't compress
+    out.setWritePos(originalLength);
+    appendToBuffer(out, len, src);
 }
 
 void decompressToBuffer(MemoryBuffer & out, const void * src)
@@ -2487,6 +2490,124 @@ IPropertyTree *getBlockedFileDetails(IFile *file)
     }
     return NULL;
 }
+
+class CCompressHandlerArray : public IArrayOf<ICompressHandler>
+{
+public:
+    ICompressHandler *lookup(const char *type) const
+    {
+        ForEachItemIn(h, *this)
+        {
+            ICompressHandler &handler = item(h);
+            if (0 == stricmp(type, handler.queryType()))
+                return &handler;
+        }
+        return NULL;
+    }
+} compressors;
+
+
+bool addCompressorHandler(ICompressHandler *handler)
+{
+    if (compressors.lookup(handler->queryType()))
+    {
+        handler->Release();
+        return false; // already registered
+    }
+    compressors.append(* handler);
+    return true;
+}
+
+bool removeCompressorHandler(ICompressHandler *handler)
+{
+    return compressors.zap(* handler);
+}
+
+Linked<ICompressHandler> defaultCompressor;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    class CCompressHandlerBase : public CInterface, implements ICompressHandler
+    {
+        StringAttr type;
+    public:
+        IMPLEMENT_IINTERFACE;
+        CCompressHandlerBase(const char *_type) : type(_type) { }
+    // ICompressHandler
+        virtual const char *queryType() const { return type; }
+    };
+    class CFLZCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        CFLZCompressHandler() : CCompressHandlerBase("FLZ") { }
+        virtual ICompressor *getCompressor(const char *options) { return createFastLZCompressor(); }
+        virtual IExpander *getExpander(const char *options) { return createFastLZExpander(); }
+    };
+    class CAESCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        CAESCompressHandler() : CCompressHandlerBase("AES") { }
+        virtual ICompressor *getCompressor(const char *options)
+        {
+            assertex(options);
+            return createAESCompressor(options, strlen(options));
+        }
+        virtual IExpander *getExpander(const char *options)
+        {
+            assertex(options);
+            return createAESExpander(options, strlen(options));
+        }
+    };
+    class CDiffCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        CDiffCompressHandler() : CCompressHandlerBase("DIFF") { }
+        virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
+        virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
+    };
+    ICompressHandler *flzCompressor = new CFLZCompressHandler();
+    addCompressorHandler(flzCompressor);
+    addCompressorHandler(new CAESCompressHandler());
+    addCompressorHandler(new CDiffCompressHandler());
+    defaultCompressor.set(flzCompressor);
+    return true;
+}
+
+ICompressHandler *queryCompressHandler(const char *type)
+{
+    return compressors.lookup(type);
+}
+
+void setDefaultCompressor(const char *type)
+{
+    ICompressHandler *_defaultCompressor = queryCompressHandler(type);
+    if (!_defaultCompressor)
+        throw MakeStringException(-1, "setDefaultCompressor: '%s' compressor not registered", type);
+    defaultCompressor.set(_defaultCompressor);
+}
+
+ICompressHandler *queryDefaultCompressHandler()
+{
+    return defaultCompressor;
+}
+
+ICompressor *getCompressor(const char *type, const char *options)
+{
+    ICompressHandler *handler = compressors.lookup(type);
+    if (handler)
+        return handler->getCompressor(options);
+    return NULL;
+}
+
+IExpander *getExpander(const char *type, const char *options)
+{
+    ICompressHandler *handler = compressors.lookup(type);
+    if (handler)
+        return handler->getExpander(options);
+    return NULL;
+}
+
+
 
 //===================================================================================
 

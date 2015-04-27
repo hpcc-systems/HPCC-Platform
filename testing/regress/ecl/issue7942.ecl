@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4531, ignore);
+
 outrec := record
     integer id;
     string20 desc;

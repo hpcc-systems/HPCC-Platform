@@ -23,72 +23,21 @@
 
 #define HQLERR_ErrorAlreadyReported             4799            // special case...
 
-enum ErrorSeverity
-{
-    SeverityIgnore,
-    SeverityInfo,
-    SeverityWarning,
-    SeverityError,    // a warning treated as an error
-    SeverityFatal,      // a fatal error - can't be mapped to anything else
-    SeverityUnknown,
-};
-
-inline bool isError(ErrorSeverity severity) { return severity >= SeverityError; }
-inline bool isFatal(ErrorSeverity severity) { return severity == SeverityFatal; }
-
-//TBD in a separate commit - add support for warnings to be associated with different categories
-enum WarnErrorCategory
-{
-    CategoryInformation,// Some kind of information [default severity information]
-
-    CategoryCast,       // Suspicious casts between types or out of range values
-    CategoryConfuse,    // Likely to cause confusion
-    CategoryDeprecated, // deprecated features or syntax
-    CategoryEfficiency, // Something that is likely to be inefficient
-    CategoryFolding,    // Unusual results from constant folding
-    CategoryFuture,     // Likely to cause problems in future versions
-    CategoryIgnored,    // Something that has no effect, or is ignored
-    CategoryIndex,      // Unusual indexing of datasets or strings
-    CategoryMistake,    // Almost certainly a mistake
-    CategoryLimit,      // An operation that should really have some limits to protect data runaway
-    CategorySyntax,     // Invalid syntax which is painless to recover from
-    CategoryUnusual,    // Not strictly speaking an error, but highly unusual and likely to be a mistake
-    CategoryUnexpected, // Code that could be correct, but has the potential for unexpected behaviour
-
-    CategoryError,      // Typically severity fatal
-    CategoryAll,
-    CategoryUnknown,
-    CategoryMax,
-};
-
-interface HQL_API IECLError: public IException
-{
-public:
-    virtual const char* getFilename() const = 0;
-    virtual WarnErrorCategory getCategory() const = 0;
-    virtual int getLine() const = 0;
-    virtual int getColumn() const = 0;
-    virtual int getPosition() const = 0;
-    virtual StringBuffer& toString(StringBuffer&) const = 0;
-    virtual ErrorSeverity getSeverity() const = 0;
-    virtual IECLError * cloneSetSeverity(ErrorSeverity _severity) const = 0;
-};
-inline bool isError(IECLError * error) { return isError(error->getSeverity()); }
-inline bool isFatal(IECLError * error) { return isFatal(error->getSeverity()); }
-
+interface IWorkUnit;
 interface HQL_API IErrorReceiver : public IInterface
 {
-    virtual void report(IECLError* error) = 0;
-    virtual IECLError * mapError(IECLError * error) = 0;
+    virtual void report(IError* error) = 0;
+    virtual IError * mapError(IError * error) = 0;
     virtual size32_t errCount() = 0;
     virtual size32_t warnCount() = 0;
+    virtual void exportMappings(IWorkUnit * wu) const = 0;
 
     //global helper functions
     void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos);
     void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
 };
 
-typedef IArrayOf<IECLError> IECLErrorArray;
+typedef IArrayOf<IError> IErrorArray;
 
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -98,8 +47,9 @@ class HQL_API ErrorReceiverSink : public CInterfaceOf<IErrorReceiver>
 public:
     ErrorReceiverSink() { errs = warns = 0; }
 
-    virtual IECLError * mapError(IECLError * error) { return LINK(error); }
-    virtual void report(IECLError* err);
+    virtual IError * mapError(IError * error) { return LINK(error); }
+    virtual void exportMappings(IWorkUnit * wu) const { }
+    virtual void report(IError* err);
     virtual size32_t errCount() { return errs; }
     virtual size32_t warnCount() { return warns; }
 
@@ -115,11 +65,11 @@ class IndirectErrorReceiver : public CInterfaceOf<IErrorReceiver>
 public:
     IndirectErrorReceiver(IErrorReceiver & _prev) : prevErrorProcessor(&_prev) {}
 
-    virtual void report(IECLError* error)
+    virtual void report(IError* error)
     {
         prevErrorProcessor->report(error);
     }
-    virtual IECLError * mapError(IECLError * error)
+    virtual IError * mapError(IError * error)
     {
         return prevErrorProcessor->mapError(error);
     }
@@ -130,6 +80,10 @@ public:
     virtual size32_t warnCount()
     {
         return prevErrorProcessor->warnCount();
+    }
+    virtual void exportMappings(IWorkUnit * wu) const
+    {
+        prevErrorProcessor->exportMappings(wu);
     }
 
 protected:
@@ -143,16 +97,16 @@ class HQL_API MultiErrorReceiver : public ErrorReceiverSink
 public:
     MultiErrorReceiver() {}
 
-    virtual void report(IECLError* err);
+    virtual void report(IError* err);
 
     size32_t length() { return errCount() + warnCount();}
-    IECLError* item(size32_t index) { return &msgs.item(index); }
-    IECLError* firstError();
+    IError* item(size32_t index) { return &msgs.item(index); }
+    IError* firstError();
     StringBuffer& toString(StringBuffer& out);
     void clear() { msgs.kill(); }
 
 private:
-    IECLErrorArray msgs;
+    IErrorArray msgs;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -164,12 +118,11 @@ extern HQL_API ErrorSeverity getCheckSeverity(IAtom * name);
 
 //---------------------------------------------------------------------------------------------------------------------
 
-extern HQL_API IECLError *createECLError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0);
-inline IECLError * createECLError(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
+inline IError * createError(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
 {
-    return createECLError(CategoryError, SeverityFatal, errNo, msg, filename, lineno, column, pos);
+    return createError(CategoryError, SeverityFatal, errNo, msg, filename, lineno, column, pos);
 }
-extern HQL_API void reportErrors(IErrorReceiver & receiver, IECLErrorArray & errors);
+extern HQL_API void reportErrors(IErrorReceiver & receiver, IErrorArray & errors);
 void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args);
 void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...) __attribute__((format(printf, 4, 5)));
 

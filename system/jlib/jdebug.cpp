@@ -1,6 +1,5 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -48,7 +47,10 @@
 #include <sys/klog.h>
 #include <dirent.h>
 #endif
-
+#ifdef __APPLE__
+ #include <sys/param.h>
+ #include <sys/mount.h>
+#endif
 
 //===========================================================================
 #ifdef _DEBUG
@@ -263,6 +265,16 @@ __int64 cycle_to_nanosec(cycle_t cycles)
     return (__int64)((double)cycles * cycleToNanoScale);
 }
 
+__int64 jlib_decl cycle_to_microsec(cycle_t cycles)
+{
+    return (__int64)((double)cycles * cycleToNanoScale) / 1000;
+}
+
+__int64 jlib_decl cycle_to_millisec(cycle_t cycles)
+{
+    return (__int64)((double)cycles * cycleToNanoScale) / 1000000;
+}
+
 cycle_t nanosec_to_cycle(__int64 ns)
 {
     return (__int64)((double)ns / cycleToNanoScale);
@@ -288,7 +300,9 @@ static bool use_gettimeofday=false;
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
 static bool useRDTSC = _USE_RDTSC;
 #endif
-static double cycleToNanoScale; 
+static double cycleToNanoScale;
+static double cycleToMicroScale;
+static double cycleToMilliScale;
 
 void calibrate_timing()
 {
@@ -328,6 +342,8 @@ void calibrate_timing()
             if (numPerUS>0)
             {
                 cycleToNanoScale = 1000.0 / numPerUS;
+                cycleToMicroScale = 1.0 / numPerUS;
+                cycleToMilliScale = 0.001 / numPerUS;
                 return;
             }
         }
@@ -368,6 +384,24 @@ __int64 jlib_decl cycle_to_nanosec(cycle_t cycles)
     return cycles;
 }
 
+__int64 jlib_decl cycle_to_microsec(cycle_t cycles)
+{
+#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+    if (useRDTSC)
+        return (__int64)((double)cycles * cycleToMicroScale);
+#endif
+    return cycles / 1000;
+}
+
+__int64 jlib_decl cycle_to_millisec(cycle_t cycles)
+{
+#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
+    if (useRDTSC)
+        return (__int64)((double)cycles * cycleToMilliScale);
+#endif
+    return cycles / 1000000;
+}
+
 cycle_t nanosec_to_cycle(__int64 ns)
 {
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
@@ -387,7 +421,7 @@ double getCycleToNanoScale()
 
 void display_time(const char *title, cycle_t diff)
 {
-    DBGLOG("Time taken for %s: %"I64F"d cycles (%"I64F"dM) = %"I64F"d msec", title, diff, diff/1000000, cycle_to_nanosec(diff)/1000000);
+    DBGLOG("Time taken for %s: %" I64F "d cycles (%" I64F "dM) = %" I64F "d msec", title, diff, diff/1000000, cycle_to_nanosec(diff)/1000000);
 }
 
 TimeSection::TimeSection(const char * _title) : title(_title)
@@ -402,16 +436,16 @@ TimeSection::~TimeSection()
     display_time(title, end_time-start_time);
 }
 
-MTimeSection::MTimeSection(ITimeReporter *_master, const char * _scope, const char * _title) : scope(_scope), title(_title), master(_master)
+MTimeSection::MTimeSection(ITimeReporter *_master, const char * _scope) : scope(_scope), master(_master)
 {
-  start_time = get_cycles_now();
+    start_time = get_cycles_now();
 }
 
 MTimeSection::~MTimeSection()
 {
     cycle_t end_time = get_cycles_now();
     if (master)
-        master->addTiming(scope, title, end_time-start_time);
+        master->addTiming(scope, end_time-start_time);
     else
         display_time(title, end_time-start_time);
 }
@@ -482,10 +516,10 @@ public:
         for(iter.first(); iter.isValid(); iter.next())
         {
             TimeSectionInfo &ts = (TimeSectionInfo &)iter.query();
-            cb.report(ts.scope, ts.description, ts.totalcycles, ts.maxcycles, ts.count);
+            cb.report(ts.scope, ts.description, cycle_to_nanosec(ts.totalcycles), cycle_to_nanosec(ts.maxcycles), ts.count);
         }
     }
-    virtual void addTiming(const char * scope, const char *desc, unsigned __int64 cycles)
+    virtual void addTiming(const char * scope, cycle_t cycles)
     {
         CriticalBlock b(c);
         TimeSectionInfo *info = sections->find(scope);
@@ -497,7 +531,7 @@ public:
         }
         else
         {
-            TimeSectionInfo &newinfo = * new TimeSectionInfo(scope, desc, cycles);
+            TimeSectionInfo &newinfo = * new TimeSectionInfo(scope, NULL, cycles);
             sections->replaceOwn(newinfo);
         }
     }
@@ -505,6 +539,14 @@ public:
     {
         CriticalBlock b(c);
         return sections->count();
+    }
+    virtual StatisticKind getTimerType(unsigned idx)
+    {
+        return StTimeElapsed;
+    }
+    virtual StatisticScopeType getScopeType(unsigned idx)
+    {
+        return SSTsection;
     }
     virtual __int64 getTime(unsigned idx)
     {
@@ -526,11 +568,6 @@ public:
         CriticalBlock b(c);
         return s.append(findSection(idx).scope);
     }
-    virtual StringBuffer &getDescription(unsigned idx, StringBuffer &s)
-    {
-        CriticalBlock b(c);
-        return s.append(findSection(idx).description);
-    }
     virtual void reset()
     {
         CriticalBlock b(c);
@@ -543,7 +580,8 @@ public:
         if (numSections())
         {
             for (unsigned i = 0; i < numSections(); i++)
-                getDescription(i, str.append("Timing: ")).append(" total=")
+            {
+                getScope(i, str.append("Timing: ")).append(" total=")
                                          .append(getTime(i)/1000000)
                                          .append("ms max=")
                                          .append(getMaxTime(i)/1000)
@@ -552,6 +590,7 @@ public:
                                          .append(" ave=")
                                          .append((getTime(i)/1000)/getCount(i))
                                          .append("us\n");
+            }
         }
         return str;
     }
@@ -564,13 +603,13 @@ public:
             PrintLog(getTimings(str).str());
         }
     }
-    virtual void mergeTiming(const char * scope, const char *desc, const __int64 totalcycles, const __int64 maxcycles, const unsigned count)
+    virtual void mergeTiming(const char * scope, cycle_t totalcycles, cycle_t maxcycles, const unsigned count)
     {
         CriticalBlock b(c);
         TimeSectionInfo *info = sections->find(scope);
         if (!info)
         {
-            info = new TimeSectionInfo(scope, desc, totalcycles, maxcycles, count);
+            info = new TimeSectionInfo(scope, NULL, totalcycles, maxcycles, count);
             sections->replaceOwn(*info);
         }
         else
@@ -587,7 +626,7 @@ public:
         for(iter.first(); iter.isValid(); iter.next())
         {
             TimeSectionInfo &ts = (TimeSectionInfo &) iter.query();
-            other.mergeTiming(ts.scope, ts.description, ts.totalcycles, ts.maxcycles, ts.count);
+            other.mergeTiming(ts.scope, ts.totalcycles, ts.maxcycles, ts.count);
         }
     }
     virtual void merge(ITimeReporter &other)
@@ -608,8 +647,13 @@ public:
     }
 };
 
-ITimeReporter *defaultTimer;
-ITimeReporter *timer;
+static ITimeReporter * activeTimer = NULL;
+ITimeReporter * queryActiveTimer()
+{
+    return activeTimer;
+}
+
+
 ITimeReporter *createStdTimeReporter() { return new DefaultTimeReporter(); }
 ITimeReporter *createStdTimeReporter(MemoryBuffer &mb) { return new DefaultTimeReporter(mb); }
 
@@ -624,14 +668,14 @@ MODULE_INIT(INIT_PRIORITY_JDEBUG1)
 
 MODULE_INIT(INIT_PRIORITY_JDEBUG2)
 {
-    timer = defaultTimer = new DefaultTimeReporter();
+    activeTimer = new DefaultTimeReporter();
     return true;
 }
 
 MODULE_EXIT()
 {
-    ::Release(defaultTimer);
-    defaultTimer = NULL;
+    ::Release(activeTimer);
+    activeTimer = NULL;
 }
 
 
@@ -848,7 +892,7 @@ unsigned getAffinityCpus()
 {
     unsigned numCpus = 0;
     DWORD ProcessAffinityMask, SystemAffinityMask;
-    if (GetProcessAffinityMask(GetCurrentProcess(), &ProcessAffinityMask, &SystemAffinityMask))
+    if (GetProcessAffinityMask(GetCurrentProcess(), (PDWORD_PTR)&ProcessAffinityMask, (PDWORD_PTR)&SystemAffinityMask))
     {
         unsigned i = 0;
         while (ProcessAffinityMask)
@@ -860,7 +904,7 @@ unsigned getAffinityCpus()
     }
     else // fall back to legacy num system cpus
     {
-        Owned<IException> e = MakeOsException(GetLastError(), "Failed to get affinity");
+        Owned<IException> e = makeOsException(GetLastError(), "Failed to get affinity");
         EXCLOG(e, NULL);
         unsigned cpuSpeed;
         getCpuInfo(numCpus, cpuSpeed);
@@ -885,7 +929,7 @@ memsize_t getMapInfo(const char *type)
         if (strstr(ln, typeStr.str()))
         {
             unsigned __int64 addrLow, addrHigh;
-            if (2 == sscanf(ln, "%16"I64F"x-%16"I64F"x", &addrLow, &addrHigh))
+            if (2 == sscanf(ln, "%16" I64F "x-%16" I64F "x", &addrLow, &addrHigh))
             {
                 ret = (memsize_t)(addrHigh-addrLow);
                 break;
@@ -1064,11 +1108,11 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 
 
     unsigned sum = (unsigned)((arena+mmapmem)/1024); 
-    out.appendf("MU=%3u%% MAL=%"I64F"d MMP=%"I64F"d SBK=%"I64F"d TOT=%uK RAM=%uK SWP=%uK", 
+    out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK", 
         muval, total, mmapmem, sbrkmem, (unsigned)(proctot/1024), mu, su);
 #ifdef _USE_MALLOC_HOOK
     if (totalMem) 
-        out.appendf(" TM=%"I64F"d",totalMem);
+        out.appendf(" TM=%" I64F "d",totalMem);
 #endif
     memused = mu+su;
     memtot = mt+st;
@@ -1081,7 +1125,7 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 
 void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 & inUse)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
     struct statfs stfs;
     if(statfs(path, &stfs) < 0)
     {
@@ -1102,9 +1146,8 @@ void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 
             inUse = total - (unsigned __int64)stfs.f_bfree * st.st_blksize;
         }
     }
-#endif
-#if defined (__FreeBSD__) || defined (__APPLE__)
-    UNIMPLEMENTED;
+#else
+    total = inUse = 0;
 #endif
 }
 
@@ -1318,7 +1361,7 @@ class CProcessMonitor
     bool busy;
 
 
-    static int compare(CInterface **i1, CInterface **i2)
+    static int compare(CInterface * const *i1, CInterface * const *i2)
     {
         CProcInfo *pi1 = QUERYINTERFACE(*i1,CProcInfo);
         CProcInfo *pi2 = QUERYINTERFACE(*i2,CProcInfo);
@@ -1888,9 +1931,9 @@ public:
 #define KERN_NOTICE "<5>"   // normal but significant condition
 #define KERN_INFO   "<6>"   // informational
 #define KERN_DEBUG  "<7>"   // debug-level messages
-#define KMSGTEST(S) if (memcmp(p,S,3)==0) ln.append(#S)
+#define KMSGTEST(S) if (memcmp(p,S,3)==0) { ln.append(#S); level = p[1]-'0'; }
 
-    void printKLog()
+    void printKLog(IPerfMonHook *hook)
     {
         const char *p;
         size32_t sz = getKLog(p);
@@ -1899,14 +1942,15 @@ public:
         while (p!=e) {
             if (*p=='<') {
                 ln.clear();
-                KMSGTEST(KERN_EMERG);
-                else KMSGTEST(KERN_ALERT);
-                else KMSGTEST(KERN_CRIT);
-                else KMSGTEST(KERN_ERR);
-                else KMSGTEST(KERN_WARNING);
-                else KMSGTEST(KERN_NOTICE);
-                else KMSGTEST(KERN_INFO);
-                else KMSGTEST(KERN_DEBUG);
+                int level = -1;
+                KMSGTEST(KERN_EMERG)
+                else KMSGTEST(KERN_ALERT)
+                else KMSGTEST(KERN_CRIT)
+                else KMSGTEST(KERN_ERR)
+                else KMSGTEST(KERN_WARNING)
+                else KMSGTEST(KERN_NOTICE)
+                else KMSGTEST(KERN_INFO)
+                else KMSGTEST(KERN_DEBUG)
                 else {
                     ln.append("KERN_UNKNOWN");
                     p -= 3;
@@ -1915,7 +1959,10 @@ public:
                 ln.append(": ");
                 while ((p!=e)&&(*p!='\n'))
                     ln.append(*(p++));
-                PROGLOG("%s",ln.str());
+                if (hook)
+                    hook->log(level, ln.str());
+                else
+                    PROGLOG("%s",ln.str());
             }
             while ((p!=e)&&(*p!='\n'))
                 p++;
@@ -2122,7 +2169,7 @@ public:
                 hook->extraLogging(str);
 #ifdef _USE_MALLOC_HOOK
             if (totalMem)
-                str.appendf(" TM=%"I64F"d",totalMem);
+                str.appendf(" TM=%" I64F "d",totalMem);
 #endif
 
 #endif
@@ -2172,8 +2219,8 @@ public:
             str.appendf("IW=%10u ",(unsigned)(ioc.WriteTransferCount/1024));
             str.appendf("IO=%10u ",(unsigned)(ioc.OtherTransferCount/1024));
 
-            str.appendf("KT=%16"I64F"u ",kut.KernelTime);
-            str.appendf("UT=%16"I64F"u ",kut.UserTime);
+            str.appendf("KT=%16" I64F "u ",kut.KernelTime);
+            str.appendf("UT=%16" I64F "u ",kut.UserTime);
         }
 
 #else
@@ -2279,7 +2326,7 @@ public:
                 if (traceMode&PerfMonExtended) {
                     if (extstats.getLine(str.clear()))
                         LOG(MCdebugInfo, unknownJob, "%s", str.str());
-                    extstats.printKLog();
+                    extstats.printKLog(hook);
                 }
 #endif
             }
@@ -2572,9 +2619,9 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
                 const char *path = ln;
                 if (printbody) {
                     if (useprintf)
-                        printf("%08"I64F"x,%08"I64F"x,%"I64F"d,%08"I64F"x,%s,%s\n",start,end,(offset_t)(end-start),offset,perms,path);
+                        printf("%08" I64F "x,%08" I64F "x,%" I64F "d,%08" I64F "x,%s,%s\n",start,end,(offset_t)(end-start),offset,perms,path);
                     else
-                        PROGLOG("%08"I64F"x,%08"I64F"x,%"I64F"d,%08"I64F"x,%s,%s",start,end,(offset_t)(end-start),offset,perms,path);
+                        PROGLOG("%08" I64F "x,%08" I64F "x,%" I64F "d,%08" I64F "x,%s,%s",start,end,(offset_t)(end-start),offset,perms,path);
                 }
                 SegTypes t = segtype_data;
                 if (strcmp(perms,"---p")==0)
@@ -2626,21 +2673,21 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
         if (lnout==NULL)
             lnout = &tln;
 
-        lnout->appendf("%"I64F"u,"    // total
+        lnout->appendf("%" I64F "u,"    // total
                "%u,"             // n
-               "%"I64F"u,"    // largest
-               "%"I64F"u,"    // total
-               "%"I64F"u,"    // total
+               "%" I64F "u,"    // largest
+               "%" I64F "u,"    // total
+               "%" I64F "u,"    // total
                "%u,"          // n
-               "%"I64F"u,"   // total
+               "%" I64F "u,"   // total
                "%u,"          // n
-               "%"I64F"u,"    // largest
-               "%"I64F"u,"    // total
-               "%"I64F"u,"    // total
-               "%"I64F"u,"    // largest
-               "%"I64F"u,"    // total
-               "%"I64F"u,"    // total
-               "%"I64F"u"    // largest
+               "%" I64F "u,"    // largest
+               "%" I64F "u,"    // total
+               "%" I64F "u,"    // total
+               "%" I64F "u,"    // largest
+               "%" I64F "u,"    // total
+               "%" I64F "u,"    // total
+               "%" I64F "u"    // largest
                ,
             recs[segtype_free].total,
             recs[segtype_free].n,
@@ -2732,6 +2779,50 @@ void PrintMemoryReport(bool full)
 
 #endif
 
+
+bool areTransparentHugePagesEnabled()
+{
+#ifdef __linux__
+    StringBuffer contents;
+    try
+    {
+        contents.loadFile("/sys/kernel/mm/transparent_hugepage/enabled");
+        return !strstr(contents.str(), "[never]");
+    }
+    catch (IException * e)
+    {
+        e->Release();
+    }
+#endif
+    return false;
+}
+
+memsize_t getHugePageSize()
+{
+#ifdef __linux__
+    StringBuffer contents;
+    try
+    {
+        //Search for an entry   Hugepagesize:      xxxx kB
+        const char * const tag = "Hugepagesize:";
+        contents.loadFile("/proc/meminfo");
+        const char * hugepage = strstr(contents.str(), tag);
+        if (hugepage)
+        {
+            const char * next = hugepage + strlen(tag);
+            char * end;
+            memsize_t size = strtoul(next, &end, 10);
+            if (strncmp(end, " kB", 3) == 0)
+                return size * 0x400;
+        }
+    }
+    catch (IException * e)
+    {
+        e->Release();
+    }
+#endif
+    return 0x200000; // Default for an x86 system
+}
 
 //===========================================================================
 
@@ -2968,7 +3059,7 @@ void printAllocationSummary()
 
         PROGLOG("%s(%d) %d:%d {%ld} = %d", display->szFileName ? display->szFileName : "<unknown>", display->nLine, display->nDataSize, counts[i2], display->lRequest, display->nDataSize * counts[i2]);
     }
-    PROGLOG("Ungrouped: %d  Total %"I64F"d", counts[maxUnique], totalAllocated);
+    PROGLOG("Ungrouped: %d  Total %" I64F "d", counts[maxUnique], totalAllocated);
 
     PROGLOG("Summary by location");
     for (unsigned iSummary2 = 0; iSummary2 < numUnique; )
@@ -3086,7 +3177,7 @@ void * jlib_malloc_hook (size_t size, const void *caller)
         if (totalMem>hwmTotalMem) {
             if (hwmTotalMem/(100*0x100000)!=totalMem/(100*0x100000)) {
                 PrintStackReport();
-                PROGLOG("TOTALMEM(%"I64F"d): malloc %u",totalMem,(unsigned)size);
+                PROGLOG("TOTALMEM(%" I64F "d): malloc %u",totalMem,(unsigned)size);
             }
             hwmTotalMem = totalMem;
         }
@@ -3134,7 +3225,7 @@ void *jlib_realloc_hook (void *ptr, size_t size, const void *caller)
     if (totalMem>hwmTotalMem) {
         if (hwmTotalMem/(100*0x100000)!=totalMem/(100*0x100000)) {
             PrintStackReport();
-            PROGLOG("TOTALMEM(%"I64F"d): realloc %u %u",totalMem,(unsigned)oldsz,(unsigned)size);
+            PROGLOG("TOTALMEM(%" I64F "d): realloc %u %u",totalMem,(unsigned)oldsz,(unsigned)size);
         }
         hwmTotalMem = totalMem;
     }

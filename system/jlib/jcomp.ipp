@@ -35,7 +35,9 @@ public:
     virtual void addLinkOption(const char * option);
     virtual void addInclude(const char * includePath);
     virtual void addSourceFile(const char * filename);
+    virtual void addObjectFile(const char * filename);
     virtual bool compile();
+    virtual void extractErrors(IArrayOf<IError> & errors);
     virtual void setDebug(bool _debug);
     virtual void setDebugLibrary(bool _debug);
     virtual void setOnlyCompile(bool _onlyCompile) { onlyCompile = _onlyCompile; }
@@ -70,6 +72,7 @@ protected:
     StringArray     allSources;
     StringArray     logFiles;
     StringAttr      ccLogPath;
+    StringAttr      coreName;
     unsigned        targetCompiler;
     unsigned        maxCompileThreads;
     bool            onlyCompile;
@@ -80,6 +83,7 @@ protected:
     void _addInclude(StringBuffer &s, const char *paths);
     bool            saveTemps;
     bool            precompileHeader;
+    bool            linkFailed;
     IAbortRequestCallback * abortChecker;
 };
 

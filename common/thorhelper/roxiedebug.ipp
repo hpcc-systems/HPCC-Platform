@@ -220,7 +220,7 @@ class RoxiePacketHeader;
 
 interface IRoxieQueryPacket;
 
-interface IDebuggableContext : extends IActivityTimer
+interface IDebuggableContext : public IInterface
 {
 // Called by program being debugged
     virtual void debugInitialize(const char *id, const char *queryName, bool breakAtStart) = 0;

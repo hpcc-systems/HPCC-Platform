@@ -159,7 +159,7 @@ bool DirectoryBuilder::walkDirectory(const char * path, IPropertyTree * director
         fullname.append(PATHSEPCHAR);
     search.append(fullname).append(wildcard);
 
-    Array pending;
+    IArray pending;
     bool empty = true;
 
     checkForRemoteAbort(masterSocket);

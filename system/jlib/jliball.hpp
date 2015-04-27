@@ -20,6 +20,7 @@
 #define JLIBALL_HPP
 
 #include "platform.h"
+#include "errorlist.h"
 #include "jiface.hpp"
 
 #include "jarray.hpp"
@@ -29,7 +30,6 @@
 #include "jcrc.hpp"
 #include "jdebug.hpp"
 #include "jencrypt.hpp"
-#include "jerrorrange.hpp"
 #include "jexcept.hpp"
 #include "jfile.hpp"
 #include "jhash.hpp"

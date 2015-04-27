@@ -388,7 +388,7 @@ bool FileTransferThread::performTransfer()
             newProgress.deserializeExtra(msg, 1);
             sprayer.updateProgress(newProgress);
 
-            LOG(MCdebugProgress(10000), job, "Update %s: %d %"I64F"d->%"I64F"d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
+            LOG(MCdebugProgress(10000), job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
 
             if (isAborting())
             {
@@ -1041,17 +1041,31 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
     }
 }
 
-
 void FileSprayer::calculateMany2OnePartition()
 {
     LOG(MCdebugProgressDetail, job, "Setting up many2one partition");
-
+    const char *partSeparator = srcFormat.getPartSeparatorString();
+    offset_t lastContentLength = 0;
     ForEachItemIn(idx, sources)
     {
         FilePartInfo & cur = sources.item(idx);
         RemoteFilename curFilename;
         curFilename.set(cur.filename);
         setCanAccessDirectly(curFilename);
+        if (partSeparator)
+        {
+            offset_t contentLength = cur.size - cur.xmlHeaderLength - cur.xmlFooterLength;
+            if (contentLength)
+            {
+                if (lastContentLength)
+                {
+                    PartitionPoint &part = createLiteral(1, partSeparator, (unsigned) -1);
+                    part.whichOutput = 0;
+                    partition.append(part);
+                }
+                lastContentLength = contentLength;
+            }
+        }
         partition.append(*new PartitionPoint(idx, 0, cur.headerSize, cur.size, cur.size));
     }
 }
@@ -1487,7 +1501,13 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
         {
             try
             {
-                locateXmlHeader(io, cur.headerSize, cur.xmlHeaderLength, cur.xmlFooterLength);
+                if (srcFormat.headerLength == (unsigned)-1 || srcFormat.footerLength == (unsigned)-1)
+                    locateContentHeader(io, cur.headerSize, cur.xmlHeaderLength, cur.xmlFooterLength);
+                else
+                {
+                    cur.xmlHeaderLength = srcFormat.headerLength;
+                    cur.xmlFooterLength = srcFormat.footerLength;
+                }
                 cur.headerSize += (unsigned)cur.xmlHeaderLength;
                 cur.size -= (cur.xmlHeaderLength + cur.xmlFooterLength);
             }
@@ -1531,6 +1551,7 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
 void FileSprayer::locateXmlHeader(IFileIO * io, unsigned headerSize, offset_t & xmlHeaderLength, offset_t & xmlFooterLength)
 {
     Owned<IFileIOStream> in = createIOStream(io);
+
     XmlSplitter splitter(srcFormat);
     BufferedDirectReader reader;
 
@@ -1544,7 +1565,22 @@ void FileSprayer::locateXmlHeader(IFileIO * io, unsigned headerSize, offset_t & 
     xmlFooterLength = splitter.getFooterLength(reader, size);
 }
 
+void FileSprayer::locateJsonHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength)
+{
+    Owned<IFileIOStream> in = createIOStream(io);
 
+    JsonSplitter jsplitter(srcFormat, *in);
+    headerLength = jsplitter.getHeaderLength();
+    footerLength = jsplitter.getFooterLength();
+}
+
+void FileSprayer::locateContentHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength)
+{
+    if (srcFormat.markup == FMTjson)
+        locateJsonHeader(io, headerSize, headerLength, footerLength);
+    else
+        locateXmlHeader(io, headerSize, headerLength, footerLength);
+}
 
 void FileSprayer::derivePartitionExtra()
 {
@@ -1743,7 +1779,7 @@ void FileSprayer::gatherMissingSourceTarget(IFileDescriptor * source)
                 }
                 else if (secondarySize != -1) 
                 {
-                    LOG(MCwarning, unknownJob, "Replicate - primary and secondary copies have different sizes (%"I64F"d v %"I64F"d) for part %u", primarySize, secondarySize, idx);
+                    LOG(MCwarning, unknownJob, "Replicate - primary and secondary copies have different sizes (%" I64F "d v %" I64F "d) for part %u", primarySize, secondarySize, idx);
                     continue; // ignore copy
                 }
             }
@@ -2384,7 +2420,7 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
 
             ForEachItemIn(i, multi)
             {
-                RemoteFilename &rfn = multi.item(i);
+                const RemoteFilename &rfn = multi.item(i);
                 FilePartInfo & next = * new FilePartInfo(rfn);
                 Owned<IPartDescriptor> part = source->getPart(idx);
                 next.extractExtra(*part);
@@ -2763,7 +2799,7 @@ void FileSprayer::spray()
         insertHeaders();
     }
     addEmptyFilesToPartition();
-    
+
     derivePartitionExtra();
     if (partition.ordinality() < 1000)
         displayPartition();

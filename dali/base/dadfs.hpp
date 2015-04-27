@@ -722,7 +722,8 @@ enum DistributedFileSystemError
     DFSERR_CannotFindPartFileCrc,
     DFSERR_ClusterNotFound,
     DFSERR_ClusterAlreadyExists,
-    DFSERR_LookupConnectionTimout       // only raised if timeout specified on lookup etc.
+    DFSERR_LookupConnectionTimout,       // only raised if timeout specified on lookup etc.
+    DFSERR_FailedToDeleteFile
 };
 
 

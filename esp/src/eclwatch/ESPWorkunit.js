@@ -45,8 +45,8 @@ define([
 
         _watched: [],
         preRequest: function (request) {
-            if (request.Sortby && request.Sortby === "TotalThorTime") {
-                request.Sortby = "ThorTime";
+            if (request.Sortby && request.Sortby === "TotalClusterTime") {
+                request.Sortby = "ClusterTime";
             }
         },
         create: function (id) {
@@ -59,7 +59,7 @@ define([
             storeItem.updateData(item);
             if (!this._watched[id]) {
                 var context = this;
-                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
                         context.notify(storeItem, id);
                     }
@@ -122,19 +122,62 @@ define([
         _SourceFilesSetter: function (SourceFiles) {
             var sourceFiles = [];
             for (var i = 0; i < SourceFiles.ECLSourceFile.length; ++i) {
-                sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, SourceFiles.ECLSourceFile[i])));
+                sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid, __hpcc_parentName: "" }, SourceFiles.ECLSourceFile[i])));
+                if (lang.exists("ECLSourceFiles.ECLSourceFile", SourceFiles.ECLSourceFile[i])) {
+                    for (var j = 0; j < SourceFiles.ECLSourceFile[i].ECLSourceFiles.ECLSourceFile.length; ++j) {
+                        sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid, __hpcc_parentName: SourceFiles.ECLSourceFile[i].Name }, SourceFiles.ECLSourceFile[i].ECLSourceFiles.ECLSourceFile[j])));
+                    }
+                }
             }
             this.set("sourceFiles", sourceFiles);
+        },
+        ExtractTime: function (Timer) {
+            //  GH:  <n>ns or <m>ms or <s>s or [<d> days ][<h>:][<m>:]<s>[.<ms>]
+            var nsIndex = Timer.indexOf("ns");
+            if (nsIndex !== -1) {
+                return parseFloat(Timer.substr(0, nsIndex)) / 1000000000;
+            }
+            var msIndex = Timer.indexOf("ms");
+            if (msIndex !== -1) {
+                return parseFloat(Timer.substr(0, msIndex)) / 1000;
+            }
+            var sIndex = Timer.indexOf("s");
+            if (sIndex !== -1 && Timer.indexOf("days") === -1) {
+                return parseFloat(Timer.substr(0, sIndex));
+            }
+
+            var dayTimeParts = Timer.split(" days ");
+            var days = parseFloat(dayTimeParts.length > 1 ? dayTimeParts[0] : 0.0);
+            var time = dayTimeParts.length > 1 ? dayTimeParts[1] : dayTimeParts[0];
+            var secs = 0.0;
+            var timeParts = time.split(":").reverse();
+            for (var j = 0; j < timeParts.length; ++j) {
+                secs += parseFloat(timeParts[j]) * Math.pow(60, j);
+            }
+            return (days * 24 * 60 * 60) + secs;
+        },
+        ExtractTimeTests: function () {
+            var tests = [
+                { str: "1.1s", expected: 1.1 },
+                { str: "2.2ms", expected: 0.0022 },
+                { str: "3.3ns", expected: 0.0000000033 },
+                { str: "4.4", expected: 4.4 },
+                { str: "5:55.5", expected: 355.5 },
+                { str: "6:06:06.6", expected: 21966.6 },
+                { str: "6:06:6.6", expected: 21966.6 },
+                { str: "6:6:6.6", expected: 21966.6 },
+                { str: "7 days 7:07:7.7", expected: 630427.7 }
+            ];
+            tests.forEach(function (test, idx) {
+                if (this.ExtractTime(test.str) !== test.expected) {
+                    console.log("ExtractTimeTests failed with " + this.ExtractTime(test.str) + " !== " +  test.expected);
+                }
+            }, this);
         },
         _TimersSetter: function (Timers) {
             var timers = [];
             for (var i = 0; i < Timers.ECLTimer.length; ++i) {
-                var timeParts = Timers.ECLTimer[i].Value.split(":");
-                var secs = 0;
-                for (var j = 0; j < timeParts.length; ++j) {
-                    secs = secs * 60 + timeParts[j] * 1;
-                }
-
+                var secs = this.ExtractTime(Timers.ECLTimer[i].Value);
                 timers.push(lang.mixin(Timers.ECLTimer[i], {
                     __hpcc_id: i + 1,
                     Seconds: Math.round(secs * 1000) / 1000,
@@ -225,7 +268,7 @@ define([
             }
             if (!this.hasCompleted) {
                 var context = this;
-                this.watch("changedCount", function (name, oldValue, newValue) {
+                this.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue && newValue) {
                         if (callback) {
                             callback(context);
@@ -415,7 +458,7 @@ define([
             });
         },
         refresh: function (full) {
-            if (full || this.Archived || this.changedCount === 0) {
+            if (full || this.Archived || this.__hpcc_changedCount === 0) {
                 return this.getInfo({
                     onGetText: function () {
                     },
@@ -519,11 +562,12 @@ define([
                                 if (context.timers) {
                                     context.graphs[i].Time = 0;
                                     for (var j = 0; j < context.timers.length; ++j) {
-                                        if (context.timers[j].GraphName == context.graphs[i].Name) {
-                                            context.graphs[i].Time += context.timers[j].Seconds;
+                                        if (context.timers[j].GraphName === context.graphs[i].Name && !context.timers[j].HasSubGraphId) {
+                                            context.graphs[i].Time = context.timers[j].Seconds;
+                                            break;
                                         }
-                                        context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                     }
+                                    context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                 }
                                 if (lang.exists("ApplicationValues.ApplicationValue", context)) {
                                     var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
@@ -828,9 +872,13 @@ define([
             return retVal;
         },
 
-        Get: function (wuid) {
+        Get: function (wuid, data) {
             var store = new Store();
-            return store.get(wuid);
+            var retVal = store.get(wuid);
+            if (data) {
+                retVal.updateData(data);
+            }
+            return retVal;
         },
 
         CreateWUQueryStore: function (options) {

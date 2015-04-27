@@ -34,7 +34,10 @@
           <entry>A comma-delimited list of folder or file names in the
           repository. The dollar sign ($) makes all definitions in the current
           folder available. The caret symbol (^) can be used as shorthand for
-          the container of the current folder.</entry>
+          the container of the current folder. Using a caret within the module
+          specifier (such as, myModule.^) selects the container of that
+          folder. A leading caret specifies the logical root of the file
+          tree.</entry>
         </row>
 
         <row>
@@ -96,7 +99,9 @@
   <emphasis>folder</emphasis>) available for use in the current ECL
   code.</para>
 
-  <para>Example:</para>
+  <para></para>
+
+  <para>Examples:</para>
 
   <programlisting>IMPORT $;                               //makes all definitions from the same folder available
 
@@ -113,6 +118,8 @@ IMPORT $.^.^.SomeOtherModule            //makes available the definitions from S
 IMPORT SomeFolder.SomeFile;             //make the specific file available
 
 IMPORT SomeReallyLongFolderName AS SN;  //alias the long name as "SN"
+
+IMPORT ^ as root;                       //allows access to non-modules defined in the root of the repository
 
 IMPORT Def1,Def2 FROM Fred;             //makes Def1 and Def2 from Fred folder available, unqualified
 

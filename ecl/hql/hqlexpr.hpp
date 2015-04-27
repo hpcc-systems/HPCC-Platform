@@ -528,6 +528,7 @@ enum _node_operator {
         no_pat_x_before_y,              // look ahead assertion
         no_pat_x_after_y,               // look behind assertion
         no_xml,
+        no_json,
         no_compound_fetch,
         no_pat_index,
         no_pat_beginpattern,            // marks the start of a global/child pattern.
@@ -737,6 +738,8 @@ enum _node_operator {
         no_merge_pending,
         no_httpcall,
         no_getenv,
+        no_fromjson,
+        no_tojson,
         no_last_op,
 
 //These never get created as IHqlExpressions....
@@ -907,7 +910,7 @@ public:
     Owned<IPropertyTree> nestedDependTree;
     Owned<IPropertyTree> globalDependTree;
     Owned<IPropertyTree> metaTree;
-    IECLErrorArray orphanedWarnings;
+    IErrorArray orphanedWarnings;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;
@@ -1222,7 +1225,6 @@ extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, I
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3);
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3, IHqlExpression *p4);
 extern HQL_API IHqlExpression *createValueF(node_operator op, ITypeInfo * type, ...);
-extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, unsigned num, IHqlExpression * * args);
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, HqlExprArray & args);        //NB: This deletes the array that is passed
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args);
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args, unsigned from, unsigned max);
@@ -1308,7 +1310,7 @@ extern HQL_API IHqlExpression * createLocationAnnotation(IHqlExpression * _owned
 extern HQL_API IHqlExpression * createLocationAnnotation(IHqlExpression * ownedBody, ISourcePath * sourcePath, int lineno, int column);
 extern HQL_API IHqlExpression * createMetaAnnotation(IHqlExpression * _ownedBody, HqlExprArray & _args);
 extern HQL_API IHqlExpression * createParseMetaAnnotation(IHqlExpression * _ownedBody, HqlExprArray & _args);
-extern HQL_API IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IECLError * _ownedWarning);
+extern HQL_API IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IError * _ownedWarning);
 extern HQL_API IHqlExpression * createJavadocAnnotation(IHqlExpression * _ownedBody, IPropertyTree * _doc);
 
 extern HQL_API IHqlExpression * createCompound(IHqlExpression * expr1, IHqlExpression * expr2);
@@ -1536,6 +1538,7 @@ extern HQL_API unsigned getRepeatMin(IHqlExpression * expr);
 extern HQL_API bool isStandardRepeat(IHqlExpression * expr);
 extern HQL_API bool transformContainsCounter(IHqlExpression * transform, IHqlExpression * counter);
 extern HQL_API bool preservesValue(ITypeInfo * after, IHqlExpression * expr);
+extern HQL_API bool castPreservesValue(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getActiveTableSelector();
 extern HQL_API IHqlExpression * queryActiveTableSelector();
 extern HQL_API IHqlExpression * getSelf(IHqlExpression * ds);
@@ -1602,7 +1605,7 @@ extern HQL_API bool isShared(IHqlExpression * expr);
 extern HQL_API bool isImport(IHqlExpression * expr);
 extern HQL_API bool isVirtualSymbol(IHqlExpression * expr);
 
-extern HQL_API IECLError * queryAnnotatedWarning(const IHqlExpression * expr);
+extern HQL_API IError * queryAnnotatedWarning(const IHqlExpression * expr);
 
 extern HQL_API bool isPublicSymbol(IHqlExpression * expr);
 extern HQL_API ITypeInfo * getSumAggType(IHqlExpression * arg);
@@ -1804,6 +1807,7 @@ inline int boolToInt(bool x)                    { return x ? 1 : 0; }
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, IHqlExpression * value, IHqlExpression * parms, IHqlExpression * defaults, IHqlExpression * attrs);
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, HqlExprArray & args);
 extern HQL_API IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr);
+extern HQL_API bool functionBodyUsesContext(IHqlExpression * body);
 
 #define NO_AGGREGATE        \
          no_count:          \

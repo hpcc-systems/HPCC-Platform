@@ -20,9 +20,10 @@
 
 #include "filecopy.hpp"
 #include "ftbase.ipp"
-#include "daft.hpp"
+#include "daftmc.hpp"
 #include "daftformat.hpp"
 #include "rmtpass.hpp"
+#include "jptree.hpp"
 
 //---------------------------------------------------------------------------
 
@@ -81,7 +82,7 @@ public:
 class DALIFT_API CSimpleFixedPartitioner : public CSimplePartitioner
 {
 public:
-    CSimpleFixedPartitioner(unsigned _recordSize, bool _noTranslation) { recordSize = _recordSize; noTranslation = _noTranslation; }
+    CSimpleFixedPartitioner(unsigned _recordSize, bool _noTranslation);
 
     virtual void setPartitionRange(offset_t _totalSize, offset_t _thisOffset, offset_t _thisSize, unsigned _thisHeaderSize, unsigned _numParts);
 
@@ -201,6 +202,7 @@ class DALIFT_API CRECFMvbPartitioner : public CInputBasePartitioner
     bool isBlocked;
 protected:
     virtual size32_t getRecordSize(const byte * record, unsigned maxToRead);
+    virtual size32_t getBlockSize(const byte * record, unsigned maxToRead);
     virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer);
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
 public:
@@ -267,11 +269,7 @@ protected:
 class DALIFT_API CCsvQuickPartitioner : public CCsvPartitioner
 {
 public:
-    CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation) 
-        : CCsvPartitioner(_format)
-    {
-        noTranslation = _noTranslation;
-    }
+    CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor);
@@ -323,7 +321,7 @@ protected:
 class DALIFT_API CUtfQuickPartitioner : public CUtfPartitioner
 {
 public:
-    CUtfQuickPartitioner(const FileFormat & _format, bool _noTranslation) : CUtfPartitioner(_format) { noTranslation = _noTranslation; }
+    CUtfQuickPartitioner(const FileFormat & _format, bool _noTranslation);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor);
@@ -357,6 +355,239 @@ protected:
     byte * buffer;
     Linked<IFileIOStream> stream;
 };
+
+class DALIFT_API JsonSplitter : public CInterface, implements IPTreeNotifyEvent
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    JsonSplitter(const FileFormat & format, IFileIOStream &stream) : headerLength(0), pathPos(0), tangent(0), rowDepth(0), rowStart(0), rowEnd(0), footerLength(0), newRowSet(true), hasRootArray(false)
+    {
+        LOG(MCdebugProgressDetail, unknownJob, "JsonSplitter::JsonSplitter(format.type :'%s', rowPath:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
+
+        size = stream.size();
+        const char *rowPath = format.rowTag;
+        while (*rowPath=='/')
+            rowPath++;
+        pathNodes.appendList(rowPath, "/");
+        noPath = !pathNodes.length();
+        reader.setown(createPullJSONStreamReader(stream, *this, ptr_noRoot));
+    }
+    virtual void beginNode(const char *tag, offset_t startOffset)
+    {
+        if (tangent)
+        {
+            tangent++;
+            return;
+        }
+        if (rowDepth)
+        {
+            rowDepth++;
+            return;
+        }
+        if (!pathPos)
+        {
+            if (streq(tag, "__array__")) //ignore root array, except for knowing footer offset
+            {
+                hasRootArray = true;
+                return;
+            }
+            if (!noPath && streq(tag, "__object__")) //paths start inside this object, with no path this starts a row
+                return;
+        }
+        if (noPath || streq(tag, pathNodes.item(pathPos))) //closer to a row
+        {
+            if (!noPath)
+                pathPos++;
+            if (noPath || pathPos==pathNodes.ordinality()) //start a row
+            {
+                rowDepth=1;
+                rowStart=startOffset;
+            }
+            return;
+        }
+        //off on a tangent
+        tangent=1;
+    }
+    virtual void newAttribute(const char *name, const char *value){}
+    virtual void beginNodeContent(const char *tag){}
+    virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
+    {
+        if (rowDepth)
+        {
+            rowDepth--;
+            if (!rowDepth)
+            {
+                rowEnd=endOffset;
+                if (newRowSet)
+                    newRowSet = false;  //individual row ended, but track whether the rowset itself ends before next row start
+                pathPos--;
+            }
+        }
+        else if (tangent)
+            tangent--;
+        else if (pathPos)
+        {
+            if (!newRowSet)
+                newRowSet=true;
+            pathPos--;
+        }
+    }
+
+    bool findNextRow()
+    {
+        if (rowDepth && !exitRow())
+            return false;
+        while (reader->next())
+            if (rowDepth==1)
+                return true;
+        return false;
+    }
+
+    bool exitRow()
+    {
+        if (!rowDepth)
+            return false;
+        while (reader->next())
+            if (rowDepth==0)
+                return true;
+        return false;
+    }
+    bool findNextRowEnd()
+    {
+        if (rowDepth)
+            return exitRow();
+        while (reader->next())
+            if (rowDepth==1)
+                return exitRow();
+        return false;
+    }
+    bool findRowEnd(offset_t splitOffset, offset_t &prevRowEnd)
+    {
+        while (rowEnd < splitOffset + headerLength)
+        {
+            prevRowEnd = rowEnd;
+            if (!findNextRowEnd())
+                return false;
+        }
+        return true;
+    }
+    offset_t getHeaderLength()
+    {
+        if (!headerLength)
+        {
+            while (!rowStart && reader->next());
+            if (!rowStart)
+                throw MakeStringException(DFTERR_CannotFindFirstJsonRecord, "Could not find first json record (check path)");
+            else
+                headerLength = rowStart-1;
+        }
+        return headerLength;
+    }
+    offset_t getFooterLength()
+    {
+        if (!footerLength)
+        {
+            while (reader->next());
+            if (rowEnd)
+            {
+                footerLength = isRootless() ? 0 : 1; //account for parser using ] as offset unless rootless
+                footerLength = footerLength + size - rowEnd;
+            }
+        }
+        return footerLength;
+    }
+    offset_t getRowOffset()
+    {
+        if (rowStart <= headerLength)
+            return 0;
+        return rowStart - headerLength - 1;
+    }
+
+    bool isRootless(){return (noPath && !hasRootArray);}
+
+public:
+    Owned<IFileIOStream> inStream;
+    Owned<IPullPTreeReader> reader;
+    StringArray pathNodes;
+    offset_t rowStart;
+    offset_t rowEnd;
+    offset_t headerLength;
+    offset_t footerLength;
+    offset_t size;
+    unsigned pathPos;
+    unsigned tangent;
+    unsigned rowDepth;
+    bool noPath;
+    bool newRowSet;
+    bool hasRootArray;
+};
+
+class DALIFT_API CJsonInputPartitioner : public CPartitioner
+{
+public:
+    CJsonInputPartitioner(const FileFormat & _format);
+    ~CJsonInputPartitioner();
+
+    virtual void setSource(unsigned _whichInput, const RemoteFilename & _fullPath, bool compressedInput, const char *decryptKey);
+
+protected:
+    virtual void findSplitPoint(offset_t splitOffset, PartitionCursor & cursor)
+    {
+        if (!splitOffset) //header + 0 is first offset
+            return;
+
+        offset_t prevRowEnd;
+        json->findRowEnd(splitOffset, prevRowEnd);
+        if (!json->rowStart)
+            return;
+        if (!json->newRowSet) //get rid of extra delimiter if we haven't closed and reopened in the meantime
+        {
+            cursor.trimLength = json->rowStart - prevRowEnd;
+            if (cursor.trimLength && json->isRootless()) //compensate for difference in rootless offset
+                cursor.trimLength--;
+        }
+        cursor.inputOffset = json->getRowOffset();
+        if (json->findNextRow())
+            cursor.nextInputOffset = json->getRowOffset();
+        else
+            cursor.nextInputOffset = cursor.inputOffset;  //eof
+    }
+
+protected:
+    FileFormat      format;
+    Owned<IFileIOStream>   inStream;
+    Owned<JsonSplitter> json;
+    static IFileIOCache    *openfilecache;
+    static CriticalSection openfilecachesect;
+};
+
+
+class DALIFT_API CJsonPartitioner : public CJsonInputPartitioner
+{
+public:
+    CJsonPartitioner(const FileFormat & _format);
+
+    virtual void setTarget(IOutputProcessor * _target){UNIMPLEMENTED;}
+
+    //Processing.
+    virtual void beginTransform(offset_t thisOffset, offset_t thisLength, TransformCursor & cursor){UNIMPLEMENTED;}
+    virtual void endTransform(TransformCursor & cursor){UNIMPLEMENTED;}
+    virtual crc32_t getInputCRC(){return 0;}
+    virtual void setInputCRC(crc32_t value){UNIMPLEMENTED;}
+    virtual unsigned transformBlock(offset_t endOffset, TransformCursor & cursor){UNIMPLEMENTED;}
+    virtual void killBuffer(){}
+
+protected:
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer){UNIMPLEMENTED;}
+    virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead){UNIMPLEMENTED;}
+
+protected:
+    size32_t recordSize;
+    unsigned unitSize;
+    UtfReader::UtfFormat utfFormat;
+};
+
 
 class DALIFT_API XmlSplitter
 {
@@ -402,7 +633,7 @@ protected:
 class DALIFT_API CXmlQuickPartitioner : public CXmlPartitioner
 {
 public:
-    CXmlQuickPartitioner(const FileFormat & _format, bool _noTranslation) : CXmlPartitioner(_format) { noTranslation = _noTranslation; }
+    CXmlQuickPartitioner(const FileFormat & _format, bool _noTranslation);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor);

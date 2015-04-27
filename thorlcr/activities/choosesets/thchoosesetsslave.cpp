@@ -68,7 +68,7 @@ public:
     LocalChooseSetsActivity(CGraphElementBase *container) : BaseChooseSetsActivity(container) { }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         BaseChooseSetsActivity::start();
         ActPrintLog("CHOOSESETS: Is Local");
         input.set(inputs.item(0));
@@ -85,7 +85,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         loop
         {
             OwnedConstThorRow row = input->ungroupedNextRow();
@@ -159,7 +159,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ActPrintLog("CHOOSESETS: Is Global");
         BaseChooseSetsActivity::start();
         first = true;
@@ -188,7 +188,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (first) 
         {
             first = false;
@@ -301,7 +301,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         ActPrintLog("CHOOSESETS: Is Global");
         if (counts)
         {
@@ -381,7 +381,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
         for (unsigned idx=0; idx < numSets; idx++)
         {
             rowcount_t firstToCopy = 0;
-            ActPrintLog("CHOOSESETSLAST: %d P(%"RCPF"d) C(%"RCPF"d) L(%"I64F"d) T(%"RCPF"d)", idx, priorCounts[idx], counts[idx], limits[idx], totalCounts[idx]);
+            ActPrintLog("CHOOSESETSLAST: %d P(%" RCPF "d) C(%" RCPF "d) L(%" I64F "d) T(%" RCPF "d)", idx, priorCounts[idx], counts[idx], limits[idx], totalCounts[idx]);
             if (((rowcount_t)limits[idx]) < totalCounts[idx])
                 firstToCopy = totalCounts[idx] - (rowcount_t)limits[idx];
             if (priorCounts[idx] + counts[idx] > firstToCopy)
@@ -393,7 +393,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
                 numToReturn[idx] = (unsigned)(priorCounts[idx] + counts[idx] - firstToCopy);
                 skipAll = false;
 #if THOR_TRACE_LEVEL >= 5
-                ActPrintLog("CHOOSESETSLAST: Selection %d.  Range(%d,%"RCPF"d)", idx, numToSkip[idx], counts[idx]);
+                ActPrintLog("CHOOSESETSLAST: Selection %d.  Range(%d,%" RCPF "d)", idx, numToSkip[idx], counts[idx]);
 #endif
             }
         }
@@ -423,7 +423,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (first) 
         {
             first = false;
@@ -502,7 +502,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (first) 
         {
             first = false;

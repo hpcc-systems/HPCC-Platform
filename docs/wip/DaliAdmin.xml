@@ -29,8 +29,8 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
-      Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -42,14 +42,15 @@
       <para></para>
     </legalnotice>
 
-    <releaseinfo>© 2011 HPCC Systems. All rights reserved</releaseinfo>
+    <releaseinfo>© 2015 HPCC Systems<superscript>®</superscript>. All rights
+    reserved</releaseinfo>
 
     <date>3.0.0_x</date>
 
     <corpname>HPCC Systems</corpname>
 
     <copyright>
-      <year>May, 2011</year>
+      <year>May, 2015</year>
     </copyright>
 
     <mediaobject role="logo">

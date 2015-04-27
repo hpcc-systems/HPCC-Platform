@@ -675,7 +675,7 @@ public:
             {
                 int nThreads = m_threadPool->runningCount();
                 if (nThreads > 0)
-                    throw MakeOsException(-1, "Unfinished threads detected!");
+                    throw makeOsException(-1, "Unfinished threads detected!");
             }
 
             Owned<IPropertyTreeIterator> iter = pComputers->getElements(XML_TAG_COMPUTER);
@@ -776,7 +776,7 @@ public:
             if (m_threadPool)
                 m_threadPool->joinAll();
 
-            throw MakeErrnoException("Unknown Exception during cloud operation %s", getFnString(m_eA));
+            throw makeErrnoExceptionV("Unknown Exception during cloud operation %s", getFnString(m_eA));
         }
 
         return false;

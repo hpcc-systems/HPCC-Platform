@@ -12,7 +12,7 @@
         </div>
         <div id="${id}Source" class="centerPanel" data-dojo-props="region: 'center'" data-dojo-type="ECLSourceWidget">
         </div>
-        <div id="${id}GraphControl" style="width: 240px;" data-dojo-props="minSize:120, region: 'right', splitter:true" data-dojo-type="GraphWidget">
+        <div id="${id}GraphControl" style="width: 240px;" data-dojo-props="minSize:120, region: 'right', splitter:true" data-dojo-type="${graphType}">
         </div>
         <div id="${id}StackContainer" style="height: 240px;" data-dojo-props="minSize:120, region: 'bottom', splitter:true" data-dojo-type="dijit.layout.StackContainer">
             <div id="${id}_ErrWarn" data-dojo-props="iconClass:'iconErrWarn', showTitle: false, disabled: true, title: '${i18n.ErrorWarnings}'" data-dojo-type="InfoGridWidget">

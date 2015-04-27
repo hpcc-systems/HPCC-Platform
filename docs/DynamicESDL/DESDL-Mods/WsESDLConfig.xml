@@ -1,0 +1,3560 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>WsESDLConfig</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Documentation Team</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>Jan. 2015</pubdate>
+  </bookinfo>
+
+  <chapter id="WsESDLConfig">
+    <title><emphasis role="bold">WsESDLConfig Webservice</emphasis></title>
+
+    <sect1 id="WeESDLConfigMethods" role="nobrk">
+      <title>WsESDLConfig Methods</title>
+
+      <sect2 id="ecl_command_syntax">
+        <title>echo</title>
+
+        <para>the echo method is used for connectivity testing.</para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis role="bold">Tag</emphasis></entry>
+
+                <entry><emphasis role="bold">Description</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>EchoRequest</entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry>Request</entry>
+
+                <entry>String to echo</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis role="bold">Tag</emphasis></entry>
+
+                <entry><emphasis role="bold">Description</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>EchoResponse</entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry>Response</entry>
+
+                <entry>Echo of submitted string </entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>PublishESDLDefinition</title>
+
+        <para>The PublishESDLDefinition method publishes the ESDL definition
+        to Dali making it available for ESP service binding and configuration.
+        </para>
+
+        <para>This is similar to the command line action:</para>
+
+        <programlisting>esdl publish 
+</programlisting>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis role="bold">Tag</emphasis></entry>
+
+                <entry><emphasis role="bold">Description</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>PublishESDLDefinitionRequest</entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry>ServiceName</entry>
+
+                <entry>The name of the service defined in the ESDL definition
+                file (.chm)</entry>
+              </row>
+
+              <row>
+                <entry>XMLDefinition</entry>
+
+                <entry>THE XML defintion produced from the ESDL definition
+                file. </entry>
+              </row>
+
+              <row>
+                <entry>DeletePrevious</entry>
+
+                <entry>Boolean flag to specify whether or not to overwrite a
+                previous definition.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis role="bold">Tag</emphasis></entry>
+
+                <entry><emphasis role="bold">Description</emphasis></entry>
+              </row>
+
+              <row>
+                <entry>PublishESDLDefinitionResponse</entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><programlisting role="wsig">  Exceptions</programlisting></entry>
+
+                <entry><para role="sans">Structure containing one or more exceptions</para></entry>
+              </row>
+
+              <row>
+                <entry>....Source</entry>
+
+                <entry>Source of the exceptions</entry>
+              </row>
+
+              <row>
+                <entry>....Exception</entry>
+
+                <entry>Structure containing one exception</entry>
+              </row>
+
+              <row>
+                <entry>......Code</entry>
+
+                <entry>Exception code</entry>
+              </row>
+
+              <row>
+                <entry>......Audience</entry>
+
+                <entry>Audience</entry>
+              </row>
+
+              <row>
+                <entry>......Source</entry>
+
+                <entry>Source of the exception</entry>
+              </row>
+
+              <row>
+                <entry>......Message</entry>
+
+                <entry>Error message</entry>
+              </row>
+
+              <row>
+                <entry>..ServiceName </entry>
+
+                <entry>The name of the published service definition</entry>
+              </row>
+
+              <row>
+                <entry>..EsdlVersion </entry>
+
+                <entry>ESDL Version number</entry>
+              </row>
+
+              <row>
+                <entry>..DeletePrevious</entry>
+
+                <entry>The submitted overwrite flag</entry>
+              </row>
+
+              <row>
+                <entry>..status</entry>
+
+                <entry>Structure containing the status of the
+                operation</entry>
+              </row>
+
+              <row>
+                <entry>....Code</entry>
+
+                <entry>Status code</entry>
+              </row>
+
+              <row>
+                <entry>....Description</entry>
+
+                <entry>Status description</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>esdl ecl</title>
+
+        <para><emphasis role="bold">esdl ecl [options] filename.ecm
+        [&lt;outdir&gt;] </emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="80.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>filename.ecm</emphasis></entry>
+
+                <entry>The file containing the ESDL definitions</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-r|--recursive</emphasis></entry>
+
+                <entry>process all includes</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-v|--verbose</emphasis></entry>
+
+                <entry>display verbose information</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-?/-h/--help</emphasis></entry>
+
+                <entry>show usage page</entry>
+              </row>
+
+              <row>
+                <entry>Output<emphasis> </emphasis></entry>
+
+                <entry>(srcdir|&lt;outdir&gt;)/filename.ecl</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>This generates ECL from ESDL definition.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>esdl ecl MathService.ecm .
+</programlisting>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>esdl xsd</title>
+
+        <para><emphasis role="bold">esdl xsd [options] filename.ecm
+        [&lt;outdir&gt;] </emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="80.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>filename.ecm</emphasis></entry>
+
+                <entry>The file containing the ESDL definitions</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-r|--recursive</emphasis></entry>
+
+                <entry>process all includes</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-v|--verbose</emphasis></entry>
+
+                <entry>display verbose information</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-?/-h/--help</emphasis></entry>
+
+                <entry>show usage page</entry>
+              </row>
+
+              <row>
+                <entry>Output<emphasis> </emphasis></entry>
+
+                <entry>(srcdir|&lt;outdir&gt;)/filename.ecl</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>This generates XSD from ESDL definition.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>esdl XSD MathService.ecm .
+</programlisting>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>esdl wsdl</title>
+
+        <para><emphasis role="bold">esdl wsdl [options] filename.ecm
+        [&lt;outdir&gt;] </emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="80.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>filename.ecm</emphasis></entry>
+
+                <entry>The file containing the ESDL definitions</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-r|--recursive</emphasis></entry>
+
+                <entry>process all includes</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-v|--verbose</emphasis></entry>
+
+                <entry>display verbose information</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-?/-h/--help</emphasis></entry>
+
+                <entry>show usage page</entry>
+              </row>
+
+              <row>
+                <entry>Output<emphasis> </emphasis></entry>
+
+                <entry>(srcdir|&lt;outdir&gt;)/filename.ecl</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>This generates WSDL from ESDL definition.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>esdl ecl MathService.ecm .
+</programlisting>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl publish</title>
+
+        <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
+        [--name=&lt;val&gt;] [--activate | --no-activate] &lt;wuid&gt;
+        </emphasis></para>
+
+        <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
+        [--name=&lt;val&gt;] [--activate | --no-activate] &lt;so | dll | -
+        &gt;</emphasis></para>
+
+        <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
+        --name=&lt;val&gt; [--activate | --no-activate] &lt;archive | - &gt;
+        </emphasis></para>
+
+        <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
+        --name=&lt;val&gt; [--activate | --no-activate] &lt;ecl_file | -
+        &gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl publish --target=roxie --name=FindPersonService -A W20120224-125557
+ecl publish --target=roxie --name=FindPersonService -A libW20120224-125557.so
+ecl publish --target=roxie --name=FindPersonService -A ArchiveQuery.xml
+ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
+ecl publish --target=roxie --name=FindPersonService --activate --no-files findperson.ecl
+ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
+</programlisting>
+
+        <para>A hyphen (-) specifies that the object should be read from
+        stdin.</para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl publish</entry>
+
+                  <entry>Publishes a query into a queryset. The query is
+                  created by adding a workunit to a queryset and assigning it
+                  a query name.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>wuid</entry>
+
+                  <entry>The workunit id to publish</entry>
+                </row>
+
+                <row>
+                  <entry>ecl_file</entry>
+
+                  <entry>The ECL text file to deploy</entry>
+                </row>
+
+                <row>
+                  <entry>archive</entry>
+
+                  <entry>The ECL archive to deploy</entry>
+                </row>
+
+                <row>
+                  <entry>so | dll</entry>
+
+                  <entry>The workunit dynamic linked library or shared object
+                  to deploy</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-t, --target</entry>
+
+                  <entry>The target cluster to associate workunit with</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --name</entry>
+
+                  <entry>The workunit job name</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates query when published (default)</entry>
+                </row>
+
+                <row>
+                  <entry>-A-, --no-activate</entry>
+
+                  <entry>Does not activate query when published</entry>
+                </row>
+
+                <row>
+                  <entry>-sp, --suspend-prev</entry>
+
+                  <entry>Suspend previously active query</entry>
+                </row>
+
+                <row>
+                  <entry>-dp, --delete-prev</entry>
+
+                  <entry>Delete previously active query</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Specifies to not copy DFS file information for files
+                  referenced by the query</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Specifies to not request a reload of the Roxie
+                  cluster</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Specifies to allow the use of foreign files in a
+                  Roxie query. If a Roxie query references foreign files and
+                  this is not enabled, publish will fail.</entry>
+                </row>
+
+                <row>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query timeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query warnTimeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Value to set for query memoryLimit configuration.
+                  Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T,
+                  etc.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Maximum time to wait for cluster finish
+                  updating</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--main</entry>
+
+                  <entry>The definition to use from legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Send ecl text to hpcc without generating
+                  archive</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">eclcc
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>-Ipath</entry>
+
+                  <entry>Add path to locations to search for ecl
+                  imports</entry>
+                </row>
+
+                <row>
+                  <entry>-Lpath</entry>
+
+                  <entry>Add path to locations to search for system
+                  libraries</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Specify path to manifest file</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl unpublish</title>
+
+        <para><emphasis role="bold">ecl unpublish &lt;queryset&gt;
+        &lt;query_id&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>ecl unpublish roxie FindpersonService.1
+ecl unpublish roxie "FindpersonService*"
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl unpublish</entry>
+
+                  <entry>executes the supplied ecl unpublish command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>The name of queryset containing query to
+                  unpublish</entry>
+                </row>
+
+                <row>
+                  <entry>query_id</entry>
+
+                  <entry>The query to remove from query set. Wildcards
+                  allowed, but must be in quotes (e.g., "MyQuery*" ).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl run</title>
+
+        <para><emphasis role="bold">ecl run
+        [--target=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
+        &lt;wuid&gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl run
+        [--target=&lt;c&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
+        &lt;queryset&gt; &lt;query&gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl run
+        [--target=&lt;c&gt;][--name=&lt;nm&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
+        &lt;dll|-&gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl run --target=&lt;c&gt;
+        --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
+        &lt;archive|-&gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl run --target=&lt;c&gt;
+        --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
+        &lt;eclfile|-&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Examples</emphasis>:</para>
+
+        <programlisting>ecl run --target=thor --input=data.xml --wait=1000 W20120224-125557
+ecl run --target=thor --input=data.xml --wait=1000 thor findpersonservice
+ecl run --target=thor --input=data.xml --wait=1000 ArchiveQuery.xml
+ecl run --target=thor --input=data.xml --wait=1000 findperson.ecl
+ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" findperson.ecl
+</programlisting>
+
+        <para>A hyphen (-) specifies that the object should be read from
+        stdin.</para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl run</entry>
+
+                  <entry>executes the supplied ecl run command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>wuid</entry>
+
+                  <entry>The workunit id to publish</entry>
+                </row>
+
+                <row>
+                  <entry>ecl_file</entry>
+
+                  <entry>The ECL text file to deploy</entry>
+                </row>
+
+                <row>
+                  <entry>archive</entry>
+
+                  <entry>TheECL archive to deploy</entry>
+                </row>
+
+                <row>
+                  <entry>so | dll</entry>
+
+                  <entry>The workunit dynamic linked library or shared object
+                  to deploy</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-t, --target</entry>
+
+                  <entry>The target cluster to associate workunit with</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --name</entry>
+
+                  <entry>The workunit job name</entry>
+                </row>
+
+                <row>
+                  <entry>-in,--input=&lt;file|xml&gt;</entry>
+
+                  <entry>The file or xml content to use as query input</entry>
+                </row>
+
+                <row>
+                  <entry>-X&lt;name&gt;</entry>
+
+                  <entry>Sets the stored input value (stored('name'))</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Maximum time to wait for cluster finish updating (in
+                  ms)</entry>
+                </row>
+
+                <row>
+                  <entry>--exception-level</entry>
+
+                  <entry>Sets the minimum severity for reporting exceptions.
+                  Possible severity levels are <emphasis
+                  role="bold">info</emphasis>, <emphasis
+                  role="bold">warning</emphasis>, or <emphasis
+                  role="bold">error</emphasis>. The default is info which
+                  returns all exceptions.</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--main</entry>
+
+                  <entry>The definition to use from legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Send ecl text to hpcc without generating
+                  archive</entry>
+                </row>
+
+                <row>
+                  <entry>--limit</entry>
+
+                  <entry>Sets the result limit for the query, defaults to
+                  100</entry>
+                </row>
+
+                <row>
+                  <entry>-f&lt;option&gt;[=value]</entry>
+
+                  <entry>set an ECL option (equivalent to #OPTION in
+                  ECL)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">eclcc
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>-Ipath</entry>
+
+                  <entry>Add path to locations to search for ecl
+                  imports</entry>
+                </row>
+
+                <row>
+                  <entry>-Lpath</entry>
+
+                  <entry>Add path to locations to search for system
+                  libraries</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Specify path to manifest file</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl activate</title>
+
+        <para><emphasis role="bold">ecl activate &lt;queryset&gt;
+        &lt;query_id&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>ecl activate Roxie FindpersonService.4</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl activate</entry>
+
+                  <entry>Activates a published query. This assigns a query to
+                  the active alias with the same name as the query.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>The name of queryset containing query to
+                  activate</entry>
+                </row>
+
+                <row>
+                  <entry>query_id</entry>
+
+                  <entry>The query to activate</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl deactivate</title>
+
+        <para><emphasis role="bold">ecl deactivate &lt;queryset&gt;
+        &lt;active_alias&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>ecl deactivate Roxie FindpersonService</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl deactivate</entry>
+
+                  <entry>Deactivates a published query by removing an active
+                  query alias from the given queryset.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>The name of queryset containing alias to
+                  deactivate</entry>
+                </row>
+
+                <row>
+                  <entry>active_alias</entry>
+
+                  <entry>The active alias to be removed from the
+                  queryset</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title id="eclquerieslist">ecl queries list</title>
+
+        <para><emphasis role="bold">ecl queries list
+        [&lt;queryset&gt;][--target=&lt;cluster&gt;][--show=&lt;flags&gt;]</emphasis></para>
+
+        <para><emphasis role="bold"></emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries list roxie
+ecl queries list roxie --target=roxie --show=A </programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries list</entry>
+
+                  <entry>Displays a list of the queries in one or more
+                  querysets. If a cluster is provided the querysets associated
+                  with that cluster will be shown. If no queryset or cluster
+                  is specified all querysets are shown.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>list</entry>
+
+                  <entry>List queries in queryset(s)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>The name of queryset from which to list
+                  queries</entry>
+                </row>
+
+                <row>
+                  <entry>-t, --target</entry>
+
+                  <entry>The target cluster associated with the queries to
+                  list</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates query when published</entry>
+                </row>
+
+                <row>
+                  <entry>--show=&lt;flags&gt;</entry>
+
+                  <entry>Show only queries with matching flags</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Flags</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>A</entry>
+
+                  <entry>Active</entry>
+                </row>
+
+                <row>
+                  <entry>S</entry>
+
+                  <entry>Suspended</entry>
+                </row>
+
+                <row>
+                  <entry>U</entry>
+
+                  <entry>No Flags</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclqueriescopy" role="brk">
+        <title>ecl queries copy</title>
+
+        <para><emphasis role="bold">ecl queries copy &lt;source_query_path&gt;
+        &lt;target_queryset&gt; [--activate] </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries copy thor/findperson thor2 --activate
+ecl queries copy //192.168.1.10:8010/thor/findperson thor
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries copy</entry>
+
+                  <entry>Copies a query from one queryset to another. A query
+                  can be copied from one HPCC environment to another by using
+                  a path which begins with '//' followed by the IP or hostname
+                  and Port of the source ECL Watch and then followed by the
+                  source queryset and query.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>copy</entry>
+
+                  <entry>Copy a query from one queryset to another</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>source_query_path</entry>
+
+                  <entry>The path of the query to copy using the format:
+                  [//ip:port/]queryset/query or queryset/query.</entry>
+                </row>
+
+                <row>
+                  <entry>target_queryset</entry>
+
+                  <entry>The name of the queryset to which the query should be
+                  copied</entry>
+                </row>
+
+                <row>
+                  <entry>-t, --target</entry>
+
+                  <entry>The target cluster to associate with the remote
+                  workunit</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Specifies to not copy DFS file information for files
+                  referenced by the query</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates query when copied</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Specifies to not request a reload of the Roxie
+                  cluster</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Specifies to allow the use of foreign files in a
+                  Roxie query. If a Roxie query references foreign files and
+                  this is not enabled, copy will fail.</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Whether to overwrite existing information - true if
+                  present</entry>
+                </row>
+
+                <row>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query timeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query warnTimeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Value to set for query memoryLimit configuration.
+                  Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T,
+                  etc.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Maximum time to wait for cluster finish updating (in
+                  ms)</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclqueriescopyset" role="brk">
+        <title>ecl queries copy-set</title>
+
+        <para><emphasis role="bold">ecl queries copy-set &lt;source_target&gt;
+        &lt;destination_target&gt; [--all] [--clone-active-state]
+        </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries copy-set roxie1 roxie2
+ecl queries copy-set roxie1 roxie2 --all
+ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries copy-set</entry>
+
+                  <entry>Copies a set of queries from one target to
+                  another.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>copy-set</entry>
+
+                  <entry>Copy a set of queries from one target to
+                  another.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>source_target</entry>
+
+                  <entry>Target cluster from which to copy queries.</entry>
+                </row>
+
+                <row>
+                  <entry>destination_target</entry>
+
+                  <entry>Target cluster to copy queries to.</entry>
+                </row>
+
+                <row>
+                  <entry>--all</entry>
+
+                  <entry>Specifies to copy both active and inactive queries.
+                  If omitted, only active are copied.</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Specifies to not copy DFS file information for files
+                  referenced by the query</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>IP address or hostname of the remote Dali to use for
+                  logical file lookups.</entry>
+                </row>
+
+                <row>
+                  <entry>--source-process</entry>
+
+                  <entry>Process cluster from which to copy files.</entry>
+                </row>
+
+                <row>
+                  <entry>--clone-active-state</entry>
+
+                  <entry>Make copied queries active on target if they are
+                  active on the source.</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Specifies to allow the use of foreign files in a
+                  Roxie query. If a Roxie query references foreign files and
+                  this is not enabled, copy will fail.</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Whether to overwrite existing DFS information - true
+                  if present</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclqueriesconfig" role="brk">
+        <title>ecl queries config</title>
+
+        <para><emphasis role="bold">ecl queries config &lt;target&gt;
+        &lt;queryid&gt; [options]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries config thor findperson --wait=1000
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries config</entry>
+
+                  <entry>Updates query configuration values</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>config</entry>
+
+                  <entry>Set or update query configuration values</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The name of the target queryset</entry>
+                </row>
+
+                <row>
+                  <entry>queryid</entry>
+
+                  <entry>The name of the query</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Specifies to not request a reload of the Roxie
+                  cluster</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Maximum time to wait for cluster finish updating (in
+                  ms)</entry>
+                </row>
+
+                <row>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query timeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query warnTimeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Value to set for query memoryLimit configuration.
+                  Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T,
+                  etc.</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackageadd" role="brk">
+        <title>ecl packagemap add</title>
+
+        <para><emphasis role="bold">ecl packagemap add [--daliip][options]
+        &lt;target&gt; &lt;filename&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap add  -s=192.168.1.10 roxie mypackagemap.pkg
+ecl packagemap add roxie mypackagemap.pkg --overwrite
+ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap add</entry>
+
+                  <entry>Calls the packagemap add command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>add</entry>
+
+                  <entry>Adds a packagemap to the target cluster</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target to associate the packagemap with</entry>
+                </row>
+
+                <row>
+                  <entry>filename</entry>
+
+                  <entry>The name of the file containing packagemap
+                  information.</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>IP address or hostname of the remote Dali to use for
+                  logical file lookups</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Whether to overwrite existing information - true if
+                  present</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates packagemap</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Specifies to allow the use of foreign files. If a
+                  packagemap references foreign files and this is not enabled,
+                  packagemap add will fail.</entry>
+                </row>
+
+                <row>
+                  <entry>--pmid=&lt;packagemapid&gt;</entry>
+
+                  <entry>id of package map - defaults to filename if not
+                  specified</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagedelete" role="brk">
+        <title>ecl packagemap delete</title>
+
+        <para><emphasis role="bold">ecl packagemap delete [options]
+        &lt;target&gt;&lt;packagemap&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap delete roxie mypackagemap
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap delete</entry>
+
+                  <entry>Calls the packagemap delete command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>delete</entry>
+
+                  <entry>Deletes a packagemap</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackageactivate" role="brk">
+        <title>ecl packagemap activate</title>
+
+        <para><emphasis role="bold">ecl packagemap activate &lt;target&gt;
+        &lt;packagemap&gt; </emphasis></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>ecl packagemap activate roxie mypackagemap.pkg</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap activate</entry>
+
+                  <entry>The activate command will deactivate the currently
+                  active packagemap and make the specified packagemap
+                  active.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to
+                  activate</entry>
+                </row>
+
+                <row>
+                  <entry>packagemap</entry>
+
+                  <entry>name of packagemap to update</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagedeactivate" role="brk">
+        <title>ecl packagemap deactivate</title>
+
+        <para><emphasis role="bold">ecl packagemap deactivate &lt;target&gt;
+        &lt;packagemap&gt; </emphasis></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>ecl packagemap deactivate roxie mypackagemap.pkg</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap deactivate</entry>
+
+                  <entry>The deactivate command will deactivate the currently
+                  active packagemap.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to
+                  deactivate</entry>
+                </row>
+
+                <row>
+                  <entry>packagemap</entry>
+
+                  <entry>Name of packagemap to deactivate</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagelist" role="brk">
+        <title>ecl packagemap list</title>
+
+        <para><emphasis role="bold">ecl packagemap list &lt;target&gt;
+        </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap list roxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap list</entry>
+
+                  <entry>Calls the packagemap list command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>list</entry>
+
+                  <entry>Lists loaded packagemap names</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to list</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackageinfo" role="brk">
+        <title>ecl packagemap info</title>
+
+        <para><emphasis role="bold">ecl packagemap info [options]
+        &lt;target&gt; </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap info roxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap info</entry>
+
+                  <entry>Calls the packagemap info command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>info</entry>
+
+                  <entry>returns packagemap info</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to
+                  retrieve</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackagevalidate" role="brk">
+        <title>ecl packagemap validate</title>
+
+        <para><emphasis role="bold">ecl packagemap validate &lt;target&gt;
+        [&lt;filename&gt;] </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap validate roxie mypackagemap.pkg
+ecl packagemap validate roxie --active</programlisting>
+
+        <para>The packagemap validate command verifies that :</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Referenced superkeys have subfiles defined (warns if no
+            subfiles exist)</para>
+          </listitem>
+
+          <listitem>
+            <para>All referenced queries exist in the current Roxie
+            queryset</para>
+          </listitem>
+
+          <listitem>
+            <para>All Roxie queries are defined in the package</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>The result will also list any files that are used by queries but
+        not mapped in the packagemap.</para>
+
+        <para>Filename, --active, and --pmid are mutually exclusive. The
+        --active or --pmid options validate a packagemap that has already been
+        added instead of a local file.</para>
+
+        <para>The --queryid option checks the files in a query instead of all
+        the queries in the target queryset. This is quicker when you only need
+        to validate the files for a single query. <informaltable colsep="0"
+            frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="175.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap validate</entry>
+
+                  <entry>Calls the packagemap validate command.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>validate</entry>
+
+                  <entry>Validates packagemap info</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>filename</entry>
+
+                  <entry>The filename containing the packagemap info to
+                  validate</entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to
+                  validate</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--active</entry>
+
+                  <entry>Validates the packagemap that is active for the given
+                  target</entry>
+                </row>
+
+                <row>
+                  <entry>--pmid=&lt;packagemapid&gt;</entry>
+
+                  <entry>Validates the given packagemap</entry>
+                </row>
+
+                <row>
+                  <entry>--queryid</entry>
+
+                  <entry>Validate the files for the given queryid if they are
+                  mapped in the packagemap</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie attach</title>
+
+        <para><emphasis role="bold">ecl roxie attach
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie attach myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie attach</entry>
+
+                  <entry>Attach the roxie to Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie detach</title>
+
+        <para><emphasis role="bold">ecl roxie detach
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie detach myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie detach</entry>
+
+                  <entry>Detach the roxie from Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie reload</title>
+
+        <para><emphasis role="bold">ecl roxie reload
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie reload myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie reload</entry>
+
+                  <entry>Reloads the roxie info from Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie check</title>
+
+        <para><emphasis role="bold">ecl roxie check
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie check myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie check</entry>
+
+                  <entry>Checks the state of the roxie process</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
+
+                  <entry>Max time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable><parameter></parameter></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle depends</title>
+
+        <para><emphasis role="bold">ecl bundle depends &lt;bundleName&gt;
+        [--version &lt;versionnumber&gt;]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle depends mybundle
+ecl bundle depends mybundle --version=2</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle depends</entry>
+
+                  <entry>Shows the dependencies of a bundle</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>The name of a bundle file or installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>--recurse</entry>
+
+                  <entry>Displays indirect dependencies</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Specify a version of the bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle info</title>
+
+        <para><emphasis role="bold">ecl bundle info &lt;bundleName&gt;
+        [--version &lt;versionnumber&gt;]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle info mybundle
+ecl bundle info mybundle --version=2</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle info</entry>
+
+                  <entry>Lists information about a bundle</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>A bundle filename, a bundle folder, or a bundle
+                  name.</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Specify a version of the bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle install</title>
+
+        <para><emphasis role="bold">ecl bundle install
+        &lt;bundleName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle install mybundle
+ecl bundle install mybundle --dryrun
+ecl bundle install mybundle --update
+ecl bundle install mybundle --keepprior</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle install</entry>
+
+                  <entry>Installs a bundle</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>A bundle filename or a bundle folder.</entry>
+                </row>
+
+                <row>
+                  <entry>--dryrun</entry>
+
+                  <entry>List what would be installed, but do not copy</entry>
+                </row>
+
+                <row>
+                  <entry>--force</entry>
+
+                  <entry>Install even if required dependencies missing</entry>
+                </row>
+
+                <row>
+                  <entry>--keepprior</entry>
+
+                  <entry>Do not remove any previous versions of the
+                  bundle</entry>
+                </row>
+
+                <row>
+                  <entry>--update</entry>
+
+                  <entry>Update an existing installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle uninstall</title>
+
+        <para><emphasis role="bold">ecl bundle uninstall
+        &lt;bundleName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle uninstall mybundle
+ecl bundle install mybundle --dryrun
+ecl bundle install mybundle --update
+ecl bundle install mybundle --keepprior</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle install</entry>
+
+                  <entry>Installs a bundle</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>The name of an installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>--dryrun</entry>
+
+                  <entry>List what would be removed, but do not remove
+                  them</entry>
+                </row>
+
+                <row>
+                  <entry>--force</entry>
+
+                  <entry>Uninstall even if other bundles are dependent on
+                  this</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Specify a version of the bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle list</title>
+
+        <para><emphasis role="bold">ecl bundle list
+        &lt;pattern&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle list
+ecl bundle list myb*
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle list</entry>
+
+                  <entry>Lists bundles matching specified pattern</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;pattern&gt;</entry>
+
+                  <entry>A pattern specifying bundles to list. If omitted, all
+                  bundles are listed</entry>
+                </row>
+
+                <row>
+                  <entry>--details</entry>
+
+                  <entry>Report details of each installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle use</title>
+
+        <para><emphasis role="bold">ecl bundle use &lt;bundleName&gt;
+        [--version &lt;version&gt;]</emphasis></para>
+
+        <para>Example:</para>
+
+        <programlisting>ecl bundle use myBundle --version 2
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle use</entry>
+
+                  <entry>Makes a specified version of a bundle active</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>The name of a bundle file</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>The version of the bundle to make active, or
+                  "none"</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie unused-files</title>
+
+        <para><emphasis role="bold">ecl roxie unused-files
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie unused-files myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie unused-files</entry>
+
+                  <entry>Finds files in the DFS for the given roxie process
+                  that are not currently used by queries on that
+                  roxie.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--check-packagemaps</entry>
+
+                  <entry>Exclude files referenced in active
+                  packagemaps</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl abort</title>
+
+        <para><emphasis role="bold">ecl abort -wu &lt;WUID&gt; | -n
+        &lt;jobName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl abort -wu W20150516-111213
+ecl abort -n MyJob</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl abort</entry>
+
+                  <entry>aborts one or more Workunits from the given WUID or
+                  job name</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-wu</entry>
+
+                  <entry>The WUID (Workunit ID)</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>The job name</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl status</title>
+
+        <para><emphasis role="bold">ecl status -wu &lt;WUID&gt; | -n
+        &lt;jobName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl status -wu W20150516-111213
+ecl status -n MyJob</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl status</entry>
+
+                  <entry>returns the status of a given workunit or job name.
+                  If more than one is found, a CSV list returns.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-wu</entry>
+
+                  <entry>The WUID (Workunit ID)</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>The job name</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl getwuid</title>
+
+        <para><emphasis role="bold">ecl getwuid -n &lt;jobName&gt;
+        [--limit=&lt;limitCount&gt;]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl getwuid -n MyJobName
+ecl getwuid -n MyCommonJobName --limit=100</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl getwuid</entry>
+
+                  <entry>returns the WUID(s) for a given job name. If more
+                  than one is found, a list returns.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>The job name</entry>
+                </row>
+
+                <row>
+                  <entry>--limit=<emphasis>nn</emphasis></entry>
+
+                  <entry>Integer to set result limit, default is 100</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl getname</title>
+
+        <para><emphasis role="bold">ecl getname -wu &lt;WUID&gt;
+        </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl getname -wu W20140516-111213
+ecl getname -wu W201407*
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl getname</entry>
+
+                  <entry>returns the job name for a given workunit.</entry>
+                </row>
+
+                <row>
+                  <entry>--wuid</entry>
+
+                  <entry>The WUID (Workunit ID)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--limit=&lt;limit&gt;</entry>
+
+                  <entry>This sets the result limit. This is useful when using
+                  wildcards in a request. (Default is 100)</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

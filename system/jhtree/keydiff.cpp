@@ -417,7 +417,7 @@ public:
             flags |= HTREE_VARSIZE;
         if(quickCompressed)
             flags |= HTREE_QUICK_COMPRESSED_KEY;
-        keyBuilder.setown(createKeyBuilder(keyStream, flags, rowsize, 0, nodeSize, keyedsize, 0)); // MORE - support for sequence other than 0...
+        keyBuilder.setown(createKeyBuilder(keyStream, flags, rowsize, nodeSize, keyedsize, 0)); // MORE - support for sequence other than 0...
     }
 
     ~CKeyWriter()
@@ -1264,7 +1264,7 @@ private:
             WARNLOG("Patch did not include TLK info in header, TLK has been generated but its CRC has not been verified");
     }
 
-    static int rowCompare(IInterface ** ll, IInterface ** rr)
+    static int rowCompare(IInterface * const * ll, IInterface * const * rr)
     {
         CNodeInfo * l = static_cast<CNodeInfo *>(*ll);
         CNodeInfo * r = static_cast<CNodeInfo *>(*rr);

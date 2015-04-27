@@ -187,12 +187,17 @@ define([
                 return;
 
             var context = this;
-            this.activity.watch("changedCount", function (item, oldValue, newValue) {
+            this.activity.watch("__hpcc_changedCount", function (item, oldValue, newValue) {
                 context.grid.set("query", {});
                 context._refreshActionState();
             });
 
             this._refreshActionState();
+            ESPUtil.MonitorVisibility(this.gridTab, function (visibility) {
+                if (visibility) {
+                    context.refreshGrid();
+                }
+            });
         },
 
         createGrid: function (domID) {

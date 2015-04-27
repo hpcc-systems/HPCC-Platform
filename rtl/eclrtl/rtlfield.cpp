@@ -201,9 +201,9 @@ size32_t RtlIntTypeInfo::process(const byte * self, const byte * selfrow, const 
 size32_t RtlIntTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
     if (isUnsigned())
-        target.outputUInt(rtlReadUInt(self, length), queryXPath(field));
+        target.outputUInt(rtlReadUInt(self, length), length, queryXPath(field));
     else
-        target.outputInt(rtlReadInt(self, length), queryXPath(field));
+        target.outputInt(rtlReadInt(self, length), length, queryXPath(field));
     return length;
 }
 
@@ -231,9 +231,9 @@ size32_t RtlSwapIntTypeInfo::process(const byte * self, const byte * selfrow, co
 size32_t RtlSwapIntTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
     if (isUnsigned())
-        target.outputUInt(rtlReadSwapUInt(self, length), queryXPath(field));
+        target.outputUInt(rtlReadSwapUInt(self, length), length, queryXPath(field));
     else
-        target.outputInt(rtlReadSwapInt(self, length), queryXPath(field));
+        target.outputInt(rtlReadSwapInt(self, length), length, queryXPath(field));
     return length;
 }
 
@@ -265,11 +265,12 @@ size32_t RtlPackedIntTypeInfo::process(const byte * self, const byte * selfrow, 
 
 size32_t RtlPackedIntTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
+    size32_t fieldsize = rtlGetPackedSize(self);
     if (isUnsigned())
-        target.outputUInt(rtlGetPackedUnsigned(self), queryXPath(field));
+        target.outputUInt(rtlGetPackedUnsigned(self), fieldsize, queryXPath(field));
     else
-        target.outputInt(rtlGetPackedSigned(self), queryXPath(field));
-    return rtlGetPackedSize(self); 
+        target.outputInt(rtlGetPackedSigned(self), fieldsize, queryXPath(field));
+    return fieldsize;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -1417,11 +1418,12 @@ size32_t RtlBitfieldTypeInfo::process(const byte * self, const byte * selfrow, c
 
 size32_t RtlBitfieldTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
+    size32_t fieldsize = size(self, selfrow);
     if (isUnsigned())
-        target.outputUInt(unsignedValue(self), queryXPath(field));
+        target.outputUInt(unsignedValue(self), fieldsize, queryXPath(field));
     else
-        target.outputInt(signedValue(self), queryXPath(field));
-    return size(self, selfrow);
+        target.outputInt(signedValue(self), fieldsize, queryXPath(field));
+    return fieldsize;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -1446,8 +1448,8 @@ size32_t RtlUnimplementedTypeInfo::toXML(const byte * self, const byte * selfrow
 
 //-------------------------------------------------------------------------------------------------------------------
 
-RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type) 
-: RtlFieldInfo(rtlCreateFieldNameAtom(_name), _xpath, _type) 
+RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer)
+: RtlFieldInfo(rtlCreateFieldNameAtom(_name), _xpath, _type, _initializer)
 {
 }
 

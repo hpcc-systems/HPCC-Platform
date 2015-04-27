@@ -101,51 +101,19 @@ static bool versionOk(const char *versionPresent, const char *minOk, const char 
 
 //--------------------------------------------------------------------------------------------------------------
 
-unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *args, const char *input)
+unsigned doPipeCommand(StringBuffer &output, const char *cmd, const char *args, const char *input)
 {
-    try
+    VStringBuffer runcmd("%s %s", cmd, args);
+    if (optVerbose)
     {
-        Owned<IPipeProcess> pipe = createPipeProcess();
-        VStringBuffer runcmd("%s %s", cmd, args);
-        pipe->run(cmd, runcmd, ".", input != NULL, true, true, 1024*1024);
-        if (optVerbose)
-        {
-            printf("Running %s\n", runcmd.str());
-            if (input)
-                printf("with input %s\n", input);
-        }
+        printf("Running %s\n", runcmd.str());
         if (input)
-        {
-            pipe->write(strlen(input), input);
-            pipe->closeInput();
-        }
-        char buf[1024];
-        while (true)
-        {
-            size32_t read = pipe->read(sizeof(buf), buf);
-            if (!read)
-                break;
-            output.append(read, buf);
-        }
-        int ret = pipe->wait();
-        StringBuffer error;
-        while (true)
-        {
-            size32_t read = pipe->readError(sizeof(buf), buf);
-            if (!read)
-                break;
-            error.append(read, buf);
-        }
-        if (optVerbose && (ret > 0 || error.length()))
-            printf("eclcc return code was %d, output to stderr:\n%s", ret, error.str());
-        return ret;
+            printf("with input %s\n", input);
     }
-    catch (IException *E)
-    {
-        E->Release();
-        output.clear();
-        return 255;
-    }
+    unsigned ret = runExternalCommand(output, runcmd, input);
+    if (optVerbose && (ret > 0))
+        printf("%s return code was %d", cmd, ret);
+    return ret;
 }
 
 static bool platformVersionDone = false;
@@ -156,7 +124,7 @@ static const char *queryPlatformVersion()
     if (!platformVersionDone)
     {
         StringBuffer output;
-        doEclCommand(output, "eclcc", "--nologfile --version", NULL);
+        doPipeCommand(output, "eclcc", "--nologfile --version", NULL);
         RegExpr re("_[0-9]+[.][0-9]+[.][0-9]+");
         const char *found = re.find(output);
         if (!found)
@@ -230,6 +198,11 @@ void recursiveRemoveDirectory(IFile *dir, bool isDryRun)
         dir->remove();
 }
 
+static bool isUrl(const char *str)
+{
+    return strstr(str, ":/") != NULL;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 
 interface IBundleCollection;
@@ -281,6 +254,73 @@ interface IBundleCollection : extends IInterface
     virtual bool checkDependencies(const IBundleInfo *bundle, bool going) const = 0;
 };
 
+StringArray deleteOnCloseDown;
+
+void doDeleteOnCloseDown()
+{
+    ForEachItemIn(idx, deleteOnCloseDown)
+    {
+        const char *goer = deleteOnCloseDown.item(idx);
+        try
+        {
+            Owned<IFile> goFile = createIFile(goer);
+            recursiveRemoveDirectory(goFile, false);
+        }
+        catch (IException *E)
+        {
+            StringBuffer m;
+            E->errorMessage(m);
+            printf("Error: %s\n", m.str());
+            E->Release();
+        }
+    }
+}
+
+StringBuffer & fetchURL(const char *bundleName, StringBuffer &fetchedLocation)
+{
+    // If the bundle name looks like a url, fetch it somewhere temporary first...
+    if (isUrl(bundleName))
+    {
+        //Put it into a temp directory - we need the filename to be right
+        //I don't think there is any way to disable the following warning....
+        const char *tmp = tmpnam(NULL);
+        recursiveCreateDirectory(tmp);
+        deleteOnCloseDown.append(tmp);
+        if (optVerbose)
+            printf("mkdir %s\n", tmp);
+
+        const char *ext = pathExtension(bundleName);
+        if (ext && strcmp(ext, ".git")==0)
+        {
+            fetchedLocation.append(tmp).append(PATHSEPCHAR);
+            splitFilename(bundleName, NULL, NULL, &fetchedLocation, NULL);
+            StringBuffer output;
+            VStringBuffer params("clone --depth=1 %s %s", bundleName, fetchedLocation.str());
+            unsigned retCode = doPipeCommand(output, "git", params, NULL);
+            if (optVerbose)
+                printf("%s", output.str());
+            if (retCode == START_FAILURE)
+                throw makeStringExceptionV(0, "Could not retrieve repository %s: git executable missing?", bundleName);
+        }
+        else
+        {
+            // Use curl executable
+            fetchedLocation.append(tmp).append(PATHSEPCHAR);
+            splitFilename(bundleName, NULL, NULL, &fetchedLocation,  &fetchedLocation);
+            StringBuffer output;
+            VStringBuffer params("-o %s %s", fetchedLocation.str(), bundleName);
+            unsigned retCode = doPipeCommand(output, "curl", params, NULL);
+            if (optVerbose)
+                printf("%s", output.str());
+            if (retCode == START_FAILURE)
+                throw makeStringExceptionV(0, "Could not retrieve url %s: curl executable missing?", bundleName);
+        }
+    }
+    else
+        fetchedLocation.append(bundleName); // Assume local
+    return fetchedLocation;
+}
+
 class CBundleInfo : public CInterfaceOf<IBundleInfo>
 {
 public:
@@ -314,7 +354,7 @@ public:
                                     " [ (UTF8) COUNT(b.authors) ] + B.authors + "
                                     " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn + "
                                     " [ (UTF8) #IFDEFINED(B.platformVersion, '')]", bundleName.str());
-            if (doEclCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
+            if (doPipeCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
                 throw MakeStringException(0, "%s cannot be parsed as a bundle\n", bundle);
             // output should contain [ 'name', 'version', etc ... ]
             if (optVerbose)
@@ -425,7 +465,7 @@ public:
     virtual bool checkDependencies(const IBundleCollection &allBundles, const IBundleInfo *bundle, bool going) const
     {
         bool ok = true;
-        for (int i = 0; i < depends.length(); i++)
+        for (unsigned i = 0; i < depends.length(); i++)
         {
             if (!checkDependency(allBundles, depends.item(i), bundle, going))
                 ok = false;
@@ -445,12 +485,12 @@ public:
                                 "#END\n"
                 , cleanName.str());
         StringBuffer output;
-        if (doEclCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
+        if (doPipeCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
         {
             printf("%s\n", output.str());
             printf("%s selftests cannot be compiled\n", cleanName.str());
         }
-        int retcode = doEclCommand(output, exeFileName, "", NULL);
+        int retcode = doPipeCommand(output, exeFileName, "", NULL);
         printf("%s\n", output.str());
         if (retcode > 0)
         {
@@ -495,7 +535,7 @@ private:
         else if (depVersions.length() > 1)
         {
             bool ok = false;
-            for (int i = 1; i < depVersions.length(); i++)
+            for (unsigned i = 1; i < depVersions.length(); i++)
                 if (dependentBundle->checkVersion(depVersions.item(i)))
                     ok = true;
             if (!ok)
@@ -531,7 +571,7 @@ private:
         StringBuffer cleaned;
         found++;  // skip the '
         unsigned foundLen = re.findlen()-2; // and the trailing ''
-        for (int i = 0; i < foundLen; i++)
+        for (unsigned i = 0; i < foundLen; i++)
         {
             unsigned char c = found[i];
             if (c=='\\')
@@ -863,7 +903,7 @@ public:
     }
 
 private:
-    static int compareBundleSets(IInterface **a, IInterface **b)
+    static int compareBundleSets(IInterface * const *a, IInterface * const *b)
     {
         IBundleInfoSet *aa = (IBundleInfoSet *) *a;
         IBundleInfoSet *bb = (IBundleInfoSet *) *b;
@@ -923,14 +963,14 @@ protected:
     void getCompilerPaths()
     {
         StringBuffer output;
-        doEclCommand(output, "eclcc", "--nologfile -showpaths", NULL);
+        doPipeCommand(output, "eclcc", "--nologfile -showpaths", NULL);
         extractValueFromEnvOutput(bundlePath, output, ECLCC_ECLBUNDLE_PATH);
         extractValueFromEnvOutput(hooksPath, output, HPCC_FILEHOOKS_PATH);
     }
     bool isFromFile() const
     {
         // If a supplied bundle id contains pathsep or ., assume a filename or directory is being supplied
-        return strchr(optBundle, PATHSEPCHAR) != NULL || strchr(optBundle, '.') != NULL;
+        return strchr(optBundle, PATHSEPCHAR) != NULL || strchr(optBundle, '.') != NULL || isUrl(optBundle);
     }
     StringAttr optBundle;
     StringBuffer bundlePath;
@@ -1055,7 +1095,7 @@ private:
                 if (depVersions.length() > 1)
                 {
                     matching = false;
-                    for (int i = 1; i < depVersions.length(); i++)
+                    for (unsigned i = 1; i < depVersions.length(); i++)
                         if (dependentBundle->checkVersion(depVersions.item(i)))
                             matching = true;
                     if (!matching)
@@ -1086,7 +1126,11 @@ public:
     {
         Owned<const IBundleInfo> bundle;
         if (isFromFile())
-            bundle.setown(new CBundleInfo(optBundle));
+        {
+            StringBuffer useName;
+            fetchURL(optBundle, useName);
+            bundle.setown(new CBundleInfo(useName));
+        }
         else
         {
             CBundleCollection allBundles(bundlePath, optBundle);
@@ -1105,7 +1149,7 @@ public:
                 "\n"
                 "ecl bundle info <bundle> \n"
                 " Options:\n"
-                "   <bundle>               The name of a bundle file, or installed bundle\n"
+                "   <bundle>               The name or URL of a bundle file, or installed bundle\n"
                );
         EclCmdBundleBaseWithVersion::usage();
     }
@@ -1139,11 +1183,13 @@ public:
 
     virtual int processCMD()
     {
-        Owned<IFile> bundleFile = createIFile(optBundle.get());
+        StringBuffer useName;
+        fetchURL(optBundle, useName);
+        Owned<IFile> bundleFile = createIFile(useName);
         if (bundleFile->exists())
         {
             bool ok = true;
-            Owned<IBundleInfo> bundle = new CBundleInfo(optBundle);
+            Owned<IBundleInfo> bundle = new CBundleInfo(useName);
             bundle->checkValid();
             const char *version = bundle->queryVersion();
             printf("Installing bundle %s version %s\n", bundle->queryBundleName(), version);
@@ -1255,7 +1301,7 @@ public:
                 "\n"
                 "ecl bundle install <bundle> \n"
                 " Options:\n"
-                "   <bundle>               The name of a bundle file\n"
+                "   <bundle>               The name or URL of a bundle file\n"
                 "   --dryrun               Print what would be installed, but do not copy\n"
                 "   --force                Install even if required dependencies missing\n"
                 "   --keepprior            Do not remove an previous versions of the bundle\n"
@@ -1363,7 +1409,11 @@ public:
     {
         Owned<const IBundleInfo> bundle;
         if (isFromFile())
-            bundle.setown(new CBundleInfo(optBundle));
+        {
+            StringBuffer useName;
+            fetchURL(optBundle, useName);
+            bundle.setown(new CBundleInfo(useName));
+        }
         else
         {
             CBundleCollection allBundles(bundlePath, optBundle);
@@ -1382,7 +1432,7 @@ public:
                 "\n"
                 "ecl bundle info <bundle> \n"
                 " Options:\n"
-                "   <bundle>               The name of a bundle file, or installed bundle\n"
+                "   <bundle>               The name or URL of a bundle file, or installed bundle\n"
                );
         EclCmdBundleBaseWithVersion::usage();
     }
@@ -1583,6 +1633,7 @@ int main(int argc, const char *argv[])
         E->Release();
         exitCode = 2;
     }
+    doDeleteOnCloseDown();
     removeFileHooks();
     releaseAtoms();
     exit(exitCode);

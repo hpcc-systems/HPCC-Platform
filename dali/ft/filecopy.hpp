@@ -35,15 +35,42 @@ typedef enum
     FFTrecfmvb, FFTrecfmv, FFTvariablebigendian,
     FFTlast
  } FileFormatType;
+
+static const char * FileFormatTypeStr[] =
+{       "FFTunknown",
+        "FFTfixed", "FFTvariable", "FFTblocked",
+        "FFTcsv",
+        "FFTutf",                             // any format, default to utf-8n
+        "FFTutf8", "FFTutf8n",
+        "FFTutf16", "FFTutf16be", "FFTutf16le",
+        "FFTutf32", "FFTutf32be", "FFTutf32le",
+        "FFTrecfmvb", "FFTrecfmv", "FFTvariablebigendian",
+        "FFTlast"
+};
 enum { FTactionpull, FTactionpush, FTactionpartition, FTactiondirectory, FTactionsize, FTactionpcopy };
 
+typedef enum
+{
+    FMTunknown,
+    FMTxml,
+    FMTjson,
+    FMTlast
+ } FileMarkupType;
+
+static const char * FileMarkupTypeStr[] =
+{
+    "FMTunknown",
+    "FMTxml",
+    "FMTjson",
+    "FMTlast"
+};
 
 #define EFX_BLOCK_SIZE          32768
 
 class DALIFT_API FileFormat
 {
 public:
-    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0)
+    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0) : headerLength((unsigned)-1), footerLength((unsigned)-1), markup(FMTunknown)
             { set(_type, _recordSize); maxRecordSize = 0; quotedTerminator = true;}
 
     void deserialize(MemoryBuffer & in);
@@ -59,6 +86,9 @@ public:
     void set(const FileFormat & src);
     bool hasQuote() const                           { return (quote == NULL) || (*quote != '\0'); }
     bool hasQuotedTerminator() const                { return quotedTerminator; }
+    const char * getFileFormatTypeString() const        { return FileFormatTypeStr[type]; }
+    void updateMarkupType(const char *rowLocator, const char *kind);
+    const char *getPartSeparatorString(){return (markup==FMTjson) ? ",\n" : NULL;}
 
 public:
     FileFormatType      type;
@@ -70,7 +100,10 @@ public:
     StringAttr          escape;
     StringAttr          rowTag;
 
-    //This value isn't serialized/deserialized.
+    //These values aren't serialized/deserialized:
+    FileMarkupType      markup;
+    unsigned            headerLength;
+    unsigned            footerLength;
     bool                quotedTerminator;
 };
 UtfReader::UtfFormat getUtfFormatType(FileFormatType type);

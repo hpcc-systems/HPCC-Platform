@@ -137,6 +137,7 @@
     <div class="not-expd">
       <xsl:text>&lt;</xsl:text>
       <span class="start-tag"><xsl:value-of select="name(.)"/></span>
+      <xsl:call-template name="namespace-attr" />
       <xsl:apply-templates select="@*"/>
       <xsl:text>/&gt;</xsl:text>
     </div>
@@ -147,6 +148,7 @@
     <div class="not-expd">
       <xsl:text>&lt;</xsl:text>
       <span class="start-tag"><xsl:value-of select="name(.)"/></span>
+      <xsl:call-template name="namespace-attr" />
       <xsl:apply-templates select="@*"/>
       <xsl:text>&gt;</xsl:text>
 
@@ -247,9 +249,35 @@
       <span class="start-tag">
         <xsl:value-of select="$tagname"/>
       </span>
+      <xsl:call-template name="namespace-attr" />
       <xsl:apply-templates select="@*"/>
       <xsl:text>&gt;</xsl:text>
     </div>
+  </xsl:template>
+
+  <xsl:template name="namespace-attr">
+    <xsl:if test="count(namespace::node()) > count(../namespace::node())">
+      <xsl:variable name="namespaces-str">
+        <xsl:for-each select="../namespace::node()"><xsl:text>&lt;</xsl:text><xsl:value-of select="name()" /><xsl:text>&gt;</xsl:text></xsl:for-each>
+      </xsl:variable>
+      <xsl:for-each select="namespace::node()">
+        <xsl:variable name="n1" select="name()"/>
+        <xsl:variable name="v1" select="."/>
+        <xsl:if test="$v1 != 'http://www.w3.org/XML/1998/namespace'"> <!-- extra namespace added by browsers -->
+          <xsl:variable name="namespace-str"><xsl:text>&lt;</xsl:text><xsl:value-of select="name()" /><xsl:text>&gt;</xsl:text></xsl:variable>
+          <xsl:if test="not(contains($namespaces-str, $namespace-str))">
+            <xsl:choose>
+              <xsl:when test="$n1 != ''">
+                <xsl:text> xmlns:</xsl:text><xsl:value-of select="$n1" /><xsl:text>="</xsl:text><xsl:value-of select="$v1"/><xsl:text>"</xsl:text>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:text> xmlns="</xsl:text><xsl:value-of select="$v1"/><xsl:text>"</xsl:text>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:if>
+        </xsl:if>
+      </xsl:for-each>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template name="expand-comment">

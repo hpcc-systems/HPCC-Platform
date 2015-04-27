@@ -13,6 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+include_directories (${SCM_GENERATED_DIR})
 HPCC_ADD_SUBDIRECTORY (bindings)
 HPCC_ADD_SUBDIRECTORY (clients "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (eclwatch "PLATFORM")
@@ -25,5 +26,6 @@ HPCC_ADD_SUBDIRECTORY (services "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (smc "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (test "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (tools "CLIENTTOOLS")
-HPCC_ADD_SUBDIRECTORY (xslt "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (xslt)
+HPCC_ADD_SUBDIRECTORY (esdllib)
 

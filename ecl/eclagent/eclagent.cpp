@@ -560,6 +560,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
 
 EclAgent::~EclAgent()
 {
+    rowManager.clear();
     ::Release(pluginMap);
     abortmonitor->stop();
     ::Release(abortmonitor); // no nead to join
@@ -772,13 +773,13 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
         outputSerializer->close(sequence, false);
 }
 
-void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val)
+void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val, unsigned size)
 {
-    LOG(MCsetresult, unknownJob, "setResultInt(%s,%d,%"I64F"d)", nullText(name), sequence, val);
+    LOG(MCsetresult, unknownJob, "setResultInt(%s,%d,%" I64F "d)", nullText(name), sequence, val);
     Owned<IWUResult> r = updateResult(name, sequence);
     if (r)
     {
-        r->setResultInt(val);   
+        r->setResultInt(val);
         r->setResultStatus(ResultStatusCalculated);
     }
     else
@@ -787,7 +788,7 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val)
     {
         if (outputFmt == ofSTD)
         {
-            outputSerializer->printf(sequence, "%"I64F"d", val);
+            outputSerializer->printf(sequence, "%" I64F "d", val);
             outputSerializer->close(sequence, true);
         }
         else
@@ -795,13 +796,13 @@ void EclAgent::setResultInt(const char * name, unsigned sequence, __int64 val)
     }
 }
 
-void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __int64 val)
+void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __int64 val, unsigned size)
 {
-    LOG(MCsetresult, unknownJob, "setResultUInt(%s,%d,%"I64F"u)", nullText(name), sequence, val);
+    LOG(MCsetresult, unknownJob, "setResultUInt(%s,%d,%" I64F "u)", nullText(name), sequence, val);
     Owned<IWUResult> r = updateResult(name, sequence);
     if (r)
     {
-        r->setResultUInt(val);  
+        r->setResultUInt(val);
         r->setResultStatus(ResultStatusCalculated);
     }
     else
@@ -810,7 +811,7 @@ void EclAgent::setResultUInt(const char * name, unsigned sequence, unsigned __in
     {
         if (outputFmt == ofSTD)
         {
-            outputSerializer->printf(sequence, "%"I64F"u", val);
+            outputSerializer->printf(sequence, "%" I64F "u", val);
             outputSerializer->close(sequence, true);
         }
         else
@@ -858,6 +859,16 @@ unsigned EclAgent::getResultHash(const char * name, unsigned sequence)
         failv(0, "Failed to retrieve hash value %s from workunit", name);
     return r->getResultHash();
 }
+
+unsigned EclAgent::getExternalResultHash(const char * wuid, const char * name, unsigned sequence)
+{
+    logGetResult("ExternalHash", name, sequence);
+    Owned<IConstWUResult> r = getExternalResult(wuid, name, sequence);
+    if (!r)
+        failv(0, "Failed to retrieve hash value %s from workunit %s", name, wuid);
+    return r->getResultHash();
+}
+
 
 
 //---------------------------------------------------------------------------
@@ -1048,6 +1059,11 @@ const void * EclAgent::fromXml(IEngineRowAllocator * rowAllocator, size32_t len,
     return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
 }
 
+const void * EclAgent::fromJson(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+{
+    return createRowFromJson(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+}
+
 
 bool EclAgent::getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * stepname, int sequence)
 {
@@ -1226,10 +1242,10 @@ void EclAgent::setResultUnicode(const char * name, unsigned sequence, int len, U
     {
         if (outputFmt == ofSTD)
         {
-            char * buff = 0;
+            rtlDataAttr buff;
             unsigned bufflen = 0;
-            rtlUnicodeToCodepageX(bufflen, buff, len, val, "utf-8");
-            outputSerializer->fwrite(sequence, (const void*)buff, 1, bufflen);
+            rtlUnicodeToCodepageX(bufflen, buff.refstr(), len, val, "utf-8");
+            outputSerializer->fwrite(sequence, buff.getdata(), 1, bufflen);
             outputSerializer->close(sequence, true);
         }
         else
@@ -1359,7 +1375,7 @@ bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalNa
 ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, bool isWrite, StringBuffer * expandedlfn)
 {
     StringBuffer lfn;
-    expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally);
+    expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally, false);
     if (resolveFilesLocally && *fname != '~')
     {
         StringBuffer name;
@@ -1454,12 +1470,14 @@ char * EclAgent::getExpandLogicalName(const char * logicalName)
 
 void EclAgent::addWuException(const char * text, unsigned code, unsigned severity, char const * source)
 {
-    addException((WUExceptionSeverity)severity, source, code, text, NULL, 0, 0, false, false);
+    ErrorSeverity mappedSeverity = wuRead->getWarningSeverity(code, (ErrorSeverity)severity);
+    if (mappedSeverity != SeverityIgnore)
+        addException(mappedSeverity, source, code, text, NULL, 0, 0, false, false);
 }
 
 void EclAgent::addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
 {
-    addException(ExceptionSeverityError, "user", code, text, filename, lineno, column, false, false);
+    addException(SeverityError, "user", code, text, filename, lineno, column, false, false);
     if (isAbort)
         rtlFailOnAssert();      // minimal implementation
 }
@@ -1627,10 +1645,10 @@ IHThorGraphResults * EclAgent::createGraphLoopResults()
 
 //---------------------------------------------------------------------------
 
-void addException(IWorkUnit *w, WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError)
+void addException(IWorkUnit *w, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError)
 {
     PrintLog("%s", text);
-    if ((severity == ExceptionSeverityError) && (w->getState()!=WUStateAborting) && failOnError)
+    if ((severity == SeverityError) && (w->getState()!=WUStateAborting) && failOnError)
         w->setState(WUStateFailed);
     addExceptionToWorkunit(w, severity, source, code, text, filename, lineno, column);
 }
@@ -1650,13 +1668,13 @@ EclAgentQueryLibrary * EclAgent::queryEclLibrary(const char * libraryName, unsig
     return NULL;
 }
 
-EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, bool embedded)
+EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsigned expectedInterfaceHash, const char * embeddedGraphName)
 {
     Linked<EclAgentQueryLibrary> library = queryEclLibrary(libraryName, expectedInterfaceHash);
     if (!library)
     {
         const char * graphName = "graph1";
-        if (embedded)
+        if (embeddedGraphName)
         {
             library.setown(new EclAgentQueryLibrary);
             library->wu.set(queryWorkUnit());
@@ -1664,7 +1682,7 @@ EclAgentQueryLibrary * EclAgent::loadEclLibrary(const char * libraryName, unsign
             library->name.set(libraryName);
             queryLibraries.append(*LINK(library));
 
-            graphName = libraryName;
+            graphName = embeddedGraphName;
         }
         else
         {
@@ -1729,9 +1747,8 @@ void EclAgent::loadDependencies(IConstWorkUnit * wu)
     for (plugins->first();plugins->isValid();plugins->next())
     {
         IConstWUPlugin &thisplugin = plugins->query();
-        SCMStringBuffer name, version;
+        SCMStringBuffer name;
         thisplugin.getPluginName(name);
-        thisplugin.getPluginVersion(version);
 
         StringBuffer plugIn;
         plugIn.append(pluginDirectory).append(name);
@@ -1820,12 +1837,14 @@ void EclAgent::doProcess()
                 w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), logname.str());
 
             eclccCodeVersion = w->getCodeVersion();
+            if (eclccCodeVersion == 0)
+                throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
             if (checkVersion && ((eclccCodeVersion > ACTIVITY_INTERFACE_VERSION) || (eclccCodeVersion < MIN_ACTIVITY_INTERFACE_VERSION)))
                 failv(0, "Workunit was compiled for eclagent interface version %d, this eclagent requires version %d..%d", eclccCodeVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
             if(noRetry && (w->getState() == WUStateFailed))
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
-            w->addTimeStamp("EclAgent", GetCachedHostName(), "Started");
+            addTimeStamp(w, SSTglobal, NULL, StWhenQueryStarted);
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());
@@ -1843,7 +1862,7 @@ void EclAgent::doProcess()
                 w->resetWorkflow();
         }
         {
-            MTIME_SECTION(timer, "Process");
+            MTIME_SECTION(queryActiveTimer(), "Process");
             Owned<IEclProcess> process = loadProcess();
 
             if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
@@ -1892,7 +1911,7 @@ void EclAgent::doProcess()
     {
         WorkunitUpdate w = updateWorkUnit();
 
-        w->addTimeStamp("EclAgent", GetCachedHostName(), "Finished");
+        addTimeStamp(w, SSTglobal, NULL, StWhenQueryFinished);
         addTimings();
 
         switch (w->getState())
@@ -1944,7 +1963,7 @@ void EclAgent::doProcess()
                     StringBuffer msg;
                     msg.append("Failed to deschedule workunit ").append(wuid.str()).append(": ");
                     e->errorMessage(msg);
-                    logException(ExceptionSeverityWarning, code, msg.str(), false);
+                    logException(SeverityWarning, code, msg.str(), false);
                     e->Release();
                     WARNLOG("%s (%d)", msg.str(), code);
                 }
@@ -1991,7 +2010,7 @@ void EclAgent::doProcess()
             StringBuffer m("System error ");
             m.append(e->errorCode()).append(": ");
             e->errorMessage(m);
-            ::addException(w, ExceptionSeverityError, "eclagent", e->errorCode(), m.str(), NULL, 0, 0, true);
+            ::addException(w, SeverityError, "eclagent", e->errorCode(), m.str(), NULL, 0, 0, true);
         }
         catch (IException *e2)
         {
@@ -2008,8 +2027,6 @@ void EclAgent::runProcess(IEclProcess *process)
 {
     assertex(rowManager==NULL);
     allocatorMetaCache.setown(createRowAllocatorCache(this));
-    rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
-    setHThorRowManager(rowManager.get());
 
     //Get memory limit. Workunit specified value takes precedence over config file
     int memLimitMB = agentTopology->getPropInt("@defaultMemoryLimitMB", DEFAULT_MEM_LIMIT);
@@ -2018,6 +2035,12 @@ void EclAgent::runProcess(IEclProcess *process)
 
     bool allowHugePages = agentTopology->getPropBool("@heapUseHugePages", false);
     allowHugePages = globals->getPropBool("heapUseHugePages", allowHugePages);
+
+    bool allowTransparentHugePages = agentTopology->getPropBool("@heapUseTransparentHugePages", true);
+    allowTransparentHugePages = globals->getPropBool("heapUseTransparentHugePages", allowTransparentHugePages);
+
+    bool retainMemory = agentTopology->getPropBool("@heapRetainMemory", false);
+    retainMemory = globals->getPropBool("heapRetainMemory", retainMemory);
 
 #ifndef __64BIT__
     if (memLimitMB > 4096)
@@ -2028,8 +2051,10 @@ void EclAgent::runProcess(IEclProcess *process)
     }
 #endif
     memsize_t memLimitBytes = (memsize_t)memLimitMB * 1024 * 1024;
-    roxiemem::setTotalMemoryLimit(allowHugePages, memLimitBytes, 0, NULL);
+    roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, memLimitBytes, 0, NULL, NULL);
 
+    rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
+    setHThorRowManager(rowManager.get());
     rowManager->setActivityTracking(queryWorkUnit()->getDebugValueBool("traceRoxiePeakMemory", false));
 
     if (debugContext)
@@ -2183,7 +2208,7 @@ void EclAgentWorkflowMachine::reportContingencyFailure(char const * type, IExcep
     StringBuffer msg;
     msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
     e->errorMessage(msg);
-    agent.logException(ExceptionSeverityWarning, e->errorCode(), msg.str(), false);
+    agent.logException(SeverityWarning, e->errorCode(), msg.str(), false);
 }
 
 void EclAgentWorkflowMachine::checkForAbort(unsigned wfid, IException * handling)
@@ -2196,7 +2221,7 @@ void EclAgentWorkflowMachine::checkForAbort(unsigned wfid, IException * handling
             msg.append("Abort takes precedence over error: ").append(handling->errorCode()).append(": ");
             handling->errorMessage(msg);
             msg.append(" (in item ").append(wfid).append(")");
-            agent.logException(ExceptionSeverityWarning, handling->errorCode(), msg.str(), false);
+            agent.logException(SeverityWarning, handling->errorCode(), msg.str(), false);
             handling->Release();
         }
         throw new WorkflowException(0, "Workunit abort request received", wfid, WorkflowException::ABORT, MSGAUD_user);
@@ -2293,16 +2318,16 @@ void EclAgent::doNotify(char const * name, char const * text, const char * targe
     pusher->push(name, text, target);
 }
 
-void EclAgent::logException(WUExceptionSeverity severity, unsigned code, const char * text, bool isAbort)
+void EclAgent::logException(ErrorSeverity severity, unsigned code, const char * text, bool isAbort)
 {
     addException(severity, "eclagent", code, text, NULL, 0, 0, true, isAbort);
-    if (severity == ExceptionSeverityError)
+    if (severity == SeverityError)
         ERRLOG(code, "%s", text);
 }
 
-void EclAgent::addException(WUExceptionSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort)
+void EclAgent::addException(ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort)
 {
-    if (writeResultsToStdout && (severity != ExceptionSeverityInformation))
+    if (writeResultsToStdout && (severity != SeverityInformation))
     {
         StringBuffer location;
         if (filename)
@@ -2312,7 +2337,7 @@ void EclAgent::addException(WUExceptionSeverity severity, const char * source, u
                 location.append('(').append(lineno).append(")");
             location.append(": ");
         }
-        const char * kind = (severity == ExceptionSeverityError) ? "error" : "warning";
+        const char * kind = (severity == SeverityError) ? "error" : "warning";
         fprintf(stderr, "%s%s: C%04u %s\n", location.str(), kind, code, text);
     }
     try
@@ -2372,7 +2397,7 @@ void EclAgent::logException(WorkflowException *e)
     else    
         m.append("Unknown error");
 
-    logException(ExceptionSeverityError, code, m.str(), isAbort);
+    logException(SeverityError, code, m.str(), isAbort);
 }
 
 void EclAgent::logException(IException *e)
@@ -2392,7 +2417,7 @@ void EclAgent::logException(IException *e)
     else    
         m.append("Unknown error");
 
-    logException(ExceptionSeverityError, code, m.str(), false);
+    logException(SeverityError, code, m.str(), false);
 }
 
 void EclAgent::logException(std::exception & e)
@@ -2402,7 +2427,7 @@ void EclAgent::logException(std::exception & e)
         m.append("out of memory (std::bad_alloc)");
     else
         m.append("standard library exception (std::exception ").append(e.what()).append(")");
-    logException(ExceptionSeverityError, 0, m.str(), false);
+    logException(SeverityError, 0, m.str(), false);
 }
 
 static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
@@ -2410,13 +2435,13 @@ static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __i
     CDateTime dt;
     file->getModificationTime(dt);
     unsigned __int64 modifiedTime = dt.getSimple();
-    PrintLog("getDatasetHash adding crc %"I64F"u for file %s", modifiedTime, filename);
+    PrintLog("getDatasetHash adding crc %" I64F "u for file %s", modifiedTime, filename);
     return rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
 }
 
 unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __int64 crc)
 {
-    PrintLog("getDatasetHash initial crc %"I64F"x", crc);
+    PrintLog("getDatasetHash initial crc %" I64F "x", crc);
 
     StringBuffer fullname;
     expandLogicalName(fullname, logicalName);
@@ -2456,7 +2481,7 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
     else
         PrintLog("getDatasetHash did not find file %s", fullname.str());
 
-    PrintLog("getDatasetHash final crc %"I64F"x", crc);
+    PrintLog("getDatasetHash final crc %" I64F "x", crc);
     return crc;
 }
 
@@ -2588,7 +2613,7 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
         {
             StringBuffer msg;
             msg.append("PERSIST('").append(logicalName).append("') is up to date");
-            logException(ExceptionSeverityInformation, 0, msg.str(), false);
+            logException(SeverityInformation, 0, msg.str(), false);
             return true;
         }
 
@@ -2611,12 +2636,12 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
     {
         StringBuffer msg;
         msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");
-        logException(ExceptionSeverityInformation, 0, msg.str(), false);
+        logException(SeverityInformation, 0, msg.str(), false);
         changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
         return true;
     }
     if (errText.length())
-        logException(ExceptionSeverityInformation, 0, errText.str(), false);
+        logException(SeverityInformation, 0, errText.str(), false);
     return false;
 }
 
@@ -2628,9 +2653,9 @@ void EclAgent::updatePersist(IRemoteConnection *persistLock, const char * logica
     eclName.append(lfn).append("$eclcrc");
     whenName.append(lfn).append("$when");
 
-    setResultInt(crcName,ResultSequencePersist,allCRC);
-    setResultInt(eclName,ResultSequencePersist,eclCRC);
-    setResultInt(whenName,ResultSequencePersist,time(NULL));
+    setResultInt(crcName,ResultSequencePersist,allCRC,sizeof(int));
+    setResultInt(eclName,ResultSequencePersist,eclCRC,sizeof(int));
+    setResultInt(whenName,ResultSequencePersist,time(NULL),sizeof(int));
 
     reportProgress("Convert persist write lock to read lock");
     changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
@@ -2670,10 +2695,10 @@ void EclAgent::checkPersistMatches(const char * logicalName, unsigned eclCRC)
 
     StringBuffer msg;
     msg.append("Frozen PERSIST('").append(logicalName).append("') is up to date");
-    logException(ExceptionSeverityInformation, 0, msg.str(), false);
+    logException(SeverityInformation, 0, msg.str(), false);
 }
 
-static int comparePersistAccess(IInterface **_a, IInterface **_b)
+static int comparePersistAccess(IInterface * const *_a, IInterface * const *_b)
 {
     IPropertyTree *a = *(IPropertyTree **)_a;
     IPropertyTree *b = *(IPropertyTree **)_b;
@@ -3001,7 +3026,7 @@ char * EclAgent::getDaliServers()
 void EclAgent::addTimings()
 {
     WorkunitUpdate w = updateWorkUnit();
-    updateWorkunitTimings(w, timer, "eclagent");
+    updateWorkunitTimings(w, queryActiveTimer());
 }
 
 // eclagent abort monitoring
@@ -3059,7 +3084,7 @@ void EclAgent::fatalAbort(bool userabort,const char *excepttext)
         if (userabort) 
             w->setState(WUStateAborted);
         if (excepttext&&*excepttext)
-            addException(ExceptionSeverityError, "ECLAGENT", 1000, excepttext, NULL, 0, 0, true, false);
+            addException(SeverityError, "ECLAGENT", 1000, excepttext, NULL, 0, 0, true, false);
         w->deleteTempFiles(NULL, false, true);
         wuRead.clear(); 
         w->commit();        // needed because we can't unlock the workunit in this thread
@@ -3177,6 +3202,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     ILogMsgHandler * logMsgHandler = NULL;
     if (!standAloneExe)
     {
+        setStatisticsComponentName(SCThthor, agentTopology->queryProp("@name"), true);
+
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(agentTopology, "eclagent");
         lf->setCreateAliasFile(false);
         logMsgHandler = lf->beginLogging();
@@ -3311,7 +3338,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         if (daliServers.length())
         {
             {
-                MTIME_SECTION(timer, "SDS_Initialize");
+                MTIME_SECTION(queryActiveTimer(), "SDS_Initialize");
                 Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
                 initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, MP_WAIT_FOREVER);
             }
@@ -3322,7 +3349,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 #endif
 
             {
-                MTIME_SECTION(timer, "Environment_Initialize");
+                MTIME_SECTION(queryActiveTimer(), "Environment_Initialize");
                 setPasswordsFromSDS();
             }
             PrintLog("ECLAGENT build %s", BUILD_TAG);
@@ -3342,7 +3369,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 //Stand alone program, but dali is specified => create a workunit in dali, and store the results there....
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                Owned<IWorkUnit> daliWu = factory->createWorkUnit(NULL, "eclagent", "eclagent");
+                Owned<IWorkUnit> daliWu = factory->createWorkUnit("eclagent", "eclagent");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
                 extendedWu->copyWorkUnit(standAloneWorkUnit, true);
                 daliWu->getWuid(wuid);
@@ -3693,14 +3720,14 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
     {
         output->outputBeginNested("att", false);
         output->outputCString(name, "@name");
-        output->outputInt(value, "@value");
+        output->outputInt(value, 0, "@value");
         output->outputEndNested("att");
     }
 
     void rowToXML(IXmlWriter *output, const void *row, unsigned sequence, unsigned rowCount, bool skipped, bool limited, bool eof, bool eog) const
     {
         output->outputBeginNested("Row", true);
-        output->outputInt(sequence, "@seq");
+        output->outputInt(sequence, 0, "@seq");
         if (skipped)
             output->outputBool(true, "@skip");
         if (limited)
@@ -3711,9 +3738,9 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
             output->outputBool(true, "@eog");
         if (row)
         {
-            output->outputInt(rowCount, "@count");
+            output->outputInt(rowCount, 0, "@count");
             IOutputMetaData *meta = queryOutputMeta();
-            output->outputInt(meta->getRecordSize(row), "@size");
+            output->outputInt(meta->getRecordSize(row), 0, "@size");
             meta->toXML((const byte *) row, *output);
         }
         output->outputEndNested("Row");
@@ -3851,8 +3878,8 @@ public:
                         else
                         {
                             output->outputBeginNested("Row", true);
-                            output->outputInt(rowData->querySequence(), "@sequence");
-                            output->outputInt(rowData->queryRowCount(), "@count");
+                            output->outputInt(rowData->querySequence(), 0, "@sequence");
+                            output->outputInt(rowData->queryRowCount(), 0, "@count");
                             output->outputEndNested("Row");
                         }
                     }
@@ -4094,7 +4121,7 @@ public:
         bp.removeEdge(*this);
     }
 
-    virtual void updateProgress(IWUGraphProgress &progress) const 
+    virtual void updateProgress(IStatisticGatherer &progress) const
     {   
         if (in)
             in->updateProgress(progress);

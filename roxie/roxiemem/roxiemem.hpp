@@ -37,12 +37,13 @@
 #define ROXIEMM_MEMORY_POOL_EXHAUSTED     ROXIEMM_ERROR_START+1
 #define ROXIEMM_INVALID_MEMORY_ALIGNMENT  ROXIEMM_ERROR_START+2
 #define ROXIEMM_HEAP_ERROR                ROXIEMM_ERROR_START+3
+#define ROXIEMM_TOO_MUCH_MEMORY           ROXIEMM_ERROR_START+4
 
 
 #ifdef __64BIT__
-#define HEAP_ALIGNMENT_SIZE I64C(0x100000u)                     // 1 mb heaplets - may be too big?
+#define HEAP_ALIGNMENT_SIZE I64C(0x40000u)                      // 256kb heaplets
 #else
-#define HEAP_ALIGNMENT_SIZE 0x100000                            // 1 mb heaplets - may be too big?
+#define HEAP_ALIGNMENT_SIZE 0x40000                             // 256kb heaplets
 #endif
 #define HEAP_ALIGNMENT_MASK ((~(HEAP_ALIGNMENT_SIZE)) + 1)
 #define ACTIVITY_MASK   0x00ffffff                              // must be > HEAP_ALIGNMENT_SIZE
@@ -58,6 +59,7 @@
 #define UNKNOWN_ROWSET_ID               0x000F8421              // Use as the allocatorId for a rowset from an unknown activity
 #define UNKNOWN_ACTIVITY                123456789
 
+#define MAX_SIZE_DIRECT_BUCKET          2048                    // Sizes below this are directly mapped to a particular bucket
 #define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
 #define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks
 
@@ -121,7 +123,7 @@ protected:
     virtual unsigned _rawAllocatorId(const void *ptr) const = 0;
     virtual void noteLinked(const void *ptr) = 0;
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) = 0;
-    virtual void _internalReleaseNoDestructor(const void *ptr) = 0;
+    virtual void _internalFreeNoDestructor(const void *ptr) = 0;
 
 public:
     inline static HeapletBase *findBase(const void *ptr)
@@ -145,7 +147,7 @@ public:
     static void setDestructorFlag(const void *ptr);
     static bool hasDestructor(const void *ptr);
 
-    static void internalReleaseNoDestructor(const void *ptr);
+    static void internalFreeNoDestructor(const void *ptr);
 
     static inline void releaseClear(const void *&ptr)
     {
@@ -227,7 +229,7 @@ private:
     virtual bool _hasDestructor(const void *ptr) const { return false; }
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
-    virtual void _internalReleaseNoDestructor(const void *ptr) { throwUnexpected(); }
+    virtual void _internalFreeNoDestructor(const void *ptr) { throwUnexpected(); }
 protected:
     DataBuffer()
     {
@@ -262,7 +264,7 @@ private:
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual void noteLinked(const void *ptr);
     virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
-    virtual void _internalReleaseNoDestructor(const void *ptr) { throwUnexpected(); }
+    virtual void _internalFreeNoDestructor(const void *ptr) { throwUnexpected(); }
 
 public:
     DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain);
@@ -445,7 +447,7 @@ interface IRowManager : extends IInterface
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void reportMemoryUsage(bool peak) const = 0;
-    virtual bool compactRows(memsize_t count, const void * * rows) = 0;
+    virtual memsize_t compactRows(memsize_t count, const void * * rows) = 0;
     virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
     virtual memsize_t getExpectedFootprint(memsize_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
     virtual void reportPeakStatistics(IStatisticTarget & target, unsigned detail) = 0;
@@ -485,7 +487,7 @@ interface IActivityMemoryUsageMap : public IInterface
     virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache) = 0;
 };
 
-extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false);
+extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false, bool outputOOMReports = false);
 
 // Fixed size aggregated link-counted zero-overhead data Buffer manager
 
@@ -497,7 +499,7 @@ interface IDataBufferManager : extends IInterface
 
 extern roxiemem_decl IDataBufferManager *createDataBufferManager(size32_t size);
 extern roxiemem_decl void setMemoryStatsInterval(unsigned secs);
-extern roxiemem_decl void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t largeBlockSize, ILargeMemCallback * largeBlockCallback);
+extern roxiemem_decl void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback);
 extern roxiemem_decl memsize_t getTotalMemoryLimit();
 extern roxiemem_decl void releaseRoxieHeap();
 extern roxiemem_decl bool memPoolExhausted();

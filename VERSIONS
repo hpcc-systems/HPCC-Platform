@@ -41,21 +41,35 @@ distro for which a pre-packaged binary is not available, then you should build
 the stable branch. Note that stable is rebased when a new MAJOR or MINOR version
 number release is published.
 
-Branches with names starting closedown- contain code that is being prepared for
-the next point release. 
-
 Branches with names starting candidate- contain code that is being prepared for
 release as a stable version. Individual release candidates will be tagged along these
 branches.
 
 When preparing a patch or a GitHub pull request, a new git branch should be created
-based on the appropriate target - if the change is to go into the next 4.0.x build, then
-base it on closedown-4.0.x, for example. All changes that are accepted into candidate-4.0.0
-are normally merged into closedown-4.0.x, and all changes in 4.0.x are normally merged to
-master, without requiring separate pull requests.
+based on the appropriate target - if the change is to go into the 5.2.2 build, then
+base it on candidate-5.2.2, for example. All changes that are accepted into a candidate
+branch are normally upmerged to any later unreleased candidate branches, and to master,
+without requiring separate pull requests. Pull requests against master will go in the
+next major release version.
 
 Tags
 ====
 
 Tags corresponding to the release versions will be applied to points on the
 candidate- branch where binary releases have been built and published.
+
+Rules for major, minor and point releases
+=========================================
+
+It should always be safe to upgrade a system to the latest point release with matching
+major and minor version. If upgrading to a new major or minor version, users should always
+use the latest available point release. It is important to observe the following rules:
+
+1. Sequence number increases on a gold release are for build errors and regressions only.
+   A new sequence release should be considered as rendering earlier sequence releases invalid
+   and unsupported.
+2. NEVER include new functionality in point releases - only bug fixes
+3. If a bug fix introduces incompatibilities that might break existing ECL code, or
+   require it to be recompiled, it should be held until the next minor release.
+4. Any bug fix that is included in a gold release for a give major.minor version must
+   also be available (if relevant) in a gold release of all later released major.minor versions.

@@ -236,9 +236,9 @@ public:
         }
         return (unsigned)-1;
     }
-    void dequeue(BASE *e)
+    BASE *dequeue(BASE *e)
     {
-        dequeue(find(e));
+        return dequeue(find(e));
     }
     inline unsigned ordinality() const { return num; }
 };

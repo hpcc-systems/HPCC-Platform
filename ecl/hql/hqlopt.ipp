@@ -32,7 +32,7 @@ class OptTransformInfo : public NewTransformInfo
 public:
     OptTransformInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) { useCount = 0; }
 
-    bool getStopHoist() { return spareByte1; }
+    bool getStopHoist() { return spareByte1 != 0; }
     void setStopHoist() { spareByte1 = true; }
 
 public:

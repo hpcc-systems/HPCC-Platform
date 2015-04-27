@@ -64,6 +64,8 @@ public:
     virtual unsigned getCrc();
     virtual typemod_t queryModifier()           { return typemod_none; }
     virtual IInterface * queryModifierExtra()   { return NULL; }
+    virtual IHqlExpression * castToExpression() { return NULL; }
+    virtual IHqlScope * castToScope()           { return NULL; }
 
     virtual void serialize(MemoryBuffer &tgt)   { tgt.append((unsigned char) getTypeCode()); }
     virtual void deserialize(MemoryBuffer &tgt) { UNIMPLEMENTED; }
@@ -507,7 +509,7 @@ class CEnumeratedTypeInfo : public CTypeInfo, public IEnumeratedTypeBuilder
 private:
     size32_t numValues;
     KeptHashTable valueMap;
-    Array valueList;
+    IArray valueList;
     Owned<ITypeInfo> base;
 
 public:
@@ -771,9 +773,10 @@ class CFunctionTypeInfo : public CBasedTypeInfo, implements IFunctionTypeExtra
 private:
     Owned<IInterface> parameters;
     Owned<IInterface> defaults;
+    Owned<IInterface> attrs;
 public:
-    CFunctionTypeInfo(ITypeInfo * _basetype, IInterface * _parameters, IInterface * _defaults) 
-        : CBasedTypeInfo(_basetype, UNKNOWN_LENGTH), parameters(_parameters), defaults(_defaults) 
+    CFunctionTypeInfo(ITypeInfo * _basetype, IInterface * _parameters, IInterface * _defaults, IInterface *_attrs)
+        : CBasedTypeInfo(_basetype, UNKNOWN_LENGTH), parameters(_parameters), defaults(_defaults), attrs(_attrs)
     {}
     IMPLEMENT_IINTERFACE_USING(CBasedTypeInfo)
 
@@ -789,8 +792,9 @@ public:
     virtual bool equals(const CTypeInfo & other) const;
 
 //IFunctionTypeExtra
-    virtual IInterface * queryParameters() { return parameters; }
-    virtual IInterface * queryDefaults() { return defaults; }
+    virtual IInterface * queryParameters() const { return parameters; }
+    virtual IInterface * queryDefaults() const { return defaults; }
+    virtual IInterface * queryAttributes() const { return attrs; }
 };
 
 

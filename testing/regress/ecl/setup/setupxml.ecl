@@ -16,7 +16,9 @@
 ############################################################################## */
 
 import $;
-C := $.files(__PLATFORM__, false);
+
+boolean createMultiPart := (__PLATFORM__[1..4] = 'thor');
+C := $.files(createMultiPart, false);
 
 set of string lines := [
     '<?xml version="1.0" encoding="UTF-8"?>',

@@ -55,7 +55,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         dataLinkStart();
         __uint64 numRows = helper->numRows();
         // local when generated from a child query (the range is per node, don't split)
@@ -66,8 +66,8 @@ public:
             __uint64 nodeid = container.queryCodeContext()->getNodeNum();
             startRow = (nodeid * numRows) / nodes;
             maxRow = ((nodeid + 1) * numRows) / nodes;
-            ActPrintLog("InlineSLAVE: numRows = %"I64F"d, nodes = %"I64F
-                        "d, nodeid = %"I64F"d, start = %"I64F"d, max = %"I64F"d",
+            ActPrintLog("InlineSLAVE: numRows = %" I64F "d, nodes = %" I64F
+                        "d, nodeid = %" I64F "d, start = %" I64F "d, max = %" I64F "d",
                         numRows, nodes, nodeid, startRow, maxRow);
         }
         else
@@ -87,7 +87,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (abortSoon)
             return NULL;
         while (currentRow < maxRow) {

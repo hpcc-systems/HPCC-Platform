@@ -174,7 +174,7 @@ Decimal & Decimal::divide(const Decimal & other)
     memset(temp, 0, numeratorDigits+spare);             // ensure two zero in msb, and below lsb.  Also 2 zeros for looking 2 bytes ahead..
 
     byte * numerator = temp+spare;
-    if (numeratorDigits > nd1)
+    if (numeratorDigits > (unsigned)nd1)
         memcpy(numerator + numeratorDigits - 1 - nd1, digits+lo1, nd1);
     else
         memcpy(numerator, digits + hi1 + 1 - (numeratorDigits-1), numeratorDigits-1);

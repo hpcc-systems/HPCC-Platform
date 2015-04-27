@@ -1861,32 +1861,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
             return 1;
         return 0;
     case no_datasetfromrow:
-        {
-            IHqlExpression * row = expr->queryChild(0);
-            //Is this special casing really the best way to handle this?  I'm not completely convinced.
-            loop
-            {
-                switch (row->getOperator())
-                {
-                case no_selectnth:
-                case no_split:
-                case no_spill:
-                    return 1;
-                case no_alias:
-                case no_alias_scope:
-                case no_nofold:
-                case no_nohoist:
-                case no_section:
-                case no_sectioninput:
-                case no_globalscope:
-                case no_thisnode:
-                    break;
-                default:
-                    return 0;
-                }
-                row = row->queryChild(0);
-            }
-        }
+    case no_projectrow:
     case no_fetch:
     case no_mapto:
     case no_evaluate:
@@ -2025,8 +2000,6 @@ bool isSourceActivity(IHqlExpression * expr, bool ignoreCompound)
     case no_compound_childgroupaggregate:
     case no_compound_inline:
         return !ignoreCompound;
-    case no_datasetfromrow:
-        return (getNumActivityArguments(expr) == 0);
     }
     return false;
 }
@@ -2375,12 +2348,12 @@ void DependenciesUsed::addFilenameWrite(IHqlExpression * expr)
         allWritten = true;
 }
 
-void DependenciesUsed::addResultRead(IHqlExpression * seq, IHqlExpression * name, bool isGraphResult)
+void DependenciesUsed::addResultRead(IHqlExpression * wuid, IHqlExpression * seq, IHqlExpression * name, bool isGraphResult)
 {
     if (!isGraphResult)
         if (!seq || !seq->queryValue())
             return;         //Can be called in parser when no sequence has been allocated
-    OwnedHqlExpr result = createAttribute(resultAtom, LINK(seq), LINK(name));
+    OwnedHqlExpr result = createAttribute(resultAtom, LINK(seq), LINK(name), LINK(wuid));
     if (resultsWritten.find(*result) == NotFound)
         appendUniqueExpr(resultsRead, LINK(result));
 }
@@ -2504,12 +2477,13 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
         {
             IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
             IHqlExpression * name = queryAttributeChild(expr, nameAtom, 0);
-            addResultRead(sequence, name, false);
+            IHqlExpression * wuid = expr->queryAttribute(wuidAtom);
+            addResultRead(wuid, sequence, name, false);
         }
         break;
     case no_getgraphresult:
         if (flags & GatherGraphResultRead)
-            addResultRead(expr->queryChild(1), expr->queryChild(2), true);
+            addResultRead(NULL, expr->queryChild(1), expr->queryChild(2), true);
         break;
     case no_setgraphresult:
         if (flags & GatherGraphResultWrite)
@@ -2520,7 +2494,8 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
         {
             IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
             IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
-            addResultRead(sequence, name, false);
+            IHqlExpression * wuid = expr->queryAttribute(wuidAtom);
+            addResultRead(wuid, sequence, name, false);
         }
         break;
     case no_ensureresult:
@@ -2542,7 +2517,7 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
     case no_callsideeffect:
         if (flags & GatherResultRead)
         {
-            addResultRead(expr->queryAttribute(_uid_Atom), NULL, false);
+            addResultRead(NULL, expr->queryAttribute(_uid_Atom), NULL, false);
         }
         break;
     }
@@ -2666,6 +2641,50 @@ void checkSelectConsistency(IHqlExpression * expr)
 {
     SelectConsistencyChecker checker;
     checker.analyse(expr, 0);
+}
+
+//---------------------------------------------------------------------------
+
+static HqlTransformerInfo parameterDependencyCheckerInfo("ParameterDependencyChecker");
+class ParameterDependencyChecker  : public NewHqlTransformer
+{
+public:
+    ParameterDependencyChecker() : NewHqlTransformer(parameterDependencyCheckerInfo), foundParameter(false)
+    {
+    }
+
+    virtual void analyseExpr(IHqlExpression * expr)
+    {
+        if (expr->isFullyBound() || alreadyVisited(expr) || foundParameter)
+            return;
+
+        if (expr->getOperator() == no_param)
+        {
+            foundParameter = true;
+            return;
+        }
+
+        NewHqlTransformer::analyseExpr(expr);
+    }
+
+    bool isDependent(IHqlExpression * expr)
+    {
+        analyse(expr, 0);
+        return foundParameter;
+    }
+
+protected:
+    bool foundParameter;
+};
+
+
+//Is 'expr' really dependent on a parameter - expr->isFullyBound() can give false negatives.
+bool isDependentOnParameter(IHqlExpression * expr)
+{
+    if (expr->isFullyBound())
+        return false;
+    ParameterDependencyChecker checker;
+    return checker.isDependent(expr);
 }
 
 //---------------------------------------------------------------------------
@@ -2982,6 +3001,64 @@ bool isValidXmlRecord(IHqlExpression * expr)
     return true;
 }
 
+static void expandHintValue(StringBuffer & s, IHqlExpression * expr)
+{
+    node_operator op = expr->getOperator();
+    node_operator childOp = no_none;
+    switch (op)
+    {
+    case no_constant:
+        expr->queryValue()->getStringValue(s);
+        break;
+    case no_comma:
+        expandHintValue(s, expr->queryChild(0));
+        expandHintValue(s.append(","), expr->queryChild(1));
+        break;
+    case no_range:
+        expandHintValue(s, expr->queryChild(0));
+        expandHintValue(s.append(".."), expr->queryChild(1));
+        break;
+    case no_rangefrom:
+        expandHintValue(s, expr->queryChild(0));
+        s.append("..");
+        break;
+    case no_rangeto:
+        expandHintValue(s.append(".."), expr->queryChild(0));
+        break;
+    case no_list:
+        {
+            s.append("[");
+            ForEachChild(i, expr)
+            {
+                if (i)
+                    s.append(",");
+                expandHintValue(s, expr->queryChild(i));
+            }
+            s.append("]");
+            break;
+        }
+    case no_attr:
+        s.append(expr->queryName());
+        break;
+    default:
+        s.append("?");
+        break;
+    }
+}
+
+void getHintNameValue(IHqlExpression * attr, StringBuffer &name, StringBuffer &value)
+{
+    name.set(attr->queryName()->str());
+    ForEachChild(i, attr)
+    {
+        if (i)
+            value.append(",");
+        expandHintValue(value, attr->queryChild(i));
+    }
+    if (value.length() == 0)
+        value.append("1");
+}
+
 bool getBoolValue(IHqlExpression * expr, bool dft)
 {
     if (expr)
@@ -3284,7 +3361,8 @@ static void convertRecordToAssigns(HqlExprArray & assigns, IHqlExpression * reco
                 }
                 else
                 {
-                    assertex(value || canOmit);
+                    if (!value && !canOmit)
+                        throwError1(HQLERR_FieldHasNoDefaultValue, cur->queryId()->str());
                     if (value)
                         assigns.append(*createAssign(LINK(newTargetSelector), LINK(value)));
                 }
@@ -4177,7 +4255,7 @@ IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted)
     return createConstant("");
 }
 
-int compareAtoms(IInterface * * pleft, IInterface * * pright)
+int compareAtoms(IInterface * const * pleft, IInterface * const * pright)
 {
     IAtom * left = static_cast<IAtom *>(*pleft);
     IAtom * right = static_cast<IAtom *>(*pright);
@@ -4185,20 +4263,8 @@ int compareAtoms(IInterface * * pleft, IInterface * * pright)
     return stricmp(left->str(), right->str());
 }
 
-
-int compareSymbolsByName(IInterface * * pleft, IInterface * * pright)
+int compareScopesByName(IHqlScope * left, IHqlScope * right)
 {
-    IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
-    IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
-
-    return stricmp(left->queryName()->str(), right->queryName()->str());
-}
-
-int compareScopesByName(IInterface * * pleft, IInterface * * pright)
-{
-    IHqlScope * left = static_cast<IHqlScope *>(*pleft);
-    IHqlScope * right = static_cast<IHqlScope *>(*pright);
-
     const char * leftName = left->queryName()->str();
     const char * rightName = right->queryName()->str();
     if (leftName && rightName)
@@ -4208,6 +4274,26 @@ int compareScopesByName(IInterface * * pleft, IInterface * * pright)
     if (rightName)
         return -1;
     return 0;
+}
+
+int compareSymbolsByName(IHqlExpression * left, IHqlExpression * right)
+{
+    return stricmp(left->queryName()->str(), right->queryName()->str());
+}
+
+int compareSymbolsByName(IInterface * const * pleft, IInterface * const * pright)
+{
+    IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
+    IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
+
+    return stricmp(left->queryName()->str(), right->queryName()->str());
+}
+
+int compareScopesByName(IInterface * const * pleft, IInterface * const * pright)
+{
+    IHqlScope * left = static_cast<IHqlScope *>(*pleft);
+    IHqlScope * right = static_cast<IHqlScope *>(*pright);
+    return compareScopesByName(left, right);
 }
 
 class ModuleExpander
@@ -5266,7 +5352,7 @@ IHqlExpression * queryUncastExpr(IHqlExpression * expr)
     }
 }
 
-bool isSimpleTransformToMergeWith(IHqlExpression * expr, int & varSizeCount)
+static bool isSimpleTransformToMergeWith(IHqlExpression * expr, int & varSizeCount)
 {
     ForEachChild(i, expr)
     {
@@ -5311,6 +5397,11 @@ bool isSimpleTransformToMergeWith(IHqlExpression * expr)
     return isSimpleTransformToMergeWith(expr, varSizeCount) && varSizeCount < 3;
 }
 
+bool isSimpleTransform(IHqlExpression * expr)
+{
+    int varSizeCount = 0;
+    return isSimpleTransformToMergeWith(expr, varSizeCount);
+}
 
 
 bool isConstantDataset(IHqlExpression * expr)
@@ -5409,6 +5500,13 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                         attrs.setown(createComma(attrs.getClear(), createAttribute(onceAtom)));
                     else if (matchOption(start, lenBuffer, buffer, 6, "action"))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(actionAtom)));
+                    else if (matchOption(start, lenBuffer, buffer, 6, "source"))
+                    {
+                        stripQuotes(start, end, buffer);
+                        Owned<IValue> restOfLine = createUtf8Value(end-start, buffer+start, makeUtf8Type(UNKNOWN_LENGTH, NULL));
+                        OwnedHqlExpr arg = createConstant(restOfLine.getClear());
+                        attrs.setown(createComma(attrs.getClear(), createAttribute(sourceAtom, arg.getClear())));
+                    }
                     else if (matchOption(start, lenBuffer, buffer, 7, "library"))
                     {
                         stripQuotes(start, end, buffer);
@@ -5769,7 +5867,7 @@ void TempTableTransformer::reportError(IHqlExpression * location, int code,const
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    Owned<IECLError> err = createECLError(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    Owned<IError> err = createError(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
     errorProcessor.report(err);
 }
 
@@ -6156,11 +6254,8 @@ void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpression * expr, bool
 //------------------------- Library processing -------------------------------------
 
 
-int compareLibraryParameterOrder(IInterface * * pleft, IInterface * * pright)
+int compareLibraryParameterOrder(IHqlExpression * left, IHqlExpression * right)
 {
-    IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
-    IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
-
     //datasets come first - even if not streamed
     if (left->isDataset())
     {
@@ -6190,6 +6285,12 @@ int compareLibraryParameterOrder(IInterface * * pleft, IInterface * * pright)
 }
 
 
+static int compareLibraryParameterOrder(IInterface * const * pleft, IInterface * const * pright)
+{
+    IHqlExpression * left = static_cast<IHqlExpression *>(*pleft);
+    IHqlExpression * right = static_cast<IHqlExpression *>(*pright);
+    return compareLibraryParameterOrder(left, right);
+}
 
 LibraryInputMapper::LibraryInputMapper(IHqlExpression * _libraryInterface)
 : libraryInterface(_libraryInterface)
@@ -6628,10 +6729,23 @@ void ErrorSeverityMapper::restoreState(const ErrorSeverityMapperState & saved)
     activeSymbol = saved.symbol;
 }
 
-IECLError * ErrorSeverityMapper::mapError(IECLError * error)
+void ErrorSeverityMapper::exportMappings(IWorkUnit * wu) const
+{
+    IndirectErrorReceiver::exportMappings(wu);
+
+    const unsigned max = severityMappings.ordinality();
+    for (unsigned i=firstActiveMapping; i < max; i++)
+    {
+        IHqlExpression & cur = severityMappings.item(i);
+        wu->setWarningSeverity((unsigned)getIntValue(cur.queryChild(0)), getCheckSeverity(cur.queryChild(1)->queryName()));
+    }
+}
+
+
+IError * ErrorSeverityMapper::mapError(IError * error)
 {
     //An error that is fatal cannot be mapped.
-    Owned<IECLError> mappedError = IndirectErrorReceiver::mapError(error);
+    Owned<IError> mappedError = IndirectErrorReceiver::mapError(error);
     if (!isFatal(mappedError))
     {
         //This takes precedence over mappings in the parent
@@ -6707,8 +6821,8 @@ public:
             }
         case annotate_warning:
             {
-                IECLError * error = static_cast<CHqlWarningAnnotation *>(expr)->queryWarning();
-                Owned<IECLError> mappedError = mapper.mapError(error);
+                IError * error = static_cast<CHqlWarningAnnotation *>(expr)->queryWarning();
+                Owned<IError> mappedError = mapper.mapError(error);
                 mapper.report(mappedError);
                 break;
             }
@@ -6727,7 +6841,7 @@ protected:
 };
 
 
-void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLErrorArray & orphanedWarnings)
+void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IErrorArray & orphanedWarnings)
 {
     if (!errs || !expr)
         return;
@@ -6745,7 +6859,7 @@ void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLError
 
     ForEachItemIn(i, orphanedWarnings)
     {
-        Owned<IECLError> mappedError = globalOnWarning->mapError(&orphanedWarnings.item(i));
+        Owned<IError> mappedError = globalOnWarning->mapError(&orphanedWarnings.item(i));
         globalOnWarning->report(mappedError);
     }
 }
@@ -6777,18 +6891,22 @@ StringBuffer & convertToValidLabel(StringBuffer &out, const char * in, unsigned 
     return out;
 }
 
-bool arraysSame(CIArray & left, CIArray & right)
+template <class ARRAY>
+bool doArraysSame(ARRAY & left, ARRAY & right)
 {
     if (left.ordinality() != right.ordinality())
         return false;
     return memcmp(left.getArray(), right.getArray(), left.ordinality() * sizeof(CInterface*)) == 0;
 }
 
-bool arraysSame(Array & left, Array & right)
+bool arraysSame(HqlExprArray & left, HqlExprArray & right)
 {
-    if (left.ordinality() != right.ordinality())
-        return false;
-    return memcmp(left.getArray(), right.getArray(), left.ordinality() * sizeof(CInterface*)) == 0;
+    return doArraysSame(left, right);
+}
+
+bool arraysSame(HqlExprCopyArray & left, HqlExprCopyArray & right)
+{
+    return doArraysSame(left, right);
 }
 
 bool isFailAction(IHqlExpression * expr)
@@ -7009,13 +7127,15 @@ public:
         IHqlExpression *formals = funcdef->queryChild(1);
         ITypeInfo * retType = funcdef->queryType()->queryChildType();
 
-        enum { ServiceApi, RtlApi, BcdApi, CApi, LocalApi } api = ServiceApi;
+        enum { ServiceApi, RtlApi, BcdApi, CApi, CppApi, LocalApi } api = ServiceApi;
         if (body->hasAttribute(eclrtlAtom))
             api = RtlApi;
         else if (body->hasAttribute(bcdAtom))
             api = BcdApi;
         else if (body->hasAttribute(cAtom))
             api = CApi;
+        else if (body->hasAttribute(cppAtom))
+            api = CppApi;
         else if (body->hasAttribute(localAtom))
             api = LocalApi;
 
@@ -7039,7 +7159,7 @@ public:
         StringBuffer mangledReturnParameters;
         mangleFunctionReturnType(mangledReturn, mangledReturnParameters, retType);
 
-        if (body->hasAttribute(contextAtom))
+        if (functionBodyUsesContext(body))
             mangled.append("P12ICodeContext");
         else if (body->hasAttribute(globalContextAtom) )
             mangled.append("P18IGlobalCodeContext");
@@ -7286,7 +7406,7 @@ public:
 
         mangled.append(mangledReturn);
 
-        if (body->hasAttribute(contextAtom))
+        if (functionBodyUsesContext(body))
             mangled.append("PVICodeContext@@");
         else if (body->hasAttribute(globalContextAtom) )
             mangled.append("PVIGlobalCodeContext@@");
@@ -7929,13 +8049,13 @@ public:
     ConstantRowCreator(MemoryBuffer & _out) : out(_out) { expectedIndex = 0; }
 
     bool buildTransformRow(IHqlExpression * transform);
+    bool processFieldValue(IHqlExpression * optField, ITypeInfo * lhsType, IHqlExpression * rhs);
 
 protected:
     bool expandAssignChildren(IHqlExpression * expr);
     bool expandAssignElement(IHqlExpression * expr);
 
     bool processElement(IHqlExpression * expr, IHqlExpression * parentSelector);
-    bool processFieldValue(IHqlExpression * optField, ITypeInfo * lhsType, IHqlExpression * rhs);
     bool processRecord(IHqlExpression * record, IHqlExpression * parentSelector);
 
     IHqlExpression * queryMatchingAssign(IHqlExpression * self, IHqlExpression * search);
@@ -8136,12 +8256,13 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
             }
             return true;
         }
+    case type_utf8:
     case type_unicode:
     case type_qstring:
         {
             if (lenLhs == UNKNOWN_LENGTH)
                 rtlWriteInt4(out.reserve(sizeof(size32_t)), lenValue);
-            castValue->toMem(out.reserve(castValueType->getSize()));
+            castValue->toMem(out.reserve(castValue->getSize()));
             return true;
         }
     //MORE:
@@ -8222,6 +8343,12 @@ bool createConstantRow(MemoryBuffer & target, IHqlExpression * transform)
     return builder.buildTransformRow(transform);
 }
 
+bool createConstantField(MemoryBuffer & target, IHqlExpression * field, IHqlExpression * value)
+{
+    ConstantRowCreator builder(target);
+    return builder.processFieldValue(field, field->queryType(), value);
+}
+
 IHqlExpression * createConstantRowExpr(IHqlExpression * transform)
 {
     MemoryBuffer rowData;
@@ -8256,12 +8383,12 @@ IHqlExpression * ensureOwned(IHqlExpression * expr)
 }
 
 
-IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * location)
+IError * annotateExceptionWithLocation(IException * e, IHqlExpression * location)
 {
     StringBuffer errorMsg;
     e->errorMessage(errorMsg);
     unsigned code = e->errorCode();
-    return createECLError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
+    return createError(code, errorMsg.str(), location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0);
 }
 
 StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix)

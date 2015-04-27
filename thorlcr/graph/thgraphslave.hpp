@@ -31,6 +31,7 @@
 #include "platform.h"
 #include "slave.hpp"
 #include "thormisc.hpp"
+#include "thorcommon.hpp"
 #include "thgraph.hpp"
 #include "jdebug.hpp"
 
@@ -43,8 +44,8 @@ class graphslave_decl CSlaveActivity : public CActivityBase
     mutable CriticalSection crit;
 
 protected:
-    PointerIArrayOf<IThorDataLink> inputs, outputs;
-    unsigned __int64 totalCycles;
+    IPointerArrayOf<IThorDataLink> inputs, outputs;
+    ActivityTimeAccumulator totalCycles;
     MemoryBuffer startCtx;
 
 public:
@@ -68,7 +69,7 @@ public:
     void startInput(IThorDataLink *itdl, const char *extra=NULL);
     void stopInput(IRowStream *itdl, const char *extra=NULL);
 
-    unsigned __int64 &getTotalCyclesRef() { return totalCycles; }
+    ActivityTimeAccumulator &getTotalCyclesRef() { return totalCycles; }
     unsigned __int64 queryLocalCycles() const;
     virtual unsigned __int64 queryTotalCycles() const; // some acts. may calculate accumulated total from inputs (e.g. splitter)
     virtual void serializeStats(MemoryBuffer &mb);
@@ -143,15 +144,13 @@ class graphslave_decl CJobSlave : public CJobBase
     CriticalSection graphRunCrit;
     size32_t oldNodeCacheMem;
 
-    void startJob();
-    void endJob();
-
 public:
     IMPLEMENT_IINTERFACE;
 
     CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *workUnitInfo, const char *graphName, const char *querySo, mptag_t _mptag, mptag_t _slavemptag);
     ~CJobSlave();
 
+    virtual void startJob();
     const char *queryFindString() const { return key.get(); } // for string HT
 
     ISlaveWatchdog *queryProgressHandler() { return watchdog; }
@@ -172,10 +171,21 @@ public:
         CMessageBuffer msg;
         msg.append((int)smt_errorMsg);
         IThorException *te = QUERYINTERFACE(e, IThorException);
+        bool userOrigin = false;
         if (te)
+        {
             te->setJobId(key);
+            te->setSlave(queryMyRank());
+            if (!te->queryOrigin())
+            {
+                VStringBuffer msg("SLAVE #%d", queryMyRank());
+                te->setOrigin(msg);
+            }
+            else if (0 == stricmp("user", te->queryOrigin()))
+                userOrigin = true;
+        }
         serializeThorException(e, msg);
-        if (te && te->queryOrigin() && 0 == stricmp("user", te->queryOrigin()))
+        if (userOrigin)
         {
             // wait for reply
             if (!queryJobComm().sendRecv(msg, 0, querySlaveMpTag(), LONGTIMEOUT))

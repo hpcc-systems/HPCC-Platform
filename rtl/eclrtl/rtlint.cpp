@@ -581,10 +581,10 @@ void rtlWriteInt(void * self, __int64 val, unsigned length)
 {
     switch (length)
     {
-    case 1: rtlWriteInt1(self, val); break;
-    case 2: rtlWriteInt2(self, val); break;
-    case 3: rtlWriteInt3(self, val); break;
-    case 4: rtlWriteInt4(self, val); break;
+    case 1: rtlWriteInt1(self, (unsigned)val); break;
+    case 2: rtlWriteInt2(self, (unsigned)val); break;
+    case 3: rtlWriteInt3(self, (unsigned)val); break;
+    case 4: rtlWriteInt4(self, (unsigned)val); break;
     case 5: rtlWriteInt5(self, val); break;
     case 6: rtlWriteInt6(self, val); break;
     case 7: rtlWriteInt7(self, val); break;
@@ -599,10 +599,10 @@ void rtlWriteSwapInt(void * self, __int64 val, unsigned length)
 {
     switch (length)
     {
-    case 1: rtlWriteSwapInt1(self, val); break;
-    case 2: rtlWriteSwapInt2(self, val); break;
-    case 3: rtlWriteSwapInt3(self, val); break;
-    case 4: rtlWriteSwapInt4(self, val); break;
+    case 1: rtlWriteSwapInt1(self, (unsigned)val); break;
+    case 2: rtlWriteSwapInt2(self, (unsigned)val); break;
+    case 3: rtlWriteSwapInt3(self, (unsigned)val); break;
+    case 4: rtlWriteSwapInt4(self, (unsigned)val); break;
     case 5: rtlWriteSwapInt5(self, val); break;
     case 6: rtlWriteSwapInt6(self, val); break;
     case 7: rtlWriteSwapInt7(self, val); break;

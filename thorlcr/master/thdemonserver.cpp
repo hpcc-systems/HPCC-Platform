@@ -39,7 +39,7 @@ private:
     CIArrayOf<CGraphBase> activeGraphs;
     UnsignedArray graphStarts;
     
-    void doReportGraph(IWUGraphProgress *progress, CGraphBase *graph, bool finished)
+    void doReportGraph(IStatisticGatherer & stats, CGraphBase *graph, bool finished)
     {
         Owned<IThorActivityIterator> iter;
         if (graph->queryOwner() && !graph->isGlobal())
@@ -53,30 +53,30 @@ private:
             if (activity) // may not be created (if within child query)
             {
                 activity_id id = container.queryId();
-                graph_id sourceGraphId = container.queryOwner().queryGraphId();
+
                 unsigned outputs = container.getOutputs();
                 unsigned oid = 0;
                 for (; oid < outputs; oid++)
                 {
-                    StringBuffer edgeId;
-                    edgeId.append(id).append('_').append(oid);
-                    IPropertyTree &edge = progress->updateEdge(sourceGraphId, edgeId.str());
-                    activity->getXGMML(oid, &edge); // for subgraph, may recursively call reportGraph
+                    StatsEdgeScope edgeScope(stats, id, oid);
+                    activity->getEdgeStats(stats, oid); // for subgraph, may recursively call reportGraph
                 }
-                IPropertyTree &node = progress->updateNode(sourceGraphId, id);
-                activity->getXGMML(progress, &node);
+
+                StatsActivityScope scope(stats, id);
+                activity->getActivityStats(stats);
             }
         }
     }
-    void reportGraph(IWUGraphProgress *progress, CGraphBase *graph, bool finished)
+    void reportGraph(IStatisticGatherer & stats, CGraphBase *graph, bool finished)
     {
         try
         {
+            StatsSubgraphScope subgraph(stats, graph->queryGraphId());
             if (graph->isCreated())
-                doReportGraph(progress, graph, finished);
+                doReportGraph(stats, graph, finished);
             Owned<IThorGraphIterator> graphIter = graph->getChildGraphs();
             ForEach (*graphIter)
-                reportGraph(progress, &graphIter->query(), finished);
+                reportGraph(stats, &graphIter->query(), finished);
         }
         catch (IException *e)
         {
@@ -92,7 +92,7 @@ private:
         formatGraphTimerLabel(timer, graphname, 0, graph.queryGraphId());
         formatGraphTimerScope(graphScope, graphname, 0, graph.queryGraphId());
         unsigned duration = msTick()-startTime;
-        updateWorkunitTimeStat(wu, "thor", graphScope, "totalTime", timer, milliToNano(duration), 1, 0);
+        updateWorkunitTimeStat(wu, SSTsubgraph, graphScope, StTimeElapsed, timer, milliToNano(duration));
 
         if (finished)
         {
@@ -129,13 +129,12 @@ private:
             {
                 IConstWorkUnit &currentWU = activeGraphs.item(0).queryJob().queryWorkUnit();
                 Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)activeGraphs.item(0).queryJob()).getGraphProgress();
-                Owned<IWUGraphProgress> progress = graphProgress->update();
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    reportGraph(progress, &graph, finished);
+                    Owned<IWUGraphStats> stats = graphProgress->update(SCTthor, queryStatisticsComponentName(), graph.queryGraphId());
+                    reportGraph(stats->queryStatsBuilder(), &graph, finished);
                 }
-                progress.clear(); // clear progress(lock) now, before attempting to get lock on wu, potentially delaying progress unlock.
                 graphProgress.clear();
                 Owned<IWorkUnit> wu = &currentWU.lock();
                 ForEachItemIn (g2, activeGraphs)
@@ -160,11 +159,12 @@ private:
         {
             IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
             Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)graph->queryJob()).getGraphProgress();
-            Owned<IWUGraphProgress> progress = graphProgress->update();
 
-            reportGraph(progress, graph, finished);
+            {
+                Owned<IWUGraphStats> stats = graphProgress->update(SCTthor, queryStatisticsComponentName(), graph->queryGraphId());
+                reportGraph(stats->queryStatsBuilder(), graph, finished);
+            }
 
-            progress.clear(); // clear progress(lock) now, before attempting to get lock on wu, potentially delaying progress unlock.
             graphProgress.clear();
 
             Owned<IWorkUnit> wu = &currentWU.lock();
@@ -213,12 +213,12 @@ public:
                 ForEachItemIn(g, activeGraphs) if (activeGraphs.item(g).queryGraphId() == graphId) graph = (CMasterGraph *)&activeGraphs.item(g);
                 if (!graph)
                 {
-                    LOG(MCdebugProgress, unknownJob, "heartbeat received from unknown graph %"GIDPF"d", graphId);
+                    LOG(MCdebugProgress, unknownJob, "heartbeat received from unknown graph %" GIDPF "d", graphId);
                     break;
                 }
                 if (!graph->deserializeStats(node, uncompressedMb))
                 {
-                    LOG(MCdebugProgress, unknownJob, "heartbeat error in graph %"GIDPF"d", graphId);
+                    LOG(MCdebugProgress, unknownJob, "heartbeat error in graph %" GIDPF "d", graphId);
                     break;
                 }
             }

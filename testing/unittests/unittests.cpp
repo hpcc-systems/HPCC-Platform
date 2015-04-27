@@ -17,6 +17,7 @@
 
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
+#include "jstats.h"
 
 /*
  * This is the main unittest driver for HPCC. From here,
@@ -40,7 +41,7 @@ int main(int argc, char* argv[])
 {
     InitModuleObjects();
     // These are the internal unit tests covered by other modules and libraries
-    Array objects;
+    IArray objects;
     objects.append(*(new LoadedObject ("jhtree")));
     objects.append(*(new LoadedObject ("roxiemem")));
     objects.append(*(new LoadedObject ("thorhelper")));
@@ -65,5 +66,22 @@ int main(int argc, char* argv[])
     releaseAtoms();
     return wasSucessful;
 }
+
+
+//MORE: This can't be included in jlib because of the dll dependency
+class InternalStatisticsTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( InternalStatisticsTest  );
+        CPPUNIT_TEST(testMappings);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testMappings()
+    {
+        verifyStatisticFunctions();
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( InternalStatisticsTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( InternalStatisticsTest, "StatisticsTest" );
 
 #endif // _USE_CPPUNIT

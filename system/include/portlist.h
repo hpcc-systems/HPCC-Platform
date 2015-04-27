@@ -57,6 +57,8 @@
 #define MP_START_PORT                   7101 // Default range for MP ports
 #define MP_END_PORT                     7500
 
+#define SECURE_DAFILESRV_PORT           7600 // aka daliservix
+
 //ESP SERVICES
 //INSECURE
 #define WS_ECL_DEFAULT_PORT             8002
@@ -78,6 +80,7 @@
 #define WS_JABBER_DEFAULT_PORT          8080
 #define WS_REF_TRACKER_DEFAULT_PORT     8080
 #define WS_ATTRIBUTES_DEFAULT_PORT      8145
+#define WS_LOGGING_DEFAULT_PORT         8146
 #define WS_ITS_DEFAULT_PORT             8888
 #define WS_FACTS_DEFAULT_PORT           8999
 #define WS_MOXIE_DEFAULT_PORT           8999

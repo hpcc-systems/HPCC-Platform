@@ -657,10 +657,10 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             return difftime(startTime, otherTime) < 0;
         }
 
-        static int compareTime(CInterface **_l, CInterface**_r)
+        static int compareTime(CInterface * const *_l, CInterface* const *_r)
         {
-            QueryStatsRecord *l = *(QueryStatsRecord **) _l;
-            QueryStatsRecord *r = *(QueryStatsRecord **) _r;
+            QueryStatsRecord *l = (QueryStatsRecord *)*_l;
+            QueryStatsRecord *r = (QueryStatsRecord *)*_r;
             return l->elapsedTimeMs - r->elapsedTimeMs;
         }
 

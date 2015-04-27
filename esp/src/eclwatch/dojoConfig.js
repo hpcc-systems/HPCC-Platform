@@ -14,6 +14,7 @@ var dojoConfig = (function () {
             params: searchNodes.length >= 2 ? searchNodes[1] : "",
             baseHost: baseHost,
             basePath: baseHost + "/esp/files",
+            pluginsPath: baseHost + "/esp/files",
             resourcePath: baseHost + "/esp/files/eclwatch",
             scriptsPath: baseHost + "/esp/files/eclwatch",
             thisPath: pathnodes.join("/")
@@ -37,14 +38,30 @@ var dojoConfig = (function () {
         getImageHTML: function (name, tooltip) {
             return "<img src='" + this.getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + " class='iconAlign'/>";
         },
+        isPluginInstalled: function () {
+            try {
+                var o = new ActiveXObject("HPCCSystems.HPCCSystemsGraphViewControl.1");
+                o = null;
+                return true;
+            } catch (e) { 
+            }
+            if (navigator.plugins) {
+                for (var i = 0, p = navigator.plugins, l = p.length; i < l; i++) {
+                    if (p[i].name.indexOf("HPCCSystemsGraphViewControl") > -1) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        },
+        paths: {
+            //  Visualization Paths  ---
+            "async": urlInfo.basePath + "/Visualization/widgets/lib/requirejs/plugins/async",
+            "css": urlInfo.basePath + "/Visualization/widgets/lib/requirejs/plugins/css",
+            "goog": urlInfo.basePath + "/Visualization/widgets/lib/requirejs/plugins/goog",
+            "propertyParser": urlInfo.basePath + "/Visualization/widgets/lib/requirejs/plugins/propertyParser"
+        },
         packages: [{
-            name: "d3",
-            location: urlInfo.basePath + "/d3",
-            main:"d3"
-        }, {
-            name: "topojson",
-            location: urlInfo.basePath + "/topojson"
-        }, {
             name: "hpcc",
             location: urlInfo.scriptsPath
         }, {
@@ -53,6 +70,30 @@ var dojoConfig = (function () {
         }, {
             name: "ecl",
             location: urlInfo.resourcePath + "/ecl"
+        }, {
+            name: "plugins",
+            location: urlInfo.pluginsPath
+        }, {
+            name: "src",
+            location: urlInfo.basePath + "/Visualization/widgets/src"
+        }, {
+            name: "lib",
+            location: urlInfo.basePath + "/Visualization/widgets/lib"
+        }, {
+            name: "d3",
+            location: urlInfo.basePath + "/Visualization/widgets/lib/d3",
+            main: "d3"
+        }, {
+            name: "c3",
+            location: urlInfo.basePath + "/Visualization/widgets/lib/c3",
+            main: "c3"
+        }, {
+            name: "crossfilter",
+            location: urlInfo.basePath + "/Visualization/widgets/lib/crossfilter",
+            main: "crossfilter"
+        }, {
+            name: "topojson",
+            location: urlInfo.basePath + "/Visualization/widgets/lib/topojson"
         }, {
             name: "this",
             location: urlInfo.thisPath

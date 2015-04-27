@@ -31,7 +31,6 @@
 #include "thmem.hpp"
 
 
-class BytePointerArray;
 interface ICompare;
 interface IRecordSize;
 interface ISortKeySerializer;

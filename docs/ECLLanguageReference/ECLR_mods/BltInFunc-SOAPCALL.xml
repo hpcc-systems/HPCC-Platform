@@ -60,7 +60,11 @@
             conduct a Federated search where the request is sent to each of
             the target systems in the list. These URLs may contain standard
             form usernames and passwords, if required. The default
-            username/password are those contained in the workunit.</entry>
+            username/password are those contained in the workunit. If calling
+            an ESP Web service, you can append the ver_=n.nn parameter to
+            specify the version of the service. For example: <programlisting>SOAPCALL('http://127.0.0.1:8010/Wsdfu/?ver_=1.22', 
+         'DFUSearchData', 
+         instructure,DATASET(outsructure));</programlisting></entry>
           </row>
 
           <row>

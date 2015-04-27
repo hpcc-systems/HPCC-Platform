@@ -28,6 +28,7 @@
   <xsl:variable name="isArchived" select="WUInfoResponse/Workunit/Archived"/>
   <xsl:variable name="debugTargetClusterType" select="WUInfoResponse/Workunit/targetclustertype" />
   <xsl:variable name="jobName" select="WUInfoResponse/Workunit/Jobname" />
+  <xsl:variable name="SecMethod" select="WUInfoResponse/SecMethod"/>
   <xsl:include href="/esp/xslt/lib.xslt"/>
   <xsl:include href="/esp/xslt/wuidcommon.xslt"/>
 
@@ -544,6 +545,7 @@
                   {
                     activeSections[activeSections.length] = 'Warnings';
                     activeSections[activeSections.length] = 'Info';
+                    activeSections[activeSections.length] = 'Alert';
                   }
                 }
               }
@@ -573,7 +575,7 @@
 
             function getSectionName(Section)
             {
-              if ('WarningsInfo'.indexOf(Section)>-1)
+              if ('WarningsInfoAlert'.indexOf(Section)>-1)
               {
                 return 'Exceptions';
               }
@@ -749,18 +751,28 @@
                         mywindow.focus();
                         return false;
                     }
-                    function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo)
+                    function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo, password)
                     {
                         document.getElementById("ESPIPAddress").value=espIP;
                         if (thorIP != '')
-                            document.getElementById("ESPIPAddress").value=thorIP;
+                            document.getElementById("ThorIPAddress").value=thorIP;
                         document.getElementById("BuildVersion").value=ESPBuildVersion;
                         if (problemDesciption != '')
                             document.getElementById("ProblemDescription").value=problemDesciption;
+                        else
+                            document.getElementById("ProblemDescription").value = "";
                         if (history != '')
                             document.getElementById("WhatChanged").value=history;
+                        else
+                            document.getElementById("WhatChanged").value = "";
                         if (timingInfo != '')
                             document.getElementById("WhereSlow").value=timingInfo;
+                        else
+                            document.getElementById("WhereSlow").value = "";
+                        if (password != '')
+                            document.getElementById("Password").value=password;
+                        else
+                            document.getElementById("Password").value = "";
 
                         document.forms['protect'].action = "/WsWorkunits/WUCreateZAPInfo";
                         document.forms['protect'].encType="application/x-www-form-urlencoded";

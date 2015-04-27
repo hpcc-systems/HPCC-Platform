@@ -44,9 +44,6 @@
 
 #define PARALLEL_EXECUTE
 
-#define RE_FailedToLoadProcedure    0x1000
-#define RE_FailedToLoadSharedObject 0x2000
-
 #define MAXTRACELEVEL 100     // don't want traceLevel+1 to wrap to 0 in lsb
 #define MAX_CLUSTER_SIZE 1024
 #define UDP_QUEUE_SIZE 100
@@ -151,10 +148,11 @@ private:
     RoxiePacketHeader(const RoxiePacketHeader &source);
 
 public:
-    unsigned short packetlength;
+    unsigned packetlength;
     unsigned short retries;         // how many retries on this query, the high bits are used as flags, see above
     unsigned short overflowSequence;// Used if more than one packet-worth of data from server - eg keyed join. We don't mind if we wrap...
     unsigned short continueSequence;// Used if more than one chunk-worth of data from slave. We don't mind if we wrap 
+    unsigned short channel;         // multicast family to send on
     unsigned activityId;            // identifies the helper factory to be used (activityId in graph)
     hash64_t queryHash;             // identifies the query
 
@@ -163,7 +161,6 @@ public:
 #ifdef TIME_PACKETS
     unsigned tick;
 #endif
-    unsigned short channel;         // multicast family to send on
 
     inline RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
     {
@@ -401,6 +398,7 @@ extern bool mergeSlaveStatistics;
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
 extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
+extern bool selfTestMode;
 
 extern unsigned roxiePort;     // If listening on multiple, this is the first. Used for lock cascading
 
@@ -411,6 +409,8 @@ extern bool nodeCachePreload;
 extern unsigned nodeCacheMB;
 extern unsigned leafCacheMB;
 extern unsigned blobCacheMB;
+
+extern Owned<IPerfMonHook> perfMonHook;
 
 struct PartNoType
 {
@@ -478,83 +478,29 @@ class LogItem : public CInterface
     StringAttr text;
     unsigned time;
     unsigned channel;
-    unsigned statCode;
-    unsigned __int64 statValue;
-    unsigned statCount;
 
 public:
     LogItem(TracingCategory _category, const char *_prefix, unsigned _time, unsigned _channel, const char *_text) 
         : category(_category), prefix(_prefix), time(_time), channel(_channel), text(_text)
     {
-        statCode = 0;
-        statValue = 0;
-        statCount = 0;
-    }
-
-    LogItem(TracingCategory _category, unsigned _channel, unsigned _statCode, unsigned __int64 _statValue, unsigned _count) 
-        : category(_category), channel(_channel), statCode(_statCode), statValue(_statValue), statCount(_count)
-    {
-        time = 0;
-    }
-    
-    inline bool isStatistics() const
-    {
-        return category==LOG_STATVALUES;
-    }
-
-    inline unsigned getStatCode() const
-    {
-        return statCode;
-    }
-
-    inline unsigned __int64 getStatValue() const
-    {
-        return statValue;
-    }
-
-    inline unsigned __int64 getStatCount() const
-    {
-        return statCount;
     }
 
     LogItem(MemoryBuffer &buf)
     {
         char c; buf.read(c); category = (TracingCategory) c;
         buf.read(channel);
-        if (category==LOG_STATVALUES)
-        {
-            time = 0;
-            buf.read(statCode);
-            buf.read(statValue);
-            buf.read(statCount);
-        }
-        else
-        {
-            buf.read(prefix);
-            buf.read(text);
-            buf.read(time);
-            statCode = 0;
-            statValue = 0;
-            statCount = 0;
-        }
+        buf.read(prefix);
+        buf.read(text);
+        buf.read(time);
     }
 
     void serialize(MemoryBuffer &buf)
     {
         buf.append((char) category);
         buf.append(channel);
-        if (category==LOG_STATVALUES)
-        {
-            buf.append(statCode);
-            buf.append(statValue);
-            buf.append(statCount);
-        }
-        else
-        {
-            buf.append(prefix);
-            buf.append(text);
-            buf.append(time);
-        }
+        buf.append(prefix);
+        buf.append(text);
+        buf.append(time);
     }
 
     static const char *getCategoryString(TracingCategory c)
@@ -563,9 +509,9 @@ public:
         {
         case LOG_TRACING: return "TRACE";
         case LOG_ERROR: return "ERROR";
-        case LOG_TIMING: return "TIMING";
-        case LOG_STATISTICS: return "STATISTICS";
         case LOG_STATVALUES: return "STATVALUES";
+        case LOG_CHILDSTATS: return "CHILDSTATS";
+        case LOG_CHILDCOUNT: return "CHILDCOUNT";
         default: return "UNKNOWN";
         }
     }
@@ -599,186 +545,9 @@ public:
 
 };
 
+// MORE - this code probably should be commoned up with some of the new stats code
 extern void putStatsValue(IPropertyTree *node, const char *statName, const char *statType, unsigned __int64 val);
 extern void putStatsValue(StringBuffer &reply, const char *statName, const char *statType, unsigned __int64 val);
-
-class StatsCollector : public CInterface, implements IInterface
-{
-    unsigned __int64 *cumulative;
-    unsigned *counts;
-    mutable SpinLock lock;
-    bool aborted;
-
-    inline void init()
-    {
-        if (!cumulative)
-        {
-            cumulative = new unsigned __int64[STATS_SIZE];
-            counts = new unsigned [STATS_SIZE];
-            memset(cumulative, 0, STATS_SIZE * sizeof(cumulative[0]));
-            memset(counts, 0, STATS_SIZE * sizeof(counts[0]));
-        }
-    }
-
-    inline static const char *getStatCombineModeName(StatisticCombineType type)
-    {
-        switch(type)
-        {
-            case STATSMODE_COMBINE_SUM: return "sum";
-            case STATSMODE_COMBINE_MAX: return "max";
-            case STATSMODE_COMBINE_MIN: return "min";
-            default:
-                throwUnexpected();
-        }
-    }
-
-public:
-    IMPLEMENT_IINTERFACE;
-    StatsCollector()
-    {
-        // CAUTION: this object is reused by threadpooling - so be sure to update reset() method too!
-        cumulative = NULL;
-        counts = NULL;
-        aborted = false;
-        // CAUTION: this object is reused by threadpooling - so be sure to update reset() method too!
-    }
-    
-    ~StatsCollector()
-    {
-        if (cumulative) delete [] cumulative;
-        if (counts) delete [] counts;
-    }
-
-    void noteStatistic(unsigned statIdx, unsigned __int64 value, unsigned count)
-    {
-        SpinBlock b(lock);
-        if (aborted)
-            throw MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
-        init();
-        assert (statIdx < STATS_SIZE);
-        switch (getStatCombineMode(statIdx))
-        {
-        case STATSMODE_COMBINE_SUM:
-            cumulative[statIdx] += value;
-            break;
-        case STATSMODE_COMBINE_MAX:
-            if (!counts[statIdx] || cumulative[statIdx] <= value)
-                cumulative[statIdx] = value;
-            break;
-        case STATSMODE_COMBINE_MIN:
-            if (!counts[statIdx] || cumulative[statIdx] >= value)
-                cumulative[statIdx] = value;
-            break;
-        }
-        counts[statIdx] += count;
-    }
-
-    void merge(const StatsCollector &from)
-    {
-        SpinBlock b(from.lock);
-        if (from.cumulative)
-        {
-            for (unsigned i = 0; i < STATS_SIZE; i++)
-            {
-                if (from.counts[i])
-                    noteStatistic(i, from.cumulative[i], from.counts[i]);
-            }
-        }
-    }
-
-    void dumpStats(const IRoxieContextLogger &logctx) const
-    {
-        SpinBlock b(lock);
-        if (cumulative)
-        {
-            for (unsigned i = 0; i < STATS_SIZE; i++)
-            {
-                if (counts[i])
-                {
-                    StringBuffer prefix, text;
-                    logctx.getLogPrefix(prefix);
-                    text.appendf("%s - %"I64F"d (%d instances)", getStatName(i), cumulative[i], counts[i]);
-                    logctx.CTXLOGa(LOG_STATISTICS, prefix.str(), text.str());
-                }
-            }
-        }
-    }
-
-    void dumpStats(IWorkUnit *wu) const
-    {
-        SpinBlock b(lock);
-        if (cumulative)
-        {
-            for (unsigned i = 0; i < STATS_SIZE; i++)
-            {
-                if (counts[i])
-                    wu->setStatistic("roxie", "workunit", getStatShortName(i), getStatName(i), getStatMeasure(i), cumulative[i], counts[i], 0, false);
-            }
-        }
-    }
-
-    void toXML(StringBuffer &reply) const
-    {
-        SpinBlock b(lock);
-        if (cumulative)
-        {
-            for (unsigned i = 0; i < STATS_SIZE; i++)
-            {
-                if (counts[i])
-                {
-                    putStatsValue(reply, getStatName(i), getStatCombineModeName(getStatCombineMode(i)), counts[i]);
-                }
-            }
-        }
-    }
-
-    void getNodeProgressInfo(IPropertyTree &node) const
-    {
-        SpinBlock b(lock);
-        if (cumulative)
-        {
-            for (unsigned i = 0; i < STATS_SIZE; i++)
-            {
-                if (counts[i])
-                {
-                    putStatsValue(&node, getStatShortName(i), getStatCombineModeName(getStatCombineMode(i)), counts[i]);
-                }
-            }
-        }
-    }
-
-
-    void cascade(unsigned channel, const IRoxieContextLogger &logctx) const
-    {
-        SpinBlock b(lock);
-        if (cumulative)
-        {
-            for (unsigned i = 0; i < STATS_SIZE; i++)
-            {
-                if (counts[i])
-                {
-                    logctx.CTXLOGl(new LogItem(LOG_STATVALUES, channel, i, cumulative[i], counts[i]));
-                }
-            }
-        }
-    }
-
-    void reset()
-    {
-        SpinBlock b(lock);
-        if (cumulative) delete [] cumulative;
-        if (counts) delete [] counts;
-        cumulative = NULL;
-        counts = NULL;
-        aborted = false;
-    }
-
-    void requestAbort()
-    {
-        SpinBlock b(lock);
-        aborted = true;
-    }
-};
 
 class ContextLogger : public CInterface, implements IRoxieContextLogger
 {
@@ -786,30 +555,26 @@ protected:
     mutable CriticalSection crit;
     unsigned start;
     unsigned ctxTraceLevel;
-    mutable StatsCollector stats;
-    mutable ITimeReporter *timeReporter;
+    mutable CRuntimeStatisticCollection stats;
     unsigned channel;
 public: // Not very clean but I don't care
     bool intercept;
     bool blind;
+    mutable bool aborted;
     mutable CIArrayOf<LogItem> log;
 private:
     ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
     IMPLEMENT_IINTERFACE;
 
-    ContextLogger() 
+    ContextLogger() : stats(allStatistics)
     {
         ctxTraceLevel = traceLevel;
         intercept = false;
         blind = false;
-        timeReporter = createStdTimeReporter();
         start = msTick();
         channel = 0;
-    }
-    ~ContextLogger()
-    {
-        ::Release(timeReporter);
+        aborted = false;
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -821,26 +586,6 @@ public:
         }
     };
 
-    virtual void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)))
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGva(format, args);
-        va_end(args);
-    }
-    virtual void CTXLOGva(const char *format, va_list args) const
-    {
-        StringBuffer prefix, text;
-        getLogPrefix(prefix);
-        text.valist_appendf(format, args);
-        DBGLOG("[%s] %s", prefix.str(), text.str());
-        if (intercept)
-        {
-            CriticalBlock b(crit);
-            log.append(* new LogItem(LOG_TRACING, prefix, msTick() - start, channel, text));
-            flush(false, false);
-        }
-    }
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
     {
         if (category == LOG_TRACING)
@@ -851,29 +596,8 @@ public:
         {
             CriticalBlock b(crit);
             log.append(* new LogItem(category, prefix, msTick() - start, channel, text));
-            flush(false, false);
         }
     }
-    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6)))
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGaeva(E, file, line, 0, format, args);
-        va_end(args);
-    }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
-    {
-        CTXLOGaeva(E, file, line, 0, format, args);
-    }
-
-    virtual void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 6, 7)))
-    {
-        va_list args;
-        va_start(args, format);
-        CTXLOGaeva(E, file, line, prefix, format, args);
-        va_end(args);
-    }
-
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const
     {
         StringBuffer text;
@@ -893,7 +617,6 @@ public:
         {
             CriticalBlock b(crit);
             log.append(* new LogItem(LOG_ERROR, prefix, msTick() - start, channel, text));
-            flush(false, false);
         }
     }
     virtual void CTXLOGl(LogItem *logItem) const
@@ -901,7 +624,6 @@ public:
         // NOTE - we don't actually print anything to logfile here - was already printed on slave
         CriticalBlock b(crit);
         log.append(*logItem);
-        flush(false, false);
     }
 
     void setIntercept(bool _intercept)
@@ -919,18 +641,9 @@ public:
         ctxTraceLevel = _traceLevel;
     }
 
-    virtual void flush(bool closing, bool aborted) const
+    StringBuffer &getStats(StringBuffer &s) const
     {
-    }
-
-    void dumpStats() const
-    {
-        stats.dumpStats(*this);
-    }
-
-    virtual void dumpStats(IWorkUnit *wu) const
-    {
-        stats.dumpStats(wu);
+        return stats.toStr(s);
     }
 
     virtual bool isIntercepted() const
@@ -943,23 +656,29 @@ public:
         return blind;
     }
 
-    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
-        stats.noteStatistic(statCode, value, count);
+        if (aborted)
+            throw MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
+        stats.addStatistic(kind, value);
+    }
+
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    {
+        stats.merge(from);
+    }
+    virtual const CRuntimeStatisticCollection &queryStats() const
+    {
+        return stats;
     }
 
     virtual unsigned queryTraceLevel() const
     {
         return ctxTraceLevel;
     }
-    inline ITimeReporter *queryTimer() const
-    {
-        return timeReporter;
-    }
     void reset()
     {
         stats.reset();
-        timer->reset();
     }
 };
 
@@ -984,24 +703,10 @@ public:
     }
 };
 
-class SimpleContextLogger : public ContextLogger
-{
-    unsigned instanceId;
-public:
-    SimpleContextLogger(unsigned _instanceId) : instanceId(_instanceId)
-    {
-    }
-    virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
-    {
-        return ret.append(instanceId);  
-    }
-};
-
 class SlaveContextLogger : public StringContextLogger
 {
-    mutable Owned<IMessagePacker> output;
-    mutable bool anyOutput;
-    bool traceActivityTimes;
+    Owned<IMessagePacker> output;
+    mutable bool anyOutput; // messy
     bool debuggerActive;
     bool checkingHeap;
     IpAddress ip;
@@ -1010,22 +715,21 @@ public:
     SlaveContextLogger();
     SlaveContextLogger(IRoxieQueryPacket *packet);
     void set(IRoxieQueryPacket *packet);
-    virtual void flush(bool closing, bool aborted) const;
-    inline bool queryTraceActivityTimes() const { return traceActivityTimes; }
+    void putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed) const;
+    void putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const;
+    void flush();
     inline bool queryDebuggerActive() const { return debuggerActive; }
-    inline bool queryCheckingHeap() const { return checkingHeap; }
-    inline void setDebuggerActive(bool _active) { debuggerActive = _active; }
-    inline const StatsCollector &queryStats() const 
+    inline const CRuntimeStatisticCollection &queryStats() const
     {
         return stats;
-    }
-    inline void requestAbort()
-    {
-        stats.requestAbort();
     }
     inline const char *queryWuid()
     {
         return wuid.get();
+    }
+    inline void abort()
+    {
+        aborted = true;
     }
 };
 #endif

@@ -19,6 +19,8 @@
 #include "configengcallback.hpp"
 #include "deploy.hpp"
 #include "build-config.h"
+#include "jutil.hpp"
+#include "jhash.ipp"
 
 #define STANDARD_INDIR COMPONENTFILES_DIR"/configxml"
 #define STANDARD_OUTDIR RUNTIME_DIR
@@ -45,11 +47,11 @@ void usage()
   puts("          configgencomplist.xml. If not specified, the following ");
   puts("          defaults are used. ");
   puts("          For win32, 'c:\\trunk\\initfiles\\componentfiles\\configxml'");
-  puts("          For Linux, '"COMPONENTFILES_DIR"/configxml/'");
+  puts("          For Linux, '" COMPONENTFILES_DIR "/configxml/'");
   puts("   -od <output directory>: The output directory for the generated files.");
   puts("          If not specified, the following defaults are used. ");
   puts("          For win32, '.'");
-  puts("          For Linux, '"CONFIG_DIR"'");
+  puts("          For Linux, '" CONFIG_DIR "'");
   puts("   -ldapconfig : Generates a .ldaprc file and puts it in the specified");
   puts("          output directory. If output directory is not specified,");
   puts("          default output directory is used as mentioned in -od option");
@@ -323,7 +325,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
     }
 
     StringBuffer out;
-    xPath.clear().append(XML_TAG_SOFTWARE"/"XML_TAG_LDAPSERVERPROCESS);
+    xPath.clear().append(XML_TAG_SOFTWARE "/" XML_TAG_LDAPSERVERPROCESS);
     Owned<IPropertyTreeIterator> ldaps = pEnv->getElements(xPath.str());
     Owned<IPropertyTree> pSelComps(createPTree("SelectedComponents"));
     bool flag = false;
@@ -413,7 +415,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
 
     //Lookup and output all LDAPServer components
     StringBuffer out;
-    xPath.clear().append(XML_TAG_SOFTWARE"/"XML_TAG_LDAPSERVERPROCESS);
+    xPath.clear().append(XML_TAG_SOFTWARE "/" XML_TAG_LDAPSERVERPROCESS);
     Owned<IPropertyTreeIterator> ldaps = pEnv->getElements(xPath.str());
 
     ForEach(*ldaps)
@@ -427,12 +429,11 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
         //If this is ldap server name, lookup and add its IP address
         if (0==strcmp(attrs->queryName(), "@name"))
         {
-          StringBuffer sb(attrs->queryValue());
-          StringBuffer * ldapIP = ldapServers.getValue(sb);
-          if (ldapIP->str())
+          StringBuffer * ldapIP = ldapServers.getValue(attrs->queryValue());
+          if (ldapIP)
           {
             out.appendf("@ldapAddress,%s\n",ldapIP->str());
-            ldapServers.setValue(attrs->queryValue(), NULL);
+            ldapServers.remove(attrs->queryValue());//ensure this server only listed once
           }
           else
           {
@@ -535,7 +536,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   else if (listESPServices == true)
   {
       StringBuffer out;
-      Owned<IPropertyTreeIterator> espProcesses = pEnv->getElements(XML_TAG_SOFTWARE"/"XML_TAG_ESPPROCESS);
+      Owned<IPropertyTreeIterator> espProcesses = pEnv->getElements(XML_TAG_SOFTWARE "/" XML_TAG_ESPPROCESS);
 
       ForEach(*espProcesses)
       {
@@ -582,34 +583,46 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   }
   else if (listMachines)
   {
+    MapStringTo<bool> mapOfMachineIPs;
     StringBuffer out;
     Owned<IPropertyTreeIterator> computers = pEnv->getElements("Hardware/Computer");
     ForEach(*computers)
     {
       IPropertyTree* pComputer = &computers->query();
       const char *netAddress = pComputer->queryProp("@netAddress");
+
+      if (mapOfMachineIPs.getValue(netAddress) != NULL)
+      {
+          continue;
+      }
+      else
+      {
+          mapOfMachineIPs.setValue(netAddress, true);
+      }
+
       StringBuffer xpath;
       const char* name = pComputer->queryProp(XML_ATTR_NAME);
-      bool isHPCCNode = false, isSqlOrLdap = false;
+      bool isNonHPCCNode = true;
 
-      xpath.clear().appendf(XML_TAG_SOFTWARE"/*[//"XML_ATTR_COMPUTER"='%s']", name);
+      xpath.clear().appendf(XML_TAG_SOFTWARE "/*[//" XML_ATTR_COMPUTER "='%s']", name);
       Owned<IPropertyTreeIterator> it = pEnv->getElements(xpath.str());
 
       ForEach(*it)
       {
         IPropertyTree* pComponent = &it->query();
 
-        if (!strcmp(pComponent->queryName(), "MySQLProcess") ||
-            !strcmp(pComponent->queryName(), "LDAPServerProcess"))
-          isSqlOrLdap = true;
+        if (!strcmp(pComponent->queryName(), "LDAPServerProcess") ||
+            !strcmp(pComponent->queryName(), "MySQLProcess"))
+            // because if either blacklisted components are also on a machine that
+            // has a valid component, we still want to show that machine.
+            continue;
         else
-        {
-          isHPCCNode = true;
-          break;
-        }
+            // iterator is valid, and not blacklisted
+            isNonHPCCNode = false;
+            break;
       }
 
-      if (!isHPCCNode && isSqlOrLdap)
+      if (isNonHPCCNode)
         continue;
 
       out.appendf("%s,", netAddress  ? netAddress : "");
@@ -718,7 +731,7 @@ int main(int argc, char** argv)
   const char* out_filename = NULL;
   const char* compName = NULL;
   const char* compType = NULL;
-  StringBuffer ipAddr = NULL;
+  StringBuffer ipAddr;
   bool generateOutput = true;
   bool listComps = false;
   bool verbose = false;

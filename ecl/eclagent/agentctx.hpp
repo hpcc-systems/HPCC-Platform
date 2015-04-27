@@ -17,10 +17,22 @@
 #ifndef AGENTCTX_HPP_INCL
 #define AGENTCTX_HPP_INCL
 
+#include "errorlist.h"
 #include "dautils.hpp"
 #include "eclhelper.hpp"
 #include "workunit.hpp"
 #include "layouttrans.hpp"
+
+#if (ECLAGENT_ERROR_START != 5400 || ECLAGENT_ERROR_END != 5499)
+#error "ECLAGENT_ERROR_START has changed"
+#endif
+
+#define WRN_SkipMissingOptIndex             5400
+#define WRN_SkipMissingOptFile              5401
+#define WRN_UseLayoutTranslation            5402
+#define WRN_UnsupportedAlgorithm            5403
+#define WRN_MismatchGroupInfo               5404
+#define WRN_MismatchCompressInfo            5405
 
 struct IHThorGraphResult : extends IInterface
 {
@@ -91,7 +103,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const = 0;
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source) = 0;
 
-    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, bool embedded, const byte * parentExtract) = 0;
+    virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract) = 0;
     virtual bool getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * name, int seq) = 0;
     virtual IHThorGraphResults * createGraphLoopResults() = 0;
     virtual void outputFormattedResult(const char *name, unsigned sequence, bool close) = 0;

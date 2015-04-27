@@ -115,6 +115,7 @@ unsigned preabortKeyedJoinsThreshold = 100;
 unsigned preabortIndexReadsThreshold = 100;
 bool preloadOnceData;
 bool reloadRetriesFailed;
+bool selfTestMode = false;
 
 unsigned memoryStatsInterval = 0;
 memsize_t defaultMemoryLimit;
@@ -176,6 +177,7 @@ unsigned leafCacheMB = 50;
 unsigned blobCacheMB = 0;
 
 unsigned roxiePort = 0;
+Owned<IPerfMonHook> perfMonHook;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -414,7 +416,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     init_signals();
 
     // stand alone usage only, not server
-    for (unsigned i=0; i<argc; i++)
+    for (unsigned i=0; i<(unsigned)argc; i++)
     {
         if (stricmp(argv[i], "--help")==0 ||
             stricmp(argv[i], "-h")==0)
@@ -427,7 +429,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     #ifdef _USE_CPPUNIT
     if (argc>=2 && stricmp(argv[1], "-selftest")==0)
     {
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_prefix);
+        selfTestMode = true;
+        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
         CppUnit::TextUi::TestRunner runner;
         if (argc==2)
         {
@@ -529,6 +532,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
         }
         topology->getProp("@name", roxieName);
+        if (roxieName.length())
+            setStatisticsComponentName(SCTroxie, roxieName, true);
+        else
+            setStatisticsComponentName(SCTroxie, "roxie", true);
+
         Owned<const IQueryDll> standAloneDll;
         if (globals->hasProp("--loadWorkunit"))
         {
@@ -750,9 +758,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         socketCheckInterval = topology->getPropInt("@socketCheckInterval", 5000);
         memsize_t totalMemoryLimit = (memsize_t) topology->getPropInt64("@totalMemoryLimit", 0);
         bool allowHugePages = topology->getPropBool("@heapUseHugePages", false);
+        bool allowTransparentHugePages = topology->getPropBool("@heapUseTransparentHugePages", true);
+        bool retainMemory = topology->getPropBool("@heapRetainMemory", false);
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000;  // 1 Gb;
-        roxiemem::setTotalMemoryLimit(allowHugePages, totalMemoryLimit, 0, NULL);
+        roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
@@ -822,8 +832,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             roxiemem::setDataAlignmentSize(0x400);
         }
         unsigned pinterval = topology->getPropInt("@systemMonitorInterval",1000*60);
+        perfMonHook.setown(roxiemem::createRoxieMemStatsPerfMonHook());  // Note - we create even if pinterval is 0, as can be enabled via control message
         if (pinterval)
-            startPerformanceMonitor(pinterval);
+            startPerformanceMonitor(pinterval, PerfMonStandard, perfMonHook);
 
 
         topology->getProp("@pluginDirectory", pluginDirectory);
@@ -888,17 +899,17 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         {
             numChannels = numNodes;
             unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 1);
-            for (int i=0; i<numNodes; i++)
+            for (unsigned i=0; i<numNodes; i++)
             {
                 // Note this code is a little confusing - easy to get the cyclic offset backwards
                 // cyclic offset means node n+offset has copy 2 for channel n, so node n has copy 2 for channel n-offset
-                int channel = i+1;
-                for (int copy=0; copy<numDataCopies; copy++)
+                int channel = (int)i+1;
+                for (unsigned copy=0; copy<numDataCopies; copy++)
                 {
                     if (channel < 1)
                         channel = channel + numNodes;
                     addChannel(i, channel, copy);
-                    channel = channel - cyclicOffset;
+                    channel -= cyclicOffset;
                 }
             }
         }
@@ -907,10 +918,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!channelsPerNode)
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channelsPerNode should be > 0");
             numChannels = numNodes * channelsPerNode;
-            for (int i=0; i<numNodes; i++)
+            for (unsigned i=0; i<numNodes; i++)
             {
-                int channel = i+1;
-                for (int copy=0; copy<channelsPerNode; copy++)
+                int channel = (int)(i+1);
+                for (unsigned copy=0; copy<channelsPerNode; copy++)
                 {
                     addChannel(i, channel, copy);
                     channel += numNodes;
@@ -923,11 +934,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not an integer");
             numChannels = numNodes / numDataCopies;
             int channel = 1;
-            for (int i=0; i<numNodes; i++)
+            for (unsigned i=0; i<numNodes; i++)
             {
                 addChannel(i, channel, 0);
                 channel++;
-                if (channel > numChannels)
+                if ((unsigned)channel > numChannels)
                     channel = 1;
             }
         }
@@ -1071,6 +1082,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     releaseRoxieStateCache();
     setDaliServixSocketCaching(false);  // make sure it cleans up or you get bogus memleak reports
     setNodeCaching(false); // ditto
+    perfMonHook.clear();
     strdup("Make sure leak checking is working");
     UseSysLogForOperatorMessages(false);
     ExitModuleObjects();

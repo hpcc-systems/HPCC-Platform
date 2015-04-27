@@ -26,6 +26,7 @@
   <xsl:variable name="isArchived" select="WUInfoResponse/Workunit/Archived"/>
   <xsl:variable name="havesubgraphtimings" select="WUInfoResponse/Workunit/HaveSubGraphTimings"/>
   <xsl:variable name="thorSlaveIP" select="WUInfoResponse/ThorSlaveIP"/>
+  <xsl:variable name="SecMethod" select="WUInfoResponse/SecMethod"/>
   <xsl:include href="/esp/xslt/lib.xslt"/>
   <xsl:include href="/esp/xslt/wuidcommon.xslt"/>
 
@@ -88,7 +89,7 @@
                 if (parentSectionDiv)
                 {
                   parentSectionDiv.innerHTML = '<span class="loading">&nbsp;&nbsp;Workunit has no ' + Section + '.</span>';
-                  if (Section == 'Exceptions' || Section == 'Warnings' || Section == 'Info')
+                  if (Section == 'Exceptions' || Section == 'Warnings' || Section == 'Info' || Section == 'Alert')
                   {
                     parentSectionDiv.style.display = 'none';
                     parentSectionDiv.style.visibility = 'hidden';
@@ -115,6 +116,7 @@
                   {
                     updateSection('Warnings');
                     updateSection('Info');
+                    updateSection('Alert');
                   }
                 }
               }

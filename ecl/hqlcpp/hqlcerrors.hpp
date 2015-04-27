@@ -211,6 +211,10 @@
 #define HQLERR_UserCodeNotAllowed               4191
 #define HQLERR_StreamInputUsedDirectly          4192
 #define HQLERR_MaxlengthExceedsLimit            4193
+#define HQLERR_CouldNotGenerateDefault          4194
+#define HQLERR_DistributionVariableLengthX      4195
+#define HQLERR_DistributionUnsupportedTypeXX    4196
+#define HQLERR_InconsistentEmbedded             4197
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -256,6 +260,8 @@
 #define HQLWRN_AmbiguousRollupNoGroup           4542
 #define HQLWRN_GlobalActionDependendOnScope     4543
 #define HQLWRN_NoThorContextDependent           4544
+#define HQLWRN_OnlyLocalMergeJoin               4545
+#define HQLWRN_WorkflowDependParameter          4546
 
 //Temporary errors
 #define HQLERR_OrderOnVarlengthStrings          4601
@@ -307,6 +313,7 @@
 #define HQLERR_DependencyWithinGraph            4836
 #define HQLERR_UnknownCompoundAssign            4837
 #define HQLERR_ReadSpillBeforeWriteFix          4838
+#define HQLERR_AccessUnavailableGraph           4839
 //#define HQLERR_Max                            4999
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
@@ -531,6 +538,12 @@
 #define HQLWRN_AmbiguousRollupNoGroup_Text      "ROLLUP condition - no fields are preserved in the transform - not converted to GROUPed ROLLUP"
 #define HQLWRN_GlobalActionDependendOnScope_Text "Global action appears to be context dependent - this may cause a dataset not active error"
 #define HQLWRN_NoThorContextDependent_Text      "NOTHOR expression%s appears to access a parent dataset - this may cause a dataset not active error"
+#define HQLWRN_OnlyLocalMergeJoin_Text          "Only LOCAL versions of %s are currently supported on THOR"
+#define HQLWRN_WorkflowDependParameter_Text     "Workflow action %s appears to be dependent upon a parameter"
+
+#define HQLERR_DistributionVariableLengthX_Text "DISTRIBUTION does not support variable length field '%s'"
+#define HQLERR_DistributionUnsupportedTypeXX_Text "DISTRIBUTION does not support field '%s' with type %s"
+#define HQLERR_InconsistentEmbedded_Text        "Field '%s' is specified as embedded but child record requires link counting"
 
 #define HQLERR_OrderOnVarlengthStrings_Text     "Rank/Ranked not supported on variable length strings"
 #define HQLERR_DistributionNoSequence_Text      "DISTRIBUTION() only supported at the outer level"
@@ -580,10 +593,12 @@
 #define HQLERR_DependencyWithinGraph_Text       "INTERNAL: Dependency within a graph incorrectly generated for hThor (%u)"
 #define HQLERR_UnknownCompoundAssign_Text       "INTERNAL: Unrecognised compound assign %s"
 #define HQLERR_ReadSpillBeforeWriteFix_Text     "INTERNAL: Attempt to read spill file %s before it is written.  Try adding #option ('allowThroughSpill', false); to the query."
+#define HQLERR_CouldNotGenerateDefault_Text     "INTERNAL: Could not generate default value for field %s"
+#define HQLERR_AccessUnavailableGraph_Text      "INTERNAL: Attempt to access result from unavailable graph (%s)"
 
-#define WARNINGAT(cat, e, x)                 reportWarning(cat, e, x, x##_Text)
-#define WARNINGAT1(cat, e, x, a)             reportWarning(cat, e, x, x##_Text, a)
-#define WARNINGAT2(cat, e, x, a, b)          reportWarning(cat, e, x, x##_Text, a, b)
-#define WARNINGAT3(cat, e, x, a, b, c)       reportWarning(cat, e, x, x##_Text, a, b, c)
+#define WARNINGAT(cat, e, x)                 reportWarning(cat, SeverityUnknown, e, x, x##_Text)
+#define WARNINGAT1(cat, e, x, a)             reportWarning(cat, SeverityUnknown, e, x, x##_Text, a)
+#define WARNINGAT2(cat, e, x, a, b)          reportWarning(cat, SeverityUnknown, e, x, x##_Text, a, b)
+#define WARNINGAT3(cat, e, x, a, b, c)       reportWarning(cat, SeverityUnknown, e, x, x##_Text, a, b, c)
 
 #endif

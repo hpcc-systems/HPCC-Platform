@@ -60,7 +60,7 @@ public:
     }
     void start()
     {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
+        ActivityTimer s(totalCycles, timeActivities);
         resultSent = container.queryLocal(); // i.e. local, so don't send result to master
         eos = stopped = anyThisGroup = eogNext = false;
         input = inputs.item(0);
@@ -100,7 +100,7 @@ public:
     
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eos)
             return NULL;
         while (!abortSoon && !eogNext)
@@ -142,7 +142,7 @@ public:
     }
     const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         OwnedConstThorRow ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
@@ -211,7 +211,7 @@ class CSkipLimitSlaveActivity : public CLimitSlaveActivityBase
 
             // We used to warn if excessive buffering. I think there should be callback to signal,
             // Alternatively, could do via IDiskUsage whish smart buffer used to take...
-            //throw MakeActivityException(this, 0, "SkipLimit(%"ACTPF"d) exceeded activity buffering limit", container.queryId());
+            //throw MakeActivityException(this, 0, "SkipLimit(%" ACTPF "d) exceeded activity buffering limit", container.queryId());
         }
         buf->flush();
         stopInput(count);
@@ -261,7 +261,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
+        ActivityTimer t(totalCycles, timeActivities);
         if (eof) 
             return NULL;
         if (!limitChecked)

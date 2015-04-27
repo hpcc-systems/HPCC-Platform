@@ -380,6 +380,8 @@ public:
         cmdLine.set("eclcc -E");
         if (cmd.optLegacy)
             cmdLine.append(" -legacy");
+        if (cmd.optDebug)
+            cmdLine.append(" -g");
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
         appendOptPath(cmdLine, 'L', cmd.optLibPath.str());
         if (cmd.optAttributePath.length())
@@ -409,6 +411,20 @@ public:
                 if (value)
                     cmdLine.append('=').append(value);
             }
+        }
+        if (cmd.definitions.length())
+        {
+            ForEachItemIn(i, cmd.definitions)
+            {
+                IEspNamedValue &item = cmd.definitions.item(i);
+                const char *name = item.getName();
+                const char *value = item.getValue();
+                cmdLine.append(" \"-D").append(name);
+                if (value)
+                    cmdLine.append('=').append(value);
+                cmdLine.append("\"");
+            }
+            cmd.definitions.kill();
         }
         if ((int)cmd.optResultLimit > 0)
         {
@@ -556,6 +572,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     }
     if (matchVariableOption(iter, 'f', debugValues))
         return EclCmdOptionMatch;
+    if (matchVariableOption(iter, 'D', definitions))
+        return EclCmdOptionMatch;
     if (iter.matchPathFlag(optLibPath, ECLOPT_LIB_PATH_S))
         return EclCmdOptionMatch;
     if (iter.matchPathFlag(optImpPath, ECLOPT_IMP_PATH_S))
@@ -569,6 +587,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchFlag(optNoArchive, ECLOPT_ECL_ONLY))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optLegacy, ECLOPT_LEGACY) || iter.matchFlag(optLegacy, ECLOPT_LEGACY_DASH))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optDebug, ECLOPT_DEBUG) || iter.matchFlag(optDebug, ECLOPT_DEBUG_DASH))
         return EclCmdOptionMatch;
     if (iter.matchOption(optResultLimit, ECLOPT_RESULT_LIMIT))
         return EclCmdOptionMatch;

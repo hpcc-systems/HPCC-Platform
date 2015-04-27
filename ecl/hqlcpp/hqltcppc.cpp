@@ -262,6 +262,11 @@ void CMemberInfo::calcCachedSize(const SizeStruct & offset, SizeStruct & sizeSel
 }
 
 
+bool CMemberInfo::checkCompatibleIfBlock(HqlExprCopyArray & conditions)
+{
+    return false;
+}
+
 StringBuffer & CMemberInfo::expandSelectPathText(StringBuffer & out, bool isLast) const
 {
     bool isField = (column->getOperator() == no_field);
@@ -300,14 +305,27 @@ void CContainerInfo::calcAllCachedOffsets()
     }
 }
 
-void CContainerInfo::calcCachedChildrenOffsets(SizeStruct & offset, SizeStruct & sizeSelf)
+void CContainerInfo::calcCachedChildrenOffsets(const SizeStruct & startOffset, SizeStruct & sizeSelf)
 {
+    //Optimize one special case of ifblocks.
+    //Sometimes you have a header with some fields, followed by a set of mutually exlusive ifblocks.
+    //Spot any trailing mutually exclusive ifblocks and don't update
+    HqlExprCopyArray conditions;
+    unsigned maxOffsetUpdate = children.ordinality();
+    while (maxOffsetUpdate > 0)
+    {
+        CMemberInfo & cur = children.item(maxOffsetUpdate-1);
+        if (!cur.checkCompatibleIfBlock(conditions))
+            break;
+        maxOffsetUpdate--;
+    }
+
+    SizeStruct offset(startOffset);
     ForEachItemIn(idx, children)
     {
         CMemberInfo & cur = children.item(idx);
 
         SizeStruct sizeChild(offset.querySelf());
-        SizeStruct maxSizeChild(offset.querySelf());
 
         cur.calcCachedOffsets(offset, sizeChild);
         if (offset.isWorthCommoning())
@@ -316,7 +334,8 @@ void CContainerInfo::calcCachedChildrenOffsets(SizeStruct & offset, SizeStruct &
             offset.forceToTemp(no_offsetof, child);
         }
         sizeSelf.add(sizeChild);
-        offset.add(sizeChild);
+        if (idx < maxOffsetUpdate)
+            offset.add(sizeChild);
     }
 }
 
@@ -370,8 +389,7 @@ unsigned CContainerInfo::getTotalMinimumSize()
 
 void CIfBlockInfo::calcCachedSize(const SizeStruct & offset, SizeStruct & sizeSelf)
 {
-    SizeStruct childOffset(offset);
-    calcCachedChildrenOffsets(childOffset, cachedSize);
+    calcCachedChildrenOffsets(offset, cachedSize);
 
     if (cachedSize.isFixedSize())
         sizeSelf.set(cachedSize);
@@ -381,6 +399,17 @@ void CIfBlockInfo::calcCachedSize(const SizeStruct & offset, SizeStruct & sizeSe
 //      if (alwaysPresent)
 //          sizeSelf.addFixed(cachedSize.getFixedSize());
     }
+}
+
+bool CIfBlockInfo::checkCompatibleIfBlock(HqlExprCopyArray & conditions)
+{
+    ForEachItemIn(i, conditions)
+    {
+        if (!areExclusiveConditions(condition, &conditions.item(i)))
+            return false;
+    }
+    conditions.append(*condition);
+    return true;
 }
 
 unsigned CIfBlockInfo::getTotalFixedSize()
@@ -401,8 +430,7 @@ void CBitfieldContainerInfo::calcCachedSize(const SizeStruct & offset, SizeStruc
     sizeSelf.set(cachedSize);
 
     SizeStruct sizeBitfields(sizeSelf.querySelf());
-    SizeStruct offsetBitfields(offset);
-    calcCachedChildrenOffsets(offsetBitfields, sizeBitfields);
+    calcCachedChildrenOffsets(offset, sizeBitfields);
     assertex(sizeBitfields.isFixedSize() && sizeBitfields.getFixedSize() == 0);
 }
 
@@ -1163,8 +1191,13 @@ void CIfBlockInfo::buildExpr(HqlCppTranslator & translator, BuildCtx & ctx, IRef
 void CIfBlockInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     //MORE: This should really associate offset of the ifblock with the offset of its first child as well.
-    CHqlBoundExpr boundSize;
-    buildOffset(translator, ctx, selector, boundSize);
+    CHqlBoundExpr boundOffset;
+    buildOffset(translator, ctx, selector, boundOffset);
+
+    //NB: Sizeof(ifblock) has an unusual representation...
+    OwnedHqlExpr sizeOfIfBlock = createValue(no_sizeof, makeIntType(4,false), createSelectExpr(LINK(selector->queryExpr()), LINK(column)));
+    CHqlBoundTarget cachedSize;
+    cachedSize.expr.setown(ctx.getTempDeclare(sizetType, queryZero()));
 
     //MORE: Should also conditionally set a variable to the size of the ifblock to simplify subsequent generated code
     OwnedHqlExpr cond = selector->queryRootRow()->bindToRow(condition, queryRootSelf());
@@ -1176,6 +1209,11 @@ void CIfBlockInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ct
     //MORE: This test could be avoided if the first child is *actually* variable length
     ensureTargetAvailable(translator, condctx, selector, CContainerInfo::getTotalMinimumSize());
     CContainerInfo::buildDeserialize(translator, condctx, selector, helper, serializeForm);
+
+    //Avoid recalculating the size outside of the ifblock()
+    translator.buildExprAssign(condctx, cachedSize, sizeOfIfBlock);
+
+    ctx.associateExpr(sizeOfIfBlock, cachedSize.expr);
 }
 
 void CIfBlockInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)

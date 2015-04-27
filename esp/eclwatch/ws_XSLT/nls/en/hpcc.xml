@@ -110,6 +110,7 @@
 <st id='Refresh'>Refresh</st>
 <st id='Rows'>rows</st>
 <st id='RoxieServer'>Roxie Server</st>
+<st id='RoxieState'>Roxie State</st>
 <st id='SashaServers'>Sasha Servers</st>
 <st id='SchedulerProcess'>Scheduler Process</st>
 <st id='SecurityString'>Security String</st>
