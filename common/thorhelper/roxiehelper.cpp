@@ -524,6 +524,17 @@ bool CSafeSocket::readBlock(MemoryBuffer &ret, unsigned timeout, unsigned maxBlo
     }
 }
 
+int readHttpHeaderLine(IBufferedSocket *linereader, char *headerline, unsigned maxlen)
+{
+    Owned<IMultiException> me = makeMultiException("roxie");
+    int bytesread = linereader->readline(headerline, maxlen, true, me);
+    if (me->ordinality())
+        throw me.getClear();
+    if(bytesread <= 0 || bytesread > maxlen)
+        throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Bad Request");
+    return bytesread;
+}
+
 bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &continuationNeeded, bool &isStatus, unsigned maxBlockSize)
 {
     continuationNeeded = false;
@@ -595,25 +606,22 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         }
         else if (pHttpHelper != NULL && strncmp((char *)&len, "GET", 3) == 0)
         {
-#define MAX_HTTP_GET_HEADERSIZE 16000
-            pHttpHelper->setIsHttp(true);
-            char header[MAX_HTTP_GET_HEADERSIZE + 1]; // allow room for \0
-            sock->read(header, 1, MAX_HTTP_GET_HEADERSIZE, bytesRead, timeout);
-            header[bytesRead] = 0;
-            char *payload = strstr(header, "\r\n\r\n");
-            if (payload)
-            {
-                *payload = 0;
-                payload += 4;
-                char *str;
-
-                pHttpHelper->parseHTTPRequestLine(header);
-
-                // capture authentication token
-                if ((str = strstr(header, "Authorization: Basic ")) != NULL)
-                    pHttpHelper->setAuthToken(str+21);
-
+#define MAX_HTTP_GET_LINE 16000 //arbitrary per line limit, most web servers are lower, but urls for queries can be complex..
                 pHttpHelper->setIsHttp(true);
+                char headerline[MAX_HTTP_GET_LINE + 1];
+                Owned<IBufferedSocket> linereader = createBufferedSocket(sock);
+
+                int bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                pHttpHelper->parseHTTPRequestLine(headerline);
+
+                bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                while(bytesread >= 0 && *headerline && *headerline!='\r')
+                {
+                    // capture authentication token
+                    if (!strnicmp(headerline, "Authorization: Basic ", 21))
+                        pHttpHelper->setAuthToken(headerline+21);
+                    bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                }
 
                 StringBuffer queryName;
                 const char *target = pHttpHelper->queryTarget();
@@ -632,9 +640,6 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 else
                     toXML(req, ret);
                 return true;
-            }
-            else
-                throw MakeStringException(THORHELPER_DATA_ERROR, "Badly formed HTTP GET");
         }
         else if (strnicmp((char *)&len, "STAT", 4) == 0)
             isStatus = true;
