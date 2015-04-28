@@ -1781,7 +1781,7 @@ readAnother:
                 if (isHTTP)
                 {
                     Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception");
-                    sendHttpException(*client, httpHelper.queryContentFormat(), E, queryName);
+                    client->checkSendHttpException(httpHelper, E, queryName);
                 }
                 else
                     client->sendException("Roxie", ROXIE_INTERNAL_ERROR, "Unknown exception", isBlocked, logctx);
