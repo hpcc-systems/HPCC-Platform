@@ -118,6 +118,7 @@ enum DFUsortfield
     DFUsf_pcdone,
     DFUsf_wuidhigh,         // only for filter high of range
     DFUsf_protected,
+    DFUsf_wildwuid,
     DFUsf_term = 0,
     DFUsf_reverse = 0x100,  // for sort
     DFUsf_nocase  = 0x200,  // sort and filter
