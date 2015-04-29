@@ -1991,7 +1991,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
 
     IHqlExpression * spillReason = tableExpr ? queryAttributeChild(tableExpr, _spillReason_Atom, 0) : NULL;
 
-    if (spillReason)
+    if (spillReason && !translator.queryOptions().obfuscateOutput)
     {
         StringBuffer text;
         getStringValue(text, spillReason);

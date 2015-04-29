@@ -399,8 +399,11 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                     SCMStringBuffer jobname;
                     if (embeddedWU->getJobName(jobname).length()) //let ECL win naming job during initial compile
                         workunit->setJobName(jobname.str());
-                    Owned<IWUQuery> query = workunit->updateQuery();
-                    query->setQueryText(eclQuery.s.str());
+                    if (!workunit->getDebugValueBool("obfuscateOutput", false))
+                    {
+                        Owned<IWUQuery> query = workunit->updateQuery();
+                        query->setQueryText(eclQuery.s.str());
+                    }
                 }
 
                 createUNCFilename(realdllfilename.str(), dllurl);

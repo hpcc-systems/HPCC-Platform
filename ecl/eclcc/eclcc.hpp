@@ -114,6 +114,7 @@ const char * const helpText[] = {
     "?!  -fmaxCompileThreads     Number of compiler instances to compile the c++",
     "?!  -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
     "?!  -fpickBestEngine        Allow simple thor queries to be passed to thor",
+    "?!  -fobfuscateOutput       Remove details of the original ECL from output",
     "?!  -freportCppWarnings     Report warnings from c++ compilation",
     "?!  -fsaveCpp -fsaveCppTempFiles  Retain the generated c++ files",
     "?!  -fshowActivitySizeInGraph  Show estimates of generated c++ size in the graph",
