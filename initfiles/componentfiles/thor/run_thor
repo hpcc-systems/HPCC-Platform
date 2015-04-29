@@ -92,6 +92,7 @@ while [ 1 ]; do
         fi
     else
         echo failed to start thormaster$LCR, pausing for 30 seconds
+        $deploydir/stop_thor $deploydir
         sleep 30
     fi
     if [ ! -e $SENTINEL ]; then
