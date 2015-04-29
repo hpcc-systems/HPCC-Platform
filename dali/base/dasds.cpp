@@ -4469,6 +4469,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 if (queryTransactionLogging())
                     transactionLog.log("xpath='%s'", xpath.get());
                 mb.clear();
+                CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 Owned<IPropertyTree> matchTree = SDSManager->getXPaths(serverId, xpath, DAMP_SDSCMD_GETXPATHSPLUSIDS==action);
                 if (matchTree)
                 {
@@ -4499,6 +4500,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                         ascending?"true":"false", from, limit);
                 }
                 mb.clear();
+                CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 Owned<IPropertyTree> matchTree = SDSManager->getXPathsSortLimitMatchTree(xpath, matchXPath, sortBy, caseinsensitive, ascending, from, limit);
                 if (matchTree)
                 {
