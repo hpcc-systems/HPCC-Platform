@@ -3371,6 +3371,54 @@ bool isRunning(IConstWorkUnit &cw)
     }
 }
 
+void CWsWorkunitsEx::readGraph(IEspContext& context, const char* subGraphId, WUGraphIDType& id, bool running,
+    IConstWUGraph* graph, IArrayOf<IEspECLGraphEx>& graphs)
+{
+    SCMStringBuffer name, label, type;
+    graph->getName(name);
+    graph->getLabel(label);
+    graph->getTypeName(type);
+
+    Owned<IEspECLGraphEx> g = createECLGraphEx("","");
+    g->setName(name.str());
+    g->setLabel(label.str());
+    g->setType(type.str());
+
+    WUGraphState graphState = graph->getState();
+    if (running && (WUGraphRunning == graphState))
+    {
+        g->setRunning(true);
+        g->setRunningId(id);
+    }
+    else if (context.getClientVersion() > 1.20)
+    {
+        if (WUGraphComplete == graphState)
+            g->setComplete(true);
+        else if (WUGraphFailed == graphState)
+            g->setFailed(true);
+    }
+
+    Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true);
+
+    // New functionality, if a subgraph id is specified and we only want to load the xgmml for that subgraph
+    // then we need to conditionally pull a propertytree from the xgmml graph one and use that for the xgmml.
+
+    //JCSMORE this should be part of the API and therefore allow *only* the subtree to be pulled from the backend.
+
+    StringBuffer xml;
+    if (notEmpty(subGraphId))
+    {
+        VStringBuffer xpath("//node[@id='%s']", subGraphId);
+        toXML(xgmml->queryPropTree(xpath.str()), xml);
+    }
+    else
+        toXML(xgmml, xml);
+
+    g->setGraph(xml.str());
+
+    graphs.append(*g.getClear());
+}
+
 bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& req, IEspWUGetGraphResponse& resp)
 {
     try
@@ -3389,65 +3437,16 @@ bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& r
         bool running = (isRunning(*cw) && cw->getRunningGraph(runningGraph,id));
 
         IArrayOf<IEspECLGraphEx> graphs;
-
-        Owned<IConstWUGraphIterator> it;
-        IConstWUGraph *graph = NULL;
         if (isEmpty(req.getGraphName())) // JCS->GS - is this really required??
         {
-            it.setown(&cw->getGraphs(GraphTypeAny));
-            if (it->first())
-                graph = &it->query();
+            Owned<IConstWUGraphIterator> it = &cw->getGraphs(GraphTypeAny);
+            ForEach(*it)
+                readGraph(context, req.getSubGraphId(), id, running, &it->query(), graphs);
         }
         else
-            graph = cw->getGraph(req.getGraphName());
-        while (graph)
         {
-            SCMStringBuffer name, label, type;
-            graph->getName(name);
-            graph->getLabel(label);
-            graph->getTypeName(type);
-
-            Owned<IEspECLGraphEx> g = createECLGraphEx("","");
-            g->setName(name.str());
-            g->setLabel(label.str());
-            g->setType(type.str());
-            WUGraphState graphState = graph->getState();
-
-            if (running && (WUGraphRunning == graphState))
-            {
-                g->setRunning(true);
-                g->setRunningId(id);
-            }
-            else if (context.getClientVersion() > 1.20)
-            {
-                if (WUGraphComplete == graphState)
-                    g->setComplete(true);
-                else if (WUGraphFailed == graphState)
-                    g->setFailed(true);
-            }
-
-            Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true);
-
-            // New functionality, if a subgraph id is specified and we only want to load the xgmml for that subgraph
-            // then we need to conditionally pull a propertytree from the xgmml graph one and use that for the xgmml.
-
-            //JCSMORE this should be part of the API and therefore allow *only* the subtree to be pulled from the backend.
-
-            StringBuffer xml;
-            if (notEmpty(req.getSubGraphId()))
-            {
-                VStringBuffer xpath("//node[@id='%s']", req.getSubGraphId());
-                toXML(xgmml->queryPropTree(xpath.str()), xml);
-            }
-            else
-                toXML(xgmml, xml);
-
-            g->setGraph(xml.str());
-
-            graphs.append(*g.getClear());
-            if (!it || !it->next())
-                break;
-            graph = &it->query();
+            Owned<IConstWUGraph> graph = cw->getGraph(req.getGraphName());
+            readGraph(context, req.getSubGraphId(), id, running, graph, graphs);
         }
         resp.setGraphs(graphs);
     }
