@@ -1767,7 +1767,7 @@ readAnother:
             }
             else
             {
-                fprintf(stderr, "EXCEPTION: %s", error.str());
+                fprintf(stderr, "EXCEPTION: %s\n", error.str());
             }
             E->Release();
         }
