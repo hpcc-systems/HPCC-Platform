@@ -229,6 +229,7 @@ extern HQL_API IAtom * keyedAtom;
 extern HQL_API IAtom * labeledAtom;
 extern HQL_API IAtom * languageAtom;
 extern HQL_API IAtom * lastAtom;
+extern HQL_API IAtom * _lazy_Atom;
 extern HQL_API IAtom * leftAtom;
 extern HQL_API IAtom * leftonlyAtom;
 extern HQL_API IAtom * leftouterAtom;

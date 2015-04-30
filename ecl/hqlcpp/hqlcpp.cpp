@@ -1761,6 +1761,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.showEclInGraph,"showEclInGraph",true),
         DebugOption(options.optimizeSortAllFields,"optimizeSortAllFields",true),
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
+        DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
     };
 
     //get options values from workunit
