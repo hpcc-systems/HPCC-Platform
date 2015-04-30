@@ -760,6 +760,8 @@ int CDfuPlusHelper::copy()
     }
     if(globals->hasProp("compress"))
         req->setCompress(globals->getPropBool("compress", false));
+    if(globals->hasProp("preserveCompression"))
+        req->setPreserveCompression(globals->getPropBool("preserveCompression", true));
     if(globals->hasProp("encrypt"))
         req->setEncrypt(globals->queryProp("encrypt"));
     if(globals->hasProp("decrypt"))

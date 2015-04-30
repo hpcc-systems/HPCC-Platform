@@ -82,10 +82,9 @@ ESPStruct [nil_remove] DFUWorkunit
     string decrypt;
 
     [min_ver("1.08")] bool failIfNoSourceFile(false);
-
     [min_ver("1.09")] bool recordStructurePresent(false);
-
     [min_ver("1.10")] bool quotedTerminator(true);
+    [min_ver("1.12")] bool preserveCompression(true);
 };
 
 ESPStruct [nil_remove] GroupNode
@@ -455,6 +454,7 @@ ESPrequest [nil_remove] Copy
     string encrypt;
     string decrypt;
 
+    [min_ver("1.12")] bool preserveCompression(true);
 };
 
 ESPresponse [exceptions_inline] 
@@ -629,7 +629,7 @@ ESPresponse [exceptions_inline, nil_remove] GetSprayTargetsResponse
 };
 
 ESPservice [
-    version("1.11"),
+    version("1.12"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;
