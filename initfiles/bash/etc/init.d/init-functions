@@ -169,22 +169,32 @@ log_use_fancy_output () {
 }
 
 log_success_msg () {
-    status="[  OK  ]"
+    status="[   OK    ]"
     args="$*"
     if [ "$args" != "" ]; then
         printf "\E[32m %s \n%s \033[0m \n" "${status}"  "$args "
     else
-        printf "\E[32m %s  \033[0m \n" "${status}" 
+        printf "\E[32m %s  \033[0m \n" "${status}"
     fi
-}   
+}
 
 log_failure_msg () {
-    status="[FAILED]"
+    status="[ FAILED  ]"
     args="$*"
     if [ "$args" != "" ]; then
         printf "\E[31m %s \n%s \033[0m \n" "${status}"  "$args "
     else
-        printf "\E[31m %s  \033[0m \n" "${status}"  
+        printf "\E[31m %s  \033[0m \n" "${status}"
+    fi
+}
+
+log_timeout_msg () {
+    status="[ TIMEOUT ]"
+    args="$*"
+    if [ "$args" != "" ]; then
+        printf "\E[33m %s \n%s \033[0m \n" "${status}" "$args "
+    else
+        printf "\E[33m %s \033[0m \n" "${status}"
     fi
 }
 
