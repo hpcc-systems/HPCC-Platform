@@ -57,6 +57,8 @@ ESPStruct DFULogicalFile
     [min_ver("1.22")] bool IsCompressed;
     [min_ver("1.24")] string ContentType;
     [min_ver("1.22")] int64 CompressedFileSize;
+    [min_ver("1.30")] string SuperOwners;
+    [min_ver("1.30")] bool Persistent;
 };
 
 ESPStruct DFUPart
@@ -169,6 +171,7 @@ ESPrequest [nil_remove] DFUQueryRequest
 
     bool OneLevelDirFileReturn(false);
     [min_ver("1.24")] int64 CacheHint;
+    [min_ver("1.30")] bool IncludeSuperOwner;
 };
 
 ESPresponse 
@@ -679,7 +682,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.29"),
+    version("1.30"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
