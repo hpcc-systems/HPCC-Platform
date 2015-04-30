@@ -2385,15 +2385,25 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     }
 }
 
-void openSaveFile(IEspContext &context, int opt, const char* filename, const char* origMimeType, MemoryBuffer& buf, IEspWULogFileResponse &resp)
+void checkFileSizeLimit(unsigned long xmlSize, unsigned long sizeLimit)
+{
+    if ((sizeLimit > 0) && (xmlSize > sizeLimit))
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,
+            "The file size (%ld bytes) exceeds the size limit (%ld bytes). You may set 'Option > 1' or use 'Download_XML' link to get compressed file.",
+            xmlSize, sizeLimit);
+}
+
+void openSaveFile(IEspContext &context, int opt, __int64 sizeLimit, const char* filename, const char* origMimeType, MemoryBuffer& buf, IEspWULogFileResponse &resp)
 {
     if (opt < 1)
     {
+        checkFileSizeLimit(buf.length(), sizeLimit);
         resp.setThefile(buf);
         resp.setThefile_mimetype(origMimeType);
     }
     else if (opt < 2)
     {
+        checkFileSizeLimit(buf.length(), sizeLimit);
         StringBuffer headerStr("attachment;");
         if (filename && *filename)
         {
@@ -2509,12 +2519,12 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             if (strieq(File_ArchiveQuery, req.getType()))
             {
                 winfo.getWorkunitArchiveQuery(mb);
-                openSaveFile(context, opt, "ArchiveQuery.xml", HTTP_TYPE_APPLICATION_XML, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "ArchiveQuery.xml", HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
             else if (strieq(File_Cpp,req.getType()) && notEmpty(req.getName()))
             {
                 winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb, opt > 0);
-                openSaveFile(context, opt, req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_DLL,req.getType()))
             {
@@ -2522,17 +2532,17 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 winfo.getWorkunitDll(name, mb);
                 resp.setFileName(name.str());
                 resp.setDaliServer(daliServers.get());
-                openSaveFile(context, opt, req.getName(), HTTP_TYPE_OCTET_STREAM, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_OCTET_STREAM, mb, resp);
             }
             else if (strieq(File_Res,req.getType()))
             {
                 winfo.getWorkunitResTxt(mb);
-                openSaveFile(context, opt, "res.txt", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "res.txt", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
                 winfo.getWorkunitThorLog(req.getName(), mb);
-                openSaveFile(context, opt, "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
@@ -2540,12 +2550,12 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 getConfigurationDirectory(directories, "log", "thor", req.getProcess(), logDir);
 
                 winfo.getWorkunitThorSlaveLog(req.getClusterGroup(), req.getIPAddress(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, false);
-                openSaveFile(context, opt, "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
                 winfo.getWorkunitEclAgentLog(req.getName(), req.getProcess(), mb);
-                openSaveFile(context, opt, "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
             {
@@ -2557,7 +2567,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                     ptr = name;
 
                 winfo.getWorkunitAssociatedXml(name, req.getIPAddress(), req.getPlainText(), req.getDescription(), opt > 0, mb);
-                openSaveFile(context, opt, ptr, HTTP_TYPE_APPLICATION_XML, mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), ptr, HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) || strieq(File_WUECL,req.getType()))
             {
@@ -2585,7 +2595,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                         mimeType.set(HTTP_TYPE_APPLICATION_XML);
                     }
                 }
-                openSaveFile(context, opt, fileName.str(), mimeType.str(), mb, resp);
+                openSaveFile(context, opt, req.getSizeLimit(), fileName.str(), mimeType.str(), mb, resp);
             }
         }
     }
