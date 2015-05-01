@@ -41,10 +41,9 @@ static const char * queryXPath(const RtlFieldInfo * field)
 
 static const char * queryScalarXPath(const RtlFieldInfo * field)
 {
-    const char *xpath = queryXPath(field);
-    if (strchr(xpath, '/'))
+    if (field->type && !field->type->xpathIsScalar())
         return field->name->str();
-    return xpath;
+    return queryXPath(field);
 }
 
 static bool hasOuterXPath(const RtlFieldInfo * field)

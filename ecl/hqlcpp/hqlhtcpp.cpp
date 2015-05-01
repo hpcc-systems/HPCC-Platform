@@ -3527,22 +3527,6 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
             break;
         }
 
-        StringBuffer typeName;
-        typeFlags = buildRtlType(typeName, fieldType);
-
-        StringBuffer lowerName;
-        lowerName.append(field->queryName()).toLowerCase();
-
-        if (options.debugGeneratedCpp)
-        {
-            name.append("rf_");
-            convertToValidLabel(name, lowerName.str(), lowerName.length());
-            name.append("_").append(++nextFieldId);
-        }
-        else
-            name.append("rf").append(++nextFieldId);
-
-
         StringBuffer xpathName, xpathItem;
         switch (fieldType->getTypeCode())
         {
@@ -3562,8 +3546,28 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
             break;
         }
 
-        if (xpathName.length() && (xpathName.charAt(0) == '@'))
-            typeFlags |= RFTMhasxmlattr;
+        if (xpathName.length())
+        {
+            if (xpathName.charAt(0) == '@')
+                typeFlags |= RFTMhasxmlattr;
+            if (!strpbrk(xpathName, "/?*[]<>"))
+                typeFlags |= RFTMxpathscalar;
+        }
+
+        StringBuffer typeName;
+        typeFlags = buildRtlType(typeName, fieldType, typeFlags); //benefit to adding other flags to generated code as well?
+
+        StringBuffer lowerName;
+        lowerName.append(field->queryName()).toLowerCase();
+
+        if (options.debugGeneratedCpp)
+        {
+            name.append("rf_");
+            convertToValidLabel(name, lowerName.str(), lowerName.length());
+            name.append("_").append(++nextFieldId);
+        }
+        else
+            name.append("rf").append(++nextFieldId);
 
         //Format of the xpath field is (nested-item 0x01 repeated-item)
         StringBuffer xpathFull, xpathCppText;
@@ -3714,14 +3718,15 @@ unsigned HqlCppTranslator::getRtlFieldInfo(StringBuffer & fieldInfoName, IHqlExp
     return buildRtlField(&fieldInfoName, fieldKey);
 }
 
-unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo * type)
+unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo * type, unsigned typeFlags)
 {
     assertex(type);
     type_t tc = type->getTypeCode();
     if (tc == type_record)
         type = queryUnqualifiedType(type);
 
-    OwnedHqlExpr search = createVariable("t", LINK(type));
+    VStringBuffer searchKey("t%d", typeFlags);
+    OwnedHqlExpr search = createVariable(searchKey, LINK(type));
     BuildCtx declarectx(*code, declareAtom);
     HqlExprAssociation * match = declarectx.queryMatchExpr(search);
     if (match)
@@ -3743,7 +3748,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     else
         name.append("ty").append(++nextTypeId);
 
-    unsigned fieldType= 0;
+    unsigned fieldType = typeFlags;
     if (tc == type_alien)
     {
         ITypeInfo * physicalType = queryAlienType(type)->queryPhysicalType();
@@ -3852,7 +3857,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
         {
             className.clear().append("RtlRowTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type));
+            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
 //          fieldType |= (childType & RFTMcontainsifblock);
             if (hasLinkCountedModifier(type))
                 fieldType |= RFTMlinkcounted;
@@ -3863,7 +3868,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
         {
             className.clear().append("RtlDatasetTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type));
+            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
             if (hasLinkCountedModifier(type))
                 fieldType |= RFTMlinkcounted;
             break;
@@ -3872,7 +3877,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
         {
             className.clear().append("RtlDictionaryTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type));
+            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
             if (hasLinkCountedModifier(type))
                 fieldType |= RFTMlinkcounted;
             StringBuffer lookupHelperName;
@@ -3883,7 +3888,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     case type_set:
         className.clear().append("RtlSetTypeInfo");
         arguments.append(",&");
-        childType = buildRtlType(arguments, type->queryChildType());
+        childType = buildRtlType(arguments, type->queryChildType(), 0);
         break;
     case type_unicode:
         className.clear().append("RtlUnicodeTypeInfo");
@@ -4100,7 +4105,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
             assertex(!instance.isGrouped());
 
             StringBuffer typeName;
-            unsigned recordTypeFlags = buildRtlType(typeName, record->queryType());
+            unsigned recordTypeFlags = buildRtlType(typeName, record->queryType(), 0);
             s.clear().append("virtual const RtlTypeInfo * queryTypeInfo() const { return &").append(typeName).append("; }");
             metactx.addQuoted(s);
 

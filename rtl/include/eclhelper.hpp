@@ -326,6 +326,7 @@ enum RtlFieldTypeMask
 
     RFTMalien               = 0x00000800,                   // this is the physical format of a user defined type, if unknown size we can't calculate it
     RFTMcontainsifblock     = 0x00000800,                   // contains an if block - if set on a record then it contains ifblocks, so can't work out field offsets.
+    RFTMxpathscalar         = 0x00001000,                   // field xpath contains only one node, and is therefore usable for naming scalar fields
 
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
     RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
@@ -363,6 +364,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isFixedSize() const { return (fieldType & RFTMunknownsize) == 0; }
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
+    inline bool xpathIsScalar() const { return (fieldType & RFTMxpathscalar) != 0; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }
     inline unsigned getBitfieldIntSize() const { return (length & 0xff); }
@@ -375,7 +377,6 @@ public:
                                     // for decimal, numdigits | precision << 16
                                     // if RFTMunknownsize then maxlength (records) [maxcount(datasets)]
 };
-
 
 //Core struct used for representing meta for a field.
 struct RtlFieldInfo
