@@ -2219,6 +2219,36 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
     return true;
 }
 
+const char* CFileSprayEx::getDropZoneDirByIP(const char* ip, StringBuffer& dir)
+{
+    if (!ip || !*ip)
+        return NULL;
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+        return NULL;
+
+    StringBuffer destIPStr;
+    if (strieq(".", ip))
+        queryHostIP().getIpText(destIPStr);
+    else
+        destIPStr.set(ip);
+
+    Owned<IPropertyTree> root = &env->getPTree();
+    VStringBuffer xPath("Hardware/Computer[@netAddress='%s']/@name", destIPStr.str());
+    const char* computer = root->queryProp(xPath.str());
+    if (!computer || !*computer)
+        return NULL;
+
+    xPath.setf("Software/DropZone[@computer='%s']/@directory", computer);
+    const char* path = root->queryProp(xPath.str());
+    if (!path || !*path)
+        return NULL;
+
+    return dir.append(path).str();
+}
+
 bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDesprayResponse &resp)
 {
     try
@@ -2266,7 +2296,16 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         {
             RemoteFilename rfn;
             SocketEndpoint ep(destip);
-            rfn.setPath(ep, destfile);
+            if (isAbsolutePath(destfile))
+                rfn.setPath(ep, destfile);
+            else
+            {
+                StringBuffer buf;
+                getDropZoneDirByIP(destip, buf);
+                if (buf.length() && buf.charAt(buf.length()-1) != PATHSEPCHAR)
+                    buf.append(PATHSEPCHAR);
+                rfn.setPath(ep, buf.append(destfile).str());
+            }
             destination->setSingleFilename(rfn);
         }
         else
