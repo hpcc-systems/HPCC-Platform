@@ -44,7 +44,7 @@ public:
         OwnedRoxieString xmlpath(helper->getXmlIteratorPath());
         if (!xmlpath)
         {
-            rowTag.append("Row");
+            rowTag.append(DEFAULTXMLROWTAG);
         }
         else
         {
@@ -63,7 +63,7 @@ public:
             else if (suppliedHeader)
                 out.set(suppliedHeader);
             else
-                out.set("<Dataset>").newline();
+                out.set(DEFAULTXMLHEADER).newline();
             outraw->write(out.length(), out.toCharArray());
             if (calcFileCrc)
                 fileCRC.tally(out.length(), out.toCharArray());
@@ -91,7 +91,7 @@ public:
             else if (suppliedFooter)
                 out.set(suppliedFooter);
             else
-                out.set("</Dataset>").newline();
+                out.set(DEFAULTXMLFOOTER).newline();
             outraw->write(out.length(), out.toCharArray());
             if (calcFileCrc)
                 fileCRC.tally(out.length(), out.toCharArray());

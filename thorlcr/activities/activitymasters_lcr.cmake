@@ -89,7 +89,8 @@ include_directories (
          ./../mfilemanager 
          ./../../common/thorhelper 
          ./../activities 
-         ./../../rtl/eclrtl 
+         ./../../rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/dali/ft
     )
 
 HPCC_ADD_LIBRARY( activitymasters_lcr SHARED ${SRCS} )

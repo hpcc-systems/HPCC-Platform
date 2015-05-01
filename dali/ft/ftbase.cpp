@@ -34,33 +34,6 @@
 #include "dalienv.hpp"
 #include "rmtspawn.hpp"
 
-#define DEFAULT_MAX_CSV_SIZE     8096
-
-//Use hash defines for properties so I can't mis-spell them....
-#define ANinput             "@input"
-#define ANinputDirect       "@inputDirect"
-#define ANinputLength       "@inputLength"
-#define ANinputOffset       "@inputOffset"
-#define ANlength            "@length"
-#define ANoutput            "@output"
-#define ANoutputDirect      "@outputDirect"
-#define ANoutputLength      "@outputLength"
-#define ANoutputOffset      "@outputOffset"
-
-//File attributes
-#define FPrecordSize        "@recordSize"
-#define FPformat            "@format"
-#define FPmaxRecordSize     "@maxRecordSize"
-#define FPcsvSeparate       "@csvSeparate"
-#define FPcsvQuote          "@csvQuote"
-#define FPcsvTerminate      "@csvTerminate"
-#define FPcsvEscape         "@csvEscape"
-#define FProwTag            "@rowTag"
-#define FPkind              "@kind"
-#define FPheaderLength      "@headerLength"
-#define FPfooterLength      "@footerLength"
-
-
 
 //----------------------------------------------------------------------------
 

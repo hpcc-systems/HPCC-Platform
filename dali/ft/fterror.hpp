@@ -80,6 +80,7 @@
 #define DFTERR_WrongRECFMvRecordSize            8107
 #define DFTERR_WrongSplitRecordSize             8108
 #define DFTERR_CannotFindFirstJsonRecord        8109
+#define DFTERR_InvalidXmlPartSize               8110
 
 //Internal errors
 #define DFTERR_UnknownFormatType                8190
@@ -147,6 +148,7 @@
 #define DFTERR_WrongRECFMvbBlockSize_Text       "Invalid RECFMvb file Block Size (%d) or the file is not RECFMvb format!"
 #define DFTERR_WrongRECFMvRecordSize_Text       "Invalid RECFMv file Record Size (%d) or the file is not RECFMv format!"
 #define DFTERR_WrongSplitRecordSize_Text        "Invalid Record Size (%d, 0x%08x)!"
+#define DFTERR_InvalidXmlPartSize_Text          "Invalid XML part size:%" I64F "d! Size is less than XML Header (%" I64F "d) + Footer (%" I64F "d)) size!"
 
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%" I64F "d expected %" I64F "d) at %s of block %d"
