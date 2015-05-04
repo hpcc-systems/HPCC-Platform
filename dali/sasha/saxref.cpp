@@ -24,6 +24,9 @@
 #include "sacoalescer.hpp"
 #include "sacmd.hpp"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpointer-bool-conversion"
+
 #define DEFAULT_MAXDIRTHREADS 500
 #define DEFAULT_MAXMEMORY 4096
 

@@ -54,6 +54,9 @@
 #include "hqlexpr.hpp"
 #include "eclrtl.hpp"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpointer-bool-conversion"
+
 #define     Action_Delete           "Delete"
 #define     Action_AddtoSuperfile   "Add To Superfile"
 static const char* FEATURE_URL="DfuAccess";
