@@ -784,12 +784,15 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
     if (0 == aborting)
     {
         aborting = 1;
-        if (!e)
+        if (errCode)
         {
-            _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
-            e = _e;
+            if (!e)
+            {
+                _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
+                e = _e;
+            }
+            EXCLOG(e,"abortThor");
         }
-        EXCLOG(e,"abortThor");
         LOG(MCdebugProgress, thorJob, "abortThor called");
         if (jM)
             jM->stop();

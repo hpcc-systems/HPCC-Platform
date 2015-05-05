@@ -118,7 +118,7 @@ static void stopServer()
     stopMPServer();
 }
 
-bool actionOnAbort()
+bool actionOnAbort(ahType aht_val)
 {
     stopServer();
     return true;

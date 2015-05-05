@@ -241,14 +241,14 @@ int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
 
 //---------------------------------------------------------------------------------
 
-bool ControlHandler() 
-{ 
+bool ControlHandler(ahType aht_val)
+{
     if (execSvr)
     {
         execSvr->stop();
     }
-    return false; 
-} 
+    return false;
+}
 
 //---------------------------------------------------------------------------------
 
