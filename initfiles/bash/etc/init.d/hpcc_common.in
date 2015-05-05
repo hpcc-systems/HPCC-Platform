@@ -508,7 +508,7 @@ startCmd() {
     while [ ${WAITTIME} -gt 0 ]
     do
         WAITTIME=`expr ${WAITTIME} - 1`
-        check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
+        check_status ${pid}/${compName}_init.pid ${LOCKPATH} ${COMPPIDPATH} ${SENTINEL_CHECK}
         RCSTART=$?
         if [ ${RCSTART} -eq 0 ]; then
           log_success_msg
