@@ -41,7 +41,7 @@ static const char * queryXPath(const RtlFieldInfo * field)
 
 static const char * queryScalarXPath(const RtlFieldInfo * field)
 {
-    if (field->type && !field->type->xpathIsScalar())
+    if (field->type->isValueNonScalarXpath())
         return field->name->str();
     return queryXPath(field);
 }

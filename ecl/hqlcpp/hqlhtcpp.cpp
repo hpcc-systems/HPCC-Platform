@@ -3487,6 +3487,11 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
     return LINK(expr);
 }
 
+bool checkXpathIsNonScalar(const char *xpath)
+{
+    return (strpbrk(xpath, "/?*[]<>")!=NULL); //anything other than a single tag/attr name cannot name a scalar field
+}
+
 unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpression * fieldKey)
 {
     BuildCtx declarectx(*code, declareAtom);
@@ -3550,8 +3555,8 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer * instanceName, IHqlExpres
         {
             if (xpathName.charAt(0) == '@')
                 typeFlags |= RFTMhasxmlattr;
-            if (!strpbrk(xpathName, "/?*[]<>"))
-                typeFlags |= RFTMxpathscalar;
+            if (checkXpathIsNonScalar(xpathName))
+                typeFlags |= RFTMhasnonscalarxpath;
         }
 
         StringBuffer typeName;
