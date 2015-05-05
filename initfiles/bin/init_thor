@@ -28,7 +28,6 @@ rm -f ${SENTINEL}
 
 killed() {
         echo "Stopping"
-        $deploydir/stop_thor $deploydir
         kill_process ${SENTINEL} ${PID_NAME} 3
         exit 255
 }
