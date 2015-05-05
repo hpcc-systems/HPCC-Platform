@@ -3104,7 +3104,7 @@ void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& inp
     if (isEmpty(trimmedInput))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Workunit ID not set", methodName);
 
-    if (!looksLikeAWuid(trimmedInput))
+    if (!looksLikeAWuid(trimmedInput, 'W'))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Invalid Workunit ID: %s", methodName, trimmedInput);
 
     return;
