@@ -76,10 +76,6 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
             bool started = false;
             try
             {
-                { 
-                    CriticalBlock b(stopCrit);
-                    if (stopping) return;
-                }
                 if (funnel.startInputs)
                 {
                     IThorDataLink *_input = QUERYINTERFACE(input.get(), IThorDataLink);

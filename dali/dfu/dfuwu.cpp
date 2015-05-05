@@ -2057,6 +2057,15 @@ public:
         queryRoot()->setPropBool("@quotedTerminator",val);
     }
 
+    bool getPreserveCompression() const
+    {
+        return queryRoot()->getPropBool("@preserveCompression");
+    }
+
+    void setPreserveCompression(bool val)
+    {
+        queryRoot()->setPropBool("@preserveCompression",val);
+    }
 };
 
 class CExceptionIterator: public CInterface, implements IExceptionIterator

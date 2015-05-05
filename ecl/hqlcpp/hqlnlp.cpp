@@ -736,7 +736,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     wu()->setDebugValue("maxMemory", text.str(), true);
 #endif
 
-    if (options.debugNlp != 0)
+    if ((options.debugNlp != 0) && !options.obfuscateOutput)
     {
         BuildCtx subctx(instance->classctx);
         subctx.addQuotedLiteral("#if 0\nHuman readable form of the grammar");

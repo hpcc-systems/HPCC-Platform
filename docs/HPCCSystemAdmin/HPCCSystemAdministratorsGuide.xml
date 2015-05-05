@@ -525,7 +525,7 @@
       clusters. The number of Roxie nodes should never exceed the number of
       Thor nodes. In addition, the number of Thor nodes should be evenly
       divisible by the number of Roxie nodes. This ensures an efficient
-      distribution of file parts from Thor to Roxie. </para>
+      distribution of file parts from Thor to Roxie.</para>
     </sect1>
 
     <sect1>
@@ -1238,9 +1238,9 @@ lock=/var/lock/HPCCSystems</programlisting>
 
         <para>If you are adding or removing Thor cluster nodes but
         <emphasis>all previous nodes remain part of the environment and
-        accessible</emphasis>, you can <emphasis role="bold">rename</emphasis>
-        the group that is associated with the Thor cluster (or the Cluster
-        name if there is no group name).</para>
+        accessible</emphasis>, you must <emphasis
+        role="bold">rename</emphasis> the group that is associated with the
+        Thor cluster (or the Cluster name if there is no group name).</para>
 
         <para>This will ensure all previously existing files, continue to use
         the old group structure, while new files use the new group

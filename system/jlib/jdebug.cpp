@@ -50,6 +50,9 @@
 #ifdef __APPLE__
  #include <sys/param.h>
  #include <sys/mount.h>
+ #include <sys/sysctl.h>
+ #include <mach/task.h>
+ #include <mach/mach_init.h>
 #endif
 
 //===========================================================================
@@ -1116,8 +1119,21 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
 #endif
     memused = mu+su;
     memtot = mt+st;
-#endif
-#if defined (__FreeBSD__) || defined (__APPLE__)
+#elif defined (__APPLE__)
+    __uint64 bytes;
+    size_t len = sizeof(bytes);
+    sysctlbyname("hw.memsize", &bytes, &len, NULL, 0);
+    // See http://miknight.blogspot.com/2005/11/resident-set-size-in-mac-os-x.html
+    struct task_basic_info t_info;
+    mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
+    task_info(current_task(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
+    out.appendf("RES=%" I64F "uMiB VIRT=%" I64F "uMiB TOT=%" I64F "uMiB",
+            (__uint64) t_info.resident_size/(1024*1024),
+            (__uint64) t_info.virtual_size/(1024*1024),
+            bytes/(1024*1024));
+    memused = t_info.resident_size;
+    memtot = t_info.virtual_size;
+#elif defined (__FreeBSD___)
     UNIMPLEMENTED;
 #endif
 }
@@ -1798,9 +1814,6 @@ class CExtendedStats  // Disk network and cpu stats
             free(kbuf);
             kbuf = NULL;
         }
-#endif
-#if defined (__FreeBSD__) || defined (__APPLE__)
-        UNIMPLEMENTED;
 #endif
         data = NULL;
         return 0;

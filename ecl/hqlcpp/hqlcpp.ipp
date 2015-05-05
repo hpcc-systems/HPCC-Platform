@@ -745,8 +745,11 @@ struct HqlCppOptions
     bool                newBalancedSpotter;
     bool                keyedJoinPreservesOrder;
     bool                expandSelectCreateRow;
+    bool                obfuscateOutput;
+    bool                showEclInGraph;
     bool                optimizeSortAllFields;
     bool                optimizeSortAllFieldsStrict;
+    bool                alwaysReuseGlobalSpills;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

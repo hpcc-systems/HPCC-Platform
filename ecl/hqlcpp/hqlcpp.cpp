@@ -1758,8 +1758,11 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
         DebugOption(options.keyedJoinPreservesOrder,"keyedJoinPreservesOrder",true),
         DebugOption(options.expandSelectCreateRow,"expandSelectCreateRow",false),
+        DebugOption(options.obfuscateOutput,"obfuscateOutput",false),
+        DebugOption(options.showEclInGraph,"showEclInGraph",true),
         DebugOption(options.optimizeSortAllFields,"optimizeSortAllFields",true),
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
+        DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
     };
 
     //get options values from workunit
@@ -4365,7 +4368,7 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
 
 void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHqlBoundTarget & tempTarget, IHqlExpression * expr, ExpressionFormat format, bool ignoreSetAll)
 {
-    if (options.addLocationToCpp)
+    if (options.addLocationToCpp && !options.obfuscateOutput)
     {
         IHqlExpression * location = queryLocation(expr);
         if (location)

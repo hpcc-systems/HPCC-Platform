@@ -398,8 +398,11 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                     const char *jobname = embeddedWU->queryJobName();
                     if (jobname && *jobname) //let ECL win naming job during initial compile
                         workunit->setJobName(jobname);
-                    Owned<IWUQuery> query = workunit->updateQuery();
-                    query->setQueryText(eclQuery.s.str());
+                    if (!workunit->getDebugValueBool("obfuscateOutput", false))
+                    {
+                        Owned<IWUQuery> query = workunit->updateQuery();
+                        query->setQueryText(eclQuery.s.str());
+                    }
                 }
 
                 createUNCFilename(realdllfilename.str(), dllurl);
