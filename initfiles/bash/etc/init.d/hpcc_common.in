@@ -43,8 +43,8 @@ which_pidof(){
     PIDOF=`type --path pidof`
     if [ "${PIDOF}" == "" ]; then
         if [ -e /bin/pidof ]; then
-	    PIDOF=/bin/pidof
-	elif [ -e /sbin/pidof  ]; then
+            PIDOF=/bin/pidof
+        elif [ -e /sbin/pidof  ]; then
             PIDOF=/sbin/pidof
         elif [ -e /usr/sbin/pidof ]; then
             PIDOF=/usr/sbin/pidof
@@ -525,7 +525,7 @@ startCmd() {
     done
 
     if [ ${WAITTIME} -eq 0 ]; then
-        log_failure_msg "${compName} has timed out, but may still be starting"
+        log_timeout_msg
     fi
 
     chmod 644 ${envfile}
