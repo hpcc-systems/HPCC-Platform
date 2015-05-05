@@ -21,6 +21,7 @@ define([
     "dojo/_base/array",
     "dojo/on",
 
+    "dgrid/tree",
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
@@ -29,7 +30,7 @@ define([
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-                selector,
+                tree, selector,
                 GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil) {
     return declare("SourceFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
@@ -57,6 +58,12 @@ define([
         },
 
         createGrid: function (domID) {
+            this.store.mayHaveChildren = function (item) {
+                return item.IsSuperFile;
+            };
+            this.store.getChildren = function (parent, options) {
+                return context.store.query({__hpcc_parentName: parent.Name});
+            };
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
@@ -64,18 +71,18 @@ define([
                         width: 27,
                         selectorType: 'checkbox'
                     }),
-                    Name: {
+                    Name: tree({
                         label: "Name", sortable: true,
                         formatter: function (Name, row) {
                             return dojoConfig.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
                         }
-                    },
+                    }),
                     Count: { label: "Usage", width: 72, sortable: true }
                 }
             }, domID);
 
             var context = this;
-            retVal.on("." + this.id + "dgrid-row-url:click", function (evt) {
+            retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
                     context._onRowDblClick(row);
@@ -127,7 +134,7 @@ define([
                         row.sequence = idx;
                     });
                     context.store.setData(sourceFiles);
-                    context.grid.refresh();
+                    context.grid.set("query", { __hpcc_parentName: "" });
                 }
             });
         }

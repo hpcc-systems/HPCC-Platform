@@ -75,6 +75,7 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.summaryWidget = registry.byId(this.id + "_Summary");
+            this.deleteBtn = registry.byId(this.id + "Delete");
         },
 
         startup: function (args) {
@@ -228,6 +229,15 @@ define([
                 var item = context.subfilesGrid.row(evt).data;
                 var tab = context.ensureLFPane(item.Name, item);
                 context.selectChild(tab, true);
+            });
+            this.subfilesGrid.on("dgrid-select", function (evt) {
+                context.deleteBtn.set("disabled", true);
+            });
+            this.subfilesGrid.on("dgrid-deselect", function (evt) {
+                var selections = context.subfilesGrid.getSelected();
+                if (selections.length === 0) {
+                    context.deleteBtn.set("disabled", false);
+                }
             });
             this.subfilesGrid.on(".dgrid-row:dblclick", function (evt) {
                 var item = context.subfilesGrid.row(evt).data;
