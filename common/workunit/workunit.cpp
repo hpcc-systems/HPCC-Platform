@@ -10218,11 +10218,11 @@ extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unr
     }
 }
 
-bool looksLikeAWuid(const char * wuid)
+bool looksLikeAWuid(const char * wuid, const char firstChar)
 {
     if (!wuid)
         return false;
-    if (wuid[0] != 'W')
+    if (wuid[0] != firstChar)
         return false;
     if (!isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]))
         return false;

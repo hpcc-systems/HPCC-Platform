@@ -177,7 +177,7 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
 
         try
         {
-            if (!looksLikeAWuid(wuid))
+            if (!looksLikeAWuid(wuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
 
             if ((action == ActionRestore) || (action == ActionEventDeschedule))
@@ -1086,7 +1086,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
 
         if (runWuid && *runWuid)
         {
-            if (!looksLikeAWuid(runWuid))
+            if (!looksLikeAWuid(runWuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", runWuid);
 
             if (req.getCloneWorkunit())
@@ -1876,7 +1876,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         }
 
         const char* wuid = cw.queryWuid();
-        if (!looksLikeAWuid(wuid))
+        if (!looksLikeAWuid(wuid, 'W'))
         {
             numWUs--;
             continue;
@@ -2210,7 +2210,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
-        else if(notEmpty(wuid) && looksLikeAWuid(wuid))
+        else if(notEmpty(wuid) && looksLikeAWuid(wuid, 'W'))
             doWUQueryBySingleWuid(context, wuid, resp);
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
             doWUQueryByFile(context, req.getLogicalFile(), resp);
@@ -2487,7 +2487,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
         const char* wuidIn = wuidStr.trim().str();
         if (wuidIn && *wuidIn)
         {
-            if (!looksLikeAWuid(wuidIn))
+            if (!looksLikeAWuid(wuidIn, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID");
 
             ensureWsWorkunitAccess(context, wuidIn, SecAccess_Read);
@@ -2613,7 +2613,7 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
         const char* wuidIn = wuidStr.trim().str();
         if (wuidIn && *wuidIn)
         {
-            if (!looksLikeAWuid(wuidIn))
+            if (!looksLikeAWuid(wuidIn, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuidIn);
 
             ensureWsWorkunitAccess(context, wuidIn, SecAccess_Read);
@@ -2806,7 +2806,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         const char* wuid = wuidStr.trim().str();
         if (wuid && *wuid)
         {
-            if (!looksLikeAWuid(wuid))
+            if (!looksLikeAWuid(wuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
 
             ensureWsWorkunitAccess(context, wuid, SecAccess_Read);

@@ -126,6 +126,7 @@ DFUWUSearchResponse
 
 ESPrequest GetDFUWorkunits
 {
+    [min_ver("1.12")] string Wuid;
     string Owner;
     string Cluster;
     string StateReq;
