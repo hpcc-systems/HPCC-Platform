@@ -616,6 +616,7 @@ class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
     bool trailing;
     byte *outbuf;
     size32_t outlen;
+    size32_t wrmax;
 
     inline void setinmax()
     {
@@ -637,11 +638,13 @@ class jlib_decl CFastLZCompressor : public CInterface, public ICompressor
         if (trailing)
             return;
         size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
+        if (toflush == 0)
+            return;
         assertex(outlen+sizeof(size32_t)*2+toflush+fastlzSlack(toflush)<=blksz);
         size32_t *cmpsize = (size32_t *)(outbuf+outlen);
         byte *out = (byte *)(cmpsize+1);
         *cmpsize = (size32_t)fastlz_compress(inbuf, (int)toflush, out, ht);
-        if (*cmpsize<=toflush) {
+        if (*cmpsize<toflush) {
             *(size32_t *)outbuf += toflush;
             outlen += *cmpsize+sizeof(size32_t);
             if (inlenblk==COMMITTED)
@@ -665,6 +668,7 @@ public:
         outlen = 0;
         outbuf = NULL;      // only set on close
         bufalloc = 0;
+        wrmax = 0;          // set at open
     }
 
     virtual ~CFastLZCompressor()
@@ -676,6 +680,7 @@ public:
 
     virtual void open(void *buf,size32_t max)
     {
+        wrmax = max;
         if (buf) {
             if (bufalloc) {
                 free(outbuf);
@@ -723,16 +728,30 @@ public:
 
     size32_t write(const void *buf,size32_t len)
     {
-        if (len+inlen>inmax) {
-            if (trailing)
-                return 0;
-            flushcommitted();
-            if (len+inlen>inmax) 
-                len = inmax-inlen;
+        // no more than wrmax per write
+        size32_t lenb = wrmax;
+        byte *b = (byte *)buf;
+        size32_t written = 0;
+        while (len)
+        {
+            if (len < lenb)
+                lenb = len;
+            if (lenb+inlen>inmax) {
+                if (trailing)
+                    return written;
+                flushcommitted();
+                if (lenb+inlen>inmax)
+                    lenb = inmax-inlen;
+            }
+            if (lenb == 0)
+                return written;
+            memcpy(inbuf+inlen,b,lenb);
+            b += lenb;
+            inlen += lenb;
+            len -= lenb;
+            written += lenb;
         }
-        memcpy(inbuf+inlen,buf,len);
-        inlen += len;
-        return len;
+        return written;
     }
 
     void *  bufptr() 
@@ -791,7 +810,7 @@ public:
     }
 
     virtual void expand(void *buf)
-{
+    {
         if (!outlen)
             return;
         if (buf) {

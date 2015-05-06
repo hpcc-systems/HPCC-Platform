@@ -6025,7 +6025,7 @@ public:
     virtual void get(size32_t len, void * ptr)
     {
         if (len>buffer.remaining()) {
-            ERRLOG("CFileSerialStream::get read past end of stream.4(%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
+            ERRLOG("CMemoryBufferSerialStream::get read past end of stream.4(%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
             throw MakeStringException(-1,"CMemoryBufferSerialStream::get read past end of stream (%u,%u)",(unsigned)len,(unsigned)buffer.remaining());
         }
         const void * data = buffer.readDirect(len);
