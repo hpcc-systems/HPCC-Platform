@@ -1676,6 +1676,7 @@ public:
     virtual void        setQueryMainDefinition(const char * str);
     virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc);
     virtual void        removeAssociatedFiles();
+    virtual void        removeAssociatedFile(WUFileType type, const char * name, const char * desc);
 };
 
 class CLocalWUWebServicesInfo : public CInterface, implements IWUWebServicesInfo
@@ -7023,6 +7024,23 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
     associated.append(*q);
 }
 
+void CLocalWUQuery::removeAssociatedFile(WUFileType type, const char * name, const char * desc)
+{
+    CriticalBlock block(crit);
+    associatedCached = false;
+    associated.kill();
+    StringBuffer xpath;
+    xpath.append("Associated/File");
+    if (type)
+        xpath.append("[@type=\"").append(getEnumText(type, queryFileTypes)).append("\"]");
+    if (name)
+        xpath.append("[@filename=\"").append(name).append("\"]");
+    if (desc)
+        xpath.append("[@desc=\"").append(desc).append("\"]");
+
+    p->removeProp(xpath.str());
+}
+
 void CLocalWUQuery::removeAssociatedFiles()
 {
     associatedCached = false;
@@ -10200,11 +10218,11 @@ extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unr
     }
 }
 
-bool looksLikeAWuid(const char * wuid)
+bool looksLikeAWuid(const char * wuid, const char firstChar)
 {
     if (!wuid)
         return false;
-    if (wuid[0] != 'W')
+    if (wuid[0] != firstChar)
         return false;
     if (!isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]))
         return false;

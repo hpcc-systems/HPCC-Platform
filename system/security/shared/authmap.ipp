@@ -46,6 +46,15 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CAuthMap(ISecManager* secmgr) {m_secmgr = secmgr;};
+    virtual ~CAuthMap()
+    {
+        ForEachItemIn(x, m_resourcelists)
+        {
+            ISecResourceList* rlist = m_resourcelists.item(x).list();
+            if (rlist)
+                rlist->Release();
+        }
+    }
     int add(const char* path, ISecResourceList* resourceList);
     bool shouldAuth(const char* path);
     ISecResourceList* queryResourceList(const char* path);

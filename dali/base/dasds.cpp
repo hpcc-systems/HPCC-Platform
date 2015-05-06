@@ -4469,6 +4469,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 if (queryTransactionLogging())
                     transactionLog.log("xpath='%s'", xpath.get());
                 mb.clear();
+                CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 Owned<IPropertyTree> matchTree = SDSManager->getXPaths(serverId, xpath, DAMP_SDSCMD_GETXPATHSPLUSIDS==action);
                 if (matchTree)
                 {
@@ -4499,6 +4500,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                         ascending?"true":"false", from, limit);
                 }
                 mb.clear();
+                CHECKEDDALIREADLOCKBLOCK(manager.dataRWLock, readWriteTimeout);
                 Owned<IPropertyTree> matchTree = SDSManager->getXPathsSortLimitMatchTree(xpath, matchXPath, sortBy, caseinsensitive, ascending, from, limit);
                 if (matchTree)
                 {
@@ -4516,7 +4518,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 mb.clear().append((int) DAMP_SDSREPLY_OK);
                 if (queryTransactionLogging())
                 {
-                    CServerRemoteTree *idTree = (CServerRemoteTree *) SDSManager->queryRegisteredTree(serverId);
+                    Owned<CServerRemoteTree> idTree = (CServerRemoteTree *) SDSManager->getRegisteredTree(serverId);
                     transactionLog.log("%s", idTree?idTree->queryName():"???");
                 }
                 SDSManager->getExternalValueFromServerId(serverId, mb);
@@ -7034,7 +7036,7 @@ void CCovenSDSManager::getExternalValue(__int64 index, MemoryBuffer &mb)
 
 void CCovenSDSManager::getExternalValueFromServerId(__int64 serverId, MemoryBuffer &mb)
 {
-    CServerRemoteTree *idTree = (CServerRemoteTree *) SDSManager->queryRegisteredTree(serverId);
+    Owned<CServerRemoteTree> idTree = (CServerRemoteTree *) SDSManager->getRegisteredTree(serverId);
     if (idTree)
     {
         CHECKEDCRITICALBLOCK(extCrit, fakeCritTimeout);

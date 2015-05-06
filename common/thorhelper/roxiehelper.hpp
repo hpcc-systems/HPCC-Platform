@@ -31,9 +31,10 @@ class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     bool _isHttp;
-    StringAttr urlPath;
+    StringAttr url;
     StringAttr authToken;
     StringAttr contentType;
+    StringArray pathNodes;
     Owned<IProperties> parameters;
 private:
     inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
@@ -46,7 +47,7 @@ private:
         if (len)
             s.set(v, len);
     }
-    void gatherUrlParameters();
+    void parseURL();
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -55,6 +56,7 @@ public:
     bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
     void setIsHttp(bool __isHttp) { _isHttp = __isHttp; }
     const char *queryAuthToken() { return authToken.str(); }
+    const char *queryTarget() { return (pathNodes.length()) ? pathNodes.item(0) : NULL; }
     inline void setAuthToken(const char *v)
     {
         setHttpHeaderValue(authToken, v, false);
@@ -64,20 +66,50 @@ public:
     {
         setHttpHeaderValue(contentType, v, true);
     };
-    inline void setUrlPath(const char *v)
+    inline void parseHTTPRequestLine(const char *v)
     {
         const char *end = strstr(v, " HTTP");
         if (end)
         {
-            urlPath.set(v, end - v);
-            gatherUrlParameters();
+            url.set(v, end - v);
+            parseURL();
         }
     }
     TextMarkupFormat queryContentFormat(){return (strieq(queryContentType(), "application/json")) ? MarkupFmt_JSON : MarkupFmt_XML;}
     IProperties *queryUrlParameters(){return parameters;}
 };
 
-//========================================================================================= 
+//==============================================================================================================
+
+typedef enum {heapSortAlgorithm, insertionSortAlgorithm, quickSortAlgorithm, stableQuickSortAlgorithm, spillingQuickSortAlgorithm, stableSpillingQuickSortAlgorithm, unknownSortAlgorithm } RoxieSortAlgorithm;
+
+interface ISortAlgorithm : extends IInterface
+{
+    virtual void prepare(IInputBase *input) = 0;
+    virtual const void *next() = 0;
+    virtual void reset() = 0;
+};
+
+extern THORHELPER_API ISortAlgorithm *createQuickSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId);
+extern THORHELPER_API ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable);
+
+extern THORHELPER_API ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm algorithm, ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId);
+
+//=========================================================================================
+
+interface IGroupedInput : extends IInterface, extends IInputBase
+{
+};
+
+extern THORHELPER_API IGroupedInput *createGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare);
+extern THORHELPER_API IGroupedInput *createDegroupedInputReader(IInputBase *_input);
+extern THORHELPER_API IGroupedInput *createSortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter);
+extern THORHELPER_API IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter);
+
+//=========================================================================================
 
 interface SafeSocket : extends IInterface
 {
@@ -267,6 +299,6 @@ private:
 
 THORHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags);
 THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in);
-THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally);
+THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix);
 
 #endif // ROXIEHELPER_HPP

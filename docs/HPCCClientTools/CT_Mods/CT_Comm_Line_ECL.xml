@@ -165,16 +165,17 @@
         command line parameters to send directly to an ECL execution engine.
         These options can be typed directly on the command line, sent using a
         script or batch file, through an <emphasis role="bold">ini</emphasis>
-        file, or any combination.</para>
+        file in the same directory as the executable, or any
+        combination.</para>
 
         <sect3 role="brk">
           <title>eclplus.ini</title>
 
           <para>All the options can be put directly on the command line, or
-          placed in a file called eclplus.ini. If your operating system is
-          case-sensitive, make sure the filename is in lowercase. Options that
-          do not change very often can be put in the ini file. For
-          example:</para>
+          placed in a file called eclplus.ini in the same directory as the
+          executable. If your operating system is case-sensitive, make sure
+          the filename is in lowercase. Options that do not change very often
+          can be put in the ini file. For example:</para>
 
           <programlisting>server=10.150.50.12
 cluster=training

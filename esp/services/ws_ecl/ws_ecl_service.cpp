@@ -252,8 +252,16 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         if (!process.length())
             continue;
         const char *vip = NULL;
+        bool includeTargetInURL = true;
         if (vips)
-            vip = vips->queryProp(xpath.clear().appendf("ProcessCluster[@name='%s']/@vip", process.str()).str());
+        {
+            IPropertyTree *pc = vips->queryPropTree(xpath.clear().appendf("ProcessCluster[@name='%s']", process.str()));
+            if (pc)
+            {
+                vip = pc->queryProp("@vip");
+                includeTargetInURL = pc->getPropBool("@includeTargetInURL", true);
+            }
+        }
         StringBuffer list;
         bool loadBalanced = false;
         if (vip && *vip)
@@ -274,7 +282,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         }
         if (list.length())
         {
-            Owned<ISmartSocketFactory> sf = createSmartSocketFactory(list.str(), !loadBalanced);
+            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL);
             connMap.setValue(target.str(), sf.get());
         }
     }
@@ -1578,7 +1586,7 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     IProperties *parms = context.queryRequestParameters();
 
     StringBuffer soapmsg, pageName;
-    getSoapMessage(soapmsg, context, request, wsinfo, 0, true);
+    getSoapMessage(soapmsg, context, request, wsinfo, REQSF_TRIM|REQSF_ROOT, true);
 
     StringBuffer params;
     const char* excludes[] = {"soap_builder_",NULL};
@@ -1644,7 +1652,7 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     IProperties *parms = context.queryRequestParameters();
 
     StringBuffer jsonmsg, pageName;
-    getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0, true);
+    getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, REQSF_TRIM, true);
 
     StringBuffer params;
     const char* excludes[] = {"soap_builder_",NULL};
@@ -1845,7 +1853,9 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
 
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
         StringBuffer url("http://");
-        ep.getIpText(url).append(':').append(ep.port).append('/').append(target);
+        ep.getIpText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
+        if (static_cast<RoxieSocketFactory*>(conn)->includeTargetInURL)
+            url.append(target);
         if (!trim)
             url.append("?.trim=0");
 
@@ -1897,7 +1907,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
     if (isRoxieReq && outputJSON)
     {
         StringBuffer jsonmsg;
-        getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0, false);
+        getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, REQSF_TRIM, false);
         if (jsonp && *jsonp)
             output.append(jsonp).append('(');
         sendRoxieRequest(wsinfo.qsetname.get(), jsonmsg, output, status, wsinfo.queryname, trim, "application/json");

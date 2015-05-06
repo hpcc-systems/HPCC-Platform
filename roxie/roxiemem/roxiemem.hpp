@@ -299,6 +299,14 @@ public:
 #define RoxieRowAllocatorId(row) roxiemem::HeapletBase::getAllocatorId(row)
 #define RoxieRowIsShared(row)  roxiemem::HeapletBase::isShared(row)
 
+inline void ReleaseRoxieRows(ConstPointerArray &data)
+{
+    ForEachItemIn(idx, data)
+        ReleaseRoxieRow(data.item(idx));
+    data.kill();
+}
+
+
 class OwnedRoxieRow;
 class OwnedConstRoxieRow
 {

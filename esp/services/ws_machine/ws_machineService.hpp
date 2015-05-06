@@ -786,7 +786,7 @@ private:
     bool readStorageSpace(const char *line, StringBuffer& title, __int64& free, __int64& total, int& percentAvail);
     void addProcessData(CMachineData* machine, const char* processType, const char* compName, const char* path, unsigned processNumber);
     void setMachineInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char *response, int error);
-    void setProcessInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char* response, int error, CProcessData& process, bool firstProcess, IEspMachineInfoEx* pMachineInfo, IEspMachineInfoEx* pMachineInfo1);
+    void setProcessInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char* response, int error, CProcessData& process, bool firstProcess, IEspMachineInfoEx* pMachineInfo);
     void setProcessComponent(IEspContext& context, CMachineInfoThreadParam* pParam, CProcessData& process, bool firstProcess, IArrayOf<IEspSWRunInfo>& processArray, IEspComponentInfo* pComponentInfo);
     void enumerateRunningProcesses(CMachineInfoThreadParam* pParam, CProcessData& process, map<string, Linked<IEspSWRunInfo> >* processMap, bool firstProcess);
 

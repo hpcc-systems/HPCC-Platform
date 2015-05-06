@@ -619,6 +619,16 @@ static IHqlExpression * findCommonExpression(IHqlExpression * lower, IHqlExpress
 
 //---------------------------------------------------------------------------------------------------------------------
 
+bool isFileOutput(IHqlExpression * expr)
+{
+    return (expr->getOperator() == no_output) && (queryRealChild(expr, 1) != NULL);
+}
+
+bool isWorkunitOutput(IHqlExpression * expr)
+{
+    return (expr->getOperator() == no_output) && (queryRealChild(expr, 1) == NULL);
+}
+
 bool isCommonSubstringRange(IHqlExpression * expr)
 {
     if (expr->getOperator() != no_substring)

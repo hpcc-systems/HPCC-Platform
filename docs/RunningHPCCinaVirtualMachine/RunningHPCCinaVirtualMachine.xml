@@ -390,7 +390,7 @@
           operating system for better performance and usability. If you would
           like to use your mouse pointer, and/or other desktop tools with your
           virtual machine, start the X windows display after you log into to
-          your virtual machine. </para>
+          your virtual machine.</para>
 
           <para>Log in with the credentials provided. (user: hpccdemo,
           password: hpccdemo) At the command prompt enter: <emphasis
@@ -560,8 +560,9 @@
             </listitem>
 
             <listitem>
-              <para>Press the <emphasis role="bold">Open appliance</emphasis>
-              button from the dialog to select the appliance to import.</para>
+              <para>Press the <emphasis role="bold">Open
+              appliance...</emphasis> button from the dialog to select the
+              appliance to import.</para>
             </listitem>
 
             <listitem>
@@ -607,6 +608,8 @@
             </listitem>
 
             <listitem>
+              <?dbfo keep-together="always"?>
+
               <para>Select the <emphasis role="bold">Network</emphasis> menu
               option. On the <emphasis>Adapter 1</emphasis> tab check the
               <emphasis>Enable Network Adapter</emphasis> box, and set the
@@ -635,11 +638,22 @@
             </listitem>
 
             <listitem>
+              <?dbfo keep-together="always"?>
+
               <para>From the same <emphasis>Network - Settings</emphasis>
               window, select the tab for<emphasis> Adapter 2</emphasis>. Check
               the <emphasis>Enable Network Adapter</emphasis> box, and set the
               <emphasis>Attached to:</emphasis> option to <emphasis
-              role="bold">Host-only Adapter</emphasis>.</para>
+              role="bold">Host-only Adapter</emphasis>. <figure id="VBoxNet2">
+                  <title xreflabel="welc">VM VirtualBox Network Adapter
+                  2</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg18.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
             </listitem>
 
             <listitem>
@@ -1578,10 +1592,11 @@ OUTPUT(ValidWords)
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Right-click on the <emphasis role="bold">MyFiles</emphasis>
-                folder in the Repository<emphasis role="bold"></emphasis>
-                window, and select <emphasis role="bold">Insert
-                Folder</emphasis> from the pop-up menu.</para>
+                <para>Right-click on the <emphasis
+                role="bold">MyFiles</emphasis> folder in the
+                Repository<emphasis role="bold"></emphasis> window, and select
+                <emphasis role="bold">Insert Folder</emphasis> from the pop-up
+                menu.</para>
 
                 <para><figure>
                     <title>Insert Folder</title>

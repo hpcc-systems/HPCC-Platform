@@ -23,7 +23,7 @@
     <para>In the HPCCClientTools.PDF there is a chapter devoted to the
     DFUplus.exe program. This is a command line tool with specific options
     that allow you to spray and despray files into BLOBs in the HPCC. In all
-    the examples below, we'll assume you have a DFUPLUS.INI file containing
+    the examples below, we'll assume you have a DFUPLUS.INI file in the same folder as the executable containing
     the standard content described in that section of the PDF.</para>
 
     <para>The key to making a spray operation write to BLOBs is the use of the

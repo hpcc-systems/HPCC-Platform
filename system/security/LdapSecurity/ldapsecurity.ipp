@@ -110,13 +110,13 @@ public:
    virtual int getPasswordDaysRemaining()
    {
        if (m_passwordExpiration.isNull())
-           return -2;//-2 if never expires
+           return scPasswordNeverExpires;//-2 if never expires
        CDateTime expiry(m_passwordExpiration);
        CDateTime now;
        now.setNow();
        now.adjustTime(now.queryUtcToLocalDelta());
        if (expiry <= now)
-           return -1;//-1 if already expired
+           return scPasswordExpired;//-1 if already expired
        expiry.setTime(0,0,0,0);
        now.setTime(23,59,59);
        int numDays = 0;

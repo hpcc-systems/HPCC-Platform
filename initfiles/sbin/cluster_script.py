@@ -27,7 +27,15 @@ import time
 import datetime
 import logging
 import ConfigParser
+import signal
 
+def signal_handler(signal, frame):
+        print('\n\nctrl-c\n')
+        os._exit(1)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGQUIT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 from hpcc.cluster.host import Host
 from hpcc.cluster.task import ScriptTask

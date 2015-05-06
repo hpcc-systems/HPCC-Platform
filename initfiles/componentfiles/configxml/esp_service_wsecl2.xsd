@@ -52,6 +52,21 @@
                       </xs:appinfo>
                     </xs:annotation>
                   </xs:attribute>
+                  <xs:attribute name="sendTargetToRoxie" use="optional" default="true">
+                      <xs:annotation>
+                          <xs:appinfo>
+                              <tooltip>Send roxie the target from which to run query (disable for backward compatibility issues)</tooltip>
+                              <title>Send Target To Roxie</title>
+                              <colIndex>3</colIndex>
+                          </xs:appinfo>
+                      </xs:annotation>
+                      <xs:simpleType>
+                          <xs:restriction base="xs:string">
+                              <xs:enumeration value="true"/>
+                              <xs:enumeration value="false"/>
+                          </xs:restriction>
+                      </xs:simpleType>
+                  </xs:attribute>
                 </xs:complexType>
               </xs:element>
             </xs:sequence>

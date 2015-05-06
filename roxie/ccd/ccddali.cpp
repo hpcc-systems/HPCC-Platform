@@ -494,6 +494,10 @@ public:
             return NULL;
         StringBuffer foreignLfn("foreign::");
         foreignLfn.append(cloneFrom);
+        const char *cloneFromPrefix = fdesc->queryProperties().queryProp("@cloneFromPrefix");
+        if (cloneFromPrefix && *cloneFromPrefix)
+            foreignLfn.append("::").append(cloneFromPrefix);
+        foreignLfn.append("::").append(_lfn);
         if (!connected())
             return resolveCachedLFN(foreignLfn);  // Note - cache only used when no dali connection available
         try
@@ -568,7 +572,7 @@ public:
 
     virtual void commitCache()
     {
-        if (isConnected)
+        if (isConnected && cache)
         {
             CriticalBlock b(cacheCrit);
             if (!recursiveCreateDirectory(queryDirectory))

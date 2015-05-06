@@ -22,45 +22,46 @@ thorpid=0
 
 RUN_THOR_PID_NAME="$PID/run_thor.`basename $PWD`.pid"
 # prevent two thors starting together
-if [ -e $RUN_THOR_PID_NAME ]; then
-  oldpid=`cat $RUN_THOR_PID_NAME`
-  while ps h $oldpid ; do 
-     echo waiting for process $oldpid to finish
-     sleep 5
-  done
+if [[ -e $RUN_THOR_PID_NAME ]]; then
+    oldpid=$(cat $RUN_THOR_PID_NAME)
+    while ps h $oldpid ; do
+        echo "waiting for process $oldpid to finish"
+        sleep 5
+    done
 fi
 trap "rm -f $RUN_THOR_PID_NAME" exit
 echo $$ > $RUN_THOR_PID_NAME
 
 export SENTINEL="thor.sentinel"
-while [ 1 ]; do
+while [[ 1 ]]; do
     # update slaves file in case state of environment has been altered since last run
-    daliadmin $DALISERVER dfsgroup ${groupName} slaves
+    daliadmin server=$DALISERVER dfsgroup ${groupName} slaves
     errcode=$?
-    if [ 0 != ${errcode} ]; then
-    echo 'failed to lookup dali group for $groupName'
+    if [[ 0 != ${errcode} ]]; then
+    echo "failed to lookup dali group for $groupName"
         exit 1
     fi
     $deploydir/makethorgroup
     sort $instancedir/slaves | uniq > $instancedir/uslaves.start
 
-    echo --------------------------
-    echo starting thorslaves ...
+    echo "--------------------------"
+    echo "starting thorslaves ..."
 
     logredirect="$logdir/start_slaves_$logpthtail.log"
     # Would be simpler, if there was simple way to test if ip is local and get rid of 'localthor' setting
-    if [ "$localthor" = "true" ]; then
-        $deploydir/start_slaves $THORMASTER $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect
+    if [[ "$localthor" = "true" ]]; then
+        slaveip=$(head -n 1 $instancedir/uslaves.start)
+        $deploydir/start_slaves $slaveip $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect
     else
-        nslaves=`cat $instancedir/uslaves.start | wc -l`
+        nslaves=$(cat $instancedir/uslaves.start | wc -l)
         $deploydir/frunssh $instancedir/uslaves.start "/bin/sh -c '$deploydir/start_slaves %a $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1
         FRUNSSH_RC=$?
         if [[ ${FRUNSSH_RC} -gt 0 ]]; then
-          echo "Error ${FRUNSSH_RC} in frunssh"
-          echo "Please check `dirname ${logdir}`/frunssh for more details"
-          # clean up any slaves it was able to reach
-          $deploydir/stop_thor $deploydir
-          exit 0
+            echo "Error ${FRUNSSH_RC} in frunssh"
+            echo "Please check `dirname ${logdir}`/frunssh for more details"
+            # clean up any slaves it was able to reach
+            $deploydir/stop_thor $deploydir
+            exit 0
         fi
     fi
 
@@ -68,41 +69,61 @@ while [ 1 ]; do
     nohup $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
 
     thorpid=$!
-    if [ "$thorpid" -ne "0" ]; then 
+    if [[ "$thorpid" -ne "0" ]]; then
         echo thormaster$LCR process started pid = $thorpid
         
         echo $thorpid > $PID_NAME
         echo $thorpid > $PID_NAME_BASE
         wait $thorpid
         errcode=$?
-        if [ "$errcode" -eq "0" ]; then  # allows for CTRL-C or thorstop
-            echo thor exited cleanly - script stopping
+        case $errcode in
+        # TEC_Clean
+        0)  echo "Thormaster ($thorpid) Exited cleanly"
+            rm -rf $instancedir/uslaves.start $PID_NAME > /dev/null 2>&1
             exit 0
-        fi
-        echo master exited with errorcode = $errcode
-        if [ ! -e $SENTINEL ]; then
-            echo $SENTINEL 'has been removed (1) - script stopping'
+            ;;
+        # TEC_CtrlC
+        1)  echo "Thormaster ($thorpid) Interrupted, Ctrl-C caught"
             $deploydir/stop_thor $deploydir
-            exit 0
-        fi
-
-        echo 'stopping thor(slaves) for restart'
-        $deploydir/stop_thor $deploydir keep_sentinel
-
-        if [ 0 != $autoSwapNode ]; then
-            echo "Running autoswap $THORNAME"
-            compname=`basename $PWD`
-            swapnode auto $DALISERVER $compname
-            errcode=$?
-            if [ 0 != ${errcode} ]; then
-                echo auto swap node failed, errcode=${errcode}
-            fi
-        fi
+            exit 1
+            ;;
+        # TEC_Idle, TEC_Watchdog, TEC_Swap, TEC_DaliDown
+        2|3|5|6)    [[ $errcode -eq 2 ]] && echo "Thormaster ($thorpid) Idle"
+                    [[ $errcode -eq 3 ]] && echo "Thormaster ($thorpid) Lost connection to slave(s)"
+                    [[ $errcode -eq 5 ]] && echo "Thormaster ($thorpid) Swap node required"
+                    [[ $errcode -eq 6 ]] && echo "Thormaster ($thorpid) Unable to connect to Dali"
+                    echo 'stopping thorslave(s) for restart'
+                    $deploydir/stop_thor $deploydir keep_sentinel
+                    if [[ 0 != $autoSwapNode ]]; then
+                        echo "Running autoswap $THORNAME :: ($thorpid)"
+                        compname=`basename $PWD`
+                        swapnode auto $DALISERVER $compname
+                        errcode=$?
+                        if [[ 0 != ${errcode} ]]; then
+                            echo "auto swap node failed, errcode=${errcode}"
+                            $deploydir/stop_thor $deploydir
+                            exit 1
+                        fi
+                    fi
+                # restarting thormaster
+                ;;
+        # TEC_SlaveInit
+        4)  echo "Thormaster ($thorpid) Slaves failed to initialize"
+            echo "Shutting down"
+            $deploydir/stop_thor $deploydir
+            exit 1
+            ;;
+        *)  echo "Thormaster ($thorpid) Unknown error code.  Stopping"
+            $deploydir/stop_thor $deploydir
+            exit 1
+            ;;
+        esac
     else
         echo failed to start thormaster$LCR, pausing for 30 seconds
+        $deploydir/stop_thor $deploydir
         sleep 30
     fi
-    if [ ! -e $SENTINEL ]; then
+    if [[ ! -e $SENTINEL ]]; then
         echo $SENTINEL 'has been removed or thormaster did not fully start - script stopping'
         exit 0
     fi

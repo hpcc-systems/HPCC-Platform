@@ -93,7 +93,6 @@ IAtom * _spill_Atom;
 IAtom * _spillReason_Atom;
 IAtom * _steppedMeta_Atom;
 IAtom * subgraphAtom;
-IAtom * _tempCount_Atom;
 IAtom * _translated_Atom;
 IAtom * utf8Atom;
 IAtom * wrapperAtom;
@@ -1488,7 +1487,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKESYSATOM(spill);
     MAKESYSATOM(spillReason);
     MAKESYSATOM(steppedMeta);
-    MAKESYSATOM(tempCount);
     MAKESYSATOM(translated);
     return true;
 }

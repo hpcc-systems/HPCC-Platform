@@ -47,7 +47,7 @@ function pidwait_fn () {
       return 0
     fi
 
-    kill $WATCH_PID
+    kill $WATCH_PID > /dev/null 2>&1
     while [[ -d /proc/$WATCH_PID ]] && [[ $TIMEOUT -gt 0 ]]; do
       sleep 0.2
       local TIMEOUT=$(($TIMEOUT-200))
@@ -64,7 +64,7 @@ function pidwait_fn () {
       fi
     fi
 
-    rm -f $PID
+    rm -f $PID > /dev/null 2>&1
     return 0
 }
 

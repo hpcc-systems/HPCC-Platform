@@ -17,7 +17,7 @@ The HPCC Systems architecture incorporates the Thor and Roxie clusters as well a
 
 Thor (the Data Refinery Cluster) is responsible for consuming vast amounts of data, transforming, linking and indexing that data. It functions as a distributed file system with parallel processing power spread across the nodes. A cluster can scale from a single node to thousands of nodes.
 
-* Single-threaded
+* Multiple concurrent queries / Single job runs at a time
 * Distributed parallel processing
 * Distributed file system
 * Powerful parallel processing programming language (ECL)
@@ -26,7 +26,7 @@ Thor (the Data Refinery Cluster) is responsible for consuming vast amounts of da
 
 ## [Roxie](http://hpccsystems.com/FAQ/what-roxie)
 
-Roxie (the Query Cluster) provides separate high-performance online query processing and data warehouse capabilities.  Roxie (Rapid Online XML Inquiry Engine) is the data delivery engine used in HPCC to serve data quickly and can support many thousands of requests per node per second. 
+Roxie (the Query Cluster) provides separate high-performance online query processing and data warehouse capabilities.  Roxie (Richard's Online XML Inquiry Engine) is the data delivery engine used in HPCC to serve data quickly and can support many thousands of requests per node per second. 
 
 * Multi-threaded
 * Distributed parallel processing
@@ -45,6 +45,7 @@ ECL (Enterprise Control Language) is the powerful programming language that is i
 * Combines data representation and algorithm implementation
 * Easily extend using C++ libraries
 * ECL is compiled into optimized C++
+* Plugin support that enables embedding languages and external data sources: Javascript, Python, Java, Cassandra/CQL, etc.
 
 ## [ECL IDE](http://hpccsystems.com/FAQ/what-ecl-ide)
 
@@ -61,3 +62,6 @@ ESP (Enterprise Services Platform) provides an easy to use interface to access E
 
 * Standards-based interface to access ECL functions
 
+------
+
+Get started by [building HPCC](https://github.com/hpcc-systems/HPCC-Platform/wiki/Building-HPCC)!

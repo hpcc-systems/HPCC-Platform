@@ -45,7 +45,7 @@ public:
     void setVerbose(bool verbose){optVerbose = verbose;};
     bool getVerbose(){return optVerbose;};
 
-    void transform(const char * source, const char * outdir="", StringBuffer * out=NULL, bool outputIncludes=true)
+    void transform(const char * source, const char * outdir="", StringBuffer * out=NULL, bool outputIncludes=true, bool includedESDL=false)
     {
         if (added.getValue(source) == false)
         {
@@ -56,7 +56,7 @@ public:
                     fprintf(stdout, "Output directory not specified\n");
             }
 
-            ESDLcompiler hc(source, out==NULL, outdir, outputIncludes);
+            ESDLcompiler hc(source, out==NULL, outdir, outputIncludes, includedESDL);
             hc.Process();
             if (out != NULL)
                 out->append(hc.getEsxdlContent());
@@ -71,8 +71,8 @@ public:
                 IncludeInfo * ii;
                 for (ii=hc.includes;ii;ii=ii->next)
                 {
-                   subfile.setf("%s%s.ecm", srcDir.str(), ii->pathstr.str());
-                   transform(subfile, outdir, out, outputIncludes);
+                   subfile.setf("%s%s%s", srcDir.str(), ii->pathstr.str(), ESDL_FILE_EXTENSION);
+                   transform(subfile, outdir, out, outputIncludes, true);
                 }
             }
         }

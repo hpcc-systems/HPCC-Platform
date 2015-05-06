@@ -19,7 +19,7 @@
 #define ROXIEHELPER_IPP
 
 #include "thorhelper.hpp"
-
+#include "rtlds_imp.hpp"
 #include "jlog.hpp"
 
 extern THORHELPER_API unsigned traceLevel;
@@ -30,6 +30,15 @@ extern THORHELPER_API unsigned traceLevel;
 struct ISimpleInputBase //base for IInputBase and IHThorSimpleInput
 {
     virtual const void * nextInGroup() = 0;     // return NULL for eog/eof
+    virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...
+    virtual void readAll(RtlLinkedDatasetBuilder &builder); // note: default implementation can be overridden for efficiency...
+    inline const void * nextUngrouped()
+    {
+        const void * ret = nextInGroup();
+        if (!ret)
+            ret = nextInGroup();
+        return ret;
+    };
 };
 
 interface IOutputMetaData;

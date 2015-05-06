@@ -265,6 +265,8 @@ private:
     void cleanZAPFolder(IFile* zipDir, bool removeFolder);
     IPropertyTree* sendControlQuery(IEspContext &context, const char* target, const char* query, unsigned timeout);
     bool resetQueryStats(IEspContext &context, const char* target, IProperties* queryIds, IEspWUQuerySetQueryActionResponse& resp);
+    void readGraph(IEspContext& context, const char* subGraphId, WUGraphIDType& id, bool running,
+        IConstWUGraph* graph, IArrayOf<IEspECLGraphEx>& graphs);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

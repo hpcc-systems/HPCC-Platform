@@ -1635,22 +1635,18 @@ void Cws_machineEx::setMachineInfo(IEspContext& context, CMachineInfoThreadParam
         CProcessData& process = processes.item(idx);
 
         Owned<IEspMachineInfoEx> pMachineInfo = static_cast<IEspMachineInfoEx*>(new CMachineInfoEx(""));
-        Owned<IEspMachineInfoEx> pMachineInfo1;
-        if (pParam->m_options.getGetSoftwareInfo() && process.getType() && strieq(process.getType(), eqEclAgent))
-            pMachineInfo1.setown(static_cast<IEspMachineInfoEx*>(new CMachineInfoEx("")));
-        setProcessInfo(context, pParam, response, error, process, idx<1, pMachineInfo, pMachineInfo1);
+        setProcessInfo(context, pParam, response, error, process, idx<1, pMachineInfo);
 
         synchronized block(mutex_machine_info_table);
         pParam->m_machineInfoTable.append(*pMachineInfo.getLink());
-        if (pMachineInfo1)
-            pParam->m_machineInfoTable.append(*pMachineInfo1.getLink());
     }
 }
 
 void Cws_machineEx::setProcessInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char* response,
-                                   int error, CProcessData& process, bool firstProcess, IEspMachineInfoEx* pMachineInfo, IEspMachineInfoEx* pMachineInfo1)
+                                   int error, CProcessData& process, bool firstProcess, IEspMachineInfoEx* pMachineInfo)
 {
     double version = context.getClientVersion();
+    bool isEclAgentProcess = process.getType() && strieq(process.getType(), eqEclAgent);
     pMachineInfo->setAddress(pParam->m_machineData.getNetworkAddress());
     pMachineInfo->setConfigAddress(pParam->m_machineData.getNetworkAddressInEnvSetting());
     pMachineInfo->setOS(pParam->m_machineData.getOS());
@@ -1663,34 +1659,22 @@ void Cws_machineEx::setProcessInfo(IEspContext& context, CMachineInfoThreadParam
     //set DisplayType
     if (process.getType() && *process.getType())
     {
-        pMachineInfo->setProcessType(process.getType());
-        StringBuffer displayName;
-        getProcessDisplayName(process.getType(), displayName);
-        pMachineInfo->setDisplayType(displayName.str());
+        if (isEclAgentProcess)
+        {
+            pMachineInfo->setProcessType(eqAgentExec);
+            pMachineInfo->setDisplayType("Agent Exec");
+        }
+        else
+        {
+            pMachineInfo->setProcessType(process.getType());
+            StringBuffer displayName;
+            getProcessDisplayName(process.getType(), displayName);
+            pMachineInfo->setDisplayType(displayName.str());
+        }
     }
     else if (process.getName() && *process.getName())
     {
         pMachineInfo->setDisplayType(process.getName());
-    }
-
-    bool isEclAgentProcess = process.getType() && strieq(process.getType(), eqEclAgent);
-    if (pMachineInfo1)
-    {
-        pMachineInfo1->setAddress(pParam->m_machineData.getNetworkAddress());
-        pMachineInfo1->setConfigAddress(pParam->m_machineData.getNetworkAddressInEnvSetting());
-        pMachineInfo1->setOS(pParam->m_machineData.getOS());
-
-        if (process.getName() && *process.getName())
-            pMachineInfo1->setComponentName(process.getName());
-        if (process.getPath() && *process.getPath())
-            pMachineInfo1->setComponentPath(process.getPath());
-
-        if (isEclAgentProcess)
-        {
-            pMachineInfo1->setProcessType(eqAgentExec);
-            pMachineInfo1->setDisplayType("Agent Exec");
-        }
-        //Right now, only EclAgent has pMachineInfo1. May add more if needed
     }
 
     if ((version > 1.09) && process.getType() && strieq(process.getType(), eqThorSlaveProcess))
@@ -1706,15 +1690,11 @@ void Cws_machineEx::setProcessInfo(IEspContext& context, CMachineInfoThreadParam
         else
             description = response;
         pMachineInfo->setDescription(description.str());
-        if (pMachineInfo1)
-            pMachineInfo1->setDescription(description.str());
     }
     else
     {
         //Now, add more columns based on 'response'
         pMachineInfo->setUpTime(pParam->m_machineData.getComputerUpTime());
-        if (pMachineInfo1)
-            pMachineInfo1->setUpTime(pParam->m_machineData.getComputerUpTime());
         pParam->addColumn("Up Time");
 
         if (pParam->m_options.getGetStorageInfo())
@@ -1736,8 +1716,6 @@ void Cws_machineEx::setProcessInfo(IEspContext& context, CMachineInfoThreadParam
             }
 
             pMachineInfo->setStorage(storageArray);
-            if (pMachineInfo1)
-                pMachineInfo1->setStorage(storageArray);
             storageArray.kill();
         }
 
@@ -1749,8 +1727,6 @@ void Cws_machineEx::setProcessInfo(IEspContext& context, CMachineInfoThreadParam
             processorArray.append(*info.getLink());
 
             pMachineInfo->setProcessors(processorArray);
-            if (pMachineInfo1)
-                pMachineInfo1->setProcessors(processorArray);
             processorArray.kill();
 
             pParam->addColumn("CPU Load");
@@ -1767,18 +1743,6 @@ void Cws_machineEx::setProcessInfo(IEspContext& context, CMachineInfoThreadParam
                 //Set running processes if ApplyProcessFilter is set to false
                 //Set processes not running if ApplyProcessFilter is set to true
                 pMachineInfo->setRunning(processArray);
-                if (pMachineInfo1)
-                    pMachineInfo1->setRunning(processArray);
-            }
-
-            if (pMachineInfo1)
-            {
-                IEspComponentInfo* pComponentInfo1 = &pMachineInfo1->updateComponentInfo();
-                pComponentInfo1->setCondition(pComponentInfo->getCondition());
-                pComponentInfo1->setState(pComponentInfo->getState());
-                pComponentInfo1->setUpTime(pComponentInfo->getUpTime());
-                if (isEclAgentProcess)
-                    pComponentInfo->setUpTime("-"); //for ECL Agent
             }
 
             pParam->addColumn("Processes");

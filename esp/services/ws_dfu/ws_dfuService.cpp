@@ -3064,6 +3064,8 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFdescription), DFUQFTwildcardMatch, req.getDescription(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
+    if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
+        filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
 
     __int64 sizeFrom = req.getFileSizeFrom();
     __int64 sizeTo = req.getFileSizeTo();
@@ -3203,6 +3205,15 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
             lFile->setParts(file.queryProp(getDFUQResultFieldName(DFUQRFnumparts)));
         }
         lFile->setBrowseData(numSubFiles > 1 ? false : true); ////Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
+
+        if (version >= 1.30)
+        {
+            bool persistent = file.getPropBool(getDFUQResultFieldName(DFUQRFpersistent), false);
+            if (persistent)
+                lFile->setPersistent(true);
+            if (file.hasProp(getDFUQResultFieldName(DFUQRFsuperowners)))
+                lFile->setSuperOwners(file.queryProp(getDFUQResultFieldName(DFUQRFsuperowners)));
+        }
 
         __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),0);
         if (size > 0)

@@ -215,6 +215,7 @@
 #define HQLERR_DistributionVariableLengthX      4195
 #define HQLERR_DistributionUnsupportedTypeXX    4196
 #define HQLERR_InconsistentEmbedded             4197
+#define HQLERR_UnsupportedRowDiffType           4198
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -503,6 +504,7 @@
 #define HQLERR_VariableRowMustBeLinked_Text     "External function '%s' cannot return a non-linked variable length row"
 #define HQLERR_UserCodeNotAllowed_Text          "Workunit-supplied code is not permitted on this system"
 #define HQLERR_StreamInputUsedDirectly_Text     "Library input used directly in a child query"
+#define HQLERR_UnsupportedRowDiffType_Text      "ROWDIFF: Does not support type '%s' for field %s"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

@@ -65,6 +65,8 @@ outdata := NORMALIZE(one_per_node, numrecs, fillRow(LEFT, counter));
 
 copiedcmp1 := DATASET('nhtest::testfile_exp_copy_cmp', rec, flat, __compressed__);
 copiedcmp2 := DATASET('nhtest::testfile_cmp_copy_cmp', rec, flat, __compressed__);
+copiedcmp3 := DATASET('nhtest::testfile_cmp_copy_cmp2', rec, flat, __compressed__);
+copiedcmp4 := DATASET('nhtest::testfile_cmp_copy_cmp3', rec, flat, __compressed__);
 copiedexp := DATASET('nhtest::testfile_cmp_copy_exp', rec, flat);
 
 unsigned compareDatasets(dataset(rec) ds1,dataset(rec) ds2) := FUNCTION
@@ -106,6 +108,34 @@ sequential (
             true                        // compress
            ),  
 
+// test copy compressed to compressed with preservecompression flag
+
+FileServices.Copy('nhtest::testfile_cmp',   // sourceLogicalName
+            '',                             // destinationGroup
+            'nhtest::testfile_cmp_copy_cmp2', // destinationLogicalName
+            ,                               // sourceDali
+            5*60*1000,                      // timeOut
+            ,                               // espServerIpPort
+            ,                               // maxConnections
+            true,                           // allowoverwrite
+            false,                          // replicate
+            ,                               // asSuperfile,
+            ,
+            PRESERVECOMPRESSION:=true
+           ),
+
+// test copy compressed to compressed without preservecompression flag
+
+FileServices.Copy('nhtest::testfile_cmp',   // sourceLogicalName
+            '',                             // destinationGroup
+            'nhtest::testfile_cmp_copy_cmp3', // destinationLogicalName
+            ,                               // sourceDali
+            5*60*1000,                      // timeOut
+            ,                               // espServerIpPort
+            ,                               // maxConnections
+            true,                           // allowoverwrite
+            false                           // replicate
+           ),
 
 // test copy compressed to expanded  
 
@@ -117,13 +147,15 @@ sequential (
             ,                               // espServerIpPort
             ,                               // maxConnections, 
             true,                           // allowoverwrite
-            true,                       // replicate=false, 
+            false,                       // replicate=false,
             ,                           // asSuperfile, 
             false                       // compress
            ),
            
    OUTPUT(compareDatasets(outdata,copiedcmp1)),
    OUTPUT(compareDatasets(outdata,copiedcmp2)),
+   OUTPUT(compareDatasets(outdata,copiedcmp3)),
+   OUTPUT(compareDatasets(outdata,copiedcmp4)),
    OUTPUT(compareDatasets(outdata,copiedexp))
            
  );

@@ -111,9 +111,12 @@ namespace HttpParamHelpers
         Owned<IPropertyIterator> props = parameters->getIterator();
         ForEach(*props)
         {
-            const char *key = props->getPropKey();
+            StringBuffer key = props->getPropKey();
+            if (!key.length() || key.charAt(key.length()-1)=='!')
+                continue;
             const char *value = parameters->queryProp(key);
-            ensureParameter(pt, key, value);
+            if (value && *value)
+                ensureParameter(pt, key, value);
         }
         return pt.getClear();
     }

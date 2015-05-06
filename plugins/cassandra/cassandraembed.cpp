@@ -441,6 +441,7 @@ static bool isInteger(const CassValueType t)
 {
     switch (t)
     {
+    case CASS_VALUE_TYPE_TIMESTAMP:
     case CASS_VALUE_TYPE_INT:
     case CASS_VALUE_TYPE_BIGINT:
     case CASS_VALUE_TYPE_COUNTER:
@@ -561,6 +562,7 @@ static __int64 getSignedResult(const RtlFieldInfo *field, const CassValue *value
         check(cass_value_get_int32(value, &output));
         return output;
     }
+    case CASS_VALUE_TYPE_TIMESTAMP:
     case CASS_VALUE_TYPE_BIGINT:
     case CASS_VALUE_TYPE_COUNTER:
     case CASS_VALUE_TYPE_VARINT:

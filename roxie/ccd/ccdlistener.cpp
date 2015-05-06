@@ -1762,9 +1762,12 @@ readAnother:
                     else
                     {
                         StringBuffer querySetName;
-                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
                         if (isHTTP)
+                        {
                             client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
+                            querySetName.set(httpHelper.queryTarget());
+                        }
+                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
                         if (queryFactory)
                         {
                             queryFactory->checkSuspended();
@@ -1885,7 +1888,13 @@ readAnother:
                         {
                             pool->reportBadQuery(queryName.get(), logctx);
                             if (globalPackageSetManager->getActivePackageCount())
-                                throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryName.get());
+                            {
+                                StringBuffer targetMsg;
+                                const char *target = httpHelper.queryTarget();
+                                if (target && *target)
+                                    targetMsg.append(", in target ").append(target);
+                                throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s%s", queryName.get(), targetMsg.str());
+                            }
                             else
                                 throw MakeStringException(ROXIE_NO_PACKAGES_ACTIVE, "Unknown query %s (no packages active)", queryName.get());
                         }

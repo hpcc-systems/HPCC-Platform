@@ -76,17 +76,17 @@ public:
         return false;
     }
 
+
     virtual void *getBuffer(unsigned len, bool variable)
     {
-        data.setLength(lastput);
         if (variable)
         {
-            char *ret = (char *) data.reserve(len + sizeof(RecordLengthType));
+            char *ret = (char *) data.ensureCapacity(len + sizeof(RecordLengthType));
             return ret + sizeof(RecordLengthType);
         }
         else
         {
-            return data.reserve(len);
+            return data.ensureCapacity(len);
         }
     }
 
@@ -98,11 +98,11 @@ public:
             *(RecordLengthType *) buf = len;
             len += sizeof(RecordLengthType);
         }
-        data.setLength(lastput + len);
+        data.setWritePos(lastput + len);
         lastput += len;
     }
 
-    virtual void flush(bool last_message) { data.setLength(lastput); }
+    virtual void flush(bool last_message) { }
     virtual void sendMetaInfo(const void *buf, unsigned len) { throwUnexpected(); }
     virtual unsigned size() const { return lastput; }
 };
