@@ -48,6 +48,10 @@ define([
             if (request.Sortby && request.Sortby === "TotalClusterTime") {
                 request.Sortby = "ClusterTime";
             }
+            this.busy = true;
+        },
+        preProcessFullResponse: function (response, request, query, options) {
+            this.busy = false;
         },
         create: function (id) {
             return new Workunit({
