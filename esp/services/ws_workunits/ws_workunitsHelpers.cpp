@@ -1023,12 +1023,6 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     info.setDescription(cw->getDebugValue("description", s).str());
     if (version > 1.21)
         info.setXmlParams(cw->getXmlParams(s).str());
-    if (version >= 1.49)
-    {
-        SCMStringBuffer xml;
-        exportWorkUnitToXML(cw, xml, true, false);
-        info.setWUXMLSize(xml.length());
-    }
 
     info.setResultLimit(cw->getResultLimit());
     info.setArchived(false);
@@ -3090,7 +3084,7 @@ void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& inp
     if (isEmpty(trimmedInput))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Workunit ID not set", methodName);
 
-    if (!looksLikeAWuid(trimmedInput))
+    if (!looksLikeAWuid(trimmedInput, 'W'))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Invalid Workunit ID: %s", methodName, trimmedInput);
 
     return;

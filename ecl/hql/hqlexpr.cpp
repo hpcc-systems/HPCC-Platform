@@ -15896,7 +15896,6 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     {
         HqlScopeArray scopes;   
         getRootScopes(scopes, dataServer, ctx);
-        scopes.sort(compareScopesByName);
         ForEachItemIn(i, scopes)
         {
             IHqlScope & cur = scopes.item(i);

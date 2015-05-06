@@ -192,6 +192,7 @@ public:
     virtual void setSource(IDistributedFilePart * part);
     virtual void setSourceTarget(IFileDescriptor * fd, DaftReplicateMode mode);
     virtual void setTarget(IDistributedFile * target);
+    virtual void setTargetCompression(bool compress);
     virtual void setTarget(IFileDescriptor * target, unsigned copy);
     virtual void setTarget(IGroup * target);
     virtual void setTarget(INode * target);
@@ -315,6 +316,7 @@ protected:
     size32_t                transferBufferSize;
     StringAttr              encryptKey;
     StringAttr              decryptKey;
+    bool                    preserveCompression;
 };
 
 

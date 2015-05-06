@@ -93,7 +93,6 @@ extern IAtom * _spill_Atom;
 extern IAtom * _spillReason_Atom;
 extern IAtom * _steppedMeta_Atom;
 extern IAtom * subgraphAtom;
-extern IAtom * _tempCount_Atom;
 extern IAtom * _translated_Atom;
 extern IAtom * utf8Atom;
 extern IAtom * wrapperAtom;

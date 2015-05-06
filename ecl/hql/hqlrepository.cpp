@@ -23,6 +23,7 @@
 #include "eclrtl.hpp"
 #include "hqlexpr.ipp"
 #include "hqlerror.hpp"
+#include "hqlutil.hpp"
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -30,6 +31,7 @@ static void getRootScopes(HqlScopeArray & rootScopes, IHqlScope * scope)
 {
     HqlExprArray rootSymbols;
     scope->getSymbols(rootSymbols);
+    rootSymbols.sort(compareSymbolsByName);
     ForEachItemIn(i, rootSymbols)
     {
         IHqlExpression & cur = rootSymbols.item(i);

@@ -118,6 +118,7 @@ enum DFUsortfield
     DFUsf_pcdone,
     DFUsf_wuidhigh,         // only for filter high of range
     DFUsf_protected,
+    DFUsf_wildwuid,
     DFUsf_term = 0,
     DFUsf_reverse = 0x100,  // for sort
     DFUsf_nocase  = 0x200,  // sort and filter
@@ -165,13 +166,11 @@ interface IConstDFUoptions : extends IInterface
     virtual bool getSuppressNonKeyRepeats() const = 0;
     virtual bool getSubfileCopy() const = 0;                                // i.e. called by supercopy
     virtual bool getEncDec(StringAttr &enc,StringAttr &dec) = 0;
-
     virtual IPropertyTree *queryTree() const = 0;                   // used by DFU server
     virtual bool getFailIfNoSourceFile() const = 0;
-
     virtual bool getRecordStructurePresent() const = 0;
-
     virtual bool getQuotedTerminator() const = 0;
+    virtual bool getPreserveCompression() const = 0;
 };
 
 interface IDFUoptions : extends IConstDFUoptions
@@ -209,6 +208,7 @@ interface IDFUoptions : extends IConstDFUoptions
     virtual void setFailIfNoSourceFile(bool val=false) = 0;
     virtual void setRecordStructurePresent(bool val=false) = 0;
     virtual void setQuotedTerminator(bool val=true) = 0;
+    virtual void setPreserveCompression(bool val=true) = 0;
 };
 
 interface IConstDFUfileSpec: extends IInterface

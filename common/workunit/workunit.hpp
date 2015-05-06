@@ -407,6 +407,7 @@ interface IWUQuery : extends IConstWUQuery
     virtual void addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc) = 0;
     virtual void removeAssociatedFiles() = 0;
     virtual void setQueryMainDefinition(const char * str) = 0;
+    virtual void removeAssociatedFile(WUFileType type, const char * name, const char * desc) = 0;
 };
 
 
@@ -1390,7 +1391,7 @@ extern WORKUNIT_API bool isQueryManifest(const char * text);
 extern WORKUNIT_API IPropertyTree * resolveDefinitionInArchive(IPropertyTree * archive, const char * path);
 
 inline bool isLibrary(IConstWorkUnit * wu) { return wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0) != 0; }
-extern WORKUNIT_API bool looksLikeAWuid(const char * wuid);
+extern WORKUNIT_API bool looksLikeAWuid(const char * wuid, const char firstChar);
 
 enum WUQueryActivationOptions
 {

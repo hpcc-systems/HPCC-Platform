@@ -48,6 +48,10 @@ define([
             if (request.Sortby && request.Sortby === "TotalClusterTime") {
                 request.Sortby = "ClusterTime";
             }
+            this.busy = true;
+        },
+        preProcessFullResponse: function (response, request, query, options) {
+            this.busy = false;
         },
         create: function (id) {
             return new Workunit({
@@ -122,7 +126,12 @@ define([
         _SourceFilesSetter: function (SourceFiles) {
             var sourceFiles = [];
             for (var i = 0; i < SourceFiles.ECLSourceFile.length; ++i) {
-                sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, SourceFiles.ECLSourceFile[i])));
+                sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid, __hpcc_parentName: "" }, SourceFiles.ECLSourceFile[i])));
+                if (lang.exists("ECLSourceFiles.ECLSourceFile", SourceFiles.ECLSourceFile[i])) {
+                    for (var j = 0; j < SourceFiles.ECLSourceFile[i].ECLSourceFiles.ECLSourceFile.length; ++j) {
+                        sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid, __hpcc_parentName: SourceFiles.ECLSourceFile[i].Name }, SourceFiles.ECLSourceFile[i].ECLSourceFiles.ECLSourceFile[j])));
+                    }
+                }
             }
             this.set("sourceFiles", sourceFiles);
         },
