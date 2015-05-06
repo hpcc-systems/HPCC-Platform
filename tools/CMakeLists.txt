@@ -14,9 +14,9 @@
 #    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (esdlcomp)
-HPCC_ADD_SUBDIRECTORY (esdlcmd)
-HPCC_ADD_SUBDIRECTORY (esdlcmd-xml)
 HPCC_ADD_SUBDIRECTORY (hidl)
+HPCC_ADD_SUBDIRECTORY (esdlcmd-xml)
+HPCC_ADD_SUBDIRECTORY (esdlcmd)
 HPCC_ADD_SUBDIRECTORY (backupnode "PLATFORM")
 IF (USE_OPENLDAP)
 HPCC_ADD_SUBDIRECTORY (addScopes "PLATFORM")
