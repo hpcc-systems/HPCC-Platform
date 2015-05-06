@@ -184,17 +184,22 @@ ds2 := DATASET([{'A',2},{'B',2},{'H',2},{'I',2},{'J',2}],Rec);
 ds3 := DATASET([{'B',3},{'C',3},{'M',3},{'N',3},{'O',3}],Rec);
 ds4 := DATASET([{'A',4},{'B',4},{'R',4},{'S',4},{'T',4}],Rec);
 ds5 := DATASET([{'B',5},{'V',5},{'W',5},{'X',5},{'Y',5}],Rec);
-SetDS := [ds1,ds2,ds3,ds4,ds5];j1 := MERGEJOIN(SetDS,
-      STEPPED(LEFT.Letter=RIGHT.Letter),
-      SORTED(Letter));j2 := MERGEJOIN(SetDS,
-      STEPPED(LEFT.Letter=RIGHT.Letter),
-      SORTED(Letter),LEFT OUTER);j3 := MERGEJOIN(SetDS,
-      STEPPED(LEFT.Letter=RIGHT.Letter),
-      SORTED(Letter),LEFT ONLY);j4 := MERGEJOIN(SetDS,
-      STEPPED(LEFT.Letter=RIGHT.Letter),
-      SORTED(Letter),MOFN(3));j5 := MERGEJOIN(SetDS,
-      STEPPED(LEFT.Letter=RIGHT.Letter),
-      SORTED(Letter),MOFN(3,4));
+SetDS := [ds1,ds2,ds3,ds4,ds5];
+j1 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter));
+j2 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter),LEFT OUTER);
+j3 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter),LEFT ONLY);
+j4 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter),MOFN(3));
+j5 := MERGEJOIN(SetDS,
+                STEPPED(LEFT.Letter=RIGHT.Letter),
+                SORTED(Letter),MOFN(3,4));
 OUTPUT(j1);
 OUTPUT(j2);
 OUTPUT(j3);
@@ -202,6 +207,7 @@ OUTPUT(j4);
 OUTPUT(j5);
 </programlisting>
 
-    <para>See Also: <link linkend="MERGE">MERGE</link>, <link linkend="JOIN">JOIN</link>, <link linkend="STEPPED">STEPPED</link></para>
+    <para>See Also: <link linkend="MERGE">MERGE</link>, <link
+    linkend="JOIN">JOIN</link>, <link linkend="STEPPED">STEPPED</link></para>
   </sect2>
 </sect1>
