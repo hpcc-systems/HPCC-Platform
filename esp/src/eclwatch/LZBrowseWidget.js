@@ -226,9 +226,7 @@ define([
         },
 
         getUploadPath: function () {
-            var target = this.dropZoneTargetSelect.get("row");
-            var folder = this.dropZoneFolderSelect.get("row");
-            return target.machine.Directory + (this.endsWith(target.machine.Directory, "/") ? "" : "/") + folder.value;
+            return this.dropZoneFolderSelect.get("row").value;
         },
 
         _onUploadSubmit: function (event) {
@@ -461,6 +459,7 @@ define([
                 DropZones: true,
                 callback: function (value, row) {
                     if (context.dropZoneFolderSelect) {
+                        context.dropZoneFolderSelect.reset();
                         context.dropZoneFolderSelect._dropZoneTarget = row;
                         context.dropZoneFolderSelect.defaultValue = context.dropZoneFolderSelect.get("value");
                         context.dropZoneFolderSelect.loadDropZoneFolders();

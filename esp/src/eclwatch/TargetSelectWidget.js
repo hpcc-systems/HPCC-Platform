@@ -20,7 +20,9 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/_base/xhr",
+    "dojo/_base/Deferred",
     "dojo/data/ItemFileReadStore",
+    "dojo/promise/all",
     "dojo/on",
 
     "dijit/form/Select",
@@ -29,7 +31,7 @@ define([
     "hpcc/WsTopology",
     "hpcc/WsWorkunits",
     "hpcc/FileSpray"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, ItemFileReadStore, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, on,
     Select, registry,
     WsTopology, WsWorkunits, FileSpray) {
     return declare("TargetSelectWidget", [Select], {
@@ -144,28 +146,51 @@ define([
             });
         },
 
+        _loadDropZoneFolders: function (Netaddr, Path, OS) {
+            var retVal = [];
+            retVal.push(Path);
+            var deferred = new Deferred();
+
+            var context = this;
+            FileSpray.FileList({
+                request: {
+                    Netaddr: Netaddr,
+                    Path: Path,
+                    OS: OS
+                }
+            }).then(function (response) {
+                var requests = [];
+                if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
+                    var files = response.FileListResponse.files.PhysicalFileStruct;
+                    for (var i = 0; i < files.length; ++i) {
+                        if (files[i].isDir) {
+                            requests.push(context._loadDropZoneFolders(Netaddr, Path + "/" + files[i].name, OS));
+                        }
+                    }
+                }
+                all(requests).then(function (responses) {
+                    arrayUtil.forEach(responses, function (response) {
+                        retVal = retVal.concat(response);
+                    });
+                    deferred.resolve(retVal);
+                });
+            });
+            return deferred.promise;
+        },
+
         loadDropZoneFolders: function () {
             var context = this;
             if (this._dropZoneTarget) {
-                FileSpray.FileList({
-                    request: {
-                        Netaddr: this._dropZoneTarget.machine.Netaddress,
-                        Path: this._dropZoneTarget.machine.Directory,
-                        OS: this._dropZoneTarget.machine.OS
-                    }
-                }).then(function (response) {
-                    if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
-                        var files = response.FileListResponse.files.PhysicalFileStruct;
-                        for (var i = 0; i < files.length; ++i) {
-                            if (files[i].isDir) {
-                                context.options.push({
-                                    label: files[i].name,
-                                    value: files[i].name
-                                });
-                            }
-                        }
-                        context._postLoad();
-                    }
+                this._loadDropZoneFolders(this._dropZoneTarget.machine.Netaddress, this._dropZoneTarget.machine.Directory, this._dropZoneTarget.machine.OS).then(function (results) {
+                    results.sort();
+                    context.options = arrayUtil.map(results, function (_path) {
+                        var path = _path.substring(context._dropZoneTarget.machine.Directory.length);
+                        return {
+                            label: "..." + path,
+                            value: _path
+                        };
+                    });
+                    context._postLoad();
                 });
             }
         },
