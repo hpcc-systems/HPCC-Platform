@@ -2971,6 +2971,13 @@ void clientShutdownWorkUnit()
     factory.clear();
 }
 
+
+extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory * _factory)
+{
+    CriticalBlock b(factoryCrit);
+    factory.setown(_factory);
+}
+
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
 {
     if (!factory)

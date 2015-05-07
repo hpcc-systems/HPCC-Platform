@@ -105,7 +105,6 @@ public:
     }
     void setOptions(const StringArray &options)
     {
-        cluster = cass_cluster_new();
         const char *contact_points = "localhost";
         const char *user = "";
         const char *password = "";
@@ -3510,4 +3509,9 @@ private:
 extern "C" EXPORT IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *props)
 {
     return new cassandraembed::CCasssandraWorkUnitFactory(props);
+}
+
+extern EXPORT void forceLinkCassandraEmbed()
+{
+    // Makes debugging easier...
 }
