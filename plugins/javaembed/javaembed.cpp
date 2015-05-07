@@ -2222,6 +2222,8 @@ public:
     }
     virtual void callFunction()
     {
+        if (*argsig != ')')
+            throw MakeStringException(0, "javaembed: Too few ECL parameters passed for Java signature %s", sharedCtx->querySignature());
         sharedCtx->callFunction(result, args);
     }
 
