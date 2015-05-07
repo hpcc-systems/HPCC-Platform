@@ -901,8 +901,7 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char 
     }
     catch (IException *e)
     {
-        SCMStringBuffer wuid;
-        VStringBuffer msg("ERROR loading workunit %s shared object.", wu.getWuid(wuid).str());
+        VStringBuffer msg("ERROR loading workunit %s shared object.", wu.queryWuid());
         EXCLOG(e, msg.str());
         e->Release();
     }
