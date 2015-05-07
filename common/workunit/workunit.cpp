@@ -2147,6 +2147,7 @@ public:
         UniqueScopes us;
         if (secmgr /* && secmgr->authTypeRequired(RT_WORKUNIT_SCOPE) tbd */)
         {
+            // MORE - this will defeat any lazy-fetch mechanism in the incoming iterator
             scopes.setown(secmgr->createResourceList("wuscopes"));
             ForEach(*ptreeIter)
             {
@@ -2955,6 +2956,10 @@ protected:
     SessionId session;
 };
 
+extern WORKUNIT_API IConstWorkUnitIterator *createConstWUIterator(IPropertyTreeIterator *iter, ISecManager *secmgr, ISecUser *secuser)
+{
+    return new CConstWUIterator(iter, secmgr, secuser);
+}
 static CriticalSection factoryCrit;
 static Owned<ILoadedDllEntry> workunitServerPlugin;  // NOTE - unload AFTER the factory is released!
 static Owned<IWorkUnitFactory> factory;

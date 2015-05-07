@@ -1398,6 +1398,8 @@ extern WORKUNIT_API IPropertyTree * resolveDefinitionInArchive(IPropertyTree * a
 inline bool isLibrary(IConstWorkUnit * wu) { return wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0) != 0; }
 extern WORKUNIT_API bool looksLikeAWuid(const char * wuid, const char firstChar);
 
+extern WORKUNIT_API IConstWorkUnitIterator *createConstWUIterator(IPropertyTreeIterator *iter, ISecManager *secmgr, ISecUser *secuser);
+
 enum WUQueryActivationOptions
 {
     DO_NOT_ACTIVATE = 0,

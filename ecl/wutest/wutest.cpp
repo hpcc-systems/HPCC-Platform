@@ -48,7 +48,11 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     const char *action = globals->queryProp("#action");
     if (!action || stricmp(action, "list")==0)
     {
-        printf("%-30s %-20s %-10s\n", w.queryWuid(), w.queryJobName(), w.queryStateDesc());
+        Owned <IConstWUQuery> query = w.getQuery();
+        SCMStringBuffer queryText;
+        if (query)
+            query->getQueryText(queryText);
+        printf("%-20s %-10s %-10s %s\n", w.queryWuid(), w.queryJobName(), w.queryStateDesc(), queryText.str());
     }
     else if (stricmp(action, "results")==0)
     {
@@ -323,7 +327,7 @@ int main(int argc, const char *argv[])
         }
         else if (globals->hasProp("WUID"))
         {
-            if (stricmp(globals->queryProp("#action"), "restore")==0)
+            if (globals->queryProp("#action") && stricmp(globals->queryProp("#action"), "restore")==0)
             {
                 StringBuffer from;
                 globals->getProp("FROM", from);
