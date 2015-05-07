@@ -578,7 +578,7 @@ public:
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual int setTracingLevel(int newlevel);
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser);
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;

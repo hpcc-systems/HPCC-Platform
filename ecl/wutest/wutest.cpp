@@ -29,6 +29,11 @@
 #include "danqs.hpp"
 #include "dalienv.hpp"
 
+#ifdef _USE_CPPUNIT
+#include <cppunit/extensions/TestFactoryRegistry.h>
+#include <cppunit/ui/text/TestRunner.h>
+#endif
+
 void usage()
 {
     printf("Usage: WUTEST action [WUID=xxx] [OWNER=xxx]\n\n"
@@ -172,8 +177,9 @@ int main(int argc, const char *argv[])
     if (globals->getProp("CASSANDRASERVER", cassandraServer))
     {
         // Statically linking to cassandra plugin makes debugging easier (and means can debug simple cassandra workunit interactions without needing dali running)
-        Owned<IPTree> props = createPTreeFromXMLString("<WorkUnitsServer><Option name='server' value='.'/></WorkUnitsServer>");
+        Owned<IPTree> props = createPTreeFromXMLString("<WorkUnitsServer><Option name='server' value='.'/><Option name='randomWuidSuffix' value='4'/><Option name='traceLevel' value='0'/></WorkUnitsServer>");
         props->setProp("Option[@name='server']/@value", cassandraServer.str());
+        props->setPropInt("Option[@name='traceLevel']/@value", globals->getPropInt("tracelevel", 0));
         setWorkUnitFactory(createWorkUnitFactory(props));
     }
 #endif
@@ -204,9 +210,21 @@ int main(int argc, const char *argv[])
         }
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         const char *action = globals->queryProp("#action");
-        if (action && (stricmp(action, "testpaged")==0)) {
+        if (action && (stricmp(action, "testpaged")==0))
+        {
             testPagedWuList(factory);
         }
+#ifdef _USE_CPPUNIT
+        else if (action && (stricmp(action, "-selftest")==0))
+        {
+            queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
+            CppUnit::TextUi::TestRunner runner;
+            CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry("WuTest");
+            runner.addTest( registry.makeTest() );
+            bool wasSucessful = runner.run( "", false );
+            return wasSucessful;
+        }
+#endif
         else if (action && (stricmp(action, "orphans")==0 || stricmp(action, "cleanup")==0))
         {
             factory->setTracingLevel(0);
@@ -327,7 +345,7 @@ int main(int argc, const char *argv[])
         }
         else if (globals->hasProp("WUID"))
         {
-            if (globals->queryProp("#action") && stricmp(globals->queryProp("#action"), "restore")==0)
+            if (action && stricmp(action, "restore")==0)
             {
                 StringBuffer from;
                 globals->getProp("FROM", from);
@@ -376,3 +394,59 @@ int main(int argc, const char *argv[])
     return 0;
 }
 
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+class WuTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(WuTest);
+        CPPUNIT_TEST(testCreate);
+        CPPUNIT_TEST(testDelete);
+        CPPUNIT_TEST(testList);
+    CPPUNIT_TEST_SUITE_END();
+protected:
+    static StringArray wuids;
+    void testCreate()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned before = factory->numWorkUnits();
+        unsigned start = msTick();
+        for (int i = 0; i < 1000; i++)
+        {
+            VStringBuffer userId("user%d", i % 10);
+            Owned<IWorkUnit>wu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
+            wu->setState(WUStateFailed);
+            wu->setUser(userId);
+            wuids.append(wu->queryWuid());
+        }
+        unsigned after = factory->numWorkUnits();
+        DBGLOG("1000 workunits created in %d ms (%d total)", msTick()-start, after);
+        ASSERT(after-before==1000);
+        ASSERT(wuids.length() == 1000);
+    }
+
+    void testDelete()
+    {
+        ASSERT(wuids.length() == 1000);
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned before = factory->numWorkUnits();
+        unsigned start = msTick();
+        for (int i = 0; i < 1000; i++)
+        {
+            factory->deleteWorkUnit(wuids.item(i));
+        }
+        unsigned after = factory->numWorkUnits();
+        DBGLOG("1000 workunits deleted in %d ms (%d remain)", msTick()-start, after);
+        ASSERT(before-after==1000);
+    }
+
+    void testList()
+    {
+    }
+};
+StringArray WuTest::wuids;
+
+CPPUNIT_TEST_SUITE_REGISTRATION( WuTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( WuTest, "WuTest" );
+
+#endif

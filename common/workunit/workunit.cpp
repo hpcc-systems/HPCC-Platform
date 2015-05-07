@@ -2199,19 +2199,19 @@ CWorkUnitFactory::~CWorkUnitFactory()
 {
 }
 
-IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *scope, ISecManager *secmgr, ISecUser *secuser)
 {
-    checkWuScopeSecAccess(user, secmgr, secuser, SecAccess_Write, "Create", true, true);
+    checkWuScopeSecAccess(scope, secmgr, secuser, SecAccess_Write, "Create", true, true);
     Owned<CLocalWorkUnit> cw = _createWorkUnit(wuid, secmgr, secuser);
-    if (user)
-        cw->setWuScope(user);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
+    if (scope)
+        cw->setWuScope(scope);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
     IWorkUnit* ret = &cw->lockRemote(false);   // Note - this may throw exception if user does not have rights.
     ret->setDebugValue("CREATED_BY", app, true);
-    ret->setDebugValue("CREATED_FOR", user, true);
+    ret->setDebugValue("CREATED_FOR", scope, true);
     return ret;
 }
 
-IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, ISecManager *secmgr, ISecUser *secuser)
 {
     StringBuffer wuid("W");
     char result[32];
@@ -2222,7 +2222,7 @@ IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *user, I
     wuid.append(result);
     if (workUnitTraceLevel > 1)
         PrintLog("createWorkUnit created %s", wuid.str());
-    IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user, secmgr, secuser);
+    IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, scope, secmgr, secuser);
     if (workUnitTraceLevel > 1)
         PrintLog("createWorkUnit created %s", ret->queryWuid());
     addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
@@ -2990,9 +2990,11 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
         CriticalBlock b(factoryCrit);
         if (!factory)   // NOTE - this "double test" paradigm is not guaranteed threadsafe on modern systems/compilers - I think in this instance that is harmless even in the (extremely) unlikely event that it resulted in the setown being called twice.
         {
+            const char *forceEnv = getenv("FORCE_DALI_WORKUNITS");
+            bool forceDali = forceEnv && !strieq(forceEnv, "off") && !strieq(forceEnv, "0");
             Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/WorkUnitsServer", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
             // MORE - arguably should be looking in the config section that corresponds to the dali we connected to. If you want to allow some dalis to be configured to use a WU server and others not.
-            if (conn)
+            if (conn && !forceDali)
             {
                 const IPropertyTree *ptree = conn->queryRoot();
                 const char *pluginName = ptree->queryProp("@plugin");
@@ -3291,7 +3293,7 @@ void CLocalWorkUnit::beforeDispose()
 
 void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
 {
-    TIME_SECTION("WUDELETE cleanupAndDelete total");
+    MTIME_SECTION(queryActiveTimer(), "WUDELETE cleanupAndDelete total");
     // Delete any related things in SDS etc that might otherwise be forgotten
     if (p->getPropBool("@protected", false))
         throw MakeStringException(WUERR_WorkunitProtected, "%s: Workunit is protected",p->queryName());
