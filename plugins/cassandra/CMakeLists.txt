@@ -113,6 +113,7 @@ if (USE_CASSANDRA)
         cassandra
         eclrtl
         roxiemem
+        workunit
         jlib
         )
   endif()

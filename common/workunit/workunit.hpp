@@ -339,6 +339,8 @@ interface IWUResult : extends IConstWUResult
     virtual void setResultRow(unsigned len, const void * data) = 0;
     virtual void setResultXmlns(const char *prefix, const char *uri) = 0;
     virtual void setResultFieldOpt(const char *name, const char *value)=0;
+
+    virtual IPropertyTree *queryPTree() = 0;
 };
 
 
@@ -1277,6 +1279,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) = 0;
     virtual bool isAborting(const char *wuid) const = 0;
     virtual void clearAborting(const char *wuid) = 0;
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState) = 0;
 };
 
 interface IWorkflowScheduleConnection : extends IInterface
@@ -1322,6 +1325,8 @@ protected:
     Linked<IWorkUnit> wu;
     const char * defaultWho;
 };
+
+typedef IWorkUnitFactory * (* WorkUnitFactoryFactory)(const IPropertyTree *);
 
 extern WORKUNIT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getEclServerQueueNames(IStringVal &ret, const char *process);

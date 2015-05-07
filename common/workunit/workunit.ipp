@@ -363,10 +363,10 @@ public:
     IWURoxieQueryInfo* updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName);
     IWUPlugin * updatePluginByName(const char * name);
     IWULibrary * updateLibraryByName(const char * name);
-    IWUResult * updateResultByName(const char * name);
-    IWUResult * updateResultBySequence(unsigned seq);
-    IWUResult * updateTemporaryByName(const char * name);
-    IWUResult * updateVariableByName(const char * name);
+    virtual IWUResult * updateResultByName(const char * name);
+    virtual IWUResult * updateResultBySequence(unsigned seq);
+    virtual IWUResult * updateTemporaryByName(const char * name);
+    virtual IWUResult * updateVariableByName(const char * name);
     void addFile(const char *fileName, StringArray *clusters, unsigned usageCount, WUFileKind fileKind, const char *graphOwner);
     void noteFileRead(IDistributedFile *file);
     void releaseFile(const char *fileName);
@@ -558,6 +558,7 @@ protected:
     virtual void _lockRemote() {};
     virtual void _unlockRemote() {};
     virtual void unsubscribe();
+    virtual void _loadResults() const;
 };
 
 interface ISDSManager; // MORE - can remove once dali split out
@@ -600,6 +601,7 @@ public:
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset);
     virtual bool isAborting(const char *wuid) const;
     virtual void clearAborting(const char *wuid);
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState) = 0;
 
 protected:
     // These need to be implemented by the derived classes

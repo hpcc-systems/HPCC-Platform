@@ -17,6 +17,7 @@
 #include "jlib.hpp"
 #include "jfile.hpp"
 #include "jprop.hpp"
+#include "jptree.hpp"
 #include "jsocket.hpp"
 #include "workunit.hpp"
 #include "mpbase.hpp"
@@ -144,6 +145,9 @@ void testPagedWuList(IWorkUnitFactory *factory)
     }
 }
 
+#ifdef FORCE_WORKUNITS_TO_CASSANDRA
+extern "C" IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *props);
+#endif
 
 int main(int argc, const char *argv[])
 {
@@ -159,13 +163,26 @@ int main(int argc, const char *argv[])
         else
             globals->setProp("#action", argv[i]);
     }
+#ifdef FORCE_WORKUNITS_TO_CASSANDRA
+    StringBuffer cassandraServer;
+    if (globals->getProp("CASSANDRASERVER", cassandraServer))
+    {
+        // Statically linking to cassandra plugin makes debugging easier (and means can debug simple cassandra workunit interactions without needing dali running)
+        Owned<IPTree> props = createPTreeFromXMLString("<WorkUnitsServer><Option name='server' value='.'/></WorkUnitsServer>");
+        props->setProp("Option[@name='server']/@value", cassandraServer.str());
+        setWorkUnitFactory(createWorkUnitFactory(props));
+    }
+#endif
 
     StringBuffer daliServers;
     if (!globals->getProp("DALISERVERS", daliServers))
         daliServers.append(".");
-    Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
-    initClientProcess(serverGroup,DCR_Other);
-    setPasswordsFromSDS();
+    if (!strieq(daliServers, "none"))
+    {
+        Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
+        initClientProcess(serverGroup,DCR_Other);
+        setPasswordsFromSDS();
+    }
     try
     {
         CDateTime cutoff;
