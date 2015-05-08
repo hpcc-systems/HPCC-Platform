@@ -161,7 +161,7 @@ struct dummyReadWrite
 // backward compatible modes
 typedef enum { compatIFSHnone, compatIFSHread, compatIFSHwrite, compatIFSHexec, compatIFSHall} compatIFSHmode;
 
-static const char *VERSTRING= "DS V1.7e - 7 "       // dont forget FILESRV_VERSION in header
+static const char *VERSTRING= "DS V1.8"       // dont forget FILESRV_VERSION in header
 #ifdef _WIN32
 "Windows ";
 #else
@@ -336,45 +336,16 @@ static void mergeOnce(OnceKey &key,size32_t sz,const void *data)
 
 //---------------------------------------------------------------------------
 
+class CRemoteFileServer;
 class CThrottler
 {
-    Semaphore &sem;
+    CRemoteFileServer &owner;
     bool got;
 public:
-    CThrottler(Semaphore &_sem) : sem(_sem), got(false)
-    {
-        take();
-    }
-    ~CThrottler()
-    {
-        release();
-    }
-    bool take()
-    {
-        assertex(!got);
-        got = false;
-        loop {
-            if (sem.wait(5000)) {
-                got = true;
-                break;
-            }
-            unsigned cpu = getLatestCPUUsage();
-            PROGLOG("Throttler stalled (%d%% cpu)",cpu);
-            if (getLatestCPUUsage()<75) 
-                break;
-        }
-        return got;
-    }
-    bool release()
-    {
-        if (got)
-        {
-            got = false;
-            sem.signal();
-            return true;
-        }
-        return false;
-    }
+    CThrottler(CRemoteFileServer &_owner);
+    ~CThrottler() { release(); }
+    void take();
+    bool release();
 };
 
 // temporarily release a throttler slot
@@ -3042,6 +3013,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
     unsigned closedclients;
     CAsyncCommandManager asyncCommandManager;
     Semaphore throttlesem;
+    unsigned throttleLimit, throttleDelayMs, throttleCPULimit;
     atomic_t globallasttick;
 
     int getNextHandle()
@@ -3213,15 +3185,25 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
         }
 
 
-        void processCommand()
+        void processCommandThrottle(CThrottler *throttler)
         {
-            CThrottler throttler(parent->throttleSem());
             MemoryBuffer reply;
             RemoteFileCommandType cmd;
             buf.read(cmd);
-            parent->dispatchCommand(cmd, buf, initSendBuffer(reply), this, &throttler);
+            parent->dispatchCommand(cmd, buf, initSendBuffer(reply), this, throttler);
             buf.clear();
             sendBuffer(socket, reply);
+        }
+
+        void processCommand()
+        {
+            if (parent->throttleLimit)
+            {
+                CThrottler throttler(*parent);
+                processCommandThrottle(&throttler);
+            }
+            else
+                processCommandThrottle(NULL);
         }
 
         bool immediateCommand() // returns false if socket closed or failure
@@ -3399,9 +3381,11 @@ public:
 
     IMPLEMENT_IINTERFACE
 
-    CRemoteFileServer()
+    CRemoteFileServer(unsigned _throttleLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit)
+        : throttleLimit(_throttleLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit)
     {
-        throttlesem.signal(10);
+        if (throttleLimit) // if 0, throttling not used
+            throttlesem.signal(throttleLimit);
         lasthandle = 0;
         selecthandler.setown(createSocketSelectHandler(NULL));
         threads.setown(createThreadPool("CRemoteFileServerPool",this,NULL,MAX_THREADS,60*1000,
@@ -3430,6 +3414,34 @@ public:
 #endif
     }
 
+    bool takeThrottleSem()
+    {
+        bool got = false;
+        CCycleTimer timer;
+        loop {
+            if (throttlesem.wait(throttleDelayMs)) {
+                got = true;
+                break;
+            }
+            unsigned cpu = getLatestCPUUsage();
+            PROGLOG("Throttler: transaction delayed (%d%% cpu)", cpu);
+
+            // NB: getLatestCPUUsage() is based on interval monitoring, typically 60 secs
+            if (cpu<throttleCPULimit)
+                break;
+        }
+        if (timer.elapsedCycles() >= queryOneSecCycles()) {
+            unsigned ms = timer.elapsedMs();
+            if (ms>throttleDelayMs)
+                PROGLOG("Throttle: transaction delayed for : %d seconds", ms/1000);
+        }
+        return got;
+    }
+
+    void releaseThrottleSem()
+    {
+        throttlesem.signal();
+    }
 
     //MORE: The file handles should timeout after a while, and accessing an old (invalid handle)
     // should throw a different exception
@@ -4757,11 +4769,6 @@ public:
         return threads->runningCount();
     }
 
-    Semaphore &throttleSem()
-    {
-        return throttlesem;
-    }
-
     unsigned idleTime()
     {
         unsigned t = (unsigned)atomic_read(&globallasttick);
@@ -4771,12 +4778,34 @@ public:
 };
 
 
+CThrottler::CThrottler(CRemoteFileServer &_owner) : owner(_owner), got(false)
+{
+    take();
+}
 
-IRemoteFileServer * createRemoteFileServer()
+void CThrottler::take()
+{
+   assertex(!got);
+   got = owner.takeThrottleSem();
+}
+
+bool CThrottler::release()
+{
+    if (got)
+    {
+        got = false;
+        owner.releaseThrottleSem();
+        return true;
+    }
+    return false;
+}
+
+
+IRemoteFileServer * createRemoteFileServer(unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit)
 {
 #if SIMULATE_PACKETLOSS
     errorSimulationOn = false;
 #endif
-    return new CRemoteFileServer();
+    return new CRemoteFileServer(throttleLimit, throttleDelayMs, throttleCPULimit);
 }
 
