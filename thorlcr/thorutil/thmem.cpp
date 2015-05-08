@@ -179,7 +179,8 @@ class CSpillableStreamBase : public CSimpleInterface, implements roxiemem::IBuff
 protected:
     CActivityBase &activity;
     IRowInterfaces *rowIf;
-    bool preserveNulls, ownsRows, useCompression, spillPriority;
+    bool preserveNulls, ownsRows, useCompression;
+    unsigned spillPriority;
     CThorSpillableRowArray rows;
     OwnedIFile spillFile;
 
