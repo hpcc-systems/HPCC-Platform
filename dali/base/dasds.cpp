@@ -1003,7 +1003,7 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
             return;
         if (0 == --_retryAttempts)
         {
-            WARNLOG("writeDelta, too many retry attemps [%d]", retryAttempts);
+            WARNLOG("writeDelta, too many retry attempts [%d]", retryAttempts);
             return;
         }
         exception.clear();
@@ -1093,7 +1093,7 @@ class CBackupHandler : public CInterface, implements IThreaded
                 return;
             if (0 == --_retryAttempts)
             {
-                WARNLOG("writeExt, too many retry attemps [%d]", retryAttempts);
+                WARNLOG("writeExt, too many retry attempts [%d]", retryAttempts);
                 return;
             }
             exception.clear();
@@ -1126,7 +1126,7 @@ class CBackupHandler : public CInterface, implements IThreaded
                 return;
             if (0 == --_retryAttempts)
             {
-                WARNLOG("deleteExt, too many retry attemps [%d]", retryAttempts);
+                WARNLOG("deleteExt, too many retry attempts [%d]", retryAttempts);
                 return;
             }
             exception.clear();

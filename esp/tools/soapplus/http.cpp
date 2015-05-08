@@ -69,7 +69,7 @@ void HttpStat::printStat(FILE* ofile)
         __int64 totallen = totalreqlen + totalresplen;
         fprintf(ofile, "Total data transferred:           %Ld\n", totallen);
         if(duration > 0)
-            fprintf(ofile, "Data transfered per second:       %5.1f\n", totallen/(duration*0.001));
+            fprintf(ofile, "Data transferred per second:      %5.1f\n", totallen/(duration*0.001));
         if(numrequests > 0)
         {
             fprintf(ofile, "Slowest round trip(millisecond):  %d\n", slowest);

@@ -6092,9 +6092,9 @@ IHqlExpression * WorkflowTransformer::transformInternalCall(IHqlExpression * tra
     IHqlExpression * funcDef = transformed->queryDefinition();
     Owned<IHqlExpression> newFuncDef = transform(funcDef);
 
-    HqlExprArray paramters;
-    unwindChildren(paramters, transformed);
-    OwnedHqlExpr rebound = createReboundFunction(newFuncDef, paramters);
+    HqlExprArray parameters;
+    unwindChildren(parameters, transformed);
+    OwnedHqlExpr rebound = createReboundFunction(newFuncDef, parameters);
     inheritDependencies(rebound);
     copyDependencies(queryBodyExtra(newFuncDef), queryBodyExtra(rebound));
     return rebound.getClear();

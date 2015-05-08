@@ -939,7 +939,7 @@ public:
     void useFunction(IHqlExpression * funcdef);
     void useLibrary(const char * libname);
     void finalizeResources();
-    void generateStatistics(const char * targetDir, const char * varient);
+    void generateStatistics(const char * targetDir, const char * variant);
 
             unsigned getHints()                             { return hints; }
     inline bool queryEvaluateCoLocalRowInvariantInExtract() const { return options.evaluateCoLocalRowInvariantInExtract; }
@@ -979,7 +979,7 @@ public:
     //or isIndependentMaybeShared is false, and the code that is inserted is never implicitly shared.
     bool getInvariantMemberContext(BuildCtx & ctx, BuildCtx * * declarectx, BuildCtx * * initctx, bool isIndependentMaybeShared, bool invariantEachStart);
 
-    IPropertyTree * gatherFieldUsage(const char * varient, const IPropertyTree * exclude);
+    IPropertyTree * gatherFieldUsage(const char * variant, const IPropertyTree * exclude);
     void writeFieldUsage(const char * targetDir, IPropertyTree * xml, const char * variant);
 
 public:

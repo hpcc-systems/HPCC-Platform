@@ -39,8 +39,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
     
-   CEspProtocolThread(const char *name = "Unkown service type");
-   CEspProtocolThread(ISocket *sock, const char *name = "Unkown service type");
+   CEspProtocolThread(const char *name = "Unknown service type");
+   CEspProtocolThread(ISocket *sock, const char *name = "Unknown service type");
 
    virtual ~CEspProtocolThread();
    virtual void start();

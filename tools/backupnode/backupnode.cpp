@@ -221,7 +221,7 @@ static void usage()
     printf("  -D - overwrite existing files if size/date mismatch\n");
     printf("  -E - set compression state of existing files\n");
     printf("  -F <file> - use option XML file\n");
-    printf("  -I <ext> - ignore files that have specified extention\n");
+    printf("  -I <ext> - ignore files that have specified extension\n");
     printf("  -M - ignore sub-second differences when comparing file dates\n");
     printf("  -N - Include files even if slave count does not match filename\n");
     printf("  -Q - quiet mode: only errors are reported\n");
