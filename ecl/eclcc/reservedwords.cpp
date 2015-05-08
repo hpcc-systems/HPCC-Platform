@@ -561,7 +561,7 @@ void printKeywordsToXml()
      unsigned int nGroups = sizeof(keywordList)/sizeof(keywordList[0]);
 
      buffer.append("<xml>\n");
-     for (int i = 0; i < nGroups; ++i)
+     for (unsigned i = 0; i < nGroups; ++i)
      {
          buffer.append("  <cat group=\"").append(keywordList[i].group).append("\">\n");
          unsigned int j = 0;

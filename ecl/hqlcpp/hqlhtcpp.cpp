@@ -6784,7 +6784,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 }
         }
     }
-    catch (IError * e)
+    catch (IError *)
     {
         throw;
     }

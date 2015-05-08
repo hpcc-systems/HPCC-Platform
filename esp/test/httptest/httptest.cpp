@@ -465,7 +465,7 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
     else
         request.append(c1);
 
-    int seq = 2;
+    unsigned seq = 2;
     while(seq < req.length() && !endofheaders)
     {
         char c = req.charAt(seq);

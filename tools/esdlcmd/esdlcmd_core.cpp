@@ -228,7 +228,7 @@ public:
 
             loadTransform( fullxsltpath, params);
 
-            for( int i=0; i < optXformTimes; i++ )
+            for( unsigned i=0; i < optXformTimes; i++ )
             {
                 doTransform( *structs, outputBuffer, optVersion, opts.get(), NULL, optFlags );
             }
@@ -549,7 +549,7 @@ public:
             createParams();
             loadTransform( fullxsltpath, params);
 
-            for( int i=0; i < optXformTimes; i++ )
+            for( unsigned i=0; i < optXformTimes; i++ )
             {
                 doTransform( *structs, outputBuffer, optVersion, opts.get(), NULL, optFlags );
             }

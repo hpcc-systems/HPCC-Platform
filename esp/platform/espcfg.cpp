@@ -526,7 +526,9 @@ public:
             if (fio)
             {
                 offset_t len=fio->size();
-                if (fio->read(0, len, buff.reserveTruncate(len))==len)
+                size32_t memlen = (size32_t)len;
+                assertex(len == memlen);
+                if (fio->read(0, memlen, buff.reserveTruncate(memlen))==len)
                     return true;
             }
         }

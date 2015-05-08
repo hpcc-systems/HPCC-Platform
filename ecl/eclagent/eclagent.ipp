@@ -495,7 +495,7 @@ public:
     void finishPersist(const char * persistName, IRemoteConnection *persistLock);
     void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
     void checkPersistMatches(const char * logicalName, unsigned eclCRC);
-    virtual void deleteLRUPersists(const char * logicalName, int keep);
+    virtual void deleteLRUPersists(const char * logicalName, unsigned keep);
     virtual bool queryResolveFilesLocally() { return resolveFilesLocally; }
     virtual bool queryRemoteWorkunit() { return isRemoteWorkunit; }
     virtual bool queryWriteResultsToStdout() { return writeResultsToStdout; }
