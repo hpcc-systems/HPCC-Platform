@@ -129,7 +129,7 @@ void roxieStatusReport(IPropertyTree *hashTree, unsigned reporting, unsigned not
 
     if (attached && detached)
     {
-        fputs("Mismatched DALI Attachement\n", stderr);
+        fputs("Mismatched DALI Attachment\n", stderr);
         fprintf(stderr, "  %d Node(s) attached to DALI\n", attached);
         fprintf(stderr, "  %d Node(s) detached from DALI\n", detached);
     }

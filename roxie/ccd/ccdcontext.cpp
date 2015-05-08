@@ -53,7 +53,7 @@ class CSlaveDebugContext : public CBaseDebugContext
     4. There is a problem when a slave hits a breakpoint in that the breakpoint cound have been deleted by the time it gets a chance to tell the Roxie server - can't
        happen in local case because of the critical block at the head of checkBreakpoint but the local copy of BPs out on slave CAN get out of date. Should we care?
        Should there be a "Sorry, your breakpoints are out of date, here's the new set" response?
-       Actually what we do is recheck the BP on the server, and ensure that breakpoint indexes are persistant. DONE
+       Actually what we do is recheck the BP on the server, and ensure that breakpoint indexes are persistent. DONE
     5. We need to serialize over our graph info if changed since last time.
     6. I think we need to change implementation of debugGraph to support children. Then we have a place to put a proxy for a remote one.
        - id's should probably be structured so we can use a hash table at each level

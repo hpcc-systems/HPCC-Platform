@@ -52,7 +52,7 @@ public:
         fprintf(ofile, "Total data received:              %" I64F "d\n", totalresplen);
         __int64 totallen = totalreqlen + totalresplen;
         fprintf(ofile, "Total data transferred:           %" I64F "d\n", totallen);
-        fprintf(ofile, "Data transfered per second:       %5.1f\n", totallen/(msecs*0.001));
+        fprintf(ofile, "Data transferred per second:      %5.1f\n", totallen/(msecs*0.001));
         fprintf(ofile, "Slowest round trip(millisecond):  %d\n", slowest);
         fprintf(ofile, "Fastest round trip(millisecond):  %d\n", fastest);
     }

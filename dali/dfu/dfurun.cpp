@@ -1561,7 +1561,7 @@ public:
             case DFUcmd_monitor: 
                 {
                     CriticalBlock block(monitorsect);
-                    // first check done when WU recieved
+                    // first check done when WU received
                     IDFUmonitor *monitor = wu->queryUpdateMonitor();
                     if (!monitor)
                         break;

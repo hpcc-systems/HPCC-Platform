@@ -6034,10 +6034,10 @@ static int compareTrackedSourceByName(CInterface * const * _left, CInterface * c
     return stricmp(leftName, rightName);
 }
 
-IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * varient, const IPropertyTree * exclude)
+IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * variant, const IPropertyTree * exclude)
 {
     Owned<IPropertyTree> sources = createPTree("usedsources");
-    sources->setProp("@varient", varient);
+    sources->setProp("@varient", variant);
     trackedSources.sort(compareTrackedSourceByName);
     ForEachItemIn(i, trackedSources)
     {
@@ -6102,11 +6102,11 @@ void HqlCppTranslator::writeFieldUsage(const char * targetDir, IPropertyTree * s
 }
 
 
-void HqlCppTranslator::generateStatistics(const char * targetDir, const char * varient)
+void HqlCppTranslator::generateStatistics(const char * targetDir, const char * variant)
 {
     if ((options.reportFieldUsage || options.reportFileUsage) && trackedSources.ordinality())
     {
-        Owned<IPropertyTree> sources = gatherFieldUsage(varient, NULL);
+        Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
         writeFieldUsage(targetDir, sources, NULL);
     }
 }
