@@ -1262,7 +1262,7 @@ public:
         cluster.setown(new CassandraCluster(cass_cluster_new()));
         cluster->setOptions(opts);
         session.setown(new CassandraSession(cass_session_new()));
-        CassandraFuture future(cluster->keyspace.isEmpty() ? cass_session_connect_keyspace(*session, *cluster, cluster->keyspace) : cass_session_connect(*session, *cluster));
+        CassandraFuture future(cluster->keyspace.isEmpty() ? cass_session_connect(*session, *cluster) : cass_session_connect_keyspace(*session, *cluster, cluster->keyspace));
         future.wait("connect");
     }
     virtual bool getBooleanResult()
