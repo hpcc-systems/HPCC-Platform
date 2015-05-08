@@ -364,7 +364,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isFixedSize() const { return (fieldType & RFTMunknownsize) == 0; }
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
-    inline bool isValueNonScalarXpath() const { return (fieldType & RFTMhasnonscalarxpath) != 0; }
+    inline bool hasNonScalarXpath() const { return (fieldType & RFTMhasnonscalarxpath) != 0; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }
     inline unsigned getBitfieldIntSize() const { return (length & 0xff); }

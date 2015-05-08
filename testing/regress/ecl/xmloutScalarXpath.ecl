@@ -46,5 +46,5 @@ readL1rec := RECORD
 END;
 
 output(Dataset(xrow),,'~REGRESS::TEMP::output_scalar_xpath.xml',overwrite, xml);
-readWrittenXml := dataset(DYNAMIC('~REGRESS::TEMP::output_scalar_xpath.xml'), readL1Rec, xml('Dataset/Row'));
+readWrittenXml := dataset(DYNAMIC('REGRESS::TEMP::output_scalar_xpath.xml'), readL1Rec, xml('Dataset/Row'));
 output(readWrittenXml, named('readWrittenDataset'));
