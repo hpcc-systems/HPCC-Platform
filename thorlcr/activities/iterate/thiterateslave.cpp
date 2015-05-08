@@ -418,7 +418,7 @@ public:
     }
     virtual void start()
     {
-        isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
+        bool isLocal = container.queryLocalData() || container.queryOwner().isLocalChild();
         eof = isLocal ? false : !firstNode();
         if (!eof)
             rows.setown(helper->createInput());
