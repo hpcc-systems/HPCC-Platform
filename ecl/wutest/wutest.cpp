@@ -34,6 +34,8 @@
 #include <cppunit/ui/text/TestRunner.h>
 #endif
 
+static unsigned testSize = 1000;
+
 void usage()
 {
     printf("Usage: WUTEST action [WUID=xxx] [OWNER=xxx]\n\n"
@@ -45,7 +47,8 @@ void usage()
            "   archive [TO=<directory>] [DEL=1] [KEEPFILERESULTS=1]\n"
            "   restore [FROM=<directory>]\n"
            "   pack\n"
-           "   unpack\n");
+           "   unpack\n"
+           "   validate [fix=1]\n");
 }
 
 bool dump(IConstWorkUnit &w, IProperties *globals)
@@ -217,6 +220,7 @@ int main(int argc, const char *argv[])
 #ifdef _USE_CPPUNIT
         else if (action && (stricmp(action, "-selftest")==0))
         {
+            testSize = globals->getPropInt("testSize", 1000);
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
             CppUnit::TextUi::TestRunner runner;
             CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry("WuTest");
@@ -225,6 +229,12 @@ int main(int argc, const char *argv[])
             return wasSucessful;
         }
 #endif
+        else if (action && (stricmp(action, "validate")==0))
+        {
+            bool fix = globals->getPropBool("fix", false);
+            unsigned errors = factory->validateRepository(fix);
+            printf("%u errors %s\n", errors, (fix && errors) ? "fixed" : "found");
+        }
         else if (action && (stricmp(action, "orphans")==0 || stricmp(action, "cleanup")==0))
         {
             factory->setTracingLevel(0);
@@ -401,8 +411,8 @@ class WuTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(WuTest);
         CPPUNIT_TEST(testCreate);
-        CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testList);
+        CPPUNIT_TEST(testDelete);
     CPPUNIT_TEST_SUITE_END();
 protected:
     static StringArray wuids;
@@ -411,37 +421,61 @@ protected:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < testSize; i++)
         {
-            VStringBuffer userId("user%d", i % 10);
+            VStringBuffer userId("WuTestUser%d", i % 10);
             Owned<IWorkUnit>wu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
             wu->setState(WUStateFailed);
             wu->setUser(userId);
             wuids.append(wu->queryWuid());
         }
         unsigned after = factory->numWorkUnits();
-        DBGLOG("1000 workunits created in %d ms (%d total)", msTick()-start, after);
-        ASSERT(after-before==1000);
-        ASSERT(wuids.length() == 1000);
+        DBGLOG("%u workunits created in %d ms (%d total)", testSize, msTick()-start, after);
+        ASSERT(after-before==testSize);
+        ASSERT(wuids.length() == testSize);
     }
 
     void testDelete()
     {
-        ASSERT(wuids.length() == 1000);
+        ASSERT(wuids.length() == testSize);
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         unsigned before = factory->numWorkUnits();
         unsigned start = msTick();
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < testSize; i++)
         {
             factory->deleteWorkUnit(wuids.item(i));
         }
         unsigned after = factory->numWorkUnits();
-        DBGLOG("1000 workunits deleted in %d ms (%d remain)", msTick()-start, after);
-        ASSERT(before-after==1000);
+        DBGLOG("%u workunits deleted in %d ms (%d remain)", testSize, msTick()-start, after);
+        ASSERT(before-after==testSize);
     }
 
     void testList()
     {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned before = factory->numWorkUnits();
+        unsigned start = msTick();
+        unsigned numIterated = 0;
+        Owned<IConstWorkUnitIterator> wus = factory->getWorkUnitsByOwner(NULL, NULL, NULL);
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == before);
+        // Now by owner
+        wus.setown(factory->getWorkUnitsByOwner("WuTestUser0", NULL, NULL));
+        start = msTick();
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(streq(wu.queryUser(), "WuTestUser0"));
+            numIterated++;
+        }
+        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+9)/10);
     }
 };
 StringArray WuTest::wuids;

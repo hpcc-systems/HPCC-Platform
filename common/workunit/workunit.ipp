@@ -596,7 +596,6 @@ public:
                                                 ISecManager *secmgr,
                                                 ISecUser *secuser) = 0;
     virtual unsigned numWorkUnits() = 0;
-    virtual unsigned numWorkUnitsFiltered(WUSortField *filters, const void *filterbuf, ISecManager *secmgr, ISecUser *secuser);
     virtual void descheduleAllWorkUnits(ISecManager *secmgr, ISecUser *secuser);
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset);
     virtual bool isAborting(const char *wuid) const;

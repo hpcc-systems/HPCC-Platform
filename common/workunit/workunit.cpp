@@ -2535,18 +2535,6 @@ void CWorkUnitFactory::clearAborting(const char *wuid)
     }
 }
 
-unsigned CWorkUnitFactory::numWorkUnitsFiltered(WUSortField *filters,
-                                    const void *filterbuf,
-                                    ISecManager *secmgr,
-                                    ISecUser *secuser)
-{
-    if (!filters && !secuser && !secmgr)
-        return numWorkUnits();
-    unsigned total;
-    Owned<IConstWorkUnitIterator> iter =  getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,&total,secmgr,secuser);
-    return total;
-}
-
 static CriticalSection deleteDllLock;
 static Owned<IWorkQueueThread> deleteDllWorkQ;
 
@@ -2581,7 +2569,10 @@ public:
     {
         removeShutdownHook(*this);
     }
-
+    virtual unsigned validateRepository(bool fixErrors)
+    {
+        return 0;
+    }
     virtual CLocalWorkUnit *_createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuRoot;
@@ -3029,6 +3020,10 @@ public:
         : baseFactory(_baseFactory), defaultSecMgr(_secMgr), defaultSecUser(_secUser)
     {
     }
+    virtual unsigned validateRepository(bool fix)
+    {
+        return baseFactory->validateRepository(fix);
+    }
     virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
@@ -3142,15 +3137,6 @@ public:
     virtual unsigned numWorkUnits()
     {
         return baseFactory->numWorkUnits();
-    }
-
-    virtual unsigned numWorkUnitsFiltered(WUSortField *filters,
-                                        const void *filterbuf,
-                                        ISecManager *secMgr, ISecUser *secUser)
-    {
-        if (!secMgr) secMgr = defaultSecMgr.get();
-        if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->numWorkUnitsFiltered(filters, filterbuf, secMgr, secUser);
     }
 
     virtual bool isAborting(const char *wuid) const

@@ -3107,17 +3107,6 @@ public:
         IPropertyTree *root = conn->queryRoot();
         return root->numChildren();
     }
-
-    virtual unsigned numWorkUnitsFiltered(DFUsortfield *filters,const void *filterbuf)
-    {
-        if (!filters)
-            return numWorkUnits();
-        unsigned total;
-        Owned<IConstDFUWorkUnitIterator> iter = getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,&total);
-        return total;
-    }
-
-
 };
 
 IDFUWorkUnitFactory * getDFUWorkUnitFactory()
