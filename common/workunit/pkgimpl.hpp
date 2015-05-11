@@ -446,7 +446,7 @@ public:
         MapStringTo<bool> referencedPackages;
         Owned<IPropertyTree> qs = getQueryRegistry(querySet, true);
         if (!qs)
-            throw MakeStringException(PACKAGE_TARGET_NOT_FOUND, "Target %s not found", querySet.sget());
+            throw MakeStringException(PACKAGE_TARGET_NOT_FOUND, "Target %s not found", querySet.str());
         HashIterator it(packages);
         ForEach (it)
         {
@@ -482,7 +482,7 @@ public:
                     tempQuerySet->addPropTree("Query", queryEntry.getClear());
                 else
                 {
-                    VStringBuffer msg("Query %s not found in %s queryset", queriesToCheck.item(i), querySet.sget());
+                    VStringBuffer msg("Query %s not found in %s queryset", queriesToCheck.item(i), querySet.str());
                     err.append(msg);
                 }
             }

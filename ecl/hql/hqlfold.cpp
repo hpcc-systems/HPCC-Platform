@@ -617,8 +617,8 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         ensureFileExtension(lib, SharedObjectExtension);
     }
 
-    const char * entrypoint = entry.toCharArray();
-    const char * library = lib.toCharArray();
+    const char * entrypoint = entry.str();
+    const char * library = lib.str();
     if(!body->hasAttribute(pureAtom) && !body->hasAttribute(templateAtom) && !(foldOptions & (HFOfoldimpure|HFOforcefold)))
     {
         if (foldOptions & HFOthrowerror)
@@ -5395,8 +5395,8 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                     IHqlExpression * selSeq = querySelSeq(updated);
                     IHqlExpression * updatedLhs = updated->queryChild(0);
                     IHqlExpression * updatedRhs = (op == no_selfjoin) ? updatedLhs : updated->queryChild(1);
-                    JoinSortInfo joinInfo;
-                    joinInfo.findJoinSortOrders(updatedCond, updatedLhs, updatedRhs, selSeq, false);
+                    JoinSortInfo joinInfo(updatedCond, updatedLhs, updatedRhs, selSeq, atmost);
+                    joinInfo.findJoinSortOrders(false);
 
                     //if will convert to an all join, then restore the old condition,
                     if (!joinInfo.hasRequiredEqualities())

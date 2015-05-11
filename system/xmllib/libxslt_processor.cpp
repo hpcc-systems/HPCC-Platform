@@ -403,6 +403,7 @@ public:
         return exceptions.get();
     }
     void clearExceptions(){exceptions.clear();}
+    void clearMessages(){messages.clear();}
 
 public:
     Owned<IProperties> xslParameters;
@@ -480,6 +481,9 @@ static void libxsltErrorMsgHandler(void *ctx, const char *format, ...)
 {
     if (!ctx)
         return;
+    if (format && *format == '\n')
+        return;
+
     CLibXslTransform *ctrans = (CLibXslTransform*)ctx;//getXsltTransformObject((xsltTransformContextPtr)ctx);
     if (!ctrans)
         return;
@@ -492,6 +496,8 @@ static void libxsltErrorMsgHandler(void *ctx, const char *format, ...)
 int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
 {
     clearExceptions();
+    clearMessages();
+
     xsltSetGenericErrorFunc(this, libxsltErrorMsgHandler);
     if (!xmlSrc)
         throw MakeStringException(XSLERR_MissingXml, "XSLT Transform missing XML");
@@ -529,7 +535,7 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
         IXslFunction *fn = functions.mapToValue(&h.query());
         CLibXslFunction *cfn = dynamic_cast<CLibXslFunction*>(fn);
         if (cfn && cfn->name.length())
-            xsltRegisterExtFunction(ctxt, (const xmlChar *) cfn->name.get(), (const xmlChar *) cfn->uri.sget(), globalLibXsltExtensionHandler);
+            xsltRegisterExtFunction(ctxt, (const xmlChar *) cfn->name.get(), (const xmlChar *) cfn->uri.str(), globalLibXsltExtensionHandler);
     }
     xsltSetCtxtParseOptions(ctxt, XSLT_PARSE_OPTIONS);
     MemoryBuffer mp;
@@ -544,6 +550,8 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
         throw MakeStringException(XSLERR_TransformFailed, "Failed running xlst using libxslt.");
     }
 
+    xsltTransformState stateAfterTransform = ctxt->state;
+
     try
     {
         xsltFreeTransformContext(ctxt);
@@ -556,8 +564,20 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
         throw MakeStringException(XSLERR_TransformFailed, "Failed processing libxslt transform output");
     }
     xmlFreeDoc(res);
+
     if (exceptions && exceptions->ordinality())
-        throw exceptions.getClear();
+    {
+        if (stateAfterTransform != XSLT_STATE_OK)
+        {
+            throw exceptions.getClear();
+        }
+        else
+        {
+            StringBuffer strErrMsg;
+            exceptions.get()->errorMessage(strErrMsg);
+            messages.set(strErrMsg.str());
+        }
+    }
 
     return 0;
 }

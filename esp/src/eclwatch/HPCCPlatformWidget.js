@@ -29,6 +29,7 @@ define([
     "dijit/Tooltip",
 
     "dojox/widget/UpgradeBar",
+    "dojox/widget/ColorPicker",
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
@@ -62,7 +63,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, domGeo, cookie,
                 registry, Tooltip,
-                UpgradeBar,
+                UpgradeBar, ColorPicker,
                 _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {

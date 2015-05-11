@@ -190,7 +190,7 @@ void WebServicesExtractor::getAttributeText(StringBuffer & text, const char* att
     {
         StringBuffer txt;
         txt.append("Could not read attribute: ").append(attributeName);
-        DBGLOG("%s", txt.toCharArray());
+        DBGLOG("%s", txt.str());
         throw MakeStringException(ERR_NO_ATTRIBUTE_TEXT, "%s", txt.str());
     }
 

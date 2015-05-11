@@ -1496,13 +1496,9 @@ extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const
 
 void EclAgent::executeThorGraph(const char * graphName)
 {
-    SCMStringBuffer wuid;
-    wuRead->getWuid(wuid);
-
-    SCMStringBuffer cluster;
-    SCMStringBuffer owner;
-    wuRead->getClusterName(cluster);
-    wuRead->getUser(owner);
+    StringAttr wuid(wuRead->queryWuid());
+    StringAttr owner(wuRead->queryUser());
+    StringAttr cluster(wuRead->queryClusterName());
     int priority = wuRead->getPriorityValue();
     unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", config->getPropInt("@thorConnectTimeout", 60));
     Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
@@ -1540,9 +1536,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             CWorkunitResumeHandler(IConstWorkUnit &_wu) : wu(_wu)
             {
                 xpath.append("/WorkUnits/");
-                SCMStringBuffer istr;
-                wu.getWuid(istr);
-                wuid.set(istr.str());
+                wuid.set(wu.queryWuid());
                 xpath.append(wuid.get()).append("/Action");
                 subId = 0;
             }
@@ -1568,9 +1562,7 @@ void EclAgent::executeThorGraph(const char * graphName)
                     wu.forceReload();
                     if (WUStatePaused != wu.getState() || wu.aborting())
                     {
-                        SCMStringBuffer str;
-                        wu.getStateDesc(str);
-                        PROGLOG("Aborting pause job %s, state : %s", wuid.get(), str.str());
+                        PROGLOG("Aborting pause job %s, state : %s", wuid.get(), wu.queryStateDesc());
                         ret = false;
                         break;
                     }
@@ -1704,10 +1696,7 @@ void EclAgent::executeThorGraph(const char * graphName)
                 if (isException)
                 {
                     Owned<IException> e = deserializeException(reply);
-                    StringBuffer str("Pausing job ");
-                    SCMStringBuffer istr;
-                    queryWorkUnit()->getWuid(istr);
-                    str.append(istr.str()).append(" caused exception");
+                    VStringBuffer str("Pausing job %s caused exception", queryWorkUnit()->queryWuid());
                     EXCLOG(e, str.str());
                 }
                 Owned <IWorkUnit> w = updateWorkUnit();

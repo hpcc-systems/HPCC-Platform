@@ -4373,6 +4373,14 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, BoundRow * targetRow, IHql
             buildStmt(ctx, expr->queryChild(0));
             buildRowAssign(ctx, targetRow, expr->queryChild(1));
             return;
+        case no_selectnth:
+            {
+                Owned<IReferenceSelector> src = buildNewRow(ctx, expr);
+                Owned<BoundRow> srcRow = src->getRow(ctx);
+                BoundRow * linkedRow = ensureLinkCountedRow(ctx, srcRow);
+                ctx.addAssignLink(targetRow->queryExpr(), linkedRow->queryExpr());
+                return;
+            }
         }
     }
 

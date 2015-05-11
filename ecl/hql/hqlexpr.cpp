@@ -7942,7 +7942,7 @@ void CHqlScope::throwRecursiveError(IIdAtom * searchName)
 
     StringBuffer msg("Definition of ");
     msg.append(*searchName).append(" contains a recursive dependency");
-    throw createError(ERR_RECURSIVE_DEPENDENCY, msg.toCharArray(), filename, 0, 0, 1);
+    throw createError(ERR_RECURSIVE_DEPENDENCY, msg.str(), filename, 0, 0, 1);
 }
 
 inline bool namesMatch(const char * lName, const char * rName)
@@ -8137,7 +8137,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     {
         StringBuffer msg("Definition for ");
         msg.append(*searchName).append(" contains no text");
-        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
+        throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
 
     OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(processingMarker), ob_exported);
@@ -8163,7 +8163,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
             resolved->removeSymbol(searchName);
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
         msg.append(*searchName);
-        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, 0, 0, 1);
+        throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, 0, 0, 1);
     }
 
     //Preserve ob_sandbox etc. annotated on the original definition, but not on the parsed code.
@@ -9336,7 +9336,7 @@ IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lo
         const char * filename = parentCtx->sourcePath->str();
         StringBuffer msg("Definition must contain EXPORT or SHARED value for ");
         msg.append(*searchName);
-        throw createError(ERR_EXPORT_OR_SHARE, msg.toCharArray(), filename, oldSymbol->getStartLine(), oldSymbol->getStartColumn(), 1);
+        throw createError(ERR_EXPORT_OR_SHARE, msg.str(), filename, oldSymbol->getStartLine(), oldSymbol->getStartColumn(), 1);
     }
 
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
@@ -14652,8 +14652,8 @@ bool isSelfJoin(IHqlExpression * expr)
 
     //Check this isn't going to generate a between join - if it is that takes precedence.  A bit arbitrary
     //when one is more efficient.
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, true);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(true);
     if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftReq().ordinality() == joinInfo.slidingMatches.ordinality()))
         return false;
     return true;
@@ -15896,7 +15896,6 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     {
         HqlScopeArray scopes;   
         getRootScopes(scopes, dataServer, ctx);
-        scopes.sort(compareScopesByName);
         ForEachItemIn(i, scopes)
         {
             IHqlScope & cur = scopes.item(i);

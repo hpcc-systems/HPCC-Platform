@@ -641,17 +641,14 @@ void CHThorDiskWriteActivity::publish()
     if (grouped)
         properties.setPropBool("@grouped", true);
     properties.setPropInt64("@recordCount", numRecords);
-    SCMStringBuffer info;
-    properties.setProp("@owner", agent.queryWorkUnit()->getUser(info).str());
-    info.clear();
+    properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
     if (helper.getFlags() & (TDWowned|TDXjobtemp|TDXtemporary))
         properties.setPropBool("@owned", true);
     if (helper.getFlags() & TDWresult)
         properties.setPropBool("@result", true);
 
-    properties.setProp("@workunit", agent.queryWorkUnit()->getWuid(info).str());
-    info.clear();
-    properties.setProp("@job", agent.queryWorkUnit()->getJobName(info).str());
+    properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
+    properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
     setFormat(desc);
 
     if (helper.getFlags() & TDWexpires)
@@ -692,11 +689,7 @@ void CHThorDiskWriteActivity::updateWorkUnitResult(unsigned __int64 reccount)
         if (clusterHandler)
             clusterHandler->getClusters(clusters);
         else
-        {
-            SCMStringBuffer tgtCluster;
-            wu->getClusterName(tgtCluster);
-            clusters.append(tgtCluster.str());
-        }
+            clusters.append(wu->queryClusterName());
         unsigned flags = helper.getFlags();
         if (!agent.queryResolveFilesLocally())
         {
@@ -1178,12 +1171,9 @@ void CHThorIndexWriteActivity::execute()
     properties.setProp("@kind", "key");
     properties.setPropInt64("@size", indexFileSize);
     properties.setPropInt64("@recordCount", reccount);
-    SCMStringBuffer info;
-    properties.setProp("@owner", agent.queryWorkUnit()->getUser(info).str());
-    info.clear();
-    properties.setProp("@workunit", agent.queryWorkUnit()->getWuid(info).str());
-    info.clear();
-    properties.setProp("@job", agent.queryWorkUnit()->getJobName(info).str());
+    properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
+    properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
+    properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
 #if 0
     IRecordSize * irecsize = helper.queryDiskRecordSize();
     if(irecsize && (irecsize->isFixedSize()))
@@ -2768,7 +2758,7 @@ const void * CHThorFilterActivity::nextGE(const void * seek, unsigned numFields)
         return ret.getClear();
     }
 
-    return nextUngrouped(this);
+    return nextUngrouped();
 }
 
 bool CHThorFilterActivity::gatherConjunctions(ISteppedConjunctionCollector & collector) 
@@ -2879,7 +2869,7 @@ const void * CHThorFilterGroupActivity::nextGE(const void * seek, unsigned numFi
     else
         eof = true;
 
-    return nextUngrouped(this);
+    return nextUngrouped();
 }
 
 
@@ -3674,7 +3664,7 @@ CHThorDegroupActivity::CHThorDegroupActivity(IAgentContext &_agent, unsigned _ac
 
 const void * CHThorDegroupActivity::nextInGroup()
 {
-    const void * ret = nextUngrouped(input);
+    const void * ret = input->nextUngrouped();
     if (ret)
         processed++;
     return ret;
@@ -4255,7 +4245,19 @@ void CHThorJoinActivity::ready()
 {
     CHThorActivityBase::ready();
     input1->ready();
-
+    bool isStable = (helper.getJoinFlags() & JFunstable) == 0;
+    RoxieSortAlgorithm sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
+    StringBuffer tempBase;
+    agent.getTempfileBase(tempBase);
+    if (helper.isLeftAlreadySorted())
+        sortedLeftInput.setown(createDegroupedInputReader(input));
+    else
+        sortedLeftInput.setown(createSortedInputReader(input, createSortAlgorithm(sortAlgorithm, helper.queryCompareLeft(), *queryRowManager(), input->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
+    ICompare *compareRight = helper.queryCompareRight();
+    if (helper.isRightAlreadySorted())
+        groupedSortedRightInput.setown(createGroupedInputReader(input1, compareRight));
+    else
+        groupedSortedRightInput.setown(createSortedGroupedInputReader(input1, compareRight, createSortAlgorithm(sortAlgorithm, compareRight, *queryRowManager(), input1->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
     outBuilder.setAllocator(rowAllocator);
     leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
     rightOuterJoin = (helper.getJoinFlags() & JFrightouter) != 0;
@@ -4299,7 +4301,7 @@ void CHThorJoinActivity::ready()
     if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
     {   //Limited Match Join (s[1..n])
         limitedhelper.setown(createRHLimitedCompareHelper());
-        limitedhelper->init( helper.getJoinLimit(), input1, collate, helper.queryPrefixCompare() );
+        limitedhelper->init( helper.getJoinLimit(), groupedSortedRightInput, collate, helper.queryPrefixCompare() );
     }
 }
 
@@ -4309,6 +4311,8 @@ void CHThorJoinActivity::done()
     right.clear();
     left.clear();
     pendingRight.clear();
+    sortedLeftInput.clear();
+    groupedSortedRightInput.clear();
     CHThorActivityBase::done();
     input1->done();
 }
@@ -4351,9 +4355,7 @@ void CHThorJoinActivity::createDefaultRight()
 void CHThorJoinActivity::fillLeft()
 {
     matchedLeft = false;
-    left.setown(input->nextInGroup());
-    if (!left)
-        left.setown(input->nextInGroup());
+    left.setown(sortedLeftInput->nextInGroup()); // NOTE: already degrouped
     if(betweenjoin && left && pendingRight && (collate->docompare(left, pendingRight) >= 0))
         fillRight();
     if (limitedhelper && 0==rightIndex)
@@ -4398,12 +4400,12 @@ void CHThorJoinActivity::fillRight()
         }
         else
         {
-            next.setown(input1->nextInGroup());
+            next.setown(groupedSortedRightInput->nextInGroup());
         }
         if(!rightOuterJoin && next && (!left || (collateupper->docompare(left, next) > 0))) // if right is less than left, and not right outer, can skip group
         {
             while(next) 
-                next.setown(input1->nextInGroup());
+                next.setown(groupedSortedRightInput->nextInGroup());
             continue;
         }
         while(next)
@@ -4430,7 +4432,7 @@ void CHThorJoinActivity::fillRight()
                 right.append(next.getClear());
                 do
                 {
-                    next.setown(input1->nextInGroup());
+                    next.setown(groupedSortedRightInput->nextInGroup());
                 } while(next);
                 break;
             }
@@ -4440,7 +4442,7 @@ void CHThorJoinActivity::fillRight()
                 groupCount = 0;
                 while(next) 
                 {
-                    next.setown(input1->nextInGroup());
+                    next.setown(groupedSortedRightInput->nextInGroup());
                 }
             }
             else
@@ -4448,13 +4450,13 @@ void CHThorJoinActivity::fillRight()
                 right.append(next.getClear());
                 groupCount++;
             }
-            next.setown(input1->nextInGroup());
+            next.setown(groupedSortedRightInput->nextInGroup());
             
         }
         // normally only want to read one right group, but if is between join and next right group is in window for left, need to continue
         if(betweenjoin && left)
         {
-            pendingRight.setown(input1->nextInGroup());
+            pendingRight.setown(groupedSortedRightInput->nextInGroup());
             if(!pendingRight || (collate->docompare(left, pendingRight) < 0))
                 break;
         }
@@ -4855,13 +4857,24 @@ bool CHThorJoinActivity::isGrouped()
 CHThorSelfJoinActivity::CHThorSelfJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind) 
         : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
 {
+    dualCacheInput = NULL;
 }
 
 void CHThorSelfJoinActivity::ready()
 {
     CHThorActivityBase::ready();
     outBuilder.setAllocator(rowAllocator);
-
+    ICompare *compareLeft = helper.queryCompareLeft();
+    if (helper.isLeftAlreadySorted())
+        groupedInput.setown(createGroupedInputReader(input, compareLeft));
+    else
+    {
+        bool isStable = (helper.getJoinFlags() & JFunstable) == 0;
+        RoxieSortAlgorithm sortAlgorithm = isStable ? stableSpillingQuickSortAlgorithm : spillingQuickSortAlgorithm;
+        StringBuffer tempBase;
+        agent.getTempfileBase(tempBase);
+        groupedInput.setown(createSortedGroupedInputReader(input, compareLeft, createSortAlgorithm(sortAlgorithm, compareLeft, *queryRowManager(), input->queryOutputMeta(), agent.queryCodeContext(), tempBase, activityId)));
+    }
     leftOuterJoin = (helper.getJoinFlags() & JFleftouter) != 0;
     rightOuterJoin = (helper.getJoinFlags() & JFrightouter) != 0;
     exclude = (helper.getJoinFlags() & JFexclude) != 0;
@@ -4909,8 +4922,8 @@ void CHThorSelfJoinActivity::ready()
     if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
     {   //Limited Match Join (s[1..n])
         dualcache.setown(new CRHDualCache());
-        dualcache->init(input);
-        setInput(0, (IHThorInput *)dualcache->queryOut1());
+        dualcache->init(groupedInput);
+        dualCacheInput = dualcache->queryOut1();
         failingOuterAtmost = false;
         matchedLeft = false;
         leftIndex = 0;
@@ -4926,8 +4939,7 @@ void CHThorSelfJoinActivity::done()
 {
     outBuilder.clear();
     group.clear();
-    if (limitedhelper)
-        input = (IHThorInput*)dualcache->input();
+    groupedInput.clear();
     CHThorActivityBase::done();
 }
 
@@ -4939,7 +4951,7 @@ bool CHThorSelfJoinActivity::fillGroup()
     failingOuterAtmost = false;
     OwnedConstRoxieRow next;
     unsigned groupCount = 0;
-    next.setown(input->nextInGroup());
+    next.setown(groupedInput->nextInGroup());
     while(next)
     {
         if(groupCount==abortLimit)
@@ -4967,7 +4979,7 @@ bool CHThorSelfJoinActivity::fillGroup()
             group.clear();
             groupCount = 0;
             while(next) 
-                next.setown(input->nextInGroup());
+                next.setown(groupedInput->nextInGroup());
         }
         else if(groupCount==atmostLimit)
         {
@@ -4983,7 +4995,7 @@ bool CHThorSelfJoinActivity::fillGroup()
                 group.clear();
                 groupCount = 0;
                 while(next) 
-                    next.setown(input->nextInGroup());
+                    next.setown(groupedInput->nextInGroup());
             }
         }
         else
@@ -4991,7 +5003,7 @@ bool CHThorSelfJoinActivity::fillGroup()
             group.append(next.getClear());
             groupCount++;
         }
-        next.setown(input->nextInGroup());
+        next.setown(groupedInput->nextInGroup());
     }
     if(group.ordinality()==0)
     {
@@ -5015,7 +5027,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
         {
             if (!group.isItem(rightIndex))
             {
-                lhs.setown(input->nextInGroup());   //get from dualcache
+                lhs.setown(dualCacheInput->nextInGroup());
                 if (lhs)
                 {
                     rightIndex = 0;
@@ -5079,7 +5091,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
         {
             if(failingLimit || failingOuterAtmost)
             {
-                OwnedConstRoxieRow lhs(input->nextInGroup());
+                OwnedConstRoxieRow lhs(groupedInput->nextInGroup());  // dualCache never active here
                 while(lhs)
                 {
                     const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
@@ -5088,7 +5100,7 @@ const void * CHThorSelfJoinActivity::nextInGroup()
                         processed++;
                         return ret;
                     }
-                    lhs.setown(input->nextInGroup());
+                    lhs.setown(groupedInput->nextInGroup());
                 }
                 failingLimit.clear();
             }
@@ -8110,7 +8122,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
             }
             else
                 s.append("Could not open local physical file ").append(filename).append(" (").append((unsigned)GetLastError()).append(")");
-            agent.fail(1, s.toCharArray());
+            agent.fail(1, s.str());
         }
     }
     else
@@ -8122,7 +8134,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
         {
             StringBuffer s;
             s.append("File ").append(filename).append(" size is ").append(filesize).append(" which is not a multiple of ").append(fixedDiskRecordSize);
-            agent.fail(1, s.toCharArray());
+            agent.fail(1, s.str());
         }
 
         unsigned readBufferSize = queryReadBufferSize();

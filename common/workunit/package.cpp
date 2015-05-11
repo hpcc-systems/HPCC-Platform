@@ -132,7 +132,7 @@ bool CPackageNode::validate(StringArray &warn, StringArray &err) const
 
         if (!super.hasProp("SubFile"))
         {
-            VStringBuffer msg("Package['%s']/SuperFile['%s'] has no SubFiles defined", packageId.sget(), superId.sget());
+            VStringBuffer msg("Package['%s']/SuperFile['%s'] has no SubFiles defined", packageId.str(), superId.str());
             warn.append(msg.str());
         }
     }

@@ -41,10 +41,9 @@ SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, const char *owne
     return (isEmpty(owner) || (user && streq(user, owner))) ? accessOwn : accessOthers;
 }
 
-SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, IConstWorkUnit& cw, SecAccessFlags accessOwn, SecAccessFlags accessOthers)
+SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, IConstWorkUnitInfo& cw, SecAccessFlags accessOwn, SecAccessFlags accessOthers)
 {
-    SCMStringBuffer owner;
-    return chooseWuAccessFlagsByOwnership(user, cw.getUser(owner).str(), accessOwn, accessOthers);
+    return chooseWuAccessFlagsByOwnership(user, cw.queryUser(), accessOwn, accessOthers);
 }
 
 const char *getWuAccessType(const char *owner, const char *user)
@@ -54,8 +53,7 @@ const char *getWuAccessType(const char *owner, const char *user)
 
 const char *getWuAccessType(IConstWorkUnit& cw, const char *user)
 {
-    SCMStringBuffer owner;
-    return getWuAccessType(cw.getUser(owner).str(), user);
+    return getWuAccessType(cw.queryUser(), user);
 }
 
 void getUserWuAccessFlags(IEspContext& context, SecAccessFlags& accessOwn, SecAccessFlags& accessOthers, bool except)
@@ -958,12 +956,13 @@ unsigned WsWuInfo::getLegacyTotalThorTime()
 
 void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
 {
-    SCMStringBuffer s;
-    info.setWuid(cw->getWuid(s).str());
+    info.setWuid(cw->queryWuid());
     info.setProtected(cw->isProtected() ? 1 : 0);
-    info.setJobname(cw->getJobName(s).str());
-    info.setOwner(cw->getUser(s).str());
-    info.setCluster(cw->getClusterName(clusterName).str());
+    info.setJobname(cw->queryJobName());
+    info.setOwner(cw->queryUser());
+    clusterName.set(cw->queryClusterName());
+    info.setCluster(clusterName.str());
+    SCMStringBuffer s;
     info.setSnapshot(cw->getSnapshot(s).str());
 
     if ((cw->getState() == WUStateScheduled) && cw->aborting())
@@ -974,7 +973,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
     else
     {
         info.setStateID(cw->getState());
-        info.setState(cw->getStateDesc(s).str());
+        info.setState(cw->queryStateDesc());
     }
 
     if (cw->isPausing())
@@ -1055,16 +1054,14 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     IArrayOf<IConstThorLogInfo> thorLogList;
     if (cw->getWuidVersion() > 0)
     {
-        SCMStringBuffer clusterName;
-        cw->getClusterName(clusterName);
+        StringAttr clusterName(cw->queryClusterName());
         if (!clusterName.length()) //Cluster name may not be set yet
             return countThorLog;
 
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (!clusterInfo)
         {
-            SCMStringBuffer wuid;
-            WARNLOG("Cannot find TargetClusterInfo for workunit %s", cw->getWuid(wuid).str());
+            WARNLOG("Cannot find TargetClusterInfo for workunit %s", cw->queryWuid());
             return countThorLog;
         }
 
@@ -2253,27 +2250,25 @@ WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,
 
     ForEach(*it)
     {
-        IConstWorkUnit &cw = it->query();
+        IConstWorkUnitInfo &cw = it->query();
         if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
             continue;
 
-        SCMStringBuffer wuid;
-        cw.getWuid(wuid);
-        if (wuFrom.length() && strcmp(wuid.str(),wuFrom.str())<0)
+        const char *wuid = cw.queryWuid();
+        if (wuFrom.length() && strcmp(wuid,wuFrom.str())<0)
             continue;
-        if (wuTo.length() && strcmp(wuid.str(),wuTo.str())>0)
+        if (wuTo.length() && strcmp(wuid, wuTo.str())>0)
             continue;
 
         if (state && *state)
         {
-            SCMStringBuffer descr;
-            if(!strieq(cw.getStateDesc(descr).str(),state))
+            if(!strieq(cw.queryStateDesc(),state))
                 continue;
         }
 
-        wuids.push_back(wuid.str());
+        wuids.push_back(wuid);
     }
-    std::sort(wuids.begin(),wuids.end(),std::greater<std::string>());
+    std::sort(wuids.begin(), wuids.end(),std::greater<std::string>());
 }
 
 StringBuffer& WsWuSearch::createWuidFromDate(const char* timestamp,StringBuffer& s)
@@ -2804,22 +2799,18 @@ int WUSchedule::run()
                 {
                     try
                     {
-                        IConstWorkUnit & cw = itr->query();
-                        if (cw.aborting())
+                        IConstWorkUnitInfo & cw = itr->query();
+                        if (factory->isAborting(cw.queryWuid()))
                         {
-                            WorkunitUpdate wu(&cw.lock());
+                            WorkunitUpdate wu(factory->updateWorkUnit(cw.queryWuid()));
                             wu->setState(WUStateAborted);
                             continue;
                         }
-
                         WsWuDateTime dt, now;
                         now.setNow();
                         cw.getTimeScheduled(dt);
                         if (now.compare(dt)>=0)
-                        {
-                            SCMStringBuffer wuid;
-                            runWorkUnit(cw.getWuid(wuid).str());
-                        }
+                            runWorkUnit(cw.queryWuid(), cw.queryClusterName());
                     }
                     catch(IException *e)
                     {
@@ -2860,9 +2851,8 @@ void WsWuHelpers::setXmlParameters(IWorkUnit *wu, const char *xml, bool setJobna
         return;
     if (setJobname)
     {
-        SCMStringBuffer name;
-        wu->getJobName(name);
-        if (!name.length())
+        const char *name = wu->queryJobName();
+        if (!name || !*name)
             wu->setJobName(root->queryName());
     }
     wu->setXmlParams(LINK(root));
@@ -2914,14 +2904,10 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
         case WUStateCompiling:
         case WUStateAborting:
         case WUStateBlocked:
-        {
-            SCMStringBuffer descr;
-            throw MakeStringException(ECLWATCH_CANNOT_SUBMIT_WORKUNIT, "Cannot submit the workunit. Workunit state is '%s'.", cw->getStateDesc(descr).str());
-        }
+            throw MakeStringException(ECLWATCH_CANNOT_SUBMIT_WORKUNIT, "Cannot submit the workunit. Workunit state is '%s'.", cw->queryStateDesc());
     }
 
-    SCMStringBuffer wuid;
-    cw->getWuid(wuid);
+    StringAttr wuid(cw->queryWuid());
 
     WorkunitUpdate wu(&cw->lock());
     if(!wu.get())
@@ -3011,23 +2997,18 @@ void WsWuHelpers::copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> src(factory->openWorkUnit(srcWuid, false));
 
-    SCMStringBuffer wuid;
-    wu.getWuid(wuid);
-
     queryExtendedWU(&wu)->copyWorkUnit(src, false);
 
     SCMStringBuffer token;
-    wu.setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+    wu.setSecurityToken(createToken(wu.queryWuid(), context.queryUserId(), context.queryPassword(), token).str());
     wu.commit();
 }
 
 void WsWuHelpers::runWsWorkunit(IEspContext &context, StringBuffer &wuid, const char *srcWuid, const char *cluster, const char *paramXml,
     IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs)
 {
-    StringBufferAdaptor isvWuid(wuid);
-
     NewWsWorkunit wu(context);
-    wu->getWuid(isvWuid);
+    wuid.set(wu->queryWuid());
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
@@ -3087,10 +3068,9 @@ void WsWuHelpers::runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const c
 void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query, const char *cluster, const char *paramXml)
 {
     StringBuffer srcWuid;
-    StringBufferAdaptor isvWuid(wuid);
 
     NewWsWorkunit wu(context);
-    wu->getWuid(isvWuid);
+    wuid.set(wu->queryWuid());
     resolveQueryWuid(srcWuid, queryset, query, true, wu);
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
@@ -3104,7 +3084,7 @@ void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& inp
     if (isEmpty(trimmedInput))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Workunit ID not set", methodName);
 
-    if (!looksLikeAWuid(trimmedInput))
+    if (!looksLikeAWuid(trimmedInput, 'W'))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s: Invalid Workunit ID: %s", methodName, trimmedInput);
 
     return;

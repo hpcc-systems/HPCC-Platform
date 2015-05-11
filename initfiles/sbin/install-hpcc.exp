@@ -200,6 +200,10 @@ proc runPayload {} {
       }
    }
 
+   expect  -re $
+   send "${cmd_prefix} rm ~/remote_install.tgz\r"
+   expect  -re "${prompt}" {}
+
    if { $remotelog == 1 } {
       expect -re $
       send "cat ${remote_install}/remote-install.log\r"

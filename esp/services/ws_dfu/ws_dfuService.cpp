@@ -1446,7 +1446,7 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 
         //set the file
         MemoryBuffer buff;
-        buff.setBuffer(returnStr.length(), (void*)returnStr.toCharArray());
+        buff.setBuffer(returnStr.length(), (void*)returnStr.str());
         resp.setDefFile(buff);
 
         //set the type
@@ -1522,21 +1522,18 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
 
     if (!cluster || !stricmp(cluster, ""))
     {
-        char *eclCluster = NULL;
+        StringAttr eclCluster;
         const char* wuid = df->queryAttributes().queryProp("@workunit");
         if (wuid && *wuid)
         {
             try
             {
-                Owned<IWorkUnitFactory> factory = (context.querySecManager() ? getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser()) : getWorkUnitFactory());
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 if (factory)
                 {
-                    IConstWorkUnit* wu = factory->openWorkUnit(wuid, false);
+                    IConstWorkUnit* wu = factory->openWorkUnit(wuid, false, context.querySecManager(), context.queryUser());
                     if (wu)
-                    {   
-                        SCMStringBuffer cluster;
-                        eclCluster = (char *)wu->getClusterName(cluster).str();
-                    }
+                        eclCluster.set(wu->queryClusterName());
                 }
             }
             catch(...)
@@ -1545,7 +1542,7 @@ bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, co
             }
         }
 
-        if (!eclCluster || !stricmp(eclCluster, ""))
+        if (!eclCluster.length())
             return false;
     }
 
@@ -3067,6 +3064,8 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFdescription), DFUQFTwildcardMatch, req.getDescription(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
+    if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
+        filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
 
     __int64 sizeFrom = req.getFileSizeFrom();
     __int64 sizeTo = req.getFileSizeTo();
@@ -3206,6 +3205,15 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
             lFile->setParts(file.queryProp(getDFUQResultFieldName(DFUQRFnumparts)));
         }
         lFile->setBrowseData(numSubFiles > 1 ? false : true); ////Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
+
+        if (version >= 1.30)
+        {
+            bool persistent = file.getPropBool(getDFUQResultFieldName(DFUQRFpersistent), false);
+            if (persistent)
+                lFile->setPersistent(true);
+            if (file.hasProp(getDFUQResultFieldName(DFUQRFsuperowners)))
+                lFile->setSuperOwners(file.queryProp(getDFUQResultFieldName(DFUQRFsuperowners)));
+        }
 
         __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),0);
         if (size > 0)
@@ -5534,10 +5542,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         {
             CWUWrapper wu(wuid, context);
             if (wu)
-            {
-                SCMStringBuffer cluster0;
-                cluster.append(wu->getClusterName(cluster0).str());
-            }
+                cluster.append(wu->queryClusterName());
         }
     }
     catch (IException *e)
@@ -5561,7 +5566,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         udesc->set(secUser->getName(), secUser->credentials().getPassword());
     }
 
-    if (cluster && *cluster)
+    if (cluster.length())
     {
         web.setown(createViewFileWeb(*resultSetFactory, cluster, udesc.getLink()));
     }

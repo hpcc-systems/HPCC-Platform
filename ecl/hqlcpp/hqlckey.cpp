@@ -1453,7 +1453,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
     buildFormatCrcFunction(instance->classctx, "getIndexFormatCrc", info.queryRawKey(), info.queryRawKey(), 1);
     if (info.isFullJoin())
     {
-        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", info.queryRawRhs(), NULL, 0);
+        //Remove virtual attributes from the record, so the crc will be compatible with the disk read record
+        //can occur with a (highly unusual) full keyed join to a persist file... (see indexread14.ecl)
+        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(info.queryRawRhs()->queryRecord());
+        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", noVirtualRecord, NULL, 0);
         buildEncryptHelper(instance->startctx, info.queryFile()->queryAttribute(encryptAtom), "getFileEncryptKey");
     }
 
@@ -1503,8 +1506,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     IHqlExpression * indexRecord = right->queryRecord();
     IHqlExpression * seq = querySelSeq(expr);
 
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, false);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(false);
     if (joinInfo.hasOptionalEqualities())
         throwError(HQLERR_KeyedDistributeNoSubstringJoin);
 

@@ -950,7 +950,7 @@ StringBuffer & StringBuffer::stripChar(char oldChar)
     return *this;
 }
 
-const char * StringBuffer::toCharArray() const
+const char * StringBuffer::str() const
 {
     buffer[curLen] = '\0';          // There is always room for this null
     return buffer;
@@ -999,7 +999,7 @@ String::String(const char * value, int offset, int _count)
 
 String::String(String & value)
 {
-  text = strdup(value.toCharArray());
+  text = strdup(value.str());
 }
 
 String::String(StringBuffer & value)
@@ -1022,7 +1022,7 @@ char String::charAt(size32_t index) const
 
 int String::compareTo(const String & value) const
 {
-    return strcmp(text, value.toCharArray());
+    return strcmp(text, value.str());
 }
 
 int String::compareTo(const char* value)  const
@@ -1032,7 +1032,7 @@ int String::compareTo(const char* value)  const
 
 String * String::concat(const String & value) const
 {
-  StringBuffer temp(toCharArray());
+  StringBuffer temp(str());
   temp.append(value);
   return new String(temp.str());
 }
@@ -1043,7 +1043,7 @@ bool String::endsWith(const String & value) const
   unsigned len = (size32_t)strlen(text);
 
   if (len >= lenValue)
-    return (memcmp(text+(len-lenValue),value.toCharArray(),lenValue) == 0);
+    return (memcmp(text+(len-lenValue),value.str(),lenValue) == 0);
   return false;
 }
 
@@ -1055,13 +1055,13 @@ bool String::endsWith(const char* value) const
 
 bool String::equals(String & value) const
 {
-    return strcmp(text, value.toCharArray())==0;
+    return strcmp(text, value.str())==0;
 }
 
 
 bool String::equalsIgnoreCase(const String & value) const
 {
-  return stricmp(text, value.toCharArray())==0;
+  return stricmp(text, value.str())==0;
 }
 
 void String::getBytes(int srcBegin, int srcEnd, void * dest, int dstBegin) const
@@ -1093,14 +1093,14 @@ int String::indexOf(int ch, int from) const
 
 int String::indexOf(const String & search) const
 {
-  const char * str = search.toCharArray();
+  const char * str = search.str();
   const char * match = strstr(text, str);
   return match ? (int)(match - text) : -1;
 }
 
 int String::indexOf(const String & search, int from) const
 {
-  const char * str = search.toCharArray();
+  const char * str = search.str();
   const char * match = strstr(text + from, str);
   return match ? (int)(match - text) : -1;
 }
@@ -1139,14 +1139,14 @@ size32_t String::length() const
 bool String::startsWith(String & value) const
 {
   unsigned lenValue = value.length();
-  const char * search = value.toCharArray();
+  const char * search = value.str();
   return (memcmp(text, search, lenValue) == 0);
 }
 
 bool String::startsWith(String & value, int offset) const
 {
   unsigned lenValue = value.length();
-  const char * search = value.toCharArray();
+  const char * search = value.str();
   return (memcmp(text + offset, search, lenValue) == 0);
 }
 
@@ -1165,7 +1165,7 @@ String * String::substring(int beginIndex, int endIndex) const
   return new String(text, beginIndex, endIndex - beginIndex);
 }
 
-const char *String::toCharArray() const
+const char *String::str() const
 {
   return text;
 }

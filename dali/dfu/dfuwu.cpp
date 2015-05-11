@@ -1341,7 +1341,7 @@ public:
     void setCsvOptions(const char *separate,const char *terminate,const char *quote,const char *escape,bool quotedTerminator)
     {
         IPropertyTree *t = queryUpdateProperties();
-        if (separate && *separate)
+        if (separate) //Enable to pass zero string to override default separator
             t->setProp("@csvSeparate",separate);
         if (terminate && *terminate)
             t->setProp("@csvTerminate",terminate);
@@ -2057,6 +2057,15 @@ public:
         queryRoot()->setPropBool("@quotedTerminator",val);
     }
 
+    bool getPreserveCompression() const
+    {
+        return queryRoot()->getPropBool("@preserveCompression");
+    }
+
+    void setPreserveCompression(bool val)
+    {
+        queryRoot()->setPropBool("@preserveCompression",val);
+    }
 };
 
 class CExceptionIterator: public CInterface, implements IExceptionIterator
@@ -3034,7 +3043,8 @@ public:
             }
         };
 
-        StringBuffer query("*");
+        StringBuffer query;
+        StringAttr namefilter("*");
         StringBuffer so;
         const char *field;
         StringBuffer sf;
@@ -3049,8 +3059,10 @@ public:
                 DFUsortfield fmt = filters[i];
                 if (fmt==DFUsf_wuid) 
                     namefilterlo.set(fv);
-                else if (fmt==DFUsf_wuidhigh) 
+                else if (fmt==DFUsf_wuidhigh)
                     namefilterhi.set(fv);
+                else if (fmt==DFUsf_wildwuid)
+                    namefilter.set(fv);
                 else if (!fv || !*fv)
                 {
                     const char* attr = getDFUSortFieldXPath(fmt);
@@ -3070,6 +3082,7 @@ public:
                 fv += strlen(fv)+1;
             }
         }
+        query.insert(0, namefilter.get());
         if (sortorder)
         {
             for (unsigned i=0;sortorder[i]!=DFUsf_term;i++)

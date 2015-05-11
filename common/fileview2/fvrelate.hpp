@@ -23,9 +23,9 @@
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
 typedef wchar_t UChar;
-#else //__WIN32
+#else //_WIN32
 typedef unsigned short UChar;
-#endif //__WIN32
+#endif //_WIN32
 
 typedef void (*stringFieldTransformerFunction)(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);
 typedef void (*utf8FieldTransformerFunction)(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);

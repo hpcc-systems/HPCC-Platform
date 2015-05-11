@@ -224,7 +224,7 @@ void CWsESDLConfigEx::init(IPropertyTree *cfg, const char *process, const char *
 #ifdef _DEBUG
     StringBuffer thexml;
     toXML(cfg, thexml,0,0);
-    fprintf(stderr, "%s", thexml.toCharArray());
+    fprintf(stderr, "%s", thexml.str());
 #endif
 
     StringBuffer xpath;

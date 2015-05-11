@@ -75,8 +75,6 @@ bool defaultTimeActivities = true;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
 unsigned restarts = 0;
-bool heapSort = false;
-bool insertionSort = false;
 bool fieldTranslationEnabled = false;
 bool useTreeCopy = true;
 bool mergeSlaveStatistics = true;
@@ -133,6 +131,7 @@ unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
 
 unsigned slaveQueryReleaseDelaySeconds = 60;
+unsigned coresPerQuery = 0;
 
 unsigned logQueueLen;
 unsigned logQueueDrop;
@@ -355,7 +354,7 @@ static void roxie_common_usage(const char * progName)
     printf("\t--daliServers=[host1,...]\t: List of Dali servers to use\n");
     printf("\t--tracelevel=[integer]\t: Amount of information to dump on logs\n");
     printf("\t--stdlog=[boolean]\t: Standard log format (based on tracelevel)\n");
-    printf("\t--logfile=[format]\t: Outputs to logfile, rather than stdout\n");
+    printf("\t--logfile\t: Outputs to logfile, rather than stdout\n");
     printf("\t--help|-h\t: This message\n");
     printf("\n");
 }
@@ -747,6 +746,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
 
         slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);
+        coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
@@ -819,6 +819,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         setLeafCacheMem(leafCacheMB * 0x100000);
         blobCacheMB = topology->getPropInt("@blobCacheMem", 0);
         setBlobCacheMem(blobCacheMB * 0x100000);
+
+        unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
+        updateAffinity(affinity);
 
         minFreeDiskSpace = topology->getPropInt64("@minFreeDiskSpace", (1024 * 0x100000)); // default to 1 GB
         if (topology->getPropBool("@jumboFrames", false))

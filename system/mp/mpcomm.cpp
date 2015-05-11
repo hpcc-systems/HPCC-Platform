@@ -209,10 +209,10 @@ public:
         StringBuffer tmp;
         switch (error) {
         case MPERR_ok:                          str.append("OK"); break;
-        case MPERR_connection_failed:           str.appendf("MP connect failed (%s)",endpoint.getUrlStr(tmp).toCharArray()); break;
+        case MPERR_connection_failed:           str.appendf("MP connect failed (%s)",endpoint.getUrlStr(tmp).str()); break;
         case MPERR_process_not_in_group:        str.appendf("Current process not in Communicator group"); break;
-        case MPERR_protocol_version_mismatch:   str.appendf("Protocol version mismatch (%s)",endpoint.getUrlStr(tmp).toCharArray()); break;
-        case MPERR_link_closed:                 str.appendf("MP link closed (%s)",endpoint.getUrlStr(tmp).toCharArray()); break;
+        case MPERR_protocol_version_mismatch:   str.appendf("Protocol version mismatch (%s)",endpoint.getUrlStr(tmp).str()); break;
+        case MPERR_link_closed:                 str.appendf("MP link closed (%s)",endpoint.getUrlStr(tmp).str()); break;
         }
         return str;
     }
@@ -704,7 +704,7 @@ protected: friend class CMPPacketReader;
             try {
                 StringBuffer str;
 #ifdef _TRACE
-                LOG(MCdebugInfo(100), unknownJob, "MP: connecting to %s",remoteep.getUrlStr(str).toCharArray());
+                LOG(MCdebugInfo(100), unknownJob, "MP: connecting to %s",remoteep.getUrlStr(str).str());
 #endif
                 if (((int)tm.timeout)<0)
                     remaining = CONNECT_TIMEOUT;
@@ -859,7 +859,7 @@ protected: friend class CMPPacketReader;
                     {
                         newsock->Release();
 #ifdef _TRACE
-                        LOG(MCdebugInfo(100), unknownJob, "MP: connected to %s",str.toCharArray());
+                        LOG(MCdebugInfo(100), unknownJob, "MP: connected to %s",str.str());
 #endif
                         lastxfer = msTick();
                         closed = false;
@@ -888,7 +888,7 @@ protected: friend class CMPPacketReader;
 #ifdef _TRACE
                 StringBuffer str;
                 str.clear();
-                LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).toCharArray(),retrycount+1);
+                LOG(MCdebugInfo(100), unknownJob, "MP: Retrying connection to %s, %d attempts left",remoteep.getUrlStr(str).str(),retrycount+1);
 #endif
             }
 
@@ -1939,7 +1939,7 @@ int CMPConnectThread::run()
 #ifdef _TRACE
                     StringBuffer str1;
                     StringBuffer str2;
-                    LOG(MCdebugInfo(100), unknownJob, "MP Connect Thread: connected to %s",_remoteep.getUrlStr(str1).toCharArray());
+                    LOG(MCdebugInfo(100), unknownJob, "MP Connect Thread: connected to %s",_remoteep.getUrlStr(str1).str());
 #endif
                 }
 #ifdef _FULLTRACE       

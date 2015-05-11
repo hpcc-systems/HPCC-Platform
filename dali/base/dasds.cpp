@@ -979,11 +979,11 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
                 lastGood = iFileIO->size();
             }
             stream->seek(0, IFSend);
-            stream->write(xml.length(), xml.toCharArray());
+            stream->write(xml.length(), xml.str());
             stream->flush();
             stream.clear();
             offset_t fLen = lastGood + xml.length();
-            unsigned crc = crc32(xml.toCharArray(), xml.length(), startCrc);
+            unsigned crc = crc32(xml.str(), xml.length(), startCrc);
             char *headerPtr = (char *)header.bufferBase();
             sprintf(strNum, "%010u", ~crc);
             memcpy(headerPtr + deltaHeaderCrcOff, strNum, 10);
@@ -1432,7 +1432,7 @@ public:
             LOG(MCoperatorWarning, unknownJob, e, s.str()); 
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.toCharArray(), false);
+            CPTValue v(str.length()+1, str.str(), false);
             v.serialize(mb);
         }
         else
@@ -1469,7 +1469,7 @@ public:
             {
                 StringBuffer str("EXTERNAL BINARY FILE: \"");
                 str.append(filename.str()).append("\" MISSING");
-                CPTValue v(str.length()+1, str.toCharArray(), false);
+                CPTValue v(str.length()+1, str.str(), false);
                 v.serialize(mb);
             }
             else
@@ -1537,7 +1537,7 @@ public:
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.toCharArray(), false);
+            CPTValue v(str.length()+1, str.str(), false);
             v.serialize(mb);
         }
         else
@@ -1570,7 +1570,7 @@ public:
             {
                 StringBuffer str("EXTERNAL BINARY FILE: \"");
                 str.append(filename.str()).append("\" MISSING");
-                CPTValue v(str.length()+1, str.toCharArray(), false);
+                CPTValue v(str.length()+1, str.str(), false);
                 v.serialize(mb);
             }
             else
@@ -1637,7 +1637,7 @@ public:
             LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL XML FILE: \"");
             str.append(filename.str()).append("\" MISSING");
-            CPTValue v(str.length()+1, str.toCharArray(), false);
+            CPTValue v(str.length()+1, str.str(), false);
             v.serialize(mb);
         }
         else
@@ -1669,7 +1669,7 @@ public:
             str.append(filename.str()).append("\" MISSING");
             tree.setown(createPTree(owner.queryName()));
             if (withValue)
-                tree->setProp(NULL, str.toCharArray());
+                tree->setProp(NULL, str.str());
         }
         else
         {
@@ -3805,7 +3805,7 @@ int CSDSTransactionServer::run()
                                     SDSManager->getLocks(out);
                                     mb.clear().append(DAMP_SDSREPLY_OK);
                                     mb.append(out.length());
-                                    mb.append(out.length(), out.toCharArray());
+                                    mb.append(out.length(), out.str());
 
                                     break;
                                 }
@@ -5287,9 +5287,9 @@ public:
                 di->getName(fname);
                 if ('_' != fname.charAt(7)) // Unhelpful naming convention to differentiate store files from externals!
                 {
-                    if (0 == memicmp("inc", fname.toCharArray()+4, 3) || 0 == memicmp("sds", fname.toCharArray()+4, 3))
+                    if (0 == memicmp("inc", fname.str()+4, 3) || 0 == memicmp("sds", fname.str()+4, 3))
                     {
-                        const char *num = fname.toCharArray()+7;
+                        const char *num = fname.str()+7;
                         const char *dot = (const char *)strchr(num, '.');
                         unsigned fileEdition = atoi_l(num, dot-num);
                         int d = (int)fileEdition-(int)edition;
@@ -7117,7 +7117,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
         if (l && '/' == _xpath[l-1])
         {
             tXpath.append(l-1, _xpath);
-            _xpath = tXpath.toCharArray();
+            _xpath = tXpath.str();
         }
     }
     bool newNode = false;

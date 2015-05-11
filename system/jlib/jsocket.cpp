@@ -3232,7 +3232,7 @@ void SocketEndpoint::getUrlStr(char * str, size32_t len) const
         l = len-1;
         str[l] = 0;
     }
-    memcpy(str,_str.toCharArray(),l);
+    memcpy(str,_str.str(),l);
 }
 
 StringBuffer &SocketEndpoint::getUrlStr(StringBuffer &str) const

@@ -56,9 +56,7 @@ class ExecuteExistingQueryInfo
 public:
     ExecuteExistingQueryInfo(IConstWorkUnit *cw)
     {
-        SCMStringBuffer isv;
-        cw->getJobName(isv);
-        const char *name = isv.str();
+        const char *name = cw->queryJobName();
         const char *div = strchr(name, '.');
         if (div)
         {
@@ -147,6 +145,7 @@ void setActionResult(const char* wuid, int action, const char* result, StringBuf
     default:
     {
         strAction = "Unknown";
+        break;
     }
     }
 
@@ -178,7 +177,7 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
 
         try
         {
-            if (!looksLikeAWuid(wuid))
+            if (!looksLikeAWuid(wuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
 
             if ((action == ActionRestore) || (action == ActionEventDeschedule))
@@ -523,9 +522,8 @@ bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, 
             throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
 
         NewWsWorkunit wu(context);
-        SCMStringBuffer wuid;
-        resp.updateWorkunit().setWuid(wu->getWuid(wuid).str());
-        AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
+        resp.updateWorkunit().setWuid(wu->queryWuid());
+        AuditSystemAccess(context.queryUserId(), true, "Updated %s", wu->queryWuid());
     }
     catch(IException* e)
     {
@@ -704,9 +702,7 @@ bool CWsWorkunitsEx::onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateReque
             throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
 
         NewWsWorkunit wu(context);
-        SCMStringBuffer wuid;
-        wu->getWuid(wuid);
-        req.setWuid(wuid.str());
+        req.setWuid(wu->queryWuid());
     }
     catch(IException* e)
     {
@@ -849,7 +845,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
     try
     {
         Owned<IMultiException> me = MakeMultiException();
-        SCMStringBuffer wuid;
+        StringAttr wuid;
         StringArray wuids;
 
         double version = context.getClientVersion();
@@ -870,7 +866,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 {
                     Owned<IConstWorkUnit> src(factory->openWorkUnit(wuid.str(), false));
                     NewWsWorkunit wu(factory, context);
-                    wu->getWuid(wuid);
+                    wuid.set(wu->queryWuid());
                     queryExtendedWU(wu)->copyWorkUnit(src, false);
 
                     SCMStringBuffer token;
@@ -980,10 +976,7 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
             case WUStateRunning:
             case WUStateAborting:
             case WUStateBlocked:
-            {
-                SCMStringBuffer descr;
-                throw MakeStringException(ECLWATCH_CANNOT_SCHEDULE_WORKUNIT, "Cannot schedule the workunit. Workunit state is '%s'.", wu->getStateDesc(descr).str());
-            }
+                throw MakeStringException(ECLWATCH_CANNOT_SCHEDULE_WORKUNIT, "Cannot schedule the workunit. Workunit state is '%s'.", wu->queryStateDesc());
         }
 
         wu->clearExceptions();
@@ -1043,7 +1036,7 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
                 throw WsWuHelpers::noteException(wu, MakeStringException(ECLWATCH_INVALID_INPUT,"Queryset and/or query not specified"));
             }
 
-            WsWuHelpers::runWsWuQuery(context, cw, info.queryset.sget(), info.query.sget(), cluster, NULL);
+            WsWuHelpers::runWsWuQuery(context, cw, info.queryset.str(), info.query.str(), cluster, NULL);
         }
         else
             WsWuHelpers::submitWsWorkunit(context, cw, cluster, req.getSnapshot(), req.getMaxRunTime(), true, false, false);
@@ -1093,7 +1086,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
 
         if (runWuid && *runWuid)
         {
-            if (!looksLikeAWuid(runWuid))
+            if (!looksLikeAWuid(runWuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", runWuid);
 
             if (req.getCloneWorkunit())
@@ -1118,8 +1111,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
         if (!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.", wuid.str());
 
-        SCMStringBuffer stateDesc;
-        resp.setState(cw->getStateDesc(stateDesc).str());
+        resp.setState(cw->queryStateDesc());
         resp.setWuid(wuid.str());
 
         switch (cw->getState())
@@ -1222,8 +1214,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
 
         wu.setQueryText(req.getECL());
 
-        SCMStringBuffer wuid;
-        wu->getWuid(wuid);
+        StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()
         wu->commit();
         wu.clear();
 
@@ -1273,9 +1264,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
 
         wu.setQueryText(req.getECL());
 
-        SCMStringBuffer wuid;
-        wu->getWuid(wuid);
-        wu.clear();
+        StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()        StringAttr wuid(wu->queryWuid());
 
         WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
         waitForWorkUnitToComplete(wuid.str(),req.getTimeToWait());
@@ -1369,8 +1358,7 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
             }
         }
 
-        SCMStringBuffer wuid;
-        wu->getWuid(wuid);
+        StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()
         wu->commit();
         wu.clear();
 
@@ -1847,7 +1835,17 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);
-    addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
+    if (version < 1.55)
+        addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
+    else
+    {
+        IArrayOf<IConstApplicationValue>& applicationFilters = req.getApplicationValues();
+        ForEachItemIn(i, applicationFilters)
+        {
+            IConstApplicationValue &item = applicationFilters.item(i);
+            addWUQueryFilterApplication(filters, filterCount, filterbuf, item.getApplication(), item.getName(), item.getValue());
+        }
+    }
 
     filters[filterCount] = WUSFterm;
 
@@ -1864,7 +1862,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     unsigned actualCount = 0;
     ForEach(*it)
     {
-        IConstWorkUnit& cw = it->query();
+        IConstWorkUnitInfo& cw = it->query();
         if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
         {
             numWUs--;
@@ -1877,9 +1875,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             continue;
         }
 
-        SCMStringBuffer wuidStr;
-        const char* wuid = cw.getWuid(wuidStr).str();
-        if (!looksLikeAWuid(wuid))
+        const char* wuid = cw.queryWuid();
+        if (!looksLikeAWuid(wuid, 'W'))
         {
             numWUs--;
             continue;
@@ -1888,6 +1885,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         Owned<IEspECLWorkunit> info = createECLWorkunit("","");
         WsWuInfo winfo(context, wuid);
         winfo.getCommon(*info, 0);
+        if (version >= 1.55)
+            winfo.getApplicationValues(*info, WUINFO_IncludeApplicationValues);
         results.append(*info.getClear());
     }
 
@@ -2211,7 +2210,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
-        else if(notEmpty(wuid) && looksLikeAWuid(wuid))
+        else if(notEmpty(wuid) && looksLikeAWuid(wuid, 'W'))
             doWUQueryBySingleWuid(context, wuid, resp);
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
             doWUQueryByFile(context, req.getLogicalFile(), resp);
@@ -2371,8 +2370,7 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     Owned<INewResultSet> rs;
     if (logicalName.length())
     {
-        SCMStringBuffer cluster;  //MORE is this wrong cluster?
-        rs.setown(resultSetFactory->createNewFileResultSet(logicalName.str(), cw->getClusterName(cluster).str()));
+        rs.setown(resultSetFactory->createNewFileResultSet(logicalName.str(), cw->queryClusterName())); //MORE is this wrong cluster?
     }
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
@@ -2489,7 +2487,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
         const char* wuidIn = wuidStr.trim().str();
         if (wuidIn && *wuidIn)
         {
-            if (!looksLikeAWuid(wuidIn))
+            if (!looksLikeAWuid(wuidIn, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID");
 
             ensureWsWorkunitAccess(context, wuidIn, SecAccess_Read);
@@ -2615,7 +2613,7 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
         const char* wuidIn = wuidStr.trim().str();
         if (wuidIn && *wuidIn)
         {
-            if (!looksLikeAWuid(wuidIn))
+            if (!looksLikeAWuid(wuidIn, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuidIn);
 
             ensureWsWorkunitAccess(context, wuidIn, SecAccess_Read);
@@ -2790,7 +2788,7 @@ void getWorkunitCluster(IEspContext &context, const char* wuid, SCMStringBuffer&
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
     if (cw)
-        cw->getClusterName(cluster);
+        cluster.set(cw->queryClusterName());
     else if (checkArchiveWUs)
     {
         Owned<IPropertyTree> wuProps;// = getArchivedWorkUnitProperties(wuid);
@@ -2808,7 +2806,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         const char* wuid = wuidStr.trim().str();
         if (wuid && *wuid)
         {
-            if (!looksLikeAWuid(wuid))
+            if (!looksLikeAWuid(wuid, 'W'))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
 
             ensureWsWorkunitAccess(context, wuid, SecAccess_Read);
@@ -2956,7 +2954,8 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                     {
                         bool match = false;
                         unsigned stateID = WUStateUnknown;
-                        SCMStringBuffer jobName, owner, state;
+                        StringBuffer jobName, owner;
+                        SCMStringBuffer state;
                         try
                         {
                             Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
@@ -2972,14 +2971,14 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                                 else
                                 {
                                     stateID = cw->getState();
-                                    cw->getStateDesc(state);
+                                    state.set(cw->queryStateDesc());
                                 }
 
                                 if (!stateReq || !*stateReq || strieq(stateReq, state.str()))
                                 {
                                     match = true;
-                                    cw->getJobName(jobName);
-                                    cw->getUser(owner);
+                                    jobName.set(cw->queryJobName());
+                                    owner.set(cw->queryUser());
                                 }
                             }
                         }
@@ -3381,6 +3380,54 @@ bool isRunning(IConstWorkUnit &cw)
     }
 }
 
+void CWsWorkunitsEx::readGraph(IEspContext& context, const char* subGraphId, WUGraphIDType& id, bool running,
+    IConstWUGraph* graph, IArrayOf<IEspECLGraphEx>& graphs)
+{
+    SCMStringBuffer name, label, type;
+    graph->getName(name);
+    graph->getLabel(label);
+    graph->getTypeName(type);
+
+    Owned<IEspECLGraphEx> g = createECLGraphEx("","");
+    g->setName(name.str());
+    g->setLabel(label.str());
+    g->setType(type.str());
+
+    WUGraphState graphState = graph->getState();
+    if (running && (WUGraphRunning == graphState))
+    {
+        g->setRunning(true);
+        g->setRunningId(id);
+    }
+    else if (context.getClientVersion() > 1.20)
+    {
+        if (WUGraphComplete == graphState)
+            g->setComplete(true);
+        else if (WUGraphFailed == graphState)
+            g->setFailed(true);
+    }
+
+    Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true);
+
+    // New functionality, if a subgraph id is specified and we only want to load the xgmml for that subgraph
+    // then we need to conditionally pull a propertytree from the xgmml graph one and use that for the xgmml.
+
+    //JCSMORE this should be part of the API and therefore allow *only* the subtree to be pulled from the backend.
+
+    StringBuffer xml;
+    if (notEmpty(subGraphId))
+    {
+        VStringBuffer xpath("//node[@id='%s']", subGraphId);
+        toXML(xgmml->queryPropTree(xpath.str()), xml);
+    }
+    else
+        toXML(xgmml, xml);
+
+    g->setGraph(xml.str());
+
+    graphs.append(*g.getClear());
+}
+
 bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& req, IEspWUGetGraphResponse& resp)
 {
     try
@@ -3399,65 +3446,16 @@ bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& r
         bool running = (isRunning(*cw) && cw->getRunningGraph(runningGraph,id));
 
         IArrayOf<IEspECLGraphEx> graphs;
-
-        Owned<IConstWUGraphIterator> it;
-        IConstWUGraph *graph = NULL;
         if (isEmpty(req.getGraphName())) // JCS->GS - is this really required??
         {
-            it.setown(&cw->getGraphs(GraphTypeAny));
-            if (it->first())
-                graph = &it->query();
+            Owned<IConstWUGraphIterator> it = &cw->getGraphs(GraphTypeAny);
+            ForEach(*it)
+                readGraph(context, req.getSubGraphId(), id, running, &it->query(), graphs);
         }
         else
-            graph = cw->getGraph(req.getGraphName());
-        while (graph)
         {
-            SCMStringBuffer name, label, type;
-            graph->getName(name);
-            graph->getLabel(label);
-            graph->getTypeName(type);
-
-            Owned<IEspECLGraphEx> g = createECLGraphEx("","");
-            g->setName(name.str());
-            g->setLabel(label.str());
-            g->setType(type.str());
-            WUGraphState graphState = graph->getState();
-
-            if (running && (WUGraphRunning == graphState))
-            {
-                g->setRunning(true);
-                g->setRunningId(id);
-            }
-            else if (context.getClientVersion() > 1.20)
-            {
-                if (WUGraphComplete == graphState)
-                    g->setComplete(true);
-                else if (WUGraphFailed == graphState)
-                    g->setFailed(true);
-            }
-
-            Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true);
-
-            // New functionality, if a subgraph id is specified and we only want to load the xgmml for that subgraph
-            // then we need to conditionally pull a propertytree from the xgmml graph one and use that for the xgmml.
-
-            //JCSMORE this should be part of the API and therefore allow *only* the subtree to be pulled from the backend.
-
-            StringBuffer xml;
-            if (notEmpty(req.getSubGraphId()))
-            {
-                VStringBuffer xpath("//node[@id='%s']", req.getSubGraphId());
-                toXML(xgmml->queryPropTree(xpath.str()), xml);
-            }
-            else
-                toXML(xgmml, xml);
-
-            g->setGraph(xml.str());
-
-            graphs.append(*g.getClear());
-            if (!it || !it->next())
-                break;
-            graph = &it->query();
+            Owned<IConstWUGraph> graph = cw->getGraph(req.getGraphName());
+            readGraph(context, req.getSubGraphId(), id, running, graph, graphs);
         }
         resp.setGraphs(graphs);
     }
@@ -3687,8 +3685,7 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
 {
     NewWsWorkunit wu(context);
 
-    SCMStringBuffer wuid;
-    wu->getWuid(wuid);
+    StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()
 
     wu->setAction(WUActionCompile);
 
@@ -3818,16 +3815,14 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
 
     NewWsWorkunit wu(context, wuid); //duplicate wuid made unique
 
-    StringBufferAdaptor isvWuid(wuid);
-    wu->getWuid(isvWuid);
+    wuid.set(wu->queryWuid());
     wu->setClusterName(cluster);
     wu->commit();
 
     StringBuffer dllXML;
     if (getWorkunitXMLFromFile(dllpath.str(), dllXML))
     {
-        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
-        embeddedWU->loadXML(dllXML.str());
+        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dllXML.str());
         queryExtendedWU(wu)->copyWorkUnit(embeddedWU, true);
     }
 
@@ -3977,12 +3972,11 @@ void CWsWorkunitsEx::addProcessLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& win
 
 void CWsWorkunitsEx::createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr)
 {
-    SCMStringBuffer temp;
     StringBuffer sb;
-    sb.append("Workunit:     ").append(cwu->getWuid(temp)).append("\r\n");
-    sb.append("User:         ").append(cwu->getUser(temp).str()).append("\r\n");
+    sb.append("Workunit:     ").append(cwu->queryWuid()).append("\r\n");
+    sb.append("User:         ").append(cwu->queryUser()).append("\r\n");
     sb.append("Build Version:").append(req.getBuildVersion()).append("\r\n");
-    sb.append("Cluster:      ").append(cwu->getClusterName(temp).str()).append("\r\n");
+    sb.append("Cluster:      ").append(cwu->queryClusterName()).append("\r\n");
     if (req.getESPIPAddress())
         sb.append("ESP:          ").append(req.getESPIPAddress()).append("\r\n");
     if (req.getThorIPAddress())
@@ -3992,6 +3986,7 @@ void CWsWorkunitsEx::createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<
     StringBuffer info, warn, err, alert;
     ForEach(*exceptions)
     {
+        SCMStringBuffer temp;
         switch (exceptions->query().getSeverity())
         {
         case SeverityInformation:

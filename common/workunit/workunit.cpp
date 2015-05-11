@@ -39,6 +39,7 @@
 #include "danqs.hpp"
 #include "dautils.hpp"
 #include "dllserver.hpp"
+#include "thorplugin.hpp"
 #include "thorhelper.hpp"
 #include "workflow.hpp"
 
@@ -48,6 +49,7 @@
 #include "wuerror.hpp"
 #include "wujobq.hpp"
 #include "environment.hpp"
+#include "workunit.ipp"
 
 #define GLOBAL_WORKUNIT "global"
 
@@ -96,11 +98,13 @@ static void wuAccessError(const char *username, const char *action, const char *
     if (excpt)
         throw MakeStringException(WUERR_AccessError, "%s", err.str());
 }
-static bool checkWuScopeSecAccess(const char *wuscope, ISecManager &secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
+static bool checkWuScopeSecAccess(const char *wuscope, ISecManager *secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
 {
-    bool ret=(!secuser) ? true : (secmgr.authorizeEx(RT_WORKUNIT_SCOPE, *secuser, wuscope)>=required);
+    if (!secmgr || !secuser)
+        return true;
+    bool ret = secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, wuscope)>=required;
     if (!ret && (log || excpt))
-        wuAccessError(secuser ? secuser->getName() : NULL, action, wuscope, NULL, excpt, log);
+        wuAccessError(secuser->getName(), action, wuscope, NULL, excpt, log);
     return ret;
 }
 static bool checkWuScopeListSecAccess(const char *wuscope, ISecResourceList *scopes, int required, const char *action, bool excpt, bool log)
@@ -127,18 +131,19 @@ static bool checkWuScopeListSecAccess(const char *wuscope, ISecResourceList *sco
         wuAccessError(NULL, action, wuscope, NULL, excpt, log);
     return ret;
 }
-static bool checkWuSecAccess(IConstWorkUnit &cw, ISecManager &secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
+static bool checkWuSecAccess(IConstWorkUnit &cw, ISecManager *secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
 {
+    if (!secmgr || !secuser)
+        return true;
     SCMStringBuffer wuscope;
-    bool ret=(!secuser) ? true : (secmgr.authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw.getWuScope(wuscope).str())>=required);
+    bool ret=secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, cw.getWuScope(wuscope).str())>=required;
     if (!ret && (log || excpt))
     {
-        SCMStringBuffer wuid;
-        wuAccessError(secuser ? secuser->getName() : NULL, action, wuscope.str(), cw.getWuid(wuid).str(), excpt, log);
+        wuAccessError(secuser->getName(), action, wuscope.str(), cw.queryWuid(), excpt, log);
     }
     return ret;
 }
-static bool checkWuSecAccess(const char *wuid, ISecManager &secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
+static bool checkWuSecAccess(const char *wuid, ISecManager *secmgr, ISecUser *secuser, int required, const char *action, bool excpt, bool log)
 {
     StringBuffer wuRoot;
     Owned<IRemoteConnection> conn = querySDS().connect(getXPath(wuRoot, wuid).str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
@@ -944,446 +949,259 @@ private:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-class CLocalWUAppValue : public CInterface, implements IConstWUAppValue
-{
-    Owned<IPropertyTree> p;
-    StringAttr prop;
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWUAppValue(IPropertyTree *p,unsigned child);
+struct mapEnums { int val; const char *str; };
 
-    virtual IStringVal & getApplication(IStringVal & str) const;
-    virtual IStringVal & getName(IStringVal & str) const;
-    virtual IStringVal & getValue(IStringVal & dt) const;
+mapEnums states[] = {
+   { WUStateUnknown, "unknown" },
+   { WUStateCompiled, "compiled" },
+   { WUStateRunning, "running" },
+   { WUStateCompleted, "completed" },
+   { WUStateFailed, "failed" },
+   { WUStateArchived, "archived" },
+   { WUStateAborting, "aborting" },
+   { WUStateAborted, "aborted" },
+   { WUStateBlocked, "blocked" },
+   { WUStateSubmitted, "submitted" },
+   { WUStateScheduled, "scheduled" },
+   { WUStateCompiling, "compiling" },
+   { WUStateWait, "wait" },
+   { WUStateUploadingFiles, "uploading_files" },
+   { WUStateDebugPaused, "debugging" },
+   { WUStateDebugRunning, "debug_running" },
+   { WUStatePaused, "paused" },
+   { WUStateSize, NULL }
 };
 
-
-class CLocalWUStatistic : public CInterface, implements IConstWUStatistic
+const char * getWorkunitStateStr(WUState state)
 {
-    Owned<IPropertyTree> p;
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWUStatistic(IPropertyTree *p);
+    dbgassertex(state < WUStateSize);
+    return states[state].str; // MORE - should be using getEnumText, or need to take steps to ensure values remain contiguous and in order.
+}
 
-    virtual IStringVal & getCreator(IStringVal & str) const;
-    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const;
-    virtual IStringVal & getFormattedValue(IStringVal & str) const;
-    virtual IStringVal & getType(IStringVal & str) const;
-    virtual IStringVal & getScope(IStringVal & str) const;
-    virtual StatisticMeasure getMeasure() const;
-    virtual StatisticCreatorType getCreatorType() const;
-    virtual StatisticScopeType getScopeType() const;
-    virtual StatisticKind getKind() const;
-    virtual unsigned __int64 getValue() const;
-    virtual unsigned __int64 getCount() const;
-    virtual unsigned __int64 getMax() const;
-    virtual unsigned __int64 getTimestamp() const;
-
-    virtual bool matches(const IStatisticsFilter * filter) const;
-};
-
-
-class CLocalWULegacyTiming : public CInterface, implements IConstWUStatistic
+const char *getEnumText(int value, const mapEnums *map)
 {
-    Owned<IPropertyTree> p;
-public:
-    IMPLEMENT_IINTERFACE;
-    CLocalWULegacyTiming(IPropertyTree *p);
-
-    virtual IStringVal & getCreator(IStringVal & str) const;
-    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const;
-    virtual IStringVal & getFormattedValue(IStringVal & str) const;
-    virtual IStringVal & getType(IStringVal & str) const;
-    virtual IStringVal & getScope(IStringVal & str) const;
-    virtual StatisticMeasure getMeasure() const;
-    virtual StatisticCreatorType getCreatorType() const;
-    virtual StatisticScopeType getScopeType() const;
-    virtual StatisticKind getKind() const;
-    virtual unsigned __int64 getValue() const;
-    virtual unsigned __int64 getCount() const;
-    virtual unsigned __int64 getMax() const;
-    virtual unsigned __int64 getTimestamp() const;
-
-    virtual bool matches(const IStatisticsFilter * filter) const;
-};
-
-
-template <typename T, typename IT> struct CachedTags
-{
-    CachedTags(): cached(false) {}
-    void load(IPropertyTree* p,const char* xpath)
+    const char *defval = map->str;
+    while (map->str)
     {
-        if (!cached)
+        if (value==map->val)
+            return map->str;
+        map++;
+    }
+    assertex(!"Unexpected value in setEnum");
+    return defval;
+}
+
+void setEnum(IPropertyTree *p, const char *propname, int value, const mapEnums *map)
+{
+    const char *defval = map->str;
+    while (map->str)
+    {
+        if (value==map->val)
         {
-            assertex(tags.length() == 0);
-            Owned<IPropertyTreeIterator> r = p->getElements(xpath);
-            for (r->first(); r->isValid(); r->next())
+            p->setProp(propname, map->str);
+            return;
+        }
+        map++;
+    }
+    assertex(!"Unexpected value in setEnum");
+    p->setProp(propname, defval);
+}
+
+static int getEnum(const char *v, const mapEnums *map)
+{
+    if (v)
+    {
+        while (map->str)
+        {
+            if (stricmp(v, map->str)==0)
+                return map->val;
+            map++;
+        }
+        assertex(!"Unexpected value in getEnum");
+    }
+    return 0;
+}
+
+static int getEnum(const IPropertyTree *p, const char *propname, const mapEnums *map)
+{
+    return getEnum(p->queryProp(propname),map);
+}
+
+//==========================================================================================
+
+class CLightweightWorkunitInfo : public CInterfaceOf<IConstWorkUnitInfo>
+{
+public:
+    CLightweightWorkunitInfo(IPropertyTree &p)
+    {
+        wuid.set(p.queryName());
+        user.set(p.queryProp("@submitID"));
+        jobName.set(p.queryProp("@jobName"));
+        clusterName.set(p.queryProp("@clusterName"));
+        timeScheduled.set(p.queryProp("@timeScheduled"));
+        state = (WUState) getEnum(&p, "@state", states);
+        _isProtected = p.getPropBool("@protected", false);
+        _isAborting = false; // MORE - this one is tricky
+    }
+    virtual const char *queryWuid() const { return wuid.str(); }
+    virtual const char *queryUser() const { return user.str(); }
+    virtual const char *queryJobName() const { return jobName.str(); }
+    virtual const char *queryClusterName() const { return clusterName.str(); }
+    virtual WUState getState() const { return state; }
+    virtual const char *queryStateDesc() const { return getEnumText(getState(), states); }
+    virtual bool isProtected() const { return _isProtected; }
+// Not sure about these ones...
+    virtual bool aborting() const { return _isAborting; }
+    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
+    {
+        if (timeScheduled.length())
+            val.setGmtString(timeScheduled.str());
+        return val;
+    }
+
+protected:
+    StringAttr wuid, user, jobName, clusterName, timeScheduled;
+    WUState state;
+    bool _isProtected;
+    bool _isAborting;
+};
+
+class CDaliWorkUnit : public CLocalWorkUnit
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    CDaliWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser)
+        : connection(_conn), CLocalWorkUnit(secmgr, secuser)
+    {
+        loadPTree(connection->getRoot());
+        abortDirty = true;
+        abortState = false;
+    }
+    ~CDaliWorkUnit()
+    {
+        // NOTE - order is important - we need to construct connection before p and (especially) destroy after p
+        // We use the beforeDIspose() in base class to help ensure this
+        p.clear();
+    }
+
+    virtual void forceReload()
+    {
+        synchronized sync(locked); // protect locked workunits (uncommited writes) from reload
+        StringBuffer wuRoot;
+        getXPath(wuRoot, p->queryName());
+        IRemoteConnection *newconn = querySDS().connect(wuRoot.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+        if (!newconn)
+            throw MakeStringException(WUERR_ConnectFailed, "Could not connect to workunit %s (deleted?)",p->queryName());
+        CriticalBlock block(crit);
+        clearCached(true);
+        connection.setown(newconn);
+        abortDirty = true;
+        p.setown(connection->getRoot());
+    }
+
+    virtual void cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
+    {
+        CLocalWorkUnit::cleanupAndDelete(deldll, deleteOwned, deleteExclusions);
+        connection->close(true);
+        PROGLOG("WUID %s removed",p->queryName());
+        connection.clear();
+    }
+
+    virtual void commit()
+    {
+        CLocalWorkUnit::commit();
+        if (connection)
+            connection->commit();
+    }
+
+    virtual void _lockRemote()
+    {
+        StringBuffer wuRoot;
+        getXPath(wuRoot, p->queryName());
+        if (connection)
+            connection->changeMode(RTM_LOCK_WRITE,SDS_LOCK_TIMEOUT);
+        else
+            connection.setown(querySDS().connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
+        if (!connection)
+            throw MakeStringException(WUERR_LockFailed, "Failed to get connection for xpath %s", wuRoot.str());
+        clearCached(true);
+        abortDirty = true;
+        p.setown(connection->getRoot());
+    }
+
+    virtual void _unlockRemote()
+    {
+        try
+        {
+            //MORE: I'm not convinced this is useful...
+            setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, NULL, StWhenWorkunitModified, NULL, getTimeStampNowValue(), 1, 0, StatsMergeReplace);
+            try
             {
-                IPropertyTree *rp = &r->query();
-                rp->Link();
-                tags.append(*new T(rp));
+                connection->commit();
             }
-            cached = true;
-        }
-    }
-
-    void append(IPropertyTree * p)
-    {
-        tags.append(*new T(p));
-    }
-
-    operator IArrayOf<IT>&() { return tags; }
-    unsigned ordinality() const { return tags.ordinality(); }
-
-    void kill()
-    {
-        cached = false;
-        tags.kill();
-    }
-
-    bool cached;
-    IArrayOf<IT> tags;
-};
-
-template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
-{
-    CachedTags(): cached(false) {}
-    void load(IPropertyTree* p,const char* xpath)
-    {
-        if (!cached)
-        {
-            assertex(tags.length() == 0);
-            Owned<IPropertyTreeIterator> r = p->getElements(xpath);
-            for (r->first(); r->isValid(); r->next())
+            catch (IException *e)
             {
-                IPropertyTree *rp = &r->query();
-                Owned<IPropertyTreeIterator> v = rp->getElements("*");
-                unsigned pos = 1;
-                for (v->first(); v->isValid(); v->next())
-                {
-                    rp->Link();
-                    tags.append(*new CLocalWUAppValue(rp,pos++));
-                }
+                EXCLOG(e, "Error during workunit commit");
+                connection->rollback();
+                connection->changeMode(0, SDS_LOCK_TIMEOUT);
+                throw;
             }
-            cached = true;
+            connection->changeMode(0, SDS_LOCK_TIMEOUT);
+        }
+        catch (IException *E)
+        {
+            StringBuffer s;
+            PrintLog("Failed to release write lock on workunit: %s", E->errorMessage(s).str());
+            throw;
         }
     }
 
-    operator IArrayOf<IConstWUAppValue>&() { return tags; }
-
-    void kill()
+    virtual void subscribe(WUSubscribeOptions options)
     {
-        cached = false;
-        tags.kill();
+        CriticalBlock block(crit);
+        assertex(options==SubscribeOptionAbort);
+        if (!abortWatcher)
+        {
+            abortWatcher.setown(new CWorkUnitAbortWatcher(this, p->queryName()));
+            abortDirty = true;
+        }
     }
 
-    bool cached;
-    IArrayOf<IConstWUAppValue> tags;
-};
-
-
-class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements ISDSSubscription, implements IExtendedWUInterface
-{
-    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress);
-    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress);
-
-    // NOTE - order is important - we need to construct connection before p and (especially) destruct after p
-    Owned<IRemoteConnection> connection;
-    Owned<IPropertyTree> p;
-    bool dirty;
-    bool connectAtRoot;
-    mutable bool abortDirty;
-    mutable bool abortState;
-    mutable CriticalSection crit;
-    mutable Owned<IWUQuery> query;
-    mutable Owned<IWUWebServicesInfo> webServicesInfo;
-    mutable Owned<IWURoxieQueryInfo> roxieQueryInfo;
-    mutable Owned<IWorkflowItemIterator> workflowIterator;
-    mutable bool workflowIteratorCached;
-    mutable bool resultsCached;
-    mutable bool temporariesCached;
-    mutable bool variablesCached;
-    mutable bool exceptionsCached;
-    mutable bool pluginsCached;
-    mutable bool librariesCached;
-    mutable bool activitiesCached;
-    mutable bool webServicesInfoCached;
-    mutable bool roxieQueryInfoCached;
-    mutable IArrayOf<IWUPlugin> plugins;
-    mutable IArrayOf<IWULibrary> libraries;
-    mutable IArrayOf<IWUException> exceptions;
-    mutable IArrayOf<IWUGraph> graphs;
-    mutable IArrayOf<IWUResult> results;
-    mutable IArrayOf<IWUResult> temporaries;
-    mutable IArrayOf<IWUResult> variables;
-    mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
-    mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics;
-    mutable CachedTags<CLocalWULegacyTiming,IConstWUStatistic> legacyTimings;
-    mutable Owned<IUserDescriptor> userDesc;
-    Mutex locked;
-    Owned<ISecManager> secMgr;
-    Owned<ISecUser> secUser;
-    mutable Owned<IPropertyTree> cachedGraphs;
-
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser);
-    CLocalWorkUnit(IRemoteConnection *_conn, IPropertyTree* root, ISecManager *secmgr, ISecUser *secuser);
-    ~CLocalWorkUnit();
-    CLocalWorkUnit(const char *dummyWuid, ISecManager *secmgr, ISecUser *secuser);
-    IPropertyTree *getUnpackedTree(bool includeProgress) const;
-
-    ISecManager *querySecMgr(){return secMgr.get();}
-    ISecUser *querySecUser(){return secUser.get();}
-
-    void setSecIfcs(ISecManager *mgr, ISecUser*usr){secMgr.set(mgr); secUser.set(usr);}
-    
-    virtual bool aborting() const;
-    virtual void forceReload();
-    virtual WUAction getAction() const;
-    virtual IStringVal& getActionEx(IStringVal & str) const;
-    virtual IStringVal & getApplicationValue(const char * application, const char * propname, IStringVal & str) const;
-    virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const;
-    virtual IConstWUAppValueIterator & getApplicationValues() const;
-    virtual bool hasWorkflow() const;
-    virtual unsigned queryEventScheduledCount() const;
-    virtual IPropertyTree * queryWorkflowTree() const;
-    virtual IConstWorkflowItemIterator * getWorkflowItems() const;
-    virtual IWorkflowItemArray * getWorkflowClone() const;
-    virtual IConstLocalFileUploadIterator * getLocalFileUploads() const;
-    virtual bool requiresLocalFileUpload() const;
-    virtual bool getIsQueryService() const;
-    virtual IStringVal & getClusterName(IStringVal & str) const;
-    virtual bool hasDebugValue(const char * propname) const;
-    virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const;
-    virtual IStringIterator & getDebugValues() const;
-    virtual IStringIterator & getDebugValues(const char *prop) const;
-    virtual int getDebugValueInt(const char * propname, int defVal) const;
-    virtual __int64 getDebugValueInt64(const char * propname, __int64 defVal) const;
-    virtual bool getDebugValueBool(const char * propname, bool defVal) const;
-    virtual unsigned getExceptionCount() const;
-    virtual IConstWUExceptionIterator & getExceptions() const;
-    virtual IConstWUResult * getGlobalByName(const char * name) const;
-    virtual unsigned getGraphCount() const;
-    virtual unsigned getSourceFileCount() const;
-    virtual unsigned getResultCount() const;
-    virtual unsigned getVariableCount() const;
-    virtual unsigned getApplicationValueCount() const;
-    virtual IConstWUGraphIterator & getGraphs(WUGraphType type) const;
-    virtual IConstWUGraphMetaIterator & getGraphsMeta(WUGraphType type) const;
-    virtual IConstWUGraph * getGraph(const char *name) const;
-    virtual IConstWUGraphProgress * getGraphProgress(const char * name) const;
-    virtual IStringVal & getJobName(IStringVal & str) const;
-    virtual IConstWUPlugin * getPluginByName(const char * name) const;
-    virtual IConstWUPluginIterator & getPlugins() const;
-    virtual IConstWULibraryIterator & getLibraries() const;
-    virtual WUPriorityClass getPriority() const;
-    virtual int getPriorityLevel() const;
-    virtual int getPriorityValue() const;
-    virtual IConstWUQuery * getQuery() const;
-    virtual bool getRescheduleFlag() const;
-    virtual IConstWUResult * getResultByName(const char * name) const;
-    virtual IConstWUResult * getResultBySequence(unsigned seq) const;
-    virtual unsigned getResultLimit() const;
-    virtual IConstWUResultIterator & getResults() const;
-    virtual IStringVal & getScope(IStringVal & str) const;
-    virtual IStringVal & getSecurityToken(IStringVal & str) const;
-    virtual WUState getState() const;
-    virtual IStringVal & getStateEx(IStringVal & str) const;
-    virtual __int64 getAgentSession() const;
-    virtual unsigned getAgentPID() const;
-    virtual IStringVal & getStateDesc(IStringVal & str) const;
-    virtual IConstWUResult * getTemporaryByName(const char * name) const;
-    virtual IConstWUResultIterator & getTemporaries() const;
-    virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const;
-    virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const;
-    virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
-    virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const;
-    virtual IStringVal & getXmlParams(IStringVal & params) const;
-    virtual const IPropertyTree *getXmlParams() const;
-    virtual unsigned __int64 getHash() const;
-    virtual IStringIterator *getLogs(const char *type, const char *component) const;
-    virtual IStringIterator *getProcesses(const char *type) const;
-    virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const;
-
-    virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
-    virtual IStringVal & getSnapshot(IStringVal & str) const;
-    virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const;
-
-    virtual IStringVal & getUser(IStringVal & str) const;
-    virtual IStringVal & getWuScope(IStringVal & str) const;
-    virtual IConstWUResult * getVariableByName(const char * name) const;
-    virtual IConstWUResultIterator & getVariables() const;
-    virtual IStringVal & getWuid(IStringVal & str) const;
-    virtual bool getRunningGraph(IStringVal &graphName, WUGraphIDType &subId) const;
-    virtual bool isProtected() const;
-    virtual bool isPausing() const;
-    virtual IWorkUnit& lock();
-    virtual bool reload();
-    virtual void requestAbort();
-    virtual void subscribe(WUSubscribeOptions options);
-    virtual unsigned calculateHash(unsigned prevHash);
-    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
-    virtual unsigned queryFileUsage(const char *filename) const;
-    virtual bool getCloneable() const;
-    virtual IUserDescriptor * queryUserDescriptor() const;
-    virtual unsigned getCodeVersion() const;
-    virtual unsigned getWuidVersion() const;
-    virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const;
-    virtual IPropertyTree * getDiskUsageStats();
-    virtual IPropertyTreeIterator & getFileIterator() const;
-    virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned);
-    virtual void packWorkUnit(bool pack=true);
-    virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const;
-    virtual IPropertyTreeIterator & getFilesReadIterator() const;
-    virtual void protect(bool protectMode);
-    virtual IConstWULibrary * getLibraryByName(const char * name) const;
-    virtual unsigned getDebugAgentListenerPort() const;
-    virtual IStringVal & getDebugAgentListenerIP(IStringVal &ip) const;
-
-    void clearExceptions();
-    void commit();
-    IWUException *createException();
-    void addProcess(const char *type, const char *instance, unsigned pid, const char *log);
-    void setAction(WUAction action);
-    void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite);
-    void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite);
-    void incEventScheduledCount();
-    void setIsQueryService(bool value);
-    void setCloneable(bool value);
-    void setIsClone(bool value);
-    void setClusterName(const char * value);
-    void setCodeVersion(unsigned version, const char * buildVersion, const char * eclVersion);
-    void setDebugValue(const char * propname, const char * value, bool overwrite);
-    void setDebugValueInt(const char * propname, int value, bool overwrite);
-    void setJobName(const char * value);
-    void setPriority(WUPriorityClass cls);
-    void setPriorityLevel(int level);
-    void setRescheduleFlag(bool value);
-    void setResultLimit(unsigned value);
-    void setState(WUState state);
-    void setStateEx(const char * text);
-    void setAgentSession(__int64 sessionId);
-    void setSecurityToken(const char *value);
-    void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction);
-    void setTracingValue(const char * propname, const char * value);
-    void setTracingValueInt(const char * propname, int value);
-    void setUser(const char * value);
-    void setWuScope(const char * value);
-    void setSnapshot(const char * value);
-    void setWarningSeverity(unsigned code, ErrorSeverity severity);
-    void setDebugAgentListenerPort(unsigned port);
-    void setDebugAgentListenerIP(const char * ip);
-    void setXmlParams(const char *params);
-    void setXmlParams(IPropertyTree *tree);
-    void setHash(unsigned __int64 hash);
-
-    IWorkflowItem* addWorkflowItem(unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor);
-    IWorkflowItemIterator * updateWorkflowItems();
-    void syncRuntimeWorkflow(IWorkflowItemArray * array);
-    void resetWorkflow();
-    void schedule();
-    void deschedule();
-    unsigned addLocalFileUpload(LocalFileUploadType type, char const * source, char const * destination, char const * eventTag);
-    IWUResult * updateGlobalByName(const char * name);
-    IWUGraph * createGraph(const char * name, WUGraphType type, IPropertyTree *xgmml);
-    IWUGraph * updateGraph(const char * name);
-    IWUQuery * updateQuery();
-    IWUWebServicesInfo* updateWebServicesInfo(bool create);
-    IWURoxieQueryInfo* updateRoxieQueryInfo(const char *wuid, const char *roxieClusterName);
-    IWUPlugin * updatePluginByName(const char * name);
-    IWULibrary * updateLibraryByName(const char * name);
-    IWUResult * updateResultByName(const char * name);
-    IWUResult * updateResultBySequence(unsigned seq);
-    IWUResult * updateTemporaryByName(const char * name);
-    IWUResult * updateVariableByName(const char * name);
-    void addFile(const char *fileName, StringArray *clusters, unsigned usageCount, WUFileKind fileKind, const char *graphOwner);
-    void noteFileRead(IDistributedFile *file);
-    void releaseFile(const char *fileName);
-    void clearGraphProgress();
-    void resetBeforeGeneration();
-    void deleteTempFiles(const char *graph, bool deleteOwned, bool deleteJobOwned);
-    void deleteTemporaries();
-    void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId);
-    void setTimeScheduled(const IJlibDateTime &val);
-
-// ILocalWorkUnit - used for debugging etc
-    void loadXML(const char *xml);
-    void serialize(MemoryBuffer &tgt);
-    void deserialize(MemoryBuffer &src);
-
-    IWorkUnit &lockRemote(bool commit);
-    void unlockRemote(bool closing);
-    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL);
-    void abort();
-    void cleanupAndDelete(bool deldll,bool deleteOwned, const StringArray *deleteExclusions=NULL);
-    bool switchThorQueue(const char *cluster, IQueueSwitcher *qs);
-    void setAllowedClusters(const char *value);
-    IStringVal & getAllowedClusters(IStringVal & str) const;
-    void remoteCheckAccess(IUserDescriptor *user, bool writeaccess) const;
-    void setAllowAutoQueueSwitch(bool val);
-    bool getAllowAutoQueueSwitch() const;
-    void setLibraryInformation(const char * name, unsigned interfaceHash, unsigned definitionHash);
-
-private:
-    void init();
-    IWUGraph *createGraph();
-    IWUResult *createResult();
-    void loadGraphs() const;
-    void loadResults() const;
-    void loadTemporaries() const;
-    void loadVariables() const;
-    void loadExceptions() const;
-    void loadPlugins() const;
-    void loadLibraries() const;
-    void loadClusters() const;
-    void unsubscribe();
-    void checkAgentRunning(WUState & state);
-
-    // MORE - the two could be a bit more similar...
-
-    class CWorkUnitWatcher : public CInterface, implements ISDSSubscription
+    virtual void unsubscribe()
     {
-        ISDSSubscription *parent; // not linked - it links me
-        SubscriptionId change;
-        bool sub;
-    public:
-        IMPLEMENT_IINTERFACE;
-        CWorkUnitWatcher(ISDSSubscription *_parent, const char *wuid, bool _sub) : parent(_parent), sub(_sub)
+        CriticalBlock block(crit);
+        if (abortWatcher)
         {
-            StringBuffer wuRoot;
-            getXPath(wuRoot, wuid);
-            change = querySDS().subscribe(wuRoot.str(), *this, sub);
+            abortWatcher->unsubscribe();
+            abortWatcher.clear();
         }
-        ~CWorkUnitWatcher()
-        {
-            assertex(change==0);
-        }
-        bool watchingChildren()
-        {
-            return sub;
-        }
-        void unsubscribe()
-        {
-            querySDS().unsubscribe(change);
-            change = 0;
-        }
+    }
 
-        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    virtual bool aborting() const
+    {
+        CriticalBlock block(crit);
+        if (abortDirty)
         {
-            parent->notify(id, xpath, flags, valueLen, valueData);
+            StringBuffer apath;
+            apath.append("/WorkUnitAborts/").append(p->queryName());
+            Owned<IRemoteConnection> acon = querySDS().connect(apath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+            if (acon)
+                abortState = acon->queryRoot()->getPropInt(NULL) != 0;
+            else
+                abortState = false;
+            abortDirty = false;
         }
-    };
+        return abortState;
+    }
 
+protected:
     class CWorkUnitAbortWatcher : public CInterface, implements ISDSSubscription
     {
-        CLocalWorkUnit *parent; // not linked - it links me
+        CDaliWorkUnit *parent; // not linked - it links me
         SubscriptionId abort;
     public:
         IMPLEMENT_IINTERFACE;
-        CWorkUnitAbortWatcher(CLocalWorkUnit *_parent, const char *wuid) : parent(_parent)
+        CWorkUnitAbortWatcher(CDaliWorkUnit *_parent, const char *wuid) : parent(_parent)
         {
             StringBuffer wuRoot;
             wuRoot.append("/WorkUnitAborts/").append(wuid);
@@ -1402,26 +1220,15 @@ private:
 
         void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
         {
-            parent->abort();
+            parent->abortDirty = true;
         }
     };
+
+    Owned<IRemoteConnection> connection;
     Owned<CWorkUnitAbortWatcher> abortWatcher;
-    Owned<CWorkUnitWatcher> changeWatcher;
 
-    void ensureGraphsUnpacked ()
-    {
-        IPropertyTree *t = p->queryPropTree("PackedGraphs");
-        MemoryBuffer buf;
-        if (t&&t->getPropBin(NULL,buf)) {
-            cachedGraphs.clear();
-            IPropertyTree *st = createPTree(buf);
-            if (st) {
-                p->setPropTree("Graphs",st);
-                p->removeTree(t);
-            }
-        }
-    }
-
+    mutable bool abortDirty;
+    mutable bool abortState;
 };
 
 class CLockedWorkUnit : public CInterface, implements ILocalWorkUnit, implements IExtendedWUInterface
@@ -1434,21 +1241,14 @@ public:
     ~CLockedWorkUnit()
     {
         if (workUnitTraceLevel > 1)
-        {
-            StringAttr x;
-            StringAttrAdaptor strval(x);
-            getWuid(strval);
-            PrintLog("Releasing locked workunit %s", x.get());
-        }
+            PrintLog("Releasing locked workunit %s", queryWuid());
         if (c)
-            c->unlockRemote(c->IsShared());
+            c->unlockRemote();
     }
-
-    void setSecIfcs(ISecManager *mgr, ISecUser*usr){c->setSecIfcs(mgr, usr);}
 
     virtual IConstWorkUnit * unlock()
     {
-        c->unlockRemote(c->IsShared());
+        c->unlockRemote();
         return c.getClear();
     }
     virtual bool aborting() const
@@ -1485,8 +1285,8 @@ public:
             { return c->getCloneable(); }
     virtual IUserDescriptor * queryUserDescriptor() const
             { return c->queryUserDescriptor(); }
-    virtual IStringVal & getClusterName(IStringVal & str) const
-            { return c->getClusterName(str); }
+    virtual const char *queryClusterName() const
+            { return c->queryClusterName(); }
     virtual unsigned getCodeVersion() const
             { return c->getCodeVersion(); }
     virtual unsigned getWuidVersion() const
@@ -1529,8 +1329,8 @@ public:
             { return c->getGraph(name); }
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const
             { return c->getGraphProgress(name); }
-    virtual IStringVal & getJobName(IStringVal & str) const
-            { return c->getJobName(str); }
+    virtual const char *queryJobName() const
+            { return c->queryJobName(); }
     virtual IConstWUPlugin * getPluginByName(const char * name) const
             { return c->getPluginByName(name); }
     virtual IConstWUPluginIterator & getPlugins() const
@@ -1573,27 +1373,24 @@ public:
             { return c->getAgentSession(); }
     virtual unsigned getAgentPID() const
             { return c->getAgentPID(); }
-    virtual IStringVal & getStateDesc(IStringVal & str) const
-            { return c->getStateDesc(str); }
+    virtual const char *queryStateDesc() const
+            { return c->queryStateDesc(); }
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const
             { return c->getRunningGraph(graphName, subId); }
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const
             { return c->getStatistics(filter); }
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const
             { return c->getStatistic(creator, scope, kind); }
-    virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day)
-            { return c->getWuDate(year,month,day);}
-
     virtual IStringVal & getSnapshot(IStringVal & str) const
             { return c->getSnapshot(str); } 
+    virtual const char *queryUser() const
+            { return c->queryUser(); }
     virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const
             { return c->getWarningSeverity(code, defaultSeverity); }
-     virtual IStringVal & getUser(IStringVal & str) const
-            { return c->getUser(str); }
     virtual IStringVal & getWuScope(IStringVal & str) const
             { return c->getWuScope(str); }
-    virtual IStringVal & getWuid(IStringVal & str) const
-            { return c->getWuid(str); }
+    virtual const char *queryWuid() const
+            { return c->queryWuid(); }
     virtual IConstWUResult * getGlobalByName(const char * name) const
             { return c->getGlobalByName(name); }
     virtual IConstWUResult * getTemporaryByName(const char * name) const
@@ -1617,13 +1414,13 @@ public:
     virtual void requestAbort()
             { c->requestAbort(); }
     virtual unsigned calculateHash(unsigned prevHash)
-            { return c->calculateHash(prevHash); }
+            { return queryExtendedWU(c)->calculateHash(prevHash); }
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
-            { c->copyWorkUnit(cached, all); }
+            { queryExtendedWU(c)->copyWorkUnit(cached, all); }
     virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned)
-            { return c->archiveWorkUnit(base,del,deldll,deleteOwned); }
+            { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned); }
     virtual void packWorkUnit(bool pack)
-            { c->packWorkUnit(pack); }
+            { queryExtendedWU(c)->packWorkUnit(pack); }
     virtual unsigned queryFileUsage(const char *filename) const
             { return c->queryFileUsage(filename); }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const
@@ -1704,17 +1501,7 @@ public:
     virtual void setUser(const char * value)
             { c->setUser(value); }
     virtual void setWuScope(const char * value)
-    {
-        if (value && *value)
-        {
-            ISecManager *secmgr=c->querySecMgr();
-            ISecUser *secusr=c->querySecUser();
-            if (!secmgr || !secusr)
-                throw MakeStringException(WUERR_SecurityNotAvailable, "Trying to change workunit scope without security interfaces available");
-            if (checkWuScopeSecAccess(value, *secmgr, secusr, SecAccess_Write, "Change Scope", true, true))
-                c->setWuScope(value);
-        }
-    }
+            { c->setWuScope(value); }
     virtual IWorkflowItem* addWorkflowItem(unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor)
             { return c->addWorkflowItem(wfid, type, mode, success, failure, recovery, retriesAllowed, contingencyFor); }
     virtual void syncRuntimeWorkflow(IWorkflowItemArray * array)
@@ -1794,8 +1581,6 @@ public:
             { c->setHash(hash); }
 
 // ILocalWorkUnit - used for debugging etc
-    virtual void loadXML(const char *xml)
-            { c->loadXML(xml); }
     virtual void serialize(MemoryBuffer &tgt)
             { c->serialize(tgt); }
     virtual void deserialize(MemoryBuffer &src)
@@ -1815,139 +1600,32 @@ public:
             { return c->getAllowAutoQueueSwitch(); }
     virtual void setLibraryInformation(const char * name, unsigned interfaceHash, unsigned definitionHash)
             { c->setLibraryInformation(name, interfaceHash, definitionHash); }
-
     virtual void setResultInt(const char * name, unsigned sequence, __int64 val)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultInt(val);   
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
+            { c->setResultInt(name, sequence, val); }
     virtual void setResultUInt(const char * name, unsigned sequence, unsigned __int64 val)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultUInt(val);  
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
+            { c->setResultUInt(name, sequence, val); }
     virtual void setResultReal(const char *name, unsigned sequence, double val)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultReal(val);  
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
+            { c->setResultReal(name, sequence, val); }
     virtual void setResultVarString(const char * stepname, unsigned sequence, const char *val)
-    {
-        setResultString(stepname, sequence, strlen(val), val);
-    }
+            { c->setResultVarString(stepname, sequence, val); }
     virtual void setResultVarUnicode(const char * stepname, unsigned sequence, UChar const *val)
-    {
-        setResultUnicode(stepname, sequence, rtlUnicodeStrlen(val), val);
-    }
+            { c->setResultVarUnicode(stepname, sequence, val); }
     virtual void setResultString(const char * stepname, unsigned sequence, int len, const char *val)
-    {
-        doSetResultString(type_string, stepname, sequence, len, val);
-    }
+            { c->setResultString(stepname, sequence, len, val); }
     virtual void setResultData(const char * stepname, unsigned sequence, int len, const void *val)
-    {
-        doSetResultString(type_data, stepname, sequence, len, (const char *)val);
-    }
+            { c->setResultData(stepname, sequence, len, val); }
     virtual void setResultRaw(const char * name, unsigned sequence, int len, const void *val)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultRaw(len, val, ResultFormatRaw); 
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
-    virtual void setResultSet(const char * name, unsigned sequence, bool isAll, size32_t len, const void *val, ISetToXmlTransformer *)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultIsAll(isAll);
-            r->setResultRaw(len, val, ResultFormatRaw); 
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
+            { c->setResultRaw(name, sequence, len, val); }
+    virtual void setResultSet(const char * name, unsigned sequence, bool isAll, size32_t len, const void *val, ISetToXmlTransformer *xform)
+            { c->setResultSet(name, sequence, isAll, len, val, xform); }
     virtual void setResultUnicode(const char * name, unsigned sequence, int len, UChar const * val)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultUnicode((char const *)val, len);
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
+            { c->setResultUnicode(name, sequence, len, val); }
     virtual void setResultBool(const char *name, unsigned sequence, bool val)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultBool(val);
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
+            { c->setResultBool(name, sequence, val); }
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultDecimal(val, len);
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
+            { c->setResultDecimal(name, sequence, len,  precision, isSigned, val); }
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            __int64 totalRows = numRows;
-            if (extend)
-            {
-                totalRows += r->getResultRowCount();
-                r->addResultRaw(len, val, ResultFormatRaw);
-            }
-            else
-                r->setResultRaw(len, val, ResultFormatRaw);
-
-            r->setResultStatus(ResultStatusCalculated);
-            r->setResultRowCount(totalRows);
-            r->setResultTotalRowCount(totalRows);
-        }
-    }
-
-protected:
-    IWUResult *updateResult(const char *name, unsigned sequence)
-    {
-        Owned <IWUResult> result = updateWorkUnitResult(this, name, sequence);
-        if (result)
-        {
-            SCMStringBuffer rname;
-            if (!result->getResultName(rname).length())
-                result->setResultName(name);
-        }
-        return result.getClear();
-    }
-
-    void doSetResultString(type_t type, const char *name, unsigned sequence, int len, const char *val)
-    {
-        Owned<IWUResult> r = updateResult(name, sequence);
-        if (r)
-        {
-            r->setResultString(val, len);   
-            r->setResultStatus(ResultStatusCalculated);
-        }
-    }
-
+            { c->setResultDataset(name, sequence, len, val, numRows, extend); }
 };
 
 class CLocalWUAssociated : public CInterface, implements IConstWUAssociatedFile
@@ -1999,6 +1677,7 @@ public:
     virtual void        setQueryMainDefinition(const char * str);
     virtual void        addAssociatedFile(WUFileType type, const char * name, const char * ip, const char * desc, unsigned crc);
     virtual void        removeAssociatedFiles();
+    virtual void        removeAssociatedFile(WUFileType type, const char * name, const char * desc);
 };
 
 class CLocalWUWebServicesInfo : public CInterface, implements IWUWebServicesInfo
@@ -2131,6 +1810,8 @@ public:
     virtual void        setResultRow(unsigned len, const void * data);
     virtual void        setResultXmlns(const char *prefix, const char *uri);
     virtual void        setResultFieldOpt(const char *name, const char *value);
+
+    virtual IPropertyTree *queryPTree() { return p; }
 };
 
 class CLocalWUPlugin : public CInterface, implements IWUPlugin
@@ -2166,7 +1847,6 @@ class CLocalWUGraph : public CInterface, implements IWUGraph
     Owned<IPropertyTree> p;
     mutable Owned<IPropertyTree> graph; // cached copy of graph xgmml
     mutable Linked<IConstWUGraphProgress> progress;
-    StringAttr wuid;
     unsigned wuidVersion;
 
     void mergeProgress(IPropertyTree &tree, IPropertyTree &progressTree, const unsigned &progressV) const;
@@ -2234,76 +1914,19 @@ extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence)
     }
 }
 
-struct mapEnums { int val; const char *str; };
-
-const char *getEnumText(int value, const mapEnums *map)
-{
-    const char *defval = map->str;
-    while (map->str)
-    {
-        if (value==map->val)
-            return map->str;
-        map++;
-    }
-    assertex(!"Unexpected value in setEnum");
-    return defval;
-}
-
-void setEnum(IPropertyTree *p, const char *propname, int value, const mapEnums *map)
-{
-    const char *defval = map->str;
-    while (map->str)
-    {
-        if (value==map->val)
-        {
-            p->setProp(propname, map->str);
-            return;
-        }
-        map++;
-    }
-    assertex(!"Unexpected value in setEnum");
-    p->setProp(propname, defval);
-}
-
-static int getEnum(const char *v, const mapEnums *map)
-{
-    if (v)
-    {
-        while (map->str)
-        {
-            if (stricmp(v, map->str)==0)
-                return map->val;
-            map++;
-        }
-        assertex(!"Unexpected value in getEnum");
-    }
-    return 0;
-}
-
-static int getEnum(const IPropertyTree *p, const char *propname, const mapEnums *map)
-{
-    return getEnum(p->queryProp(propname),map);
-}
-
-//==========================================================================================
-
 class CConstWUArrayIterator : public CInterface, implements IConstWorkUnitIterator
 {
     IArrayOf<IPropertyTree> trees;
-    Owned<IConstWorkUnit> cur;
+    Owned<IConstWorkUnitInfo> cur;
     unsigned curTreeNum;
-    Linked<IRemoteConnection> conn;
-    Linked<ISecManager> secmgr;
-    Linked<ISecUser> secuser;
 
     void setCurrent()
     {
-        cur.setown(new CLocalWorkUnit(LINK(conn), LINK(&trees.item(curTreeNum)), secmgr, secuser));
+        cur.setown(new CLightweightWorkunitInfo(trees.item(curTreeNum)));
     }
 public:
     IMPLEMENT_IINTERFACE;
-    CConstWUArrayIterator(IRemoteConnection *_conn, IArrayOf<IPropertyTree> &_trees, ISecManager *_secmgr=NULL, ISecUser *_secuser=NULL)
-        : conn(_conn), secmgr(_secmgr), secuser(_secuser)
+    CConstWUArrayIterator(IArrayOf<IPropertyTree> &_trees)
     {
         ForEachItemIn(t, _trees)
             trees.append(*LINK(&_trees.item(t)));
@@ -2329,7 +1952,7 @@ public:
         ++curTreeNum;
         return true;
     }
-    IConstWorkUnit & query() { return *cur; }
+    IConstWorkUnitInfo & query() { return *cur; }
 };
 //==========================================================================================
 
@@ -2487,292 +2110,564 @@ public:
     }
 };
 
-#define WUID_VERSION 2 // recorded in each wuid created, useful for bkwd compat. checks
-
-class CWorkUnitFactory : public CInterface, implements IWorkUnitFactory, implements IDaliClientShutdown
+class CConstWUIterator : public CInterface, implements IConstWorkUnitIterator
 {
-    Owned<IWorkQueueThread> deletedllworkq;
+    Owned<IConstWorkUnitInfo> cur;
+    Linked<IPropertyTreeIterator> ptreeIter;
+    Owned<ISecResourceList> scopes;
+
+    void setCurrent()
+    {
+        cur.setown(new CLightweightWorkunitInfo(ptreeIter->query()));
+    }
+    bool getNext() // scan for a workunit with permissions
+    {
+        if (!scopes)
+        {
+            setCurrent();
+            return true;
+        }
+        do
+        {
+            const char *scopeName = ptreeIter->query().queryProp("@scope");
+            if (!scopeName || !*scopeName || checkWuScopeListSecAccess(scopeName, scopes, SecAccess_Read, "iterating", false, false))
+            {
+                setCurrent();
+                return true;
+            }
+        } while (ptreeIter->next());
+        cur.clear();
+        return false;
+    }
 public:
     IMPLEMENT_IINTERFACE;
+    CConstWUIterator(IPropertyTreeIterator *_ptreeIter, ISecManager *secmgr=NULL, ISecUser *secuser=NULL)
+        : ptreeIter(_ptreeIter)
+    {
+        UniqueScopes us;
+        if (secmgr /* && secmgr->authTypeRequired(RT_WORKUNIT_SCOPE) tbd */)
+        {
+            scopes.setown(secmgr->createResourceList("wuscopes"));
+            ForEach(*ptreeIter)
+            {
+                const char *scopeName = ptreeIter->query().queryProp("@scope");
+                if (scopeName && *scopeName && !us.getValue(scopeName))
+                {
+                    scopes->addResource(scopeName);
+                    us.setValue(scopeName, true);
+                }
+            }
+            if (scopes->count())
+                secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, scopes);
+            else
+                scopes.clear();
+        }
+    }
+    bool first()
+    {
+        if (!ptreeIter->first())
+        {
+            cur.clear();
+            return false;
+        }
+        return getNext();
+    }
+    bool isValid()
+    {
+        return (NULL != cur.get());
+    }
+    bool next()
+    {
+        if (!ptreeIter->next())
+        {
+            cur.clear();
+            return false;
+        }
+        return getNext();
+    }
+    IConstWorkUnitInfo & query() { return *cur; }
+};
 
-    CWorkUnitFactory()
+#define WUID_VERSION 2 // recorded in each wuid created, useful for bkwd compat. checks
+
+CWorkUnitFactory::CWorkUnitFactory()
+{
+}
+
+CWorkUnitFactory::~CWorkUnitFactory()
+{
+}
+
+IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+{
+    checkWuScopeSecAccess(user, secmgr, secuser, SecAccess_Write, "Create", true, true);
+    Owned<CLocalWorkUnit> cw = _createWorkUnit(wuid, secmgr, secuser);
+    if (user)
+        cw->setWuScope(user);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
+    IWorkUnit* ret = &cw->lockRemote(false);   // Note - this may throw exception if user does not have rights.
+    ret->setDebugValue("CREATED_BY", app, true);
+    ret->setDebugValue("CREATED_FOR", user, true);
+    return ret;
+}
+
+IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+{
+    StringBuffer wuid("W");
+    char result[32];
+    time_t ltime;
+    time( &ltime );
+    tm *today = localtime( &ltime );   // MORE - this is not threadsafe. But I probably don't care that much!
+    strftime(result, sizeof(result), "%Y%m%d-%H%M%S", today);
+    wuid.append(result);
+    if (workUnitTraceLevel > 1)
+        PrintLog("createWorkUnit created %s", wuid.str());
+    IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user, secmgr, secuser);
+    if (workUnitTraceLevel > 1)
+        PrintLog("createWorkUnit created %s", ret->queryWuid());
+    addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
+    return ret;
+}
+
+bool CWorkUnitFactory::deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    if (workUnitTraceLevel > 1)
+        PrintLog("deleteWorkUnit %s", wuid);
+    StringBuffer wuRoot;
+    getXPath(wuRoot, wuid);
+    Owned<CLocalWorkUnit> cw = _updateWorkUnit(wuid, secmgr, secuser);
+    if (!checkWuSecAccess(*cw.get(), secmgr, secuser, SecAccess_Full, "delete", true, true))
+        return false;
+    try
+    {
+        cw->cleanupAndDelete(true, true);
+    }
+    catch (IException *E)
+    {
+        StringBuffer s;
+        LOG(MCexception(E, MSGCLS_warning), E, s.append("Exception during deleteWorkUnit: ").append(wuid).str());
+        E->Release();
+        return false;
+    }
+    removeWorkUnitFromAllQueues(wuid); //known active workunits wouldn't make it this far
+    return true;
+}
+
+IConstWorkUnit* CWorkUnitFactory::openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser)
+{
+    StringBuffer wuidStr(wuid);
+    wuidStr.trim();
+    if (wuidStr.length() && ('w' == wuidStr.charAt(0)))
+        wuidStr.setCharAt(0, 'W');
+
+    if (!wuidStr.length() || ('W' != wuidStr.charAt(0)))
+    {
+        if (workUnitTraceLevel > 1)
+            PrintLog("openWorkUnit %s invalid WUID", nullText(wuidStr.str()));
+
+        return NULL;
+    }
+
+    if (workUnitTraceLevel > 1)
+        PrintLog("openWorkUnit %s", wuidStr.str());
+    Owned<IConstWorkUnit> wu = _openWorkUnit(wuid, lock, secmgr, secuser);
+    if (wu)
+    {
+        if (!checkWuSecAccess(*wu, secmgr, secuser, SecAccess_Read, "opening", true, true))
+            return NULL; // Actually throws exception on failure, so won't reach here
+        return wu.getClear();
+    }
+    else
+    {
+        if (workUnitTraceLevel > 0)
+            PrintLog("openWorkUnit %s not found", wuidStr.str());
+        return NULL;
+    }
+}
+
+IWorkUnit* CWorkUnitFactory::updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    if (workUnitTraceLevel > 1)
+        PrintLog("updateWorkUnit %s", wuid);
+    Owned<CLocalWorkUnit> wu = _updateWorkUnit(wuid, secmgr, secuser);
+    if (wu)
+    {
+        if (!checkWuSecAccess(*wu.get(), secmgr, secuser, SecAccess_Write, "updating", true, true))
+            return NULL;
+        return &wu->lockRemote(false);
+    }
+    else
+    {
+        if (workUnitTraceLevel > 0)
+            PrintLog("updateWorkUnit %s not found", wuid);
+        return NULL;
+    }
+}
+
+int CWorkUnitFactory::setTracingLevel(int newLevel)
+{
+    if (newLevel)
+        PrintLog("Setting workunit trace level to %d", newLevel);
+    int level = workUnitTraceLevel;
+    workUnitTraceLevel = newLevel;
+    return level;
+}
+
+void CWorkUnitFactory::descheduleAllWorkUnits(ISecManager *secmgr, ISecUser *secuser)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("/Schedule", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if(!conn) return;
+    Owned<IPropertyTree> root(conn->queryRoot()->getBranch("."));
+    KeptAtomTable entries;
+    Owned<IPropertyTreeIterator> iter(root->getElements("*/*/*/*"));
+    StringBuffer wuid;
+    for(iter->first(); iter->isValid(); iter->next())
+    {
+        char const * entry = iter->query().queryName();
+        if(!entries.find(entry))
+        {
+            entries.addAtom(entry);
+            ncnameUnescape(entry, wuid.clear());
+            Owned<IWorkUnit> wu = updateWorkUnit(wuid, secmgr, secuser);
+            if(wu && (wu->getState() == WUStateWait))
+                wu->setState(WUStateCompleted);
+        }
+    }
+    bool more;
+    do more = root->removeProp("*"); while(more);
+}
+
+IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuerySortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
+                                            WUQuerySortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
+                                            const void *filterbuf,  // (appended) string values for filters
+                                            unsigned startoffset,
+                                            unsigned maxnum,
+                                            __int64 *cachehint,
+                                            unsigned *total,
+                                            const MapStringTo<bool> *_subset)
+{
+    struct PostFilters
+    {
+        WUQueryFilterBoolean activatedFilter;
+        WUQueryFilterBoolean suspendedByUserFilter;
+        PostFilters()
+        {
+            activatedFilter = WUQFSAll;
+            suspendedByUserFilter = WUQFSAll;
+        };
+    } postFilters;
+
+    class CQuerySetQueriesPager : public CSimpleInterface, implements IElementsPager
+    {
+        StringAttr querySet;
+        StringAttr xPath;
+        StringAttr sortOrder;
+        PostFilters postFilters;
+        StringArray unknownAttributes;
+        const MapStringTo<bool> *subset;
+
+        void populateQueryTree(const IPropertyTree* querySetTree, IPropertyTree* queryTree)
+        {
+            const char* querySetId = querySetTree->queryProp("@id");
+            VStringBuffer path("Query%s", xPath.get());
+            Owned<IPropertyTreeIterator> iter = querySetTree->getElements(path.str());
+            ForEach(*iter)
+            {
+                IPropertyTree &query = iter->query();
+
+                bool activated = false;
+                const char* queryId = query.queryProp("@id");
+                if (queryId && *queryId)
+                {
+                    if (subset)
+                    {
+                        VStringBuffer match("%s/%s", querySetId, queryId);
+                        if (!subset->getValue(match))
+                            continue;
+                    }
+                    VStringBuffer aliasXPath("Alias[@id='%s']", queryId);
+                    IPropertyTree *alias = querySetTree->queryPropTree(aliasXPath.str());
+                    if (alias)
+                        activated = true;
+                }
+                if (activated && (postFilters.activatedFilter == WUQFSNo))
+                    continue;
+                if (!activated && (postFilters.activatedFilter == WUQFSYes))
+                    continue;
+                if ((postFilters.suspendedByUserFilter == WUQFSNo) && query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
+                    continue;
+                if ((postFilters.suspendedByUserFilter == WUQFSYes) && !query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
+                    continue;
+
+                IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", createPTreeFromIPT(&query));
+                queryWithSetId->setProp("@querySetId", querySetId);
+                queryWithSetId->setPropBool("@activated", activated);
+            }
+        }
+        IRemoteConnection* populateQueryTree(IPropertyTree* queryTree)
+        {
+            StringBuffer querySetXPath("QuerySets");
+            if (!querySet.isEmpty())
+                querySetXPath.appendf("/QuerySet[@id=\"%s\"]", querySet.get());
+            Owned<IRemoteConnection> conn = querySDS().connect(querySetXPath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+            if (!conn)
+                return NULL;
+
+            if (querySet.isEmpty())
+            {
+                Owned<IPropertyTreeIterator> querySetIter = conn->queryRoot()->getElements("*");
+                ForEach(*querySetIter)
+                    populateQueryTree(&querySetIter->query(), queryTree);
+            }
+            else
+                populateQueryTree(conn->queryRoot(), queryTree);
+            return conn.getClear();
+        }
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes, const MapStringTo<bool> *_subset)
+            : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), subset(_subset)
+        {
+            postFilters.activatedFilter = _postFilters.activatedFilter;
+            postFilters.suspendedByUserFilter = _postFilters.suspendedByUserFilter;
+            ForEachItemIn(x, _unknownAttributes)
+                unknownAttributes.append(_unknownAttributes.item(x));
+        }
+        virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
+        {
+            Owned<IPropertyTree> elementTree = createPTree("Queries");
+            Owned<IRemoteConnection> conn = populateQueryTree(elementTree);
+            if (!conn)
+                return NULL;
+            Owned<IPropertyTreeIterator> iter = elementTree->getElements("*");
+            if (!iter)
+                return NULL;
+            sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+            return conn.getClear();
+        }
+    };
+    StringAttr querySet;
+    StringBuffer xPath;
+    StringBuffer so;
+    StringArray unknownAttributes;
+    if (filters)
+    {
+        const char *fv = (const char *)filterbuf;
+        for (unsigned i=0;filters[i]!=WUQSFterm;i++) {
+            int fmt = filters[i];
+            int subfmt = (fmt&0xff);
+            if (subfmt==WUQSFQuerySet)
+                querySet.set(fv);
+            else if ((subfmt==WUQSFmemoryLimit) || (subfmt==WUQSFtimeLimit) || (subfmt==WUQSFwarnTimeLimit) || (subfmt==WUQSFpriority))
+                xPath.append('[').append(getEnumText(subfmt,querySortFields)).append(">=").append(fv).append("]");
+            else if ((subfmt==WUQSFmemoryLimitHi) || (subfmt==WUQSFtimeLimitHi) || (subfmt==WUQSFwarnTimeLimitHi) || (subfmt==WUQSFpriorityHi))
+                xPath.append('[').append(getEnumText(subfmt,querySortFields)).append("<=").append(fv).append("]");
+            else if (subfmt==WUQSFActivited)
+                postFilters.activatedFilter = (WUQueryFilterBoolean) atoi(fv);
+            else if (subfmt==WUQSFSuspendedByUser)
+                postFilters.suspendedByUserFilter = (WUQueryFilterBoolean) atoi(fv);
+            else if (!fv || !*fv)
+                unknownAttributes.append(getEnumText(subfmt,querySortFields));
+            else {
+                xPath.append('[').append(getEnumText(subfmt,querySortFields)).append('=');
+                if (fmt&WUQSFnocase)
+                    xPath.append('?');
+                if (fmt&WUQSFnumeric)
+                    xPath.append('#');
+                if (fmt&WUQSFwild)
+                    xPath.append('~');
+                xPath.append('"').append(fv).append("\"]");
+            }
+            fv = fv + strlen(fv)+1;
+        }
+    }
+    if (sortorder) {
+        for (unsigned i=0;sortorder[i]!=WUQSFterm;i++) {
+            if (so.length())
+                so.append(',');
+            int fmt = sortorder[i];
+            if (fmt&WUQSFreverse)
+                so.append('-');
+            if (fmt&WUQSFnocase)
+                so.append('?');
+            if (fmt&WUQSFnumeric)
+                so.append('#');
+            so.append(getEnumText(fmt&0xff,querySortFields));
+        }
+    }
+    IArrayOf<IPropertyTree> results;
+    Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters, unknownAttributes, _subset);
+    Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
+    return new CConstQuerySetQueryIterator(results);
+}
+
+bool CWorkUnitFactory::isAborting(const char *wuid) const
+{
+    VStringBuffer apath("/WorkUnitAborts/%s", wuid);
+    try
+    {
+        Owned<IRemoteConnection> acon = querySDS().connect(apath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+        if (acon)
+            return acon->queryRoot()->getPropInt(NULL) != 0;
+    }
+    catch (IException *E)
+    {
+        EXCLOG(E);
+        E->Release();
+    }
+    return false;
+}
+
+void CWorkUnitFactory::clearAborting(const char *wuid)
+{
+    VStringBuffer apath("/WorkUnitAborts/%s", wuid);
+    try
+    {
+        Owned<IRemoteConnection> acon = querySDS().connect(apath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_LOCK_SUB, SDS_LOCK_TIMEOUT);
+        if (acon)
+            acon->close(true);
+    }
+    catch (IException *E)
+    {
+        EXCLOG(E);
+        E->Release();
+    }
+}
+
+unsigned CWorkUnitFactory::numWorkUnitsFiltered(WUSortField *filters,
+                                    const void *filterbuf,
+                                    ISecManager *secmgr,
+                                    ISecUser *secuser)
+{
+    if (!filters && !secuser && !secmgr)
+        return numWorkUnits();
+    unsigned total;
+    Owned<IConstWorkUnitIterator> iter =  getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,&total,secmgr,secuser);
+    return total;
+}
+
+static CriticalSection deleteDllLock;
+static Owned<IWorkQueueThread> deleteDllWorkQ;
+
+static void asyncRemoveDll(const char * name)
+{
+    CriticalBlock b(deleteDllLock);
+    if (!deleteDllWorkQ)
+        deleteDllWorkQ.setown(createWorkQueueThread());
+    deleteDllWorkQ->post(new asyncRemoveDllWorkItem(name));
+}
+
+static void asyncRemoveFile(const char * ip, const char * name)
+{
+    CriticalBlock b(deleteDllLock);
+    if (!deleteDllWorkQ)
+        deleteDllWorkQ.setown(createWorkQueueThread());
+    deleteDllWorkQ->post(new asyncRemoveRemoteFileWorkItem(ip, name));
+}
+
+class CDaliWorkUnitFactory : public CWorkUnitFactory, implements IDaliClientShutdown
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CWorkUnitFactory);
+    CDaliWorkUnitFactory()
     {
         // Assumes dali client configuration has already been done
         sdsManager = &querySDS();
         session = myProcessSession();
-        deletedllworkq.setown(createWorkQueueThread());
         addShutdownHook(*this);
     }
-
-    ~CWorkUnitFactory()
+    ~CDaliWorkUnitFactory()
     {
         removeShutdownHook(*this);
-        // deletepool->joinAll();
-    }
-    void clientShutdown();
-    SessionId startSession()
-    {
-        // Temporary placeholder until startSession is implemented
-#ifdef _WIN32
-        return GetTickCount();
-#else
-        struct timeval tm;
-        gettimeofday(&tm,NULL);
-        return tm.tv_usec;
-#endif
-    }
-    IWorkUnit* ensureNamedWorkUnit(const char *name)
-    {
-        if (workUnitTraceLevel > 1)
-            PrintLog("ensureNamedWorkUnit created %s", name);
-        StringBuffer wuRoot;
-        getXPath(wuRoot, name);
-        IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-        conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager *)NULL, NULL);
-        return &cw->lockRemote(false);
     }
 
-    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
+    virtual CLocalWorkUnit *_createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
         IRemoteConnection *conn;
-        if (queryDaliServerVersion().compare("2.0") >= 0)
-             conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SDS_LOCK_TIMEOUT);
-        else
-            conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
+        conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
         conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
-        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager*)NULL, NULL);
-        IWorkUnit* ret = &cw->lockRemote(false);
-        ret->setDebugValue("CREATED_BY", app, true);
-        ret->setDebugValue("CREATED_FOR", user, true);
-        if (user)
-            cw->setWuScope(user);
-        return ret;
+        return new CDaliWorkUnit(conn, secmgr, secuser);
     }
-    virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
+
+    virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser)
     {
-        StringBuffer wuid("W");
-        char result[32];
-        time_t ltime;
-        time( &ltime );
-        tm *today = localtime( &ltime );   // MORE - this is not threadsafe. But I probably don't care that much!
-        strftime(result, sizeof(result), "%Y%m%d-%H%M%S", today);
-        wuid.append(result);
-        if (queryDaliServerVersion().compare("2.0") < 0)
-            wuid.append('-').append(startSession());
-        if (workUnitTraceLevel > 1)
-            PrintLog("createWorkUnit created %s", wuid.str());
-        IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user);
-        if (workUnitTraceLevel > 1)
-        {
-            SCMStringBuffer wuidName;
-            ret->getWuid(wuidName);
-            PrintLog("createWorkUnit created %s", wuidName.str());
-        }
-        addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
-        return ret;
-    }
-    bool secDeleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser, bool raiseexceptions)
-    {
-        if (workUnitTraceLevel > 1)
-            PrintLog("deleteWorkUnit %s", wuid);
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
-        IRemoteConnection *conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_LOCK_SUB, SDS_LOCK_TIMEOUT);
-        if (!conn)
-        {
-            if (workUnitTraceLevel > 0)
-                PrintLog("deleteWorkUnit %s not found", wuid);
-            return false;
-        }
-        Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, secmgr, secuser); // takes ownership of conn
-        if (secmgr && !checkWuSecAccess(*cw.get(), *secmgr, secuser, SecAccess_Full, "delete", true, true)) {
-            if (raiseexceptions) {
-                // perhaps raise exception here?
-            }
-            return false;
-        }
-        if (raiseexceptions) {
-            try
-            {
-                cw->cleanupAndDelete(true,true);
-            }
-            catch (IException *E)
-            {
-                StringBuffer s;
-                LOG(MCexception(E, MSGCLS_warning), E, s.append("Exception during deleteWorkUnit: ").append(wuid).str());
-                E->Release();
-                return false;
-            }
-        }
-        else
-            cw->cleanupAndDelete(true,true);
-        removeWorkUnitFromAllQueues(wuid); //known active workunits wouldn't make it this far
-        return true;
-    }
-
-    virtual bool deleteWorkUnitEx(const char * wuid)
-    {
-        return secDeleteWorkUnit(wuid,NULL,NULL,true);
-    }
-    virtual bool deleteWorkUnit(const char * wuid)
-    {
-        return secDeleteWorkUnit(wuid,NULL,NULL,false);
-    }
-    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner)
-    {
-        StringBuffer path("*");
-        if (owner && *owner)
-            path.append("[@submitID=\"").append(owner).append("\"]");
-        return getWorkUnitsByXPath(path.str());
-    }
-    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state);
-    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char* ecl)
-    {
-        StringBuffer path("*");
-        if (ecl && *ecl)
-            path.append("[Query/Text=~\"*").append(ecl).append("*\"]");
-        return getWorkUnitsByXPath(path.str());
-    }
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char* cluster)
-    {
-        StringBuffer path("*");
-        if (cluster && *cluster)
-            path.append("[@clusterName=\"").append(cluster).append("\"]");
-        return getWorkUnitsByXPath(path.str());
-    }
-
-    virtual IConstWorkUnitIterator * getChildWorkUnits(const char *parent)
-    {
-        StringBuffer path("*[@parent=\"");
-        path.append(parent).append("\"]");
-        return getWorkUnitsByXPath(path.str());
-    }
-    virtual IConstWorkUnit* secOpenWorkUnit(const char *wuid, bool lock, ISecManager *secmgr=NULL, ISecUser *secuser=NULL)
-    {
-        StringBuffer wuidStr(wuid);
-        wuidStr.trim();
-        if (wuidStr.length() && ('w' == wuidStr.charAt(0)))
-            wuidStr.setCharAt(0, 'W');
-
-        if (!wuidStr.length() || ('W' != wuidStr.charAt(0)))
-        {
-            if (workUnitTraceLevel > 1)
-                PrintLog("openWorkUnit %s invalid WUID", nullText(wuidStr.str()));
-
-            return NULL;
-        }
-
-        if (workUnitTraceLevel > 1)
-            PrintLog("openWorkUnit %s", wuidStr.str());
-        StringBuffer wuRoot;
-        getXPath(wuRoot, wuidStr.str());
         IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, lock ? RTM_LOCK_READ|RTM_LOCK_SUB : 0, SDS_LOCK_TIMEOUT);
         if (conn)
-        {
-            CLocalWorkUnit *wu = new CLocalWorkUnit(conn, secmgr, secuser);
-            if (secmgr && wu)
-            {
-                if (!checkWuSecAccess(*wu, *secmgr, secuser, SecAccess_Read, "opening", true, true))
-                {
-                    delete wu;
-                    return NULL;
-                }
-            }
-            return wu;
-        }
+            return new CDaliWorkUnit(conn, secmgr, secuser);
         else
-        {
-            if (workUnitTraceLevel > 0)
-                PrintLog("openWorkUnit %s not found", wuidStr.str());
             return NULL;
-        }
     }
-    virtual IConstWorkUnit* openWorkUnit(const char *wuid, bool lock)
+
+    virtual CLocalWorkUnit* _updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
-        return secOpenWorkUnit(wuid, lock);
-    }
-    virtual IWorkUnit* secUpdateWorkUnit(const char *wuid, ISecManager *secmgr=NULL, ISecUser *secuser=NULL)
-    {
-        if (workUnitTraceLevel > 1)
-            PrintLog("updateWorkUnit %s", wuid);
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
         IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_LOCK_SUB, SDS_LOCK_TIMEOUT);
         if (conn)
-        {
-            Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, secmgr, secuser);
-            if (secmgr && cw)
-            {
-                if (!checkWuSecAccess(*cw.get(), *secmgr, secuser, SecAccess_Write, "updating", true, true))
-                    return NULL;
-            }
-            return &cw->lockRemote(false);
-        }
+            return new CDaliWorkUnit(conn, secmgr, secuser);
         else
-        {
-            if (workUnitTraceLevel > 0)
-                PrintLog("updateWorkUnit %s not found", wuid);
             return NULL;
-        }
-    }
-    virtual IWorkUnit* updateWorkUnit(const char *wuid)
-    {
-        return secUpdateWorkUnit(wuid);
-    }
-    virtual int setTracingLevel(int newLevel)
-    {
-        if (newLevel)
-            PrintLog("Setting workunit trace level to %d", newLevel);
-        int level = workUnitTraceLevel;
-        workUnitTraceLevel = newLevel;
-        return level;
-    }
-    IConstWorkUnitIterator * getWorkUnitsByXPath(const char *xpath)
-    {
-        return getWorkUnitsByXPath(xpath,NULL,NULL);
     }
 
-    void descheduleAllWorkUnits()
+    virtual IWorkUnit* getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
     {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Schedule", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-        if(!conn) return;
-        Owned<IPropertyTree> root(conn->queryRoot()->getBranch("."));
-        KeptAtomTable entries;
-        Owned<IPropertyTreeIterator> iter(root->getElements("*/*/*/*"));
-        StringBuffer wuid;
-        for(iter->first(); iter->isValid(); iter->next())
-        {
-            char const * entry = iter->query().queryName();
-            if(!entries.find(entry))
-            {
-                entries.addAtom(entry);
-                ncnameUnescape(entry, wuid.clear());
-                Owned<IWorkUnit> wu = updateWorkUnit(wuid);
-                if(wu && (wu->getState() == WUStateWait))
-                    wu->setState(WUStateCompleted);
-            }
-        }
-        bool more;
-        do more = root->removeProp("*"); while(more);
+        // MORE - should it check security?
+        StringBuffer wuRoot;
+        getXPath(wuRoot, GLOBAL_WORKUNIT);
+        IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+        conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+        Owned<CLocalWorkUnit> cw = new CDaliWorkUnit(conn, (ISecManager *) NULL, NULL);
+        return &cw->lockRemote(false);
     }
 
-    IConstWorkUnitIterator * getWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
+    virtual IConstWorkUnitIterator* getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
+    {
+        StringBuffer path("*");
+        if (owner && *owner)
+            path.append("[@submitID=\"").append(owner).append("\"]");
+        return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
+    }
+    IConstWorkUnitIterator* getWorkUnitsByState(WUState state, ISecManager *secmgr, ISecUser *secuser)
+    {
+        StringBuffer path("*");
+        path.append("[@state=\"").append(getEnumText(state, states)).append("\"]");
+        return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
+    }
+    IConstWorkUnitIterator* getWorkUnitsByECL(const char* ecl, ISecManager *secmgr, ISecUser *secuser)
+    {
+        StringBuffer path("*");
+        if (ecl && *ecl)
+            path.append("[Query/Text=~\"*").append(ecl).append("*\"]");
+        return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
+    }
+    IConstWorkUnitIterator* getWorkUnitsByCluster(const char* cluster, ISecManager *secmgr, ISecUser *secuser)
+    {
+        StringBuffer path("*");
+        if (cluster && *cluster)
+            path.append("[@clusterName=\"").append(cluster).append("\"]");
+        return _getWorkUnitsByXPath(path.str(), secmgr, secuser);
+    }
+
+    IConstWorkUnitIterator* getWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
+    {
+        // NOTE - this is deprecated - we want to get rid of it (daliadmin MAY be allowed to use it, but nothing else should)
+        return _getWorkUnitsByXPath(xpath, secmgr, secuser);
+    }
+
+    virtual void clientShutdown();
+
+    virtual unsigned numWorkUnits()
     {
         Owned<IRemoteConnection> conn = sdsManager->connect("/WorkUnits", session, 0, SDS_LOCK_TIMEOUT);
-        if (conn)
-        {
-            CDaliVersion serverVersionNeeded("3.2");
-            Owned<IPropertyTreeIterator> iter(queryDaliServerVersion().compare(serverVersionNeeded) < 0 ? 
-                conn->queryRoot()->getElements(xpath) : 
-                conn->getElements(xpath));
-            return new CConstWUIterator(conn, iter, secmgr, secuser);
-        }
-        else
-            return NULL;
+        if (!conn)
+            return 0;
+        IPropertyTree *root = conn->queryRoot();
+        return root->numChildren();
     }
 
     IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
@@ -2780,11 +2675,11 @@ public:
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,
                                                 unsigned maxnum,
-                                                const char *queryowner, 
+                                                const char *queryowner,
                                                 __int64 *cachehint,
-                                                ISecManager *secmgr, 
-                                                ISecUser *secuser,
-                                                unsigned *total)
+                                                unsigned *total,
+                                                ISecManager *secmgr,
+                                                ISecUser *secuser)
     {
         class CWorkUnitsPager : public CSimpleInterface, implements IElementsPager
         {
@@ -2841,7 +2736,7 @@ public:
                     if (b)
                         return *b;
                 }
-                bool ret = checkWuScopeSecAccess(scopename,*secmgr,secuser,SecAccess_Read,"iterating",false,false);
+                bool ret = checkWuScopeSecAccess(scopename,secmgr,secuser,SecAccess_Read,"iterating",false,false);
                 {
                     // conceivably could have already been checked and added, but ok.
                     CriticalBlock block(crit);
@@ -2862,9 +2757,9 @@ public:
             for (unsigned i=0;filters[i]!=WUSFterm;i++) {
                 int fmt = filters[i];
                 int subfmt = (fmt&0xff);
-                if (subfmt==WUSFwuid) 
+                if (subfmt==WUSFwuid)
                     namefilterlo.set(fv);
-                else if (subfmt==WUSFwuidhigh) 
+                else if (subfmt==WUSFwuidhigh)
                     namefilterhi.set(fv);
                 else if (subfmt==WUSFwildwuid)
                     namefilter.set(fv);
@@ -2889,11 +2784,11 @@ public:
                 if (so.length())
                     so.append(',');
                 int fmt = sortorder[i];
-                if (fmt&WUSFreverse) 
+                if (fmt&WUSFreverse)
                     so.append('-');
-                if (fmt&WUSFnocase) 
+                if (fmt&WUSFnocase)
                     so.append('?');
-                if (fmt&WUSFnumeric) 
+                if (fmt&WUSFnumeric)
                     so.append('#');
                 so.append(getEnumText(fmt&0xff,workunitSortFields));
             }
@@ -2901,437 +2796,312 @@ public:
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,queryowner,cachehint,results,total);
-        return new CConstWUArrayIterator(conn, results, secmgr, secuser);
+        return new CConstWUArrayIterator(results);
     }
 
-    
-    IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
-                                                WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
-                                                const void *filterbuf,  // (appended) string values for filters
-                                                unsigned startoffset,
-                                                unsigned maxnum,
-                                                const char *queryowner, 
-                                                __int64 *cachehint,
-                                                unsigned *total)
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
-        return getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, NULL, NULL, total);
-    }
-
-    IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
-                                                WUQuerySortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
-                                                const void *filterbuf,  // (appended) string values for filters
-                                                unsigned startoffset,
-                                                unsigned maxnum,
-                                                __int64 *cachehint,
-                                                unsigned *total,
-                                                const MapStringTo<bool> *_subset)
-    {
-        struct PostFilters
+        StringBuffer wuRoot;
+        getXPath(wuRoot, wuid);
+        Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot.str());
+        LocalIAbortHandler abortHandler(*waiter);
+        WUState ret = WUStateUnknown;
+        Owned<IRemoteConnection> conn = sdsManager->connect(wuRoot.str(), session, 0, SDS_LOCK_TIMEOUT);
+        if (conn)
         {
-            WUQueryFilterBoolean activatedFilter;
-            WUQueryFilterBoolean suspendedByUserFilter;
-            PostFilters()
+            unsigned start = msTick();
+            loop
             {
-                activatedFilter = WUQFSAll;
-                suspendedByUserFilter = WUQFSAll;
-            };
-        } postFilters;
-
-        class CQuerySetQueriesPager : public CSimpleInterface, implements IElementsPager
-        {
-            StringAttr querySet;
-            StringAttr xPath;
-            StringAttr sortOrder;
-            PostFilters postFilters;
-            StringArray unknownAttributes;
-            const MapStringTo<bool> *subset;
-
-            void populateQueryTree(const IPropertyTree* querySetTree, IPropertyTree* queryTree)
-            {
-                const char* querySetId = querySetTree->queryProp("@id");
-                VStringBuffer path("Query%s", xPath.get());
-                Owned<IPropertyTreeIterator> iter = querySetTree->getElements(path.str());
-                ForEach(*iter)
+                ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
+                switch (ret)
                 {
-                    IPropertyTree &query = iter->query();
-
-                    bool activated = false;
-                    const char* queryId = query.queryProp("@id");
-                    if (queryId && *queryId)
+                case WUStateCompiled:
+                case WUStateUploadingFiles:
+                    if (!compiled)
+                        break;
+                    // fall into
+                case WUStateCompleted:
+                case WUStateFailed:
+                case WUStateAborted:
+                    waiter->unsubscribe();
+                    return ret;
+                case WUStateWait:
+                    if(returnOnWaitState)
                     {
-                        if (subset)
-                        {
-                            VStringBuffer match("%s/%s", querySetId, queryId);
-                            if (!subset->getValue(match))
-                                continue;
-                        }
-                        VStringBuffer aliasXPath("Alias[@id='%s']", queryId);
-                        IPropertyTree *alias = querySetTree->queryPropTree(aliasXPath.str());
-                        if (alias)
-                            activated = true;
+                        waiter->unsubscribe();
+                        return ret;
                     }
-                    if (activated && (postFilters.activatedFilter == WUQFSNo))
-                        continue;
-                    if (!activated && (postFilters.activatedFilter == WUQFSYes))
-                        continue;
-                    if ((postFilters.suspendedByUserFilter == WUQFSNo) && query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
-                        continue;
-                    if ((postFilters.suspendedByUserFilter == WUQFSYes) && !query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
-                        continue;
-
-                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", createPTreeFromIPT(&query));
-                    queryWithSetId->setProp("@querySetId", querySetId);
-                    queryWithSetId->setPropBool("@activated", activated);
+                    break;
+                case WUStateCompiling:
+                case WUStateRunning:
+                case WUStateDebugPaused:
+                case WUStateDebugRunning:
+                case WUStateBlocked:
+                case WUStateAborting:
+                    if (queryDaliServerVersion().compare("2.1")>=0)
+                    {
+                        SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
+                        if((agent>0) && querySessionManager().sessionStopped(agent, 0))
+                        {
+                            waiter->unsubscribe();
+                            conn->reload();
+                            ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
+                            bool isEcl = false;
+                            switch (ret)
+                            {
+                                case WUStateCompiling:
+                                    isEcl = true;
+                                    // drop into
+                                case WUStateRunning:
+                                case WUStateBlocked:
+                                    ret = WUStateFailed;
+                                    break;
+                                case WUStateAborting:
+                                    ret = WUStateAborted;
+                                    break;
+                                default:
+                                    return ret;
+                            }
+                            WARNLOG("_waitForWorkUnit terminated: %" I64F "d state = %d",(__int64)agent,(int)ret);
+                            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                            Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
+                            wu->setState(ret);
+                            Owned<IWUException> e = wu->createException();
+                            e->setExceptionCode(isEcl ? 1001 : 1000);
+                            e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
+                            return ret;
+                        }
+                    }
+                    break;
                 }
-            }
-            IRemoteConnection* populateQueryTree(IPropertyTree* queryTree)
-            {
-                StringBuffer querySetXPath("QuerySets");
-                if (!querySet.isEmpty())
-                    querySetXPath.appendf("/QuerySet[@id=\"%s\"]", querySet.get());
-                Owned<IRemoteConnection> conn = querySDS().connect(querySetXPath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-                if (!conn)
-                    return NULL;
-
-                if (querySet.isEmpty())
+                unsigned waited = msTick() - start;
+                if (timeout==-1)
                 {
-                    Owned<IPropertyTreeIterator> querySetIter = conn->queryRoot()->getElements("*");
-                    ForEach(*querySetIter)
-                        populateQueryTree(&querySetIter->query(), queryTree);
+                    waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
+                    if (waiter->aborted)
+                    {
+                        ret = WUStateUnknown;  // MORE - throw an exception?
+                        break;
+                    }
                 }
-                else
-                    populateQueryTree(conn->queryRoot(), queryTree);
-                return conn.getClear();
-            }
-        public:
-            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes, const MapStringTo<bool> *_subset)
-                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), subset(_subset)
-            {
-                postFilters.activatedFilter = _postFilters.activatedFilter;
-                postFilters.suspendedByUserFilter = _postFilters.suspendedByUserFilter;
-                ForEachItemIn(x, _unknownAttributes)
-                    unknownAttributes.append(_unknownAttributes.item(x));
-            }
-            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
-            {
-                Owned<IPropertyTree> elementTree = createPTree("Queries");
-                Owned<IRemoteConnection> conn = populateQueryTree(elementTree);
-                if (!conn)
-                    return NULL;
-                Owned<IPropertyTreeIterator> iter = elementTree->getElements("*");
-                if (!iter)
-                    return NULL;
-                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
-                return conn.getClear();
-            }
-        };
-        StringAttr querySet;
-        StringBuffer xPath;
-        StringBuffer so;
-        StringArray unknownAttributes;
-        if (filters)
-        {
-            const char *fv = (const char *)filterbuf;
-            for (unsigned i=0;filters[i]!=WUQSFterm;i++) {
-                int fmt = filters[i];
-                int subfmt = (fmt&0xff);
-                if (subfmt==WUQSFQuerySet)
-                    querySet.set(fv);
-                else if ((subfmt==WUQSFmemoryLimit) || (subfmt==WUQSFtimeLimit) || (subfmt==WUQSFwarnTimeLimit) || (subfmt==WUQSFpriority))
-                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append(">=").append(fv).append("]");
-                else if ((subfmt==WUQSFmemoryLimitHi) || (subfmt==WUQSFtimeLimitHi) || (subfmt==WUQSFwarnTimeLimitHi) || (subfmt==WUQSFpriorityHi))
-                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append("<=").append(fv).append("]");
-                else if (subfmt==WUQSFActivited)
-                    postFilters.activatedFilter = (WUQueryFilterBoolean) atoi(fv);
-                else if (subfmt==WUQSFSuspendedByUser)
-                    postFilters.suspendedByUserFilter = (WUQueryFilterBoolean) atoi(fv);
-                else if (!fv || !*fv)
-                    unknownAttributes.append(getEnumText(subfmt,querySortFields));
-                else {
-                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append('=');
-                    if (fmt&WUQSFnocase)
-                        xPath.append('?');
-                    if (fmt&WUQSFnumeric)
-                        xPath.append('#');
-                    if (fmt&WUQSFwild)
-                        xPath.append('~');
-                    xPath.append('"').append(fv).append("\"]");
+                else if (waited > timeout || !waiter->wait(timeout-waited))
+                {
+                    ret = WUStateUnknown;  // MORE - throw an exception?
+                    break;
                 }
-                fv = fv + strlen(fv)+1;
+                conn->reload();
             }
         }
-        if (sortorder) {
-            for (unsigned i=0;sortorder[i]!=WUQSFterm;i++) {
-                if (so.length())
-                    so.append(',');
-                int fmt = sortorder[i];
-                if (fmt&WUQSFreverse)
-                    so.append('-');
-                if (fmt&WUQSFnocase)
-                    so.append('?');
-                if (fmt&WUQSFnumeric)
-                    so.append('#');
-                so.append(getEnumText(fmt&0xff,querySortFields));
-            }
-        }
-        IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters, unknownAttributes, _subset);
-        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
-        return new CConstQuerySetQueryIterator(results);
+        waiter->unsubscribe();
+        return ret;
     }
 
-    virtual unsigned numWorkUnits()
+protected:
+    class WorkUnitWaiter : public CInterface, implements ISDSSubscription, implements IAbortHandler
+    {
+        Semaphore changed;
+        SubscriptionId change;
+    public:
+        IMPLEMENT_IINTERFACE;
+
+        WorkUnitWaiter(const char *xpath)
+        {
+            change = querySDS().subscribe(xpath, *this, false);
+            aborted = false;
+        }
+        ~WorkUnitWaiter()
+        {
+            assertex(change==0);
+        }
+
+        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+        {
+            changed.signal();
+        }
+        bool wait(unsigned timeout)
+        {
+            return changed.wait(timeout) && !aborted;
+        }
+        bool onAbort()
+        {
+            aborted = true;
+            changed.signal();
+            return false;
+        }
+        void unsubscribe()
+        {
+            querySDS().unsubscribe(change);
+            change = 0;
+        }
+        bool aborted;
+    };
+
+    IConstWorkUnitIterator * _getWorkUnitsByXPath(const char *xpath, ISecManager *secmgr, ISecUser *secuser)
     {
         Owned<IRemoteConnection> conn = sdsManager->connect("/WorkUnits", session, 0, SDS_LOCK_TIMEOUT);
-        if (!conn) 
-            return 0;
-        IPropertyTree *root = conn->queryRoot();
-        return root->numChildren();
-    }
-
-    virtual unsigned numWorkUnitsFiltered(WUSortField *filters,
-                                        const void *filterbuf,
-                                        ISecManager *secmgr, 
-                                        ISecUser *secuser)
-    {
-        unsigned total;
-        Owned<IConstWorkUnitIterator> iter =  getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,secmgr,secuser,&total);
-        return total;
-    }
-
-    virtual unsigned numWorkUnitsFiltered(WUSortField *filters,const void *filterbuf)
-    {
-        if (!filters)
-            return numWorkUnits();
-        return numWorkUnitsFiltered(filters,filterbuf,NULL,NULL);
-    }
-
-    void asyncRemoveDll(const char * name)
-    {
-        deletedllworkq->post(new asyncRemoveDllWorkItem(name));
-    }
-
-    void asyncRemoveFile(const char * ip, const char * name)
-    {
-        deletedllworkq->post(new asyncRemoveRemoteFileWorkItem(ip, name));
+        if (conn)
+        {
+            CDaliVersion serverVersionNeeded("3.2");
+            Owned<IPropertyTreeIterator> iter(queryDaliServerVersion().compare(serverVersionNeeded) < 0 ?
+                conn->queryRoot()->getElements(xpath) :
+                conn->getElements(xpath));
+            return new CConstWUIterator(iter, secmgr, secuser);
+        }
+        else
+            return NULL;
     }
 
     ISDSManager *sdsManager;
     SessionId session;
-    ISecManager *secMgr;
-
-private:
-    void deleteChildren(IPropertyTree *root, const char *wuid)
-    {
-        StringBuffer kids("*[@parent=\"");
-        kids.append(wuid).append("\"]");
-        Owned<IPropertyTreeIterator> it = root->getElements(kids.str());
-        ForEach (*it)
-        {
-            deleteChildren(root, it->query().queryName());
-        }
-        root->removeProp(wuid);
-    }
-    class CConstWUIterator : public CInterface, implements IConstWorkUnitIterator
-    {
-        Owned<IConstWorkUnit> cur;
-        Linked<IRemoteConnection> conn;
-        Linked<IPropertyTreeIterator> ptreeIter;
-        Linked<ISecManager> secmgr;
-        Linked<ISecUser> secuser;
-        Owned<ISecResourceList> scopes;
-
-        void setCurrent()
-        {
-            cur.setown(new CLocalWorkUnit(LINK(conn), LINK(&ptreeIter->query()), secmgr, secuser));
-        }
-        bool getNext() // scan for a workunit with permissions
-        {
-            if (!scopes)
-            {
-                setCurrent();
-                return true;
-            }
-            do
-            {
-                const char *scopeName = ptreeIter->query().queryProp("@scope");
-                if (!scopeName || !*scopeName || checkWuScopeListSecAccess(scopeName, scopes, SecAccess_Read, "iterating", false, false))
-                {
-                    setCurrent();
-                    return true;
-                }
-            }
-            while (ptreeIter->next());
-            cur.clear();
-            return false;
-        }
-    public:
-        IMPLEMENT_IINTERFACE;
-        CConstWUIterator(IRemoteConnection *_conn, IPropertyTreeIterator *_ptreeIter, ISecManager *_secmgr=NULL, ISecUser *_secuser=NULL)
-            : conn(_conn), ptreeIter(_ptreeIter), secmgr(_secmgr), secuser(_secuser)
-        {
-            UniqueScopes us;
-            if (secmgr /* && secmgr->authTypeRequired(RT_WORKUNIT_SCOPE) tbd */)
-            {
-                scopes.setown(secmgr->createResourceList("wuscopes"));
-                ForEach(*ptreeIter)
-                {
-                    const char *scopeName = ptreeIter->query().queryProp("@scope");
-                    if (scopeName && *scopeName && !us.getValue(scopeName))
-                    {
-                        scopes->addResource(scopeName);
-                        us.setValue(scopeName, true);
-                    }
-                }
-                if (scopes->count())
-                    secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, scopes);
-                else
-                    scopes.clear();
-            }
-        }
-        bool first()
-        {
-            if (!ptreeIter->first())
-            {
-                cur.clear();
-                return false;
-            }
-            return getNext();
-        }
-        bool isValid()
-        {
-            return (NULL != cur.get());
-        }
-        bool next()
-        {
-            if (!ptreeIter->next())
-            {
-                cur.clear();
-                return false;
-            }
-            return getNext();
-        }
-        IConstWorkUnit & query() { return *cur; }
-    };
-    IRemoteConnection* connect(const char *xpath, unsigned flags)
-    {
-        return sdsManager->connect(xpath, session, flags, SDS_LOCK_TIMEOUT);
-    }
-
 };
 
-static Owned<CWorkUnitFactory> factory;
+static CriticalSection factoryCrit;
+static Owned<ILoadedDllEntry> workunitServerPlugin;  // NOTE - unload AFTER the factory is released!
+static Owned<IWorkUnitFactory> factory;
 
-void CWorkUnitFactory::clientShutdown()
+void CDaliWorkUnitFactory::clientShutdown()
 {
+    CriticalBlock b(factoryCrit);
     factory.clear();
 }
 
 void clientShutdownWorkUnit()
 {
+    CriticalBlock b(factoryCrit);
     factory.clear();
+}
+
+
+extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory * _factory)
+{
+    CriticalBlock b(factoryCrit);
+    factory.setown(_factory);
 }
 
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
 {
     if (!factory)
-        factory.setown(new CWorkUnitFactory());
+    {
+        CriticalBlock b(factoryCrit);
+        if (!factory)   // NOTE - this "double test" paradigm is not guaranteed threadsafe on modern systems/compilers - I think in this instance that is harmless even in the (extremely) unlikely event that it resulted in the setown being called twice.
+        {
+            Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/WorkUnitsServer", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+            // MORE - arguably should be looking in the config section that corresponds to the dali we connected to. If you want to allow some dalis to be configured to use a WU server and others not.
+            if (conn)
+            {
+                const IPropertyTree *ptree = conn->queryRoot();
+                const char *pluginName = ptree->queryProp("@plugin");
+                if (!pluginName)
+                    throw makeStringException(WUERR_WorkunitPluginError, "WorkUnitsServer information missing plugin name");
+                workunitServerPlugin.setown(createDllEntry(pluginName, false, NULL));
+                if (!workunitServerPlugin)
+                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: failed to load plugin %s", pluginName);
+                WorkUnitFactoryFactory pf = (WorkUnitFactoryFactory) workunitServerPlugin->getEntry("createWorkUnitFactory");
+                if (!pf)
+                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: function createWorkUnitFactory not found in plugin %s", pluginName);
+                factory.setown(pf(ptree));
+                if (!factory)
+                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: createWorkUnitFactory returned NULL in plugin %s", pluginName);
+            }
+            else
+                factory.setown(new CDaliWorkUnitFactory());
+        }
+    }
     return factory.getLink();
 }
+
+// A SecureWorkUnitFactory allows the security params to be supplied once to the factory rather than being supplied to each call.
+// They can still be supplied if you want...
 
 class CSecureWorkUnitFactory : public CInterface, implements IWorkUnitFactory
 {
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSecureWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser)
+    CSecureWorkUnitFactory(IWorkUnitFactory *_baseFactory, ISecManager *_secMgr, ISecUser *_secUser)
+        : baseFactory(_baseFactory), defaultSecMgr(_secMgr), defaultSecUser(_secUser)
     {
-        if (!factory)
-            factory.setown(new CWorkUnitFactory());
-        secMgr.set(&secmgr);
-        secUser.set(&secuser);
     }
-    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user)
+    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
-        checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        IWorkUnit *wu=factory->createNamedWorkUnit(wuid, app, user);
-        if (wu)
-        {
-            CLockedWorkUnit* lw = dynamic_cast<CLockedWorkUnit*>(wu);
-            if (lw)
-                lw->setSecIfcs(secMgr.get(), secUser.get());
-        }
-        return wu;
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->createNamedWorkUnit(wuid, app, user, secMgr, secUser);
     }
-    virtual IWorkUnit* createWorkUnit(const char *app, const char *user)
+    virtual IWorkUnit* createWorkUnit(const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
-        checkWuScopeSecAccess(user, *secMgr.get(), secUser.get(), SecAccess_Write, "Create", true, true);
-        IWorkUnit *wu=factory->createWorkUnit(app, user);
-        if (wu)
-        {
-            CLockedWorkUnit* lw = dynamic_cast<CLockedWorkUnit*>(wu);
-            if (lw)
-                lw->setSecIfcs(secMgr.get(), secUser.get());
-        }
-        return wu;
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->createWorkUnit(app, user, secMgr, secUser);
     }
-    virtual bool deleteWorkUnitEx(const char * wuid)
+    virtual bool deleteWorkUnit(const char * wuid, ISecManager *secMgr, ISecUser *secUser)
     {
-        return factory->secDeleteWorkUnit(wuid, secMgr.get(), secUser.get(), true);
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->deleteWorkUnit(wuid, secMgr, secUser);
     }
-    virtual bool deleteWorkUnit(const char * wuid)
+    virtual IConstWorkUnit* openWorkUnit(const char *wuid, bool lock, ISecManager *secMgr, ISecUser *secUser)
     {
-        return factory->secDeleteWorkUnit(wuid, secMgr.get(), secUser.get(), false);
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->openWorkUnit(wuid, lock, secMgr, secUser);
     }
-    virtual IConstWorkUnit* openWorkUnit(const char *wuid, bool lock)
+    virtual IWorkUnit* updateWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser)
     {
-        return factory->secOpenWorkUnit(wuid, lock, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->updateWorkUnit(wuid, secMgr, secUser);
     }
-    virtual IWorkUnit* updateWorkUnit(const char *wuid)
+    virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secMgr, ISecUser *secUser)
     {
-        return factory->secUpdateWorkUnit(wuid, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getGlobalWorkUnit(secMgr, secUser);
     }
 
-    //make cached workunits a non secure pass through for now.
-    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner)
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secMgr, ISecUser *secUser)
     {
-        StringBuffer path("*");
-        if (owner && *owner)
-            path.append("[@submitID=\"").append(owner).append("\"]");
-        return factory->getWorkUnitsByXPath(path.str(), secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByOwner(owner, secMgr, secUser);
     }
-    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state);
-    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char* ecl)
+    virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secMgr, ISecUser *secUser)
+    {
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByState(state, secMgr, secUser);
+    }
+    virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char* ecl, ISecManager *secMgr, ISecUser *secUser)
+    {
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByECL(ecl, secMgr, secUser);
+    }
+
+    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char* cluster, ISecManager *secMgr, ISecUser *secUser)
     {   
-        return factory->getWorkUnitsByECL(ecl);
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByCluster(cluster, secMgr, secUser);
     }
 
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char* cluster)
-    {   
-        return factory->getWorkUnitsByCluster(cluster);
-    }
-
-    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath)
+    virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secMgr, ISecUser *secUser)
     {
-        return factory->getWorkUnitsByXPath(xpath, secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsByXPath(xpath, secMgr, secUser);
     }
 
-    virtual void descheduleAllWorkUnits()
+    virtual void descheduleAllWorkUnits(ISecManager *secMgr, ISecUser *secUser)
     {
-        factory->descheduleAllWorkUnits();
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        baseFactory->descheduleAllWorkUnits(secMgr, secUser);
     }
 
-    virtual IConstWorkUnitIterator * getChildWorkUnits(const char *parent)
-    {
-        StringBuffer path("*[@parent=\"");
-        path.append(parent).append("\"]");
-        return factory->getWorkUnitsByXPath(path.str(), secMgr.get(), secUser.get());
-    }
     virtual int setTracingLevel(int newLevel)
     {
-        return factory->setTracingLevel(newLevel);
+        return baseFactory->setTracingLevel(newLevel);
     }
 
     virtual IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
@@ -3341,9 +3111,12 @@ public:
                                                         unsigned maxnum,
                                                         const char *queryowner, 
                                                         __int64 *cachehint,
-                                                        unsigned *total)
+                                                        unsigned *total,
+                                                        ISecManager *secMgr, ISecUser *secUser)
     {
-        return factory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, secMgr.get(), secUser.get(), total);
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, total, secMgr, secUser);
     }
 
     virtual IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder,
@@ -3355,36 +3128,47 @@ public:
                                                 unsigned *total,
                                                 const MapStringTo<bool> *subset)
     {
-        return factory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total, subset);
+        // MORE - why no security?
+        return baseFactory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total,subset);
     }
 
     virtual unsigned numWorkUnits()
     {
-        return factory->numWorkUnits();
+        return baseFactory->numWorkUnits();
     }
 
     virtual unsigned numWorkUnitsFiltered(WUSortField *filters,
-                                        const void *filterbuf)
+                                        const void *filterbuf,
+                                        ISecManager *secMgr, ISecUser *secUser)
     {
-        return factory->numWorkUnitsFiltered(filters,filterbuf,secMgr.get(), secUser.get());
+        if (!secMgr) secMgr = defaultSecMgr.get();
+        if (!secUser) secUser = defaultSecUser.get();
+        return baseFactory->numWorkUnitsFiltered(filters, filterbuf, secMgr, secUser);
     }
 
+    virtual bool isAborting(const char *wuid) const
+    {
+        return baseFactory->isAborting(wuid);
+    }
 
+    virtual void clearAborting(const char *wuid)
+    {
+        baseFactory->clearAborting(wuid);
+    }
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
+    {
+        return baseFactory->waitForWorkUnit(wuid, timeout, compiled, returnOnWaitState);
+    }
 private:
-    Owned<CWorkUnitFactory> base_factory;
-    Owned<ISecManager> secMgr;
-    Owned<ISecUser> secUser;
+    Owned<IWorkUnitFactory> baseFactory;
+    Linked<ISecManager> defaultSecMgr;
+    Linked<ISecUser> defaultSecUser;
 };
-
-extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser)
-{
-    return new CSecureWorkUnitFactory(secmgr, secuser);
-}
 
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser)
 {
     if (secmgr && secuser)
-        return getSecWorkUnitFactory(*secmgr, *secuser);
+        return new CSecureWorkUnitFactory(getWorkUnitFactory(), secmgr, secuser);
     else
         return getWorkUnitFactory();
 }
@@ -3429,30 +3213,31 @@ public:
 };
 //==========================================================================================
 
-CLocalWorkUnit::CLocalWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser) : connection(_conn)
+CLocalWorkUnit::CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
 {
-    connectAtRoot = true;
-    init();
-    p.setown(connection->getRoot());
+    clearCached(false);
     secMgr.set(secmgr);
     secUser.set(secuser);
+    workflowIteratorCached = false;
+    resultsCached = false;
+    temporariesCached = false;
+    variablesCached = false;
+    exceptionsCached = false;
+    pluginsCached = false;
+    librariesCached = false;
+    activitiesCached = false;
+    webServicesInfoCached = false;
+    roxieQueryInfoCached = false;
 }
 
-CLocalWorkUnit::CLocalWorkUnit(IRemoteConnection *_conn, IPropertyTree* root, ISecManager *secmgr, ISecUser *secuser) : connection(_conn)
+void CLocalWorkUnit::clearCached(bool clearTree)
 {
-    connectAtRoot = false;
-    init();
-    p.setown(root);
-    secMgr.set(secmgr);
-    secUser.set(secuser);
-}
-
-void CLocalWorkUnit::init()
-{
-    p.clear();
-    cachedGraphs.clear();
-    workflowIterator.clear();
     query.clear();
+    webServicesInfo.clear();
+    roxieQueryInfo.clear();
+    workflowIterator.clear();
+    cachedGraphs.clear();
+
     graphs.kill();
     results.kill();
     variables.kill();
@@ -3460,10 +3245,11 @@ void CLocalWorkUnit::init()
     libraries.kill();
     exceptions.kill();
     temporaries.kill();
-    appvalues.kill();
     statistics.kill();
-    roxieQueryInfo.clear();
-    webServicesInfo.clear();
+    appvalues.kill();
+
+    if (clearTree)
+        p.clear();
 
     workflowIteratorCached = false;
     resultsCached = false;
@@ -3475,52 +3261,25 @@ void CLocalWorkUnit::init()
     activitiesCached = false;
     webServicesInfoCached = false;
     roxieQueryInfoCached = false;
-    dirty = false;
-    abortDirty = true;
-    abortState = false;
 }
 
-// Dummy workunit support
-CLocalWorkUnit::CLocalWorkUnit(const char *_wuid, ISecManager *secmgr, ISecUser *secuser)
+void CLocalWorkUnit::loadPTree(IPropertyTree *ptree)
 {
-    connectAtRoot = true;
-    init();
-    p.setown(createPTree(_wuid));
-    p->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-    secMgr.set(secmgr);
-    secUser.set(secuser);
+    clearCached(false);
+    p.setown(ptree);
 }
 
-CLocalWorkUnit::~CLocalWorkUnit() 
+void CLocalWorkUnit::beforeDispose()
 {
-    if (workUnitTraceLevel > 1)
-    {
-        PrintLog("Releasing workunit %s mode %x", p->queryName(), connection ? connection->queryMode() :0);
-    }
     try
     {
         unsubscribe();
-        query.clear();
-        webServicesInfo.clear();
-        roxieQueryInfo.clear();
-        workflowIterator.clear();
 
-        plugins.kill();
-        libraries.kill();
-        exceptions.kill();
-        graphs.kill();
-        results.kill();
-        temporaries.kill();
-        variables.kill();
-        appvalues.kill();
-        statistics.kill();
+        clearCached(true);
 
         userDesc.clear();
         secMgr.clear();
         secUser.clear();
-        cachedGraphs.clear();
-        p.clear();
-        connection.clear();
     }
     catch (IException *E) { LOG(MCexception(E, MSGCLS_warning), E, "Exception during ~CLocalWorkUnit"); E->Release(); }
 }
@@ -3529,7 +3288,6 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
 {
     TIME_SECTION("WUDELETE cleanupAndDelete total");
     // Delete any related things in SDS etc that might otherwise be forgotten
-    assertex(connectAtRoot); // make sure we don't delete entire workunit tree!
     if (p->getPropBool("@protected", false))
         throw MakeStringException(WUERR_WorkunitProtected, "%s: Workunit is protected",p->queryName());
     switch (getState())
@@ -3576,27 +3334,19 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
                     {
                         Owned<IDllEntry> entry = queryDllServer().getEntry(name.str());
                         if (entry.get())
-                            factory->asyncRemoveDll(name.str());
+                            asyncRemoveDll(name.str());
                         else
                         {
                             SCMStringBuffer ip, localPath;
                             cur.getName(localPath);
                             cur.getIp(ip);
-                            factory->asyncRemoveFile(ip.str(), localPath.str());
+                            asyncRemoveFile(ip.str(), localPath.str());
                         }
                     }
                 }
             }
         }
-        StringBuffer apath;
-//      PROGLOG("wuid dll files removed");
-        {
-            apath.append("/WorkUnitAborts/").append(p->queryName());
-            Owned<IRemoteConnection> acon = factory->sdsManager->connect(apath.str(), factory->session, RTM_LOCK_WRITE | RTM_DELETE_ON_DISCONNECT, SDS_LOCK_TIMEOUT);
-            acon.clear();
-        }
-//      PROGLOG("wuid WorkUnitAborts entry removed");
-
+        factory->clearAborting(queryWuid());
         deleteTempFiles(NULL, deleteOwned, true); // all, any remaining.
     }
     catch(IException *E)
@@ -3610,9 +3360,6 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
         WARNLOG("Unknown exception during cleanupAndDelete: %s", p->queryName()); 
     }
     CConstGraphProgress::deleteWuidProgress(p->queryName());
-    connection->close(true);  
-    PROGLOG("WUID %s removed",p->queryName());
-    connection.clear();
 }
 
 void CLocalWorkUnit::setTimeScheduled(const IJlibDateTime &val)
@@ -3964,7 +3711,7 @@ bool restoreWorkUnit(const char *base,const char *wuid)
 void CLocalWorkUnit::loadXML(const char *xml)
 {
     CriticalBlock block(crit);
-    init();
+    clearCached(true);
     assertex(xml);
     p.setown(createPTreeFromXMLString(xml));
 }
@@ -3984,16 +3731,6 @@ void CLocalWorkUnit::deserialize(MemoryBuffer &src)
     loadXML(value);
 }
 
-void CLocalWorkUnit::notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-{
-    dirty = true;
-}
-
-void CLocalWorkUnit::abort()
-{
-    abortDirty = true;
-}
-
 void CLocalWorkUnit::requestAbort()
 {
     CriticalBlock block(crit);
@@ -4002,143 +3739,29 @@ void CLocalWorkUnit::requestAbort()
 
 void CLocalWorkUnit::subscribe(WUSubscribeOptions options)
 {
-    CriticalBlock block(crit);
-    bool subscribeAbort = false;
-    bool subscribeChange = false;
-    bool needChildren = true;
-    switch (options)
-    {
-    case SubscribeOptionAbort:
-        subscribeAbort = true;
-        break;
-    case SubscribeOptionRunningState:
-        needChildren = false;
-    case SubscribeOptionAnyState:
-        subscribeAbort = true;
-        subscribeChange = true;
-        break;
-    case SubscribeOptionProgress:
-    case SubscribeOptionAll:
-        subscribeChange = true;
-        break;
-    }
-    if (subscribeChange)
-    {
-        if (changeWatcher && changeWatcher->watchingChildren() != needChildren)
-        {
-            changeWatcher->unsubscribe();
-            changeWatcher.clear();
-        }
-        if (!changeWatcher)
-        {
-            changeWatcher.setown(new CWorkUnitWatcher(this, p->queryName(), needChildren));
-            dirty = true;
-        }
-    }
-    if (subscribeAbort && !abortWatcher)
-    {
-        abortWatcher.setown(new CWorkUnitAbortWatcher(this, p->queryName()));
-        abortDirty = true;
-    }
 }
 
-void CLocalWorkUnit::forceReload()
-{
-    dirty = true;
-    reload();
-}
-
-bool CLocalWorkUnit::reload()
-{
-    synchronized sync(locked); // protect locked workunits (uncommited writes) from reload
-    CriticalBlock block(crit);
-    if (dirty)
-    {
-        if (!connectAtRoot)
-        {
-            StringBuffer wuRoot;
-            getXPath(wuRoot, p->queryName());
-            IRemoteConnection *newconn = factory->sdsManager->connect(wuRoot.str(), factory->session, 0, SDS_LOCK_TIMEOUT);
-            if (!newconn)
-                throw MakeStringException(WUERR_ConnectFailed, "Could not connect to workunit %s (deleted?)",p->queryName());
-            connection.setown(newconn);
-            connectAtRoot = true;
-        }
-        else
-            connection->reload();
-        init();
-        p.setown(connection->getRoot());
-        return true;
-    }
-    return false;
-}
-
-void CLocalWorkUnit::unsubscribe()
-{
-    CriticalBlock block(crit);
-    if (abortWatcher)
-    {
-        abortWatcher->unsubscribe();
-        abortWatcher.clear();
-    }
-    if (changeWatcher)
-    {
-        changeWatcher->unsubscribe();
-        changeWatcher.clear();
-    }
-}
-
-void CLocalWorkUnit::unlockRemote(bool commit)
+void CLocalWorkUnit::unlockRemote()
 {
     CriticalBlock block(crit);
     locked.unlock();
-    if (commit)  
+    if (IsShared())  // Is this right? Doesn't feel right! Commit on last unlock would seem smarter
     {
-        try
-        {
-            assertex(connectAtRoot);
-            //MORE: I'm not convinced this is useful...
-            setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, NULL, StWhenWorkunitModified, NULL, getTimeStampNowValue(), 1, 0, StatsMergeReplace);
-            try { connection->commit(); }
-            catch (IException *e)
-            { 
-                EXCLOG(e, "Error during workunit commit");
-                connection->rollback();
-                connection->changeMode(0, SDS_LOCK_TIMEOUT);
-                throw;
-            }
-            connection->changeMode(0, SDS_LOCK_TIMEOUT);
-        }
-        catch (IException *E)
-        {
-            StringBuffer s;
-            PrintLog("Failed to release write lock on workunit: %s", E->errorMessage(s).str());
-            throw;
-        }
+        _unlockRemote();
     }
 }
 
 IWorkUnit &CLocalWorkUnit::lockRemote(bool commit)
 {
     if (secMgr)
-        checkWuSecAccess(*this, *secMgr.get(), secUser.get(), SecAccess_Write, "write lock", true, true);
+        checkWuSecAccess(*this, secMgr.get(), secUser.get(), SecAccess_Write, "write lock", true, true);
     locked.lock();
     CriticalBlock block(crit);
     if (commit)
     {
         try
         {
-            StringBuffer wuRoot;
-            getXPath(wuRoot, p->queryName());
-            if (connection&&connectAtRoot) 
-                connection->changeMode(RTM_LOCK_WRITE,SDS_LOCK_TIMEOUT);
-            else 
-                connection.setown(factory->sdsManager->connect(wuRoot.str(), factory->session, RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
-            if (!connection)
-                throw MakeStringException(WUERR_LockFailed, "Failed to get connection for xpath %s", wuRoot.str());
-            connectAtRoot = true;
-            init();
-            p.setown(connection->getRoot());
+            _lockRemote();
         }
         catch (IException *E)
         {
@@ -4153,10 +3776,7 @@ IWorkUnit &CLocalWorkUnit::lockRemote(bool commit)
 
 void CLocalWorkUnit::commit()
 {
-    CriticalBlock block(crit);
-    assertex(connectAtRoot);
-    if (connection)
-        connection->commit();
+    // Nothing to do if not backed by a persistent store
 }
 
 IWorkUnit& CLocalWorkUnit::lock()
@@ -4164,11 +3784,10 @@ IWorkUnit& CLocalWorkUnit::lock()
     return lockRemote(true);
 }
 
-IStringVal& CLocalWorkUnit::getWuid(IStringVal &str) const
+const char *CLocalWorkUnit::queryWuid() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryName());
-    return str;
+    return p->queryName();
 }
 
 unsigned CLocalWorkUnit::getDebugAgentListenerPort() const
@@ -4220,11 +3839,13 @@ void CLocalWorkUnit::setJobName(const char *value)
     p->setProp("@jobName", value);
 }
 
-IStringVal& CLocalWorkUnit::getJobName(IStringVal &str) const
+const char *CLocalWorkUnit::queryJobName() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("@jobName"));
-    return str;
+    const char *ret = p->queryProp("@jobName");
+    if (!ret)
+        ret = "";
+    return ret;
 }
 
 void CLocalWorkUnit::setClusterName(const char *value)
@@ -4233,11 +3854,13 @@ void CLocalWorkUnit::setClusterName(const char *value)
     p->setProp("@clusterName", value);
 }
 
-IStringVal& CLocalWorkUnit::getClusterName(IStringVal &str) const
+const char *CLocalWorkUnit::queryClusterName() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("@clusterName"));
-    return str;
+    const char *ret = p->queryProp("@clusterName");
+    if (!ret)
+        ret = "";
+    return ret;
 }
 
 void CLocalWorkUnit::setAllowedClusters(const char *value)
@@ -4296,16 +3919,10 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
                 perm = 0;
         }
     }
-    if (!HASREADPERMISSION(perm)) {
-        SCMStringBuffer wuid;
-        getWuid(wuid);
-        throw MakeStringException(WUERR_WorkunitAccessDenied, "Read access denied for workunit %s",wuid.s.str());
-    }
-    if (writeaccess&&!HASWRITEPERMISSION(perm)) {
-        SCMStringBuffer wuid;
-        getWuid(wuid);
-        throw MakeStringException(WUERR_WorkunitAccessDenied, "Write access denied for workunit %s",wuid.s.str());
-    }
+    if (!HASREADPERMISSION(perm))
+        throw MakeStringException(WUERR_WorkunitAccessDenied, "Read access denied for workunit %s", queryWuid());
+    if (writeaccess && !HASWRITEPERMISSION(perm))
+        throw MakeStringException(WUERR_WorkunitAccessDenied, "Write access denied for workunit %s", queryWuid());
 }
 
 
@@ -4315,17 +3932,25 @@ void CLocalWorkUnit::setUser(const char * value)
     p->setProp("@submitID", value); 
 }
 
-IStringVal& CLocalWorkUnit::getUser(IStringVal &str) const 
+const char *CLocalWorkUnit::queryUser() const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("@submitID"));
-    return str;
+    const char *ret = p->queryProp("@submitID");
+    if (!ret)
+        ret = "";
+    return ret;
 }
 
 void CLocalWorkUnit::setWuScope(const char * value) 
 { 
-    CriticalBlock block(crit);
-    p->setProp("@scope", value); 
+    if (value && *value)
+    {
+        if (checkWuScopeSecAccess(value, secMgr.get(), secUser.get(), SecAccess_Write, "Change Scope", true, true))
+        {
+            CriticalBlock block(crit);
+            p->setProp("@scope", value);
+        }
+    }
 }
 
 IStringVal& CLocalWorkUnit::getWuScope(IStringVal &str) const 
@@ -4355,64 +3980,14 @@ WUPriorityClass CLocalWorkUnit::getPriority() const
     return (WUPriorityClass) getEnum(p, "@priorityClass", priorityClasses);
 }
 
-mapEnums states[] = {
-   { WUStateUnknown, "unknown" },
-   { WUStateCompiled, "compiled" },
-   { WUStateRunning, "running" },
-   { WUStateCompleted, "completed" },
-   { WUStateFailed, "failed" },
-   { WUStateArchived, "archived" },
-   { WUStateAborting, "aborting" },
-   { WUStateAborted, "aborted" },
-   { WUStateBlocked, "blocked" },
-   { WUStateSubmitted, "submitted" },
-   { WUStateScheduled, "scheduled" },
-   { WUStateCompiling, "compiling" },
-   { WUStateWait, "wait" },
-   { WUStateUploadingFiles, "uploading_files" },
-   { WUStateDebugPaused, "debugging" },
-   { WUStateDebugRunning, "debug_running" },
-   { WUStatePaused, "paused" },
-   { WUStateSize, NULL }
-};
-
-const char * getWorkunitStateStr(WUState state)
-{
-    return states[state].str;
-}
-
-IConstWorkUnitIterator * CWorkUnitFactory::getWorkUnitsByState(WUState state)
-{
-    StringBuffer path("*");
-    path.append("[@state=\"").append(getEnumText(state, states)).append("\"]");
-    return getWorkUnitsByXPath(path.str());
-}
-IConstWorkUnitIterator * CSecureWorkUnitFactory::getWorkUnitsByState(WUState state)
-{
-    StringBuffer path("*");
-    path.append("[@state=\"").append(getEnumText(state, states)).append("\"]");
-    return factory->getWorkUnitsByXPath(path.str(), secMgr.get(), secUser.get());
-}
-
 void CLocalWorkUnit::setState(WUState value) 
 {
-    CriticalBlock block(crit);
     if (value==WUStateAborted || value==WUStatePaused || value==WUStateCompleted || value==WUStateFailed || value==WUStateSubmitted || value==WUStateWait)
     {
-        if (abortWatcher)
-        {
-            abortWatcher->unsubscribe();
-            abortWatcher.clear();
-        }
-        StringBuffer apath;
-        apath.append("/WorkUnitAborts/").append(p->queryName());
-        if(factory)
-        {
-            Owned<IRemoteConnection> acon = factory->sdsManager->connect(apath.str(), factory->session, RTM_LOCK_WRITE|RTM_LOCK_SUB, SDS_LOCK_TIMEOUT);
-            if (acon)
-                acon->close(true);
-        }
+        if (factory)
+            factory->clearAborting(queryWuid());
     }
+    CriticalBlock block(crit);
     setEnum(p, "@state", value, states);
     if (getDebugValueBool("monitorWorkunit", false))
     {
@@ -4446,22 +4021,7 @@ void CLocalWorkUnit::setAgentSession(__int64 sessionId)
 
 bool CLocalWorkUnit::aborting() const 
 {
-    CriticalBlock block(crit);
-    if (abortDirty)
-    {
-        if (factory)
-        {
-            StringBuffer apath;
-            apath.append("/WorkUnitAborts/").append(p->queryName());
-            Owned<IRemoteConnection> acon = factory->sdsManager->connect(apath.str(), factory->session, 0, SDS_LOCK_TIMEOUT);
-            if (acon)
-                abortState = acon->queryRoot()->getPropInt(NULL)!=0;
-            else
-                abortState = false;
-        }
-        abortDirty = false;
-    }
-    return abortState;
+    return false;
 }
 
 bool CLocalWorkUnit::getIsQueryService() const 
@@ -4571,19 +4131,18 @@ unsigned CLocalWorkUnit::getAgentPID() const
     return p->getPropInt("@agentPID", -1);
 }
 
-IStringVal& CLocalWorkUnit::getStateDesc(IStringVal &str) const 
+const char * CLocalWorkUnit::queryStateDesc() const
 {
     // MORE - not sure about this - may prefer a separate interface
     CriticalBlock block(crit);
     try
     {
-        str.set(getEnumText(getState(), states));
+        return getEnumText(getState(), states);
     }
     catch (...)
     {
-        str.set("???");
+        return "???";
     }
-    return str;
 }
 
 mapEnums actions[] = {
@@ -5377,9 +4936,7 @@ IUserDescriptor *CLocalWorkUnit::queryUserDescriptor() const
     {
         SCMStringBuffer token, user, password;
         getSecurityToken(token);
-        SCMStringBuffer wuid;
-        getWuid(wuid);
-        extractToken(token.str(), wuid.str(), user, password);
+        extractToken(token.str(), queryWuid(), user, password);
         userDesc.setown(createUserDescriptor());
         userDesc->set(user.str(), password.str());
     }
@@ -5554,6 +5111,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     IPropertyTree *pt;
 
     CriticalBlock block(crit);
+    clearCached(false);
     query.clear();
     updateProp(p, fromP, "@jobName");
     copyTree(p, fromP, "Query");
@@ -6151,19 +5709,6 @@ IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * creator, const cha
     return NULL;
 }
 
-bool CLocalWorkUnit::getWuDate(unsigned & year, unsigned & month, unsigned& day)
-{
-    CriticalBlock block(crit);
-    SCMStringBuffer wuidstr;
-    const char *wuid = getWuid(wuidstr).str();
-
-    if (sscanf(wuid, "W%4u%2u%2u", &year, &month, &day)==3)
-    {
-    }
-    
-    return false;
-}
-
 IWUPlugin* CLocalWorkUnit::updatePluginByName(const char *qname)
 {
     CriticalBlock block(crit);
@@ -6216,6 +5761,11 @@ IWULibrary* CLocalWorkUnit::updateLibraryByName(const char *qname)
     libraries.append(*q);
     q->setName(qname);
     return q;
+}
+
+void CLocalWorkUnit::unsubscribe()
+{
+    // Only overriding versions need to do anything
 }
 
 void CLocalWorkUnit::loadExceptions() const
@@ -6363,19 +5913,24 @@ static int compareResults(IInterface * const *ll, IInterface * const *rr)
     return l->getResultSequence() - r->getResultSequence();
 }
 
+void CLocalWorkUnit::_loadResults() const
+{
+    Owned<IPropertyTreeIterator> r = p->getElements("Results/Result");
+    for (r->first(); r->isValid(); r->next())
+    {
+        IPropertyTree *rp = &r->query();
+        rp->Link();
+        results.append(*new CLocalWUResult(rp));
+    }
+}
+
 void CLocalWorkUnit::loadResults() const
 {
     CriticalBlock block(crit);
     if (!resultsCached)
     {
         assertex(results.length() == 0);
-        Owned<IPropertyTreeIterator> r = p->getElements("Results/Result");
-        for (r->first(); r->isValid(); r->next())
-        {
-            IPropertyTree *rp = &r->query();
-            rp->Link();
-            results.append(*new CLocalWUResult(rp));
-        }
+        _loadResults();
         results.sort(compareResults);
         resultsCached = true;
     }
@@ -6519,7 +6074,7 @@ IConstWUResult* CLocalWorkUnit::getGlobalByName(const char *qname) const
     if (strcmp(p->queryName(), GLOBAL_WORKUNIT)==0)
         return getVariableByName(qname);
 
-    Owned <IWorkUnit> global = factory->ensureNamedWorkUnit(GLOBAL_WORKUNIT);
+    Owned <IWorkUnit> global = factory->getGlobalWorkUnit(secMgr, secUser);
     return global->getVariableByName(qname);
 }
 
@@ -6529,7 +6084,7 @@ IWUResult* CLocalWorkUnit::updateGlobalByName(const char *qname)
     if (strcmp(p->queryName(), GLOBAL_WORKUNIT)==0)
         return updateVariableByName(qname);
 
-    Owned <IWorkUnit> global = factory->ensureNamedWorkUnit(GLOBAL_WORKUNIT);
+    Owned <IWorkUnit> global = factory->getGlobalWorkUnit(secMgr, secUser);
     return global->updateVariableByName(qname);
 }
 
@@ -6925,9 +6480,6 @@ mapEnums graphTypes[] = {
 
 CLocalWUGraph::CLocalWUGraph(const CLocalWorkUnit &_owner, IPropertyTree *props) : p(props), owner(_owner)
 {
-    SCMStringBuffer str;
-    owner.getWuid(str);
-    wuid.set(str.s.str());
     wuidVersion = owner.getWuidVersion();
 }
 
@@ -7305,7 +6857,7 @@ void CLocalWUGraph::setName(const char *str)
 {
     p->setProp("@name", str);
     progress.clear();
-    progress.setown(new CConstGraphProgress(wuid, str));
+    progress.setown(new CConstGraphProgress(owner.queryWuid(), str));
 }
 
 void CLocalWUGraph::setLabel(const char *str)
@@ -7437,7 +6989,7 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
         Owned<IConstWUGraphProgress> _progress;
         if (progress) _progress.set(progress);
         else
-            _progress.setown(new CConstGraphProgress(wuid, p->queryProp("@name")));
+            _progress.setown(new CConstGraphProgress(owner.queryWuid(), p->queryProp("@name")));
 
         //MORE: Eventually this should directly access the new stats structure
         unsigned progressV = _progress->queryFormatVersion();
@@ -7647,6 +7199,23 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
         s->setPropInt("@crc", crc);
     IConstWUAssociatedFile * q = new CLocalWUAssociated(LINK(s)); 
     associated.append(*q);
+}
+
+void CLocalWUQuery::removeAssociatedFile(WUFileType type, const char * name, const char * desc)
+{
+    CriticalBlock block(crit);
+    associatedCached = false;
+    associated.kill();
+    StringBuffer xpath;
+    xpath.append("Associated/File");
+    if (type)
+        xpath.append("[@type=\"").append(getEnumText(type, queryFileTypes)).append("\"]");
+    if (name)
+        xpath.append("[@filename=\"").append(name).append("\"]");
+    if (desc)
+        xpath.append("[@desc=\"").append(desc).append("\"]");
+
+    p->removeProp(xpath.str());
 }
 
 void CLocalWUQuery::removeAssociatedFiles()
@@ -9178,9 +8747,18 @@ bool CLocalWULegacyTiming::matches(const IStatisticsFilter * filter) const
 
 //==========================================================================================
 
-extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit()
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit(const char *xml)
 {
-    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit("W_LOCAL", (ISecManager*)NULL, NULL);
+    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit((ISecManager *) NULL, NULL);
+    if (xml)
+        cw->loadPTree(createPTreeFromXMLString(xml));
+    else
+    {
+        Owned<IPropertyTree> p = createPTree("W_LOCAL");
+        p->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+        cw->loadPTree(p.getClear());
+    }
+
     ILocalWorkUnit* ret = QUERYINTERFACE(&cw->lockRemote(false), ILocalWorkUnit);
     return ret;
 }
@@ -9247,8 +8825,7 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     SCMStringBuffer token;
     createToken(wuid, username, password, token);
     workunit->setSecurityToken(token.str());
-    SCMStringBuffer clusterName;
-    workunit->getClusterName(clusterName);
+    StringAttr clusterName(workunit->queryClusterName());
     if (!clusterName.length()) 
         throw MakeStringException(WUERR_InvalidCluster, "No target cluster specified");
     workunit->commit();
@@ -9275,13 +8852,13 @@ extern WORKUNIT_API void abortWorkUnit(const char *wuid)
 }
 extern WORKUNIT_API void secSubmitWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser)
 {
-    if (checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Write, "Submit", true, true))
+    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
         submitWorkUnit(wuid, secuser.getName(), secuser.credentials().getPassword());
 }
 
 extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser)
 {
-    if (checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Write, "Submit", true, true))
+    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
         abortWorkUnit(wuid);
 }
 
@@ -9426,15 +9003,13 @@ void CLocalWorkUnit::schedule()
     }
 
     StringBuffer rootPath;
-    SCMStringBuffer clusterName;
-    getClusterName(clusterName);
-    rootPath.append("/Schedule/").append(clusterName.str());
+    rootPath.append("/Schedule/").append(queryClusterName());
     Owned<IRemoteConnection> conn = querySDS().connect(rootPath.str(), myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     Owned<IPropertyTree> root = conn->getRoot();
     if(!root->hasChildren())
     {
         StringBuffer addPath;
-        addPath.append("/Schedulers/").append(clusterName.str());
+        addPath.append("/Schedulers/").append(queryClusterName());
         Owned<IRemoteConnection> addConn = querySDS().connect(addPath.str(), myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     }
 
@@ -9763,157 +9338,21 @@ void testWorkflow()
 
 //------------------------------------------------------------------------------------------
 
-class WorkUnitWaiter : public CInterface, implements ISDSSubscription, implements IAbortHandler
-{
-    Semaphore changed;
-    SubscriptionId change;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    WorkUnitWaiter(const char *xpath) 
-    {
-        change = querySDS().subscribe(xpath, *this, false);
-        aborted = false; 
-    }
-    ~WorkUnitWaiter()
-    {
-        assertex(change==0);
-    }
-
-    void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-    {
-        changed.signal();
-    }
-    bool wait(unsigned timeout)
-    {
-        return changed.wait(timeout) && !aborted;
-    }
-    bool onAbort()
-    {
-        aborted = true;
-        changed.signal();
-        return false;
-    }
-    void unsubscribe()
-    {
-        querySDS().unsubscribe(change);
-        change = 0;
-    }
-    bool aborted;
-};
-
-static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
-{
-    StringBuffer wuRoot;
-    getXPath(wuRoot, wuid);
-    Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot.str());
-    LocalIAbortHandler abortHandler(*waiter);
-    WUState ret = WUStateUnknown;
-    Owned<IRemoteConnection> conn = querySDS().connect(wuRoot.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-    if (conn)
-    {
-        unsigned start = msTick();
-        loop
-        {
-            ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
-            switch (ret)
-            {
-            case WUStateCompiled:
-            case WUStateUploadingFiles:
-                if (!compiled)
-                    break;
-                // fall into
-            case WUStateCompleted:
-            case WUStateFailed:
-            case WUStateAborted:
-                waiter->unsubscribe();
-                return ret;
-            case WUStateWait:
-                if(returnOnWaitState)
-                {
-                    waiter->unsubscribe();
-                    return ret;
-                }
-                break;
-            case WUStateCompiling:
-            case WUStateRunning:
-            case WUStateDebugPaused:
-            case WUStateDebugRunning:
-            case WUStateBlocked:
-            case WUStateAborting:
-                if (queryDaliServerVersion().compare("2.1")>=0)
-                {
-                    SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
-                    if((agent>0) && querySessionManager().sessionStopped(agent, 0))
-                    {
-                        waiter->unsubscribe();
-                        conn->reload();
-                        ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
-                        bool isEcl = false;
-                        switch (ret)
-                        {
-                            case WUStateCompiling:
-                                isEcl = true;
-                                // drop into
-                            case WUStateRunning:
-                            case WUStateBlocked:
-                                ret = WUStateFailed;
-                                break;
-                            case WUStateAborting:
-                                ret = WUStateAborted;
-                                break;
-                            default:
-                                return ret;
-                        }
-                        WARNLOG("_waitForWorkUnit terminated: %" I64F "d state = %d",(__int64)agent,(int)ret);
-                        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                        Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
-                        wu->setState(ret);
-                        Owned<IWUException> e = wu->createException();
-                        e->setExceptionCode(isEcl ? 1001 : 1000);
-                        e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
-                        return ret;
-                    }
-                }
-                break;
-            }
-            unsigned waited = msTick() - start;
-            if (timeout==-1)
-            {
-                waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
-                if (waiter->aborted)
-                {
-                    ret = WUStateUnknown;  // MORE - throw an exception?
-                    break;
-                }
-            }
-            else if (waited > timeout || !waiter->wait(timeout-waited))
-            {
-                ret = WUStateUnknown;  // MORE - throw an exception?
-                break;
-            }
-            conn->reload();
-        }
-    }
-    waiter->unsubscribe();
-    return ret;
-}
-
 extern WUState waitForWorkUnitToComplete(const char * wuid, int timeout, bool returnOnWaitState)
 {
-    return _waitForWorkUnit(wuid, (unsigned)timeout, false, returnOnWaitState);
+    return factory->waitForWorkUnit(wuid, (unsigned) timeout, false, returnOnWaitState);
 }
 
 extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout, bool returnOnWaitState)
 {
-    if (checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Read, "Wait for Complete", false, true))
+    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Wait for Complete", false, true))
         return waitForWorkUnitToComplete(wuid, timeout, returnOnWaitState);
     return WUStateUnknown;
 }
 
 extern bool waitForWorkUnitToCompile(const char * wuid, int timeout)
 {
-    switch(_waitForWorkUnit(wuid, (unsigned)timeout, true, true))
+    switch(factory->waitForWorkUnit(wuid, (unsigned) timeout, true, true))
     {
     case WUStateCompiled:
     case WUStateCompleted:
@@ -9927,16 +9366,16 @@ extern bool waitForWorkUnitToCompile(const char * wuid, int timeout)
 
 extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout)
 {
-    if (checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Read, "Wait for Compile", false, true))
+    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Wait for Compile", false, true))
         return waitForWorkUnitToCompile(wuid, timeout);
     return false;
 }
 
 extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr, ISecUser &secuser, const char *command, StringBuffer &response)
 {
-    if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, secmgr, &secuser, SecAccess_Read, "Debug", false, true))
+    if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Debug", false, true))
     {
-        Owned<IConstWorkUnit> wu = factory->secOpenWorkUnit(wuid, false, &secmgr, &secuser);
+        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false, &secmgr, &secuser);
         SCMStringBuffer ip;
         unsigned port;
         port = wu->getDebugAgentListenerPort();
@@ -10673,9 +10112,6 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
     if (!dllName.length())
         throw MakeStringException(WUERR_InvalidDll, "Cannot deploy query - no associated dll.");
 
-    SCMStringBuffer wuid;
-    workunit->getWuid(wuid);
-
     StringBuffer currentTargetClusterType;
     queryRegistry->getProp("@targetclustertype", currentTargetClusterType); 
 
@@ -10697,7 +10133,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
         }
     }
 
-    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
+    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, workunit->queryWuid(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
     Owned<IConstWULibraryIterator> libraries = &workunit->getLibraries();
     checkAddLibrariesToQueryEntry(newEntry, libraries);
     newQueryId.append(newEntry->queryProp("@id"));
@@ -10823,11 +10259,11 @@ extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unr
     }
 }
 
-bool looksLikeAWuid(const char * wuid)
+bool looksLikeAWuid(const char * wuid, const char firstChar)
 {
     if (!wuid)
         return false;
-    if (wuid[0] != 'W')
+    if (wuid[0] != firstChar)
         return false;
     if (!isdigit(wuid[1]) || !isdigit(wuid[2]) || !isdigit(wuid[3]) || !isdigit(wuid[4]))
         return false;

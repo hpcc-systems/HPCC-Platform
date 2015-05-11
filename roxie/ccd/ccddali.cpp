@@ -494,6 +494,10 @@ public:
             return NULL;
         StringBuffer foreignLfn("foreign::");
         foreignLfn.append(cloneFrom);
+        const char *cloneFromPrefix = fdesc->queryProperties().queryProp("@cloneFromPrefix");
+        if (cloneFromPrefix && *cloneFromPrefix)
+            foreignLfn.append("::").append(cloneFromPrefix);
+        foreignLfn.append("::").append(_lfn);
         if (!connected())
             return resolveCachedLFN(foreignLfn);  // Note - cache only used when no dali connection available
         try
@@ -601,8 +605,7 @@ public:
             StringBuffer wuXML;
             if (getEmbeddedWorkUnitXML(source, wuXML))
             {
-                Owned<ILocalWorkUnit> localWU = createLocalWorkUnit();
-                localWU->loadXML(wuXML);
+                Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
                 queryExtendedWU(w)->copyWorkUnit(localWU, true);
             }
             else

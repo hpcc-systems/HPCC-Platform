@@ -446,12 +446,12 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
 
     resp.setWuid(wuid.str());
 
-    SCMStringBuffer cluster;
+    StringAttr cluster;
     if (notEmpty(req.getCluster()))
         cluster.set(req.getCluster());
     else
-        cw->getClusterName(cluster);
-    if (!isValidCluster(req.getCluster()))
+        cluster.set(cw->queryClusterName());
+    if (!isValidCluster(cluster))
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster.str());
 
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
@@ -747,19 +747,19 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
 
     resp.setWuid(wuid.str());
 
-    SCMStringBuffer queryName;
+    StringAttr queryName;
     if (notEmpty(req.getJobName()))
         queryName.set(req.getJobName());
     else
-        cw->getJobName(queryName).str();
+        queryName.set(cw->queryJobName());
     if (!queryName.length())
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query/Job name not defined for publishing workunit %s", wuid.str());
 
-    SCMStringBuffer target;
+    StringAttr target;
     if (notEmpty(req.getCluster()))
         target.set(req.getCluster());
     else
-        cw->getClusterName(target);
+        target.set(cw->queryClusterName());
     if (!target.length())
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", wuid.str());
     if (!isValidCluster(target.str()))
@@ -2065,7 +2065,7 @@ public:
 
         destQuerySet.setown(getQueryRegistry(target, false));
         if (!destQuerySet) // getQueryRegistry should have created if not found
-            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Destination Queryset %s could not be created, or found", target.sget());
+            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Destination Queryset %s could not be created, or found", target.str());
 
         factory.setown(getWorkUnitFactory(context->querySecManager(), context->queryUser()));
     }

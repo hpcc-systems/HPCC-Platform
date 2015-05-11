@@ -120,6 +120,7 @@ bool canCreateTemporary(IHqlExpression * expr)
     case type_rule:
     case type_pattern:
     case type_token:
+    case type_event:
         return false;
     default:
         return true;

@@ -1505,7 +1505,7 @@ void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool 
             offset_t pos = node->getFPosAt(i);
             StringBuffer s;
             appendURL(&s, dst, length, true);
-            fprintf(out, "keyVal %d [%" I64F "d] = %s\n", i, pos, s.toCharArray());
+            fprintf(out, "keyVal %d [%" I64F "d] = %s\n", i, pos, s.str());
         }
     }
     if (!raw)

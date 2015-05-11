@@ -428,7 +428,7 @@ public:
         params->setProp("sourceFileName", finger);
         StringBuffer esdl2eclxslt (optHPCCCompFilesDir.get());
         esdl2eclxslt.append("/xslt/esdl2ecl.xslt");
-        esdl2eclxsltTransform(expstr.str(), esdl2eclxslt.toCharArray(), params, outfile.str());
+        esdl2eclxsltTransform(expstr.str(), esdl2eclxslt.str(), params, outfile.str());
     }
 
     void esdl2eclxsltTransform(const char* xml, const char* sheet, IProperties *params, const char *filename)

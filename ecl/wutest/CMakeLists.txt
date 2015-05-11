@@ -39,6 +39,10 @@ include_directories (
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
+if ( FORCE_WORKUNITS_TO_CASSANDRA )
+  ADD_DEFINITIONS( -DFORCE_WORKUNITS_TO_CASSANDRA )
+endif()
+
 
 HPCC_ADD_EXECUTABLE ( wutest ${SRCS} )
 target_link_libraries ( wutest 
@@ -49,8 +53,11 @@ target_link_libraries ( wutest
          dllserver 
          nbcd 
          eclrtl 
-         deftype 
+         deftype
          workunit 
     )
-
+    
+if ( FORCE_WORKUNITS_TO_CASSANDRA )
+  target_link_libraries ( wutest cassandraembed )
+endif ()
 

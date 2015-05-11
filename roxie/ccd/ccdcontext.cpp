@@ -2044,13 +2044,10 @@ protected:
     void executeThorGraph(const char *graphName)
     {
         assertex(workUnit);
-        SCMStringBuffer wuid;
-        workUnit->getWuid(wuid);
+        StringAttr wuid(workUnit->queryWuid());
+        StringAttr owner(workUnit->queryUser());
+        StringAttr cluster(workUnit->queryClusterName());
 
-        SCMStringBuffer cluster;
-        SCMStringBuffer owner;
-        workUnit->getClusterName(cluster);
-        workUnit->getUser(owner);
         int priority = workUnit->getPriorityValue();
         unsigned timelimit = workUnit->getDebugValueInt("thorConnectTimeout", defaultThorConnectTimeout);
         Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
@@ -2088,9 +2085,7 @@ protected:
                 CWorkunitResumeHandler(IConstWorkUnit &_wu) : wu(_wu)
                 {
                     xpath.append("/WorkUnits/");
-                    SCMStringBuffer istr;
-                    wu.getWuid(istr);
-                    wuid.set(istr.str());
+                    wuid.set(wu.queryWuid());
                     xpath.append(wuid.get()).append("/Action");
                     subId = 0;
                 }
@@ -2116,9 +2111,7 @@ protected:
                         wu.forceReload();
                         if (WUStatePaused != wu.getState() || wu.aborting())
                         {
-                            SCMStringBuffer str;
-                            wu.getStateDesc(str);
-                            PROGLOG("Aborting pause job %s, state : %s", wuid.get(), str.str());
+                            PROGLOG("Aborting pause job %s, state : %s", wuid.get(), wu.queryStateDesc());
                             ret = false;
                             break;
                         }
@@ -2613,8 +2606,7 @@ protected:
         {
             bool breakAtStart = workUnit->getDebugValueBool("BreakAtStart", true);
             wu->setState(WUStateDebugRunning);
-            SCMStringBuffer wuid;
-            initDebugMode(breakAtStart, workUnit->getWuid(wuid).str());
+            initDebugMode(breakAtStart, workUnit->queryWuid());
         }
         else
             wu->setState(WUStateRunning);
@@ -3613,14 +3605,12 @@ public:
     {
         if (workUnit)
         {
-            SCMStringBuffer out;
-            workUnit->getClusterName(out);
-            return out.s.detach();  // detach will return "" rather than NULL
+            return strdup(workUnit->queryClusterName());
         }
         else
         {
             // predeployed queries with no workunit should return the querySet name
-            return strdup(querySetName.sget()); // sget will return "" rather than NULL
+            return strdup(querySetName.str()); // StringAttr::str()  will return "" rather than NULL
         }
     }
     virtual char *getGroupName() { throwUnexpected(); }
@@ -3633,9 +3623,7 @@ public:
     {
         if (workUnit)
         {
-            SCMStringBuffer jobName;
-            workUnit->getJobName(jobName);
-            return strdup(jobName.str());
+            return strdup(workUnit->queryJobName());
         }
         return strdup(factory->queryQueryName());
     }
@@ -3648,9 +3636,7 @@ public:
     {
         if (workUnit)
         {
-            SCMStringBuffer wuid;
-            workUnit->getWuid(wuid);
-            return strdup(wuid.str());
+            return strdup(workUnit->queryWuid());
         }
         else
         {
@@ -3795,7 +3781,7 @@ public:
         StringBuffer responseHead, responseTail;
         responseHead.append("<").append(queryName).append("Response");
         responseHead.append(" sequence=\"").append(seqNo).append("\"");
-        responseHead.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.sget()).append("\">");
+        responseHead.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(queryName.length(), queryName.str()).append("\">");
         responseHead.append("<Results><Result>");
         unsigned len = responseHead.length();
         client->write(responseHead.detach(), len, true);

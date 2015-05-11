@@ -331,7 +331,7 @@ void CThorKeyArray::createSortedPartition(unsigned pn)
         sizes.setown(newsizes.getClear());
     }
     CThorExpandingRowArray newrows(activity, rowif);
-    newrows.ensure(pn);
+    newrows.resize(pn);
     for (i = 1; i<pn; i++)
     {
         unsigned p = i*n/pn;
@@ -512,7 +512,7 @@ void CThorKeyArray::split()
     // not that fast!
     unsigned n = ordinality();
     CThorExpandingRowArray newkeys(activity, rowif);
-    newkeys.ensure(n);
+    newkeys.resize(n);
     OwnedPtr<UnsignedArray> newSizes;
     OwnedPtr<Int64Array> newFilePos;
     if (sizes)

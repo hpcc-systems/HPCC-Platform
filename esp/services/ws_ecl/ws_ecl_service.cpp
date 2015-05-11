@@ -252,8 +252,16 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         if (!process.length())
             continue;
         const char *vip = NULL;
+        bool includeTargetInURL = true;
         if (vips)
-            vip = vips->queryProp(xpath.clear().appendf("ProcessCluster[@name='%s']/@vip", process.str()).str());
+        {
+            IPropertyTree *pc = vips->queryPropTree(xpath.clear().appendf("ProcessCluster[@name='%s']", process.str()));
+            if (pc)
+            {
+                vip = pc->queryProp("@vip");
+                includeTargetInURL = pc->getPropBool("@includeTargetInURL", true);
+            }
+        }
         StringBuffer list;
         bool loadBalanced = false;
         if (vip && *vip)
@@ -274,7 +282,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         }
         if (list.length())
         {
-            Owned<ISmartSocketFactory> sf = createSmartSocketFactory(list.str(), !loadBalanced);
+            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL);
             connMap.setValue(target.str(), sf.get());
         }
     }
@@ -1757,8 +1765,8 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 {
     IConstWorkUnit *sourceWorkUnit = wsinfo.ensureWorkUnit();
 
-    Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
-    Owned <IWorkUnit> workunit = factory->createWorkUnit("wsecl", context.queryUserId());
+    Owned <IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned <IWorkUnit> workunit = factory->createWorkUnit("wsecl", context.queryUserId(), context.querySecManager(), context.queryUser());
 
     IExtendedWUInterface *ext = queryExtendedWU(workunit);
     ext->copyWorkUnit(sourceWorkUnit, false);
@@ -1772,8 +1780,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     if (jobname && *jobname)
         workunit->setJobName(jobname);
 
-    SCMStringBuffer wuid;
-    workunit->getWuid(wuid);
+    StringAttr wuid(workunit->queryWuid());  // NB queryWuid() not valid after workunit,clear()
 
     SCMStringBuffer token;
     createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token);
@@ -1797,7 +1804,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
     bool async = context.queryRequestParameters()->hasProp("_async");
 
-    //don't wait indefinately, in case submitted to an inactive queue wait max + 5 mins
+    //don't wait indefinitely, in case submitted to an inactive queue wait max + 5 mins
     if (!async && waitForWorkUnitToComplete(wuid.str(), wsecl->workunitTimeout))
     {
         Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
@@ -1846,7 +1853,9 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
 
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
         StringBuffer url("http://");
-        ep.getIpText(url).append(':').append(ep.port).append('/').append(target);
+        ep.getIpText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
+        if (static_cast<RoxieSocketFactory*>(conn)->includeTargetInURL)
+            url.append(target);
         if (!trim)
             url.append("?.trim=0");
 

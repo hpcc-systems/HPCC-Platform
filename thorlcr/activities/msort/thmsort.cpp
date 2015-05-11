@@ -159,7 +159,7 @@ protected:
         Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryActivityId(),queryCodeContext());
         try
         {
-            imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.toCharArray(),auxrowif);
+            imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.str(),auxrowif);
             if (barrier->wait(false)) // local sort complete
             {
                 size32_t maxdeviance = getOptUInt(THOROPT_SORT_MAX_DEVIANCE, 10*1024*1024);

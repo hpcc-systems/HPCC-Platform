@@ -1401,7 +1401,7 @@ protected:
 
     // Handling failover to a) hashed local lookupjoin b) hash distributed standard join
     bool smart;
-    bool rhsCollated;
+    bool rhsCollated, rhsCompacted;
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
     UnsignedArray flushedRowMarkers;
@@ -1468,6 +1468,7 @@ protected:
             // This only needs to be done once, no rows will be added after collated
             clearedRows += clearNonLocalRows(rhs, 0);
             rhs.compact();
+            rhsCompacted = true;
         }
         else
         {
@@ -1565,7 +1566,7 @@ protected:
                     if (marker.init(rhsRows))
                     {
                         // NB: If this ensure returns false, it will have called the MM callbacks and have setup isLocalLookup() already
-                        success = rhs.ensure(rhsRows, SPILL_PRIORITY_LOW); // NB: Could OOM, handled by exception handler
+                        success = rhs.resize(rhsRows, SPILL_PRIORITY_LOW); // NB: Could OOM, handled by exception handler
                     }
                 }
                 catch (IException *e)
@@ -1619,6 +1620,12 @@ protected:
                     uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted);
                     rhsCollated = true;
                     ActPrintLog("Collated all RHS rows");
+
+                    if (stable && !rhsAlreadySorted)
+                    {
+                        ActPrintLog("Clearing rhs stable ptr table");
+                        rhs.setup(NULL, false, stableSort_none); // don't need stable ptr table anymore
+                    }
                 }
             }
             if (!isLocalLookup()) // check again after processing above
@@ -1710,7 +1717,12 @@ protected:
             Owned<IRowStream> rightStream;
             if (needGlobal)
             {
-                if (!rhsCollated) // NB: If spilt after rhsCollated, callback will have cleared and compacted, rows will still be sorted
+                if (rhsCollated)
+                {
+                    if (rhsCompacted) // compacted whilst spillable, couldn't reallocate row pointer at that stage, can now.
+                        rhs.resize(rhs.ordinality(), SPILL_PRIORITY_LOW);
+                }
+                else // NB: If spilt after rhsCollated, callback will have cleared and compacted, rows will still be sorted
                 {
                     /* NB: If cleared before rhsCollated, then need to clear non-locals that were added after spill
                      * There should not be many, as broadcast starts to stop as soon as a slave notifies it is spilling
@@ -1725,7 +1737,8 @@ protected:
                         CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
                         clearNonLocalRows(rows, flushedRowMarkers.item(a));
 
-                        rows.compact(); // JCS->GH - really we want to resize rhsNodeRows now to free up as much space as possible (see HPCC-12511)
+                        ActPrintLog("Compacting rhsNodeRows[%d], has %" RIPF "d rows", a, rows.numCommitted());
+                        rows.compact();
 
                         rowidx_t c = rows.numCommitted();
                         if (c > largestRowCount)
@@ -1934,7 +1947,7 @@ public:
     }
     CLookupJoinActivityBase(CGraphElementBase *_container) : PARENT(_container)
     {
-        rhsCollated = false;
+        rhsCollated = rhsCompacted = false;
         broadcast2MpTag = broadcast3MpTag = lhsDistributeTag = rhsDistributeTag = TAG_NULL;
         setLocalLookup(false);
         setStandardJoin(false);
@@ -2031,7 +2044,7 @@ public:
         {
             setLocalLookup(false);
             setStandardJoin(false);
-            rhsCollated = false;
+            rhsCollated = rhsCompacted = false;
             flushedRowMarkers.kill();
 
             if (needGlobal)
@@ -2203,7 +2216,10 @@ public:
     }
     void setup(CSlaveActivity *activity, rowidx_t size, IHash *_leftHash, IHash *_rightHash, ICompare *_compareLeftRight)
     {
-        size32_t sz = sizeof(const void *)*size;
+        unsigned __int64 _sz = sizeof(const void *) * ((unsigned __int64)size);
+        memsize_t sz = (memsize_t)_sz;
+        if (sz != _sz) // treat as OOM exception for handling purposes.
+            throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Unsigned overflow, trying to allocate hash table of size: %" I64F "d ", _sz);
         void *ht = activity->queryJob().queryRowManager()->allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
         memset(ht, 0, sz);
         htMemory.setown(ht);
@@ -2503,7 +2519,7 @@ protected:
                 return;
 
             rhsTableLen = getGlobalRHSTotal();
-            rhs.ensure(rhsTableLen);
+            rhs.resize(rhsTableLen);
             ForEachItemIn(a, rhsNodeRows)
             {
                 CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
@@ -2524,7 +2540,7 @@ protected:
                 rhsTotalCount = rightMeta.totalRowsMax;
                 if (rhsTotalCount > RIMAX)
                     throw MakeActivityException(this, 0, "Too many rows on RHS for ALL join: %" RCPF "d", rhsTotalCount);
-                rhs.ensure((rowidx_t)rhsTotalCount);
+                rhs.resize((rowidx_t)rhsTotalCount);
             }
             while (!abortSoon)
             {

@@ -923,7 +923,7 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
     const char *verstr = srvdef.queryProp("default_client_version");
     if (verstr && *verstr)
     {
-        if (atof(verstr) > atof(m_defaultSvcVersion.sget()))
+        if (atof(verstr) > atof(m_defaultSvcVersion.str()))
             m_defaultSvcVersion.set(verstr);
     }
 

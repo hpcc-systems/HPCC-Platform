@@ -61,7 +61,7 @@ inline bool isEmpty(const char *val){return (!val || !*val);}
 const char *getWuAccessType(IConstWorkUnit& cw, const char *user);
 
 SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, const char *owner, SecAccessFlags accessOwn, SecAccessFlags accessOthers);
-SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, IConstWorkUnit& cw, SecAccessFlags accessOwn, SecAccessFlags accessOthers);
+SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, IConstWorkUnitInfo& cw, SecAccessFlags accessOwn, SecAccessFlags accessOthers);
 SecAccessFlags getWsWorkunitAccess(IEspContext& cxt, IConstWorkUnit& cw);
 
 void getUserWuAccessFlags(IEspContext& context, SecAccessFlags& accessOwn, SecAccessFlags& accessOthers, bool except);
@@ -132,7 +132,7 @@ public:
       context(ctx), cw(cw_)
     {
         version = context.getClientVersion();
-        cw->getWuid(wuid);
+        wuid.set(cw->queryWuid());
     }
 
     WsWuInfo(IEspContext &ctx, const char *wuid_) :
@@ -204,7 +204,7 @@ public:
     Linked<IConstWorkUnit> cw;
     double version;
     SCMStringBuffer clusterName;
-    SCMStringBuffer wuid;
+    StringAttr wuid;
 };
 
 void getSashaNode(SocketEndpoint &ep);

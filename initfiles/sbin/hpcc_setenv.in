@@ -23,30 +23,49 @@
 ###<REPLACE>###
 
 function kill_process () {
-    SENTINEL=$1
-    PID=$2
-    TIMEOUT=$3
-    if [ -e $SENTINEL ]; then
-        rm -f $SENTINEL
+    local PID=$1
+    local PROCESS=$2
+    local TIMEOUT=$3
+    if [[ $# -eq 4 ]]; then
+      SENTINEL=$4
+      [[ -e $SENTINEL ]] && rm -f $SENTINEL
     fi
-    if [ -e $PID ]; then
-        pidwait_fn $PID $TIMEOUT
+    if [[ -e $PID ]]; then
+        pidwait_fn $PID $PROCESS $TIMEOUT
+        local RC_PIDWAIT=$?
+        return $RC_PIDWAIT
     fi
 }
 
 function pidwait_fn () {
-    PID=$1
-    WATCH_PID=`cat $PID`
-    TIMEOUT=$(($2*1000))
-    kill $WATCH_PID
-    while [ -d /proc/$WATCH_PID -a $TIMEOUT -gt 0 ]; do
-            sleep 0.2
-            TIMEOUT=$(($TIMEOUT-200))
-    done
-    if [ $TIMEOUT -le 0 ]; then
-            kill -9 $WATCH_PID
+    local PID=$1
+    local WATCH_PID=$( cat $PID )
+    local PROCESS=$2
+    local TIMEOUT=$(($3*1000))
+
+    if ps -p $WATCH_PID -o command= | grep -v "${PROCESS}" &>/dev/null ; then
+      return 0
     fi
-    rm -f $PID
+
+    kill $WATCH_PID > /dev/null 2>&1
+    while [[ -d /proc/$WATCH_PID ]] && [[ $TIMEOUT -gt 0 ]]; do
+      sleep 0.2
+      local TIMEOUT=$(($TIMEOUT-200))
+    done
+
+    if [[ $TIMEOUT -le 0 ]] && ps -p $WATCH_PID -o command= | grep "${PROCESS}" &>/dev/null ; then
+      echo "Failed to kill ${PROCESS} gracefully, sending SIGKILL"
+      kill -9 $WATCH_PID &>/dev/null
+      sleep 1
+      kill -0 $WATCH_PID &>/dev/null
+      # if still alive
+      if [[ $? -eq 0 ]]; then
+        return 1
+      fi
+    fi
+
+    rm -f $PID > /dev/null 2>&1
+    return 0
 }
 
 platform='unknown'

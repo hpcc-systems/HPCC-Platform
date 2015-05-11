@@ -509,7 +509,7 @@ int main( int argc, char *argv[]  )
             logHandler = lf->beginLogging();
             createUNCFilename(lf->queryLogFileSpec(), logUrl, false);
         }
-        LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.toCharArray());
+        LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.str());
         LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
         globals->setProp("@logURL", logUrl.str());
 
@@ -769,7 +769,7 @@ int main( int argc, char *argv[]  )
 
         Owned<CRegistryServer> registry = new CRegistryServer();
         StringBuffer thorEpStr;
-        LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).toCharArray());
+        LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
         LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
         serverStatus.queryProperties()->setProp("@thorname", thorname);

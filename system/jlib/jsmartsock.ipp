@@ -115,10 +115,5 @@ private:
     StringAttr msg;
 };
 
-ISmartSocketException *createSmartSocketException(int errorCode, const char *msg)
-{
-    return new SmartSocketException(errorCode, msg);
-}
-
 #endif
 

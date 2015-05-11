@@ -92,7 +92,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 {
     StringBuffer slfStr;
     StringBuffer masterStr;
-    LOG(MCdebugProgress, thorJob, "registering %s - master %s",slfEp.getUrlStr(slfStr).toCharArray(),masterEp.getUrlStr(masterStr).toCharArray());
+    LOG(MCdebugProgress, thorJob, "registering %s - master %s",slfEp.getUrlStr(slfStr).str(),masterEp.getUrlStr(masterStr).str());
     try
     {
         SocketEndpoint ep = masterEp;
@@ -158,7 +158,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         else
             PROGLOG("verified mp connection to rest of cluster");
         ::masterNode = LINK(masterNode);
-        LOG(MCdebugProgress, thorJob, "registered %s",slfStr.toCharArray());
+        LOG(MCdebugProgress, thorJob, "registered %s",slfStr.str());
     }
     catch (IException *e)
     {
@@ -173,7 +173,7 @@ void UnregisterSelf(IException *e)
 {
     StringBuffer slfStr;
     slfEp.getUrlStr(slfStr);
-    LOG(MCdebugProgress, thorJob, "Unregistering slave : %s", slfStr.toCharArray());
+    LOG(MCdebugProgress, thorJob, "Unregistering slave : %s", slfStr.str());
     try
     {
         CMessageBuffer msg;
@@ -181,10 +181,10 @@ void UnregisterSelf(IException *e)
         serializeException(e, msg); // NB: allows exception to be NULL
         if (!queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION, 60*1000))
         {
-            LOG(MCerror, thorJob, "Failed to unregister slave : %s", slfStr.toCharArray());
+            LOG(MCerror, thorJob, "Failed to unregister slave : %s", slfStr.str());
             return;
         }
-        LOG(MCdebugProgress, thorJob, "Unregistered slave : %s", slfStr.toCharArray());
+        LOG(MCdebugProgress, thorJob, "Unregistered slave : %s", slfStr.str());
     }
     catch (IException *e) {
         FLLOG(MCexception(e), thorJob, e,"slave unregistration error");
@@ -229,7 +229,7 @@ void startSlaveLog()
     StringBuffer url;
     createUNCFilename(lf->queryLogFileSpec(), url);
 
-    LOG(MCdebugProgress, thorJob, "Opened log file %s", url.toCharArray());
+    LOG(MCdebugProgress, thorJob, "Opened log file %s", url.str());
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
     globals->setProp("@logURL", url.str());
 }
@@ -366,7 +366,7 @@ int main( int argc, char *argv[]  )
 
             LOG(MCdebugProgress, thorJob, "ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
             StringBuffer url;
-            LOG(MCdebugProgress, thorJob, "Slave %s - temporary dir set to : %s", slfEp.getUrlStr(url).toCharArray(), queryTempDir());
+            LOG(MCdebugProgress, thorJob, "Slave %s - temporary dir set to : %s", slfEp.getUrlStr(url).str(), queryTempDir());
 #ifdef _WIN32
             ULARGE_INTEGER userfree;
             ULARGE_INTEGER total;

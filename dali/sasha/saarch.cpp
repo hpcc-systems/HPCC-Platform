@@ -779,7 +779,7 @@ class CWorkUnitArchiver: public CBranchArchiver
                     e.setPropBool("@archiveError", false);
 #ifdef _DEBUG
                 if (iserr)
-                    PROGLOG("ARCHIVE: Err(%s) date %s",wuid.sget(),dts.str()); 
+                    PROGLOG("ARCHIVE: Err(%s) date %s",wuid.str(),dts.str());
 #endif
             }
             getWorkUnitCreateTime(wuid,time);
@@ -802,7 +802,7 @@ class CWorkUnitArchiver: public CBranchArchiver
                 time.getDateString(s1);
                 StringBuffer s2;
                 ct.getDateString(s2);
-                PROGLOG("ARCHIVE: %s recent date %s %s",wuid.sget(),s1.str(),s2.str());
+                PROGLOG("ARCHIVE: %s recent date %s %s",wuid.str(),s1.str(),s2.str());
             }
 #endif
         }

@@ -88,7 +88,7 @@ protected:
     void generateParamCpp(IHqlExpression * expr, IHqlExpression * attrs);
     void generateSimpleAssign(IHqlExpression * target, IHqlExpression * source);
     void generateStmt(IHqlStmt * stmt);
-    void generateStmtAssign(IHqlStmt * assign);
+    void generateStmtAssign(IHqlStmt * assign, bool link);
     void generateStmtAssignModify(IHqlStmt * assign);
     void generateStmtCase(IHqlStmt * stmt);
     void generateStmtDeclare(IHqlStmt * declare);

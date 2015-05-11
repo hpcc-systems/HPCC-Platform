@@ -393,7 +393,7 @@ public:
                 //MORE: For the moment disable any expressions that are only used conditionally.
                 //Often including conditions improves the code, but sometimes the duplicate evaluation of the
                 //guard conditions in the parent and the child causes excessive code generation.
-                //And forcing it into an alias doesn't help becuase that isn't currently executed in the parent.
+                //And forcing it into an alias doesn't help because that isn't currently executed in the parent.
                 //Uncomment: if (moveTo->guards->guardContainsCandidate(expr))
                 {
                     invalid = true;
@@ -704,8 +704,7 @@ protected:
 
                 if (worthHoisting)
                 {
-                    //MORE: Remove || true to evaluate the subquery at the latest time.
-                    bool createSubQueryBeforeAll = forceRoot || true;
+                    bool createSubQueryBeforeAll = forceRoot;
                     spotter.transformAll(pending, createSubQueryBeforeAll);
                     translator.traceExpressions("spotted child", pending);
                 }
@@ -1835,7 +1834,7 @@ void ActivityInstance::addAttribute(const char * name, IHqlExpression * expr)
 
 void ActivityInstance::addLocationAttribute(IHqlExpression * location)
 {
-    if (!translator.queryOptions().reportLocations)
+    if (!translator.queryOptions().reportLocations || translator.queryOptions().obfuscateOutput)
         return;
 
     unsigned line = location->getStartLine();
@@ -1858,6 +1857,9 @@ void ActivityInstance::addLocationAttribute(IHqlExpression * location)
 
 void ActivityInstance::addNameAttribute(IHqlExpression * symbol)
 {
+    if (translator.queryOptions().obfuscateOutput)
+        return;
+
     //Not so sure about adding a location for a named symbol if there are other locations already present....
     //We should probably perform some deduping instead.
     addLocationAttribute(symbol);
@@ -1934,9 +1936,12 @@ void ActivityInstance::processHint(IHqlExpression * attr)
 
 void ActivityInstance::processSection(IHqlExpression * section)
 {
-    StringBuffer sectionName;
-    getStringValue(sectionName, section->queryChild(0));
-    addAttribute("section", sectionName);
+    if (!translator.queryOptions().obfuscateOutput)
+    {
+        StringBuffer sectionName;
+        getStringValue(sectionName, section->queryChild(0));
+        addAttribute("section", sectionName);
+    }
 }
 
 void ActivityInstance::processHints(IHqlExpression * hintAttr)
@@ -1974,18 +1979,24 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     IPropertyTree * parentGraphNode = subgraph ? subgraph->tree.get() : defaultSubGraph;
     if (!parentGraphNode)
         return;
+
+    HqlCppOptions const & options = translator.queryOptions();
     assertex(kind < TAKlast);
     graphNode.set(parentGraphNode->addPropTree("node", createPTree()));
 
     graphNode->setPropInt64("@id", activityId);
-    StringBuffer label;
-    if (isGrouped)
-        label.append("Grouped ");
-    else if (isLocal)
-        label.append("Local ");
-    label.append(getActivityText(kind));
 
-    graphNode->setProp("@label", graphLabel ? graphLabel.get() : label.str());
+    if (!options.obfuscateOutput)
+    {
+        StringBuffer label;
+        if (isGrouped)
+            label.append("Grouped ");
+        else if (isLocal)
+            label.append("Local ");
+        label.append(getActivityText(kind));
+
+        graphNode->setProp("@label", graphLabel ? graphLabel.get() : label.str());
+    }
 
     IHqlExpression * cur = dataset;
     loop
@@ -2027,82 +2038,88 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (isNoAccess)
         addAttributeBool("noAccess", true);
 
-    if (graphEclText.length() == 0)
-        toECL(dataset->queryBody(), graphEclText, false, true);
-
-    elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
-    if (strcmp(graphEclText.str(), "<>") != 0)
-        addAttribute("ecl", graphEclText.str());
-
-    if (translator.queryOptions().showSeqInGraph)
+    if (!options.obfuscateOutput)
     {
-        IHqlExpression * selSeq = querySelSeq(dataset);
-        if (selSeq)
-            addAttributeInt("selSeq", selSeq->querySequenceExtra());
-    }
+        if (graphEclText.length() == 0)
+            toECL(dataset->queryBody(), graphEclText, false, true);
 
-
-    if (translator.queryOptions().showMetaInGraph)
-    {
-        StringBuffer s;
-        if (translator.targetThor())
+        elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
+        if (options.showEclInGraph)
         {
-            IHqlExpression * distribution = queryDistribution(dataset);
-            if (distribution && distribution->queryName() != localAtom)
-                addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
+            if (strcmp(graphEclText.str(), "<>") != 0)
+                addAttribute("ecl", graphEclText.str());
         }
 
-        IHqlExpression * grouping = queryGrouping(dataset);
-        if (grouping)
-            addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
-
-        if (translator.targetThor())
+        if (options.showSeqInGraph)
         {
-            IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
-            if (globalSortOrder)
-                addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
+            IHqlExpression * selSeq = querySelSeq(dataset);
+            if (selSeq)
+                addAttributeInt("selSeq", selSeq->querySequenceExtra());
         }
 
-        IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
-        if (localSortOrder)
-            addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
 
-        IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
-        if (groupSortOrder)
-            addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
-    }
-
-    if (translator.queryOptions().noteRecordSizeInGraph)
-    {
-        IHqlExpression * record = dataset->queryRecord();
-        if (!record && (getNumChildTables(dataset) == 1))
-            record = dataset->queryChild(0)->queryRecord();
-        if (record)
+        if (options.showMetaInGraph)
         {
-            size32_t maxSize = getMaxRecordSize(record, translator.getDefaultMaxRecordSize());
-            if (isVariableSizeRecord(record))
+            StringBuffer s;
+            if (translator.targetThor())
             {
-                size32_t minSize = getMinRecordSize(record);
-                size32_t expectedSize = getExpectedRecordSize(record);
-                StringBuffer temp;
-                temp.append(minSize).append("..");
-                if (maxRecordSizeUsesDefault(record))
-                    temp.append("?");
-                else
-                    temp.append(maxSize);
-                temp.append("(").append(expectedSize).append(")");
-                addAttribute("recordSize", temp.str());
+                IHqlExpression * distribution = queryDistribution(dataset);
+                if (distribution && distribution->queryName() != localAtom)
+                    addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
             }
-            else
-                addAttributeInt("recordSize", maxSize);
-        }
-    }
 
-    if (translator.queryOptions().showRecordCountInGraph && !dataset->isAction())
-    {
-        StringBuffer text;
-        getRecordCountText(text, dataset);
-        addAttribute("predictedCount", text);
+            IHqlExpression * grouping = queryGrouping(dataset);
+            if (grouping)
+                addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
+
+            if (translator.targetThor())
+            {
+                IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
+                if (globalSortOrder)
+                    addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
+            }
+
+            IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
+            if (localSortOrder)
+                addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
+
+            IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
+            if (groupSortOrder)
+                addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
+        }
+
+        if (options.noteRecordSizeInGraph)
+        {
+            IHqlExpression * record = dataset->queryRecord();
+            if (!record && (getNumChildTables(dataset) == 1))
+                record = dataset->queryChild(0)->queryRecord();
+            if (record)
+            {
+                size32_t maxSize = getMaxRecordSize(record, translator.getDefaultMaxRecordSize());
+                if (isVariableSizeRecord(record))
+                {
+                    size32_t minSize = getMinRecordSize(record);
+                    size32_t expectedSize = getExpectedRecordSize(record);
+                    StringBuffer temp;
+                    temp.append(minSize).append("..");
+                    if (maxRecordSizeUsesDefault(record))
+                        temp.append("?");
+                    else
+                        temp.append(maxSize);
+                    temp.append("(").append(expectedSize).append(")");
+                    addAttribute("recordSize", temp.str());
+                }
+                else
+                    addAttributeInt("recordSize", maxSize);
+            }
+        }
+
+        if (options.showRecordCountInGraph && !dataset->isAction())
+        {
+            StringBuffer text;
+            getRecordCountText(text, dataset);
+            addAttribute("predictedCount", text);
+        }
     }
 
     processAnnotations(dataset);
@@ -2248,7 +2265,7 @@ void ActivityInstance::buildSuffix()
             if ((options.complexClassesActivityFilter == 0) || (kind == options.complexClassesActivityFilter))
                 translator.WARNING2(CategoryEfficiency, HQLWRN_ComplexHelperClass, activityId, approxSize);
         }
-        if (options.showActivitySizeInGraph)
+        if (!options.obfuscateOutput && options.showActivitySizeInGraph)
             addAttributeInt("approxClassSize", approxSize);
     }
 
@@ -5620,9 +5637,7 @@ bool HqlCppTranslator::prepareToGenerate(HqlQueryContext & query, WorkflowArray 
 
         if (!isEmbeddedLibrary)
         {
-            SCMStringBuffer libraryName;
-            wu()->getJobName(libraryName);
-            wu()->setLibraryInformation(libraryName.str(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
+            wu()->setLibraryInformation(wu()->queryJobName(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
         }
     }
     else
@@ -5786,6 +5801,12 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
     {
         wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,BUILD_TAG,LANGUAGE_VERSION);
         cacheOptions();
+
+        if (options.obfuscateOutput)
+        {
+            Owned<IWUQuery> query = wu()->updateQuery();
+            query->setQueryText(NULL);
+        }
 
         useLibrary(ECLRTL_LIB);
         useInclude("eclrtl.hpp");
@@ -6760,10 +6781,12 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 }
         }
     }
+    catch (IError * e)
+    {
+        throw;
+    }
     catch (IException * e)
     {
-        if (dynamic_cast<IError *>(e))
-            throw;
         IHqlExpression * location = queryActiveActivityLocation();
         if (location)
         {
@@ -7686,7 +7709,7 @@ static bool isFilePersist(IHqlExpression * expr)
             expr = expr->queryChild(1);
             break;
         case no_output:
-            return (queryRealChild(expr, 1) != NULL);
+            return isFileOutput(expr);
         case no_actionlist:
         case no_orderedactionlist:
             expr = expr->queryChild(expr->numChildren()-1);
@@ -7999,7 +8022,11 @@ void HqlCppTranslator::doBuildExprRowDiff(BuildCtx & ctx, const CHqlBoundTarget 
             case type_dictionary:
             case type_table:
             case type_groupedtable:
-                UNIMPLEMENTED;
+                {
+                    StringBuffer typeName;
+                    getFriendlyTypeStr(leftType, typeName);
+                    throwError2(HQLERR_UnsupportedRowDiffType, typeName.str(), expr->queryId()->str());
+                }
             }
 
             StringBuffer fullName;
@@ -10544,7 +10571,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         if (expr->hasAttribute(resultAtom))
             result->setResultRowLimit(-1);
 
-        buildFormatCrcFunction(instance->classctx, "getFormatCrc", dataset, NULL, 0);
+        //Remove virtual attributes from the record, so the crc will be compatible with the disk read record
+        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(dataset->queryRecord());
+        buildFormatCrcFunction(instance->classctx, "getFormatCrc", noVirtualRecord, NULL, 0);
 
         bool grouped = isGrouped(dataset);
         bool ignoreGrouped = !expr->hasAttribute(groupedAtom);
@@ -10736,9 +10765,6 @@ IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenc
     MetaInstance meta(*this, serialRecord, false);
     buildMetaInfo(meta);
     result->setResultRecordSizeEntry(meta.metaFactoryName);
-
-    if (targetRoxie() && (sequence >= 0) && !isFile)
-        result->setResultFormat(ResultFormatXml);
 
     if (createTransformer)
     {
@@ -11841,8 +11867,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
 
 
     bool slidingAllowed = options.slidingJoins && canBeSlidingJoin(expr);
-    JoinSortInfo joinInfo;
-    joinInfo.findJoinSortOrders(expr, slidingAllowed);
+    JoinSortInfo joinInfo(expr);
+    joinInfo.findJoinSortOrders(slidingAllowed);
 
     if (atmostAttr && joinInfo.hasHardRightNonEquality())
     {
@@ -12091,7 +12117,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
     if (isSmartJoin || expr->hasAttribute(unstableAtom))
         flags.append("|JFunstable");
-    if (joinInfo.neverMatchSelf(dataset1, dataset2, selSeq))
+    if (joinInfo.neverMatchSelf())
         flags.append("|JFnevermatchself");
 
     if (flags.length())

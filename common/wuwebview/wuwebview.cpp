@@ -76,10 +76,9 @@ public:
 
     void appendSingleResult(IConstWorkUnit *wu, const char *resultname, const char *username, const char *pw)
     {
-        SCMStringBuffer wuid;
         StringBufferAdaptor resultXML(buffer);
         Owned<IResultSetFactory> factory = getResultSetFactory(username, pw);
-        Owned<INewResultSet> nr = factory->createNewResultSet(wu->getWuid(wuid).str(), 0, resultname);
+        Owned<INewResultSet> nr = factory->createNewResultSet(wu->queryWuid(), 0, resultname);
         getResultXml(resultXML, nr.get(), resultname, 0, 0, NULL);
     }
 
@@ -226,7 +225,7 @@ public:
             if (flags & WWV_ADD_RESULTS_TAG)
                 buffer.append("</Results>");
             if (flags & WWV_ADD_RESPONSE_TAG)
-                buffer.appendf("</%sResponse>", name.sget());
+                buffer.appendf("</%sResponse>", name.str());
             if (flags & WWV_ADD_SOAP)
                 buffer.append("</soap:Body></soap:Envelope>");
             finalized=true;
@@ -323,7 +322,7 @@ public:
 
 protected:
     SCMStringBuffer dllname;
-    SCMStringBuffer name;
+    StringBuffer name;
     StringBuffer manifestDir;
     Owned<IConstWorkUnit> cw;
     Owned<ILoadedDllEntry> dll;
@@ -477,14 +476,13 @@ unsigned WuWebView::getResourceURLCount()
 
 void WuWebView::getResourceURLs(StringArray &urls, const char *prefix)
 {
-    SCMStringBuffer wuid;
-    cw->getWuid(wuid);
+    const char *wuid = cw->queryWuid();
     StringBuffer url(prefix);
     url.append("manifest/");
     if (target.length() && name.length())
         url.appendf("query/%s/%s", target.get(), name.str());
     else
-        url.append(wuid.str());
+        url.append(wuid);
     urls.append(url);
 
     Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Resource");
@@ -495,7 +493,7 @@ void WuWebView::getResourceURLs(StringArray &urls, const char *prefix)
         if (target.length() && name.length())
             url.appendf("query/%s/%s", target.get(), name.str());
         else
-            url.append(wuid.str());
+            url.append(wuid);
         if (res.hasProp("@ResourcePath"))
             urls.append(url.append(res.queryProp("@ResourcePath")));
         else if (res.hasProp("@filename"))
@@ -714,8 +712,7 @@ void WuWebView::createWuidResponse(StringBuffer &out, unsigned flags)
     flags |= WWV_OMIT_RESULT_TAG;
 
     WuExpandedResultBuffer expander(name.str(), flags);
-    SCMStringBuffer wuid;
-    appendXMLTag(expander.buffer, "Wuid", cw->getWuid(wuid).str());
+    appendXMLTag(expander.buffer, "Wuid", cw->queryWuid());
     expander.finalize();
     out.append(expander.buffer);
 }
@@ -759,6 +756,12 @@ ILoadedDllEntry *WuWebView::loadDll(bool force)
         {
             dll.setown(queryDllServer().loadDll(dllname.str(), DllLocationAnywhere));
         }
+        catch (IException *e)
+        {
+            VStringBuffer msg("Failed to load %s", dllname.str());
+            EXCLOG(e, msg.str());
+            e->Release();
+        }
         catch(...)
         {
             DBGLOG("Failed to load %s", dllname.str());
@@ -772,8 +775,8 @@ void WuWebView::setWorkunit(IConstWorkUnit &_cw)
     cw.set(&_cw);
     if (!name.length())
     {
-        cw->getJobName(name);
-        name.s.replace(' ','_');
+        name.set(cw->queryJobName());
+        name.replace(' ','_');
     }
     Owned<IConstWUQuery> q = cw->getQuery();
     if (q)
@@ -896,10 +899,15 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char 
     {
         return new WuWebView(wu, target, queryname, dir, mapEspDirectories);
     }
+    catch (IException *e)
+    {
+        VStringBuffer msg("ERROR loading workunit %s shared object.", wu.queryWuid());
+        EXCLOG(e, msg.str());
+        e->Release();
+    }
     catch (...)
     {
-        SCMStringBuffer wuid;
-        DBGLOG("ERROR loading workunit %s shared object.", wu.getWuid(wuid).str());
+        DBGLOG("ERROR loading workunit %s shared object.", wu.queryWuid());
     }
     return NULL;
 }
@@ -909,6 +917,12 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *t
     try
     {
         return new WuWebView(wuid, target, queryname, dir, mapEspDirectories);
+    }
+    catch (IException *e)
+    {
+        VStringBuffer msg("ERROR loading workunit %s shared object.", wuid);
+        EXCLOG(e, msg.str());
+        e->Release();
     }
     catch (...)
     {

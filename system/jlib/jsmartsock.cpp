@@ -19,6 +19,11 @@
 #include "jsmartsock.ipp"
 #include "jdebug.hpp"
 
+ISmartSocketException *createSmartSocketException(int errorCode, const char *msg)
+{
+    return new SmartSocketException(errorCode, msg);
+}
+
 class SmartSocketListParser
 {
 public:

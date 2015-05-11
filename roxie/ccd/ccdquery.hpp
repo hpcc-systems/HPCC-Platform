@@ -107,6 +107,7 @@ public:
     int concatPreload;
     int fetchPreload;
     int prefetchProjectPreload;
+    int bindCores;
 
     bool checkingHeap;
     bool disableLocalOptimizations;

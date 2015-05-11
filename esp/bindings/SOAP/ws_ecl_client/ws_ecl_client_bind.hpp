@@ -546,7 +546,7 @@ public:
         else
         {
             StringBuffer nsuri("urn:hpccsystems:ws:");
-            nsuri.appendLower(m_method.length(), m_method.sget());          
+            nsuri.appendLower(m_method.length(), m_method.str());
             rpc_request.set_nsuri(nsuri.str());
         }
         

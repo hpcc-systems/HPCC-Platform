@@ -30,7 +30,7 @@ rm -f ${SENTINEL}
 SNMPID=$$
 
 killed() {
-    kill_process ${SENTINEL} ${PID_NAME} 15
+    kill_process ${PID_NAME} esp 15 ${SENTINEL}
     exit 255
 }
 

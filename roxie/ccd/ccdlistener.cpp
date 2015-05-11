@@ -727,6 +727,26 @@ public:
         maxThreadsActive = 0;
     }
 
+    static void updateAffinity()
+    {
+#ifdef CPU_ZERO
+        if (sched_getaffinity(0, sizeof(cpu_set_t), &cpuMask))
+        {
+            if (traceLevel)
+                DBGLOG("Unable to get CPU affinity - thread affinity settings will be ignored");
+            cpuCores = 0;
+            lastCore = 0;
+            CPU_ZERO(&cpuMask);
+        }
+        else
+        {
+            cpuCores = CPU_COUNT(&cpuMask);
+            if (traceLevel)
+                traceAffinity(&cpuMask);
+        }
+#endif
+    }
+
     virtual void start()
     {
         // Note we allow a few additional threads than requested - these are the threads that return "Too many active queries" responses
@@ -814,6 +834,47 @@ public:
         info.append("</ACCESSINFO>\n");
     }
 
+    void setThreadAffinity(int numCores)
+    {
+#ifdef CPU_ZERO
+        // Note - strictly speaking not threadsafe but any race conditions are (a) unlikely and (b) harmless
+        if (cpuCores)
+        {
+            if (numCores > 0 && numCores < cpuCores)
+            {
+                cpu_set_t threadMask;
+                CPU_ZERO(&threadMask);
+                unsigned cores = 0;
+                unsigned offset = lastCore;
+                unsigned core;
+                for (core = 0; core < CPU_SETSIZE; core++)
+                {
+                    unsigned useCore = (core + offset) % CPU_SETSIZE;
+                    if (CPU_ISSET(useCore, &cpuMask))
+                    {
+                        CPU_SET(useCore, &threadMask);
+                        cores++;
+                        if (cores == numCores)
+                        {
+                            lastCore = useCore+1;
+                            break;
+                        }
+                    }
+                }
+                if (traceLevel > 3)
+                    traceAffinity(&threadMask);
+                pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &threadMask);
+            }
+            else
+            {
+                if (traceLevel > 3)
+                    traceAffinity(&cpuMask);
+                pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuMask);
+            }
+        }
+#endif
+    }
+
 protected:
     unsigned poolSize;
     bool running;
@@ -826,9 +887,55 @@ protected:
     CriticalSection activeCrit;
     friend class ActiveQueryLimiter;
 
+#ifdef CPU_ZERO
+    static cpu_set_t cpuMask;
+    static unsigned cpuCores;
+    static unsigned lastCore;
+
 private:
+    static void traceAffinity(cpu_set_t *mask)
+    {
+        StringBuffer trace;
+        for (unsigned core = 0; core < CPU_SETSIZE; core++)
+        {
+            if (CPU_ISSET(core, mask))
+                trace.appendf(",%d", core);
+        }
+        if (trace.length())
+            DBGLOG("Process affinity is set to use core(s) %s", trace.str()+1);
+    }
+#endif
+
     CIArrayOf<AccessTableEntry> accessTable;
 };
+
+#ifdef CPU_ZERO
+cpu_set_t RoxieListener::cpuMask;
+unsigned RoxieListener::cpuCores;
+unsigned RoxieListener::lastCore;
+#endif
+
+extern void updateAffinity(unsigned __int64 affinity)
+{
+    if (affinity)  // 0 means use the value already set for this process
+    {
+#ifndef CPU_ZERO
+        throw makeStringException(ROXIE_INTERNAL_ERROR, "Setting Roxie affinity is not supported on this operating system");
+#else
+        cpu_set_t cpus;
+        CPU_ZERO(&cpus);
+        for (unsigned core = 0; core < CPU_SETSIZE; core++)
+        {
+            if (affinity & 1)
+                CPU_SET(core, &cpus);
+            affinity >>= 1;
+        }
+        if (sched_setaffinity(0, sizeof(cpu_set_t), &cpus))
+            throw makeStringException(errno, "Failed to set affinity");
+#endif
+    }
+    RoxieListener::updateAffinity();
+}
 
 class RoxieWorkUnitListener : public RoxieListener
 {
@@ -1191,6 +1298,9 @@ public:
                         logctx.logOperatorException(e, __FILE__, __LINE__, NULL);
                     throw e;
                 }
+                int bindCores = wu->getDebugValueInt("bindCores", coresPerQuery);
+                if (bindCores > 0)
+                    pool->setThreadAffinity(bindCores);
             }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
@@ -1372,15 +1482,15 @@ private:
                     if (reqName.endsWith(requestArrayString))
                     {
                         isRequestArray = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestArrayString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestArrayString.length());
                     }
                     else if (reqName.endsWith(requestString))
                     {
                         isRequest = true;
-                        queryName.set(reqName.toCharArray(), reqName.length() - requestString.length());
+                        queryName.set(reqName.str(), reqName.length() - requestString.length());
                     }
                     else
-                        queryName.set(reqName.toCharArray());
+                        queryName.set(reqName.str());
 
                     queryXML->renameProp("/", queryName.get());  // reset the name of the tree
                 }
@@ -1652,12 +1762,19 @@ readAnother:
                     else
                     {
                         StringBuffer querySetName;
-                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
                         if (isHTTP)
+                        {
                             client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
+                            querySetName.set(httpHelper.queryTarget());
+                        }
+                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
                         if (queryFactory)
                         {
                             queryFactory->checkSuspended();
+                            int bindCores = queryFactory->queryOptions().bindCores;
+                            bindCores = queryXml->getPropInt("@bindCores", bindCores);
+                            if (bindCores > 0)
+                                pool->setThreadAffinity(bindCores);
                             bool stripWhitespace = queryFactory->queryOptions().stripWhitespaceFromStoredDataset;
                             stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
                             PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
@@ -1771,7 +1888,13 @@ readAnother:
                         {
                             pool->reportBadQuery(queryName.get(), logctx);
                             if (globalPackageSetManager->getActivePackageCount())
-                                throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryName.get());
+                            {
+                                StringBuffer targetMsg;
+                                const char *target = httpHelper.queryTarget();
+                                if (target && *target)
+                                    targetMsg.append(", in target ").append(target);
+                                throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s%s", queryName.get(), targetMsg.str());
+                            }
                             else
                                 throw MakeStringException(ROXIE_NO_PACKAGES_ACTIVE, "Unknown query %s (no packages active)", queryName.get());
                         }

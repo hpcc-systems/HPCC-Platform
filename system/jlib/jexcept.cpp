@@ -480,7 +480,7 @@ IMultiException *makeMultiException(const char* source/*=NULL*/)
 void pexception(const char *msg,IException *e)
 { // like perror except for exceptions
     StringBuffer s;
-    fprintf(stderr,"%s : %s\n",msg,e?e->errorMessage(s).toCharArray():"NULL Exception!");
+    fprintf(stderr,"%s : %s\n",msg,e?e->errorMessage(s).str():"NULL Exception!");
 }
 
 void userBreakpoint()
@@ -537,7 +537,7 @@ void raiseAssertException(const char *assertion, const char *file, unsigned line
 #endif
 #endif
 
-    throw makeStringException(3000, s.toCharArray()); // 3000: internal error
+    throw makeStringException(3000, s.str()); // 3000: internal error
 }
 
 void raiseAssertCore(const char *assertion, const char *file, unsigned line)

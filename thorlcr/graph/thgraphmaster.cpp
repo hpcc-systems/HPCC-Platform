@@ -802,10 +802,8 @@ class CThorCodeContextMaster : public CThorCodeContextBase
 
     virtual IWorkUnit *updateWorkUnit() const
     {
-        StringAttr wuid;
-        workunit->getWuid(StringAttrAdaptor(wuid));
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        return factory->updateWorkUnit(wuid);
+        return factory->updateWorkUnit(workunit->queryWuid());
     }
     IWUResult *updateResult(const char *name, unsigned sequence)
     {
@@ -1202,15 +1200,11 @@ public:
     }
     virtual char *getJobName()
     {
-        SCMStringBuffer out;
-        workunit->getJobName(out);
-        return out.s.detach();
+        return strdup(workunit->queryJobName());
     }
     virtual char *getClusterName()
     {
-        SCMStringBuffer out;
-        workunit->getClusterName(out);
-        return out.s.detach();
+        return strdup(workunit->queryClusterName());
     }
     virtual char *getGroupName()
     {
@@ -1257,13 +1251,11 @@ void loadPlugin(SafePluginMap *pluginMap, const char *_path, const char *name)
 CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const char *_querySo, bool _sendSo, const SocketEndpoint &_agentEp)
     : CJobBase(graphName), workunit(&_workunit), sendSo(_sendSo), agentEp(_agentEp)
 {
-    SCMStringBuffer _token, _wuid, _user, _scope;
-    workunit->getWuid(_wuid);
-    workunit->getUser(_user);
+    SCMStringBuffer _token, _scope;
     workunit->getScope(_scope);
     workunit->getSecurityToken(_token);
-    wuid.append(_wuid.str());
-    user.append(_user.str());
+    wuid.set(workunit->queryWuid());
+    user.set(workunit->queryUser());
     token.append(_token.str());
     scope.append(_scope.str());
     globalMemorySize = globals->getPropInt("@masterMemorySize", globals->getPropInt("@globalMemorySize")); // in MB
@@ -1627,9 +1619,7 @@ bool CJobMaster::go()
         CWorkunitPauseHandler(CJobMaster &_job, IConstWorkUnit &_wu) : job(_job), wu(_wu)
         {
             StringBuffer xpath("/WorkUnits/");
-            SCMStringBuffer istr;
-            wu.getWuid(istr);
-            xpath.append(istr.str()).append("/Action");
+            xpath.append(wu.queryWuid()).append("/Action");  // MORE - this should not be done here!
             subId = querySDS().subscribe(xpath.str(), *this, false, true);
             subscribed = true;
         }

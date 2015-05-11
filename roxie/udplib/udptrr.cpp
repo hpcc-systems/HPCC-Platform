@@ -258,7 +258,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                 catch(IException *e) 
                 {
                     StringBuffer s;
-                    DBGLOG("UdpReceiver: send_acknowledge failed node=%u %s", destNodeIndex, e->errorMessage(s).toCharArray());
+                    DBGLOG("UdpReceiver: send_acknowledge failed node=%u %s", destNodeIndex, e->errorMessage(s).str());
                     e->Release();
                 }
             }
@@ -546,7 +546,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                     if (running && e->errorCode() != JSOCKERR_timeout_expired)
                     {
                         StringBuffer s;
-                        DBGLOG("UdpReceiver: receive_sniffer::run read failed %s", e->errorMessage(s).toCharArray());
+                        DBGLOG("UdpReceiver: receive_sniffer::run read failed %s", e->errorMessage(s).str());
                         MilliSleep(1000);
                     }
                     e->Release();
@@ -657,7 +657,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                     if (running && e->errorCode() != JSOCKERR_timeout_expired)
                     {
                         StringBuffer s;
-                        DBGLOG("UdpReceiver: failed %i %s", flow_port, e->errorMessage(s).toCharArray());
+                        DBGLOG("UdpReceiver: failed %i %s", flow_port, e->errorMessage(s).str());
                     }
                     e->Release();
                 }
@@ -754,7 +754,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                     if (running && e->errorCode() != JSOCKERR_timeout_expired)
                     {
                         StringBuffer s;
-                        DBGLOG("UdpReceiver: receive_data::run read failed port=%u - Exp: %s", parent.data_port,  e->errorMessage(s).toCharArray());
+                        DBGLOG("UdpReceiver: receive_data::run read failed port=%u - Exp: %s", parent.data_port,  e->errorMessage(s).str());
                         MilliSleep(1000); // Give a chance for mem free
                     }
                     e->Release();

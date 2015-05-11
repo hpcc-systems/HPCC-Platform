@@ -314,7 +314,7 @@ CThorException *_ThorWrapException(IException *e, const char *format, va_list ar
     eStr.appendf("%d, ", e->errorCode());
     e->errorMessage(eStr).append(" : ");
     eStr.limited_valist_appendf(2048, format, args);
-    CThorException *te = new CThorException(e->errorAudience(), e->errorCode(), eStr.toCharArray());
+    CThorException *te = new CThorException(e->errorAudience(), e->errorCode(), eStr.str());
     return te;
 }
 
@@ -551,7 +551,7 @@ void SetLogName(const char *prefix, const char *logdir, const char *thorname, bo
 #endif
     logname.append(".log");
     StringBuffer lf;
-    openLogFile(lf, logname.toCharArray());
+    openLogFile(lf, logname.str());
     PrintLog("Opened log file %s", lf.str());
     PrintLog("Build %s", BUILD_TAG);
 }
@@ -592,7 +592,7 @@ public:
         tempPrefix.set(_tempPrefix);
         StringBuffer base(name);
         addPathSepChar(base);
-        tempdir.set(base.toCharArray());
+        tempdir.set(base.str());
         recursiveCreateDirectory(tempdir);
 #ifdef _WIN32
         altallowed = false;
@@ -717,7 +717,7 @@ void loadCmdProp(IPropertyTree *tree, const char *cmdProp)
         prop.clip();
         val.clip();
         if (prop.length())
-            tree->setProp(prop.toCharArray(), val.toCharArray());
+            tree->setProp(prop.str(), val.str());
     }
 }
 

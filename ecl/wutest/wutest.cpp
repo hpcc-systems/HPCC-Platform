@@ -17,6 +17,7 @@
 #include "jlib.hpp"
 #include "jfile.hpp"
 #include "jprop.hpp"
+#include "jptree.hpp"
 #include "jsocket.hpp"
 #include "workunit.hpp"
 #include "mpbase.hpp"
@@ -47,11 +48,7 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     const char *action = globals->queryProp("#action");
     if (!action || stricmp(action, "list")==0)
     {
-        SCMStringBuffer wuid, jobname, state;
-        w.getWuid(wuid);
-        w.getStateDesc(state);
-        w.getJobName(jobname);
-        printf("%-30s %-20s %-10s\n", wuid.str(), jobname.str(), state.str());
+        printf("%-30s %-20s %-10s\n", w.queryWuid(), w.queryJobName(), w.queryStateDesc());
     }
     else if (stricmp(action, "results")==0)
     {
@@ -87,11 +84,7 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     else if (stricmp(action, "delete")==0)
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        SCMStringBuffer wuid, jobname;
-        {
-            MTIME_SECTION(queryActiveTimer(), "getWUID");
-            w.getWuid(wuid);
-        }
+        StringAttr wuid(w.queryWuid());
         {
             MTIME_SECTION(queryActiveTimer(), "deleteWorkunit");
             factory->deleteWorkUnit(wuid.str());
@@ -105,9 +98,8 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
         globals->getProp("TO", to);
         if (to.length()==0)
             to.append('.');
-        SCMStringBuffer wuid;
-        w.getWuid(wuid);
-        if (QUERYINTERFACE(&w, IExtendedWUInterface)->archiveWorkUnit(to.str(),globals->getPropBool("DEL",false),true,!globals->getPropBool("KEEPFILERESULTS", false)))
+        StringAttr wuid(w.queryWuid());
+        if (QUERYINTERFACE(&w, IExtendedWUInterface)->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, !globals->getPropBool("KEEPFILERESULTS", false)))
             printf("archived %s\n", wuid.str());
         else
             printf("archive of %s failed\n", wuid.str());
@@ -115,8 +107,7 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     else if ((stricmp(action, "pack")==0)||(stricmp(action, "unpack")==0))
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        SCMStringBuffer wuid;
-        w.getWuid(wuid);
+        StringAttr wuid(w.queryWuid());
         bool pack = (stricmp(action, "pack")==0);
         QUERYINTERFACE(&w, IExtendedWUInterface)->packWorkUnit(pack);
         if (pack)
@@ -148,16 +139,15 @@ void testPagedWuList(IWorkUnitFactory *factory)
         Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, NULL, NULL, page*10, 10, "nigel", &cachehint, NULL);
         ForEach(*it) {
             n++;
-            IConstWorkUnit& wu = it->query();
-            SCMStringBuffer wuid;
-            wu.getWuid(wuid);
-            SCMStringBuffer user;
-            wu.getUser(user);
-            printf("%d: %s, %s, %d\n",n,wuid.str(),user.str(),(int)wu.getState());
+            IConstWorkUnitInfo& wu = it->query();
+            printf("%d: %s, %s, %d\n", n, wu.queryWuid(), wu.queryUser(), (int)wu.getState());
         }
     }
 }
 
+#ifdef FORCE_WORKUNITS_TO_CASSANDRA
+extern "C" IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *props);
+#endif
 
 int main(int argc, const char *argv[])
 {
@@ -173,13 +163,26 @@ int main(int argc, const char *argv[])
         else
             globals->setProp("#action", argv[i]);
     }
+#ifdef FORCE_WORKUNITS_TO_CASSANDRA
+    StringBuffer cassandraServer;
+    if (globals->getProp("CASSANDRASERVER", cassandraServer))
+    {
+        // Statically linking to cassandra plugin makes debugging easier (and means can debug simple cassandra workunit interactions without needing dali running)
+        Owned<IPTree> props = createPTreeFromXMLString("<WorkUnitsServer><Option name='server' value='.'/></WorkUnitsServer>");
+        props->setProp("Option[@name='server']/@value", cassandraServer.str());
+        setWorkUnitFactory(createWorkUnitFactory(props));
+    }
+#endif
 
     StringBuffer daliServers;
     if (!globals->getProp("DALISERVERS", daliServers))
         daliServers.append(".");
-    Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
-    initClientProcess(serverGroup,DCR_Other);
-    setPasswordsFromSDS();
+    if (!strieq(daliServers, "none"))
+    {
+        Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
+        initClientProcess(serverGroup,DCR_Other);
+        setPasswordsFromSDS();
+    }
     try
     {
         CDateTime cutoff;
@@ -212,12 +215,10 @@ int main(int argc, const char *argv[])
                     Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsByOwner(globals->queryProp("OWNER"));
                     ForEach(*it)
                     {
-                        IConstWorkUnit& w = it->query();
+                        IConstWorkUnitInfo& w = it->query();
                         if (!w.isProtected() || globals->getPropBool("protected", false))
                         {
-                            SCMStringBuffer wuidstr;
-                            w.getWuid(wuidstr);
-                            const char *wuid = wuidstr.str();
+                            const char *wuid = w.queryWuid();
                             unsigned year,month,day,hour,min,sec;
                             if (sscanf(wuid, "W%4u%2u%2u-%2u%2u%2u", &year, &month, &day, &hour, &min, &sec)==6)
                             {
@@ -229,9 +230,9 @@ int main(int argc, const char *argv[])
                                     printf("Aged workunit %s\n", wuid);
                                     if (globals->getPropInt("remove", 0))
                                     {
-                                        Owned<IWorkUnit> lw = &w.lock();
+                                        Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
                                         lw->protect(false);
-                                        lw->setState(WUStateArchived);  // we are killing anyway so it's irrelevent, but this will allow us to be sure we can kill it...
+                                        lw->setState(WUStateArchived);  // we are killing anyway so it's irrelevant, but this will allow us to be sure we can kill it...
                                         lw.clear();
                                         killWuids.append(wuid);
                                     }
@@ -343,11 +344,11 @@ int main(int argc, const char *argv[])
         else 
         {
             Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsByOwner(globals->queryProp("OWNER"));
-            
             ForEach(*it)
             {
-                IConstWorkUnit& w = it->query();
-                if (!dump(w, globals))
+                IConstWorkUnitInfo& wi = it->query();
+                Owned<IConstWorkUnit> w = factory->openWorkUnit(wi.queryWuid(), false);
+                if (!dump(*w, globals))
                     break;
             }
             

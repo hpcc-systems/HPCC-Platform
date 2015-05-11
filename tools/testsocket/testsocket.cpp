@@ -484,7 +484,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             fullQuery.append(base);
     }
 
-    const char * query = fullQuery.toCharArray();
+    const char * query = fullQuery.str();
     int len=strlen(query);
     int sendlen = len;
     if (persistConnections)
@@ -924,7 +924,7 @@ int main(int argc, char **argv)
                     }
                     if (in != stdin)
                         fclose(in);
-                    ret = sendQuery(ip, socketPort, fileContents.toCharArray());
+                    ret = sendQuery(ip, socketPort, fileContents.str());
                 }
                 else
                     printf("File %s could not be opened\n", query);

@@ -883,7 +883,7 @@ public:
             throw MakeStringException(-1, "ctx can't be created");
         }
         password.set(passphrase);
-        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.sget());
+        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
 
         if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
@@ -933,7 +933,7 @@ public:
             StringBuffer pwd;
             decrypt(pwd, passphrase);
             password.set(pwd);
-            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.sget());
+            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
             SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
         }
 

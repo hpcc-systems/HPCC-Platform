@@ -650,7 +650,10 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
 
     maxElementLength = 1;
     format.set(_format);
-    addActionList(matcher, format.separate.get() ? format.separate.get() : "\\,", SEPARATOR, &maxElementLength);
+    const char * separator = format.separate.get();
+    if (separator && *separator)
+        addActionList(matcher, separator, SEPARATOR, &maxElementLength);
+
     addActionList(matcher, format.quote.get() ? format.quote.get() : "\"", QUOTE, &maxElementLength);
     addActionList(matcher, format.terminate.get() ? format.terminate.get() : "\\n,\\r\\n", TERMINATOR, &maxElementLength);
     const char * escape = format.escape.get();
@@ -705,7 +708,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
     }
 
     // Check discovered field name uniqueness
-    const char * fn = fieldName.toCharArray();
+    const char * fn = fieldName.str();
     if ( fields->find(fn) != NULL )
     {
         time_t t;
@@ -716,7 +719,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
     recordStructure.append(fieldName);
     recordStructure.append(";\n");
 
-    fields->addAtom(fieldName.toCharArray());
+    fields->addAtom(fieldName.str());
 }
 
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
@@ -1045,7 +1048,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
     }
 
     // Check discovered field name uniqueness
-    const char * fn = fieldName.toCharArray();
+    const char * fn = fieldName.str();
     if ( fields->find(fn) != NULL )
     {
         time_t t;
@@ -1056,7 +1059,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
     recordStructure.append(fieldName);
     recordStructure.append(";\n");
 
-    fields->addAtom(fieldName.toCharArray());
+    fields->addAtom(fieldName.str());
 }
 
 size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)

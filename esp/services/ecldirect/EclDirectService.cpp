@@ -196,9 +196,8 @@ bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspR
         workunit->setSnapshot(snapshot);
 
     // Execute it
-    SCMStringBuffer wuid;
+    StringAttr wuid(workunit->queryWuid());  // NB queryWuid() not valid after workunit,clear()
     
-    workunit->getWuid(wuid);
     workunit->setAction(WUActionRun);
     workunit->setState(WUStateSubmitted);
     workunit.clear();
@@ -281,8 +280,7 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
         workunit->setResultLimit(req.getResultLimit());
 
     // Execute it
-    SCMStringBuffer wuid;
-    workunit->getWuid(wuid);
+    StringAttr wuid(workunit->queryWuid());  // NB queryWuid() not valid after workunit,clear()
     workunit->setAction(WUActionRun);
     workunit->setState(WUStateSubmitted);
     workunit.clear();

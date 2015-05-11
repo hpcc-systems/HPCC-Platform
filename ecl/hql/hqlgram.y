@@ -2274,9 +2274,11 @@ action
                         {
                             $1.annotateExprWithLocation();
                             $$.inherit($1);
-                            $$.setPosition($1);
                         }
-    | setMetaCommand
+    | setMetaCommand    {
+                            $1.annotateExprWithLocation();
+                            $$.inherit($1);
+                        }
     ;
 
 actionStmt
@@ -7808,8 +7810,8 @@ simpleDataSet
 
                             IHqlExpression * ds = createDataset(no_keyeddistribute, left, createComma(right, cond, LINK(attr), $12.getExpr()));
 
-                            JoinSortInfo joinInfo;
-                            joinInfo.findJoinSortOrders(cond, NULL, NULL, NULL, false);
+                            JoinSortInfo joinInfo(cond, NULL, NULL, NULL, NULL);
+                            joinInfo.findJoinSortOrders(false);
                             unsigned numUnsortedFields = numPayloadFields(right);
                             if (joinInfo.extraMatch || (!ds->hasAttribute(firstAtom) && (joinInfo.queryLeftReq().ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"Condition on DISTRIBUTE must match the key exactly");

@@ -202,7 +202,7 @@ void CEspDeploymentEngine::xslTransform(
    {
       Owned<IDeployTask> task = 
          createDeployTask(*m_pCallback, "XSL Transform", m_process.queryName(), m_name.get(), 
-                           instanceName, xslFilePath, outputFilePath, m_curSSHUser.sget(), m_curSSHKeyFile.sget(), m_curSSHKeyPassphrase.sget(), 
+                           instanceName, xslFilePath, outputFilePath, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(),
                            m_useSSHIfDefined, os, processName);
       m_pCallback->printStatus(task);
       task->transformFile(*m_processor, *m_transform, m_cachePath.get());

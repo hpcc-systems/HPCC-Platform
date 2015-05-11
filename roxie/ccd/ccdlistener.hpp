@@ -39,5 +39,6 @@ extern IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspe
 extern bool suspendRoxieListener(unsigned port, bool suspended);
 extern IArrayOf<IRoxieListener> socketListeners;
 extern void disconnectRoxieQueues();
+extern void updateAffinity(unsigned __int64 affinity);
 
 #endif

@@ -91,6 +91,7 @@ public:
     ~BuildCtx();
 
     IHqlStmt *                  addAssign(IHqlExpression * target, IHqlExpression * value);
+    IHqlStmt *                  addAssignLink(IHqlExpression * target, IHqlExpression * value);
     IHqlStmt *                  addAssignIncrement(IHqlExpression * target, IHqlExpression * value);
     IHqlStmt *                  addAssignDecrement(IHqlExpression * target, IHqlExpression * value);
     IHqlStmt *                  addAlias(IHqlStmt * stmt);
@@ -195,6 +196,7 @@ enum StmtKind {
              line_stmt,
              continue_stmt,
              function_stmt,
+             assign_link_stmt,
 };
 
 
