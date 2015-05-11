@@ -600,6 +600,8 @@ void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte 
         case TAKdiskwrite:
         case TAKfetch:
         case TAKkeyedjoin:
+        case TAKkeyeddenormalize:
+        case TAKkeyeddenormalizegroup:
         case TAKworkunitwrite:
         case TAKworkunitread:
         case TAKdictionaryworkunitwrite:

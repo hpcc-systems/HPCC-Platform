@@ -137,6 +137,75 @@ Out15 :=DENORMALIZE(PROJECT(Files.DG_FlatFile, tooutrow(LEFT, 'Keyed, Outer limi
          AND left.DG_lastname=right.DG_lastname 
       , addRow(left, right, counter), LIMIT(3,SKIP), LEFT OUTER);
 
+// child query tests. Doesn't test every combo, only inner
+recKids := RECORD
+ unsigned id;
+ Files.DG_FlatFile.DG_FirstName;
+ Files.DG_FlatFile.DG_LastName;
+ DATASET(RECORDOF(Files.DG_FlatFile)) kids;
+END;
+
+grpd := GROUP(SORT(Files.DG_FlatFile, DG_LastName), DG_LastName);
+rolledup := ROLLUP(grpd, GROUP, TRANSFORM(recKids, SELF.id := HASH32(LEFT.DG_LastName); SELF.kids := ROWS(LEFT); SELF := LEFT));
+
+outrec := RECORD
+ Files.DG_FlatFile.DG_FirstName;
+ Files.DG_FlatFile.DG_LastName;
+ unsigned kidCount;
+END;
+
+outrec denormTrans1(rolledup l) := TRANSFORM
+ cd := DENORMALIZE(PROJECT(l.kids, tooutrow(LEFT, 'Child Keyed')), Files.DG_IndexFileEvens, left.DG_firstname = right.DG_firstname 
+         AND left.DG_lastname=right.DG_lastname 
+         AND left.DG_Prange=right.DG_Prange     
+      , addRow(left, right, COUNTER));
+ SELF.kidcount := COUNT(cd);
+ SELF := l;
+END;
+
+Out16 := PROJECT(rolledup, denormTrans1(LEFT));
+
+outrec denormTrans2(rolledup l) := TRANSFORM
+ cd := DENORMALIZE(PROJECT(Files.DG_FlatFile, tooutrow(LEFT, 'Keyed, skip')), Files.DG_IndexFileEvens, left.DG_firstname = right.DG_firstname 
+         AND left.DG_lastname=right.DG_lastname 
+         AND left.DG_Prange=right.DG_Prange     
+      , addRowSkip(left, right, COUNTER));
+ SELF.kidcount := COUNT(cd);
+ SELF := l;
+END;
+
+Out17 := PROJECT(rolledup, denormTrans2(LEFT));
+
+outrec denormTrans3(rolledup l) := TRANSFORM
+ cd := DENORMALIZE(PROJECT(Files.DG_FlatFile, tooutrow(LEFT, 'Keyed, keep(2)')), Files.DG_IndexFileEvens, left.DG_firstname = right.DG_firstname 
+         AND left.DG_lastname=right.DG_lastname 
+      , addRow(left, right, counter), KEEP(2));
+ SELF.kidcount := COUNT(cd);
+ SELF := l;
+END;
+
+Out18 := PROJECT(rolledup, denormTrans3(LEFT));
+
+outrec denormTrans4(rolledup l) := TRANSFORM
+ cd := DENORMALIZE(PROJECT(Files.DG_FlatFile, tooutrow(LEFT, 'Keyed, atmost(3)')), Files.DG_IndexFileEvens, left.DG_firstname = right.DG_firstname 
+         AND left.DG_lastname=right.DG_lastname 
+      , addRow(left, right, counter), ATMOST(3));
+ SELF.kidcount := COUNT(cd);
+ SELF := l;
+END;
+
+Out19 := PROJECT(rolledup, denormTrans4(LEFT));
+
+outrec denormTrans5(rolledup l) := TRANSFORM
+ cd := DENORMALIZE(PROJECT(Files.DG_FlatFile, tooutrow(LEFT, 'Keyed, limit(3,skip)')), Files.DG_IndexFileEvens, left.DG_firstname = right.DG_firstname 
+         AND left.DG_lastname=right.DG_lastname 
+      , addRow(left, right, counter), LIMIT(3,SKIP));
+ SELF.kidcount := COUNT(cd);
+ SELF := l;
+END;
+
+Out20 := PROJECT(rolledup, denormTrans5(LEFT));
+
 
 // Unkeyed DenormalizeGroup, with INNER, LEFT OUTER, and unspecified (should be same as LEFT OUTER)
 
@@ -326,6 +395,13 @@ output(SORT(Out12,record));
 output(SORT(Out13,record));
 output(SORT(Out14,record));
 output(SORT(Out15,record));
+
+output('Child Keyed Denormalize');
+output(SORT(Out16,record));
+output(SORT(Out17,record));
+output(SORT(Out18,record));
+output(SORT(Out19,record));
+output(SORT(Out20,record));
 
 output('Keyed DenormalizeGroup');
 output(SORT(Out101,record));
