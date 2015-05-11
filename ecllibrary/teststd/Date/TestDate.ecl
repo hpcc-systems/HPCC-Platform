@@ -127,12 +127,12 @@ EXPORT TestDate := MODULE
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=1) = 20010228);
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=4) = 20040229);
 
-    ASSERT(vSeconds + vLocalTimeZoneOffset = vSecondsLocal);
+    ASSERT(vSeconds + vLocalTimeZoneOffset BETWEEN vSecondsLocal-1 AND vSecondsLocal+1);
 
     ASSERT(vTimestamp != vIndTimestamp); // Test for non-pure calls to C++ code
 
-    ASSERT(Date.TimestampToSeconds(vTimestamp) = vSeconds);
-    ASSERT(Date.TimestampToSeconds(vTimestampLocal) = vSecondsLocal);
+    ASSERT(Date.TimestampToSeconds(vTimestamp) BETWEEN vSeconds-1 AND vSeconds+1);
+    ASSERT(Date.TimestampToSeconds(vTimestampLocal) BETWEEN vSecondsLocal-1 AND vSecondsLocal+1);
 
     // IsLocalDaylightSavingsInEffect() -- not possible to check without pinning both cluster location and date
 
