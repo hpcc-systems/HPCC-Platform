@@ -6098,7 +6098,7 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
         builder.appendOwn(row);
         processed++;
     }
-    size32_t usedCount = rtlDictionaryCount(builder.getcount(), builder.queryrows());
+    unsigned __int64 usedCount = rtlDictionaryCount(builder.getcount(), builder.queryrows());
 
     // In absense of OPT_OUTPUTLIMIT check pre 5.2 legacy name OPT_OUTPUTLIMIT_LEGACY
     size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt(OPT_OUTPUTLIMIT, agent.queryWorkUnit()->getDebugValueInt(OPT_OUTPUTLIMIT_LEGACY, defaultDaliResultLimit)) * 0x100000;

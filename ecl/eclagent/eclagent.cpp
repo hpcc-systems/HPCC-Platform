@@ -2297,7 +2297,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
         if (agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
             doExecuteItemDependencies(item, wfid);
         if (maxPersistCopies > 0)
-            agent.deleteLRUPersists(logicalName, maxPersistCopies-1);
+            agent.deleteLRUPersists(logicalName, (unsigned)(maxPersistCopies-1));
         doExecuteItem(item, wfid);
         agent.updatePersist(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC);
     }
@@ -2715,7 +2715,7 @@ static int comparePersistAccess(IInterface * const *_a, IInterface * const *_b)
 
 }
 
-void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
+void EclAgent::deleteLRUPersists(const char * logicalName, unsigned keep)
 {
     StringBuffer lfn;
     expandLogicalName(lfn, logicalName);

@@ -1351,7 +1351,7 @@ int HttpClient::validate(StringBuffer& xml)
         if(http_tracelevel > 0)
         {
             IArrayOf<IException> &es = me->getArray();
-            for (int i=0; i<es.ordinality(); i++)
+            for (unsigned i=0; i<es.ordinality(); i++)
             {
                 StringBuffer msg;
                 IException& e = es.item(i);
@@ -1430,7 +1430,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
     else
         request.append(c1);
 
-    int seq = 2;
+    unsigned seq = 2;
     while(seq < req.length() && !endofheaders)
     {
         char c = req.charAt(seq);
