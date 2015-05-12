@@ -261,6 +261,12 @@ public:
             rtlFail(0, err.str());
         }
     }
+    void set(CassFuture *_future)
+    {
+        if (future)
+            cass_future_free(future);
+        future = _future;
+    }
 private:
     CassandraFuture(const CassandraFuture &);
     CassFuture *future;
@@ -2844,7 +2850,7 @@ StringBuffer & describeTable(const CassandraXmlMapping *mappings, StringBuffer &
         fields.appendf("%s %s,", mappings->columnName, mappings->columnType);
         mappings++;
     }
-    return out.appendf("CREATE TABLE IF NOT EXISTS HPCC.%s (%s PRIMARY KEY %s);", mappings->columnType, fields.str(), mappings->xpath);
+    return out.appendf("CREATE TABLE IF NOT EXISTS %s (%s PRIMARY KEY %s);", mappings->columnType, fields.str(), mappings->xpath);
 }
 
 const CassResult *executeQuery(CassSession *session, CassStatement *statement)
@@ -2859,7 +2865,7 @@ const CassResult *fetchDataForKey(const char *key, CassSession *session, const C
     StringBuffer names;
     StringBuffer tableName;
     getFieldNames(mappings+(key?1:0), names, tableName);  // mappings+1 means we don't return the key column
-    VStringBuffer selectQuery("select %s from HPCC.%s", names.str()+1, tableName.str());
+    VStringBuffer selectQuery("select %s from %s", names.str()+1, tableName.str());
     if (key)
         selectQuery.appendf(" where %s='%s'", mappings->columnName, key); // MORE - should consider using prepared for this - is it faster?
     selectQuery.append(';');
@@ -2874,7 +2880,7 @@ const CassResult *fetchDataForKeyAndWuid(const char *key, const char *wuid, Cass
     StringBuffer names;
     StringBuffer tableName;
     getFieldNames(mappings+2, names, tableName);  // mappings+1 means we don't return the key column
-    VStringBuffer selectQuery("select %s from HPCC.%s where %s='%s' and wuid='%s'", names.str()+1, tableName.str(), mappings->columnName, key, wuid); // MORE - should consider using prepared/bind for this - is it faster?
+    VStringBuffer selectQuery("select %s from %s where %s='%s' and wuid='%s'", names.str()+1, tableName.str(), mappings->columnName, key, wuid); // MORE - should consider using prepared/bind for this - is it faster?
     selectQuery.append(';');
     //if (traceLevel >= 2)
     //    DBGLOG("%s", selectQuery.str());
@@ -2889,7 +2895,7 @@ void deleteSecondaryByKey(const CassandraXmlMapping *mappings, const char *wuid,
         StringBuffer names;
         StringBuffer tableName;
         getFieldNames(mappings, names, tableName);
-        VStringBuffer insertQuery("DELETE from HPCC.%s where %s=? and wuid=?;", tableName.str(), mappings[0].columnName);
+        VStringBuffer insertQuery("DELETE from %s where %s=? and wuid=?;", tableName.str(), mappings[0].columnName);
         Owned<CassandraPrepared> prepared = sessionCache->prepareStatement(insertQuery);
         CassandraStatement update(cass_prepared_bind(*prepared));
         check(cass_statement_bind_string(update, 0, cass_string_init(key)));
@@ -2903,7 +2909,7 @@ void deleteChildByWuid(const CassandraXmlMapping *mappings, const char *wuid, co
     StringBuffer names;
     StringBuffer tableName;
     getFieldNames(mappings, names, tableName);
-    VStringBuffer insertQuery("DELETE from HPCC.%s where wuid=?;", tableName.str());
+    VStringBuffer insertQuery("DELETE from %s where wuid=?;", tableName.str());
     Owned<CassandraPrepared> prepared = sessionCache->prepareStatement(insertQuery);
     CassandraStatement update(cass_prepared_bind(*prepared));
     check(cass_statement_bind_string(update, 0, cass_string_init(wuid)));
@@ -2953,7 +2959,7 @@ extern void simpleXMLtoCassandra(const ICassandraSession *session, CassBatch *ba
     StringBuffer bindings;
     StringBuffer tableName;
     getBoundFieldNames(mappings, names, bindings, inXML, tableName);
-    VStringBuffer insertQuery("INSERT into HPCC.%s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
+    VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     Owned<CassandraPrepared> prepared = session->prepareStatement(insertQuery);
     CassandraStatement update(cass_prepared_bind(*prepared));
     bindFromXML(mappings, update, inXML, 0);
@@ -2971,7 +2977,7 @@ extern void childXMLtoCassandra(const ICassandraSession *session, CassBatch *bat
             StringBuffer names;
             StringBuffer tableName;
             getBoundFieldNames(mappings, names, bindings, &result, tableName);
-            VStringBuffer insertQuery("INSERT into HPCC.%s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
+            VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
             Owned<CassandraPrepared> prepared = session->prepareStatement(insertQuery);
             CassandraStatement update(cass_prepared_bind(*prepared));
             check(cass_statement_bind_string(update, 0, cass_string_init(wuid)));
@@ -3084,7 +3090,7 @@ extern void graphProgressXMLtoCassandra(CassSession *session, IPTree *inXML)
     StringBuffer bindings;
     StringBuffer tableName;
     int numBound = getFieldNames(graphProgressMappings, names, bindings, tableName);
-    VStringBuffer insertQuery("INSERT into HPCC.%s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
+    VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     DBGLOG("%s", insertQuery.str());
     CassandraBatch batch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED));
     CassandraFuture futurePrep(cass_session_prepare(session, cass_string_init(insertQuery)));
@@ -3260,7 +3266,7 @@ public:
             batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED)));
         deleteChildren(wuid);
         deleteSecondaries(wuid);
-        Owned<CassandraPrepared> prepared = sessionCache->prepareStatement("DELETE from HPCC.workunits where wuid=?;");
+        Owned<CassandraPrepared> prepared = sessionCache->prepareStatement("DELETE from workunits where wuid=?;");
         CassandraStatement update(cass_prepared_bind(*prepared));
         check(cass_statement_bind_string(update, 0, cass_string_init(wuid)));
         check(cass_batch_add_statement(*batch, update));
@@ -3501,19 +3507,11 @@ public:
             }
         }
         cluster.setOptions(options);
-        session.set(cass_session_new());
-//        CassandraFuture future(cass_session_connect_keyspace(session, cluster, "hpcc"));
-        CassandraFuture future(cass_session_connect(session, cluster));  // Since we don't know if HPCC keyspace exists, easier not to connect to it but rather specify it explicitly in each query
-        future.wait("connect");
-        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS hpcc WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1' } ;"); // MORE - options from props!
-        executeSimpleCommand(session, create);
-        ensureTable(session, workunitsMappings);
-        ensureTable(session, ownerMappings);
-        ensureTable(session, wuResultsMappings);
-        ensureTable(session, wuVariablesMappings);
-        ensureTable(session, wuExceptionsMappings);
-        ensureTable(session, wuStatisticsMappings);
+        if (cluster.keyspace.isEmpty())
+            cluster.keyspace.set("hpcc");
+        connect();
     }
+
     ~CCasssandraWorkUnitFactory()
     {
     }
@@ -3547,7 +3545,7 @@ public:
             suffix = 0;
             suffixLength = 0;
         }
-        Owned<CassandraPrepared> prepared = prepareStatement("INSERT INTO HPCC.workunits (wuid) VALUES (?) IF NOT EXISTS;");
+        Owned<CassandraPrepared> prepared = prepareStatement("INSERT INTO workunits (wuid) VALUES (?) IF NOT EXISTS;");
         loop
         {
             // Create a unique WUID by adding suffixes until we managed to add a new value
@@ -3615,7 +3613,7 @@ public:
                                                         ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
     virtual unsigned numWorkUnits()
     {
-        Owned<CassandraPrepared> prepared = prepareStatement("SELECT COUNT(*) FROM HPCC.workunits;");
+        Owned<CassandraPrepared> prepared = prepareStatement("SELECT COUNT(*) FROM workunits;");
         CassandraStatement statement(cass_prepared_bind(*prepared));
         CassandraFuture future(cass_session_execute(session, statement));
         future.wait("select count(*)");
@@ -3632,6 +3630,7 @@ public:
     virtual unsigned queryTraceLevel() const { return traceLevel; };
     virtual CassandraPrepared *prepareStatement(const char *query) const
     {
+        assertex(session);
         CriticalBlock b(cacheCrit);
         Linked<CassandraPrepared> cached = preparedCache.getValue(query);
         if (cached)
@@ -3655,7 +3654,7 @@ public:
     }
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
-        VStringBuffer select("select state from hpcc.workunits where wuid = '%s';", wuid);
+        VStringBuffer select("select state from workunits where wuid = '%s';", wuid);
         CassandraStatement statement(cass_statement_new(cass_string_init(select.str()), 0));
         unsigned start = msTick();
         loop
@@ -3734,10 +3733,45 @@ public:
         return errCount;
     }
 
+    virtual void deleteRepository(bool recreate)
+    {
+        // USE WITH CARE!
+        session.set(cass_session_new());
+        CassandraFuture future(cass_session_connect(session, cluster));
+        future.wait("connect without keyspace to delete");
+        VStringBuffer deleteKeyspace("DROP KEYSPACE IF EXISTS %s;", cluster.keyspace.get());
+        executeSimpleCommand(session, deleteKeyspace);
+        if (recreate)
+            connect();
+        else
+            session.set(NULL);
+    }
+
+    virtual void createRepository()
+    {
+        session.set(cass_session_new());
+        CassandraFuture future(cass_session_connect(session, cluster));
+        future.wait("connect without keyspace");
+        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", cluster.keyspace.get()); // MORE - options from props? Not 100% sure if they are appropriate.
+        executeSimpleCommand(session, create);
+        connect();
+        ensureTable(session, workunitsMappings);
+        ensureTable(session, ownerMappings);
+        ensureTable(session, wuResultsMappings);
+        ensureTable(session, wuVariablesMappings);
+        ensureTable(session, wuExceptionsMappings);
+        ensureTable(session, wuStatisticsMappings);
+    }
 private:
+    void connect()
+    {
+        session.set(cass_session_new());
+        CassandraFuture future(cass_session_connect_keyspace(session, cluster, cluster.keyspace));
+        future.wait("connect with keyspace");
+    }
     bool checkWuExists(const char *wuid)
     {
-        Owned<CassandraPrepared> prepared = prepareStatement("SELECT COUNT(*) FROM HPCC.workunits where wuid=?;");
+        Owned<CassandraPrepared> prepared = prepareStatement("SELECT COUNT(*) FROM workunits where wuid=?;");
         CassandraStatement statement(cass_prepared_bind(*prepared));
         cass_statement_bind_string(statement, 0, cass_string_init(wuid));
         CassandraFuture future(cass_session_execute(session, statement));

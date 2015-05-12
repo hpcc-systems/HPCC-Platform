@@ -180,7 +180,7 @@ int main(int argc, const char *argv[])
     if (globals->getProp("CASSANDRASERVER", cassandraServer))
     {
         // Statically linking to cassandra plugin makes debugging easier (and means can debug simple cassandra workunit interactions without needing dali running)
-        Owned<IPTree> props = createPTreeFromXMLString("<WorkUnitsServer><Option name='server' value='.'/><Option name='randomWuidSuffix' value='4'/><Option name='traceLevel' value='0'/></WorkUnitsServer>");
+        Owned<IPTree> props = createPTreeFromXMLString("<WorkUnitsServer><Option name='server' value='.'/><Option name='randomWuidSuffix' value='4'/><Option name='traceLevel' value='0'/><Option name='keyspace' value='hpcc_test'></Option></WorkUnitsServer>");
         props->setProp("Option[@name='server']/@value", cassandraServer.str());
         props->setPropInt("Option[@name='traceLevel']/@value", globals->getPropInt("tracelevel", 0));
         setWorkUnitFactory(createWorkUnitFactory(props));
@@ -234,6 +234,21 @@ int main(int argc, const char *argv[])
             bool fix = globals->getPropBool("fix", false);
             unsigned errors = factory->validateRepository(fix);
             printf("%u errors %s\n", errors, (fix && errors) ? "fixed" : "found");
+        }
+        else if (action && (stricmp(action, "clear")==0))
+        {
+            if (globals->getPropBool("entire", false) && globals->getPropBool("repository", false))
+            {
+                factory->deleteRepository(false);
+                printf("Repository deleted\n");
+            }
+            else
+                printf("You need to specify entire=1 and repository=1 to delete entire repository\n");
+        }
+        else if (action && (stricmp(action, "initialize")==0))
+        {
+            factory->createRepository();
+            printf("Repository created\n");
         }
         else if (action && (stricmp(action, "orphans")==0 || stricmp(action, "cleanup")==0))
         {

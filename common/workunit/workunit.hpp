@@ -1281,6 +1281,8 @@ interface IWorkUnitFactory : extends IInterface
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState) = 0;
 
     virtual unsigned validateRepository(bool fixErrors) = 0;
+    virtual void deleteRepository(bool recreate) = 0;
+    virtual void createRepository() = 0;  // If not already there...
 };
 
 interface IWorkflowScheduleConnection : extends IInterface

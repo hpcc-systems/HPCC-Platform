@@ -2573,6 +2573,14 @@ public:
     {
         return 0;
     }
+    virtual void deleteRepository(bool recreate)
+    {
+        UNIMPLEMENTED; // And will probably never be!
+    }
+    virtual void createRepository()
+    {
+        // Nothing to do
+    }
     virtual CLocalWorkUnit *_createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuRoot;
@@ -3024,6 +3032,15 @@ public:
     {
         return baseFactory->validateRepository(fix);
     }
+    virtual void deleteRepository(bool recreate)
+    {
+        return baseFactory->deleteRepository(recreate);
+    }
+    virtual void createRepository()
+    {
+        return baseFactory->createRepository();
+    }
+
     virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
