@@ -1996,9 +1996,8 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return CreateRecordSourceActivity;
     case no_createdictionary:
         return FixedInputActivity;
-    case no_indict:
     case no_selectmap:
-        return FixedInputActivity;
+        return SourceActivity;
     case no_extractresult:
     case no_apply:
         return SinkActivity;
