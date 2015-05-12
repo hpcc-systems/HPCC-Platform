@@ -2288,43 +2288,27 @@ const char* CFileSprayEx::getDropZoneDirByIP(const char* ip, StringBuffer& dir)
     if (!env)
         return NULL;
 
-    Owned<IPropertyTree> root = &env->getPTree();
-    VStringBuffer xPath("Hardware/Computer[@netAddress='%s']/@name", ip);
-    const char* computer = root->queryProp(xPath.str());
-    if (!computer || !*computer)
+    Owned<IConstMachineInfo> machine = env->getMachineByAddress(ip);
+    if (!machine)
     {
         StringBuffer localHostIP;
         queryHostIP().getIpText(localHostIP);
         if (!strieq(".", ip) && !strieq("localhost", ip) && !strieq("127.0.0.1", ip) && !strieq(ip, localHostIP.str()))
             return NULL;
-
-        StringArray possibleIPs;
-        if (!strieq(".", ip))
-            possibleIPs.append(".");
-        if (!strieq("localhost", ip))
-            possibleIPs.append("localhost");
-        if (!strieq("127.0.0.1", ip))
-            possibleIPs.append("127.0.0.1");
-        if (!strieq(localHostIP.str(), ip))
-            possibleIPs.append(localHostIP.str());
-
-        ForEachItemIn(i, possibleIPs)
-        {
-            xPath.setf("Hardware/Computer[@netAddress='%s']/@name", possibleIPs.item(i));
-            computer = root->queryProp(xPath.str());
-            if (computer && *computer)
-                break;
-        }
-        if (!computer || !*computer)
+        machine.setown(env->getMachineForLocalHost());
+        if (!machine)
             return NULL;
     }
-
-    xPath.setf("Software/DropZone[@computer='%s']/@directory", computer);
-    const char* path = root->queryProp(xPath.str());
-    if (!path || !*path)
+    SCMStringBuffer computer, directory;
+    machine->getName(computer);
+    if (!computer.length())
         return NULL;
 
-    return dir.append(path).str();
+    Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByComputer(computer.str());
+    if (!dropZone)
+        return NULL;
+    dropZone->getDirectory(directory);
+    return dir.set(directory.str()).str();
 }
 
 bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDesprayResponse &resp)
@@ -2380,8 +2364,8 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             {
                 StringBuffer buf;
                 getDropZoneDirByIP(destip, buf);
-                if (buf.length() && buf.charAt(buf.length()-1) != PATHSEPCHAR)
-                    buf.append(PATHSEPCHAR);
+                if (buf.length())
+                    addPathSepChar(buf);
                 rfn.setPath(ep, buf.append(destfile).str());
             }
             destination->setSingleFilename(rfn);
