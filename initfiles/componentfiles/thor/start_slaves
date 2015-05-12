@@ -68,8 +68,10 @@ done
 trap "rm -f $lckfile" exit
 echo $$ > $lckfile
 
-
-
+ulimit -c unlimited > /dev/null 2>&1
+[[ $? -ne 0 ]] && echo "`date` Failed to set ulimit for core file size"
+ulimit -n 32768 > /dev/null 2>&1
+[[ $? -ne 0 ]] && echo "`date` Failed to set ulimit for number of file descriptors open"
 
 echo "`date` slave(s) starting"
 
