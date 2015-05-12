@@ -569,7 +569,7 @@
 
     <!--***SYSTEM HEALTH CHECK UP***TO COME***-->
 
-    <sect1>
+    <sect1 id="SysAdmin_DataHandling">
       <title>Data Handling</title>
 
       <para>When you start working with your HPCC system, you will want to
