@@ -559,25 +559,23 @@ stop_component() {
 
     eval $stopcmd
 
+    unlock ${LOCKPATH}
+    removePid ${PIDPATH}
+
     RESULT=0
-    local counter=0
-    while [[ $RESULT -eq 0 && $counter -le 20 ]]; do
+    local waittime=30
+    while [[ $RESULT -ne 1 && $waittime -gt 0 ]]; do
         check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
         RESULT=$?
-        ((counter++))
-        if [[ $RESULT -eq 0 ]]; then
-            sleep 1
-        fi
+        ((waittime--))
+        sleep 1
     done
 
-    if [[ $RESULT -ne 1 && $RESULT -ne 4 ]]; then
+    if [[ $RESULT -ne 1 ]]; then
         log_failure_msg
     else
         log_success_msg
     fi
-
-    removePid ${PIDPATH}
-    unlock ${LOCKPATH}
 
     RCSTOP=0
 
