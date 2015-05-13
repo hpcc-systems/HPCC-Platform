@@ -2291,9 +2291,9 @@ const char* CFileSprayEx::getDropZoneDirByIP(const char* ip, StringBuffer& dir)
     Owned<IConstMachineInfo> machine = env->getMachineByAddress(ip);
     if (!machine)
     {
-        StringBuffer localHostIP;
-        queryHostIP().getIpText(localHostIP);
-        if (!strieq(".", ip) && !strieq("localhost", ip) && !strieq("127.0.0.1", ip) && !strieq(ip, localHostIP.str()))
+        IpAddress ipAddr;
+        ipAddr.ipset(ip);
+        if (!ipAddr.isLocal())
             return NULL;
         machine.setown(env->getMachineForLocalHost());
         if (!machine)

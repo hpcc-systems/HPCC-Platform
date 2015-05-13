@@ -980,9 +980,6 @@ IConstDomainInfo * CLocalEnvironment::getDomain(const char * name) const
 
 void CLocalEnvironment::buildMachineCache() const
 {
-    StringBuffer localHostIP;
-    queryHostIP().getIpText(localHostIP);
-
     synchronized procedure(safeCache);
     if (!machineCacheBuilt)
     {
@@ -1004,8 +1001,11 @@ void CLocalEnvironment::buildMachineCache() const
                 x.append(name).append("\"]");
                 Owned<IConstEnvBase> cached = new CConstMachineInfo((CLocalEnvironment *) this, &it->query());
                 cache.setValue(x.str(), cached);
-                if (streq(".", name) || strieq("localhost", name) || streq("127.0.0.1", name) || streq(name, localHostIP.str()))
-                    cache.setValue("Hardware/Computer[@netAddress='.']", cached);
+
+                IpAddress ip;
+                ip.ipset(name);
+                if (ip.isLocal())
+                    cache.setValue("Hardware/Computer[@netAddress=\".\"]", cached);
             }
         }
         machineCacheBuilt = true;
@@ -1128,32 +1128,9 @@ IConstMachineInfo * CLocalEnvironment::getMachineByAddress(const char * name) co
 
 IConstMachineInfo * CLocalEnvironment::getMachineForLocalHost() const
 {
-    IConstEnvBase *cached = getCache("Hardware/Computer[@netAddress='.']");
-    if (!cached)
-    {
-        StringBuffer localHostIP;
-        queryHostIP().getIpText(localHostIP);
-
-        StringArray possibleIPs;
-        possibleIPs.append(".");
-        possibleIPs.append("localhost");
-        possibleIPs.append("127.0.0.1");
-        possibleIPs.append(localHostIP.str());
-
-        synchronized procedure(safeCache);
-        ForEachItemIn(i, possibleIPs)
-        {
-            VStringBuffer xpath("Hardware/Computer[@netAddress='%s']", possibleIPs.item(i));
-            IPropertyTree *d = p->queryPropTree(xpath.str());
-            if (d)
-            {
-                cached = new CConstMachineInfo((CLocalEnvironment *) this, d);
-                setCache("Hardware/Computer[@netAddress='.']", cached);
-                break;
-            }
-        }
-    }
-    return (CConstMachineInfo *) cached;
+    buildMachineCache();
+    synchronized procedure(safeCache);
+    return (CConstMachineInfo *) getCache("Hardware/Computer[@netAddress=\".\"]");
 }
 
 IConstDropZoneInfo * CLocalEnvironment::getDropZone(const char * name) const
@@ -1163,16 +1140,7 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZone(const char * name) const
     buildDropZoneCache();
     VStringBuffer xpath("Software/DropZone[@name=\"%s\"]", name);
     synchronized procedure(safeCache);
-    IConstEnvBase *cached = getCache(xpath.str());
-    if (!cached)
-    {
-        IPropertyTree *d = p->queryPropTree(xpath.str());
-        if (!d)
-            return NULL;
-        cached = new CConstDropZoneInfo((CLocalEnvironment *) this, d);
-        setCache(xpath.str(), cached);
-    }
-    return (CConstDropZoneInfo *) cached;
+    return (CConstDropZoneInfo *) getCache(xpath.str());
 }
 
 
@@ -1181,18 +1149,9 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByComputer(const char * compu
     if (!computer)
         return NULL;
     buildDropZoneCache();
-    VStringBuffer xpath("Software/DropZone[@computer='%s']", computer);
+    VStringBuffer xpath("Software/DropZone[@computer=\"%s\"]", computer);
     synchronized procedure(safeCache);
-    IConstEnvBase *cached = getCache(xpath.str());
-    if (!cached)
-    {
-        IPropertyTree *d = p->queryPropTree(xpath.str());
-        if (!d)
-            return NULL;
-        cached = new CConstDropZoneInfo((CLocalEnvironment *) this, d);
-        setCache(xpath.str(), cached);
-    }
-    return (CConstDropZoneInfo *) cached;
+    return (CConstDropZoneInfo *) getCache(xpath.str());
 }
 
 IConstInstanceInfo * CLocalEnvironment::getInstance(const char *type, const char *version, const char *domain) const
