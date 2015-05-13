@@ -39,6 +39,12 @@ static const char * queryXPath(const RtlFieldInfo * field)
     return field->name->str();
 }
 
+static const char * queryScalarXPath(const RtlFieldInfo * field)
+{
+    if (field->type->hasNonScalarXpath())
+        return field->name->str();
+    return queryXPath(field);
+}
 
 static bool hasOuterXPath(const RtlFieldInfo * field)
 {
@@ -140,7 +146,7 @@ size32_t RtlBoolTypeInfo::process(const byte * self, const byte * selfrow, const
 
 size32_t RtlBoolTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
-    target.outputBool(*(const bool *)self, queryXPath(field));
+    target.outputBool(*(const bool *)self, queryScalarXPath(field));
     return sizeof(bool);
 }
 
@@ -174,7 +180,7 @@ size32_t RtlRealTypeInfo::process(const byte * self, const byte * selfrow, const
 
 size32_t RtlRealTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
-    target.outputReal(value(self), queryXPath(field));
+    target.outputReal(value(self), queryScalarXPath(field));
     return length;
 }
 
@@ -201,9 +207,9 @@ size32_t RtlIntTypeInfo::process(const byte * self, const byte * selfrow, const 
 size32_t RtlIntTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
     if (isUnsigned())
-        target.outputUInt(rtlReadUInt(self, length), length, queryXPath(field));
+        target.outputUInt(rtlReadUInt(self, length), length, queryScalarXPath(field));
     else
-        target.outputInt(rtlReadInt(self, length), length, queryXPath(field));
+        target.outputInt(rtlReadInt(self, length), length, queryScalarXPath(field));
     return length;
 }
 
@@ -231,9 +237,9 @@ size32_t RtlSwapIntTypeInfo::process(const byte * self, const byte * selfrow, co
 size32_t RtlSwapIntTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
     if (isUnsigned())
-        target.outputUInt(rtlReadSwapUInt(self, length), length, queryXPath(field));
+        target.outputUInt(rtlReadSwapUInt(self, length), length, queryScalarXPath(field));
     else
-        target.outputInt(rtlReadSwapInt(self, length), length, queryXPath(field));
+        target.outputInt(rtlReadSwapInt(self, length), length, queryScalarXPath(field));
     return length;
 }
 
@@ -267,9 +273,9 @@ size32_t RtlPackedIntTypeInfo::toXML(const byte * self, const byte * selfrow, co
 {
     size32_t fieldsize = rtlGetPackedSize(self);
     if (isUnsigned())
-        target.outputUInt(rtlGetPackedUnsigned(self), fieldsize, queryXPath(field));
+        target.outputUInt(rtlGetPackedUnsigned(self), fieldsize, queryScalarXPath(field));
     else
-        target.outputInt(rtlGetPackedSigned(self), fieldsize, queryXPath(field));
+        target.outputInt(rtlGetPackedSigned(self), fieldsize, queryScalarXPath(field));
     return fieldsize;
 }
 
@@ -373,11 +379,11 @@ size32_t RtlStringTypeInfo::toXML(const byte * self, const byte * selfrow, const
         unsigned lenAscii;
         rtlDataAttr ascii;
         rtlEStrToStrX(lenAscii, ascii.refstr(), thisLength, str);
-        target.outputString(lenAscii, ascii.getstr(), queryXPath(field));
+        target.outputString(lenAscii, ascii.getstr(), queryScalarXPath(field));
     }
     else
     {
-        target.outputString(thisLength, str, queryXPath(field));
+        target.outputString(thisLength, str, queryScalarXPath(field));
     }
     return thisSize;
 }
@@ -453,7 +459,7 @@ size32_t RtlDataTypeInfo::toXML(const byte * self, const byte * selfrow, const R
         thisSize = sizeof(size32_t) + thisLength;
     }
 
-    target.outputData(thisLength, str, queryXPath(field));
+    target.outputData(thisLength, str, queryScalarXPath(field));
     return thisSize;
 }
 
@@ -530,10 +536,10 @@ size32_t RtlVarStringTypeInfo::toXML(const byte * self, const byte * selfrow, co
         unsigned lenAscii;
         rtlDataAttr ascii;
         rtlEStrToStrX(lenAscii, ascii.refstr(), thisLength, str);
-        target.outputString(lenAscii, ascii.getstr(), queryXPath(field));
+        target.outputString(lenAscii, ascii.getstr(), queryScalarXPath(field));
     }
     else
-        target.outputString(thisLength, str, queryXPath(field));
+        target.outputString(thisLength, str, queryScalarXPath(field));
 
     return thisSize;
 }
@@ -611,7 +617,7 @@ size32_t RtlQStringTypeInfo::toXML(const byte * self, const byte * selfrow, cons
         thisSize = sizeof(size32_t) + rtlQStrSize(thisLength);
     }
 
-    target.outputQString(thisLength, str, queryXPath(field));
+    target.outputQString(thisLength, str, queryScalarXPath(field));
     return thisSize;
 }
 
@@ -657,9 +663,9 @@ size32_t RtlDecimalTypeInfo::toXML(const byte * self, const byte * selfrow, cons
 {
     size32_t thisSize = calcSize();
     if (isUnsigned())
-        target.outputUDecimal(self, thisSize, getDecimalPrecision(), queryXPath(field));
+        target.outputUDecimal(self, thisSize, getDecimalPrecision(), queryScalarXPath(field));
     else
-        target.outputDecimal(self, thisSize, getDecimalPrecision(), queryXPath(field));
+        target.outputDecimal(self, thisSize, getDecimalPrecision(), queryScalarXPath(field));
     return thisSize;
 }
 
@@ -690,7 +696,7 @@ size32_t RtlCharTypeInfo::toXML(const byte * self, const byte * selfrow, const R
         rtlEStrToStr(1, &c, 1, str);
     else
         c = *str;
-    target.outputString(1, &c, queryXPath(field));
+    target.outputString(1, &c, queryScalarXPath(field));
     return 1;
 }
 
@@ -767,7 +773,7 @@ size32_t RtlUnicodeTypeInfo::toXML(const byte * self, const byte * selfrow, cons
         thisSize = sizeof(size32_t) + thisLength * sizeof(UChar);
     }
 
-    target.outputUnicode(thisLength, ustr, queryXPath(field));
+    target.outputUnicode(thisLength, ustr, queryScalarXPath(field));
     return thisSize;
 }
 
@@ -831,7 +837,7 @@ size32_t RtlVarUnicodeTypeInfo::toXML(const byte * self, const byte * selfrow, c
     else
         thisSize = (thisLength + 1) * sizeof(UChar);
 
-    target.outputUnicode(thisLength, ustr, queryXPath(field));
+    target.outputUnicode(thisLength, ustr, queryScalarXPath(field));
     return thisSize;
 }
 
@@ -877,7 +883,7 @@ size32_t RtlUtf8TypeInfo::toXML(const byte * self, const byte * selfrow, const R
     unsigned thisLength = rtlReadUInt4(self);
     unsigned thisSize = sizeof(size32_t) + rtlUtf8Size(thisLength, str);
 
-    target.outputUtf8(thisLength, str, queryXPath(field));
+    target.outputUtf8(thisLength, str, queryScalarXPath(field));
     return thisSize;
 }
 
@@ -1420,9 +1426,9 @@ size32_t RtlBitfieldTypeInfo::toXML(const byte * self, const byte * selfrow, con
 {
     size32_t fieldsize = size(self, selfrow);
     if (isUnsigned())
-        target.outputUInt(unsignedValue(self), fieldsize, queryXPath(field));
+        target.outputUInt(unsignedValue(self), fieldsize, queryScalarXPath(field));
     else
-        target.outputInt(signedValue(self), fieldsize, queryXPath(field));
+        target.outputInt(signedValue(self), fieldsize, queryScalarXPath(field));
     return fieldsize;
 }
 

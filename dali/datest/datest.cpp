@@ -1730,7 +1730,7 @@ void TestExternal()
             Owned<IFileIO> fileIO = ifile->open(IFOread);
             assertex(fileIO);
 
-            sz = ifile->size();
+            sz = (size32_t)ifile->size();
             void *mem = malloc(sz);
 
             fileIO->read(0, sz, mem);
@@ -2587,13 +2587,13 @@ NULL
         if (0 == l)
         {
             OwnedIFileIO newFileIO = newFile->open(IFOread);
-            read(newFileIO, 0, newFile->size(), newOutput);
+            read(newFileIO, 0, (size32_t)newFile->size(), newOutput);
             newFileIO.clear();
         }
         else
         {
             OwnedIFileIO newFileSecondaryIO = newFileSecondary->open(IFOread);
-            read(newFileSecondaryIO, 0, newFileSecondary->size(), secondary);
+            read(newFileSecondaryIO, 0, (size32_t)newFileSecondary->size(), secondary);
             newFileSecondaryIO.clear();
 
             if (newOutput.length() != secondary.length() || 0 != memcmp(newOutput.toByteArray(), secondary.toByteArray(), newOutput.length()))

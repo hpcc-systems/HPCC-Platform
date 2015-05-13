@@ -70,10 +70,10 @@
 #define VERIFY_DELAY            (1*60*1000)  // 1 Minute
 #define VERIFY_TIMEOUT          (1*60*1000)  // 1 Minute
 
-#define DIGIT1 (256UL*256UL*256UL*65536UL)
-#define DIGIT2 (256UL*256UL*65536UL)
-#define DIGIT3 (256UL*65536UL)
-#define DIGIT4 (65536UL)
+#define DIGIT1 U64C(0x10000000000) // (256ULL*256ULL*256ULL*65536ULL)
+#define DIGIT2 U64C(0x100000000)   // (256ULL*256ULL*65536ULL)
+#define DIGIT3 U64C(0x1000000)     // (256ULL*65536ULL)
+#define DIGIT4 U64C(0x10000)       // (65536ULL)
 
 #define _TRACING
 
@@ -676,7 +676,7 @@ class CMPChannel: public CInterface
     bool closed;
     IArrayOf<ISocket> keptsockets;
     CriticalSection attachsect;
-    unsigned long attachaddrval;
+    unsigned __int64 attachaddrval;
     SocketEndpoint attachep;
     atomic_t attachchk;
 
@@ -730,7 +730,7 @@ protected: friend class CMPPacketReader;
 
                 unsigned __int64 addrval = DIGIT1*id[0].ip[0] + DIGIT2*id[0].ip[1] + DIGIT3*id[0].ip[2] + DIGIT4*id[0].ip[3] + id[0].port;
 #ifdef _TRACE
-                PROGLOG("MP: connect addrval = %lu", addrval);
+                PROGLOG("MP: connect addrval = %" I64F "u", addrval);
 #endif
 
                 newsock->write(&id[0],sizeof(id)); 
@@ -773,7 +773,7 @@ protected: friend class CMPPacketReader;
                             if (remoteep.equals(attachep))
                             {
 #ifdef _TRACE
-                                PROGLOG("MP: deadlock situation [] attachaddrval = %lu addrval = %lu", attachaddrval, addrval);
+                                PROGLOG("MP: deadlock situation [] attachaddrval = %" I64F "u addrval = %" I64F "u", attachaddrval, addrval);
 #endif
                                 if (attachaddrval < addrval)
                                     break;
@@ -934,7 +934,7 @@ public:
 
     void reset();
 
-    bool attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,const SocketEndpoint &_localep,bool ismaster,size32_t *confirm, unsigned long addrval=0);
+    bool attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,const SocketEndpoint &_localep,bool ismaster,size32_t *confirm, unsigned __int64 addrval=0);
 
     bool writepacket(const void *hdr,size32_t hdrsize,const void *hdr2,size32_t hdr2size,const void *body,size32_t bodysize,CTimeMon &tm)
     {
@@ -1558,7 +1558,7 @@ CMPChannel::~CMPChannel()
     reader->Release();
 }
 
-bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,const SocketEndpoint &_localep,bool ismaster,size32_t *confirm, unsigned long addrval) // takes ownership if succeeds
+bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,const SocketEndpoint &_localep,bool ismaster,size32_t *confirm, unsigned __int64 addrval) // takes ownership if succeeds
 {
     struct attachdTor
     {
@@ -1568,7 +1568,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
     } attachChk (attachchk);
 
 #ifdef _FULLTRACE       
-    PROGLOG("MP: attachSocket on entry, ismaster = %d, confirm = %p, channelsock = %p, addrval = %u", ismaster, confirm, channelsock, addrval);
+    PROGLOG("MP: attachSocket on entry, ismaster = %d, confirm = %p, channelsock = %p, addrval = %" I64F "u", ismaster, confirm, channelsock, addrval);
 #endif
 
     {
@@ -1908,7 +1908,7 @@ int CMPConnectThread::run()
 
                 unsigned __int64 addrval = DIGIT1*id[0].ip[0] + DIGIT2*id[0].ip[1] + DIGIT3*id[0].ip[2] + DIGIT4*id[0].ip[3] + id[0].port;
 #ifdef _TRACE
-                PROGLOG("MP: Connect Thread: addrval = %lu", addrval);
+                PROGLOG("MP: Connect Thread: addrval = %" I64F "u", addrval);
 #endif
 
                 if (_remoteep.isNull() || hostep.isNull())

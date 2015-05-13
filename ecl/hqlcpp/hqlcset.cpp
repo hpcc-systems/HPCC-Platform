@@ -817,6 +817,9 @@ InlineLinkedDictionaryCursor::InlineLinkedDictionaryCursor(HqlCppTranslator & _t
 
 IHqlExpression * InlineLinkedDictionaryCursor::getFirstSearchValue(IHqlExpression * searchExpr, IHqlExpression * searchRecord)
 {
+    if (!searchExpr->isDatarow())
+        return LINK(searchExpr);
+
     if (searchExpr->getOperator() == no_alias)
         searchExpr = searchExpr->queryChild(0);
 
@@ -881,7 +884,14 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
         translator.buildDictionaryHashClass(record, lookupHelperName);
         args.append(*createQuoted(lookupHelperName, makeBoolType()));
         args.append(*LINK(dictionary));
-        args.append(*LINK(searchExpr));
+        if (!searchExpr->isDatarow())
+        {
+            //NOTE: This call should never fail since it has already succeeded in the parser.
+            ECLlocation unknownLocation;
+            args.append(*createRowForDictExpr(translator.queryErrorProcessor(), unknownLocation, searchExpr, dictionary));
+        }
+        else
+            args.append(*LINK(searchExpr));
         args.append(*::createRow(no_null, LINK(record))); // the default record
         lookupFunction = dictionaryLookupId;
     }
@@ -945,7 +955,14 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
         translator.buildDictionaryHashClass(record, lookupHelperName);
         args.append(*createQuoted(lookupHelperName, makeBoolType()));
         args.append(*LINK(dictionary));
-        args.append(*LINK(searchExpr));
+        if (!searchExpr->isDatarow())
+        {
+            //NOTE: This call should never fail since it has already succeeded in the parser.
+            ECLlocation unknownLocation;
+            args.append(*createRowForDictExpr(translator.queryErrorProcessor(), unknownLocation, searchExpr, dictionary));
+        }
+        else
+            args.append(*LINK(searchExpr));
         lookupFunction = dictionaryLookupExistsId;
     }
     OwnedHqlExpr call = translator.bindFunctionCall(lookupFunction, args, makeBoolType());

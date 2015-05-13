@@ -157,7 +157,7 @@ namespace JsonHelpers
 
         StringBuffer temp;
         IArrayOf<IException>& exceptions = e->getArray();
-        for (int i = 0 ; i < exceptions.ordinality(); i++)
+        for (unsigned i = 0 ; i < exceptions.ordinality(); i++)
         {
             appendJSONExceptionItem(s, e->errorCode(), e->errorMessage(temp.clear()).str(), objname, arrayName);
         }

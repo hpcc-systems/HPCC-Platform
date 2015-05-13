@@ -4264,8 +4264,8 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
 {
     class CDFUFileMetaDataReader
     {
-        int totalColumnCount;
-        int keyedColumnCount;
+        unsigned totalColumnCount;
+        unsigned keyedColumnCount;
         StringBuffer XmlSchema, XmlXPathSchema;
         IArrayOf<IEspDFUDataColumn> dataColumns;
         const IResultSetMetaData& meta;
@@ -4314,7 +4314,7 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
     public:
         CDFUFileMetaDataReader(const IResultSetMetaData& _meta) : meta(_meta)
         {
-            totalColumnCount = meta.getColumnCount();
+            totalColumnCount = (unsigned)meta.getColumnCount();
             keyedColumnCount = meta.getNumKeyedColumns();
             unsigned i = 0;
             for (; i < keyedColumnCount; i++)

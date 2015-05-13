@@ -2494,7 +2494,7 @@ public:
     }
 
     // Note that this caching mechanism (unlike the old keyed-join specific one) does not common up cases where multiple 
-    // identical queries are in-flight at the same time. But if we can make it persistant between queries that will 
+    // identical queries are in-flight at the same time. But if we can make it persistent between queries that will
     // more than make up for it
 };
 

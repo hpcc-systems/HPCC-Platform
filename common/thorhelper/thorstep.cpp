@@ -2691,7 +2691,7 @@ bool CProximityRangeJoinGenerator::gatherNextCandidates(unsigned iLowest)
             else
                 maxLowestBeforeCur = maxLeftBeforeRight * (iInput - iLowest);
 
-            assertex(maxLowestBeforeCur >= 0);          // should have created an anchored varient if not true
+            assertex(maxLowestBeforeCur >= 0);          // should have created an anchored variant if not true
 
             // maxLowestBeforeCur = maxCurAfterLowest
             unsigned __int64 maxDistance = lowestDistance + maxLowestBeforeCur;     

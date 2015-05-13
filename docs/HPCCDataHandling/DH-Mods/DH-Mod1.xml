@@ -588,6 +588,16 @@
 
                     <entry>Check this box to compress the files.</entry>
                   </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Quoted
+                    Terminator</emphasis></entry>
+
+                    <entry>Check this box to indicate that the terminator
+                    character can be included in a quoted field. If unchecked,
+                    it allows quicker partitioning of the file (avoiding a
+                    complete file scan).</entry>
+                  </row>
                 </tbody>
               </tgroup>
             </informaltable></para>

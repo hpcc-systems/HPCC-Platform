@@ -413,7 +413,7 @@ void CJobManager::run()
                             unsigned e = msTick() - t;
                             StringBuffer msg;
                             if (_item.get())
-                                msg.append("Jobqueue item retreived");
+                                msg.append("Jobqueue item retrieved");
                             else
                                 msg.append("Nothing found on jobq::dequeue");
                             if (e>=5000)
