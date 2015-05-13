@@ -1016,7 +1016,7 @@ public:
 
     IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord);
     unsigned buildRtlField(StringBuffer * instanceName, IHqlExpression * fieldKey);
-    unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type);
+    unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type, unsigned typeFlags);
     unsigned buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord);
