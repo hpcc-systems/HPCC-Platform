@@ -46,6 +46,22 @@
 #define SDS_SVER_MIN_NODESUBSCRIBE "3.12"
 
 
+enum DALockFilterType
+{
+    DALFTLockType = 1,
+    DALFTEndpoint = 2,
+    DALFTDuration = 3
+};
+
+enum DALockTypeFilter
+{
+    DALTFAll = 1,
+    DALTFFileLock = 2,
+    DALTFNonFileLock = 3
+};
+
+#define DALockFilterSeparator '|'
+
 enum SDSNotifyFlags { SDSNotify_None=0x00, SDSNotify_Data=0x01, SDSNotify_Structure=0x02, SDSNotify_Added=(SDSNotify_Structure+0x04), SDSNotify_Deleted=(SDSNotify_Structure+0x08), SDSNotify_Renamed=(SDSNotify_Structure+0x10) };
 interface ISDSSubscription : extends IInterface
 {
@@ -108,6 +124,7 @@ interface ISDSManager
     virtual void unsubscribe(SubscriptionId id) = 0;
     virtual void unsubscribeExact(SubscriptionId id) = 0;
     virtual StringBuffer &getLocks(StringBuffer &out) = 0;
+    virtual void getFilteredLocks(const char *filters, MemoryBuffer &out) = 0;
     virtual StringBuffer &getUsageStats(StringBuffer &out) = 0;
     virtual StringBuffer &getConnections(StringBuffer &out) = 0;
     virtual StringBuffer &getSubscribers(StringBuffer &out) = 0;

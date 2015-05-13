@@ -357,6 +357,36 @@ GetStatusServerInfoResponse
     ESPstruct StatusServerInfo StatusServerInfo;
 };
 
+ESPStruct [nil_remove] LockEndpoint
+{
+    string Endpoint;
+    string SessionID;
+    string ConnectionID;
+    unsigned DurationMS;
+    unsigned Mode;
+};
+
+ESPStruct [nil_remove] Lock
+{
+    string File;
+    string Path;
+    ESParray<ESPstruct LockEndpoint, Endpoint> Endpoints;
+};
+
+ESPrequest [nil_remove] GetLocksRequest
+{
+    string Endpoint;
+    unsigned DurationLow;
+    unsigned DurationHigh;
+    bool FileLockOnly;
+    bool NonFileLockOnly;
+};
+
+ESPresponse [exceptions_inline, nil_remove] GetLocksResponse
+{
+    ESParray<ESPstruct Lock, Lock> Locks;
+};
+
 ESPservice [noforms, version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
@@ -383,6 +413,7 @@ ESPservice [noforms, version("1.19"), exceptions_inline("./smc_xslt/exceptions.x
 
     ESPmethod RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
     ESPmethod GetStatusServerInfo(GetStatusServerInfoRequest, GetStatusServerInfoResponse);
+    ESPmethod GetLocks(GetLocksRequest, GetLocksResponse);
 };
 
 SCMexportdef(WSSMC);

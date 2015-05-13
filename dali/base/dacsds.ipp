@@ -406,6 +406,7 @@ public:
     virtual void unsubscribe(SubscriptionId id);
     virtual void unsubscribeExact(SubscriptionId id);
     virtual StringBuffer &getLocks(StringBuffer &out);
+    virtual void getFilteredLocks(const char *filters, MemoryBuffer &mb);
     virtual StringBuffer &getUsageStats(StringBuffer &out);
     virtual StringBuffer &getConnections(StringBuffer &out);
     virtual StringBuffer &getSubscribers(StringBuffer &out);

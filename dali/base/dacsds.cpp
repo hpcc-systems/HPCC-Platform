@@ -1887,6 +1887,13 @@ StringBuffer &CClientSDSManager::getLocks(StringBuffer &out)
     return getInfo(DIAG_CMD_LOCKINFO, out);
 }
 
+void CClientSDSManager::getFilteredLocks(const char *filters, MemoryBuffer &mb)
+{
+    StringBuffer out;
+    getInfo(DIAG_CMD_LOCKINFO, out);
+    mb.append(out.str());
+}
+
 StringBuffer &CClientSDSManager::getUsageStats(StringBuffer &out)
 {
     return getInfo(DIAG_CMD_STATS, out);
