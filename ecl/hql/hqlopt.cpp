@@ -763,7 +763,71 @@ IHqlExpression * CTreeOptimizer::optimizeDatasetIf(IHqlExpression * transformed)
             noteUnused(left);
         return transformed->cloneAllAnnotations(ret);
     }
-    return LINK(transformed);
+    return NULL;
+}
+
+IHqlExpression * CTreeOptimizer::optimizeIfAppend(IHqlExpression * expr, node_operator combineOp)
+{
+    IHqlExpression * trueExpr = expr->queryChild(1);
+    IHqlExpression * falseExpr = expr->queryChild(2);
+    if (!falseExpr)
+        return NULL;
+
+    IHqlExpression * commonExpr = NULL;
+    IHqlExpression * appendExpr = trueExpr;
+    if ((trueExpr->getOperator() == combineOp) && !isShared(trueExpr))
+    {
+        IHqlExpression * trueArg0 = trueExpr->queryChild(0);
+        if (trueArg0->queryBody() == falseExpr->queryBody())
+        {
+            //Convert IF(a, b+c, b) to b + IF(a, DATASET(c))
+            commonExpr = falseExpr;
+        }
+        else if ((falseExpr->getOperator() == combineOp) && !isShared(falseExpr) &&
+                 (trueArg0->queryBody() == falseExpr->queryChild(0)->queryBody()))
+        {
+            //Convert IF(a, b+c, b+d) to b + IF(a, DATASET(c), DATASET(d))
+
+            //Check any other attributes match
+            if (remainingChildrenMatch(trueExpr, falseExpr, 3))
+                commonExpr = trueArg0;
+        }
+    }
+    else if ((falseExpr->getOperator() == combineOp) && !isShared(falseExpr))
+    {
+        if (trueExpr->queryBody() == falseExpr->queryChild(0)->queryBody())
+        {
+            //Convert IF(a, b, b+c) to b + IF(a, DATASET(), DATASET(c))
+            commonExpr = trueExpr;
+            appendExpr = falseExpr;
+        }
+    }
+
+    if (!commonExpr)
+        return NULL;
+
+    //Create an IF() for the expression that wasn't common between the two branches
+    HqlExprArray ifargs;
+    ifargs.append(*LINK(expr->queryChild(0)));
+    if (trueExpr->queryBody() == commonExpr->queryBody())
+        ifargs.append(*createNullExpr(expr));
+    else
+        ifargs.append(*ensureDataset(trueExpr->queryChild(1)));
+    if (falseExpr->queryBody() == commonExpr->queryBody())
+        ifargs.append(*createNullExpr(expr));
+    else
+        ifargs.append(*ensureDataset(falseExpr->queryChild(1)));
+
+    OwnedHqlExpr newIf = expr->clone(ifargs);
+    incUsage(newIf);
+
+    //Append the common dataset with the new IF()
+    HqlExprArray args;
+    args.append(*LINK(commonExpr));
+    args.append(*newIf.getClear());
+    OwnedHqlExpr ret = appendExpr->clone(args);
+    DBGLOG("Optimizer: Extract common branch - replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
+    return ret.getClear();
 }
 
 static bool branchesMatch(unsigned options, IHqlExpression * left, IHqlExpression * right)
@@ -2195,19 +2259,27 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
     IHqlExpression * child = transformed->queryChild(0);
 
     //Any optimizations that remove the current node, or modify the current node don't need to check if the children are shared
-    //Removing child nodes could be included, but it may create more spillers/spliters - which may be significant in thor.
+    //Removing child nodes could be included, but it may create more spillers/splitters - which may be significant in thor.
     switch (op)
     {
     case no_if:
         {
             OwnedHqlExpr ret = optimizeIf(transformed);
+
+            //This won't split shared nodes, but one of the children may be shared - so processed here
+            if (!ret && transformed->isDataset())
+            {
+                //Convert IF(a, f(ds), g(ds)) to ds(IF(a,f,g)) - revisit since may increase dependencies
+                ret.setown(optimizeDatasetIf(transformed));
+
+                //Convert IF(a, b+c, b+d) to b + IF(a, DATASET(c), DATASET(d))
+                if (!ret)
+                    ret.setown(optimizeIfAppend(transformed, no_addfiles));
+            }
+
             if (ret)
                 return ret.getClear();
-
-            //Processed hereThis won't split shared nodes, but one of the children may be shared - so proce
-            if (transformed->isDataset())
-                return optimizeDatasetIf(transformed);
-            break;
+            return LINK(transformed);
         }
     case no_keyedlimit:
         {
