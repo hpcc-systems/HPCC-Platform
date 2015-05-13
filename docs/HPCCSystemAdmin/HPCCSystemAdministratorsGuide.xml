@@ -1082,6 +1082,9 @@ lock=/var/lock/HPCCSystems</programlisting>
     </sect1>
 
     <!--Inclusions-As-Sect1-->
+ <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
                 xpointer="User_Security_Maint"
