@@ -981,21 +981,24 @@ void ParentExtract::beginCreateExtract(BuildCtx & ctx, bool doDeclare)
     // cses get commoned up by tagging the serialization somehow.
     serialization = SerializationRow::create(translator, boundBuilder.expr, container ? container->queryActivity() : NULL);
 
+    OwnedHqlExpr finalFixedSize = serialization->getFinalFixedSizeExpr();
+
     //Probably do this later and allow it to be null.  Will need a mechanism for calling some finalisation code
     //after all code is generated in order to do it.
     if (doDeclare)
-    {
-        BuildCtx * declarectx = buildctx;
-        declarectx->addDeclare(boundBuilder.expr);
-    }
+        buildctx.addDeclare(boundBuilder.expr, finalFixedSize);
 
     buildctx->associateOwn(*LINK(serialization));
 
     //Ensure the row is large enough to cope with any fixed fields - will only get relocated if variable fields are serialised
-    HqlExprArray args;
-    args.append(*LINK(serialization->queryBound()));
-    args.append(*serialization->getFinalFixedSizeExpr());
-    translator.callProcedure(*buildctx, ensureRowAvailableId, args);
+    if (!doDeclare)
+    {
+        HqlExprArray args;
+        args.append(*LINK(serialization->queryBound()));
+        args.append(*LINK(finalFixedSize));
+        translator.callProcedure(*buildctx, ensureRowAvailableId, args);
+        throwUnexpected();
+    }
 
     //Collect a list of cursors together... NB these are in reverse order..
     gatherActiveRows(*buildctx);
