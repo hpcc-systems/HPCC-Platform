@@ -896,7 +896,6 @@ bool HqlCppTranslator::isNeverDistributed(IHqlExpression * expr)
     
 //============================================================================
 
-
 ParentExtract::ParentExtract(HqlCppTranslator & _translator, PEtype _type, IHqlExpression * _graphId, GraphLocalisation _localisation, EvalContext * _container)
 : HqlExprAssociation(parentExtractMarkerExpr), translator(_translator), type(_type), graphId(_graphId)
 {
@@ -977,19 +976,19 @@ void ParentExtract::associateCursors(BuildCtx & declarectx, BuildCtx & evalctx, 
 void ParentExtract::beginCreateExtract(BuildCtx & ctx, bool doDeclare)
 {
     buildctx.setown(new BuildCtx(ctx));
+
     // Don't leak the serialization row into other sub calls - may want to do this a different way so
     // cses get commoned up by tagging the serialization somehow.
+    serialization = SerializationRow::create(translator, boundBuilder.expr, container ? container->queryActivity() : NULL);
 
     //Probably do this later and allow it to be null.  Will need a mechanism for calling some finalisation code
     //after all code is generated in order to do it.
     if (doDeclare)
     {
         BuildCtx * declarectx = buildctx;
-        translator.getInvariantMemberContext(ctx, &declarectx, NULL, false, false);
         declarectx->addDeclare(boundBuilder.expr);
     }
 
-    serialization = SerializationRow::create(translator, boundBuilder.expr, container ? container->queryActivity() : NULL);
     buildctx->associateOwn(*LINK(serialization));
 
     //Ensure the row is large enough to cope with any fixed fields - will only get relocated if variable fields are serialised
