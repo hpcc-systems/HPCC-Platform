@@ -75,6 +75,7 @@ class ECLRTL_API rtlRowBuilder : public rtlDataAttr
 {
 public:
     inline rtlRowBuilder()              { maxsize = 0; }
+    inline rtlRowBuilder(size32_t size) { forceAvailable(size); }
 
     inline void clear()                 { maxsize = 0; rtlDataAttr::clear(); }
     inline size32_t size()              { return maxsize; }
@@ -91,6 +92,17 @@ protected:
     size32_t maxsize;
 };
     
+template <unsigned maxsize>
+class ECLRTL_API rtlFixedRowBuilder
+{
+public:
+    inline void ensureAvailable(size32_t size) {}
+    inline byte * getbytes()  { return data; }
+
+protected:
+    byte data[maxsize];
+};
+
 class ECLRTL_API rtlCompiledStrRegex
 {
 public:
