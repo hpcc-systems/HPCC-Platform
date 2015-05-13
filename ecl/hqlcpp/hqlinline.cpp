@@ -907,7 +907,6 @@ ParentExtract::ParentExtract(HqlCppTranslator & _translator, PEtype _type, IHqlE
     Owned<ITypeInfo> nullRow = makeRowType(queryNullRecord()->getType());
     Owned<ITypeInfo> declType = makeModifier(makeWrapperModifier(LINK(nullRow)), typemod_builder);
 
-    StringBuffer extractName;
     translator.getUniqueId(extractName.append("ex"));
     boundBuilder.expr.setown(createVariable(extractName.str(), LINK(declType)));
     boundExtract.expr.setown(createVariable(extractName.str(), makeReferenceModifier(LINK(nullRow))));
@@ -981,21 +980,26 @@ void ParentExtract::beginCreateExtract(BuildCtx & ctx, bool doDeclare)
     // cses get commoned up by tagging the serialization somehow.
     serialization = SerializationRow::create(translator, boundBuilder.expr, container ? container->queryActivity() : NULL);
 
+    OwnedHqlExpr finalFixedSize = serialization->getFinalFixedSizeExpr();
+
     //Probably do this later and allow it to be null.  Will need a mechanism for calling some finalisation code
     //after all code is generated in order to do it.
     if (doDeclare)
     {
-        BuildCtx * declarectx = buildctx;
-        declarectx->addDeclare(boundBuilder.expr);
+        declarectx.setown(new BuildCtx(*buildctx));
+        declarectx->addGroup();
     }
 
     buildctx->associateOwn(*LINK(serialization));
 
     //Ensure the row is large enough to cope with any fixed fields - will only get relocated if variable fields are serialised
-    HqlExprArray args;
-    args.append(*LINK(serialization->queryBound()));
-    args.append(*serialization->getFinalFixedSizeExpr());
-    translator.callProcedure(*buildctx, ensureRowAvailableId, args);
+    if (!doDeclare)
+    {
+        HqlExprArray args;
+        args.append(*LINK(serialization->queryBound()));
+        args.append(*LINK(finalFixedSize));
+        translator.callProcedure(*buildctx, ensureRowAvailableId, args);
+    }
 
     //Collect a list of cursors together... NB these are in reverse order..
     gatherActiveRows(*buildctx);
@@ -1009,15 +1013,6 @@ void ParentExtract::beginNestedExtract(BuildCtx & clonectx)
     //Collect a list of cursors together... NB these are in reverse order..
     gatherActiveRows(clonectx);
 }
-
-
-void ParentExtract::beginReuseExtract()
-{
-    //MORE: Should really check that the same rows are active...
-    //Need to check if any additional rows, and if so bind them.
-    childSerialization->setBuilder(this);
-}
-
 
 
 void ParentExtract::beginChildActivity(BuildCtx & declareCtx, BuildCtx & startCtx, GraphLocalisation childLocalisation, IHqlExpression * colocal, bool nested, bool ignoreSelf, ActivityInstance * activityRequiringCast)
@@ -1144,6 +1139,23 @@ void ParentExtract::endCreateExtract(CHqlBoundExpr & boundExtract)
 void ParentExtract::endUseExtract(BuildCtx & ctx)
 {
     childSerialization->finalize();
+
+    if (declarectx)
+    {
+        unsigned minSize = serialization->getTotalMinimumSize();
+        OwnedHqlExpr finalFixedSize = getSizetConstant(minSize);
+        if (serialization->isFixedSize())
+        {
+            Owned<ITypeInfo> nullRow = makeRowType(queryNullRecord()->getType());
+            Owned<ITypeInfo> declType = makeModifier(makeWrapperModifier(LINK(nullRow)), typemod_builder, LINK(finalFixedSize));
+            OwnedHqlExpr fixedSizeBuilder = createVariable(extractName, LINK(declType));
+            declarectx->addDeclare(fixedSizeBuilder);
+        }
+        else
+        {
+            declarectx->addDeclare(boundBuilder.expr, finalFixedSize);
+        }
+    }
 
     //Not so sure about the lifetime of this.  If the extract was saved for a later occasion (e.g., prefetch project) then may be destroyed too soon.
     if (canDestroyExtract)
@@ -1369,16 +1381,8 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
 
 ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, GraphLocalisation localisation, bool doDeclare)
 {
-    ParentExtract * extractor = NULL;
-//  if (localisation == GraphCoLocal)
-//      extract = checkForPreexistingExtract - find a bound association before a row association is found;
-    if (!extractor)
-    {
-        extractor = new ParentExtract(*this, type, graphId, localisation, queryEvalContext(ctx));
-        extractor->beginCreateExtract(ctx, doDeclare);
-    }
-    else
-        extractor->beginReuseExtract();
+    ParentExtract * extractor = new ParentExtract(*this, type, graphId, localisation, queryEvalContext(ctx));
+    extractor->beginCreateExtract(ctx, doDeclare);
     return extractor;
 }
 

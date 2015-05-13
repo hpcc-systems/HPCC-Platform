@@ -1935,8 +1935,21 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
     size32_t typeSize = type->getSize();
     if (hasWrapperModifier(type))
     {
-        if (hasModifier(type, typemod_builder))
-            out.append("rtlRowBuilder ").append(targetName);
+        ITypeInfo * builderModifier = queryModifier(type, typemod_builder);
+        if (builderModifier)
+        {
+            IHqlExpression * size = static_cast<IHqlExpression *>(builderModifier->queryModifierExtra());
+            if (size)
+            {
+                unsigned fixedSize = getIntValue(size);
+                if (fixedSize == 0)
+                    out.append("rtlEmptyRowBuilder ").append(targetName);
+                else
+                    out.append("rtlFixedRowBuilder<").append(fixedSize).append("> ").append(targetName);
+            }
+            else
+                out.append("rtlRowBuilder ").append(targetName);
+        }
         else if (hasStreamedModifier(type))
         {
             out.append("Owned<IRowStream> ").append(targetName);
