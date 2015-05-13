@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//nohthor
+
 idRec := { unsigned id; };
 mainRec := { unsigned seq, dataset(idRec) ids };
 
