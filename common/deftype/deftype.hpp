@@ -128,6 +128,7 @@ enum typemod_t
     typemod_outofline   = 8,
     typemod_attr        = 9,
     typemod_indirect    = 10,       // type definition needs to go via an ecl definition
+    typemod_mutable     = 11,
     typemod_max
 };
 
