@@ -93,8 +93,10 @@ typedef memsize_t rowsize_t;
 
 #ifdef _WIN32
 #define I64C(n) n##i64
+#define U64C(n) n##ui64
 #else
 #define I64C(n) n##LL
+#define U64C(n) n##ULL
 #endif
 
 // **** END   OF X-PLATFORM SECTION ****
