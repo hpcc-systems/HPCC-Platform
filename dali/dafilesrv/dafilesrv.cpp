@@ -358,6 +358,35 @@ int main(int argc,char **argv)
     unsigned throttleDelayMs = DEFAULT_THROTTLEDELAYMS;
     unsigned throttleCPULimit = DEFAULT_THROTTLECPULIMIT;
 
+    Owned<IPropertyTree> env = getHPCCEnvironment();
+    if (env)
+    {
+        StringBuffer dafilesrvPath("Software/DafilesrvProcess");
+        if (instanceName.length())
+            dafilesrvPath.appendf("[@name=\"%s\"]", instanceName.str());
+        IPropertyTree *daFileSrv = env->queryPropTree(dafilesrvPath);
+        if (daFileSrv)
+        {
+            // global DaFileSrv settings:
+            parallelRequestLimit = daFileSrv->getPropInt("@parallelRequestLimit", DEFAULT_PARALLELREQUESTLIMIT);
+            throttleDelayMs = daFileSrv->getPropInt("@throttleDelayMs", DEFAULT_THROTTLEDELAYMS);
+            throttleCPULimit = daFileSrv->getPropInt("@throttleCPULimit", DEFAULT_THROTTLECPULIMIT);
+
+            // any overrides by Instance definitions?
+            // NB: This won't work if netAddress is "." or if we start supporting hostnames there
+            StringBuffer ipStr;
+            queryHostIP().getIpText(ipStr);
+            VStringBuffer daFileSrvPath("Instance[@netAddress=\"%s\"]", ipStr.str());
+            IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
+            if (dafileSrvInstance)
+            {
+                parallelRequestLimit = dafileSrvInstance->getPropInt("@parallelRequestLimit", parallelRequestLimit);
+                throttleDelayMs = dafileSrvInstance->getPropInt("@throttleDelayMs", throttleDelayMs);
+                throttleCPULimit = dafileSrvInstance->getPropInt("@throttleCPULimit", throttleCPULimit);
+            }
+        }
+    }
+
     while (argc>i) {
         if (stricmp(argv[i],"-D")==0) {
             i++;
@@ -579,34 +608,6 @@ int main(int argc,char **argv)
         lf->beginLogging();
     }
 
-    Owned<IPropertyTree> env = getHPCCEnvironment();
-    if (env)
-    {
-        StringBuffer dafilesrvPath("Software/DafilesrvProcess");
-        if (instanceName.length())
-            dafilesrvPath.appendf("[@name=\"%s\"]", instanceName.str());
-        IPropertyTree *daFileSrv = env->queryPropTree(dafilesrvPath);
-        if (daFileSrv)
-        {
-            // global DaFileSrv settings:
-            parallelRequestLimit = daFileSrv->getPropInt("@parallelRequestLimit", DEFAULT_PARALLELREQUESTLIMIT);
-            throttleDelayMs = daFileSrv->getPropInt("@throttleDelayMs", DEFAULT_THROTTLEDELAYMS);
-            throttleCPULimit = daFileSrv->getPropInt("@throttleCPULimit", DEFAULT_THROTTLECPULIMIT);
-
-            // any overrides by Instance definitions?
-            // NB: This won't work if netAddress is "." or if we start supporting hostnames there
-            StringBuffer ipStr;
-            queryHostIP().getIpText(ipStr);
-            VStringBuffer daFileSrvPath("Instance[@netAddress=\"%s\"]", ipStr.str());
-            IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
-            if (dafileSrvInstance)
-            {
-                parallelRequestLimit = dafileSrvInstance->getPropInt("@parallelRequestLimit", parallelRequestLimit);
-                throttleDelayMs = dafileSrvInstance->getPropInt("@throttleDelayMs", throttleDelayMs);
-                throttleCPULimit = dafileSrvInstance->getPropInt("@throttleCPULimit", throttleCPULimit);
-            }
-        }
-    }
     PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
 
     const char * verstring = remoteServerVersionString();

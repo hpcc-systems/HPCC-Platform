@@ -50,6 +50,7 @@ extern REMOTE_API unsigned stopRemoteServer(ISocket * _socket);
 extern REMOTE_API const char *remoteServerVersionString();
 extern REMOTE_API IRemoteFileServer * createRemoteFileServer(unsigned throttleLimit=DEFAULT_PARALLELREQUESTLIMIT, unsigned throttleDelayMs=DEFAULT_THROTTLEDELAYMS, unsigned throttleCPULimit=DEFAULT_THROTTLECPULIMIT);
 extern REMOTE_API int setDafsTrace(ISocket * socket,byte flags);
+extern REMOTE_API int setDafsThrottleLimit(ISocket * socket, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit);
 extern REMOTE_API bool enableDafsAuthentication(bool on);
 extern int remoteExec(ISocket * socket, const char *cmdline, const char *workdir,bool sync,
                 size32_t insize, void *inbuf, MemoryBuffer *outbuf);
