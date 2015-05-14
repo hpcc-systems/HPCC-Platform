@@ -40,8 +40,6 @@ streamed dataset(outRecord) doRead(const varstring name) := EMBED(C++ : distribu
     };
 
     #body
-    unsigned numParts = ctx->getNodes();
-    unsigned whichPart = ctx->getNodeNum();
     return new StreamCreator(ctx, _resultAllocator);
 ENDEMBED;
 
@@ -74,7 +72,6 @@ dataset(outRecord) doReadBlock(const varstring name) := EMBED(C++ : distributed)
     static const char * rows3 = "Gavin     \x01Simon     \002Charlotte \x09TheEnd    \x00";
 
     #body
-    //Can return constant allocations as roxie rows
     __lenResult = 44;
     __result = rtlMalloc(44);
     memcpy(__result, rows3, 44);

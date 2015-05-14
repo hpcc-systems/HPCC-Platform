@@ -401,7 +401,7 @@ class CStreamedIteratorSlaveActivity : public CSlaveActivity, public CThorDataLi
 {
     IHThorStreamedIteratorArg *helper;
     Owned<IRowStream> rows;
-    bool eof, isLocal;
+    bool eof;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -414,7 +414,6 @@ public:
     {
         appendOutputLinked(this);   // adding 'me' to outputs array
         helper = static_cast <IHThorStreamedIteratorArg *> (queryHelper());
-        isLocal = false;
     }
     virtual void start()
     {
