@@ -1387,9 +1387,9 @@ ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype ty
 ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, IHqlExpression * expr, bool doDeclare)
 {
     if (isAlwaysCoLocal())
-        return createExtractBuilder(ctx, type, graphId, GraphCoLocal, true);
+        return createExtractBuilder(ctx, type, graphId, GraphCoLocal, doDeclare);
     bool isInsideChildQuery = (type == PETchild) || insideChildQuery(ctx);
-    return createExtractBuilder(ctx, type, graphId, getGraphLocalisation(expr, isInsideChildQuery), true);
+    return createExtractBuilder(ctx, type, graphId, getGraphLocalisation(expr, isInsideChildQuery), doDeclare);
 }
 
 
