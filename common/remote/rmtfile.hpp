@@ -68,6 +68,7 @@ extern REMOTE_API int remoteExec(const SocketEndpoint &ep,const char *cmdline, c
 extern REMOTE_API void remoteExtractBlobElements(const char * prefix, const RemoteFilename &file, ExtractedBlobArray & extracted);
 
 extern REMOTE_API int setDafileSvrTraceFlags(const SocketEndpoint &ep,byte flags);
+extern REMOTE_API int setDafileSvrThrottleLimit(const SocketEndpoint &_ep, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit);
 extern REMOTE_API int getDafileSvrInfo(const SocketEndpoint &ep,StringBuffer &retstr);
 
 extern REMOTE_API void disconnectRemoteFile(IFile *file);

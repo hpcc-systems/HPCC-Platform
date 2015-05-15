@@ -348,11 +348,44 @@ int main(int argc,char **argv)
     StringBuffer logDir;
     StringBuffer instanceName;
 
-    //Get SSL Settings
+   //Get SSL Settings
     const char *    sslCertFile;
     bool            useSSL;
     unsigned short  dafsPort;//DAFILESRV_PORT or SECURE_DAFILESRV_PORT
     querySecuritySettings(&useSSL, &dafsPort, &sslCertFile, NULL);
+
+    unsigned parallelRequestLimit = DEFAULT_PARALLELREQUESTLIMIT;
+    unsigned throttleDelayMs = DEFAULT_THROTTLEDELAYMS;
+    unsigned throttleCPULimit = DEFAULT_THROTTLECPULIMIT;
+
+    Owned<IPropertyTree> env = getHPCCEnvironment();
+    if (env)
+    {
+        StringBuffer dafilesrvPath("Software/DafilesrvProcess");
+        if (instanceName.length())
+            dafilesrvPath.appendf("[@name=\"%s\"]", instanceName.str());
+        IPropertyTree *daFileSrv = env->queryPropTree(dafilesrvPath);
+        if (daFileSrv)
+        {
+            // global DaFileSrv settings:
+            parallelRequestLimit = daFileSrv->getPropInt("@parallelRequestLimit", DEFAULT_PARALLELREQUESTLIMIT);
+            throttleDelayMs = daFileSrv->getPropInt("@throttleDelayMs", DEFAULT_THROTTLEDELAYMS);
+            throttleCPULimit = daFileSrv->getPropInt("@throttleCPULimit", DEFAULT_THROTTLECPULIMIT);
+
+            // any overrides by Instance definitions?
+            // NB: This won't work if netAddress is "." or if we start supporting hostnames there
+            StringBuffer ipStr;
+            queryHostIP().getIpText(ipStr);
+            VStringBuffer daFileSrvPath("Instance[@netAddress=\"%s\"]", ipStr.str());
+            IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
+            if (dafileSrvInstance)
+            {
+                parallelRequestLimit = dafileSrvInstance->getPropInt("@parallelRequestLimit", parallelRequestLimit);
+                throttleDelayMs = dafileSrvInstance->getPropInt("@throttleDelayMs", throttleDelayMs);
+                throttleCPULimit = dafileSrvInstance->getPropInt("@throttleCPULimit", throttleCPULimit);
+            }
+        }
+    }
 
     while (argc>i) {
         if (stricmp(argv[i],"-D")==0) {
@@ -548,7 +581,7 @@ int main(int argc,char **argv)
                 PROGLOG("Version: %s", verstring);
                 PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Running");
-                server.setown(createRemoteFileServer());
+                server.setown(createRemoteFileServer(parallelRequestLimit, throttleDelayMs, throttleCPULimit));
                 try {
                     server->run(listenep, useSSL);
                 }
@@ -574,6 +607,9 @@ int main(int argc,char **argv)
         lf->setMaxDetail(TopDetail);
         lf->beginLogging();
     }
+
+    PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
+
     const char * verstring = remoteServerVersionString();
     StringBuffer eps;
     if (listenep.isNull())
@@ -585,7 +621,7 @@ int main(int argc,char **argv)
     PROGLOG("Version: %s", verstring);
     PROGLOG("Authentication:%s required",requireauthenticate?"":" not");
     startPerformanceMonitor(10*60*1000, PerfMonStandard);
-    server.setown(createRemoteFileServer());
+    server.setown(createRemoteFileServer(parallelRequestLimit, throttleDelayMs, throttleCPULimit));
     writeSentinelFile(sentinelFile);
     try {
         server->run(listenep, useSSL);
