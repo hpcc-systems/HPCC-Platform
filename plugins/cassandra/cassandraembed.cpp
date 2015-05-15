@@ -2533,11 +2533,12 @@ public:
     {
         // NOTE - name here provides a list of attributes that we should NOT be mapping
         Owned<IAttributeIterator> attrs = row->getAttributes();
-        unsigned numItems = attrs->count();
+        unsigned numItems = 0;
         ForEach(*attrs)
         {
-            const char *key = attrs->queryName();
-            if (strstr(name, key) == NULL) // MORE - should really check that the following char is a @
+            StringBuffer key = attrs->queryName();
+            key.append('@');
+            if (strstr(name, key) == NULL)
                 numItems++;
         }
         if (numItems)
@@ -2547,11 +2548,12 @@ public:
                 CassandraCollection collection(cass_collection_new(CASS_COLLECTION_TYPE_MAP, numItems));
                 ForEach(*attrs)
                 {
-                    const char *key = attrs->queryName();
-                    if (strstr(name, key) == NULL) // MORE - should really check that the following char is a @
+                    StringBuffer key = attrs->queryName();
+                    key.append('@');
+                    if (strstr(name, key) == NULL)
                     {
                         const char *value = attrs->queryValue();
-                        check(cass_collection_append_string(collection, cass_string_init(key+1)));  // skip the @
+                        check(cass_collection_append_string(collection, cass_string_init(attrs->queryName()+1)));  // skip the @
                         check(cass_collection_append_string(collection, cass_string_init(value)));
                     }
                 }
@@ -2738,7 +2740,7 @@ const CassandraXmlMapping workunitsMappings [] =
     {"state", "text", "@state", stringColumnMapper},
 
     {"debug", "map<text, text>", "Debug", simpleMapColumnMapper},
-    {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state", attributeMapColumnMapper},  // name is the suppression list
+    {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
     {"graphs", "map<text, text>", "Graphs", graphMapColumnMapper}, // MORE - make me lazy...
     {"plugins", "list<text>", "Plugins", pluginListColumnMapper},
     {"query", "text", "Query/Text", queryTextColumnMapper},        // MORE - make me lazy...
@@ -2834,9 +2836,12 @@ const ChildTableInfo wuExceptionsTable =
 const CassandraXmlMapping wuStatisticsMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
+    {"ts", "bigint", "@ts", bigintColumnMapper},  // MORE - should change this to a timeuuid ?
     {"kind", "text", "@kind", stringColumnMapper},
-    {"attributes", "map<text, text>", "@kind", attributeMapColumnMapper},
-    { NULL, "wuStatistics", "((wuid), kind)", stringColumnMapper}
+    {"creator", "text", "@creator", stringColumnMapper},
+    {"scope", "text", "@scope", stringColumnMapper},
+    {"attributes", "map<text, text>", "@ts@kind@creator@scope@", attributeMapColumnMapper},
+    { NULL, "wuStatistics", "((wuid), ts, kind, creator, scope)", stringColumnMapper}
 };
 
 const ChildTableInfo wuStatisticsTable =
@@ -2870,7 +2875,7 @@ const CassandraXmlMapping wuResultsMappings [] =
     {"name", "text", "@name", stringColumnMapper},
     {"format", "text", "@format", stringColumnMapper},  // xml, xmlset, csv, or null to mean raw. Could probably switch to int if we wanted
     {"status", "text", "@status", stringColumnMapper},
-    {"attributes", "map<text, text>", "@sequence@name@format@status", attributeMapColumnMapper},  // name is the suppression list. We could consider folding format/status into this?
+    {"attributes", "map<text, text>", "@sequence@name@format@status@", attributeMapColumnMapper},  // name is the suppression list. We could consider folding format/status into this?
     {"rowcount", "int", "rowCount", intColumnMapper}, // This is the number of rows in result (which may be stored in a file rather than in value)
     {"totalrowcount", "bigint", "totalRowCount", bigintColumnMapper},// This is the number of rows in value
     {"schemaRaw", "blob", "SchemaRaw", blobColumnMapper},
@@ -2905,7 +2910,7 @@ const CassandraXmlMapping wuVariablesMappings [] =
 
 const ChildTableInfo wuVariablesTable =
 {
-        "Results", "Result", // Uses Results branch in XML for historical reasons
+        "Variables", "Variable", // Actually sometimes uses Variables, sometimes Temporaries.... MORE - think about how to fix that...
         WuVariablesChild,
         wuVariablesMappings
 };
@@ -2931,14 +2936,7 @@ void getBoundFieldNames(const CassandraXmlMapping *mappings, StringBuffer &names
 }
 
 void getFieldNames(const CassandraXmlMapping *mappings, StringBuffer &names, StringBuffer &tableName)
-{const ChildTableInfo wuResultsTable =
 {
-        "Results", "Result",
-        WuResultsChild,
-        wuResultsMappings
-};
-
-
     while (mappings->columnName)
     {
         names.appendf(",%s", mappings->columnName);
@@ -3343,6 +3341,7 @@ public:
     {
         CLocalWorkUnit::loadPTree(wuXML);
         allDirty = false;   // Debatable... depends where the XML came from! If we read it from Cassandra. it's not. Otherwise, it is...
+        memset(childLoaded, 0, sizeof(childLoaded));
         abortDirty = true;
         abortState = false;
     }
@@ -3489,24 +3488,22 @@ public:
         IPropertyTree *fromP = queryExtendedWU(cached)->queryPTree();
         for (const CassandraXmlMapping **mapping = secondaryTables; *mapping; mapping++)
             trackSecondaryChange(fromP->queryProp(mapping[0]->xpath), *mapping);
-        // This populates entire XML tree - so we need to note that we did so to ensure everything is flushed by commit
+        for (const ChildTableInfo **table = childTables; *table != NULL; table++)
+            checkChildLoaded(**table);
         CLocalWorkUnit::copyWorkUnit(cached, all);
+        memset(childLoaded, 1, sizeof(childLoaded));
         allDirty = true;
     }
 
     virtual void _loadResults() const
     {
-        // Lazy populate the Results branch of p from Cassandra
-        cassandraToWuChildXML(sessionCache->querySession(), wuResultsMappings, "Results", "Result", queryWuid(), p);
-        // MORE - we should really also override CLocalWUResult so that value and schema can be lazy-fetched
+        checkChildLoaded(wuResultsTable);        // Lazy populate the Results branch of p from Cassandra
         CLocalWorkUnit::_loadResults();
     }
 
     virtual void _loadStatistics() const
     {
-        // Lazy populate the Statistics branch of p from Cassandra
-        if (!statistics.cached)
-            cassandraToWuChildXML(sessionCache->querySession(), wuStatisticsMappings, "Statistics", "Statistic", queryWuid(), p);
+        checkChildLoaded(wuStatisticsTable);        // Lazy populate the Statistics branch of p from Cassandra
         CLocalWorkUnit::_loadStatistics();
     }
 
@@ -3514,20 +3511,27 @@ public:
     {
         // If anyone wants the whole ptree, we'd better make sure we have fully loaded it...
         CriticalBlock b(crit);
-        const char *wuid = queryWuid();
-        if (!resultsCached)  // Should really track the load from cassandra to ptree separately from the load from xml
-            cassandraToWuChildXML(sessionCache->querySession(), wuResultsMappings, "Results", "Result", wuid, p);
-        if (!statistics.cached)
-            cassandraToWuChildXML(sessionCache->querySession(), wuStatisticsMappings, "Statistics", "Statistic", wuid, p);
+        for (const ChildTableInfo **table = childTables; *table != NULL; table++)
+            checkChildLoaded(**table);
         return p;
     }
 protected:
     // Delete child table rows
-
     void deleteChildren(const char *wuid)
     {
         for (const ChildTableInfo **table = childTables; *table != NULL; table++)
             deleteChildByWuid(table[0]->mappings, wuid, sessionCache, *batch);
+    }
+
+    // Lazy-populate a portion of WU xml from a child table
+    void checkChildLoaded(const ChildTableInfo &child) const
+    {
+        // NOTE - should be called inside critsec
+        if (!childLoaded[child.index])
+        {
+            cassandraToWuChildXML(sessionCache->querySession(), child.mappings, child.parentElement, child.childElement, queryWuid(), p);
+            childLoaded[child.index] = true;
+        }
     }
 
     // Update secondary tables (used to search wuids by orner, state, jobname etc)
@@ -3612,6 +3616,7 @@ protected:
     const ICassandraSession *sessionCache;
     mutable bool abortDirty;
     mutable bool abortState;
+    mutable bool childLoaded[ChildTablesSize];
     bool allDirty;
     Owned<IPTree> prev;
 
