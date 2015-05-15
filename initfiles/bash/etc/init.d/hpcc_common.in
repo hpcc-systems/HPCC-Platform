@@ -564,15 +564,23 @@ stop_component() {
 
     RESULT=0
     local waittime=30
+    [[ $compType = "dali" ]] && waittime=720
     while [[ $RESULT -ne 1 && $waittime -gt 0 ]]; do
         check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
         RESULT=$?
         ((waittime--))
-        sleep 1
+        if ! ((waittime % 60)); then
+            echo "still stopping ..."
+        fi
+        [[ $RESULT -ne 1 ]] && sleep 1
     done
 
     if [[ $RESULT -ne 1 ]]; then
-        log_failure_msg
+        if [[ $waittime -eq 0 ]]; then
+            log_failure_msg "Process may still be attempting to shut down cleanly"
+        else
+            log_failure_msg
+        fi
     else
         log_success_msg
     fi
