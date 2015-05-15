@@ -1234,7 +1234,7 @@ AliasKind ParentExtract::evaluateExpression(BuildCtx & ctx, IHqlExpression * val
     CHqlBoundExpr bound;
     AliasKind kind;
     if (buildctx)
-        kind = translator.doBuildAliasValue(*buildctx, value, bound);
+        kind = translator.doBuildAliasValue(*buildctx, value, bound, NULL);
     else
         kind = container->evaluateExpression(ctx, value, bound, evaluateLocally);
     if (kind != NotFoundAlias)
@@ -1654,7 +1654,7 @@ void ClassEvalContext::createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, I
 
     //Should never be called for a nested class - that should be done in the context.
     assertex(ctxs.evalctx != NULL);
-    translator.expandAliases(*ctxs.evalctx, value);
+    translator.expandAliases(*ctxs.evalctx, value, NULL);
 
     IAtom * serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
     CHqlBoundTarget tempTarget;
@@ -1767,7 +1767,7 @@ AliasKind ClassEvalContext::evaluateExpression(BuildCtx & ctx, IHqlExpression * 
     if (!evaluateLocally)
         return NotFoundAlias;
 
-    translator.expandAliases(ctx, value);
+    translator.expandAliases(ctx, value, NULL);
     translator.buildTempExpr(ctx, value, tgt);
     return RuntimeAlias;
 }
