@@ -44,6 +44,8 @@ public:
     bool runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauthenticate=false,unsigned timeout=INFINITE); // only supported in dfuplus command line
     bool checkLocalDaFileSvr(const char *eps,SocketEndpoint &epout); // only supported in dfuplus command line
 
+    void promptFor(const char *prompt, const char *prop, bool hide, IProperties * globals);
+
 private:
     int spray();
     int replicate();

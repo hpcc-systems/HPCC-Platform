@@ -20,9 +20,6 @@
 #include "daftcfg.hpp"
 #include "dfuerror.hpp"
 #include "dfuplus.hpp"
-#if defined( __linux__) || defined(__FreeBSD__)
-#include "termios.h"
-#endif
 
 void printVersion()
 {
@@ -197,70 +194,6 @@ bool build_globals(int argc, const char *argv[], IProperties * globals)
 
     return true;
 }
-
-void promptFor(const char *prompt, const char *prop, bool hide, IProperties * globals)
-{
-    StringBuffer result;
-    fprintf(stdout, "%s", prompt);
-    fflush(stdout);
-    if (hide)
-    {
-#ifdef _WIN32
-        HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);   
-        DWORD dwInputMode;
-        GetConsoleMode(hStdIn, &dwInputMode);   
-        SetConsoleMode(hStdIn, dwInputMode & ~ENABLE_LINE_INPUT & ~ENABLE_ECHO_INPUT);
-        loop
-        {
-            /* read a character from the console input */   
-            char ch;
-            DWORD dwRead;
-            if (!ReadFile(hStdIn, &ch, sizeof(ch), &dwRead, NULL))
-                break;
-            if (ch == '\n' || ch=='\r' || !ch)
-                break;
-            result.append(ch);
-        }
-        SetConsoleMode(hStdIn, dwInputMode); 
-#else
-        int fn = fileno(stdin);
-#ifdef __linux__        
-        struct termio t;
-        /* If ioctl fails, we're probably not connected to a terminal. */
-        if(!ioctl(fn, TCGETA, &t))
-        {
-            t.c_lflag &= ~ECHO;
-            ioctl(fn, TCSETA, &t);
-        }
-#endif
-        loop
-        {
-            char ch = fgetc(stdin);
-            if (ch == '\n' || ch=='\r' || !ch)
-                break;
-            result.append(ch);
-        }
-#ifdef __linux__        
-        if(!ioctl(fn, TCGETA, &t))
-        {
-            t.c_lflag |= ECHO;
-            ioctl(fn, TCSETA, &t);
-        }
-#endif
-#endif
-        printf("\n");
-    }
-    else
-    {
-        char buf[100];
-        if (fgets(buf, 100, stdin))
-            result.append(buf);
-        if (result.length() && result.charAt(result.length()-1)=='\n')
-            result.remove(result.length()-1, 1);
-    }
-    globals->setProp(prop, result);
-}
-
 
 int main(int argc, const char* argv[])
 {
