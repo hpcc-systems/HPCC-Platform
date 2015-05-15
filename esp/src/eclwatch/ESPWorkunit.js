@@ -266,6 +266,12 @@ define([
         isDeleted: function () {
             return this.StateID === 999;
         },
+        isScheduled: function () {
+            return this.EventSchedule === 0 || this.EventSchedule === 1 ? true : false;
+        },
+        isNotScheduled: function () {
+            return this.EventSchedule === 0 || this.EventSchedule === 2 ? true : false;
+        },
         monitor: function (callback) {
             if (callback) {
                 callback(this);
@@ -433,6 +439,15 @@ define([
         },
         doDelete: function () {
             return this._action("Delete").then(function(response) {
+            });
+        },
+        doDeschedule: function () {
+            return this._action("Deschedule").then(function(response) {
+                
+            });
+        },
+        doReschedule: function () {
+            return this._action("Reschedule").then(function(response) {
             });
         },
 
