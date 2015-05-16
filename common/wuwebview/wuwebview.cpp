@@ -34,7 +34,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     WuExpandedResultBuffer(const char *queryname, unsigned _flags=0) :
-        name(queryname), datasetLevel(0), finalized(false), flags(_flags), hasXmlns(false)
+        name(queryname), resultlevel(0), finalized(false), flags(_flags), hasXmlns(false)
     {
         if (flags & (WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES))
         {
@@ -66,6 +66,17 @@ public:
             buffer.append("<Results>");
         if (!(flags & WWV_OMIT_RESULT_TAG))
             buffer.append("<Result>");
+
+        initResultChildTags();
+    }
+
+    void initResultChildTags()
+    {
+        resultChildTags.setValue("Dataset", true);
+        resultChildTags.setValue("Exception", true);
+        resultChildTags.setValue("Warning", true);
+        resultChildTags.setValue("Alert", true);
+        resultChildTags.setValue("Info", true);
     }
 
     void appendResults(IConstWorkUnit *wu, const char *username, const char *pw)
@@ -161,24 +172,24 @@ public:
 
     virtual void beginNode(const char *tag, offset_t startOffset)
     {
-        if (streq("Dataset", tag) || streq("Exception", tag))
-            datasetLevel++;
-        if (datasetLevel)
+        if (resultChildTags.getValue(tag))
+            resultlevel++;
+        if (resultlevel)
             buffer.append('<').append(tag);
     }
 
     virtual void newAttribute(const char *name, const char *value)
     {
-        if (datasetLevel)
+        if (resultlevel)
         {
             if (streq(name, "@xmlns"))
             {
                 if (!(flags & WWV_INCL_NAMESPACES))
                     return;
-                if (datasetLevel==1)
+                if (resultlevel==1)
                     hasXmlns=true;
             }
-            if (datasetLevel==1 && streq(name, "@name"))
+            if (resultlevel==1 && streq(name, "@name"))
                 dsname.set(value).toLowerCase().replace(' ', '_');;
             buffer.append(' ').append(name+1).append("=\"");
             encodeUtf8XML(value, buffer);
@@ -187,7 +198,7 @@ public:
     }
     virtual void beginNodeContent(const char *tag)
     {
-        if (datasetLevel==1 && streq("Dataset", tag))
+        if (resultlevel==1 && streq("Dataset", tag))
         {
             if (!hasXmlns && dsname.length() && (flags & WWV_INCL_GENERATED_NAMESPACES))
             {
@@ -198,12 +209,12 @@ public:
             dsname.clear();
             hasXmlns=false;
         }
-        if (datasetLevel)
+        if (resultlevel)
             buffer.append('>');
     }
     virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
     {
-        if (datasetLevel)
+        if (resultlevel)
         {
             if (length)
             {
@@ -213,8 +224,8 @@ public:
                     encodeUtf8XML((const char *)value, buffer);
             }
             buffer.append("</").append(tag).append('>');
-            if (streq("Dataset", tag) || streq("Exception", tag))
-                datasetLevel--;
+            if (resultChildTags.getValue(tag))
+                resultlevel--;
         }
     }
     StringBuffer &finalize()
@@ -253,8 +264,9 @@ public:
     bool hasXmlns;
     bool finalized;
     unsigned flags;
+    MapStringTo<bool> resultChildTags;
 private:
-    int datasetLevel;
+    int resultlevel;
 };
 
 class WuWebView : public CInterface,
@@ -723,7 +735,7 @@ void WuWebView::createWuidResponse(StringBuffer &out, unsigned flags)
 void WuWebView::expandResults(StringBuffer &out, unsigned flags)
 {
     SCMStringBuffer xml;
-    getFullWorkUnitResultsXML(username.get(), pw.get(), cw, xml);
+    getFullWorkUnitResultsXML(username.get(), pw.get(), cw, xml, WorkUnitXML_SeverityTags, SeverityInformation);
     expandResults(xml.str(), out, flags);
 }
 
