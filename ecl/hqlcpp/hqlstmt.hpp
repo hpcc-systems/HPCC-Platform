@@ -88,6 +88,7 @@ public:
     BuildCtx(HqlCppInstance & _state, IAtom * section);
     BuildCtx(HqlCppInstance & _state);
     BuildCtx(BuildCtx & _owner);
+    BuildCtx(BuildCtx & _owner, IHqlStmt * container);
     ~BuildCtx();
 
     IHqlStmt *                  addAssign(IHqlExpression * target, IHqlExpression * value);

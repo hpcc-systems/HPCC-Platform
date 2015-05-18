@@ -85,6 +85,14 @@ BuildCtx::BuildCtx(BuildCtx & _owner, HqlStmts * _root) : state(_owner.state)
 }
 
 
+BuildCtx::BuildCtx(BuildCtx & _owner, IHqlStmt * _container) : state(_owner.state)
+{
+    HqlCompoundStmt * cast = dynamic_cast<HqlCompoundStmt *>(_container);
+    assertex(cast);
+    init(&cast->code);
+}
+
+
 BuildCtx::~BuildCtx()
 {
 }

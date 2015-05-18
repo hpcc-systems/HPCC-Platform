@@ -121,6 +121,8 @@ public:
     IHqlExpression * ensureSerialized(IHqlExpression * path, IHqlExpression * colocal, bool isConditional);
     IHqlExpression * ensureSerialized(BuildCtx & ctx, IHqlExpression * colocal, IReferenceSelector * selector);
     void finalize();
+    size32_t getTotalMinimumSize() const;
+    bool isFixedSize() const;
     unsigned numFields() const;
     IHqlExpression * queryRecord();
     void setBuilder(ParentExtract * _builder)       { extractBuilder = _builder; }
