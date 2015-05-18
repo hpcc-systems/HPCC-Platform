@@ -58,7 +58,7 @@ int main(int argc, char **argv)
                 {
                     Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
                     wu->loadXML(xml);
-                    exportWorkUnitToXML(wu, xml.clear(), true, false);
+                    exportWorkUnitToXML(wu, xml.clear(), true, false, false); //should we hide passwords here?
                     printf("%s\n", xml.str());
                 }
                 else

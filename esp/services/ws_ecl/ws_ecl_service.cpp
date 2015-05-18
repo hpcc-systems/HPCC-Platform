@@ -1166,6 +1166,8 @@ void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wuinfo, IPropertyTree *parmTre
                 unsigned cols = part.getPropInt("@width");
                 if (cols)
                     schema.appendf(" formCols='%u'", cols);
+                if (part.hasProp("@password"))
+                    schema.appendf(" password='%s'", part.queryProp("@password"));
                 schema.appendf("/></xsd:appinfo></xsd:annotation></xsd:element>");
             }
             else
