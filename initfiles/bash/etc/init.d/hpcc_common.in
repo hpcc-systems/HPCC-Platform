@@ -559,25 +559,31 @@ stop_component() {
 
     eval $stopcmd
 
+    unlock ${LOCKPATH}
+    removePid ${PIDPATH}
+
     RESULT=0
-    local counter=0
-    while [[ $RESULT -eq 0 && $counter -le 20 ]]; do
+    local waittime=30
+    [[ $compType = "dali" ]] && waittime=720
+    while [[ $RESULT -ne 1 && $waittime -gt 0 ]]; do
         check_status ${PIDPATH} ${LOCKPATH} ${COMPPIDPATH} 0
         RESULT=$?
-        ((counter++))
-        if [[ $RESULT -eq 0 ]]; then
-            sleep 1
+        ((waittime--))
+        if ! ((waittime % 60)); then
+            echo "still stopping ..."
         fi
+        [[ $RESULT -ne 1 ]] && sleep 1
     done
 
-    if [[ $RESULT -ne 1 && $RESULT -ne 4 ]]; then
-        log_failure_msg
+    if [[ $RESULT -ne 1 ]]; then
+        if [[ $waittime -eq 0 ]]; then
+            log_failure_msg "Process may still be attempting to shut down cleanly"
+        else
+            log_failure_msg
+        fi
     else
         log_success_msg
     fi
-
-    removePid ${PIDPATH}
-    unlock ${LOCKPATH}
 
     RCSTOP=0
 
