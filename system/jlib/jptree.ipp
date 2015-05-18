@@ -29,12 +29,6 @@
 #include "jptree.hpp"
 #include "jbuff.hpp"
 
-#ifdef __64BIT__
-#pragma pack(push,1)    // 64bit pack PTree's    (could possibly do for 32bit also but may be compatibility problems)
-#endif
-
-
-
 #define ANE_APPEND -1
 #define ANE_SET -2
 ///////////////////
@@ -254,6 +248,13 @@ struct AttrValue
 #define AM_NOCASE_FLAG (0x8000)
 #define AM_NOCASE_MASK (0x7fff)
 
+#ifdef __64BIT__
+#pragma pack(push,1)
+// Byte-Pack AttrMap and PTree because very large numbers are created.  However, this may cause problems on systems that
+// require aligned pointer access.  Without overriding the packing the structure currently wastes 8 bytes.
+// Ideally the classes would be restructured to avoid this, but it would probably require AttrMap to move into PTree
+#endif
+
 class jlib_decl AttrMap
 {
     AttrValue *attrs;
@@ -415,14 +416,19 @@ private:
     void replaceSelf(IPropertyTree *val);
 
 protected: // data
+    byte flags;
     IPropertyTree *parent; // ! currently only used if tree embedded into array, used to locate position.
 
     HashKeyElement *name;
     ChildMap *children;
     IPTArrayValue *value;
     AttrMap attributes;
-    byte flags;
 };
+
+#ifdef __64BIT__
+#pragma pack(pop)
+#endif
+
 
 jlib_decl IPropertyTree *createPropBranch(IPropertyTree *tree, const char *xpath, bool createIntermediates=false, IPropertyTree **created=NULL, IPropertyTree **createdParent=NULL);
 
@@ -446,11 +452,9 @@ public:
 };
 
 class PTree;
-class SingleIdIterator : public CInterface, implements IPropertyTreeIterator
+class SingleIdIterator : public CInterfaceOf<IPropertyTreeIterator>
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     SingleIdIterator(const PTree &_tree, unsigned pos=1, unsigned _many=(unsigned)-1);
     ~SingleIdIterator();
     void setCurrent(unsigned pos);
@@ -468,11 +472,9 @@ private:
 };
 
 
-class PTLocalIteratorBase : public CInterface, implements IPropertyTreeIterator
+class PTLocalIteratorBase : public CInterfaceOf<IPropertyTreeIterator>
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     PTLocalIteratorBase(const PTree *tree, const char *_id, bool _nocase, bool sort);
 
     ~PTLocalIteratorBase();
@@ -485,9 +487,9 @@ public:
     virtual IPropertyTree & query() { return iter->query(); }
 
 protected:
+    bool nocase, sort;  // pack with the link count
     IPropertyTreeIterator *baseIter;
     StringAttr id;
-    bool nocase, sort;
 private:
     const PTree *tree;
     IPropertyTreeIterator *iter;
@@ -498,8 +500,6 @@ private:
 class PTIdMatchIterator : public PTLocalIteratorBase
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     PTIdMatchIterator(const PTree *tree, const char *id, bool nocase, bool sort) : PTLocalIteratorBase(tree, id, nocase, sort) { }
 
     virtual bool match();
@@ -507,11 +507,9 @@ public:
 
 class StackElement;
 
-class PTStackIterator : public CInterface, implements IPropertyTreeIterator
+class PTStackIterator : public CInterfaceOf<IPropertyTreeIterator>
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     PTStackIterator(IPropertyTreeIterator *_iter, const char *_xpath);
     ~PTStackIterator();
 
@@ -536,11 +534,11 @@ private: // data
     StackElement *stack;
 };
 
-class CPTreeMaker : public CInterface, implements IPTreeMaker
+class CPTreeMaker : public CInterfaceOf<IPTreeMaker>
 {
+    bool rootProvided, noRoot;
     IPropertyTree *root;
     ICopyArrayOf<IPropertyTree> ptreeStack;
-    bool rootProvided, noRoot;
     IPTreeNodeCreator *nodeCreator;
     class CDefaultNodeCreator : public CInterface, implements IPTreeNodeCreator
     {
@@ -555,8 +553,6 @@ class CPTreeMaker : public CInterface, implements IPTreeMaker
 protected:
     IPropertyTree *currentNode;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CPTreeMaker(byte flags=ipt_none, IPTreeNodeCreator *_nodeCreator=NULL, IPropertyTree *_root=NULL, bool _noRoot=false) : noRoot(_noRoot)
     {
         if (_nodeCreator)
@@ -642,10 +638,6 @@ public:
         return nodeCreator->create(tag);
     }
 };
-
-#ifdef __64BIT__
-#pragma pack(pop)   
-#endif
 
 
 #endif

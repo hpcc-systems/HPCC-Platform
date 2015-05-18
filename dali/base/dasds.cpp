@@ -2353,10 +2353,6 @@ CRemoteTreeBase *CRemoteTreeBase::createChild(int pos, const char *childName)
 static CheckedCriticalSection suppressedOrphanUnlockCrit; // to temporarily suppress unlockall
 static bool suppressedOrphanUnlock=false;
 
-#ifdef __64BIT__
-#pragma pack(push,1)    // 64bit pack CServerRemoteTree's    (could do for 32bit also)
-#endif
-
 #if defined(new)
 #define __old_new new
 #undef new
@@ -2816,11 +2812,6 @@ public:
 
 #if defined(_WIN32) && defined(__old_new)
 #define new __old_new
-#endif
-
-
-#ifdef __64BIT__
-#pragma pack(pop)   // 64bit pack CServerRemoteTree's    (could do for 32bit also)
 #endif
 
 
