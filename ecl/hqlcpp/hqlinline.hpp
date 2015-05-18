@@ -76,9 +76,11 @@ protected:
     CursorArray inheritedCursors;
     CursorArray localCursors;       // does not include colocal
     CursorArray cursorToBind;
+    StringBuffer extractName;
     CHqlBoundExpr boundBuilder;     // may have wrapper, or be a char[n]
     CHqlBoundExpr boundExtract;     // always a reference to a row. for "extract"
     Owned<BuildCtx> buildctx;       // may be null if nested extract
+    Owned<BuildCtx> declarectx;     // non null if builder needs to be declared
     PEtype type;
     IHqlExpression * graphId;
     bool canDestroyExtract;

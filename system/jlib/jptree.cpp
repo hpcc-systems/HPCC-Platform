@@ -6387,6 +6387,10 @@ protected:
             match("ull", "Bad value");
             type = elementTypeNull;
             break;
+        case '-':
+            value.append(nextChar);
+            readNext();
+            //fall through
         default:
             if (!isdigit(nextChar))
                 error("Bad value");
@@ -6394,7 +6398,11 @@ protected:
             while (isdigit(nextChar) || '.'==nextChar)
             {
                 if ('.'==nextChar)
+                {
+                    if (type==elementTypeReal) //already found decimal
+                        error("Bad value");
                     type = elementTypeReal;
+                }
                 value.append(nextChar);
                 readNext();
             }

@@ -7535,7 +7535,7 @@ bool HqlCppTranslator::checkGetResultContext(BuildCtx & ctx, IHqlExpression * ex
     {
         if (queryEvalContext(ctx))
         {
-            doBuildAliasValue(ctx, expr, tgt);
+            doBuildAliasValue(ctx, expr, tgt, NULL);
             return true;
         }
 
@@ -7823,7 +7823,7 @@ void HqlCppTranslator::doBuildEvalOnce(BuildCtx & ctx, const CHqlBoundTarget * t
 {
     IHqlExpression * value = expr->queryChild(0);
     CHqlBoundExpr result;
-    doBuildAliasValue(ctx, value, result);
+    doBuildAliasValue(ctx, value, result, NULL);
     if (target)
     {
         OwnedHqlExpr translated = result.getTranslatedExpr();
@@ -13665,7 +13665,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChildDataset(BuildCtx & ctx, I
     default:
         {
             CHqlBoundExpr bound;
-            doBuildAliasValue(instance->onstartctx, value, bound);
+            doBuildAliasValue(instance->onstartctx, value, bound, NULL);
             value.setown(bound.getTranslatedExpr());
             break;
         }

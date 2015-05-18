@@ -44,6 +44,7 @@ class ECLcmd(Shell):
         server = kwargs.pop('server', False)
         if server:
             args.append('--server=' + server)
+            args.append('-XTargetIP=' + server)
 
         username = kwargs.pop('username', False)
         if username:

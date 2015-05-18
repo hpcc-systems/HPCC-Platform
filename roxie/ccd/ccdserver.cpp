@@ -352,6 +352,7 @@ static const StatisticsMapping indexStatistics(&actStatistics, StNumServerCacheH
                                                 StNumIndexRowsRead, StKindNone);
 static const StatisticsMapping diskStatistics(&actStatistics, StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                StNumDiskRejected, StKindNone);
+static const StatisticsMapping soapStatistics(&actStatistics, StTimeSoapcall, StKindNone);
 
 //=================================================================================
 
@@ -24529,7 +24530,6 @@ public:
 
     // IRoxieAbortMonitor
     virtual void checkForAbort() { checkAbort(); }
-
 };
 
 //---------------------------------------------------------------------------
@@ -24589,6 +24589,10 @@ public:
         return new CRoxieServerSoapRowCallActivity(this, _probeManager);
     }
 
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return soapStatistics;
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerSoapRowCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -24645,6 +24649,11 @@ public:
     virtual bool isSink() const
     {
         return isRoot;
+    }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return soapStatistics;
     }
 };
 
@@ -24711,6 +24720,11 @@ public:
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
         return new CRoxieServerSoapDatasetCallActivity(this, _probeManager);
+    }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return soapStatistics;
     }
 };
 
@@ -24795,6 +24809,11 @@ public:
     virtual bool isSink() const
     {
         return isRoot;
+    }
+
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return soapStatistics;
     }
 };
 

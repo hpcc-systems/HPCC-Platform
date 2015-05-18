@@ -103,12 +103,21 @@ interface IConstInstanceInfo : extends IConstEnvBase
     virtual bool getRunInfo(IStringVal & progpath, IStringVal & workdir, const char * defaultprogname) const = 0;
 };
 
+interface IConstDropZoneInfo : extends IConstEnvBase
+{
+    virtual IStringVal & getComputerName(IStringVal & str) const = 0;
+    virtual IStringVal & getDescription(IStringVal & str) const = 0;
+    virtual IStringVal & getDirectory(IStringVal & str) const = 0;
+};
 
 interface IConstEnvironment : extends IConstEnvBase
 {
     virtual IConstDomainInfo * getDomain(const char * name) const = 0;
     virtual IConstMachineInfo * getMachine(const char * name) const = 0;
     virtual IConstMachineInfo * getMachineByAddress(const char * netaddress) const = 0;
+    virtual IConstMachineInfo * getMachineForLocalHost() const = 0;
+    virtual IConstDropZoneInfo * getDropZone(const char * name) const = 0;
+    virtual IConstDropZoneInfo * getDropZoneByComputer(const char * computer) const = 0;
     virtual IConstInstanceInfo * getInstance(const char * type, const char * version, const char * domain) const = 0;
     virtual IConstComputerTypeInfo * getComputerType(const char * name) const = 0;
     virtual bool getRunInfo(IStringVal & path, IStringVal & dir, const char * type, const char * version, const char * machineaddr, const char * defaultprogname) const = 0;

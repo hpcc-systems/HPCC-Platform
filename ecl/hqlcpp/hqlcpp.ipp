@@ -1293,7 +1293,7 @@ public:
     
     IHqlExpression * doBuildCharLength(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildHashMd5Element(BuildCtx & ctx, IHqlExpression * elem, CHqlBoundExpr & state);
-    AliasKind doBuildAliasValue(BuildCtx & ctx, IHqlExpression * value, CHqlBoundExpr & tgt);
+    AliasKind doBuildAliasValue(BuildCtx & ctx, IHqlExpression * value, CHqlBoundExpr & tgt, AliasExpansionInfo * parentInfo);
 
     void pushCluster(BuildCtx & ctx, IHqlExpression * cluster);
     void popCluster(BuildCtx & ctx);
@@ -1305,7 +1305,7 @@ public:
     void doBuildExprAbs(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprAdd(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprAggregate(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
-    void doBuildExprAlias(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
+    void doBuildExprAlias(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt, AliasExpansionInfo * parentInfo);
     void doBuildExprAll(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprBlobToId(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprArith(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
@@ -1561,7 +1561,7 @@ public:
     void overrideOptionsForQuery();
 
     void doExpandAliases(BuildCtx & ctx, IHqlExpression * expr, AliasExpansionInfo & info);
-    void expandAliases(BuildCtx & ctx, IHqlExpression * expr);
+    void expandAliases(BuildCtx & ctx, IHqlExpression * expr, AliasExpansionInfo * parentInfo);
     void expandAliasScope(BuildCtx & ctx, IHqlExpression * expr);
     IHqlExpression * queryExpandAliasScope(BuildCtx & ctx, IHqlExpression * expr);
 

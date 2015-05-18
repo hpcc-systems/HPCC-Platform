@@ -909,7 +909,10 @@ void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
                 if (!wfevent)
                     continue;
 
-                if (!r->hasScheduleCount() || (r->queryScheduleCountRemaining() > 0))
+                if ((!r->hasScheduleCount() || (r->queryScheduleCountRemaining() > 0))
+                    && info.getState() && !strieq(info.getState(), "scheduled")
+                    && !strieq(info.getState(), "aborting") && !strieq(info.getState(), "aborted")
+                    && !strieq(info.getState(), "failed") && !strieq(info.getState(), "archived"))
                 {
                     info.setEventSchedule(1); //Can reschedule
                     break;
@@ -1284,11 +1287,8 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
 
 void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
 {
-    bool eventCountRemaining = false;
-    bool eventCountUnlimited = false;
     try
     {
-        info.setEventSchedule(0);
         unsigned workflowsCount = 0;
         IArrayOf<IConstECLWorkflow> workflows;
         Owned<IConstWorkflowItemIterator> it = cw->getWorkflowItems();
@@ -1313,17 +1313,11 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
                         }
                         if (r->hasScheduleCount())
                         {
-                            if (r->queryScheduleCountRemaining() > 0)
-                                eventCountRemaining = true;
                             if (flags & WUINFO_IncludeWorkflows)
                             {
                                 g->setCount(r->queryScheduleCount());
                                 g->setCountRemaining(r->queryScheduleCountRemaining());
                             }
-                        }
-                        else
-                        {
-                            eventCountUnlimited = true;
                         }
                         workflowsCount++;
                         if (flags & WUINFO_IncludeWorkflows)
@@ -1345,11 +1339,6 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
         info.setWorkflowsDesc(eMsg.str());
         e->Release();
     }
-
-    if (info.getState() && !stricmp(info.getState(), "wait"))
-        info.setEventSchedule(2); //Can deschedule
-    else if (eventCountUnlimited || eventCountRemaining)
-        info.setEventSchedule(1); //Can reschedule
 }
 
 IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent)

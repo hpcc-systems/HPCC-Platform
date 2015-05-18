@@ -114,6 +114,7 @@ protected:
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
     void appendGroupNode(IArrayOf<IEspGroupNode>& groupNodes, const char* nodeName, const char* clusterType, bool replicateOutputs);
     bool getOneDFUWorkunit(IEspContext& context, const char* wuid, IEspGetDFUWorkunitsResponse& resp);
+    const char* getDropZoneDirByIP(const char* destIP, StringBuffer& dir);
 };
 
 #endif //_ESPWIZ_FileSpray_HPP__
