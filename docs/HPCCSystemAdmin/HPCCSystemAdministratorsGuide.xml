@@ -569,6 +569,43 @@
 
     <!--***SYSTEM HEALTH CHECK UP***TO COME***-->
 
+    <sect1 id="SysAdmin_DataHandling">
+      <title>Data Handling</title>
+
+      <para>When you start working with your HPCC system, you will want to
+      have some data on the system to process. Data gets transferred to and
+      the HPCC system by a process called a spray. Likewise to get data out
+      from an HPCC system it must be desprayed.</para>
+
+      <para>As HPCC is a computer cluster the data gets deployed out over the
+      nodes that make up the cluster. A <emphasis>spray</emphasis> or import
+      is the relocation of a data file from one location (such as a Landing
+      Zone) to a cluster. The term spray was adopted due to the nature of the
+      file movement – the file is partitioned across all nodes within a
+      cluster.</para>
+
+      <para>A <emphasis>despray</emphasis> or export is the relocation of a
+      data file from a Data Refinery cluster to a single machine location
+      (such as a Landing Zone). The term despray was adopted due to the nature
+      of the file movement – the file is reassembled from its parts on all
+      nodes in the cluster and placed in a single file on the
+      destination.</para>
+
+      <para>A <emphasis>Landing Zone</emphasis> (or drop zone) is a physical
+      storage location defined in your system's environment. There can be one
+      or more of these locations defined. A daemon (dafilesrv) must be running
+      on that server to enable file sprays and desprays. You can spray or
+      despray some files to your landing zone through ECL Watch. To upload
+      large files, you will need a tool that supports the secure copy
+      protocol, something like a WinSCP.</para>
+
+      <para>For more information about HPCC data handling see the
+      <emphasis>HPCC Data Handling</emphasis> and the <emphasis>HPCC Data
+      Tutorial</emphasis> documents.</para>
+
+      <!--***CAN TIE THIS ALL TOGETHER - as part of routine maint. clean up some data files... archive data... etc. ***TO COME***-->
+    </sect1>
+
     <sect1 role="nobrk">
       <title>Back Up Data</title>
 
@@ -1167,41 +1204,6 @@ lock=/var/lock/HPCCSystems</programlisting>
             </varlistentry>
           </variablelist></para>
       </sect2>
-    </sect1>
-
-    <sect1>
-      <title>Data Handling</title>
-
-      <para>When you start working with your HPCC system, you will want to
-      have some data on the system to process. Data gets transferred to and
-      the HPCC system by a process called a spray. Likewise to get data out
-      from an HPCC system it must be desprayed.</para>
-
-      <para>As HPCC is a computer cluster the data gets deployed out over the
-      nodes that make up the cluster. A <emphasis>spray</emphasis> or import
-      is the relocation of a data file from one location (such as a Landing
-      Zone) to a cluster. The term spray was adopted due to the nature of the
-      file movement – the file is partitioned across all nodes within a
-      cluster.</para>
-
-      <para>A <emphasis>despray</emphasis> or export is the relocation of a
-      data file from a Data Refinery cluster to a single machine location
-      (such as a Landing Zone). The term despray was adopted due to the nature
-      of the file movement – the file is reassembled from its parts on all
-      nodes in the cluster and placed in a single file on the
-      destination.</para>
-
-      <para>A <emphasis>Landing Zone</emphasis> (or drop zone) is a physical
-      storage location defined in your system's environment. There can be one
-      or more of these locations defined. A daemon (dafilesrv) must be running
-      on that server to enable file sprays and desprays. You can spray or
-      despray some files to your landing zone through ECL Watch. To upload
-      large files, you will need a tool that supports the secure copy
-      protocol, something like a WinSCP.</para>
-
-      <para>For more information about HPCC data handling see the
-      <emphasis>HPCC Data Handling</emphasis> and the <emphasis>HPCC Data
-      Tutorial</emphasis> documents.</para>
     </sect1>
 
     <sect1 id="Redefining_Thor_Nodes">

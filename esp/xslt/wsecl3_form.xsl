@@ -641,9 +641,10 @@ function switchInputForm()
                         <xsl:otherwise>20</xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
+                <xsl:text disable-output-escaping="yes"><![CDATA[[Enter one item per line]<br/>]]></xsl:text>
                 <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
-                <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[.Item$' id=']]></xsl:text><!--Note $ at end of name not id marks field as array input via textarea-->
                 <xsl:value-of select="$fieldId"/>
                 <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
                 <xsl:value-of select="$inputCols"/>
@@ -700,9 +701,10 @@ function switchInputForm()
                                             <xsl:otherwise>20</xsl:otherwise>
                                         </xsl:choose>
                                     </xsl:variable>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[[Enter one item per line]<br/>]]></xsl:text>
                                     <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>
                                     <xsl:value-of select="$fieldId"/>
-                                    <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
+                                    <xsl:text disable-output-escaping="yes"><![CDATA[$' id=']]></xsl:text><!--Note $ at end of name not id marks field as array input via textarea-->
                                     <xsl:value-of select="$fieldId"/>
                                     <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
                                     <xsl:value-of select="$inputCols"/>

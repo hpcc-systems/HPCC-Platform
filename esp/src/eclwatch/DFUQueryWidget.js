@@ -102,6 +102,7 @@ define([
             this.addToSuperfileGrid = registry.byId(this.id + "AddToSuperfileGrid");
             this.desprayForm = registry.byId(this.id + "DesprayForm");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
+            this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.desprayGrid = registry.byId(this.id + "DesprayGrid");
             this.remoteCopyReplicateCheckbox = registry.byId(this.id + "RemoteCopyReplicate");
         },
@@ -311,9 +312,18 @@ define([
                 DropZones: true,
                 callback: function (value, item) {
                     registry.byId(context.id + "DesprayTargetIPAddress").set("value", item.machine.Netaddress);
-                    registry.byId(context.id + "DesprayTargetPath").set("value", item.machine.Directory + "/");
+                    if (context.desprayTargetPath) {
+                        context.desprayTargetPath.reset();
+                        context.desprayTargetPath._dropZoneTarget = item;
+                        context.desprayTargetPath.defaultValue = context.desprayTargetPath.get("value");
+                        context.desprayTargetPath.loadDropZoneFolders();
+                    }
                 }
             });
+            this.desprayTargetPath.init({
+                DropZoneFolders: true
+            });
+
             this.initWorkunitsGrid();
 
             this.filter.on("clear", function (evt) {

@@ -58,6 +58,7 @@
 #define RFSERR_NoConnectSlave                   8045
 #define RFSERR_NoConnectSlaveXY                 8046
 #define RFSERR_VersionMismatch                  8047
+#define RFSERR_SetThrottleFailed                8048
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 
@@ -67,6 +68,7 @@
 #define RFSERR_TimeoutFileIOHandle_Text         "Remote fileio has been closed because of timeout"
 #define RFSERR_MasterSeemsToHaveDied_Text       "Master program seems to have died..."
 #define RFSERR_VersionMismatch_Text             "Slave version does not match, expected %d got %d"
+#define RFSERR_SetThrottleFailed_Text           "Failed to set throttle limit"
 
 #define RFSERR_TimeoutWaitSlave_Text            "Timeout waiting for slave %s to respond"
 #define RFSERR_TimeoutWaitConnect_Text          "Timeout waiting to connect to slave %s"

@@ -1977,11 +1977,10 @@ const void * CGraphBase::getLinkedRowResult(unsigned id)
 IEclGraphResults *CGraphBase::evaluate(unsigned _parentExtractSz, const byte *parentExtract)
 {
     CriticalBlock block(evaluateCrit);
-
+    localResults.setown(createThorGraphResults(xgmml->getPropInt("att[@name=\"_numResults\"]/@value", 0)));
     parentExtractSz = _parentExtractSz;
     executeChild(parentExtractSz, parentExtract);
-    //GH->JCS This needs to set up new results rather than returning a link, so helpers are thread safe
-    return LINK(localResults);
+    return localResults.getClear();
 }
 
 static bool isLocalOnly(const CGraphElementBase &activity);

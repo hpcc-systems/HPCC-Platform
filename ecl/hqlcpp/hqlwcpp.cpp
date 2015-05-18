@@ -1932,30 +1932,53 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
     if (declare->getStmt() == external_stmt)
         out.append("extern ");
 
+    indent();
+    if (hasModifier(type, typemod_mutable))
+        out.append("mutable ");
+
     size32_t typeSize = type->getSize();
     if (hasWrapperModifier(type))
     {
-        if (hasModifier(type, typemod_builder))
-            indent().append("mutable rtlRowBuilder ").append(targetName);
+        ITypeInfo * builderModifier = queryModifier(type, typemod_builder);
+        if (builderModifier)
+        {
+            IHqlExpression * size = static_cast<IHqlExpression *>(builderModifier->queryModifierExtra());
+            if (size)
+            {
+                unsigned fixedSize = getIntValue(size);
+                if (fixedSize == 0)
+                    out.append("rtlEmptyRowBuilder ").append(targetName);
+                else
+                    out.append("rtlFixedRowBuilder<").append(fixedSize).append("> ").append(targetName);
+            }
+            else
+                out.append("rtlRowBuilder ").append(targetName);
+        }
         else if (hasStreamedModifier(type))
         {
-            indent().append("Owned<IRowStream> ").append(targetName);
+            out.append("Owned<IRowStream> ").append(targetName);
         }
         else if (hasLinkCountedModifier(type))
         {
             if (type->getTypeCode() == type_row)
-                indent().append("rtlRowAttr ").append(targetName);
+                out.append("rtlRowAttr ").append(targetName);
             else
-                indent().append("rtlRowsAttr ").append(targetName);
+                out.append("rtlRowsAttr ").append(targetName);
         }
         else if (typeSize != UNKNOWN_LENGTH)
-            indent().append("rtlFixedSizeDataAttr<").append(typeSize).append("> ").append(targetName);
+            out.append("rtlFixedSizeDataAttr<").append(typeSize).append("> ").append(targetName);
         else
-            indent().append("rtlDataAttr ").append(targetName);
+            out.append("rtlDataAttr ").append(targetName);
+        if (value)
+        {
+            out.append("(");
+            generateExprCpp(value);
+            out.append(")");
+            value = NULL;
+        }
     }
     else
     {
-        indent();
         generateType(type, targetName.str());
     }
 

@@ -64,7 +64,7 @@ public:
         else
             listenep.getUrlStr(eps);
         enableDafsAuthentication(requireauthenticate);
-        server.setown(createRemoteFileServer());
+        server.setown(createRemoteFileServer(0)); // no throttle limiting
     }
 
     int run()

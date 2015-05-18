@@ -2963,6 +2963,8 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
     {
         container->addChild(created);
         prior = created;
+        if (!created->isFixedSize())
+            fixedSizeRecord = false;
     }
 
     return created;
@@ -3164,10 +3166,7 @@ CMemberInfo * ColumnToOffsetMap::expandRecord(IHqlExpression * record, CContaine
         if (created)
         {
             if (!created->isFixedSize())
-            {
                 fixedSize = false;
-                fixedSizeRecord = false;
-            }
         }
     }
     container->setFixedSize(fixedSize);
@@ -3179,7 +3178,6 @@ CMemberInfo * ColumnToOffsetMap::expandRecord(IHqlExpression * record, CContaine
 DynamicColumnToOffsetMap::DynamicColumnToOffsetMap(unsigned _maxRecordSize) : ColumnToOffsetMap(queryNullRecord(), 0, _maxRecordSize, false)
 {
     root.setDynamic();
-    fixedSizeRecord = false;
 }
 
 void DynamicColumnToOffsetMap::addColumn(IHqlExpression * column, RecordOffsetMap & map)
@@ -3187,7 +3185,8 @@ void DynamicColumnToOffsetMap::addColumn(IHqlExpression * column, RecordOffsetMa
     CMemberInfo * created = ColumnToOffsetMap::addColumn(&root, column, map);
     if (created)
     {
-        //MORE: Check if fixed size... possibly...
+        if (!created->isFixedSize())
+            root.setFixedSize(false);
     }
 }
 
@@ -3529,6 +3528,16 @@ SerializationRow * SerializationRow::create(HqlCppTranslator & _translator, IHql
 BoundRow * SerializationRow::clone(IHqlExpression * _newBound)
 {
     return new SerializationRow(translator, dataset, _newBound, serializedMap, activity);
+}
+
+size32_t SerializationRow::getTotalMinimumSize() const
+{
+    return serializedMap->getTotalMinimumSize();
+}
+
+bool SerializationRow::isFixedSize() const
+{
+    return serializedMap->isFixedWidth();
 }
 
 unsigned SerializationRow::numFields() const
