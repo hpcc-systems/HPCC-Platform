@@ -8806,6 +8806,8 @@ IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression
     ForEachChild(i, transform)
     {
         IHqlExpression * cur = transform->queryChild(i);
+        if (cur->getOperator() == no_alias_scope)
+            cur = cur->queryChild(0);
         switch (cur->getOperator())
         {
         case no_assignall:
