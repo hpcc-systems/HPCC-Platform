@@ -27,6 +27,7 @@
 #include "daserver.hpp"
 #include "dasds.hpp"
 #include "dasubs.ipp"
+#include "dautils.hpp"
 #include "dadiags.hpp"
 
 #ifdef _MSC_VER
@@ -122,7 +123,7 @@ public:
                     mb.append(getReceiveQueueDetails(buf).str());
                 }
                 else if (0 == stricmp(id, "locks")) {
-                    mb.append(querySDS().getLocks(buf).str());
+                    querySDS().getLocks(mb);
                 }
                 else if (0 == stricmp(id, "sdsstats")) {
                     mb.append(querySDS().getUsageStats(buf).str());
@@ -276,6 +277,16 @@ StringBuffer & getDaliDiagnosticValue(const char *name,StringBuffer &ret)
     mb.read(str);
     ret.append(str);
     return ret;
+}
+
+IPropertyTreeIterator *getLockDataTreeIterator()
+{
+    MemoryBuffer mb;
+    mb.append("locks");
+    getDaliDiagnosticValue(mb);
+
+    CLockDataHelper helper;
+    return helper.getLockDataTreeIterator(mb);
 }
 
 IDaliServer *createDaliDiagnosticsServer()

@@ -1887,6 +1887,19 @@ StringBuffer &CClientSDSManager::getLocks(StringBuffer &out)
     return getInfo(DIAG_CMD_LOCKINFO, out);
 }
 
+void CClientSDSManager::getLocks(CMessageBuffer &out)
+{
+    out.append((int)DAMP_SDSCMD_DIAGNOSTIC);
+    out.append((int)DIAG_CMD_LOCKINFO);
+
+    if (!queryCoven().sendRecv(out, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+    {
+        out.clear();
+        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnositc info");
+    }
+    return;
+}
+
 StringBuffer &CClientSDSManager::getUsageStats(StringBuffer &out)
 {
     return getInfo(DIAG_CMD_STATS, out);

@@ -896,13 +896,6 @@ struct DebugInfo
 };
 #endif
 
-struct LockData
-{
-    unsigned mode;
-    SessionId sessId;
-    unsigned timeLockObtained;
-};
-
 class BoolSetBlock
 {
 public:
@@ -1998,6 +1991,7 @@ public:
     virtual void unsubscribe(SubscriptionId id);
     virtual void unsubscribeExact(SubscriptionId id);
     virtual StringBuffer &getLocks(StringBuffer &out);
+    virtual void getLocks(CMessageBuffer &out);
     virtual StringBuffer &getUsageStats(StringBuffer &out);
     virtual StringBuffer &getConnections(StringBuffer &out);
     virtual StringBuffer &getSubscribers(StringBuffer &out);
@@ -3153,7 +3147,6 @@ public:
 };
 
 typedef Int64Array IdPath;
-typedef MapBetween<ConnectionId, ConnectionId, LockData, LockData> ConnectionInfoMap;
 #define LOCKSESSCHECK (1000*60*5)
 class CLockInfo : public CInterface, implements IInterface
 {
@@ -3628,51 +3621,15 @@ public:
 
     StringBuffer &getLockInfo(StringBuffer &out)
     {
-        unsigned nlocks=0;
-        MemoryBuffer locks;
-        UInt64Array keys;
-        {
-            CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
-            HashIterator iter(connectionInfo);
-            ForEach(iter)
-            {
-                IMapping &imap = iter.query();
-                LockData *lD = connectionInfo.mapToValue(&imap);
-                keys.append(* ((ConnectionId *) imap.getKey()));
-                locks.append(sizeof(LockData), lD);
-                ++nlocks;
-            }
-        }
+        CMessageBuffer mb;
+        CLockDataHelper helper;
+        helper.serializeLockData(crit, fakeCritTimeout, xpath.str(), connectionInfo, mb);
+        return helper.formatLockData(mb, out);
+    }
 
-        unsigned msNow = msTick();
-        out.append("Locks on path: /").append(xpath).newline();
-        out.append("Endpoint            |SessionId       |ConnectionId    |mode    |time(duration)]").newline().newline();
-        unsigned l = 0;
-        if (nlocks)
-        {
-            loop
-            {
-                LockData lD;
-                memcpy(&lD, ((const byte *)locks.toByteArray())+l*sizeof(LockData), sizeof(LockData));
-                ConnectionId connId = keys.item(l);
-
-                StringBuffer sessEpStr;
-                unsigned lockedFor = msNow-lD.timeLockObtained;
-                CDateTime time;
-                time.setNow();
-                time_t tt = time.getSimple() - (lockedFor/1000);
-                time.set(tt);
-                StringBuffer timeStr;
-                time.getString(timeStr);
-                out.appendf("%-20s|%-16" I64F "x|%-16" I64F "x|%-8x|%s(%d ms)", querySessionManager().getClientProcessEndpoint(lD.sessId, sessEpStr).str(), lD.sessId, connId, lD.mode, timeStr.str(), lockedFor);
-                ++l;
-                if (l>=nlocks)
-                    break;
-                out.newline();
-            }
-        }
-        out.newline();
-        return out;
+    void serializeLockData(CLockDataHelper& helper, CMessageBuffer &mb)
+    {
+        helper.serializeLockData(crit, fakeCritTimeout, xpath.str(), connectionInfo, mb);
     }
 
     void setDROLR(CServerRemoteTree *_parent, CServerRemoteTree *_child)
@@ -7845,6 +7802,29 @@ StringBuffer &CCovenSDSManager::getLocks(StringBuffer &out)
         if (out.length()) out.newline();
     }
     return out.length() ? out : out.append("No current locks");
+}
+
+void CCovenSDSManager::getLocks(CMessageBuffer &mb)
+{
+    CLockDataHelper helper;
+    unsigned lockCount=0;
+    mb.clear();
+    mb.append(lockCount);
+
+    CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
+    SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());
+    iter.first();
+    while (iter.isValid())
+    {
+        CLockInfo &lockInfo = iter.query();
+        if (lockInfo.lockCount())
+            lockInfo.serializeLockData(helper, mb);
+        lockCount++;
+        if (!iter.next())
+            break;
+    }
+    mb.writeDirect(0,sizeof(lockCount),&lockCount);
+    return;
 }
 
 StringBuffer &formatUsageStats(MemoryBuffer &src, StringBuffer &out)

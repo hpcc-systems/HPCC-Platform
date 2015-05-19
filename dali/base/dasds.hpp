@@ -108,6 +108,7 @@ interface ISDSManager
     virtual void unsubscribe(SubscriptionId id) = 0;
     virtual void unsubscribeExact(SubscriptionId id) = 0;
     virtual StringBuffer &getLocks(StringBuffer &out) = 0;
+    virtual void getLocks(CMessageBuffer &out) = 0;
     virtual StringBuffer &getUsageStats(StringBuffer &out) = 0;
     virtual StringBuffer &getConnections(StringBuffer &out) = 0;
     virtual StringBuffer &getSubscribers(StringBuffer &out) = 0;
