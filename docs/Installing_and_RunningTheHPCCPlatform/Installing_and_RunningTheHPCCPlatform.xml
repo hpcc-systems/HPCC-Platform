@@ -37,7 +37,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para> </para>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -262,7 +262,8 @@
         packages will fail to install if their dependencies are missing from
         the target system.</para>
 
-        <para>Packages are available from the HPCC Systems<superscript>®</superscript> website: <ulink
+        <para>Packages are available from the HPCC
+        Systems<superscript>®</superscript> website: <ulink
         url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink></para>
 
         <para>To install the package, follow the appropriate installation
@@ -773,8 +774,8 @@
 
         <para>This section details reconfiguring a system to use multiple
         nodes. Before you start this section, you must have already downloaded
-        the correct packages for your distro from the HPCC Systems<superscript>®</superscript> website:
-        <ulink
+        the correct packages for your distro from the HPCC
+        Systems<superscript>®</superscript> website: <ulink
         url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.</para>
 
         <orderedlist>
@@ -2068,8 +2069,8 @@ OUTPUT(ValidWords)
         </listitem>
       </itemizedlist></para>
 
-    <para>The HPCC Systems<superscript>®</superscript> Portal is also a valuable resource for more
-    information including:</para>
+    <para>The HPCC Systems<superscript>®</superscript> Portal is also a
+    valuable resource for more information including:</para>
 
     <itemizedlist spacing="compact">
       <listitem>
@@ -2133,8 +2134,9 @@ OUTPUT(ValidWords)
         <title>install-cluster.sh</title>
 
         <para><emphasis
-        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k] [-n
-        &lt;value&gt;] &lt;package-name&gt; </emphasis></emphasis></para>
+        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k] [-p
+        &lt;directory&gt;] [-n &lt;value&gt;] &lt;package-name&gt;
+        </emphasis></emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -2150,7 +2152,20 @@ OUTPUT(ValidWords)
                 </row>
 
                 <row>
-                  <entry>-k</entry>
+                  <entry>-h</entry>
+
+                  <entry>Help. Optional.</entry>
+                </row>
+
+                <row>
+                  <entry>-p, --pushkeydir</entry>
+
+                  <entry>Push existing ssh key to remote machine.
+                  Optional.</entry>
+                </row>
+
+                <row>
+                  <entry>-k, --newkey</entry>
 
                   <entry>When specified, the script generates and distributes
                   ssh keys to all hosts. Optional.</entry>
@@ -2196,6 +2211,11 @@ OUTPUT(ValidWords)
             <para>optionally, if you specify the -k option it also generates
             the required ssh keys and deploys them as required to all nodes
             specified.</para>
+          </listitem>
+
+          <listitem>
+            <para>optionally, if you specify the -p option it pushes out the
+            existing ssh keys to all nodes specified.</para>
           </listitem>
 
           <listitem>
@@ -2921,8 +2941,8 @@ add1(10);
       <sect2 id="Add_On_Javascript" role="brk">
         <title>JavaScript</title>
 
-        <para>To enable JavaScript support within the HPCC Systems<superscript>®</superscript>
-        Platform:</para>
+        <para>To enable JavaScript support within the HPCC
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
@@ -3044,7 +3064,8 @@ split_words('Once upon a time');
       <sect2 id="R" role="brk">
         <title>R</title>
 
-        <para>To enable R support within The HPCC Systems<superscript>®</superscript> Platform:</para>
+        <para>To enable R support within The HPCC
+        Systems<superscript>®</superscript> Platform:</para>
 
         <orderedlist>
           <listitem>
