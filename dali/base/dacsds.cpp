@@ -31,6 +31,7 @@
 #include "dasess.hpp"
 #include "daclient.hpp"
 #include "dadfs.hpp"
+#include "dautils.hpp"
 
 #include "dasds.ipp" // common header for client/server sds
 #include "dacsds.ipp"
@@ -1862,13 +1863,11 @@ StringBuffer &CClientSDSManager::getInfo(SdsDiagCommand cmd, StringBuffer &out)
                 case DIAG_CMD_STATS:
                     formatUsageStats(mb, out);
                     break;
-                case DIAG_CMD_LOCKINFO:
-                    size32_t sz;
-                    mb.read(sz);
-                    out.append(sz, (const char *)mb.readDirect(sz));
-                    break;
                 case DIAG_CMD_CONNECTIONS:
                     formatConnections(mb, out);
+                    break;
+                case DIAG_CMD_SUBSCRIBERS:
+                    formatSubscribers(mb, out);
                     break;
             }
             break;
@@ -1882,9 +1881,29 @@ StringBuffer &CClientSDSManager::getInfo(SdsDiagCommand cmd, StringBuffer &out)
     return out;
 }
 
-StringBuffer &CClientSDSManager::getLocks(StringBuffer &out)
+ILockInfoCollection *CClientSDSManager::getLocks(const char *ipPattern, const char *xpathPattern)
 {
-    return getInfo(DIAG_CMD_LOCKINFO, out);
+    CMessageBuffer msg;
+    msg.append((int)DAMP_SDSCMD_DIAGNOSTIC);
+    msg.append((int)DIAG_CMD_LOCKINFO);
+    msg.append(ipPattern?ipPattern:"");
+    msg.append(xpathPattern?xpathPattern:"");
+
+    if (!queryCoven().sendRecv(msg, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+        throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "getLocks");
+
+    SdsReply replyMsg;
+    msg.read((int &)replyMsg);
+    switch (replyMsg)
+    {
+        case DAMP_SDSREPLY_OK:
+            break;
+        case DAMP_SDSREPLY_ERROR:
+            throwMbException("SDS Reply Error ", msg);
+        default:
+            assertex(false);
+    }
+    return deserializeLockInfoCollection(msg);
 }
 
 StringBuffer &CClientSDSManager::getUsageStats(StringBuffer &out)

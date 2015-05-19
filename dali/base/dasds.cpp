@@ -20,6 +20,7 @@
 #include "jhash.hpp"
 #include "jlib.hpp"
 #include "jfile.hpp"
+#include "jregexp.hpp"
 #include "jthread.hpp"
 #include "javahash.hpp"
 #include "javahash.tpp"
@@ -895,13 +896,6 @@ struct DebugInfo
     SessionId ExclOwningSession;
 };
 #endif
-
-struct LockData
-{
-    unsigned mode;
-    SessionId sessId;
-    unsigned timeLockObtained;
-};
 
 class BoolSetBlock
 {
@@ -1997,7 +1991,7 @@ public:
     virtual SubscriptionId subscribeExact(const char *xpath, ISDSNodeSubscription &notify, bool sendValue=false);
     virtual void unsubscribe(SubscriptionId id);
     virtual void unsubscribeExact(SubscriptionId id);
-    virtual StringBuffer &getLocks(StringBuffer &out);
+    virtual ILockInfoCollection *getLocks(const char *ipPattern, const char *xpathPattern);
     virtual StringBuffer &getUsageStats(StringBuffer &out);
     virtual StringBuffer &getConnections(StringBuffer &out);
     virtual StringBuffer &getSubscribers(StringBuffer &out);
@@ -3172,8 +3166,8 @@ public:
 };
 
 typedef Int64Array IdPath;
-typedef MapBetween<ConnectionId, ConnectionId, LockData, LockData> ConnectionInfoMap;
 #define LOCKSESSCHECK (1000*60*5)
+
 class CLock : public CInterface, implements IInterface
 {
     DECL_NAMEDCOUNT;
@@ -3182,7 +3176,7 @@ class CLock : public CInterface, implements IInterface
     unsigned sub, readLocks, holdLocks, pending, waiting;
     IdPath idPath;
     ConnectionInfoMap connectionInfo;
-    CheckedCriticalSection crit;
+    mutable CheckedCriticalSection crit;
     Semaphore sem;
     StringAttr xpath;
     __int64 treeId;
@@ -3290,7 +3284,7 @@ class CLock : public CInterface, implements IInterface
                         {
                             waiting--;
                             StringBuffer s("Infinite timeout lock still waiting: ");
-                            getLockInfo(s);
+                            toString(s);
                             PROGLOG("%s", s.str());
                         }
                         {
@@ -3454,10 +3448,7 @@ class CLock : public CInterface, implements IInterface
         {
             if (RTM_LOCK_SUB & mode)
                 sub++;
-            LockData ld;
-            ld.mode = mode;
-            ld.sessId = sessId;
-            ld.timeLockObtained = msTick();
+            LockData ld(mode, sessId, msTick());
             connectionInfo.setValue(id, ld);
         }
         return LockSucceeded;
@@ -3621,9 +3612,9 @@ public:
             case LockFailed:
                 throw MakeSDSException(SDSExcpt_ConnectionAbsent, "Lost connection performing changeMode on connection to : %s", xpath.get());
             case LockTimedOut:
-                throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout performing changeMode on connection to : %s, existing lock info: %s", xpath.get(), getLockInfo(s).str());
+                throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout performing changeMode on connection to : %s, existing lock info: %s", xpath.get(), toString(s).str());
             case LockHeld:
-                throw MakeSDSException(SDSExcpt_LockHeld, "Lock is held performing changeMode on connection to : %s, existing lock info: %s", xpath.get(), getLockInfo(s).str());
+                throw MakeSDSException(SDSExcpt_LockHeld, "Lock is held performing changeMode on connection to : %s, existing lock info: %s", xpath.get(), toString(s).str());
             }
         }
     }
@@ -3640,58 +3631,12 @@ public:
         return NULL!=connectionInfo.getValue(connectionId);
     }
 
-    const char *queryXPath() const
+    const char *queryXPath() const { return xpath; }
+
+    ILockInfo *getLockInfo() const
     {
-        return xpath;
-    }
-
-    StringBuffer &getLockInfo(StringBuffer &out)
-    {
-        unsigned nlocks=0;
-        MemoryBuffer locks;
-        UInt64Array keys;
-        {
-            CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
-            HashIterator iter(connectionInfo);
-            ForEach(iter)
-            {
-                IMapping &imap = iter.query();
-                LockData *lD = connectionInfo.mapToValue(&imap);
-                keys.append(* ((ConnectionId *) imap.getKey()));
-                locks.append(sizeof(LockData), lD);
-                ++nlocks;
-            }
-        }
-
-        unsigned msNow = msTick();
-        out.append("Locks on path: /").append(xpath).newline();
-        out.append("Endpoint            |SessionId       |ConnectionId    |mode    |time(duration)]").newline().newline();
-        unsigned l = 0;
-        if (nlocks)
-        {
-            loop
-            {
-                LockData lD;
-                memcpy(&lD, ((const byte *)locks.toByteArray())+l*sizeof(LockData), sizeof(LockData));
-                ConnectionId connId = keys.item(l);
-
-                StringBuffer sessEpStr;
-                unsigned lockedFor = msNow-lD.timeLockObtained;
-                CDateTime time;
-                time.setNow();
-                time_t tt = time.getSimple() - (lockedFor/1000);
-                time.set(tt);
-                StringBuffer timeStr;
-                time.getString(timeStr);
-                out.appendf("%-20s|%-16" I64F "x|%-16" I64F "x|%-8x|%s(%d ms)", querySessionManager().getClientProcessEndpoint(lD.sessId, sessEpStr).str(), lD.sessId, connId, lD.mode, timeStr.str(), lockedFor);
-                ++l;
-                if (l>=nlocks)
-                    break;
-                out.newline();
-            }
-        }
-        out.newline();
-        return out;
+        CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
+        return createLockInfo(xpath, connectionInfo); // NB: doesn't resolve sessionId to Endpoint string at this point
     }
 
     void setDROLR(CServerRemoteTree *_parent, CServerRemoteTree *_child)
@@ -3706,6 +3651,11 @@ public:
         parent.set(_parent);
         child.set(_child);
     }
+    StringBuffer &toString(StringBuffer &out) const
+    {
+        Owned<ILockInfo> lockInfo = getLockInfo();
+        return lockInfo->toString(out, 0, true);
+    }
 };
 
 CPendingLockBlock::CPendingLockBlock(CLock &_lock) : lock(_lock)
@@ -3717,8 +3667,6 @@ CPendingLockBlock::~CPendingLockBlock()
 {
     lock.removePending();
 }
-
-///////////
 
 template <> void CLockTable::onRemove(void *et)
 {
@@ -3818,12 +3766,11 @@ int CSDSTransactionServer::run()
                             {
                                 case DIAG_CMD_LOCKINFO:
                                 {
-                                    StringBuffer out;
-                                    SDSManager->getLocks(out);
+                                    StringAttr ipPattern, xpathPattern;
+                                    mb.read(ipPattern).read(xpathPattern);
                                     mb.clear().append(DAMP_SDSREPLY_OK);
-                                    mb.append(out.length());
-                                    mb.append(out.length(), out.str());
-
+                                    Owned<ILockInfoCollection> lockInfoCollection = SDSManager->getLocks(ipPattern, xpathPattern);
+                                    lockInfoCollection->serialize(mb);
                                     break;
                                 }
                                 case DIAG_CMD_STATS:
@@ -7415,24 +7362,24 @@ LockStatus CCovenSDSManager::establishLock(CLock &lock, __int64 treeId, Connecti
     return res;
 }
 
-void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *__xpath, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &callback)
+void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *xpath, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &callback)
 {
     if (0 == ((RTM_LOCK_READ | RTM_LOCK_WRITE) & mode)) // no point in creating lock.
         return;
     CLock *lock = NULL;
-    StringAttr sxpath;
-    char *_xpath = (char *) (('/' == *__xpath) ? __xpath+1 : __xpath);
-    char *xpath;
-    if ('/' == _xpath[strlen(_xpath)-1])
-        xpath = (char *)_xpath;
-    else
+    StringBuffer sxpath;
+    if ('/' != *xpath)
     {
-        unsigned l = strlen(_xpath);
-        xpath = (char *)malloc(l+2);
-        memcpy(xpath, _xpath, l);
-        xpath[l] = '/';
-        xpath[l+1] = '\0';
-        sxpath.setown(xpath);
+        sxpath.append('/').append(xpath);
+        if ('/' != sxpath.charAt(sxpath.length()-1))
+            sxpath.append('/');
+        xpath = sxpath.str();
+    }
+    else if ('/' != xpath[strlen(xpath)-1])
+    {
+        sxpath.append(xpath);
+        sxpath.append('/');
+        xpath = sxpath.str();
     }
 
     __int64 treeId = tree.queryServerId();
@@ -7458,9 +7405,9 @@ void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *__xpath, Connec
             case LockFailed:
                 throw MakeSDSException(SDSExcpt_ConnectionAbsent, "Lost connection trying to establish lock on connection to : %s", xpath);
             case LockTimedOut:
-                throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout trying to establish lock to %s, existing lock info: %s", xpath, lock->getLockInfo(s).str());
+                throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout trying to establish lock to %s, existing lock info: %s", xpath, lock->toString(s).str());
             case LockHeld:
-                throw MakeSDSException(SDSExcpt_LockHeld, "Lock is held trying to establish lock to %s, existing lock info: %s", xpath, lock->getLockInfo(s).str());
+                throw MakeSDSException(SDSExcpt_LockHeld, "Lock is held trying to establish lock to %s, existing lock info: %s", xpath, lock->toString(s).str());
             }
         }
     }
@@ -7597,7 +7544,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                                                     }
                                                 }
                                                 if (lock)
-                                                    lock->getLockInfo(timeoutMsg);
+                                                    lock->toString(timeoutMsg);
                                             }
                                             throw MakeSDSException(SDSExcpt_LockTimeout, "%s", timeoutMsg.str());
                                         }
@@ -7847,23 +7794,6 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
     connection->unsubscribeSession();
 }
 
-StringBuffer &CCovenSDSManager::getLocks(StringBuffer &out)
-{
-    CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
-    SuperHashIteratorOf<CLock> iter(lockTable.queryBaseTable());
-    iter.first();
-    while (iter.isValid())
-    {
-        CLock &lock = iter.query();
-        if (lock.lockCount())
-            lock.getLockInfo(out);
-        if (!iter.next())
-            break;
-        if (out.length()) out.newline();
-    }
-    return out.length() ? out : out.append("No current locks");
-}
-
 StringBuffer &formatUsageStats(MemoryBuffer &src, StringBuffer &out)
 {
     unsigned c;
@@ -7975,6 +7905,39 @@ unsigned CCovenSDSManager::countActiveLocks()
     return activeLocks;
 }
 
+ILockInfoCollection *CCovenSDSManager::getLocks(const char *ipPattern, const char *xpathPattern)
+{
+    Owned<ILockInfoCollection> lockInfoCollection = createLockInfoCollection();
+
+    bool filteredConnections = !isEmptyString(ipPattern);
+    bool filteredXPaths = !isEmptyString(xpathPattern);
+    CLockInfoArray locks;
+    {
+        CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
+        SuperHashIteratorOf<CLock> iter(lockTable.queryBaseTable());
+        ForEach(iter)
+        {
+            CLock &lock = iter.query();
+            if (lock.lockCount())
+            {
+                if (!filteredXPaths || WildMatch(lock.queryXPath(), xpathPattern))
+                    locks.append(* lock.getLockInfo());
+            }
+        }
+    }
+    if (filteredConnections)
+    {
+        ForEachItemIn(c, locks)
+        {
+            ILockInfo &lockInfo = locks.item(c);
+            lockInfo.prune(ipPattern);
+        }
+    }
+    ForEachItemIn(l, locks)
+        lockInfoCollection->add(* LINK(&locks.item(l)));
+    return lockInfoCollection.getClear();
+}
+
 MemoryBuffer &CCovenSDSManager::collectUsageStats(MemoryBuffer &out)
 {
     { CHECKEDCRITICALBLOCK(cTableCrit, fakeCritTimeout);
@@ -8026,13 +7989,6 @@ void CCovenSDSManager::blockingSave(unsigned *writeTransactions)
     SDSManager->saveStore();
 }
 
-StringBuffer &CCovenSDSManager::getUsageStats(StringBuffer &out)
-{
-    MemoryBuffer mb;
-    formatUsageStats(collectUsageStats(mb), out);
-    return out;
-}
-
 bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),0, INFINITE);
@@ -8066,7 +8022,6 @@ StringBuffer &CCovenSDSManager::getExternalReport(StringBuffer &out)
     return out;
 }
 
-
 StringBuffer &CCovenSDSManager::getConnections(StringBuffer &out)
 {
     MemoryBuffer mb;
@@ -8078,6 +8033,13 @@ StringBuffer &CCovenSDSManager::getSubscribers(StringBuffer &out)
 {
     MemoryBuffer mb;
     formatSubscribers(collectSubscribers(mb), out);
+    return out;
+}
+
+StringBuffer &CCovenSDSManager::getUsageStats(StringBuffer &out)
+{
+    MemoryBuffer mb;
+    formatUsageStats(collectUsageStats(mb), out);
     return out;
 }
 

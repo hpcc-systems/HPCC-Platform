@@ -115,7 +115,7 @@ void usage(const char *exe)
   printf("  daliping [ <num> ]              -- time dali server connect\n");
   printf("  getxref <destxmlfile>           -- get all XREF information\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
-  printf("  unlock <xpath or logicalfile>   --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
+  printf("  unlock <xpath or logicalfile> <[path|file]> --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
@@ -2271,144 +2271,71 @@ static bool begins(const char *&ln,const char *pat)
     return false;
 }
 
-static void dodalilocks(const char *pattern,const char *obj,Int64Array *conn,bool filesonly)
+static void dalilocks(const char *ipPattern, bool files)
 {
-    StringBuffer buf;
-    getDaliDiagnosticValue("locks",buf);
-    for (int pass=(filesonly?1:0);pass<2;pass++) {
-        bool headerdone = false;
-        StringBuffer line;
-        StringBuffer curfile;
-        StringBuffer curxpath;
-        StringBuffer ips;
-        StringBuffer times;
-        StringBuffer sessid;
-        StringBuffer connid;
-        const char *s = buf.str();
-        loop {
-            line.clear();
-            while (*s&&(*s!='\n')) 
-                line.append(*(s++));
-            if (line.length()) {
-                const char *ln = line.str();
-                if (begins(ln,"Locks on path: ")) {
-                    curfile.clear();
-                    curxpath.clear();
-                    const char *x = ln;
-                    while (*x)
-                        curxpath.append(*(x++));
-                    if (begins(ln,"/Files")) {
-                        while (*ln&&(begins(ln,"/Scope[@name=\"")||begins(ln,"/File[@name=\"")||begins(ln,"/SuperFile[@name=\""))) {
-                            if (curfile.length())
-                                curfile.append("::");
-                            while (*ln&&(*ln!='"'))
-                                curfile.append(*(ln++));
-                            if (*ln=='"')
-                                ln++;
-                            if (*ln==']')
-                                ln++;
-                        }
-                    }
-                }
-                else if (isdigit(*ln)) {
-                    if (obj) 
-                        if (!curxpath.length()||!WildMatch(curxpath.str(),obj)) 
-                            if (!curfile.length()||!WildMatch(curfile.str(),obj)) 
-                                continue;
-                    if ((curfile.length()!=0)==(pass==1)) {
-                        ips.clear();
-                        while (*ln&&(*ln!=':'))
-                            ips.append(*(ln++));
-                        if (!pattern||WildMatch(ips.str(),pattern)) {
-                            ips.append(*ln++);
-                            while (isdigit(*ln))
-                                ips.append(*ln++);
-                            while (*ln!='|')    
-                                ln++;
-                            ln++; // sessid start
-                            sessid.clear();
-                            while (*ln!='|') {
-                                sessid.append(*ln);
-                                ln++;
-                            }
-                            sessid.clip();
-                            ln++; // connectid start
-                            connid.clear();
-                            while (*ln!='|') {
-                                connid.append(*ln);
-                                ln++;
-                            }
-                            connid.clip();
-                            ln++; // mode start
-                            unsigned mode = 0;
-                            while (isdigit(*ln))
-                                mode = mode*10+(*(ln++)-'0');
-                            while (*ln!='|')
-                                ln++;
-                            ln++; // duration start
-                            times.clear();
-                            while (*ln&&(*ln!='('))
-                                times.append(*(ln++));
-                            ln++;
-                            unsigned duration = 0;
-                            while (isdigit(*ln))
-                                duration = duration*10+(*(ln++)-'0');
-                            if (conn) {
-                                bool err;
-                                __int64 c = (__int64)hextoll(connid.str(),err);
-                                if (!err) {
-                                    bool found = false;
-                                    ForEachItemIn(i,*conn) 
-                                        if (c==conn->item(i))
-                                            found = true;
-                                    if (!found)
-                                        conn->append(c);
-                                }
-                            }
-                            else {
-                                if (!headerdone) {
-                                    OUTLOG( "\nServer IP         , session   ,mode, time              ,duration ,%s",pass?"File":"XPath");
-                                    OUTLOG(   "==================,===========,===,====================,=========,=====");
-                                    headerdone = true;
-                                }
-                                OUTLOG("%s, %s, %d, %s, %d, %s",ips.str(),sessid.str(),mode,times.str(),duration,pass?curfile.str():curxpath.str());
-                            }
-                        }
-                    }
-                }
-            }
-            if (!*s)
-                break;
-            s++;
+    Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(ipPattern, files ? "/Files/*" : NULL);
+    bool headers = true;
+    CDfsLogicalFileName dlfn;
+    for (unsigned l=0; l<lockInfoCollection->queryLocks(); l++)
+    {
+        ILockInfo &lockInfo = lockInfoCollection->queryLock(l);
+        if (files)
+        {
+            if (!dlfn.setFromXPath(lockInfo.queryXPath()))
+                continue;
         }
+        if (0 == lockInfo.queryConnections())
+            continue;
+        StringBuffer lockFormat;
+        lockInfo.toString(lockFormat, 1, headers, files ? dlfn.get() : NULL);
+        headers = false;
+        PROGLOG("%s", lockFormat.str());
     }
-}
-
-static void dalilocks(const char *pattern,bool fileonly)
-{
-    dodalilocks(pattern,NULL,NULL,fileonly);
+    if (headers) // if still true, no locks matched
+    {
+        printf("No lock(s) found\n");
+        return;
+    }
 }
 
 //=============================================================================
 
-static void unlock(const char *pattern)
+static void unlock(const char *pattern, bool files)
 {
-    Int64Array conn;
-    dodalilocks(NULL,pattern,&conn,false);
-    ForEachItemIn(i,conn) {
-        MemoryBuffer mb;
-        __int64 connectionId = conn.item(i);
-        bool success;
-        bool disconnect = false;        // TBD?
-        mb.append("unlock").append(connectionId).append(disconnect);
-        getDaliDiagnosticValue(mb);
-        mb.read(success);
-        StringBuffer connectionInfo;
-        if (!success)
-            PROGLOG("Lock %" I64F "x not found",connectionId);
-        else {
-            mb.read(connectionInfo);
-            PROGLOG("Lock %" I64F "x successfully removed: %s", connectionId, connectionInfo.str());
+    Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(NULL, files ? "/Files/*" : pattern);
+    for (unsigned l=0; l<lockInfoCollection->queryLocks(); l++)
+    {
+        ILockInfo &lockInfo = lockInfoCollection->queryLock(l);
+        bool match = false;
+        if (files)
+        {
+            CDfsLogicalFileName dlfn;
+            dlfn.setAllowWild(true);
+            if (dlfn.setFromXPath(lockInfo.queryXPath()))
+                match = WildMatch(dlfn.get(), pattern);
+        }
+        else
+            match = WildMatch(lockInfo.queryXPath(), pattern);
+        if (match)
+        {
+            for (unsigned c=0; c<lockInfo.queryConnections(); c++)
+            {
+                ConnectionId connectionId = lockInfo.queryLockData(c).connectionId;
+                bool disconnect = false;        // TBD?
+                MemoryBuffer mb;
+                mb.append("unlock").append(connectionId).append(disconnect);
+                getDaliDiagnosticValue(mb);
+                bool success;
+                mb.read(success);
+                if (!success)
+                    PROGLOG("Lock %" I64F "x not found",connectionId);
+                else
+                {
+                    StringBuffer connectionInfo;
+                    mb.read(connectionInfo);
+                    PROGLOG("Lock %" I64F "x successfully removed: %s", connectionId, connectionInfo.str());
+                }
+            }
         }
     }
 }
@@ -2978,8 +2905,14 @@ int main(int argc, char* argv[])
                         dalilocks(np>0?params.item(1):NULL,filesonly);
                     }
                     else if (stricmp(cmd,"unlock")==0) {
-                        CHECKPARAMS(1,1);
-                        unlock(params.item(1));
+                        CHECKPARAMS(2,2);
+                        const char *fileOrPath = params.item(2);
+                        if (0 == stricmp("file", fileOrPath))
+                            unlock(params.item(1), true);
+                        else if (0 == stricmp("path", fileOrPath))
+                            unlock(params.item(1), false);
+                        else
+                            throw MakeStringException(0, "unknown type [ %s ], must be 'file' or 'path'", fileOrPath);
                     }
                     else if (stricmp(cmd,"validateStore")==0) {
                         CHECKPARAMS(0,2);
