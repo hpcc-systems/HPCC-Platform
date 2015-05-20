@@ -2237,13 +2237,23 @@ MODULE_EXIT()
 {
     delete thePrepender;
     for(unsigned compo = 0; compo<MSGCOMP_NUMBER; compo++)
+    {
         delete theReporters[compo];
+        theReporters[compo] = NULL;
+    }
     delete theManager;
     delete theSysLogEventLogger;
     delete theStderrHandler;
     delete thePassNoneFilter;
     delete thePassLocalFilter;
     delete thePassAllFilter;
+    thePrepender = NULL;
+    theManager = NULL;
+    theSysLogEventLogger = NULL;
+    theStderrHandler = NULL;
+    thePassNoneFilter = NULL;
+    thePassLocalFilter = NULL;
+    thePassAllFilter = NULL;
 }
 
 ILogMsgManager * queryLogMsgManager()
