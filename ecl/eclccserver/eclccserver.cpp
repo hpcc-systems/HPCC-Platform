@@ -390,20 +390,20 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 realdllfilename.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
 
                 StringBuffer wuXML;
-                if (getWorkunitXMLFromFile(realdllfilename, wuXML))
+                if (!getWorkunitXMLFromFile(realdllfilename, wuXML))
+                    throw makeStringException(999, "Failed to extract workunit from query dll");
+
+                Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
+                embeddedWU->loadXML(wuXML);
+                queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
+                workunit->setIsClone(false);
+                SCMStringBuffer jobname;
+                if (embeddedWU->getJobName(jobname).length()) //let ECL win naming job during initial compile
+                    workunit->setJobName(jobname.str());
+                if (!workunit->getDebugValueBool("obfuscateOutput", false))
                 {
-                    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
-                    embeddedWU->loadXML(wuXML);
-                    queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
-                    workunit->setIsClone(false);
-                    SCMStringBuffer jobname;
-                    if (embeddedWU->getJobName(jobname).length()) //let ECL win naming job during initial compile
-                        workunit->setJobName(jobname.str());
-                    if (!workunit->getDebugValueBool("obfuscateOutput", false))
-                    {
-                        Owned<IWUQuery> query = workunit->updateQuery();
-                        query->setQueryText(eclQuery.s.str());
-                    }
+                    Owned<IWUQuery> query = workunit->updateQuery();
+                    query->setQueryText(eclQuery.s.str());
                 }
 
                 createUNCFilename(realdllfilename.str(), dllurl);
