@@ -24,9 +24,7 @@ rm -f ${SENTINEL}
 
 killed()
 {
-    dfuserver stop=1
-    sleep 5
-    kill_process ${PID_NAME} dfuserver 3 ${SENTINEL}
+    kill_process ${PID_NAME} dfuserver 15 ${SENTINEL}
     exit 255
 }
 
