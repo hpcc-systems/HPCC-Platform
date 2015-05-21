@@ -656,10 +656,14 @@ public:
     }
 };
 
-unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename)
+unsigned validateNodes(const SocketEndpointArray &epso,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename)
 {
     // used for detecting duff nodes
     IPointerArrayOf<ISocket> sockets;
+    // dedup nodes
+    SocketEndpointArray eps;
+    ForEachItemIn(i1,epso)
+        eps.appendUniq(epso.element(i1));
     unsigned to=30*1000;
     unsigned n=eps.ordinality();    // use approx log scale (timeout is long but only for failure situation)
     while (n>1) {
