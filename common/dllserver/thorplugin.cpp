@@ -284,7 +284,7 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
     //Check that there is a symbol table for the sections.
     if (hdr->e_shstrndx == SHN_UNDEF)
     {
-        DBGLOG("Failed to extract resource %s: Does include a section symbol table", filename);
+        DBGLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
         return false;
     }
 
@@ -305,7 +305,7 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
         }
     }
 
-    DBGLOG("Failed to extract resource %s: Does include a matching entry", filename);
+    DBGLOG("Failed to extract resource %s: Does not include a matching entry", filename);
     return false;
 #endif
 }
