@@ -2168,7 +2168,7 @@ OUTPUT(ValidWords)
                   <entry>-p, --pushkeydir</entry>
 
                   <entry>Push existing ssh key to remote machine. Optional.
-                  Use either -k or -p, not both. </entry>
+                  Use either -k or -p, not both.</entry>
                 </row>
 
                 <row>
@@ -2215,8 +2215,8 @@ OUTPUT(ValidWords)
 
           <listitem>
             <para>optionally, if you specify the -p option it pushes out the
-            existing ssh keys to all nodes specified. (use either the -k or
-            the -p option, but not both)</para>
+            existing ssh keys to all nodes specified. Use either the -k or the
+            -p option, but not both.</para>
           </listitem>
 
           <listitem>
