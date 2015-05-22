@@ -562,7 +562,6 @@ stop_component() {
     eval $stopcmd
 
     unlock ${LOCKPATH}
-    removePid ${PIDPATH}
 
     RESULT=0
     local waittime=30
