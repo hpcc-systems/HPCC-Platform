@@ -2417,7 +2417,7 @@ static void dumpWorkunit(const char *wuid, bool includeProgress)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
-    exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress, false);  //should we hide passwords here?
+    exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress, true);
 }
 
 static void dumpProgress(const char *wuid, const char * graph)

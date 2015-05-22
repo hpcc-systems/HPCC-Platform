@@ -751,7 +751,7 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
     {
     case ofXML:
         {
-            res->getResultXml(buff, false);
+            res->getResultXml(buff, true);
             outputSerializer->fwrite(sequence, (const void*)buff.str(), 1, buff.length());
             break;
         }

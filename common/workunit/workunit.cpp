@@ -3666,7 +3666,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
         return false;
 
     StringBuffer buf;
-    exportWorkUnitToXML(this, buf, false, false, false);
+    exportWorkUnitToXML(this, buf, false, false, true);
 
     StringBuffer extraWorkUnitXML;
     StringBuffer xpath("/GraphProgress/");
