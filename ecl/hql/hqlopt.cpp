@@ -788,7 +788,8 @@ IHqlExpression * CTreeOptimizer::optimizeIfAppend(IHqlExpression * expr, node_op
         {
             //Convert IF(a, b+c, b+d) to b + IF(a, DATASET(c), DATASET(d))
 
-            //Check any other attributes match
+            //Check any other attributes match.  This ensures that + is only combined with +,
+            //& with & and && with &&.
             if (remainingChildrenMatch(trueExpr, falseExpr, 3))
                 commonExpr = trueArg0;
         }
@@ -825,6 +826,7 @@ IHqlExpression * CTreeOptimizer::optimizeIfAppend(IHqlExpression * expr, node_op
     HqlExprArray args;
     args.append(*LINK(commonExpr));
     args.append(*newIf.getClear());
+    unwindChildren(args, appendExpr, 2);
     OwnedHqlExpr ret = appendExpr->clone(args);
     DBGLOG("Optimizer: Extract common branch - replace %s with %s", queryNode0Text(expr), queryNode1Text(ret));
     return ret.getClear();
