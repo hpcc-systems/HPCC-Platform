@@ -324,6 +324,7 @@ ESPrequest [nil_remove] WUDeployWorkunitRequest
     string QueryMainDefinition;
     string Snapshot;
     ESParray<ESPstruct NamedValue> DebugValues;
+    [min_ver("1.56")] ESParray<ESPstruct NamedValue> CppOptions;
 };
 
 ESPresponse [exceptions_inline] WUDeployWorkunitResponse
@@ -537,6 +538,7 @@ ESPrequest WURunRequest
     ESParray<ESPstruct NamedValue> DebugValues;
     ESParray<ESPstruct NamedValue> Variables;
     ESPenum WUExceptionSeverity ExceptionSeverity("info");
+    [min_ver("1.56")] ESParray<ESPstruct NamedValue> CppOptions;
 };
 
 ESPresponse [exceptions_inline] WURunResponse
@@ -1610,7 +1612,7 @@ ESPresponse [exceptions_inline] WUGetStatsResponse
 };
 
 ESPservice [
-    version("1.55"), default_client_version("1.55"),
+    version("1.56"), default_client_version("1.56"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

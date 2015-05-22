@@ -264,6 +264,8 @@ public:
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
             "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
             "   -Dname=value           Override the definition of a global attribute 'name'\n"
+            "   -Wc,xx                 Pass option xx to the c++ compiler\n"
+            "   -Wl,xx                 Pass option xx to the c++ linker\n"
             " eclcc options (everything following):\n"
         );
         for (unsigned line=0; line < _elements_in(helpText); line++)
@@ -300,6 +302,7 @@ public:
     StringAttr optSnapshot;
     IArrayOf<IEspNamedValue> debugValues;
     IArrayOf<IEspNamedValue> definitions;
+    IArrayOf<IEspNamedValue> cppOptions;
     unsigned optResultLimit;
     bool optNoArchive;
     bool optLegacy;

@@ -418,6 +418,18 @@ public:
                     cmdLine.append('=').append(value);
             }
         }
+        if (cmd.cppOptions.length())
+        {
+            ForEachItemIn(i, cmd.cppOptions)
+            {
+                IEspNamedValue &item = cmd.cppOptions.item(i);
+                const char *name = item.getName();
+                const char *value = item.getValue();
+                cmdLine.append(" ").append(name);
+                if (value)
+                    cmdLine.append(value);
+            }
+        }
         if (cmd.definitions.length())
         {
             ForEachItemIn(i, cmd.definitions)
@@ -551,6 +563,17 @@ bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNam
     addNamedValue(arg, values);
     return true;
 }
+
+bool matchVariableCompilerOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values)
+{
+    // -Wc,xxx or -Wl,xx parameter pass it as is
+    const char *arg = iter.query();
+    if (*arg!='-' || *(arg+1)!=prefix || !*(arg+2))
+        return false;
+    addNamedValue(arg, values);
+    return true;
+}
+
 eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
 {
     const char *arg = iter.query();
@@ -577,6 +600,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         return EclCmdOptionMatch;
     }
     if (matchVariableOption(iter, 'f', debugValues))
+        return EclCmdOptionMatch;
+    if (matchVariableCompilerOption(iter, 'W', cppOptions))
         return EclCmdOptionMatch;
     if (matchVariableOption(iter, 'D', definitions))
         return EclCmdOptionMatch;

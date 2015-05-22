@@ -1077,6 +1077,9 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IStringIterator *getLogs(const char *type, const char *instance=NULL) const = 0;
     virtual IStringIterator *getProcesses(const char *type) const = 0;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const = 0;
+    virtual bool getCppOption(const char * propname, bool defVal) const = 0;
+    virtual IStringIterator & getCppOptions() const = 0;
+    virtual IStringIterator & getCppOptions(const char * prop) const = 0;
 };
 
 
@@ -1167,6 +1170,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultBool(const char *name, unsigned sequence, bool val) = 0;
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0;
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) = 0;
+    virtual void setCppOption(const char * propname, bool value, bool overwrite) = 0;
 };
 
 

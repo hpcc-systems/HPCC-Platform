@@ -570,6 +570,16 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     wu->getDebugValue("compileOptions", optionAdaptor);
     compiler->addCompileOption(options.str());
 
+    // Get CppOptions from WU (for coverage generation)
+    if ( wu->getCppOption("fprofile-arcs", false) )
+        compiler->addCompileOption("-fprofile-arcs");
+
+    if ( wu->getCppOption("ftest-coverage", false) )
+        compiler->addCompileOption("-ftest-coverage");
+
+    if ( wu->getCppOption("lgcov", false) )
+        compiler->addLinkOption("-lgcov");
+
     if (okToAbort)
         compiler->setAbortChecker(this);
 
