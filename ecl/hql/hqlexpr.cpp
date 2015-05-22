@@ -1935,6 +1935,10 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_assertdistributed:
     case no_extractresult:
         return childdataset_dataset;
+    case no_alias_scope:
+        if (expr->isDataset())
+            return childdataset_dataset_noscope;
+        return childdataset_none;
     case no_keyedlimit:
     case no_preload:
     case no_limit:
@@ -1945,7 +1949,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_split:
     case no_spill:
     case no_activerow:
-    case no_alias_scope:
     case no_executewhen:  //second argument is independent of the other arguments
     case no_selectnth:
     case no_readspill:
@@ -2123,9 +2126,12 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_nwayjoin:
     case no_nwaymerge:
         return 0;       //??
+    case no_alias_scope:
+        if (dataset->isDataset())
+            return 1;
+        return 0;
     case no_selfjoin:
     case no_alias_project:
-    case no_alias_scope:
     case no_newaggregate:
     case no_apply:
     case no_cachealias:

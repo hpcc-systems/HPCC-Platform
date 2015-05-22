@@ -15,24 +15,16 @@
 #    limitations under the License.
 ################################################################################
 
-PATH_PRE=`type -path hpcc_setenv`
+PATH_PRE=$(type -path hpcc_setenv)
 source ${PATH_PRE}
-PID_NAME="$PID/`basename $PWD`.pid"
-
-INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
-echo $$ > $INIT_PID_NAME
+PID_NAME="$PID/$(basename $PWD).pid"
 
 export SENTINEL="dfuserver.sentinel"
 rm -f ${SENTINEL}
 
-
-
-
-
-killed() {
-    dfuserver stop=1
-    sleep 5
-    kill_process ${PID_NAME} dfuserver 3 ${SENTINEL}
+killed()
+{
+    kill_process ${PID_NAME} dfuserver 15 ${SENTINEL}
     exit 255
 }
 
@@ -43,9 +35,9 @@ echo $! > $PID_NAME
 wait
 rm $PID_NAME
 
-while [ -e ${SENTINEL} ]; do
+while [[ -e ${SENTINEL} ]]; do
     sleep 5
-    if [ -e ${SENTINEL} ]; then
+    if [[ -e ${SENTINEL} ]]; then
         dfuserver 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait

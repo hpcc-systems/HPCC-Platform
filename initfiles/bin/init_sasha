@@ -15,40 +15,18 @@
 #    limitations under the License.
 ################################################################################
 
-PATH_PRE=`type -path hpcc_setenv`
+PATH_PRE=$(type -path hpcc_setenv)
 source ${PATH_PRE}
-PID_NAME="$PID/`basename $PWD`.pid"
+PID_NAME="$PID/$(basename $PWD).pid"
 
-INSTALL_DIR=`dirname ${PATH_PRE}`/..
+INSTALL_DIR="$(dirname ${PATH_PRE})/.."
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
-
-INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
-echo $$ > $INIT_PID_NAME
 
 export SENTINEL="saserver.sentinel"
 rm -f ${SENTINEL}
 
-
-
-
-which_pidof
-
-killed() {
-    pid=`${PIDOF} saserver`
-    if [ -n "$pid" ]; then
-        sasha server=. action=stop
-        I=1
-        while [ -n "$pid" ] && [ $I -lt 30 ]; do
-            echo "Waiting for saserver to stop"
-            sleep 2
-            pid=`${PIDOF} saserver`
-            let I=I+1
-        
-        done
-        if [ -n "$pid" ]; then
-            kill -9 $pid
-        fi
-    fi
+killed()
+{
     kill_process ${PID_NAME} saserver 3 ${SENTINEL}
     exit 255
 }
@@ -59,9 +37,9 @@ echo $! > $PID_NAME
 wait
 rm $PID_NAME
 
-while [ -e ${SENTINEL} ]; do
+while [[ -e ${SENTINEL} ]]; do
     sleep 5
-    if [ -e ${SENTINEL} ]; then
+    if [[ -e ${SENTINEL} ]]; then
         saserver 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait

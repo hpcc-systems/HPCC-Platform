@@ -282,7 +282,7 @@ set_componentvars() {
     comp.getByName ${compName}
     compPath=`echo $comp_return | cut -d ' ' -f 2 | cut -d '=' -f 2 `
     compType=`echo $comp_return | cut -d ' ' -f 1 | cut -d '=' -f 2 `
-    PIDPATH=${pid}/${compName}_init.pid
+    PIDPATH=${pid}/init_${compName}.pid
     LOCKPATH=${lock}/$compName/$compName.lock
     COMPPIDPATH=${pid}/${compName}.pid
 }
@@ -298,7 +298,7 @@ configGenCmd() {
 
     # Creating logfiles for component
     logDir=$log/${compName}
-    logFile=$log/${compName}/${compName}_init.log
+    logFile=$log/${compName}/init_${compName}.log
 
     configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
     if [ ${DEBUG} != "NO_DEBUG" ]; then
@@ -385,9 +385,8 @@ createRuntime() {
 # cleanup all standard files made during runtime
 cleanupRuntimeEnvironment() {
     unlock ${lock}/${compName}/${compName}.lock
-    removePid ${pid}/${compName}_init.pid
-    removePid ${pid}/${compName}.pid
     removePid ${pid}/init_${compName}.pid
+    removePid ${pid}/${compName}.pid
 }
 
 
@@ -423,7 +422,7 @@ startCmd() {
 
     # Creating logfiles for component
     logDir=$log/${compName}
-    logFile=$log/${compName}/${compName}_init.log
+    logFile=$log/${compName}/init_${compName}.log
 
 
     if [ ${noStatusCheck} -ne 1 ]; then
@@ -470,7 +469,7 @@ startCmd() {
     fi
 
     EXEC_COMMAND="${bin_path}/init_${compType} "
-    startcmd="${START_STOP_DAEMON} -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1"
+    startcmd="${START_STOP_DAEMON} -S -p ${pid}/init_${compName}.pid -c ${user}:${group} -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1"
 
     issueTime=`date`
     logCommand="COMMAND:: $startcmd  ::Issued at $issueTime "
@@ -563,7 +562,6 @@ stop_component() {
     eval $stopcmd
 
     unlock ${LOCKPATH}
-    removePid ${PIDPATH}
 
     RESULT=0
     local waittime=30
@@ -609,7 +607,7 @@ start_component() {
 
     # Creating logfiles for component
     logDir=$log/${compName}
-    logFile=$log/${compName}/${compName}_init.log
+    logFile=$log/${compName}/init_${compName}.log
 
     if [ ! -d $logDir ]; then
         mkdir -p $logDir >> tmp.txt 2>&1

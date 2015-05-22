@@ -44,7 +44,6 @@ class ECLcmd(Shell):
         server = kwargs.pop('server', False)
         if server:
             args.append('--server=' + server)
-            args.append('-XTargetIP=' + server)
 
         username = kwargs.pop('username', False)
         if username:
@@ -78,6 +77,8 @@ class ECLcmd(Shell):
             args = args + eclfile.getDParameters()
 
             args = args + eclfile.getStoredInputParameters()
+
+            args.append('-XTargetIP=' + server)
 
             args.append(eclfile.getArchive())
 

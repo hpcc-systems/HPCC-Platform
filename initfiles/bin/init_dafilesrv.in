@@ -22,17 +22,12 @@ if [ -z $1 ]; then
 else
         log=$1
 fi
-
 shift
 
-PATH_PRE=`type -path hpcc_setenv`
+PATH_PRE=$(type -path hpcc_setenv)
 source ${PATH_PRE}
-PID_NAME="$PID/`basename $PWD`.pid"
-
-INSTANCE_NAME="`basename $PWD`"
-
-INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
-echo $$ > $INIT_PID_NAME
+PID_NAME="$PID/$(basename $PWD).pid"
+COMP_NAME="$(basename $PWD)"
 
 # this must match jsocket hard limit
 export handlelimit=32768
@@ -40,7 +35,8 @@ export handlelimit=32768
 export SENTINEL="dafilesrv.sentinel"
 rm -f ${SENTINEL}
 
-killed(){
+killed()
+{
     kill_process ${PID_NAME} dafilesrv 3 ${SENTINEL}
     exit 255
 }
@@ -49,15 +45,15 @@ ulimit -c unlimited
 ulimit -n $handlelimit
 
 trap "killed" SIGINT SIGTERM SIGKILL
-dafilesrv -L $log -I ${INSTANCE_NAME} &
+dafilesrv -L $log -I ${COMP_NAME} &
 echo $! > $PID_NAME
 wait
 rm $PID_NAME
 
-while [ -e ${SENTINEL} ]; do
+while [[ -e ${SENTINEL} ]]; do
     sleep 5
-    if [ -e ${SENTINEL} ]; then
-        dafilesrv -L $log -I ${INSTANCE_NAME} &
+    if [[ -e ${SENTINEL} ]]; then
+        dafilesrv -L $log -I ${COMP_NAME} &
         echo $! > $PID_NAME
         wait
         rm $PID_NAME

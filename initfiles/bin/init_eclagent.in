@@ -17,35 +17,31 @@
 
 ###<REPLACE>###
 
-PATH_PRE=`type -path hpcc_setenv`
+PATH_PRE=$(type -path hpcc_setenv)
 source ${PATH_PRE}
-PID_NAME="$PID/`basename $PWD`.pid"
-
-INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
-echo $$ > $INIT_PID_NAME
+PID_NAME="$PID/$(basename $PWD).pid"
 
 export SENTINEL="agentexec.sentinel"
 rm -f ${SENTINEL}
 
 rm -f ${PID_DIR}/hthortemp/*
 
-killed (){
+killed ()
+{
     kill_process ${PID_NAME} agentexec 3 ${SENTINEL}
     exit 255
 }
 
-
 trap "killed" SIGINT SIGTERM SIGKILL
-
 
 agentexec 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 rm $PID_NAME
 
-while [ -e ${SENTINEL} ]; do
+while [[ -e ${SENTINEL} ]]; do
     sleep 1
-    if [ -e ${SENTINEL} ]; then
+    if [[ -e ${SENTINEL} ]]; then
         agentexec 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
