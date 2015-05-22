@@ -17157,14 +17157,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
 
     doBuildHttpHeaderStringFunction(instance->startctx, expr);
 
-    IHqlExpression * httpHeader = expr->queryAttribute(httpHeaderAtom);
-    if (httpHeader)
-    {
-        //backward compatible single httpheader support
-        doBuildVarStringFunction(instance->startctx, "getHttpHeaderName", httpHeader->queryChild(0));
-        doBuildVarStringFunction(instance->startctx, "getHttpHeaderValue", httpHeader->queryChild(1));
-    }
-
     IHqlExpression * proxyAddress = expr->queryAttribute(proxyAddressAtom);
     if (proxyAddress)
     {
@@ -17214,7 +17206,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFlogmin");
         if (logText)
             flags.append("|SOAPFlogusermsg");
-        if (httpHeader)
+        if (expr->hasAttribute(httpHeaderAtom))
             flags.append("|SOAPFhttpheaders");
 
         if (flags.length())

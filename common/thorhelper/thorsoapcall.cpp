@@ -1403,7 +1403,7 @@ private:
         {
             if (master->soapaction.get())
                 request.append("SOAPAction: ").append(master->soapaction.get()).append("\r\n");
-            if (!master->httpHeaders.length() && master->httpHeaderName.get() && master->httpHeaderValue.get())
+            if (master->httpHeaders.isEmpty() && master->httpHeaderName.get() && master->httpHeaderValue.get())
             {
                 //backward compatibility
                 StringBuffer hdr = master->httpHeaderName.get();

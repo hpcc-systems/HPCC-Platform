@@ -1934,7 +1934,7 @@ int CWsSMCSoapBindingEx::onHttpEcho(CHttpRequest* request,  CHttpResponse* respo
 
     const char *content = request->queryContent();
     if (content && *content)
-        appendXMLTag(xml, "Content", request->queryContent());
+        appendXMLTag(xml, "Content", content);
     xml.append("</HttpEchoResponse></soap:Body></soap:Envelope>");
 
     response->setContent(xml);
