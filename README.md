@@ -1,129 +1,63 @@
-```
-HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+# Description / Rationale
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+HPCC Systems offers an enterprise ready, open source supercomputing platform to solve big data problems. As compared to Hadoop, the platform offers analysis of big data using less code and less nodes for greater efficiencies and offers a single programming language, a single platform and a single architecture for efficient processing. HPCC Systems is a technology division of LexisNexis Risk Solutions.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+# Getting Started
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
- 
+* [Learn about HPCC](http://hpccsystems.com/download/getting-started)
+* [Download](http://hpccsystems.com/download/free-community-edition)
+* [Installation and Running](http://hpccsystems.com/download/docs/installing-running-hpcc-platform)
+* [Build from Source](https://github.com/hpcc-systems/HPCC-Platform/wiki/Building-HPCC)
 
-http://hpccsystems.com
-``` 
+# Architecture
 
-To build for Linux:
--------------------
+The HPCC Systems architecture incorporates the Thor and Roxie clusters as well as common middleware components, an external communications layer, client interfaces which provide both end-user services and system management tools, and auxiliary components to support monitoring and to facilitate loading and storing of filesystem data from external sources. An HPCC environment can include only Thor clusters, or both Thor and Roxie clusters. Each of these cluster types is described in more detail in the following sections below the architecture diagram.
 
-Prerequisites: (w/ base Ubuntu 14)
-```
-sudo apt-get install cmake
-sudo apt-get install bison
-sudo apt-get install flex
-sudo apt-get install binutils-dev
-sudo apt-get install libiberty-dev
-sudo apt-get install slapd
-sudo apt-get install openldap-dev
-sudo apt-get install libicu-dev
-sudo apt-get install libxslt-dev
-sudo apt-get install zlib1g-dev
-sudo apt-get install libarchive-dev
-sudo apt-get install libboost-all-dev
-sudo apt-get install libssl-dev
-sudo apt-get install libapr1-dev
-sudo apt-get install libaprutil1-dev
-sudo apt-get install clang
-```
+## [Thor](http://hpccsystems.com/FAQ/what-thor)
 
-* Check out sources (for example, to directory ~/hpcc)
-* Fetch all sub-modules with:
+Thor (the Data Refinery Cluster) is responsible for consuming vast amounts of data, transforming, linking and indexing that data. It functions as a distributed file system with parallel processing power spread across the nodes. A cluster can scale from a single node to thousands of nodes.
 
-```
-   git submodule update --init --recursive
-```   
-* Create a build directory - either as a child of hpcc or elsewhere
-* cd to the build directory
-* To create makefiles to build native release version for local machine, run
-```
-   cmake ~/hpcc
-```
-* To create makefiles to build native debug version, run
-```
-   cmake -DCMAKE_BUILD_TYPE=Debug ~/hpcc
-```
-*  To create makefiles to build 32-bit version from 64-bit host, run
-```
-   cmake -DCMAKE_C_FLAGS:STRING="-m32 -march=i386" -DCMAKE_CXX_FLAGS:STRING="-m32 -march=i386" ~/hpcc
-```
-* To build the makefiles just created above, run
-```
-   make
-```
-* Executables will be created in ./&lt;releasemode&gt;/bin and ./&lt;releasemode&gt;/libs
-* To create a .deb / ,rpm to install, run
-```
-   make package
-```
+* Single-threaded
+* Distributed parallel processing
+* Distributed file system
+* Powerful parallel processing programming language (ECL)
+* Optimized for Extraction, Transformation, Loading, Sorting, Indexing and Linking
+* Scales from 1-1000s of nodes
 
- 
-To build for Windows:
----------------------
+## [Roxie](http://hpccsystems.com/FAQ/what-roxie)
 
-1. Check out sources (for example, to directory c:\hpcc)
-2. Create a build directory - either as a child of hpcc or elsewhere
-3. cd to the build directory
-4. To create a Visual Studio project, run
-```
-   cmake c:\hpcc -G "Visual Studio 9 2008"
-```
-5. The sln file hpccsystems-platform.sln will be created in the current directory, and will support debug and release targets
-6. To build the project, load the solution into the visual studio IDE and build in the usual way.
-7. Executables will be created in (for example) c:\hpcc\bin\&lt;releasemode&gt;
+Roxie (the Query Cluster) provides separate high-performance online query processing and data warehouse capabilities.  Roxie (Rapid Online XML Inquiry Engine) is the data delivery engine used in HPCC to serve data quickly and can support many thousands of requests per node per second. 
 
-To build client tools for Macintosh OSX:
-----------------------------------------
+* Multi-threaded
+* Distributed parallel processing
+* Distributed file system
+* Powerful parallel processing programming language (ECL)
+* Optimized for concurrent query processing
+* Scales from 1-1000s of nodes
 
-* Check out sources (for example, to directory ~/hpcc)
-* Fetch all sub-modules with:
+## [ECL](http://hpccsystems.com/FAQ/what-is-ecl)
 
-```
-   git submodule update --init --recursive
-```   
-* You many need to install some 3rd-party dev packages using macports or brew. (brew installs shown below)
+ECL (Enterprise Control Language) is the powerful programming language that is ideally suited for the manipulation of Big Data.
 
-```
-   brew install icu4c
-   brew install boost
-   brew install libarchive
-   brew install bison27 
-   brew install openldap 
-```
+* Transparent and implicitly parallel programming language
+* Non-procedural and dataflow oriented
+* Modular, reusable, extensible syntax
+* Combines data representation and algorithm implementation
+* Easily extend using C++ libraries
+* ECL is compiled into optimized C++
 
-** Also make sure that bison is ahead of the system bison on your path.
-`bison --version`
-(The result should be > 2.4.1 )
+## [ECL IDE](http://hpccsystems.com/FAQ/what-ecl-ide)
 
-** OS X has LDAP installed, but when compiling against it (/System/Library/Frameworks/LDAP.framework/Headers/ldap.h) you will get a `#include nested too deeply`, which is why you should install openldap.
-   
-* Create a build directory - either as a child of hpcc or elsewhere
-* cd to the build directory
-* Use clang to build the clienttools (gcc4.2 cores when compiling some of the sources):
+ECL IDE is a modern IDE used to code, debug and monitor ECL programs.
 
-```
-   export CC=/usr/bin/clang 
-   export CXX=/usr/bin/clang++ 
-   cmake ../ -DICU_LIBRARIES=/usr/local/opt/icu4c/lib/libicuuc.dylib -DICU_INCLUDE_DIR=/usr/local/opt/icu4c/include -DLIBARCHIVE_INCLUDE_DIR=/usr/local/opt/libarchive/include -DLIBARCHIVE_LIBRARIES=/usr/local/opt/libarchive/lib/libarchive.dylib -DBOOST_REGEX_LIBRARIES=/usr/local/opt/boost/lib -DBOOST_REGEX_INCLUDE_DIR=/usr/local/opt/boost/include -DCLIENTTOOLS_ONLY=true -DUSE_OPENLDAP=true -DOPENLDAP_INCLUDE_DIR=/usr/local/opt/openldap/include -DOPENLDAP_LIBRARIES=/usr/local/opt/openldap/lib/libldap_r.dylib
-```
+* Access to shared source code repositories
+* Complete development, debugging and testing environment for developing ECL dataflow programs
+* Access to the ECLWatch tool is built-in, allowing developers to watch job graphs as they are executing
+* Access to current and historical job workunits
 
-* To build the makefiles just created above, run
-   make
-* Executables will be created in ./&lt;releasemode&gt;/bin and ./&lt;releasemode&gt;/libs
-* To create a .dmg to install, run
-   make package
- 
- 
+## [ESP](http://hpccsystems.com/FAQ/what-esp)
+
+ESP (Enterprise Services Platform) provides an easy to use interface to access ECL queries using XML, HTTP, SOAP and REST.
+
+* Standards-based interface to access ECL functions
+
