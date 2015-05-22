@@ -15,12 +15,9 @@
 #    limitations under the License.
 ################################################################################
 
-PATH_PRE=`type -path hpcc_setenv`
+PATH_PRE=$(type -path hpcc_setenv)
 source ${PATH_PRE}
-PID_NAME="$PID/`basename $PWD`.pid"
-
-INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
-echo $$ > $INIT_PID_NAME
+PID_NAME="$PID/$(basename $PWD).pid"
 
 export SENTINEL="roxie.sentinel"
 rm -f ${SENTINEL}
@@ -29,11 +26,11 @@ if [ -n "$1" ]; then
     cd $1
 fi
 
-. ./roxievars
+source ./roxievars
 
 if [ -n "$2" ]; then
     logfilename=$2
-else    
+else
     logfilename="`date +%m_%d_%Y_%H_%M_%S`"
 fi
 
@@ -43,8 +40,9 @@ export restarts=0
 ulimit -c unlimited
 ulimit -n $NUM_ROXIE_HANDLES
 
-killed() {
-    if [ -n "$1" ]; then
+killed()
+{
+    if [[ -n "$1" ]]; then
         cd $1
     fi
     kill_process ${PID_NAME} roxie 3 ${SENTINEL}
@@ -58,7 +56,7 @@ wait
 rm $PID_NAME
 
 # Automatically restart roxie when it dies
-while [ -e ${SENTINEL} ]; do
+while [[ -e ${SENTINEL} ]]; do
     export restarts=$(($restarts+1))
     echo Restarting $restarts >> $logfilename.stderr
     echo Restarting $restarts >> $logfilename.stdout
