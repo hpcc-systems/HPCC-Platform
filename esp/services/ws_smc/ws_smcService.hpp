@@ -88,6 +88,7 @@ public:
     CWsSMCQueue agentQueue;
     CWsSMCQueue serverQueue;
     StringArray queuedWUIDs;
+    StringArray wuidsOnServerQueue;
 
     CWsSMCTargetCluster(){};
     virtual ~CWsSMCTargetCluster(){};
@@ -130,6 +131,7 @@ class CActivityInfo : public CInterface, implements IInterface
         CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2);
     CWsSMCTargetCluster* findTargetCluster(const char* clusterName, CIArrayOf<CWsSMCTargetCluster>& targetClusters);
     bool checkSetUniqueECLWUID(const char* wuid);
+    void addQueuedServerQueueJob(IEspContext& context, const char* serverName, const char* queueName, const char* instanceName, CIArrayOf<CWsSMCTargetCluster>& targetClusters);
 
 public:
     IMPLEMENT_IINTERFACE;
