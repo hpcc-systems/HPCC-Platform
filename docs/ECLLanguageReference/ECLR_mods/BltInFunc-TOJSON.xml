@@ -44,8 +44,8 @@
  STRING10 Firstname{xpath('FName')};  
  STRING10 Lastname{xpath('LName')}; 
 END; 
-rec1 := TOJSON(ROW({42,'Fred','Flintstone'},namesRec1)); 
-OUTPUT(rec1); 
+str1 := TOJSON(ROW({42,'Fred','Flintstone'},namesRec1)); 
+OUTPUT(str1); 
 //returns this string: 
 //'"EmpID": 42, "FName": "Fred", "LName": "Flintstone"' 
 namesRec2 := RECORD  
@@ -53,8 +53,8 @@ namesRec2 := RECORD
   STRING10 Firstname;  
   STRING10 Lastname; 
 END; 
-rec2 := TOJSON(ROW({42,'Fred','Flintstone'},namesRec2)); 
-OUTPUT(rec2); 
+str2 := TOJSON(ROW({42,'Fred','Flintstone'},namesRec2)); 
+OUTPUT(str2); 
 //returns this string: 
 //'"employeeid": 42, "firstname": "Fred", "lastname": "Flintstone"'
 </programlisting>
