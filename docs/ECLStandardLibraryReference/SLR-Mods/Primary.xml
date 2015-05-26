@@ -12,6 +12,14 @@
       <primary>Primary</primary>
     </indexterm>( </emphasis>source<emphasis role="bold"> ) </emphasis></para>
 
+  <para><emphasis role="bold">STD.Metaphone3.Primary<indexterm>
+      <primary>Std.Metaphone.Primary</primary>
+    </indexterm><indexterm>
+      <primary>Metaphone3.Primary</primary>
+    </indexterm><indexterm>
+      <primary></primary>
+    </indexterm>( </emphasis>source<emphasis role="bold"> ) </emphasis></para>
+
   <para></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -41,6 +49,11 @@
   function returns the first return value from the Double Metaphone
   algorithm.</para>
 
+  <para>The <emphasis role="bold">Metaphone3.Primary</emphasis> function uses
+  the newer Metaphone 3 libraries which improve phonetic encoding of English
+  words, non-English words familiar to Americans, and first and last names
+  commonly found in the United States (Enterprise Edition only).</para>
+
   <para>Example:</para>
 
   <programlisting>r := RECORD 
@@ -56,6 +69,16 @@ r XF(ProgGuide.Person.File L) := TRANSFORM
   SELF.M2     := STD.Metaphone.Secondary( L.LastName ); 
   SELF.Mboth  := STD.Metaphone.Double( L.LastName );
 END;
+
+// Example using Metaphone 3 (available in Enterprise Edition)
+/* 
+r XF(ProgGuide.Person.File L) := TRANSFORM 
+     SELF.source := L.LastName;
+     SELF.M1     := STD.Metaphone3.Primary( L.LastName ); 
+     SELF.M2     := STD.Metaphone3.Secondary( L.LastName ); 
+     SELF.Mboth  := STD.Metaphone3.Double( L.LastName );
+   END;
+*/
 
 ds := PROJECT(ProgGuide.Person.File,XF(LEFT)); 
 
