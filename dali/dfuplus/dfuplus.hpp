@@ -34,7 +34,7 @@ class CDfuPlusHelper : public CInterface, implements IInterface
 {
 public:
     IMPLEMENT_IINTERFACE
-    
+
     CDfuPlusHelper(IProperties* _globals,   CDfuPlusMessagerIntercept *_msgintercept=NULL);
     virtual ~CDfuPlusHelper();
 

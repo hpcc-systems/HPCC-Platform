@@ -258,6 +258,11 @@ public:
             return NULL;
         return "stub.htm";
     }
+    virtual int onGet(CHttpRequest* request,  CHttpResponse* response);
+    void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
+    int onHttpEcho(CHttpRequest* request,  CHttpResponse* response);
+
+
     virtual int onGetRoot(IEspContext &context, CHttpRequest* request,  CHttpResponse* response)
     {
         return  onGetInstantQuery(context, request, response, "WsSMC", "Activity");

@@ -1975,6 +1975,63 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
     return true;
 }
 
+int CWsSMCSoapBindingEx::onHttpEcho(CHttpRequest* request,  CHttpResponse* response)
+{
+    StringBuffer xml;
+    xml.append(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+          "<soap:Body>"
+            "<HttpEchoResponse xmlns='urn:hpccsystems:ws:httpecho'>");
+
+    appendXMLTag(xml, "Method", request->queryMethod());
+    appendXMLTag(xml, "UrlPath", request->queryPath());
+    appendXMLTag(xml, "UrlParameters", request->queryParamStr());
+
+    appendXMLOpenTag(xml, "Headers");
+    StringArray &headers = request->queryHeaders();
+    headers.sortAscii(false);
+    ForEachItemIn(i, headers)
+    {
+        const char *h = headers.item(i);
+        if (strnicmp(h, "Authorization", 13))
+            appendXMLTag(xml, "Header", h);
+    }
+    appendXMLCloseTag(xml, "Headers");
+
+    const char *content = request->queryContent();
+    if (content && *content)
+        appendXMLTag(xml, "Content", content);
+    xml.append("</HttpEchoResponse></soap:Body></soap:Envelope>");
+
+    response->setContent(xml);
+    response->setContentType("text/xml");
+    response->send();
+    return 0;
+}
+
+
+int CWsSMCSoapBindingEx::onGet(CHttpRequest* request,  CHttpResponse* response)
+{
+    const char *operation = request->queryServiceMethod();
+    if (!operation || !strieq(operation, "HttpEcho"))
+        return CWsSMCSoapBinding::onGet(request, response);
+
+    return onHttpEcho(request, response);
+}
+
+void CWsSMCSoapBindingEx::handleHttpPost(CHttpRequest *request, CHttpResponse *response)
+{
+    sub_service sstype;
+    StringBuffer operation;
+    request->getEspPathInfo(sstype, NULL, NULL, &operation, false);
+    if (!operation || !strieq(operation, "HttpEcho"))
+        CWsSMCSoapBinding::handleHttpPost(request, response);
+    else
+        onHttpEcho(request, response);
+}
+
+
 int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
 {
     try

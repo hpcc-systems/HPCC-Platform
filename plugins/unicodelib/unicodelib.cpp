@@ -277,6 +277,12 @@ inline unsigned char min3(unsigned char a, unsigned char b, unsigned char c)
     return (min<c)? min:c;
 }
 
+// returns the length of Unicode Code Point in 16-bit Code Units
+inline int ucpLength(UChar32 c)
+{
+    return U16_IS_SINGLE(c)?1:2;
+}
+
 #define DISTANCE_ON_ERROR 999
 class UPCList // User perceived character list
 {
@@ -302,12 +308,27 @@ private:
         }
         if (U_FAILURE(status)) { length_ = 0; capacity_ = 0; invalid_ = true; }
     }
+    void doCreateUPCList() {
+        if (!capacity_) {
+             capacity_ = ustring_.length();
+         }
+        next_ = new uint32_t[capacity_+1]; // the number of characters is always less or equal to the string length
+        unsigned index=0;
+        next_[index] = 0;
+        int32_t end = 0;
+        while (end < capacity_)
+        {
+            end = end+ucpLength(ustring_[end]);
+            next_[++index] = end;
+        }
+        length_ = index;
+    }
 
 public:
-    UPCList(BreakIterator& cbi, const UnicodeString & source, uint32_t capacity=0)
+    UPCList(BreakIterator* cbi, const UnicodeString & source, uint32_t capacity=0)
         : length_(0), capacity_(capacity),ustring_(source), invalid_(false)
     {
-        doCreateUPCList(cbi);
+        !cbi?doCreateUPCList():doCreateUPCList(*cbi);
     }
 
     ~UPCList()
@@ -582,7 +603,7 @@ unsigned unicodeEditDistanceV3(UnicodeString & left, UnicodeString & right, unsi
 
 //This function is based on the unicodeEditDistanceV3 to pickup optimizations;
 // It replaces RuleBasedCollator with the CharacterIterator
-unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsigned radius, BreakIterator& bi)
+unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsigned radius, BreakIterator* bi)
 {
     if (radius >= 255)
         return 255;
@@ -593,9 +614,13 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     unsigned leftLen = left.length();
     unsigned rightLen = right.length();
 
-    unsigned minED = (leftLen < rightLen)? rightLen - leftLen: leftLen - rightLen;
-    if (minED > radius)
-        return minED;
+    // this shortcut is not applicable in the bi mode because unicode characters could take more than 2 UChars
+    if (!bi)
+    {
+        unsigned minED = (leftLen < rightLen)? rightLen - leftLen: leftLen - rightLen;
+        if (minED > radius)
+            return minED>255?255:minED;
+    }
 
     if (leftLen > 255)
         leftLen = 255;
@@ -613,7 +638,7 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     UPCList leftCs(bi, left, leftLen);
     UPCList rightCs(bi, right, rightLen);
     if (leftCs.isInvalid() || rightCs.isInvalid())
-        return false;
+        return DISTANCE_ON_ERROR;
 
     leftLen = leftCs.length();
     rightLen = rightCs.length();
@@ -1326,28 +1351,36 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeCleanAccents(unsigned & tgtLen, UCh
 
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, char const * localename)
 {
-    RuleBasedCollator* rbc = queryRBCollator(localename);
-    if (!rbc)
-        return DISTANCE_ON_ERROR;
+    BreakIterator* bi = 0;
+    if (localename && *localename)
+    {
+        bi = queryCharacterBreakIterator(localename);
+        if (!bi)
+            return DISTANCE_ON_ERROR;
+    }
 
-    UnicodeString uLeft(left, leftLen);
-    UnicodeString uRight(right, rightLen);
+    UnicodeString uLeft(false, left, leftLen); // Readonly-aliasing UChar* constructor.
+    UnicodeString uRight(false, right, rightLen);
 
-    unsigned distance = nsUnicodelib::unicodeEditDistanceV2(uLeft, uRight, *rbc);
+    unsigned distance = nsUnicodelib::unicodeEditDistanceV4(uLeft, uRight, 254, bi);
     return distance;
 }
 
 
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEditDistanceWithinRadius(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, unsigned radius, char const * localename)
 {
-    BreakIterator* bi = queryCharacterBreakIterator(localename);
-    if (!bi)
-        return false;
+    BreakIterator* bi = 0;
+    if (localename && *localename)
+    {
+        bi = queryCharacterBreakIterator(localename);
+        if (!bi)
+            return false;
+    }
 
     UnicodeString uLeft(false, left, leftLen); // Readonly-aliasing UChar* constructor.
     UnicodeString uRight(false, right, rightLen);
 
-    unsigned distance = nsUnicodelib::unicodeEditDistanceV4(uLeft, uRight, radius, *bi);
+    unsigned distance = nsUnicodelib::unicodeEditDistanceV4(uLeft, uRight, radius, bi);
     return distance <= radius;
 }
 

@@ -758,6 +758,9 @@ public:
         else
             timeLimitMS = (unsigned)(dval * 1000);
 
+        if (flags & SOAPFhttpheaders)
+            httpHeaders.set(s.setown(helper->getHttpHeaders()));
+
         if (wscType == STsoap)
         {
             soapaction.set(s.setown(helper->getSoapAction()));
@@ -817,7 +820,7 @@ public:
         {
             service.toUpperCase();  //GET/PUT/POST
             if (strcmp(service.str(), "GET"))
-                throw MakeStringException(0, "HTTPCALL Only 'GET' service supported");
+                throw MakeStringException(0, "HTTPCALL Only 'GET' http method currently supported");
             OwnedRoxieString acceptTypeSupplied(helper->getAcceptType()); // text/html, text/xml, etc
             acceptType.set(acceptTypeSupplied);
             acceptType.trim();
@@ -1045,6 +1048,7 @@ protected:
     StringAttr soapaction;
     StringAttr httpHeaderName;
     StringAttr httpHeaderValue;
+    StringAttr httpHeaders;
     StringAttr inputpath;
     StringBuffer service;
     StringBuffer acceptType;//for httpcall, text/plain, text/html, text/xml, etc
@@ -1273,7 +1277,18 @@ IWSCHelper * createHttpCallHelper(IWSCRowProvider *r, IEngineRowAllocator * outp
 }
 
 //=================================================================================================
-
+bool httpHeaderBlockContainsHeader(const char *httpheaders, const char *header)
+{
+    if (!httpheaders || !*httpheaders)
+        return false;
+    VStringBuffer match("\n%s:", header);
+    const char *matchStart = match.str()+1;
+    if (!strncmp(httpheaders, matchStart, strlen(matchStart)))
+        return true;
+    if (strstr(httpheaders, match))
+        return true;
+    return false;
+}
 class CWSCAsyncFor : implements IWSCAsyncFor, public CInterface, public CAsyncFor
 {
     class CSocketDataProvider : public CInterface
@@ -1362,30 +1377,43 @@ private:
         else
             request.clear().append(master->service).append(" ").append(url.path).append(" HTTP/1.1\r\n");
 
-        if (url.userPasswordPair.length() > 0)
+        const char *httpheaders = master->httpHeaders.get();
+        if (httpheaders && *httpheaders)
         {
-            StringBuffer authToken;
-            JBASE64_Encode(url.userPasswordPair.str(), url.userPasswordPair.length(), authToken);
-            request.append("Authorization: Basic ").append(authToken).append("\r\n");
+            if (soapTraceLevel > 6 || master->logXML)
+                master->logctx.CTXLOG("%s: Adding HTTP Headers(%s)",  master->wscCallTypeText(), httpheaders);
+            request.append(httpheaders);
         }
-        else if (master->authToken.length() > 0)
+
+        if (!httpHeaderBlockContainsHeader(httpheaders, "Authorization"))
         {
-            request.append("Authorization: Basic ").append(master->authToken).append("\r\n");
+            if (url.userPasswordPair.length() > 0)
+            {
+                StringBuffer authToken;
+                JBASE64_Encode(url.userPasswordPair.str(), url.userPasswordPair.length(), authToken);
+                request.append("Authorization: Basic ").append(authToken).append("\r\n");
+            }
+            else if (master->authToken.length() > 0)
+            {
+                request.append("Authorization: Basic ").append(master->authToken).append("\r\n");
+            }
         }
+
         if (master->wscType == STsoap)
         {
             if (master->soapaction.get())
                 request.append("SOAPAction: ").append(master->soapaction.get()).append("\r\n");
-
-            if (master->httpHeaderName.get() && master->httpHeaderValue.get())
+            if (master->httpHeaders.isEmpty() && master->httpHeaderName.get() && master->httpHeaderValue.get())
             {
+                //backward compatibility
                 StringBuffer hdr = master->httpHeaderName.get();
                 hdr.append(": ").append(master->httpHeaderValue);
                 if (soapTraceLevel > 6 || master->logXML)
                     master->logctx.CTXLOG("SOAPCALL: Adding HTTP Header(%s)", hdr.str());
                 request.append(hdr.append("\r\n"));
             }
-            request.append("Content-Type: text/xml\r\n");
+            if (!httpHeaderBlockContainsHeader(httpheaders, "Content-Type"))
+                request.append("Content-Type: text/xml\r\n");
         }
         else if(master->wscType == SThttp)
             request.append("Accept: ").append(master->acceptType).append("\r\n");

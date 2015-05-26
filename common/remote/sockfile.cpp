@@ -2598,8 +2598,7 @@ void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *pr
 
 unsigned getRemoteVersion(ISocket * socket, StringBuffer &ver)
 {
-    static CriticalSection sect;
-    CriticalBlock block(sect);
+    // used to have a global critical section here
     if (!socket)
         return 0;
     unsigned ret;
@@ -2638,8 +2637,7 @@ unsigned getRemoteVersion(ISocket * socket, StringBuffer &ver)
 
 extern unsigned stopRemoteServer(ISocket * socket)
 {
-    static CriticalSection sect;
-    CriticalBlock block(sect);
+    // used to have a global critical section here
     if (!socket)
         return 0;
     MemoryBuffer sendbuf;

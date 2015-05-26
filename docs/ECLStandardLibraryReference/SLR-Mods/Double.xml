@@ -12,6 +12,10 @@
       <primary>Double</primary>
     </indexterm>( </emphasis>source <emphasis role="bold">)</emphasis></para>
 
+  <para><emphasis role="bold">STD.Metaphone3.Double<indexterm>
+      <primary>Std.Metaphone3.Double</primary>
+    </indexterm>( </emphasis>source <emphasis role="bold">)</emphasis></para>
+
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="80.50pt" />
@@ -28,7 +32,7 @@
         <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>Double returns a STRING value. </entry>
+          <entry>Double returns a STRING value.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -37,7 +41,12 @@
   <para>The <emphasis role="bold">Double</emphasis> function returns a textual
   representation of the <emphasis>source</emphasis> data, similar to a Soundex
   code. This function returns both return values from the Double Metaphone
-  algorithm, concatenating the two into a single result string. </para>
+  algorithm, concatenating the two into a single result string.</para>
+
+  <para>The <emphasis role="bold">Metaphone3.Double</emphasis> function uses
+  the newer Metaphone 3 libraries which improve phonetic encoding of English
+  words, non-English words familiar to Americans, and first and last names
+  commonly found in the United States (Enterprise Edition only).</para>
 
   <para>Example:</para>
 
@@ -54,6 +63,16 @@ r XF(ProgGuide.Person.File L) := TRANSFORM
   SELF.M2     := STD.Metaphone.Secondary( L.LastName ); 
   SELF.Mboth  := STD.Metaphone.Double( L.LastName );
 END;
+
+// Example using Metaphone 3 (available in Enterprise Edition)
+/* 
+r XF(ProgGuide.Person.File L) := TRANSFORM 
+     SELF.source := L.LastName;
+     SELF.M1     := STD.Metaphone3.Primary( L.LastName ); 
+     SELF.M2     := STD.Metaphone3.Secondary( L.LastName ); 
+     SELF.Mboth  := STD.Metaphone3.Double( L.LastName );
+   END;
+*/
 
 ds := PROJECT(ProgGuide.Person.File,XF(LEFT)); 
 

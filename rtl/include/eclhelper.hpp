@@ -2138,6 +2138,7 @@ enum
     SOAPFpreserveSpace  = 0x0080,
     SOAPFlogmin         = 0x0100,
     SOAPFlogusermsg     = 0x0200,
+    SOAPFhttpheaders    = 0x0400
 };
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
@@ -2162,6 +2163,7 @@ struct IHThorWebServiceCallActionArg : public IHThorArg
     virtual const char * getHttpHeaderValue()         { return NULL; }
     virtual const char * getProxyAddress()            { return NULL; }
     virtual const char * getAcceptType()              { return NULL; }
+    virtual const char * getHttpHeaders()             { return NULL; }
 };
 typedef IHThorWebServiceCallActionArg IHThorSoapActionArg ;
 typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;
