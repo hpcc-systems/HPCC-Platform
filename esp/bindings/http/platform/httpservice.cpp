@@ -728,10 +728,45 @@ static void httpGetDirectory(CHttpRequest* request, CHttpResponse* response, con
     response->send();
 }
 
+static bool checkHttpPathStaysWithinBounds(const char *path)
+{
+    if (!path || !*path)
+        return true;
+    int depth = 0;
+    StringArray nodes;
+    nodes.appendList(path, "/");
+    ForEachItemIn(i, nodes)
+    {
+        const char *node = nodes.item(i);
+        if (!*node || streq(node, ".")) //empty or "." doesn't advance
+            continue;
+        if (!streq(node, ".."))
+            depth++;
+        else
+        {
+            depth--;
+            if (depth<0)  //only really care that the relative http path doesn't position itself above its own root node
+                return false;
+        }
+    }
+    return true;
+}
+
 int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, const char *urlpath)
 {
         if (!request || !response || !urlpath)
             return -1;
+
+        StringBuffer basedir(getCFD());
+        basedir.append("files/");
+
+        if (!checkHttpPathStaysWithinBounds(urlpath))
+        {
+            DBGLOG("Get File %s: attempted access outside of %s", urlpath, basedir.str());
+            response->setStatus(HTTP_STATUS_NOT_FOUND);
+            response->send();
+            return 0;
+        }
 
         StringBuffer ext;
         StringBuffer tail;
@@ -745,19 +780,8 @@ int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, co
         else if (top)
             tail.set("./files");
 
-        StringBuffer basedir(getCFD());
-        basedir.append("files/");
-
         StringBuffer fullpath;
         makeAbsolutePath(urlpath, basedir.str(), fullpath);
-        if (*urlpath && strncmp(basedir, fullpath, basedir.length()))
-        {
-            DBGLOG("Get File %s: attempted access outside of %s", urlpath, basedir.str());
-            response->setStatus(HTTP_STATUS_NOT_FOUND);
-            response->send();
-            return 0;
-        }
-
         if (!checkFileExists(fullpath) && !checkFileExists(fullpath.toUpperCase()) && !checkFileExists(fullpath.toLowerCase()))
         {
             DBGLOG("Get File %s: file not found", urlpath);
