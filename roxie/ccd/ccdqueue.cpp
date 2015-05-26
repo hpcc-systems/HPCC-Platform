@@ -2466,7 +2466,6 @@ void LocalMessagePacker::flush(bool last_message)
 CLocalMessageCollator::CLocalMessageCollator(IRowManager *_rowManager, ruid_t _ruid) 
     : rowManager(_rowManager), id(_ruid)
 {
-    id = 0;
     totalBytesReceived = 0;
 }
 
