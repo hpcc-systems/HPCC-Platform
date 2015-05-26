@@ -2539,9 +2539,9 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
     virtual const char * getSoapAction()              { return NULL; }
     virtual const char * getNamespaceName()           { return NULL; }
     virtual const char * getNamespaceVar()            { return NULL; }
-
     virtual const char * getHttpHeaderName()          { return NULL; }
     virtual const char * getHttpHeaderValue()         { return NULL; }
+    virtual const char * getHttpHeaders()             { return NULL; }
     virtual const char * getProxyAddress()            { return NULL; }
     virtual const char * getAcceptType()              { return NULL; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
@@ -2584,9 +2584,9 @@ class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
     virtual const char * getSoapAction()              { return NULL; }
     virtual const char * getNamespaceName()           { return NULL; }
     virtual const char * getNamespaceVar()            { return NULL; }
-
     virtual const char * getHttpHeaderName()          { return NULL; }
     virtual const char * getHttpHeaderValue()         { return NULL; }
+    virtual const char * getHttpHeaders()             { return NULL; }
     virtual const char * getProxyAddress()            { return NULL; }
     virtual const char * getAcceptType()              { return NULL; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }

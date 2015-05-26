@@ -1509,6 +1509,8 @@ public:
     ABoundActivity * doBuildActivityWorkunitRead(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityXmlParse(BuildCtx & ctx, IHqlExpression * expr);
 
+    void doBuildHttpHeaderStringFunction(BuildCtx & ctx, IHqlExpression * expr);
+
     void doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant);
 
     void doBuildXmlEncode(BuildCtx & ctx, const CHqlBoundTarget * tgt, IHqlExpression * expr, CHqlBoundExpr * result);

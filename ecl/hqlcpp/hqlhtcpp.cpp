@@ -17047,6 +17047,32 @@ void HqlCppTranslator::validateExprScope(BuildCtx & ctx, IHqlExpression * datase
         throwError2(HQLERR_OpArgDependsDataset, opName, argName);
 }
 
+void HqlCppTranslator::doBuildHttpHeaderStringFunction(BuildCtx &ctx, IHqlExpression * expr)
+{
+    HqlExprArray headerExprs;
+    gatherAttributes(headerExprs, httpHeaderAtom, expr);
+    if (headerExprs.length())
+    {
+        Owned<ITypeInfo> string2Type = makeStringType(2);
+        OwnedHqlExpr endName = createConstant(createStringValue(": ", LINK(string2Type)));
+        OwnedHqlExpr endLine = createConstant(createStringValue("\r\n", LINK(string2Type)));
+
+        HqlExprArray headerStringExprs;
+        ForEachItemIn(i, headerExprs)
+        {
+            IHqlExpression * httpHeader = &headerExprs.item(i);
+            headerStringExprs.append(*LINK(httpHeader->queryChild(0)));
+            headerStringExprs.append(*LINK(endName));
+            headerStringExprs.append(*LINK(httpHeader->queryChild(1)));
+            headerStringExprs.append(*LINK(endLine));
+        }
+
+        OwnedHqlExpr concatHeaders = createBalanced(no_concat, unknownVarStringType, headerStringExprs);
+        concatHeaders.setown(foldHqlExpression(concatHeaders));
+        doBuildVarStringFunction(ctx, "getHttpHeaders", concatHeaders);
+    }
+
+}
 
 ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpression * expr, bool isSink, bool isRoot)
 {
@@ -17129,12 +17155,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     if (action)
         doBuildVarStringFunction(instance->startctx, "getSoapAction", action->queryChild(0));
 
-    IHqlExpression * httpHeader = expr->queryAttribute(httpHeaderAtom);
-    if (httpHeader)
-    {
-        doBuildVarStringFunction(instance->startctx, "getHttpHeaderName", httpHeader->queryChild(0));
-        doBuildVarStringFunction(instance->startctx, "getHttpHeaderValue", httpHeader->queryChild(1));
-    }
+    doBuildHttpHeaderStringFunction(instance->startctx, expr);
 
     IHqlExpression * proxyAddress = expr->queryAttribute(proxyAddressAtom);
     if (proxyAddress)
@@ -17185,6 +17206,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFlogmin");
         if (logText)
             flags.append("|SOAPFlogusermsg");
+        if (expr->hasAttribute(httpHeaderAtom))
+            flags.append("|SOAPFhttpheaders");
 
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -17293,6 +17316,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
     //virtual void toXML(const byte * self, StringBuffer & out) = 0;
     buildHTTPtoXml(instance->startctx);
 
+    doBuildHttpHeaderStringFunction(instance->startctx, expr);
+
     //virtual const char * queryOutputIteratorPath()
     IHqlExpression * separator = expr->queryAttribute(separatorAtom);
     if (separator)
@@ -17336,6 +17361,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFlogmin");
         if (logText)
             flags.append("|SOAPFlogusermsg");
+        if (expr->hasAttribute(httpHeaderAtom))
+            flags.append("|SOAPFhttpheaders");
 
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);

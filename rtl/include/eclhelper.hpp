@@ -39,7 +39,7 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      157
+#define ACTIVITY_INTERFACE_VERSION      158
 #define MIN_ACTIVITY_INTERFACE_VERSION  157             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
@@ -2138,6 +2138,7 @@ enum
     SOAPFpreserveSpace  = 0x0080,
     SOAPFlogmin         = 0x0100,
     SOAPFlogusermsg     = 0x0200,
+    SOAPFhttpheaders    = 0x0400
 };
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
@@ -2162,6 +2163,7 @@ struct IHThorWebServiceCallActionArg : public IHThorArg
     virtual const char * getHttpHeaderValue()         { return NULL; }
     virtual const char * getProxyAddress()            { return NULL; }
     virtual const char * getAcceptType()              { return NULL; }
+    virtual const char * getHttpHeaders()             { return NULL; }
 };
 typedef IHThorWebServiceCallActionArg IHThorSoapActionArg ;
 typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;
