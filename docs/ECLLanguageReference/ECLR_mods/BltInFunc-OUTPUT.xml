@@ -50,6 +50,20 @@
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
   OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  [</emphasis><emphasis> format </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> JSON<indexterm>
+      <primary>JSON</primary>
+    </indexterm> [ (</emphasis><emphasis>jsonoptions</emphasis><emphasis
+  role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>jsonfileoptions </emphasis><emphasis
+  role="bold"> ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] );</emphasis></para>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+  :=<emphasis role="bold"> ]
+  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis role="bold">]
   </emphasis><emphasis> ,</emphasis><emphasis role="bold">PIPE<indexterm>
       <primary>PIPE</primary>
@@ -149,8 +163,8 @@
             <emphasis>format</emphasis> or the RECORD structure of the
             <emphasis>recordset</emphasis> are ignored and field names are
             used instead. This allows control of whether XPATHs are used for
-            output, so that XPATHs that were meant only for xml input can be
-            ignored for output.</entry>
+            output, so that XPATHs that were meant only for xml or json input
+            can be ignored for output.</entry>
           </row>
 
           <row>
@@ -194,6 +208,28 @@
 
             <entry>Optional. A comma-delimited list of options valid for an
             XML file (see the section below for details).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">JSON</emphasis></entry>
+
+            <entry>Specifies the file is output as JSON data with the name of
+            each field in the format becoming the JSON tag for that field's
+            data.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>xmloptions</emphasis></entry>
+
+            <entry>Optional. A comma separated list of options that define how
+            the output JSON file is delimited.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>xmlfileoptions</emphasis></entry>
+
+            <entry>Optional. A comma-delimited list of options valid for an
+            JSON file (see the section below for details).</entry>
           </row>
 
           <row>
@@ -920,6 +956,223 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
   &lt;MyRow&gt;&lt;fname&gt;George&lt;/fname&gt;&lt;lname&gt;Blanda&lt;/lname&gt;&lt;/MyRow&gt;
   &lt;MyRow&gt;&lt;fname&gt;Sam&lt;/fname&gt;&lt;/MyRow&gt;
 &lt;/Dataset&gt; */
+</programlisting>
+  </sect2>
+
+  <sect2 id="OUTPUT_XML_Files">
+    <title>OUTPUT JSON Files<indexterm>
+        <primary>JSON Files</primary>
+      </indexterm><indexterm>
+        <primary>OUTPUT - JSON Files</primary>
+      </indexterm></title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
+    :=<emphasis role="bold"> ] OUTPUT<indexterm>
+        <primary>OUTPUT</primary>
+      </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+    role="bold">, [</emphasis><emphasis> format </emphasis><emphasis
+    role="bold">]</emphasis><emphasis> ,file </emphasis><emphasis role="bold">
+    </emphasis><emphasis>,</emphasis><emphasis role="bold">JSON<indexterm>
+        <primary>JSON</primary>
+      </indexterm> [ (</emphasis><emphasis>jsonoptions</emphasis><emphasis
+    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
+    role="bold">) ] [, CLUSTER<indexterm>
+        <primary>CLUSTER</primary>
+      </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
+    role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
+    OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
+    UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> EXPIRE<indexterm>
+        <primary>EXPIRE</primary>
+      </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
+    role="bold">] ) ] )</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="93.80pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+              <entry>Optional. Specifies writing the file to the specified
+              list of target clusters. If omitted, the file is written to the
+              cluster on which the workunit executes. The number of physical
+              file parts written to disk is always determined by the number of
+              nodes in the cluster on which the workunit executes, regardless
+              of the number of nodes on the target cluster(s).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>A comma-delimited list of string constants containing the
+              names of the clusters to write the file to. The names must be
+              listed as they appear on the ECL Watch Activity page or returned
+              by the Std.System.Thorlib.Group() function, optionally with
+              square brackets containing a comma-delimited list of
+              node-numbers (1-based) and/or ranges (specified with a dash, as
+              in n-m) to indicate the specific set of nodes to write
+              to.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+
+              <entry>Optional. Specifies writing the file to disk using both
+              256-bit AES encryption and LZW compression.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>key</emphasis></entry>
+
+              <entry>A string constant containing the encryption key to use to
+              encrypt the data.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+
+              <entry>Optional. Specifies overwriting the file if it already
+              exists.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Specifies that the file should be rewritten only if the
+              code or input data has changed.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+              <entry>Optional. Specifies the file is a temporary file that may
+              be automatically deleted after the specified number of
+              days.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>days</emphasis></entry>
+
+              <entry>Optional. The number of days after which the file may be
+              automatically deleted. If omitted, the default is seven
+              (7).</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>This form writes the <emphasis>recordset</emphasis> to the specified
+    <emphasis>file</emphasis> as JSON data with the name of each field in the
+    specified <emphasis>format</emphasis> becoming the JSON tag for that
+    field's data. The valid set of <emphasis>jsonoptions</emphasis>
+    are:</para>
+
+    <para><emphasis
+    role="bold">‘</emphasis><emphasis>rowtag</emphasis><emphasis
+    role="bold">'</emphasis></para>
+
+    <para><emphasis role="bold">HEADING<indexterm>
+        <primary>HEADING</primary>
+      </indexterm>( </emphasis><emphasis>headertext </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, footertext </emphasis><emphasis
+    role="bold">] )</emphasis></para>
+
+    <para><emphasis role="bold">TRIM<indexterm>
+        <primary>TRIM</primary>
+      </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+    <para><emphasis role="bold">OPT<indexterm>
+        <primary>OPT</primary>
+      </indexterm><indexterm>
+        <primary>TRIM OPT</primary>
+      </indexterm></emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="84.45pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>rowtag</emphasis></entry>
+
+              <entry>The text to place in record delimiting tag.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">HEADING</emphasis></entry>
+
+              <entry>Specifies placing header and footer records in the
+              file.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>headertext</emphasis></entry>
+
+              <entry>The text of the header record to place in the
+              file.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>footertext</emphasis></entry>
+
+              <entry>The text of the footer record to place in the
+              file.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">TRIM</emphasis></entry>
+
+              <entry>Specifies removing trailing blanks from string fields
+              before output.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">OPT</emphasis></entry>
+
+              <entry>Specifies omitting tags for any empty string field from
+              the output.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>If no <emphasis>jsonoptions</emphasis> are specified, the defaults
+    are:</para>
+
+    <programlisting>         JSON('Row',HEADING('[',']'))</programlisting>
+
+    <para>Example:</para>
+
+    <programlisting>R := {STRING10 fname,STRING12 lname};
+B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
+
+OUTPUT(B,,'fred1.json', JSON); // writes B to the fred1.json file
+/* the Fred1.json file looks like this:
+{"Row": [
+{"fname": "Fred      ", "lname": "Bell        "},
+{"fname": "George    ", "lname": "Blanda      "},
+{"fname": "Sam       ", "lname": "            "}
+]}
+*/
+OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
+/* the Fred2.json file looks like this:
+["MyResult": [
+{"fname": "Fred      ", "lname": "Bell        "},
+{"fname": "George    ", "lname": "Blanda      "},
+{"fname": "Sam       ", "lname": "            "}
+]]
 </programlisting>
   </sect2>
 
