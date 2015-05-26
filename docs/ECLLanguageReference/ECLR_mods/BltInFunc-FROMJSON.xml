@@ -19,9 +19,10 @@
           <row>
             <entry><emphasis>record</emphasis></entry>
 
-            <entry>The RECORD structure to produce. Each field must specify
+            <entry>The RECORD structure to produce. Each field should specify
             the XPATH to the data in the json<emphasis>string</emphasis> that
-            it should hold.</entry>
+            it should hold. If omitted, the lower-cased field names are
+            used.</entry>
           </row>
 
           <row>
@@ -57,5 +58,5 @@ OUTPUT(rec);
 </programlisting>
 
   <para>See Also: <link linkend="ROW">ROW</link>, <link
-  linkend="TOXML">TOJSON</link></para>
+  linkend="TOJSON">TOJSON</link></para>
 </sect1>
