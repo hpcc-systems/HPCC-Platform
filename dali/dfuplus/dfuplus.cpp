@@ -32,6 +32,7 @@
 #include "rmtfile.hpp"
 #include "sockfile.hpp"
 
+#include "jutil.hpp"
 
 static class CSecuritySettings
 {
@@ -192,6 +193,15 @@ CDfuPlusHelper::CDfuPlusHelper(IProperties* _globals,   CDfuPlusMessagerIntercep
 
     const char* username = globals->queryProp("username");
     const char* password = globals->queryProp("password");
+    if ( username && *username && (!password || !*password))
+    {
+        VStringBuffer prompt("%s's password: ", username);
+        StringBuffer passw;
+        passwordInput(prompt, passw);
+        globals->setProp("password",passw.str());
+        password = globals->queryProp("password");
+    }
+
     sprayclient->setUsernameToken(username, password, NULL);
     dfuclient->setUsernameToken(username, password, NULL);
 
