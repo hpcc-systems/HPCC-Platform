@@ -4809,11 +4809,14 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringBuffer ldapPassword;
     ClusterType platform;
     unsigned clusterWidth;
+    unsigned roxieRedundancy;
+    unsigned channelsPerNode;
+    int roxieReplicateOffset;
 
 public:
     IMPLEMENT_IINTERFACE;
     CEnvironmentClusterInfo(const char *_name, const char *_prefix, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
-        : name(_name), prefix(_prefix)
+        : name(_name), prefix(_prefix), roxieRedundancy(0), channelsPerNode(0), roxieReplicateOffset(1)
     {
         StringBuffer queue;
         if (thors.ordinality())
@@ -4857,6 +4860,24 @@ public:
             StringBuffer encPassword = roxie->queryProp("@ldapPassword");
             if (encPassword.length())
                 decrypt(ldapPassword, encPassword);
+            const char *redundancyMode = roxie->queryProp("@slaveConfig");
+            if (redundancyMode && *redundancyMode)
+            {
+                unsigned dataCopies = roxie->getPropInt("@numDataCopies", 1);
+                if (strieq(redundancyMode, "overloaded"))
+                    channelsPerNode = roxie->getPropInt("@channelsPernode", 1);
+                else if (strieq(redundancyMode, "full redundancy"))
+                {
+                    roxieRedundancy = dataCopies-1;
+                    roxieReplicateOffset = 0;
+                }
+                else if (strieq(redundancyMode, "cyclic redundancy"))
+                {
+                    roxieRedundancy = dataCopies-1;
+                    channelsPerNode = dataCopies;
+                    roxieReplicateOffset = roxie->getPropInt("@cyclicOffset", 1);
+                }
+            }
         }
         else 
         {
@@ -4874,6 +4895,7 @@ public:
         // MORE - does this need to be conditional?
         serverQueue.set(getClusterEclCCServerQueueName(queue.clear(), name));
     }
+
     IStringVal & getName(IStringVal & str) const
     {
         str.set(name.get());
@@ -4924,6 +4946,18 @@ public:
     const SocketEndpointArray & getRoxieServers() const
     {
         return roxieServers;
+    }
+    unsigned getRoxieRedundancy() const
+    {
+        return roxieRedundancy;
+    }
+    unsigned getChannelsPerNode() const
+    {
+        return channelsPerNode;
+    }
+    int getRoxieReplicateOffset() const
+    {
+        return roxieReplicateOffset;
     }
     const char *getLdapUser() const
     {

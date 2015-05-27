@@ -70,6 +70,21 @@ interface IDFUhelper: extends IInterface
                          bool dophysicalcopy=false          // NB *not* using DFU server (so use with care)
                          ) = 0;
 
+
+    virtual void cloneRoxieSubFile(const char *srcLFN,             // src LFN (can't be super)
+                         const char *srcCluster,
+                         const char *dstLFN,                       // dst LFN
+                         const char *dstCluster,                   // group name of roxie cluster
+                         const char *prefix,
+                         unsigned redundancy,                      // Number of "spare" copies of the data
+                         unsigned channelsPerNode,                 // Overloaded and cyclic modes
+                         int replicateOffset,                      // Used In cyclic mode only
+                         const char *defReplicateFolder,
+                         IUserDescriptor *userdesc,                // user desc for local dali
+                         const char *foreigndali,                  // can be omitted if srcname foreign or local
+                         bool overwrite                            // overwrite destination if exists
+                         ) = 0;
+
     virtual void cloneFileRelationships(
         const char *foreigndali,        // where src relationships are retrieved from (can be NULL for local)
         StringArray &srcfns,            // file names on source

@@ -1019,6 +1019,32 @@ public:
         cloner.cloneFile(srcname,dstname);
     }
 
+    virtual void cloneRoxieSubFile(const char *srcLFN,             // src LFN (can't be super)
+                         const char *srcCluster,
+                         const char *dstLFN,                       // dst LFN
+                         const char *dstCluster,                   // group name of roxie cluster
+                         const char *prefix,
+                         unsigned redundancy,                      // Number of "spare" copies of the data
+                         unsigned channelsPerNode,                 // Overloaded and cyclic modes
+                         int replicateOffset,                      // Used In cyclic mode only
+                         const char *defReplicateFolder,
+                         IUserDescriptor *userdesc,                // user desc for local dali
+                         const char *foreigndali,                  // can be omitted if srcname foreign or local
+                         bool overwrite                            // overwrite destination if exists
+                         )
+    {
+        DBGLOG("cloneRoxieSubFile src=%s@%s, dst=%s@%s, prefix=%s, ow=%d, docopy=false", srcLFN, srcCluster, dstLFN, dstCluster, prefix, overwrite);
+        CFileCloner cloner;
+        cloner.init(dstCluster, DFUcpdm_c_replicated_by_d, true, NULL, userdesc, foreigndali, NULL, NULL, overwrite, false);
+        cloner.spec1.setRoxie(redundancy, channelsPerNode, replicateOffset);
+        if (defReplicateFolder)
+            cloner.spec1.setDefaultReplicateDir(defReplicateFolder);
+        cloner.srcCluster.set(srcCluster);
+        cloner.prefix.set(prefix);
+        cloner.cloneFile(srcLFN, dstLFN);
+    }
+
+
     void cloneFileRelationships(
         const char *foreigndali,     // where src relationships are retrieved from (can be NULL for local)
         StringArray &srcfns,             // file names on source

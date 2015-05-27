@@ -690,8 +690,10 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
             queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
         wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryname);
         wufiles->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !overwrite, true, true);
+        StringBuffer defReplicateFolder;
+        getConfigurationDirectory(NULL, "data2", "roxie", process.str(), defReplicateFolder);
         Owned<IDFUhelper> helper = createIDFUhelper();
-        wufiles->cloneAllInfo(helper, overwrite, true, true);
+        wufiles->cloneAllInfo(helper, overwrite, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
     }
 }
 
@@ -2246,7 +2248,14 @@ public:
         {
             wufiles->resolveFiles(process, dfsIP, srcPrefix, srcCluster, !overwriteDfs, true, true);
             Owned<IDFUhelper> helper = createIDFUhelper();
-            wufiles->cloneAllInfo(helper, overwriteDfs, true, true);
+            Owned <IConstWUClusterInfo> cl = getTargetClusterInfo(target);
+            if (cl)
+            {
+                SCMStringBuffer process;
+                StringBuffer defReplicateFolder;
+                getConfigurationDirectory(NULL, "data2", "roxie", cl->getRoxieProcess(process).str(), defReplicateFolder);
+                wufiles->cloneAllInfo(helper, overwriteDfs, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder);
+            }
         }
     }
 private:
