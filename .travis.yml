@@ -1,0 +1,21 @@
+language: cpp
+
+compiler:
+  - gcc
+
+before_install:
+  - echo $LANG
+  - echo $LC_ALL
+  - sudo apt-get update && sudo apt-get install -y  g++ gcc make cmake bison flex binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev zlib1g-dev libboost-regex-dev libssl-dev libarchive-dev python2.7-dev libv8-dev openjdk-6-jdk libapr1-dev libaprutil1-dev libhiredis-dev
+
+before_script:
+  - cd ..
+  - mkdir build
+  - cd build
+  - cmake ../HPCC-Platform
+
+script:
+  - cmake --build . --target package -- -j3
+  
+os:
+  - linux
