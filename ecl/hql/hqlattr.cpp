@@ -1727,9 +1727,6 @@ bool isLocalActivity(IHqlExpression * expr)
     default:
         {
             assertex(!localChangesActivity(expr));
-            //MORE: What is this test here for??
-            if (!expr->isAction() && queryDistribution(expr))
-                return !isGroupedActivity(expr);
             return false;
         }
     }
