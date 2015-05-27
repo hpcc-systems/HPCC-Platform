@@ -27,6 +27,7 @@
 
 #ifdef _DEBUG
 #define _CLEAR_ALLOCATED_ROW
+#define _CLEAR_FREED_ROW
 //#define _CLEAR_ALLOCATED_HUGE_ROW
 #endif
 
@@ -1250,6 +1251,9 @@ public:
                 allocatorCache->onDestroy(id & MAX_ACTIVITY_ID, ptr + chunkHeaderSize);
             }
 
+#ifdef _CLEAR_FREED_ROW
+            memset((void *)_ptr, 0xdd, chunkCapacity);
+#endif
             inlineReleasePointer(ptr);
         }
     }
@@ -1482,6 +1486,9 @@ public:
             if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
                 allocatorCache->onDestroy(sharedAllocatorId & MAX_ACTIVITY_ID, ptr + chunkHeaderSize);
 
+#ifdef _CLEAR_FREED_ROW
+            memset((void *)_ptr, 0xdd, chunkCapacity);
+#endif
             inlineReleasePointer(ptr);
         }
     }

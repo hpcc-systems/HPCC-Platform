@@ -135,6 +135,7 @@ public:
     HqlExprAssociation *        queryMatchExpr(IHqlExpression * expr);
     bool                        getMatchExpr(IHqlExpression * expr, CHqlBoundExpr & bound);
     IHqlExpression *            getTempDeclare(ITypeInfo * type, IHqlExpression * value);
+    bool                        isOuterContext() const;
     void                        needFunction(IFunctionInfo & helper);
     void                        needFunction(IAtom * name);
     void                        removeAssociation(HqlExprAssociation * search);
