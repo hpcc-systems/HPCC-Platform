@@ -22,6 +22,7 @@
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jiter.hpp"
+#include "jprop.hpp"
 
 enum TextMarkupFormat
 {
@@ -206,6 +207,8 @@ jlib_decl IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_fl
 
 jlib_decl IPropertyTree *createPTreeFromJSONString(const char *json, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *parameters, bool skipLeadingDotParameters, bool nestedRoot, ipt_flags flags=ipt_none);
+
 
 #define XML_SortTags 0x01
 #define XML_Embed    0x02

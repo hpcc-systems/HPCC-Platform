@@ -1025,7 +1025,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     info.setActionEx(cw->getActionEx(s).str());
     info.setDescription(cw->getDebugValue("description", s).str());
     if (version > 1.21)
-        info.setXmlParams(cw->getXmlParams(s).str());
+        info.setXmlParams(cw->getXmlParams(s, true).str());
 
     info.setResultLimit(cw->getResultLimit());
     info.setArchived(false);
@@ -1480,7 +1480,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
         try
         {
             SCMStringBuffer xml;
-            r.getResultXml(xml);
+            r.getResultXml(xml, true);
 
             Owned<IPropertyTree> props = createPTreeFromXMLString(xml.str(), ipt_caseInsensitive);
             IPropertyTree *val = props->queryPropTree("Row/*");
@@ -2131,7 +2131,7 @@ void WsWuInfo::getWorkunitXml(const char* plainText, MemoryBuffer& buf)
         header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
 
     SCMStringBuffer xml;
-    exportWorkUnitToXML(cw, xml, true, false);
+    exportWorkUnitToXML(cw, xml, true, false, true);
 
     buf.append(strlen(header), header);
     buf.append(xml.length(), xml.str());

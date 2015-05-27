@@ -7126,3 +7126,97 @@ IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte fl
     reader->load();
     return LINK(iMaker->queryRoot());
 }
+
+
+static const char * nextHttpParameterTag(StringBuffer &tag, const char *path)
+{
+    while (*path=='.')
+        path++;
+    const char *finger = strchr(path, '.');
+    if (finger)
+    {
+        tag.clear().append(finger - path, path);
+        finger++;
+    }
+    else
+        tag.set(path);
+    return finger;
+}
+
+static void ensureHttpParameter(IPropertyTree *pt, StringBuffer &tag, const char *path, const char *value, const char *fullpath)
+{
+    if (!tag.length())
+        return;
+
+    unsigned idx = 1;
+    if (path && isdigit(*path))
+    {
+        StringBuffer pos;
+        path = nextHttpParameterTag(pos, path);
+        idx = (unsigned) atoi(pos.str())+1;
+    }
+
+    if (tag.charAt(tag.length()-1)=='$')
+    {
+        if (path && *path)
+            throw MakeStringException(-1, "'$' not allowed in parent node of parameter path: %s", fullpath);
+        tag.setLength(tag.length()-1);
+        StringArray values;
+        values.appendList(value, "\r");
+        ForEachItemIn(pos, values)
+        {
+            const char *itemValue = values.item(pos);
+            while (*itemValue=='\n')
+                itemValue++;
+            pt->addProp(tag, itemValue);
+        }
+        return;
+    }
+    unsigned count = pt->getCount(tag);
+    while (count++ < idx)
+        pt->addPropTree(tag, createPTree(tag));
+    StringBuffer xpath(tag);
+    xpath.append('[').append(idx).append(']');
+    pt = pt->queryPropTree(xpath);
+
+    if (!path || !*path)
+    {
+        pt->setProp(NULL, value);
+        return;
+    }
+
+    StringBuffer nextTag;
+    path = nextHttpParameterTag(nextTag, path);
+    ensureHttpParameter(pt, nextTag, path, value, fullpath);
+}
+
+static void ensureHttpParameter(IPropertyTree *pt, const char *path, const char *value)
+{
+    const char *fullpath = path;
+    StringBuffer tag;
+    path = nextHttpParameterTag(tag, path);
+    ensureHttpParameter(pt, tag, path, value, fullpath);
+}
+
+IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *parameters, bool skipLeadingDotParameters, bool nestedRoot, ipt_flags flags)
+{
+    Owned<IPropertyTree> pt = createPTree(name, flags);
+
+    Owned<IPropertyIterator> props = parameters->getIterator();
+    ForEach(*props)
+    {
+        const char *key = props->getPropKey();
+        const char *value = parameters->queryProp(key);
+        if (skipLeadingDotParameters && key && *key=='.')
+            continue;
+        ensureHttpParameter(pt, key, value);
+    }
+    if (nestedRoot)
+    {
+        Owned<IPropertyTree> root = createPTree(flags);
+        root->setPropTree(name, pt.getClear());
+        return root.getClear();
+    }
+
+    return pt.getClear();
+}

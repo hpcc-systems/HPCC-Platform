@@ -3102,7 +3102,7 @@ bool CWsWorkunitsEx::onWUExport(IEspContext &context, IEspWUExportRequest &req, 
         {
             Owned<IConstWorkUnit> cw = factory->openWorkUnit(it->c_str(), false);
             if (cw)
-                exportWorkUnitToXML(cw, xml, true, false);
+                exportWorkUnitToXML(cw, xml, true, false, true);
         }
         xml.append("</Workunits>");
 

@@ -492,6 +492,9 @@ int main(int argc,char **argv)
             SocketEndpoint listenep;
             bool useSSL;
             bool requireauthenticate;
+            unsigned parallelRequestLimit;
+            unsigned throttleDelayMs;
+            unsigned throttleCPULimit;
 
             
             class cpollthread: public Thread
@@ -514,8 +517,9 @@ int main(int argc,char **argv)
 
         public:
 
-            cserv(SocketEndpoint _listenep, bool _useSSL)
-                : listenep(_listenep),useSSL(_useSSL),pollthread(this)
+            cserv(SocketEndpoint _listenep, bool _useSSL, unsigned _parallelRequestLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit)
+                : listenep(_listenep),useSSL(_useSSL),pollthread(this),
+                  parallelRequestLimit(_parallelRequestLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit)
             {
                 stopped = false;
                 started = false;
@@ -592,7 +596,7 @@ int main(int argc,char **argv)
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Stopped");
                 stopped = true;
             }
-        } service(listenep, useSSL);
+        } service(listenep, useSSL, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
         service.start();
         return 0;
 #else
