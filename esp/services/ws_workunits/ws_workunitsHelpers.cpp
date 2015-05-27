@@ -2130,7 +2130,7 @@ void WsWuInfo::getWorkunitXml(const char* plainText, MemoryBuffer& buf)
     else
         header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
 
-    SCMStringBuffer xml;
+    StringBuffer xml;
     exportWorkUnitToXML(cw, xml, true, false, true);
 
     buf.append(strlen(header), header);

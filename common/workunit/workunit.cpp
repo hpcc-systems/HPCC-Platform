@@ -1417,6 +1417,10 @@ public:
             { return queryExtendedWU(c)->calculateHash(prevHash); }
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
             { queryExtendedWU(c)->copyWorkUnit(cached, all); }
+    virtual IPropertyTree *queryPTree() const
+            { return queryExtendedWU(c)->queryPTree(); }
+    virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
+            { return queryExtendedWU(c)->getUnpackedTree(includeProgress); }
     virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned)
             { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned); }
     virtual void packWorkUnit(bool pack)
@@ -5102,6 +5106,11 @@ static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char 
         to->setPropTree(xpath, match);
 }
 
+IPropertyTree *CLocalWorkUnit::queryPTree() const
+{
+    return p;
+}
+
 void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
 {
     CLocalWorkUnit *from = QUERYINTERFACE(cached, CLocalWorkUnit);
@@ -5232,6 +5241,9 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     }
 
     p->setProp("@codeVersion", fromP->queryProp("@codeVersion"));
+    p->setProp("@buildVersion", fromP->queryProp("@buildVersion"));
+    p->setProp("@eclVersion", fromP->queryProp("@eclVersion"));
+    p->setProp("@hash", fromP->queryProp("@hash"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
@@ -5688,6 +5700,11 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else
             statTree->removeProp("@max");
     }
+}
+
+void CLocalWorkUnit::_loadStatistics() const
+{
+    statistics.load(p,"Statistics/*");
 }
 
 IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter * filter) const
@@ -8902,20 +8919,14 @@ void exportWorkUnitToXMLFileWithHiddenPasswords(IPropertyTree *p, const char *fi
 
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords)
 {
-    const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
-    if (!w)
-    {
-        const CLockedWorkUnit *wl = QUERYINTERFACE(wu, const CLockedWorkUnit);
-        if (wl)
-            w = wl->c;
-    }
-    if (w)
+    const IExtendedWUInterface *ewu = queryExtendedWU(wu);
+    if (ewu)
     {
         Linked<IPropertyTree> p;
         if (unpack||includeProgress)
-            p.setown(w->getUnpackedTree(includeProgress));
+            p.setown(ewu->getUnpackedTree(includeProgress));
         else
-            p.set(w->p);
+            p.set(ewu->queryPTree());
         if (hidePasswords && p->hasProp("Variables/Variable[Format/@password]"))
             return exportWorkUnitToXMLWithHiddenPasswords(p, str);
         toXML(p, str, 0, XML_Format|XML_SortTags);
@@ -8925,33 +8936,22 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
     return str;
 }
 
-extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack, bool includeProgress, bool hidePasswords)
-{
-    StringBuffer x;
-    str.set(exportWorkUnitToXML(wu,x,unpack, includeProgress, hidePasswords).str());
-    return str;
-}
-
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords)
 {
-    const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
-    if (!w)
-    {
-        const CLockedWorkUnit *wl = QUERYINTERFACE(wu, const CLockedWorkUnit);
-        if (wl)
-            w = wl->c;
-    }
-    if (w)
+    const IExtendedWUInterface *ewu = queryExtendedWU(wu);
+    if (ewu)
     {
         Linked<IPropertyTree> p;
         if (unpack||includeProgress)
-            p.setown(w->getUnpackedTree(includeProgress));
+            p.setown(ewu->getUnpackedTree(includeProgress));
         else
-            p.set(w->p);
+            p.set(ewu->queryPTree());
         if (hidePasswords && p->hasProp("Variables/Variable[Format/@password]"))
             return exportWorkUnitToXMLFileWithHiddenPasswords(p, filename, extraXmlFlags);
         saveXML(filename, p, 0, XML_Format|XML_SortTags|extraXmlFlags);
     }
+    else
+        throw makeStringException(0, "Unrecognized workunit format");
 }
 
 
@@ -9817,9 +9817,14 @@ extern WORKUNIT_API IWorkflowScheduleConnection * getWorkflowScheduleConnection(
     return new CWorkflowScheduleConnection(wuid);
 }
 
-extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IWorkUnit * wu)
+extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IConstWorkUnit * wu)
 {
     return QUERYINTERFACE(wu, IExtendedWUInterface);
+}
+
+extern WORKUNIT_API const IExtendedWUInterface * queryExtendedWU(const IConstWorkUnit * wu)
+{
+    return QUERYINTERFACE(wu, const IExtendedWUInterface);
 }
 
 

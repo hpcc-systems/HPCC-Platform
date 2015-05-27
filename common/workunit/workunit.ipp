@@ -294,6 +294,7 @@ public:
     virtual void subscribe(WUSubscribeOptions options);
     virtual unsigned calculateHash(unsigned prevHash);
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
+    virtual IPropertyTree *queryPTree() const;
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;
@@ -559,6 +560,7 @@ protected:
     virtual void _unlockRemote() {};
     virtual void unsubscribe();
     virtual void _loadResults() const;
+    virtual void _loadStatistics() const;
 };
 
 interface ISDSManager; // MORE - can remove once dali split out
