@@ -70,15 +70,15 @@ EXPORT TestEditDistance := MODULE
     EXPORT Test28a := ASSERT(Uni.EditDistance(U'BLVAREZ',U'ÁLVAREZ','en') = 1, CONST);
     // when character's encoding is from 0x00ffff - 0x10ffff range: 0x1D306 ; Description=TETRAGRAM FOR CENTER (Tai Xuan Jing Symbols)
     // UTF-16 representation is xD834,xDF06 (2 16-bit surrogates)
-    EXPORT Test27 := ASSERT(Uni.EditDistance(U'\uD834\uDF06XXX',U'XXXX') = 1, CONST);
-    EXPORT Test27a := ASSERT(Uni.EditDistance(U'\uD834\uDF06XXX',U'XXXX','en') = 1, CONST);
+    EXPORT Test29 := ASSERT(Uni.EditDistance(U'\uD834\uDF06XXX',U'XXXX') = 1, CONST);
+    EXPORT Test29a := ASSERT(Uni.EditDistance(U'\uD834\uDF06XXX',U'XXXX','en') = 1, CONST);
     // NFC (normalized form composed) for accented characters uses multiple 16-bit code units
     // for example: Ḍ̛ is encoded as 0x1E0C,0x031B, and Ḍ̛̇ as 0x1E0C,0x031B,0x0307
     // These are the cases where the fast function version (ToDo) does not work correctly, but this one does
-    EXPORT Test28 := ASSERT(Uni.EditDistance(U'\u1E0C\u031BDDD',U'DDDD') = 2, CONST);
-    EXPORT Test28a := ASSERT(Uni.EditDistance(U'\u1E0C\u031BDDD',U'DDDD','en') = 1, CONST);
+    EXPORT Test30 := ASSERT(Uni.EditDistance(U'\u1E0C\u031BDDD',U'DDDD') = 2, CONST);
+    EXPORT Test30a := ASSERT(Uni.EditDistance(U'\u1E0C\u031BDDD',U'DDDD','en') = 1, CONST);
     // Lithuanian 'i dot acute' is encoded as 0069 0307 0301
-    EXPORT Test29 := ASSERT(Uni.EditDistance(U'\u0069\u0307\u0301DDD',U'DDDD') = 3, CONST);
-    EXPORT Test29a := ASSERT(Uni.EditDistance(U'\u0069\u0307\u0301DDD',U'DDDD','lt') = 1, CONST);
+    EXPORT Test31 := ASSERT(Uni.EditDistance(U'\u0069\u0307\u0301DDD',U'DDDD') = 3, CONST);
+    EXPORT Test31a := ASSERT(Uni.EditDistance(U'\u0069\u0307\u0301DDD',U'DDDD','lt') = 1, CONST);
   END;
 END;
