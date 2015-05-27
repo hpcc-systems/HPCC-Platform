@@ -524,6 +524,17 @@ bool CSafeSocket::readBlock(MemoryBuffer &ret, unsigned timeout, unsigned maxBlo
     }
 }
 
+int readHttpHeaderLine(IBufferedSocket *linereader, char *headerline, unsigned maxlen)
+{
+    Owned<IMultiException> me = makeMultiException("roxie");
+    int bytesread = linereader->readline(headerline, maxlen, true, me);
+    if (me->ordinality())
+        throw me.getClear();
+    if(bytesread <= 0 || bytesread > maxlen)
+        throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Bad Request");
+    return bytesread;
+}
+
 bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &continuationNeeded, bool &isStatus, unsigned maxBlockSize)
 {
     continuationNeeded = false;
@@ -553,6 +564,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         if (pHttpHelper != NULL && strncmp((char *)&len, "POST", 4) == 0)
         {
 #define MAX_HTTP_HEADERSIZE 8000
+            pHttpHelper->setIsHttp(true);
             char header[MAX_HTTP_HEADERSIZE + 1]; // allow room for \0
             sock->read(header, 1, MAX_HTTP_HEADERSIZE, bytesRead, timeout);
             header[bytesRead] = 0;
@@ -589,9 +601,45 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
             else
                 left = len = 0;
 
-            pHttpHelper->setIsHttp(true);
             if (!len)
                 throw MakeStringException(THORHELPER_DATA_ERROR, "Badly formed HTTP header");
+        }
+        else if (pHttpHelper != NULL && strncmp((char *)&len, "GET", 3) == 0)
+        {
+#define MAX_HTTP_GET_LINE 16000 //arbitrary per line limit, most web servers are lower, but urls for queries can be complex..
+                pHttpHelper->setIsHttp(true);
+                char headerline[MAX_HTTP_GET_LINE + 1];
+                Owned<IBufferedSocket> linereader = createBufferedSocket(sock);
+
+                int bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                pHttpHelper->parseHTTPRequestLine(headerline);
+
+                bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                while(bytesread >= 0 && *headerline && *headerline!='\r')
+                {
+                    // capture authentication token
+                    if (!strnicmp(headerline, "Authorization: Basic ", 21))
+                        pHttpHelper->setAuthToken(headerline+21);
+                    bytesread = readHttpHeaderLine(linereader, headerline, MAX_HTTP_GET_LINE);
+                }
+
+                StringBuffer queryName;
+                const char *target = pHttpHelper->queryTarget();
+                if (!target || !*target)
+                    throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not specified");
+                else if (!pHttpHelper->validateTarget(target))
+                    throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not found");
+                const char *query = pHttpHelper->queryQueryName();
+                if (!query || !*query)
+                    throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Query not specified");
+
+                queryName.append(query);
+                Owned<IPropertyTree> req = createPTreeFromHttpParameters(queryName, pHttpHelper->queryUrlParameters(), true, pHttpHelper->queryContentFormat()==MarkupFmt_JSON);
+                if (pHttpHelper->queryContentFormat()==MarkupFmt_JSON)
+                    toJSON(req, ret);
+                else
+                    toXML(req, ret);
+                return true;
         }
         else if (strnicmp((char *)&len, "STAT", 4) == 0)
             isStatus = true;
@@ -618,6 +666,13 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
 
         return len != 0;
     }
+    catch (IException *E)
+    {
+        if (pHttpHelper)
+            checkSendHttpException(*pHttpHelper, E, NULL);
+        heartbeat = false;
+        throw;
+    }
     catch (...)
     {
         heartbeat = false;
@@ -625,11 +680,11 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
     }
 }
 
-void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupFormat _mlfmt)
+void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper)
 {
     CriticalBlock c(crit); // Should not be needed
     httpMode = true;
-    mlFmt = _mlfmt;
+    mlFmt = httphelper.queryContentFormat();
     heartbeat = false;
     assertex(contentHead.length()==0 && contentTail.length()==0);
     if (mlFmt==MarkupFmt_JSON)
@@ -640,17 +695,89 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupF
     else
     {
         StringAttrBuilder headText(contentHead), tailText(contentTail);
-        headText.append(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-            "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
-            "<soap:Body>");
+        if (httphelper.getUseEnvelope())
+            headText.append(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+                "<soap:Body>");
         if (arrayMode)
         {
             headText.append("<").append(queryName).append("ResponseArray>");
             tailText.append("</").append(queryName).append("ResponseArray>");
         }
-        tailText.append("</soap:Body></soap:Envelope>");
+        if (httphelper.getUseEnvelope())
+            tailText.append("</soap:Body></soap:Envelope>");
     }
+}
+
+void CSafeSocket::checkSendHttpException(HttpHelper &httphelper, IException *E, const char *queryName)
+{
+    if (!httphelper.isHttp())
+        return;
+    if (httphelper.queryContentFormat()==MarkupFmt_JSON)
+        sendJsonException(E, queryName);
+    else
+        sendSoapException(E, queryName);
+}
+
+void CSafeSocket::sendSoapException(IException *E, const char *queryName)
+{
+    try
+    {
+        if (!queryName)
+            queryName = "Unknown"; // Exceptions when parsing query XML can leave queryName unset/unknowable....
+
+        StringBuffer response;
+        response.append("<").append(queryName).append("Response");
+        response.append(" xmlns=\"urn:hpccsystems:ecl:").appendLower(strlen(queryName), queryName).append("\">");
+        response.appendf("<Results><Result><Exception><Source>Roxie</Source><Code>%d</Code>", E->errorCode());
+        response.append("<Message>");
+        StringBuffer s;
+        E->errorMessage(s);
+        encodeXML(s.str(), response);
+        response.append("</Message></Exception></Result></Results>");
+        response.append("</").append(queryName).append("Response>");
+        write(response.str(), response.length());
+    }
+    catch(IException *EE)
+    {
+        StringBuffer error("While reporting exception: ");
+        EE->errorMessage(error);
+        DBGLOG("%s", error.str());
+        EE->Release();
+    }
+#ifndef _DEBUG
+    catch(...) {}
+#endif
+}
+
+void CSafeSocket::sendJsonException(IException *E, const char *queryName)
+{
+    try
+    {
+        if (!queryName)
+            queryName = "Unknown"; // Exceptions when parsing query XML can leave queryName unset/unknowable....
+
+        StringBuffer response;
+        appendfJSONName(response, "%sResponse", queryName).append(" {");
+        appendJSONName(response, "Results").append(" {");
+        appendJSONName(response, "Exception").append(" [{");
+        appendJSONValue(response, "Source", "Roxie");
+        appendJSONValue(response, "Code", E->errorCode());
+        StringBuffer s;
+        appendJSONValue(response, "Message", E->errorMessage(s).str());
+        response.append("}]}}");
+        write(response.str(), response.length());
+    }
+    catch(IException *EE)
+    {
+        StringBuffer error("While reporting exception: ");
+        DBGLOG("%s", EE->errorMessage(error).str());
+        EE->Release();
+    }
+#ifndef _DEBUG
+    catch(...) {}
+#endif
 }
 
 void CSafeSocket::setHeartBeat()

@@ -1480,7 +1480,7 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
         return;
     }
 
-    Owned<IPropertyTree> reqTree = HttpParamHelpers::createPTreeFromHttpParameters(wsinfo.queryname, parameters);
+    Owned<IPropertyTree> reqTree = createPTreeFromHttpParameters(wsinfo.queryname, parameters, true, false);
 
     if (!validate)
         toXML(reqTree, soapmsg, 0, 0);
@@ -1512,7 +1512,7 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
     try
     {
         IProperties *parameters = context.queryRequestParameters();
-        Owned<IPropertyTree> reqTree = HttpParamHelpers::createPTreeFromHttpParameters(wsinfo.queryname, parameters);
+        Owned<IPropertyTree> reqTree = createPTreeFromHttpParameters(wsinfo.queryname, parameters, true, false);
 
         if (!validate)
         {
@@ -2364,7 +2364,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
             if (!wsecl->connMap.getValue(target.str()))
                 throw MakeStringException(-1, "Target cluster not mapped to roxie process!");
-            Owned<IPropertyTree> pt = HttpParamHelpers::createPTreeFromHttpParameters(qid.str(), parms);
+            Owned<IPropertyTree> pt = createPTreeFromHttpParameters(qid.str(), parms, true, false);
             StringBuffer soapreq(
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
