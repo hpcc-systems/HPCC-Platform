@@ -219,14 +219,14 @@
           </row>
 
           <row>
-            <entry><emphasis>xmloptions</emphasis></entry>
+            <entry><emphasis>jsonoptions</emphasis></entry>
 
             <entry>Optional. A comma separated list of options that define how
             the output JSON file is delimited.</entry>
           </row>
 
           <row>
-            <entry><emphasis>xmlfileoptions</emphasis></entry>
+            <entry><emphasis>jsonfileoptions</emphasis></entry>
 
             <entry>Optional. A comma-delimited list of options valid for an
             JSON file (see the section below for details).</entry>
