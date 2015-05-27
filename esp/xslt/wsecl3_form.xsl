@@ -1132,7 +1132,7 @@ function switchInputForm()
                     <xsl:otherwise>
                         <xsl:variable name="inputType">
                             <xsl:choose>
-                                <xsl:when test="$annot/@formType">password</xsl:when>
+                                <xsl:when test="$annot/@password">password</xsl:when>
                                 <xsl:otherwise>text</xsl:otherwise>
                             </xsl:choose>
                         </xsl:variable>

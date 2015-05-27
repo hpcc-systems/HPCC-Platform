@@ -751,7 +751,7 @@ void EclAgent::outputFormattedResult(const char * name, unsigned sequence, bool 
     {
     case ofXML:
         {
-            res->getResultXml(buff);
+            res->getResultXml(buff, true);
             outputSerializer->fwrite(sequence, (const void*)buff.str(), 1, buff.length());
             break;
         }
@@ -905,7 +905,7 @@ char *EclAgent::getResultVarString(const char * stepname, unsigned sequence)
 {
     PROTECTED_GETRESULT(stepname, sequence, "VarString", "string",
         SCMStringBuffer result;
-        r->getResultString(result);
+        r->getResultString(result, false);
         return result.s.detach();
     );
 }
@@ -925,7 +925,7 @@ void EclAgent::getResultString(unsigned & tlen, char * & tgt, const char * stepn
 {
     PROTECTED_GETRESULT(stepname, sequence, "String", "string",
         SCMStringBuffer result;
-        r->getResultString(result);
+        r->getResultString(result, false);
         tlen = result.length();
         tgt = (char *)result.s.detach();
     );
@@ -936,7 +936,7 @@ void EclAgent::getResultStringF(unsigned tlen, char * tgt, const char * stepname
     PROTECTED_GETRESULT(stepname, sequence, "String", "string",
         //MORE: Could used a fixed size IStringVal implementation to save a memory allocation, but hardly worth it.
         SCMStringBuffer result;
-        r->getResultString(result);
+        r->getResultString(result, false);
         rtlStrToStr(tlen, tgt, result.length(), result.s.str());
     );
 }
@@ -945,7 +945,7 @@ void EclAgent::getResultData(unsigned & tlen, void * & tgt, const char * stepnam
 {
     PROTECTED_GETRESULT(stepname, sequence, "Data", "data",
         SCMStringBuffer result;
-        r->getResultString(result);
+        r->getResultString(result, false);
         tlen = result.length();
         tgt = (char *)result.s.detach();
     );

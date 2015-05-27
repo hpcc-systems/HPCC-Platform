@@ -61,9 +61,10 @@ void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *r
     SCMStringBuffer eclschema;
     var.getResultEclSchema(eclschema);
 
-    StringBuffer width, height, fieldSeq;
+    StringBuffer width, height, fieldSeq, isPassword;
     var.getResultFieldOpt("fieldwidth", StringBufferAdaptor(width));
     var.getResultFieldOpt("fieldheight", StringBufferAdaptor(height));
+    var.getResultFieldOpt("password", StringBufferAdaptor(isPassword));
     if (hashWebserviceSeq)
         fieldSeq.append(hashWebserviceSeq);
     else
@@ -125,6 +126,8 @@ void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *r
             part->setProp("@height", height);
         if (fieldSeq.length())
             part->setProp("@sequence", fieldSeq);
+        if (isPassword.length())
+            part->setProp("@password", isPassword);
     }
     parts.append(*part.getClear());
 }

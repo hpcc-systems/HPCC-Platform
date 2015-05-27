@@ -2597,7 +2597,7 @@ protected:
             client = NULL;
         updateSuppliedXmlParams(wu);
         SCMStringBuffer wuParams;
-        if (workUnit->getXmlParams(wuParams).length())
+        if (workUnit->getXmlParams(wuParams, false).length())
         {
             // Merge in params from WU. Ones on command line take precedence though...
             Owned<IPropertyTree> wuParamTree = createPTreeFromXMLString(wuParams.str(), ipt_caseInsensitive);

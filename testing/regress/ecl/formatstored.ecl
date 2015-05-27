@@ -36,6 +36,8 @@ integer4 i4 := 0 : stored('i4', format(fieldwidth(4), sequence(4)));
 unsigned3 u3 := 0 : stored('u3', format(fieldwidth(3), sequence(13)));
 unsigned8 u8 := 0 : stored('u8', format(fieldwidth(8), sequence(18)));
 
+string pw := 'powow' : stored('pw', format(password, fieldwidth(40)));
+
 output (i1, named('i1'));
 output (i2, named('i2'));
 output (i3, named('i3'));
@@ -56,3 +58,4 @@ output (u8, named('u8'));
 
 output (s1, named('s1'));
 
+output (pw, named('showpw'));

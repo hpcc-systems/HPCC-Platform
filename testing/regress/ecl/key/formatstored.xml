@@ -49,3 +49,6 @@
 <Dataset name='s1'>
  <Row><s1>how now brown cow</s1></Row>
 </Dataset>
+<Dataset name='showpw'>
+ <Row><showpw>powow</showpw></Row>
+</Dataset>
