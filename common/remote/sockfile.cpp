@@ -3253,18 +3253,49 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
         {
             if (selecthandled) 
                 processCommand(); // buffer already filled
-            else {
-                while (parent->threadRunningCount()<=TARGET_ACTIVE_THREADS) { // if too many threads add to select handler
-                    int w = socket->wait_read(1000);
+            else
+            {
+                while (parent->threadRunningCount()<=TARGET_ACTIVE_THREADS) // if too many threads add to select handler
+                {
+                    int w;
+                    try
+                    {
+                        w = socket->wait_read(1000);
+                    }
+                    catch (IException *e)
+                    {
+                        EXCLOG(e, "CRemoteClientHandler::main wait_read error");
+                        e->Release();
+                        parent->onCloseSocket(this,1);
+                        return;
+                    }
                     if (w==0)
                         break;
-                    if ((w<0)||!immediateCommand()) {
+                    if ((w<0)||!immediateCommand())
+                    {
                         if (w<0) 
                             WARNLOG("CRemoteClientHandler::main wait_read error");
                         parent->onCloseSocket(this,1);
                         return;
                     }
                 }
+
+                /* This is a bit confusing..
+                 * The addClient below, adds this request to a selecthandler handled by another thread
+                 * and passes ownership of 'this' (CRemoteClientHandler)
+                 *
+                 * When notified, the selecthandler will launch a new pool thread to handle the request
+                 * If the pool thread limit is hit, the selecthandler will be blocked [ see comment in CRemoteFileServer::notify() ]
+                 *
+                 * Either way, a thread pool slot is occupied when processing a request.
+                 * Blocked threads, will be blocked for up to 1 minute (as defined by createThreadPool call)
+                 * IOW, if there are lots of incoming clients that can't be serviced by the CThrottle limit,
+                 * a large number of pool threads will build up after a while.
+                 *
+                 * The CThrottler mechanism, imposes a further hard limit on how many concurrent request threads can be active.
+                 * If the thread pool had an absolute limit (instead of just introducing a delay), then I don't see the point
+                 * in this additional layer of throttling..
+                 */
                 selecthandled = true;
                 parent->addClient(this);    // add to select handler
             }
@@ -3358,6 +3389,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
             catch (IException *e) {
                 // suppress some more errors clearing client
                 EXCLOG(e,"cCommandProcessor::main(2)");
+                e->Release();
             }
         }
         bool stop()
@@ -3418,6 +3450,7 @@ public:
 #endif
 
         INFINITE,TARGET_MIN_THREADS));
+        threads->setStartDelayTracing(60); // trace amount delayed every minute.
         stopping = false;
         clientcounttick = msTick();
         closedclients = 0;
@@ -4559,7 +4592,6 @@ public:
     {
         if (listenep.isNull())
             acceptsock.setown(ISocket::create(listenep.port));
-
         else {
             StringBuffer ips;
             listenep.getIpText(ips);
@@ -4662,13 +4694,15 @@ public:
                     }
                     if (!sock||stopping)
                         break;
+                    runClient(sock.getClear());
                 }
                 catch (IException *e) {
                     EXCLOG(e,"CRemoteFileServer");
                     e->Release();
-                    break;
+                    sock.clear();
+                    if (!QUERYINTERFACE(e, IJSOCK_Exception))
+                        break;
                 }
-                runClient(sock.getClear());
             }
             else
                 checkTimeout();
@@ -4782,6 +4816,7 @@ public:
             params.client->Link();
             clients.append(*params.client);
         }
+        // NB: This could be blocked, by thread pool limit
         threads->start(&params);
     }
 
@@ -4807,11 +4842,15 @@ public:
         if (client->buf.length()) {
             cCommandProcessor::cCommandProcessorParams params;
             params.client = client.getClear();
+
+            /* This can block because the thread pool is full and therefore block the selecthandler
+             * This is akin to the main server blocking post accept() for the same reason.
+             */
             threads->start(&params);
         }
         else 
             onCloseSocket(client,3);    // removes owned handles
-        
+
         return false;
     }
 
