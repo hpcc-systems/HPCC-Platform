@@ -27,7 +27,7 @@
 
 #ifdef _DEBUG
 #define _CLEAR_ALLOCATED_ROW
-//#define _CLEAR_FREED_ROW
+#define _CLEAR_FREED_ROW
 //#define _CLEAR_ALLOCATED_HUGE_ROW
 #endif
 
