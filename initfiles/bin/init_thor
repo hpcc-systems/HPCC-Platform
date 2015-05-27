@@ -15,26 +15,197 @@
 #    limitations under the License.
 ################################################################################
 
-export deploydir=$(dirname $(type -path $0)) 
-PATH_PRE=`type -path hpcc_setenv` 
+deploydir=$(dirname $(type -path $0))
+PATH_PRE=$(type -path hpcc_setenv)
 source ${PATH_PRE} 
-PID_NAME="$PID/`basename $PWD`.pid"
 
-INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
+INSTALL_DIR=$(dirname ${PATH_PRE})/..
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+
+PID_NAME="$PID/$(basename $PWD).pid"
+INIT_PID_NAME="$PID/init_$(basename $PWD).pid"
 echo $$ > $INIT_PID_NAME
 
 export SENTINEL="thor.sentinel"
 rm -f ${SENTINEL}
 
-killed() {
-        echo "Stopping"
-        kill_process ${SENTINEL} ${PID_NAME} 3
-        exit 255
+if [[ -z "$deploydir" ]]; then
+    deploydir=$(pwd -P)
+fi
+
+compname=$(basename $PWD)
+instancedir=$(pwd -P)
+source $instancedir/setvars
+
+if [[ ! -z ${THORPRIMARY} ]]; then
+    groupName=${THORPRIMARY}
+else
+    groupName=${THORNAME}
+fi
+ln -s -f $deploydir/thormaster${LCR} thormaster_$THORNAME
+
+ENV_DIR=$(cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^configs=" | sed -e 's/^configs=//')
+logdir=$(updtdalienv $ENV_DIR/environment.xml -d log thor $THORNAME)
+logfile=$logdir/${THORNAME}.log
+
+exec >> $logfile
+
+contains()
+{
+    local n=$#
+    local value=${!n}
+    local i=0
+    for ((i=1;i < ${n};i++)); do
+        if [[ "${!i}" == "${value}" ]]; then
+            echo "${i}"
+            return 0
+        fi
+    done
+    echo "0"
+    return 1
 }
 
-echo $$ > $PID_NAME
-$deploydir/start_thor $deploydir &
+makethorgroup()
+{
+    if [[ -z "$localthorportinc" ]]; then
+        localthorportinc=200
+    fi
+    rm -f thorgroup
+
+    declare -a ports_used
+    declare -a hosts
+    for slave in $(cat slaves); do
+        p=$(contains "${hosts[@]}" "${slave}")
+        if [[ 0 == ${p} ]]; then
+            echo "${slave}:${THORSLAVEPORT}" >> thorgroup
+            p=$((${#hosts[@]}+1))
+            ports[${p}]=${THORSLAVEPORT}
+            hosts=(${hosts[@]} $slave)
+        else
+            newport=$((${ports[${p}]}+${localthorportinc}))
+            echo "${slave}:${newport}" >> thorgroup
+            ports[${p}]=${newport}
+        fi
+    done
+}
+
+kill_slaves()
+{
+    if [[ "$localthor" = "true" ]]; then
+    $deploydir/init_thorslave stop localhost $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect
+    else
+        # we want to kill only slaves that have already been started in run_thor
+        if [[ -r $instancedir/uslaves.start ]]; then
+            nslaves=$(cat $instancedir/uslaves.start 2> /dev/null | wc -l)
+            $deploydir/frunssh $instancedir/uslaves.start "/bin/sh -c '$deploydir/init_thorslave stop %a $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
+            echo slaves stopped
+        fi
+    fi
+
+    rm -f $instancedir/uslaves.start > /dev/null 2>&1
+}
+
+killed()
+{
+    echo "Stopping"
+    kill_process ${PID_NAME} thormaster_${compname} 30
+    kill_slaves
+    rm -f $INIT_PID_NAME $instancedir/uslaves.start > /dev/null 2>&1
+    exit 255
+}
+
 trap "killed" SIGINT SIGTERM
-wait
-rm $PID_NAME
+# attempt to clean up any old slaves
+kill_slaves
+thorpid=0
+
+while [[ 1 ]]; do
+    # update slaves file in case state of environment has been altered since last run
+    daliadmin server=$DALISERVER dfsgroup ${groupName} slaves
+    errcode=$?
+    if [[ 0 != ${errcode} ]]; then
+    echo "failed to lookup dali group for $groupName"
+        exit 1
+    fi
+    makethorgroup
+    sort $instancedir/slaves | uniq > $instancedir/uslaves.start
+
+    echo "--------------------------"
+    echo "starting thorslaves ..."
+
+    logpthtail=$(date +%m_%d_%Y_%H_%M_%S)
+    logredirect="$logdir/init_thorslave_$logpthtail.log"
+    # Would be simpler, if there was simple way to test if ip is local and get rid of 'localthor' setting
+    if [[ "$localthor" = "true" ]]; then
+        slaveip=$(head -n 1 $instancedir/uslaves.start)
+        $deploydir/init_thorslave start $slaveip $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect
+    else
+        nslaves=$(cat $instancedir/uslaves.start | wc -l)
+        $deploydir/frunssh $instancedir/uslaves.start "/bin/sh -c '$deploydir/init_thorslave start %a $THORMASTER $THORMASTERPORT $logdir $instancedir $deploydir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1
+        FRUNSSH_RC=$?
+        if [[ ${FRUNSSH_RC} -gt 0 ]]; then
+            echo "Error ${FRUNSSH_RC} in frunssh"
+            echo "Please check $(dirname ${logdir})/frunssh for more details"
+            # clean up any slaves it was able to reach
+            killed
+        fi
+    fi
+
+    echo thormaster cmd : $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT
+    nohup $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
+
+    thorpid=$!
+    if [[ "$thorpid" -ne "0" ]]; then
+        echo thormaster$LCR process started pid = $thorpid
+
+        echo $thorpid > $PID_NAME
+        wait $thorpid
+        errcode=$?
+        case $errcode in
+        # TEC_Clean
+        0)  echo "Thormaster ($thorpid) Exited cleanly"
+            rm -f $instancedir/uslaves.start $PID_NAME $INIT_PID_NAME > /dev/null 2>&1
+            exit 0
+            ;;
+        # TEC_CtrlC
+        1)  echo "Thormaster ($thorpid) Interrupted, Ctrl-C caught"
+            killed
+            ;;
+        # TEC_Idle, TEC_Watchdog, TEC_Swap, TEC_DaliDown
+        2|3|5|6)    [[ $errcode -eq 2 ]] && echo "Thormaster ($thorpid) Idle"
+                    [[ $errcode -eq 3 ]] && echo "Thormaster ($thorpid) Lost connection to slave(s)"
+                    [[ $errcode -eq 5 ]] && echo "Thormaster ($thorpid) Swap node required"
+                    [[ $errcode -eq 6 ]] && echo "Thormaster ($thorpid) Unable to connect to Dali"
+                    echo 'stopping thorslave(s) for restart'
+                    kill_slaves
+                    if [[ 0 != $autoSwapNode ]]; then
+                        echo "Running autoswap $THORNAME :: ($thorpid)"
+                        swapnode auto $DALISERVER $compname
+                        errcode=$?
+                        if [[ 0 != ${errcode} ]]; then
+                            echo "auto swap node failed, errcode=${errcode}"
+                            killed
+                        fi
+                    fi
+                # restarting thormaster
+                ;;
+        # TEC_SlaveInit
+        4)  echo "Thormaster ($thorpid) Slaves failed to initialize"
+            echo "Shutting down"
+            killed
+            ;;
+        *)  echo "Thormaster ($thorpid) Unknown error code.  Stopping"
+            killed
+            ;;
+        esac
+    else
+        echo failed to start thormaster$LCR, pausing for 30 seconds
+        sleep 30
+        kill_slaves
+    fi
+    if [[ ! -e $SENTINEL ]]; then
+        echo $SENTINEL 'has been removed or thormaster did not fully start - script stopping'
+        exit 0
+    fi
+done
 
