@@ -207,6 +207,7 @@ DFUQueryResponse
     string ParametersForPaging;
     string Filters;
     [min_ver("1.24")] int64 CacheHint;
+    [min_ver("1.30")] string Warning;
 };
 
 ESPrequest 
@@ -679,7 +680,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUGetFileMetaDataRe
 
 //  ===========================================================================
 ESPservice [
-    version("1.29"), default_client_version("1.29"),
+    version("1.30"), default_client_version("1.30"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

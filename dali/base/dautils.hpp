@@ -272,6 +272,10 @@ interface IElementsPager : extends IInterface
 {
     virtual IRemoteConnection *getElements(IArrayOf<IPropertyTree> &elements) = 0;
 };
+interface IElementsPagerEx : extends IElementsPager
+{
+    virtual unsigned getTotalElements() = 0;
+};
 extern da_decl void sortElements( IPropertyTreeIterator* elementsIter,
                                      const char *sortorder, 
                                      const char *namefilterlo, // if non null filter less than this value

@@ -30,6 +30,42 @@
 #include "fvrelate.hpp"
 #include "dadfs.hpp"
 
+#include <list>
+
+#define PAGE_CACHE_TIMEOUT (1000*60*10)
+
+struct IterateFilesCacheElement: public CInterface, implements IInterface
+{
+    IMPLEMENT_IINTERFACE;
+    IterateFilesCacheElement(__int64 _cacheHint, unsigned _cacheFrom, unsigned _cacheTo, unsigned _totalFiles)
+        : cacheHint(_cacheHint), cacheFrom(_cacheFrom), cacheTo(_cacheTo), totalFiles(_totalFiles)
+    {
+        due = msTick()+PAGE_CACHE_TIMEOUT;
+    }
+
+    __int64 cacheHint;
+    unsigned cacheFrom;
+    unsigned cacheTo;
+    unsigned totalFiles;
+
+    unsigned due;
+};
+
+struct IterateFilesCache: public CInterface, implements IInterface
+{
+    IMPLEMENT_IINTERFACE;
+
+    IterateFilesCache(size32_t _cacheSize=0): cacheSize(_cacheSize){}
+    IterateFilesCacheElement* lookup(IEspContext &context, __int64 _cacheHint);
+
+    void add(__int64 _cacheHint, unsigned _cacheFrom, unsigned _cacheTo, unsigned _totalFiles);
+    void remove(__int64 _cacheHint);
+
+    std::list<Linked<IterateFilesCacheElement> > cache;
+    CriticalSection crit;
+    size32_t cacheSize;
+};
+
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
 public:
@@ -46,6 +82,8 @@ class CWsDfuEx : public CWsDfu
 private:
     Owned<IXslProcessor> m_xsl;
     Mutex m_superfilemutex;
+
+    Owned<IterateFilesCache> iterateFilesCache;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -76,6 +114,7 @@ private:
     const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
     const char* getShortDescription(const char* description, StringBuffer& shortDesc);
     bool addDFUQueryFilter(DFUQResultField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, DFUQResultField name);
+    void setFileIterateFilter(unsigned cacheStart, unsigned cacheTo, StringBuffer &filterBuf);
     void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, StringBuffer& filterBuf);
     void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, const char *valueHigh, StringBuffer& filterBuf);
     void setFileTypeFilter(const char* fileType, StringBuffer& filterBuf);
