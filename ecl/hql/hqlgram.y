@@ -160,6 +160,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   COUNTER
   COVARIANCE
   CPPBODY
+  TOK_CPP
   CRC
   CRON
   CSV
@@ -1065,6 +1066,12 @@ embedBody
                             else
                                 $$.setExpr(parser->processEmbedBody($2, embedText, language, NULL), $1);
                         }
+    | embedCppPrefix CPPBODY
+                        {
+                            OwnedHqlExpr attrs = $1.getExpr();
+                            OwnedHqlExpr embedText = $2.getExpr();
+                            $$.setExpr(parser->processEmbedBody($2, embedText, NULL, attrs), $1);
+                        }
     | EMBED '(' abstractModule ',' expression ')'
                         {
                             parser->normalizeExpression($5, type_stringorunicode, true);
@@ -1088,6 +1095,14 @@ embedPrefix
                         {
                             parser->getLexer()->enterEmbeddedMode();
                             $$.setExpr(createComma($3.getExpr(), $4.getExpr()), $1);
+                        }
+    ;
+
+embedCppPrefix
+    : EMBED '(' TOK_CPP attribs ')'
+                        {
+                            parser->getLexer()->enterEmbeddedMode();
+                            $$.setExpr($4.getExpr(), $1);
                         }
     ;
 

@@ -632,6 +632,7 @@ BLOB                { RETURNSYM(BLOB); }
 BNOT                { RETURNSYM(BNOT); }
 BUILD               { RETURNSYM(BUILD); }
 BUILDINDEX          { RETURNSYM(BUILD); }
+"C++"               { RETURNSYM(TOK_CPP); }
 CARDINALITY         { RETURNSYM(CARDINALITY); }
 CASE                { RETURNSYM(CASE); }
 CATCH               { RETURNSYM(TOK_CATCH); }

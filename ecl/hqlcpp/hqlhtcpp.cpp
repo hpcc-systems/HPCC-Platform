@@ -13636,15 +13636,31 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
 
 //---------------------------------------------------------------------------
 
+static bool isDistributedFunctionCall(IHqlExpression * expr)
+{
+    IHqlExpression * funcdef = NULL;
+    switch (expr->getOperator())
+    {
+    case no_externalcall:
+        funcdef = expr->queryBody()->queryExternalDefinition();
+        break;
+    case no_call:
+        funcdef = expr->queryBody()->queryFunctionDefinition();
+        break;
+    }
+    return (funcdef && queryFunctionAttribute(funcdef, distributedAtom));
+}
+
 ABoundActivity * HqlCppTranslator::doBuildActivityChildDataset(BuildCtx & ctx, IHqlExpression * expr)
 {
     if (options.mainRowsAreLinkCounted || isGrouped(expr))
         return doBuildActivityLinkedRawChildDataset(ctx, expr);
 
-
     StringBuffer s;
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKchilditerator, expr, "ChildIterator");
+    if (isDistributedFunctionCall(expr))
+        instance->setLocal(true);
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
@@ -13698,6 +13714,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityStreamedCall(BuildCtx & ctx, I
     StringBuffer s;
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKstreamediterator, expr, "StreamedIterator");
+    if (isDistributedFunctionCall(expr))
+        instance->setLocal(true);
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
@@ -13717,6 +13735,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLinkedRawChildDataset(BuildCtx
     StringBuffer s;
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKlinkedrawiterator, expr, "LinkedRawIterator");
+    if (isDistributedFunctionCall(expr))
+        instance->setLocal(true);
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
@@ -18653,8 +18673,6 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_nohoist:
     case no_actionlist:
     case no_orderedactionlist:
-    case no_externalcall:
-    case no_call:
     case no_compound_fetch:
     case no_addfiles:
     case no_nonempty:
@@ -18708,6 +18726,13 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_globalscope:
     case no_extractresult:
         return needsRealThor(expr->queryChild(0), flags);
+
+    case no_call:
+    case no_externalcall:
+        if (isDistributedFunctionCall(expr))
+            return true;
+        //MORE: check for streamed inputs.
+        break;
 
     case no_fetch:
         return needsRealThor(expr->queryChild(1), flags);
