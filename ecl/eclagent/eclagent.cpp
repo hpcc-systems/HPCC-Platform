@@ -1973,7 +1973,7 @@ void EclAgent::doProcess()
         if (globals->getPropBool("DUMPFINALWU", false))
         {
             StringBuffer xml;
-            exportWorkUnitToXML(wuRead, xml, true, false);
+            exportWorkUnitToXML(wuRead, xml, true, false, true);
             fprintf(stdout, "%s", xml.str());
         }
         wuRead.clear(); // have a write lock still, but don't want to leave dangling unlocked wuRead after releasing write lock
