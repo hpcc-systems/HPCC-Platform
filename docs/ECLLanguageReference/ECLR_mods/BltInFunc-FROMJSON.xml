@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FROMJSON">
+  <title>FROMJSON</title>
+
+  <para><emphasis role="bold">FROMJSON<indexterm>
+      <primary>FROMJSON</primary>
+    </indexterm><indexterm>
+      <primary>FROMJSON function</primary>
+    </indexterm>(</emphasis><emphasis> record, jsonstring </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="77.95pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>record</emphasis></entry>
+
+            <entry>The RECORD structure to produce. Each field should specify
+            the XPATH to the data in the json<emphasis>string</emphasis> that
+            it should hold. If omitted, the lower-cased field names are
+            used.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>jsonstring</emphasis></entry>
+
+            <entry>A string containing the JSON to convert.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>FROMJSON returns a single row (record).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">FROMJSON </emphasis>function returns a
+  single row (record) in the <emphasis>record</emphasis> format from the
+  specified json<emphasis>string</emphasis>. This may be used anywhere a
+  single row can be used (similar to the ROW function).</para>
+
+  <para>Example:</para>
+
+  <programlisting>namesRec := RECORD  
+  UNSIGNED2 EmployeeID{xpath('EmpID')};  
+  STRING10 Firstname{xpath('FName')};  
+  STRING10 Lastname{xpath('LName')}; 
+END; 
+x := '{"FName": "George" , "LName": "Jetson", "EmpID": 42}'; 
+rec := FROMJSON(namesRec,x); 
+OUTPUT(rec);
+</programlisting>
+
+  <para>See Also: <link linkend="ROW">ROW</link>, <link
+  linkend="TOJSON">TOJSON</link></para>
+</sect1>
