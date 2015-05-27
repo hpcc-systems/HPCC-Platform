@@ -707,6 +707,13 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="controlPort" type="xs:nonNegativeInteger" use="optional" default="8010">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Sets the network port for ESP control</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="logLevel" type="xs:nonNegativeInteger" use="optional" default="1">
                 <xs:annotation>
                     <xs:appinfo>

@@ -143,6 +143,8 @@ public:
     }
 
     void setLogLevel(LogLevel level) { m_logLevel = level; }
+    void setLogRequests(bool logReq) { m_logReq = logReq; }
+    void setLogResponses(bool logResp) { m_logResp = logResp; }
 
     LogLevel getLogLevel() { return m_logLevel; }
     bool getLogRequests() { return m_logReq; }
