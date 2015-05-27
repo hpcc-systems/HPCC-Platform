@@ -161,8 +161,8 @@ template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
 
 class CLocalWorkUnit : public CInterface, implements IWorkUnit , implements IExtendedWUInterface
 {
-    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress);
-    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress);
+    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress, bool hidePasswords);
+    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress, bool hidePasswords);
 
 protected:
     Owned<IPropertyTree> p;
@@ -272,7 +272,7 @@ public:
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const;
-    virtual IStringVal & getXmlParams(IStringVal & params) const;
+    virtual IStringVal & getXmlParams(IStringVal & params, bool hidePasswords) const;
     virtual const IPropertyTree *getXmlParams() const;
     virtual unsigned __int64 getHash() const;
     virtual IStringIterator *getLogs(const char *type, const char *component) const;
