@@ -96,7 +96,7 @@
 
           <entry>One of the following keywords, optionally followed by
           relevant options for that specific type of file: THOR /FLAT, CSV,
-          XML, PIPE. Each of these is discussed in its own section,
+          XML, JSON, PIPE. Each of these is discussed in its own section,
           below.</entry>
         </row>
 
@@ -302,7 +302,7 @@
 
   <para>The first two forms are alternatives to each other and either may be
   used with any of the <emphasis>filetypes</emphasis> described below
-  (<emphasis role="bold">THOR/FLAT, CSV, XML, PIPE</emphasis>).</para>
+  (<emphasis role="bold">THOR/FLAT, CSV, XML, JSON, PIPE</emphasis>).</para>
 
   <para>The third form defines the result of an OUTPUT with the NAMED option
   within the same workunit or the workunit specified by the
@@ -817,6 +817,125 @@ rform := RECORD
 tag
 END;
 books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
+  </sect2>
+
+  <sect2 id="JSON_Files">
+    <title>JSON Files</title>
+
+    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
+    role="bold">JSON<indexterm>
+        <primary>JSON</primary>
+      </indexterm>( </emphasis><emphasis>xpath</emphasis><emphasis
+    role="bold"> [, NOROOT<indexterm>
+        <primary>NOROOT</primary>
+      </indexterm> ] ) [,ENCRYPT<indexterm>
+        <primary>ENCRYPT</primary>
+      </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
+    ]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">JSON</emphasis></entry>
+
+            <entry>Specifies the <emphasis>file</emphasis> is a JSON
+            file.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>xpath</emphasis></entry>
+
+            <entry>A string constant containing the full XPATH to the tag that
+            delimits the records in the <emphasis>file</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOROOT</emphasis></entry>
+
+            <entry>Specifies the <emphasis>file</emphasis> is a JSON file with
+            no file tags, only row tags.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">ENCRYPT</emphasis></emphasis></entry>
+
+            <entry>Optional. Specifies the <emphasis>file</emphasis> was
+            created by OUTPUT with the ENCRYPT option.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>key</emphasis></entry>
+
+            <entry>A string constant containing the encryption key used to
+            create the file.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>This form is used to read a JSON file. The
+    <emphasis>xpath</emphasis> parameter defines the record delimiter tag
+    using a subset of standard XPATH (<emphasis
+    role="underline">www.w3.org/TR/xpath</emphasis>) syntax (see the <emphasis
+    role="bold">XPATH Support</emphasis> section under the RECORD structure
+    discussion for a description of the supported subset).</para>
+
+    <para>The key to getting individual field values from the JSON lies in the
+    RECORD structure<indexterm>
+        <primary>RECORD structure</primary>
+      </indexterm> field definitions. If the field name exactly matches a
+    lower case JSON tag containing the data, then nothing special is required.
+    Otherwise, <emphasis>{xpath(xpathtag)} </emphasis>appended to the field
+    name (where the <emphasis>xpathtag</emphasis> is a string constant
+    containing standard XPATH syntax) is required to extract the data. An
+    XPATH consisting of empty quotes ('') indicates the field receives the
+    entire record. An absolute XPATH is used to access properties of parent
+    elements. Because JSON is case sensitive, and ECL identifiers are case
+    insensitive, xpaths need to be specified if the tag contains any upper
+    case characters.</para>
+
+    <para><emphasis role="bold">NOTE:</emphasis> JSON reading and parsing can
+    consume a large amount of memory, depending on the usage. In particular,
+    if the specified xpath matches a very large amount of data, then a large
+    data structure will be provided to the transform. Therefore, the more you
+    match, the more resources you consume per match. For example, if you have
+    a very large document and you match an element near the root that
+    virtually encompasses the whole thing, then the whole thing will be
+    constructed as a referenceable structure that the ECL can get at.</para>
+
+    <para><emphasis role="bold">Example:</emphasis></para>
+
+    <programlisting>/* a JSON  file called "MyBooks.json" contains this data:
+[
+  {
+    "id" : "978-0641723445",
+    "name" : "The Lightning Thief",
+    "author" : "Rick Riordan"
+  }
+,
+  {
+    "id" : "978-1423103349",
+    "name" : "The Sea of Monsters",
+    "author" : "Rick Riordan"
+  }
+]
+*/
+
+BookRec := RECORD
+  STRING ID {XPATH('id')}; //data from id tag -- renames field to uppercase
+  STRING title {XPATH('name')}; //data from name tag, renaming the field
+  STRING author; //data from author tag -- tag name is lowercase and matches field name  
+END;
+
+books := DATASET('~jd::mybooks.json',BookRec,JSON('/'));
+OUTPUT(books);</programlisting>
   </sect2>
 
   <sect2 id="PIPE_Files">
