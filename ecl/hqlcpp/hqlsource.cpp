@@ -720,7 +720,7 @@ public:
     void buildLimits(BuildCtx & classctx, IHqlExpression * expr, unique_id_t id);
     void buildReadMembers( IHqlExpression * expr);
     void buildSteppingMeta(IHqlExpression * expr, MonitorExtractor * monitors);
-    void buildTransformBody(BuildCtx & transformCtx, IHqlExpression * expr, bool returnSize, bool ignoreFilters);
+    void buildTransformBody(BuildCtx & transformCtx, IHqlExpression * expr, bool returnSize, bool ignoreFilters, bool bindInputRow);
     void checkDependencies(BuildCtx & ctx, IHqlExpression * expr);
     bool containsStepping(IHqlExpression * expr);
     ABoundActivity * buildActivity(BuildCtx & ctx, IHqlExpression * expr, ThorActivityKind activityKind, const char *kind, ABoundActivity *input);
@@ -746,7 +746,7 @@ protected:
     void buildGroupAggregateHashHelper(ParentExtract * extractBuilder, IHqlExpression * dataset, IHqlExpression * fields);
     void buildGroupAggregateProcessHelper(ParentExtract * extractBuilder, IHqlExpression * aggregate, const char * name, bool doneAny);
     void buildGroupingMonitors(IHqlExpression * expr, MonitorExtractor & monitors);
-    void buildGroupAggregateTransformBody(BuildCtx & transformctx, IHqlExpression * expr, bool useExtract);
+    void buildGroupAggregateTransformBody(BuildCtx & transformctx, IHqlExpression * expr, bool useExtract, bool bindInputRow);
     void buildNormalizeHelpers(IHqlExpression * expr);
     void buildTargetCursor(Shared<BoundRow> & tempRow, Shared<BoundRow> & rowBuilder, BuildCtx & ctx, IHqlExpression * expr);
     void associateTargetCursor(BuildCtx & subctx, BuildCtx & ctx, BoundRow * tempRow, BoundRow * rowBuilder, IHqlExpression * expr);
@@ -1167,9 +1167,9 @@ void SourceBuilder::buildLimits(BuildCtx & classctx, IHqlExpression * expr, uniq
     }
 }
 
-void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression * expr, bool returnSize, bool ignoreFilters)
+void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression * expr, bool returnSize, bool ignoreFilters, bool bindInputRow)
 {
-    if (tableExpr)
+    if (tableExpr && bindInputRow)
     {
         IHqlExpression * mode = (tableExpr->getOperator() == no_table) ? tableExpr->queryChild(2) : NULL;
         if (mode && mode->getOperator() == no_csv)
@@ -2443,9 +2443,9 @@ void SourceBuilder::buildNormalizeHelpers(IHqlExpression * expr)
 }
 
 
-void SourceBuilder::buildGroupAggregateTransformBody(BuildCtx & transformCtx, IHqlExpression * expr, bool useExtract)
+void SourceBuilder::buildGroupAggregateTransformBody(BuildCtx & transformCtx, IHqlExpression * expr, bool useExtract, bool bindInputRow)
 {
-    buildTransformBody(transformCtx, expr, false, false);
+    buildTransformBody(transformCtx, expr, false, false, bindInputRow);
 
     IHqlExpression * aggregate = expr->queryChild(0);
     OwnedHqlExpr mappedAggregate = ensureAggregateGroupingAliased(aggregate);
@@ -2849,7 +2849,7 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
 
         //associateVirtualCallbacks(*this, funcctx, tableExpr);
 
-        buildTransformBody(funcctx, expr, true, false);
+        buildTransformBody(funcctx, expr, true, false, true);
         rootSelfRow = NULL;
 
         unsigned maxColumns = countTotalFields(tableExpr->queryRecord(), false);
@@ -2864,7 +2864,7 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
         transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IFilePositionProvider * fpp)");
     translator.ensureRowAllocated(transformCtx, "crSelf");
     transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-    buildTransformBody(transformCtx, expr, true, false);
+    buildTransformBody(transformCtx, expr, true, false, true);
 }
 
 
@@ -2958,7 +2958,7 @@ void DiskNormalizeBuilder::buildTransform(IHqlExpression * expr)
     BuildCtx transformCtx(instance->startctx);
     transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf)");
     translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, true, false);
+    buildTransformBody(transformCtx, expr, true, false, false);
 }
 
 
@@ -3048,7 +3048,7 @@ void DiskAggregateBuilder::buildTransform(IHqlExpression * expr)
     BuildCtx transformCtx(instance->startctx);
     transformCtx.addQuotedCompound("void doProcessRow(ARowBuilder & crSelf, byte * left)");
     translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, false, false);
+    buildTransformBody(transformCtx, expr, false, false, true);
 }
 
 
@@ -3113,7 +3113,7 @@ void DiskCountBuilder::buildTransform(IHqlExpression * expr)
             cnt.setown(getSizetConstant(1));
 
         BuildCtx subctx(transformCtx);
-        buildTransformBody(subctx, expr, false, false);
+        buildTransformBody(subctx, expr, false, false, true);
         transformCtx.addReturn(cnt);
     }
 }
@@ -3193,7 +3193,7 @@ void DiskGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
     BuildCtx transformCtx(instance->startctx);
     transformCtx.addQuotedCompound("void doProcessRow(byte * left, IHThorGroupAggregateCallback * callback)");
     bool accessesCallback = containsOperator(expr, no_filepos) || containsOperator(expr, no_file_logicalname); 
-    buildGroupAggregateTransformBody(transformCtx, expr, isNormalize || accessesCallback);
+    buildGroupAggregateTransformBody(transformCtx, expr, isNormalize || accessesCallback, true);
 }
 
 
@@ -3277,7 +3277,7 @@ void ChildNormalizeBuilder::buildTransform(IHqlExpression * expr)
     BuildCtx transformCtx(instance->startctx);
     transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf)");
     translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, true, false);
+    buildTransformBody(transformCtx, expr, true, false, false);
 }
 
 
@@ -3333,7 +3333,7 @@ void ChildAggregateBuilder::buildTransform(IHqlExpression * expr)
     BuildCtx transformCtx(instance->startctx);
     transformCtx.addQuotedCompound("virtual void processRows(ARowBuilder & crSelf)");
     translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, false, false);
+    buildTransformBody(transformCtx, expr, false, false, false);
 }
 
 
@@ -3396,7 +3396,7 @@ void ChildGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
     BuildCtx transformCtx(instance->startctx);
     transformCtx.addQuotedCompound("void processRows(IHThorGroupAggregateCallback * callback)");
-    buildGroupAggregateTransformBody(transformCtx, expr, true);
+    buildGroupAggregateTransformBody(transformCtx, expr, true, false);
 }
 
 
@@ -3457,7 +3457,7 @@ void ChildThroughNormalizeBuilder::buildTransform(IHqlExpression * expr)
     BuildCtx transformCtx(instance->startctx);
     transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf)");
     translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, true, false);
+    buildTransformBody(transformCtx, expr, true, false, false);
 }
 
 
@@ -6378,7 +6378,7 @@ void NewIndexReadBuilder::buildTransform(IHqlExpression * expr)
         translator.ensureRowAllocated(transformCtx, "crSelf");
         transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
-        buildTransformBody(transformCtx, expr, true, false);
+        buildTransformBody(transformCtx, expr, true, false, true);
     }
 
     if (generateUnfilteredTransform)
@@ -6388,7 +6388,7 @@ void NewIndexReadBuilder::buildTransform(IHqlExpression * expr)
         translator.ensureRowAllocated(transformCtx, "crSelf");
         transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
-        buildTransformBody(transformCtx, expr, true, true);
+        buildTransformBody(transformCtx, expr, true, true, true);
     }
 }
 
@@ -6465,7 +6465,7 @@ void IndexNormalizeBuilder::buildTransform(IHqlExpression * expr)
     OwnedHqlExpr simplified = removeMonitors(expr);
     lastTransformer.set(queryExpression(simplified->queryDataset()->queryTable()));
     useFilterMappings=false;
-    buildTransformBody(transformCtx, simplified, true, false);
+    buildTransformBody(transformCtx, simplified, true, false, false);
 }
 
 
@@ -6550,7 +6550,7 @@ void IndexAggregateBuilder::buildTransform(IHqlExpression * expr)
     transformCtx.addQuotedCompound("void doProcessRow(ARowBuilder & crSelf, byte * left)");
     translator.ensureRowAllocated(transformCtx, "crSelf");
     translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
-    buildTransformBody(transformCtx, expr, false, false);
+    buildTransformBody(transformCtx, expr, false, false, true);
 }
 
 
@@ -6631,7 +6631,7 @@ void IndexCountBuilder::buildTransform(IHqlExpression * expr)
             cnt.setown(getSizetConstant(1));
 
         BuildCtx subctx(transformCtx);
-        buildTransformBody(subctx, expr, false, false);
+        buildTransformBody(subctx, expr, false, false, true);
         transformCtx.addReturn(cnt);
     }
 }
@@ -6795,7 +6795,7 @@ void IndexGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
     BuildCtx transformCtx(instance->startctx);
     transformCtx.addQuotedCompound("void doProcessRow(byte * left, IHThorGroupAggregateCallback * callback)");
     translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
-    buildGroupAggregateTransformBody(transformCtx, expr, isNormalize || transformAccessesCallback);
+    buildGroupAggregateTransformBody(transformCtx, expr, isNormalize || transformAccessesCallback, true);
 }
 
 
@@ -7182,7 +7182,7 @@ void FetchBuilder::buildTransform(IHqlExpression * expr)
     }
 
     translator.ensureRowAllocated(transformCtx, "crSelf");
-    buildTransformBody(transformCtx, expr, true, false);
+    buildTransformBody(transformCtx, expr, true, false, true);
 
     if (translator.xmlUsesContents)
         instance->classctx.addQuotedLiteral("virtual bool requiresContents() { return true; }");
