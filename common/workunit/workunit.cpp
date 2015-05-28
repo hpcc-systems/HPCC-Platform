@@ -8919,6 +8919,7 @@ void exportWorkUnitToXMLFileWithHiddenPasswords(IPropertyTree *p, const char *fi
 
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords)
 {
+    // MORE - queryPTree isn't really safe without holding CLocalWorkUnit::crit - really need to move these functions into CLocalWorkunit
     const IExtendedWUInterface *ewu = queryExtendedWU(wu);
     if (ewu)
     {

@@ -2576,7 +2576,7 @@ public:
         if (!query)
         {
             query = createPTree("Query");
-            row->setPropTree("Query", query);
+            query = row->setPropTree("Query", query);
             row->setProp("Query/@fetchEntire", "1"); // Compatibility...
         }
         return StringColumnMapper::toXML(query, "Text", value);
@@ -2728,7 +2728,7 @@ struct CassandraTableInfo
     const CassandraXmlMapping *mappings;
 };
 
-const CassandraXmlMapping workunitsMappings [] =
+static const CassandraXmlMapping workunitsMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"clustername", "text", "@clusterName", stringColumnMapper},
@@ -2749,7 +2749,7 @@ const CassandraXmlMapping workunitsMappings [] =
     { NULL, "workunits", "((wuid))", stringColumnMapper}
 };
 
-const CassandraXmlMapping workunitInfoMappings [] =  // A cut down version of the workunit mappings - used when querying with no key
+static const CassandraXmlMapping workunitInfoMappings [] =  // A cut down version of the workunit mappings - used when querying with no key
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"clustername", "text", "@clusterName", stringColumnMapper},
@@ -2764,7 +2764,7 @@ const CassandraXmlMapping workunitInfoMappings [] =  // A cut down version of th
 
 // The following describe secondary tables - they contain copies of the basic wu information but keyed by different fields
 
-const CassandraXmlMapping ownerMappings [] =
+static const CassandraXmlMapping ownerMappings [] =
 {
     {"submitID", "text", "@submitID", stringColumnMapper},
     {"wuid", "text", NULL, rootNameColumnMapper},
@@ -2777,7 +2777,7 @@ const CassandraXmlMapping ownerMappings [] =
     { NULL, "workunitsByOwner", "((submitID), wuid)", stringColumnMapper}
 };
 
-const CassandraXmlMapping clusterMappings [] =
+static const CassandraXmlMapping clusterMappings [] =
 {
     {"clustername", "text", "@clusterName", stringColumnMapper},
     {"wuid", "text", NULL, rootNameColumnMapper},
@@ -2790,7 +2790,7 @@ const CassandraXmlMapping clusterMappings [] =
     { NULL, "workunitsByCluster", "((clustername), wuid)", stringColumnMapper}
 };
 
-const CassandraXmlMapping jobnameMappings [] =
+static const CassandraXmlMapping jobnameMappings [] =
 {
     {"jobname", "text", "@jobName", stringColumnMapper},
     {"wuid", "text", NULL, rootNameColumnMapper},
@@ -2803,7 +2803,7 @@ const CassandraXmlMapping jobnameMappings [] =
     { NULL, "workunitsByJobname", "((jobname), wuid)", stringColumnMapper}
 };
 
-const CassandraXmlMapping * secondaryTables [] = { ownerMappings, clusterMappings, jobnameMappings, NULL };
+static const CassandraXmlMapping * const secondaryTables [] = { ownerMappings, clusterMappings, jobnameMappings, NULL };
 
 // The following describe child tables - all keyed by wuid
 
@@ -2817,7 +2817,7 @@ struct ChildTableInfo
     const CassandraXmlMapping *mappings;
 };
 
-const CassandraXmlMapping wuExceptionsMappings [] =
+static const CassandraXmlMapping wuExceptionsMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"attributes", "map<text, text>", "", attributeMapColumnMapper},
@@ -2826,14 +2826,14 @@ const CassandraXmlMapping wuExceptionsMappings [] =
     { NULL, "wuExceptions", "((wuid), ts)", stringColumnMapper}
 };
 
-const ChildTableInfo wuExceptionsTable =
+static const ChildTableInfo wuExceptionsTable =
 {
-        "Exceptions", "Exception",
-        WuExceptionsChild,
-        wuExceptionsMappings
+    "Exceptions", "Exception",
+    WuExceptionsChild,
+    wuExceptionsMappings
 };
 
-const CassandraXmlMapping wuStatisticsMappings [] =
+static const CassandraXmlMapping wuStatisticsMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"ts", "bigint", "@ts", bigintColumnMapper},  // MORE - should change this to a timeuuid ?
@@ -2844,14 +2844,14 @@ const CassandraXmlMapping wuStatisticsMappings [] =
     { NULL, "wuStatistics", "((wuid), ts, kind, creator, scope)", stringColumnMapper}
 };
 
-const ChildTableInfo wuStatisticsTable =
+static const ChildTableInfo wuStatisticsTable =
 {
-        "Statistics", "Statistic",
-        WuStatisticsChild,
-        wuStatisticsMappings
+    "Statistics", "Statistic",
+    WuStatisticsChild,
+    wuStatisticsMappings
 };
 
-const CassandraXmlMapping wuGraphProgressMappings [] =
+static const CassandraXmlMapping wuGraphProgressMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"graphID", "text", NULL, graphIdColumnMapper},
@@ -2861,14 +2861,14 @@ const CassandraXmlMapping wuGraphProgressMappings [] =
     { NULL, "wuGraphProgress", "((wuid), graphid, subgraphid)", stringColumnMapper}
 };
 
-const ChildTableInfo wuGraphProgressTable =
+static const ChildTableInfo wuGraphProgressTable =
 {
-        "Bit of a", "Special case",
-        WuGraphProgressChild,
-        wuGraphProgressMappings
+    "Bit of a", "Special case",
+    WuGraphProgressChild,
+    wuGraphProgressMappings
 };
 
-const CassandraXmlMapping wuResultsMappings [] =
+static const CassandraXmlMapping wuResultsMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"sequence", "int", "@sequence", intColumnMapper},
@@ -2884,16 +2884,16 @@ const CassandraXmlMapping wuResultsMappings [] =
     { NULL, "wuResults", "((wuid), sequence)", stringColumnMapper}
 };
 
-const ChildTableInfo wuResultsTable =
+static const ChildTableInfo wuResultsTable =
 {
-        "Results", "Result",
-        WuResultsChild,
-        wuResultsMappings
+    "Results", "Result",
+    WuResultsChild,
+    wuResultsMappings
 };
 
 // This looks very similar to the above, but the key is different...
 
-const CassandraXmlMapping wuVariablesMappings [] =
+static const CassandraXmlMapping wuVariablesMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"sequence", "int", "@sequence", defaultedIntColumnMapper},  // Note - should be either variable or temporary...
@@ -2908,15 +2908,15 @@ const CassandraXmlMapping wuVariablesMappings [] =
     { NULL, "wuVariables", "((wuid), sequence, name)", stringColumnMapper}
 };
 
-const ChildTableInfo wuVariablesTable =
+static const ChildTableInfo wuVariablesTable =
 {
-        "Variables", "Variable", // Actually sometimes uses Variables, sometimes Temporaries.... MORE - think about how to fix that...
-        WuVariablesChild,
-        wuVariablesMappings
+    "Variables", "Variable", // Actually sometimes uses Variables, sometimes Temporaries.... MORE - think about how to fix that...
+    WuVariablesChild,
+    wuVariablesMappings
 };
 
 // Order should match the enum above
-const ChildTableInfo * childTables [] = { &wuExceptionsTable, &wuStatisticsTable, &wuGraphProgressTable, &wuResultsTable, &wuVariablesTable, NULL };
+static const ChildTableInfo * const childTables [] = { &wuExceptionsTable, &wuStatisticsTable, &wuGraphProgressTable, &wuResultsTable, &wuVariablesTable, NULL };
 
 void getBoundFieldNames(const CassandraXmlMapping *mappings, StringBuffer &names, StringBuffer &bindings, IPTree *inXML, StringBuffer &tableName)
 {
@@ -3486,9 +3486,9 @@ public:
     {
         // Make sure that any required updates to the secondary files happen
         IPropertyTree *fromP = queryExtendedWU(cached)->queryPTree();
-        for (const CassandraXmlMapping **mapping = secondaryTables; *mapping; mapping++)
+        for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
             trackSecondaryChange(fromP->queryProp(mapping[0]->xpath), *mapping);
-        for (const ChildTableInfo **table = childTables; *table != NULL; table++)
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             checkChildLoaded(**table);
         CLocalWorkUnit::copyWorkUnit(cached, all);
         memset(childLoaded, 1, sizeof(childLoaded));
@@ -3511,7 +3511,7 @@ public:
     {
         // If anyone wants the whole ptree, we'd better make sure we have fully loaded it...
         CriticalBlock b(crit);
-        for (const ChildTableInfo **table = childTables; *table != NULL; table++)
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             checkChildLoaded(**table);
         return p;
     }
@@ -3519,7 +3519,7 @@ protected:
     // Delete child table rows
     void deleteChildren(const char *wuid)
     {
-        for (const ChildTableInfo **table = childTables; *table != NULL; table++)
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             deleteChildByWuid(table[0]->mappings, wuid, sessionCache, *batch);
     }
 
@@ -3545,7 +3545,7 @@ protected:
 
     void deleteSecondaries(const char *wuid)
     {
-        for (const CassandraXmlMapping **mapping = secondaryTables; *mapping; mapping++)
+        for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
         {
             deleteSecondaryByKey(*mapping, wuid, p->queryProp(mapping[0]->xpath), sessionCache, *batch);
         }
@@ -3553,7 +3553,7 @@ protected:
 
     void updateSecondaries(const char *wuid)
     {
-        for (const CassandraXmlMapping **mapping = secondaryTables; *mapping; mapping++)
+        for (const CassandraXmlMapping *const * mapping = secondaryTables; *mapping; mapping++)
         {
             updateSecondaryTable(*mapping, wuid, prev->queryProp(mapping[0]->xpath));
         }
@@ -3568,7 +3568,7 @@ protected:
         const char *oldval = p->queryProp(mappings->xpath);
         if (!oldval)
              oldval = "";
-         if (streq(newval, oldval))
+        if (streq(newval, oldval))
             return false;  // No change
         if (!prev)
         {
@@ -3627,7 +3627,7 @@ protected:
 class CCasssandraWorkUnitFactory : public CWorkUnitFactory, implements ICassandraSession
 {
 public:
-    CCasssandraWorkUnitFactory(const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0)
+    CCasssandraWorkUnitFactory(const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now())
     {
         StringArray options;
         Owned<IPTreeIterator> it = props->getElements("Option");
@@ -3665,7 +3665,7 @@ public:
         unsigned suffixLength;
         if (randomizeSuffix)  // May need to enable this option if you are expecting to create hundreds of workunits / second
         {
-            suffix = rand();
+            suffix = rand_r(&randState);
             suffixLength = randomizeSuffix;
         }
         else
@@ -3705,7 +3705,7 @@ public:
                 wu->lockRemote(true);
                 return wu.getClear();
             }
-            suffix = rand();
+            suffix = rand_r(&randState);
             if (suffixLength<9)
                 suffixLength++;
         }
@@ -3823,13 +3823,13 @@ public:
             Owned<IPTree> wuXML = rowToPTree(NULL, workunitInfoMappings, cass_iterator_get_row(rows));
             const char *wuid = wuXML->queryName();
             // For each secondary file, check that we get matching XML
-            for (const CassandraXmlMapping **mapping = secondaryTables; *mapping; mapping++)
+            for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
                 errCount += validateSecondary(*mapping, wuid, wuXML, batch);
         }
         // 2. Check that there are no orphaned entries in secondary or child tables
-        for (const CassandraXmlMapping **mapping = secondaryTables; *mapping; mapping++)
+        for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
             errCount += checkOrphans(*mapping, 1, batch);
-        for (const ChildTableInfo **table = childTables; *table != NULL; table++)
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             errCount += checkOrphans(table[0]->mappings, 0, batch);
         // 3. Commit fixes
         if (batch)
@@ -3863,9 +3863,9 @@ public:
         executeSimpleCommand(session, create);
         connect();
         ensureTable(session, workunitsMappings);
-        for (const CassandraXmlMapping **mapping = secondaryTables; *mapping; mapping++)
+        for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
             ensureTable(session, *mapping);
-        for (const ChildTableInfo **table = childTables; *table != NULL; table++)
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
             ensureTable(session, table[0]->mappings);
     }
 
@@ -4027,6 +4027,7 @@ private:
 
     unsigned randomizeSuffix;
     unsigned traceLevel;
+    unsigned randState;
     CassandraCluster cluster;
     CassandraSession session;
     mutable CriticalSection cacheCrit;
