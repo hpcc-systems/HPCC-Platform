@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+//class=embedded
+//class=3rdparty
+
 IMPORT memcached FROM lib_memcached;
 IMPORT Std;
 
