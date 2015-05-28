@@ -22,7 +22,7 @@ define([
   "./DojoD3",
   "./Mapping",
 
-  "d3/d3",
+  "d3",
 
   "dojo/text!./d3-cloud/d3.layout.cloud.js",
   "dojo/text!./templates/DojoD3WordCloud.css"
