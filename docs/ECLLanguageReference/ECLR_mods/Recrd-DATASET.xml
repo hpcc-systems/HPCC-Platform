@@ -859,7 +859,7 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
             <entry><emphasis role="bold">NOROOT</emphasis></entry>
 
             <entry>Specifies the <emphasis>file</emphasis> is a JSON file with
-            no file tags, only row tags.</entry>
+            no root level markup, only a collection of objects.</entry>
           </row>
 
           <row>
@@ -881,11 +881,12 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
     </informaltable>
 
     <para>This form is used to read a JSON file. The
-    <emphasis>xpath</emphasis> parameter defines the record delimiter tag
-    using a subset of standard XPATH (<emphasis
-    role="underline">www.w3.org/TR/xpath</emphasis>) syntax (see the <emphasis
-    role="bold">XPATH Support</emphasis> section under the RECORD structure
-    discussion for a description of the supported subset).</para>
+    <emphasis>xpath</emphasis> parameter defines the path used to locate
+    records within the JSON content using a subset of standard XPATH
+    (<emphasis role="underline">www.w3.org/TR/xpath</emphasis>) syntax (see
+    the <emphasis role="bold">XPATH Support</emphasis> section under the
+    RECORD structure discussion for a description of the supported
+    subset).</para>
 
     <para>The key to getting individual field values from the JSON lies in the
     RECORD structure<indexterm>
@@ -896,7 +897,7 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
     name (where the <emphasis>xpathtag</emphasis> is a string constant
     containing standard XPATH syntax) is required to extract the data. An
     XPATH consisting of empty quotes ('') indicates the field receives the
-    entire record. An absolute XPATH is used to access properties of parent
+    entire record. An absolute XPATH is used to access properties of child
     elements. Because JSON is case sensitive, and ECL identifiers are case
     insensitive, xpaths need to be specified if the tag contains any upper
     case characters.</para>
