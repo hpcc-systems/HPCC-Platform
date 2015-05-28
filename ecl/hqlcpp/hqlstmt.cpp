@@ -628,6 +628,31 @@ bool BuildCtx::hasAssociation(HqlExprAssociation & search, bool unconditional)
 }
 
 
+bool BuildCtx::isOuterContext() const
+{
+    HqlStmts * searchStmts = curStmts;
+    loop
+    {
+        HqlStmt * owner = searchStmts->owner;
+        if (!owner)
+            return true;
+
+        switch (owner->getStmt())
+        {
+        case quote_compound_stmt:
+        case quote_compoundopt_stmt:
+        case indirect_stmt:
+            return true;
+        case group_stmt:
+            break;
+        default:
+            return false;
+        }
+
+        searchStmts = owner->queryContainer();
+    }
+}
+
 HqlExprAssociation * BuildCtx::queryAssociation(IHqlExpression * search, AssocKind kind, HqlExprCopyArray * selectors)
 {
     HqlStmts * searchStmts = curStmts;

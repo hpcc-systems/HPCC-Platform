@@ -1200,6 +1200,7 @@ bool CSocket::connect_timeout( unsigned timeout, bool noexception)
         if ((err == EINPROGRESS)||(err == EWOULDBLOCK)) {
             T_FD_SET fds;
             struct timeval tv;
+            CHECKSOCKRANGE(sock);
             XFD_ZERO(&fds);
             FD_SET((unsigned)sock, &fds);
             T_FD_SET except;
@@ -1207,7 +1208,6 @@ bool CSocket::connect_timeout( unsigned timeout, bool noexception)
             FD_SET((unsigned)sock, &except);
             tv.tv_sec = remaining / 1000;
             tv.tv_usec = (remaining % 1000)*1000;
-            CHECKSOCKRANGE(sock);
             int rc = ::select( sock + 1, NULL, (fd_set *)&fds, (fd_set *)&except, &tv );
             if (rc>0) {
                 // select succeeded - return error from socket (0 if connected)
@@ -1306,6 +1306,7 @@ void CSocket::connect_wait(unsigned timems)
             while (!blockselect && ((err == EINPROGRESS)||(err == EWOULDBLOCK))) {
                 T_FD_SET fds;
                 struct timeval tv;
+                CHECKSOCKRANGE(sock);
                 XFD_ZERO(&fds);
                 FD_SET((unsigned)sock, &fds);
                 T_FD_SET except;
@@ -1318,7 +1319,6 @@ void CSocket::connect_wait(unsigned timems)
                 tv.tv_sec = 0;
                 tv.tv_usec = 0;
     #endif
-                CHECKSOCKRANGE(sock);
                 int rc = ::select( sock + 1, NULL, (fd_set *)&fds, (fd_set *)&except, &tv );
                 if (rc>0) {
                     // select succeeded - return error from socket (0 if connected)
@@ -1441,9 +1441,9 @@ int CSocket::wait_read(unsigned timeout)
     int ret = 0;
     while (sock!=INVALID_SOCKET) {
         T_FD_SET fds;
+        CHECKSOCKRANGE(sock);
         XFD_ZERO(&fds);
         FD_SET((unsigned)sock, &fds);
-        CHECKSOCKRANGE(sock);
         if (timeout==WAIT_FOREVER) {
             ret = ::select( sock + 1, (fd_set *)&fds, NULL, NULL, NULL );
         }
@@ -1471,9 +1471,9 @@ int CSocket::wait_write(unsigned timeout)
     int ret = 0;
     while (sock!=INVALID_SOCKET) {
         T_FD_SET fds;
+        CHECKSOCKRANGE(sock);
         XFD_ZERO(&fds);
         FD_SET((unsigned)sock, &fds);
-        CHECKSOCKRANGE(sock);
         if (timeout==WAIT_FOREVER) {
             ret = ::select( sock + 1, NULL, (fd_set *)&fds, NULL, NULL );
         }
@@ -3690,12 +3690,12 @@ public:
         }
         T_FD_SET fds;
         struct timeval tv;
+        CHECKSOCKRANGE(sock);
         XFD_ZERO(&fds);
         FD_SET((unsigned)sock, &fds);
         //FD_SET((unsigned)sock, &except);
         tv.tv_sec = 0;
         tv.tv_usec = 0;
-        CHECKSOCKRANGE(sock);
         int rc = ::select( sock + 1, NULL, (fd_set *)&fds, NULL, &tv );
         if (rc<0) {
             StringBuffer sockstr;
@@ -4742,13 +4742,18 @@ public:
 
     void add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
-        CriticalBlock block(sect);
-        epollthread->add(sock,mode,nfy);
+        CriticalBlock block(sect); // JCS->MK - are these blocks necessary? epollthread->add() uses it's own CS.
+
+        /* JCS->MK, the CSocketSelectHandler variety, checks result of thread->add and spins up another handler
+         * Shouldn't epoll version do the same?
+         */
+        if (!epollthread->add(sock,mode,nfy))
+            throw MakeStringException(-1, "CSocketEpollHandler: failed to add socket to epollthread handler: sock # = %d", sock->OShandle());
     }
 
     void remove(ISocket *sock)
     {
-        CriticalBlock block(sect);
+        CriticalBlock block(sect); // JCS->MK - are these blocks necessary? epollthread->add() uses it's own CS.
         epollthread->remove(sock);
     }
 
@@ -6003,7 +6008,7 @@ public:
                 if ((err == EINPROGRESS)||(err == EWOULDBLOCK))
                     err = 0; // continue
                 else {
-                    if (err==0) 
+                    if (err==0)
                         connectdone = true; // done immediately
                     else if(!oneshot) //  probably ECONNREFUSED but treat all errors same
                         refused_sleep((waitremaining==remaining)?waittm:connecttm,refuseddelay); // this stops becoming cpu bound
@@ -6011,6 +6016,7 @@ public:
             }
             if (!connectdone&&(err==0)) {
                 SOCKET s = sock->sock;
+                CHECKSOCKRANGE(s);
                 T_FD_SET fds;
                 struct timeval tv;
                 XFD_ZERO(&fds);
@@ -6020,7 +6026,6 @@ public:
                 FD_SET((unsigned)s, &except);
                 tv.tv_sec = remaining / 1000;
                 tv.tv_usec = (remaining % 1000)*1000;
-                CHECKSOCKRANGE(s);
                 int rc = ::select( s + 1, NULL, (fd_set *)&fds, (fd_set *)&except, &tv );
                 if (rc==0) 
                     break; // timeout
@@ -6091,8 +6096,10 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
 #ifdef _DEBUG
         dbgSB.appendf(" %d",socks.item(idx));
 #endif
-        maxSocket = socks.item(idx) > maxSocket ? socks.item(idx) : maxSocket;
-        FD_SET((unsigned)socks.item(idx), &fds);
+        SOCKET s = socks.item(idx);
+        CHECKSOCKRANGE(s);
+        maxSocket = s > maxSocket ? s : maxSocket;
+        FD_SET((unsigned)s, &fds);
     }
 #ifdef _DEBUG
     DBGLOG("%s",dbgSB.str());

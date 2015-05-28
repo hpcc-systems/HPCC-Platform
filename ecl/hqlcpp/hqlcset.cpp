@@ -1895,6 +1895,13 @@ void LinkedDatasetBuilderBase::buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound
     bound.count.setown(createQuoted(s.str(), LINK(unsignedType)));
     s.clear().append(instanceName).append(".queryrows()");
     bound.expr.setown(createQuoted(s.str(), makeReferenceModifier(dataset->getType())));
+    if (!ctx.isOuterContext() && ctx.queryMatchExpr(queryConditionalRowMarker()))
+    {
+        //If processing a conditional row, create a dataset object (at the outer-most) level
+        //and assign to that, to ensure the dataset doesn't go out of scope.
+        OwnedHqlExpr translated = bound.getTranslatedExpr();
+        translator.buildTempExpr(ctx, translated, bound);
+    }
 }
 
 bool LinkedDatasetBuilderBase::buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow)
