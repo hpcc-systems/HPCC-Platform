@@ -44,9 +44,8 @@
 
   <para>It has the ordering requirements of SEQUENTIAL. This is most useful
   for ordering actions which do not have anything in common, for example,
-  generating files and then sending email. Use it with care. If there is any
-  chance of a shared value which may change meaning, you need to use
-  SEQUENTIAL.</para>
+  generating files and then sending email. If there is any chance of a shared
+  value which may change meaning, you should use SEQUENTIAL.</para>
 
   <para>By definition, PERSIST on an attribute means the attribute is
   evaluated outside of any given evaluation order. Therefore, ORDERED has no
