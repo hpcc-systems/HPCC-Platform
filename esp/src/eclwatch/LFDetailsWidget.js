@@ -98,6 +98,27 @@ define([
             this.dfuWorkunitWidget = registry.byId(this.id + "_DFUWorkunit");
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
+            this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
+            var context = this;
+            var origOnOpen = this.desprayTooltiopDialog.onOpen;
+            this.desprayTooltiopDialog.onOpen = function () {
+                if (!context.desprayTargetSelect.initalized) {
+                    context.desprayTargetSelect.init({
+                        DropZones: true,
+                        callback: function (value, item) {
+                            context.updateInput("DesprayTargetIPAddress", null, item.machine.Netaddress);
+                            context.updateInput("DesprayTargetName", null, context.logicalFile.getLeaf());
+                            if (context.desprayTargetPath) {
+                                context.desprayTargetPath.reset();
+                                context.desprayTargetPath._dropZoneTarget = item;
+                                context.desprayTargetPath.defaultValue = context.desprayTargetPath.get("value");
+                                context.desprayTargetPath.loadDropZoneFolders();
+                            }
+                        }
+                    });
+                }
+                origOnOpen.apply(context.desprayTooltiopDialog, arguments);
+            }
             this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.fileBelongsToWidget = registry.byId(this.id + "_FileBelongs");
         },
@@ -191,19 +212,6 @@ define([
             }
             this.copyTargetSelect.init({
                 Groups: true
-            });
-            this.desprayTargetSelect.init({
-                DropZones: true,
-                callback: function (value, item) {
-                    context.updateInput("DesprayTargetIPAddress", null, item.machine.Netaddress);
-                    context.updateInput("DesprayTargetName", null, context.logicalFile.getLeaf());
-                    if (context.desprayTargetPath) {
-                        context.desprayTargetPath.reset();
-                        context.desprayTargetPath._dropZoneTarget = item;
-                        context.desprayTargetPath.defaultValue = context.desprayTargetPath.get("value");
-                        context.desprayTargetPath.loadDropZoneFolders();
-                    }
-                }
             });
             this.desprayTargetPath.init({
                 DropZoneFolders: true
