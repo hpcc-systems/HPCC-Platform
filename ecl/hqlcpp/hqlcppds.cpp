@@ -4413,6 +4413,9 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
     case no_null:
         doBuildRowAssignNullRow(ctx, target, expr);
         return;
+    case no_nofold:
+        buildRowAssign(ctx, target, expr->queryChild(0));
+        return;
     case no_serialize:
         {
             IHqlExpression * deserialized = expr->queryChild(0);

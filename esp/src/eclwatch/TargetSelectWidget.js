@@ -157,7 +157,8 @@ define([
                     Netaddr: Netaddr,
                     Path: Path,
                     OS: OS
-                }
+                },
+                suppressExceptionToaster: true
             }).then(function (response) {
                 var requests = [];
                 if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
