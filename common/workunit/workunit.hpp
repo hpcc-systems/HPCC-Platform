@@ -1273,7 +1273,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf,
+    virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField sortorder, WUSortField * filters, const void * filterbuf,
                                                         unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total,
                                                         ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual unsigned numWorkUnits() = 0;

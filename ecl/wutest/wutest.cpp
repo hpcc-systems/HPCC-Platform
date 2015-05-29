@@ -143,21 +143,6 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     return true;
 }
 
-void testPagedWuList(IWorkUnitFactory *factory)
-{
-    __int64 cachehint=0;
-    unsigned n=0;
-    for (unsigned page=0;page<3;page++) {
-        WUSortField sortorder[] = {WUSFuser,WUSFstate,WUSFterm};
-        Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, NULL, NULL, page*10, 10, "nigel", &cachehint, NULL);
-        ForEach(*it) {
-            n++;
-            IConstWorkUnitInfo& wu = it->query();
-            printf("%d: %s, %s, %d\n", n, wu.queryWuid(), wu.queryUser(), (int)wu.getState());
-        }
-    }
-}
-
 #ifdef FORCE_WORKUNITS_TO_CASSANDRA
 extern "C" IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *props);
 #endif
@@ -214,12 +199,8 @@ int main(int argc, const char *argv[])
         }
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         const char *action = globals->queryProp("#action");
-        if (action && (stricmp(action, "testpaged")==0))
-        {
-            testPagedWuList(factory);
-        }
 #ifdef _USE_CPPUNIT
-        else if (action && (stricmp(action, "-selftest")==0))
+        if (action && (stricmp(action, "-selftest")==0))
         {
             testSize = globals->getPropInt("testSize", 100);
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
@@ -229,8 +210,9 @@ int main(int argc, const char *argv[])
             bool wasSucessful = runner.run( "", false );
             return wasSucessful;
         }
+        else
 #endif
-        else if (action && (stricmp(action, "validate")==0))
+        if (action && (stricmp(action, "validate")==0))
         {
             bool fix = globals->getPropBool("fix", false);
             unsigned errors = factory->validateRepository(fix);
@@ -428,6 +410,7 @@ class WuTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(WuTest);
         CPPUNIT_TEST(testCreate);
         CPPUNIT_TEST(testList);
+        CPPUNIT_TEST(testSet);
         CPPUNIT_TEST(testDelete);
         CPPUNIT_TEST(testCopy);
     CPPUNIT_TEST_SUITE_END();
@@ -444,7 +427,10 @@ protected:
             VStringBuffer clusterName("WuTestCluster%d", i % 5);
             VStringBuffer jobName("WuTest job %d", i % 3);
             Owned<IWorkUnit>wu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
-            wu->setState(WUStateFailed);
+            if (i % 6)
+                wu->setState(WUStateCompleted);
+            else
+                wu->setState(WUStateFailed);
             wu->setUser(userId);
             wu->setClusterName(clusterName);
             if (i % 3)
@@ -689,7 +675,7 @@ protected:
         DBGLOG("Comparing xml2 and xml3");
         checkStringsMatch(xml2, xml3);
 
-        // Check that copy preservers everything it should (and resets what it should)
+        // Check that copy preserves everything it should (and resets what it should)
         // We can't directly compare xml1 with xml2 - not everything is copied
         Owned<IPropertyTree> p2 = createPTreeFromXMLString(xml2);
         p2->removeProp("Statistics/Statistic[@kind='WhenCreated']");
@@ -766,6 +752,94 @@ protected:
         ASSERT(factory->validateRepository(false)==0);
     }
 
+    void testSet()
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        unsigned start = msTick();
+        int i;
+        for (i = 0; i < testSize; i++)
+        {
+            Owned<IWorkUnit> wu = factory->updateWorkUnit(wuids.item(i));
+            wu->addProcess("ptype", "pInstance", 54321, "mylog");
+            wu->setAction(WUActionCompile);
+            wu->setApplicationValue("app1", "av1", "value", true);
+            wu->setApplicationValueInt("app2", "av2", 42, true);
+            wu->setIsQueryService(true);
+            wu->setClusterName("clustername");
+            wu->setDebugValue("debug1", "value", true);
+            wu->setDebugValueInt("debug2", 42, true);
+            wu->setJobName("jobname");
+            wu->setPriority(PriorityClassHigh);
+            wu->setPriorityLevel(2) ;
+            wu->setRescheduleFlag(true);
+            wu->setResultLimit(101);
+            wu->setSecurityToken("secret");
+            wu->setState(WUStateAborted);
+            wu->setStateEx("stateEx");
+            wu->setAgentSession(1234567890123);
+//            virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
+            wu->setTracingValue("trace1", "tvalue1");
+            wu->setTracingValueInt("trace2", 43);
+            wu->setUser("user");
+            wu->setWuScope("scope");
+            wu->setSnapshot("snap");
+            wu->setWarningSeverity(1234, SeverityFatal);
+        }
+        unsigned end = msTick();
+        DBGLOG("%u workunits set in %d ms", testSize, end-start);
+        start = end;
+        SCMStringBuffer s;
+        for (i = 0; i < testSize; i++)
+        {
+            Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuids.item(i), false);
+            if (false)
+            {
+                StringBuffer wuXML;
+                exportWorkUnitToXML(wu, wuXML, true, false, false);
+                DBGLOG("%s", wuXML.str());
+            }
+
+            Owned<IPTreeIterator> processes = wu->getProcesses("ptype", "pInstance");
+            ASSERT(processes->first());
+            IPTree &process = processes->query();
+            ASSERT(process.getPropInt("@pid", 0)==54321);
+            ASSERT(streq(process.queryProp("@log"), "mylog"));
+            ASSERT(!processes->next());
+            ASSERT(wu->getAction() == WUActionCompile);
+            ASSERT(streq(wu->getApplicationValue("app1", "av1", s).str(), "value"));
+            ASSERT(wu->getApplicationValueInt("app2", "av2", 0) == 42);
+            ASSERT(wu->getIsQueryService());
+            ASSERT(streq(wu->queryClusterName(),"clustername"));
+            ASSERT(streq(wu->getDebugValue("debug1", s).str(), "value"));
+            ASSERT(wu->getDebugValueInt("debug2", 0) == 42);
+            ASSERT(streq(wu->queryJobName(),"jobname"));
+            ASSERT(wu->getPriority()==PriorityClassHigh);
+            ASSERT(wu->getPriorityLevel()==2);
+            ASSERT(wu->getRescheduleFlag());
+            ASSERT(wu->getResultLimit()==101);
+            ASSERT(streq(wu->getSecurityToken(s).str(), "secret"));
+            ASSERT(wu->getState()==WUStateAborted);
+            ASSERT(streq(wu->getStateEx(s).str(), "stateEx"));
+            ASSERT(wu->getAgentSession()==1234567890123);
+//            virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
+            // Tracing is only retrievable via XML
+            const IExtendedWUInterface *ewu = queryExtendedWU(wu);
+            ASSERT(ewu);
+            IPropertyTree *p = ewu->queryPTree();
+            StringBuffer xml;
+            ASSERT(p->queryPropTree("Tracing"));
+            toXML(p->queryPropTree("Tracing"), xml, 0, XML_SortTags);
+            ASSERT(streq(xml, "<Tracing><trace1>tvalue1</trace1><trace2>43</trace2></Tracing>"));
+
+            ASSERT(streq(wu->queryUser(), "user"));
+            ASSERT(streq(wu->getWuScope(s).str(), "scope"));
+            ASSERT(streq(wu->getSnapshot(s).str(),"snap"));
+            ASSERT(wu->getWarningSeverity(1234, SeverityInformation) == SeverityFatal);
+        }
+        end = msTick();
+        DBGLOG("%u workunits reread in %d ms", testSize, end-start);
+    }
+
     void testList()
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
@@ -790,7 +864,7 @@ protected:
             ASSERT(streq(wu.queryUser(), "WuTestUser0"));
             numIterated++;
         }
-        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        DBGLOG("%d owned workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == (testSize+49)/50);
 
         // And by non-existent owner...
@@ -801,7 +875,7 @@ protected:
         {
             numIterated++;
         }
-        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        DBGLOG("%d non-existent workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == 0);
 
         // And by cluster
@@ -814,8 +888,21 @@ protected:
             ASSERT(streq(wu.queryClusterName(), "WuTestCluster0"));
             numIterated++;
         }
-        DBGLOG("%d workunits listed in %d ms", numIterated, msTick()-start);
+        DBGLOG("%d cluster workunits listed in %d ms", numIterated, msTick()-start);
         ASSERT(numIterated == (testSize+4)/5);
+
+        // And by state
+        wus.setown(factory->getWorkUnitsByState(WUStateFailed, NULL, NULL));
+        start = msTick();
+        numIterated = 0;
+        ForEach(*wus)
+        {
+            IConstWorkUnitInfo &wu = wus->query();
+            ASSERT(wu.getState() == WUStateFailed);
+            numIterated++;
+        }
+        DBGLOG("%d failed workunits listed in %d ms", numIterated, msTick()-start);
+        ASSERT(numIterated == (testSize+5)/6);
 
     }
 };

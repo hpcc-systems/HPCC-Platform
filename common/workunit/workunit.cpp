@@ -2674,8 +2674,8 @@ public:
         return root->numChildren();
     }
 
-    IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
-                                                WUSortField *filters,   // NULL or list of fields to folteron (terminated by WUSFterm)
+    IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField sortorder, // field to sort by (and flags for desc sort etc)
+                                                WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,
                                                 unsigned maxnum,
@@ -2783,19 +2783,17 @@ public:
             }
         }
         query.insert(0, namefilter.get());
-        if (sortorder) {
-            for (unsigned i=0;sortorder[i]!=WUSFterm;i++) {
-                if (so.length())
-                    so.append(',');
-                int fmt = sortorder[i];
-                if (fmt&WUSFreverse)
-                    so.append('-');
-                if (fmt&WUSFnocase)
-                    so.append('?');
-                if (fmt&WUSFnumeric)
-                    so.append('#');
-                so.append(getEnumText(fmt&0xff,workunitSortFields));
-            }
+        if (sortorder)
+        {
+            if (so.length())
+                so.append(',');
+            if (sortorder & WUSFreverse)
+                so.append('-');
+            if (sortorder & WUSFnocase)
+                so.append('?');
+            if (sortorder & WUSFnumeric)
+                so.append('#');
+            so.append(getEnumText(sortorder&0xff,workunitSortFields));
         }
         IArrayOf<IPropertyTree> results;
         Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
@@ -3127,7 +3125,7 @@ public:
         return baseFactory->setTracingLevel(newLevel);
     }
 
-    virtual IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
+    virtual IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField sortorder, // field to sort by
                                                         WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
                                                         const void *filterbuf,  // (appended) string values for filters
                                                         unsigned startoffset,
