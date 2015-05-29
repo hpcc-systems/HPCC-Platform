@@ -14,9 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+#include "jlib.hpp"
 #include "hqlxmldb.hpp"
 #include "jptree.hpp"
-#include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jprop.hpp"
 

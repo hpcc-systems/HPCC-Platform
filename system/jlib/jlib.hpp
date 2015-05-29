@@ -41,6 +41,7 @@
 #define _clear(a)          memset(&a, 0, sizeof(a))
 #define _copy(dest, src)   memcpy(&dest, &src, sizeof(src))
 
+inline bool isNull ( void const *p ) {return NULL==p;}
 
 class jlib_decl ICopyArray : public CopyReferenceArrayOf<IInterface> {};
 class jlib_decl IArray : public OwnedReferenceArrayOf<IInterface> {};

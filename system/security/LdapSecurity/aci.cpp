@@ -1114,7 +1114,7 @@ CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser& user, ISecR
     if(userbasedn == NULL)
         return csd;
 
-    if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
+    if( !isNull(&user) && DEFAULT_OWNER_PERMISSION != SecAccess_None)
     {
         StringBuffer defaultperm;
         sec2aci(DEFAULT_OWNER_PERMISSION, defaultperm);
@@ -1206,7 +1206,7 @@ CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser& user, ISec
     if(userbasedn == NULL)
         return csd;
 
-    if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
+    if( !isNull(&user) && DEFAULT_OWNER_PERMISSION != SecAccess_None)
     {
         StringBuffer defaultperm;
         sec2aci(DEFAULT_OWNER_PERMISSION, defaultperm);

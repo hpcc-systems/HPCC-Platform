@@ -17,6 +17,7 @@
 
 
 #include "platform.h"
+#include "jlib.hpp"
 #include "jprop.hpp"
 #include "jptree.hpp"
 #include "pkgimpl.hpp"

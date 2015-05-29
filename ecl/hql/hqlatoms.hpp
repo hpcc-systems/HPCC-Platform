@@ -17,6 +17,7 @@
 #ifndef HQLATOM_INCL
 #define HQLATOM_INCL
 
+#include "jlib.hpp"
 #include "jhash.hpp"        // strangely also includes hqlatom.ipp
 
 extern HQL_API IIdAtom * atId;

@@ -16,6 +16,7 @@
 ############################################################################## */
 #include "platform.h"
 
+#include "jlib.hpp"
 #include "hql.hpp"
 #include "hqlexpr.hpp"
 #include "hqldesc.hpp"

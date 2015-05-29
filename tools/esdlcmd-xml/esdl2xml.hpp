@@ -17,6 +17,7 @@
 #ifndef __ESDL2XML_HPP__
 #define __ESDL2XML_HPP__
 
+#include "jlib.hpp"
 #include "jhash.hpp"
 #include "esdlcomp.h"
 

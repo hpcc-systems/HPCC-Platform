@@ -17,6 +17,7 @@
 
 
 #include "platform.h"
+#include "jlib.hpp"
 #include "jmutex.hpp"
 #include "jsuperhash.hpp"
 #include "jmisc.hpp"
