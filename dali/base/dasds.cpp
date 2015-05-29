@@ -2353,15 +2353,13 @@ CRemoteTreeBase *CRemoteTreeBase::createChild(int pos, const char *childName)
 static CheckedCriticalSection suppressedOrphanUnlockCrit; // to temporarily suppress unlockall
 static bool suppressedOrphanUnlock=false;
 
-#ifdef __64BIT__
-#pragma pack(push,1)    // 64bit pack CServerRemoteTree's    (could do for 32bit also)
-#endif
-
 #if defined(new)
 #define __old_new new
 #undef new
 #endif
 
+//Do not override the packing for this class - otherwise the fixed size allocator will allocate
+//misaligned objects, which can cause problems on some architectures (especially for atomic operations)
 class CServerRemoteTree : public CRemoteTreeBase
 {
     DECL_NAMEDCOUNT;
@@ -2816,11 +2814,6 @@ public:
 
 #if defined(_WIN32) && defined(__old_new)
 #define new __old_new
-#endif
-
-
-#ifdef __64BIT__
-#pragma pack(pop)   // 64bit pack CServerRemoteTree's    (could do for 32bit also)
 #endif
 
 

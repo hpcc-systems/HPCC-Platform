@@ -12342,12 +12342,51 @@ IHqlExpression * ensureActiveRow(IHqlExpression * expr)
     return createRow(no_activerow, LINK(expr->queryNormalizedSelector()));
 }
 
+static void ensureSerialized(HqlExprArray & assigns, IHqlExpression *transform, IHqlExpression * srcRecord, IHqlExpression * tgtRecord, IAtom * serialForm)
+{
+    OwnedHqlExpr childSelf = createSelector(no_self, tgtRecord, NULL);
+    ForEachChild(i, srcRecord)
+    {
+        IHqlExpression * src = srcRecord->queryChild(i);
+        IHqlExpression * tgt = tgtRecord->queryChild(i);
+        dbgassertex(src->getOperator() == tgt->getOperator());
+        switch (src->getOperator())
+        {
+        case no_field:
+            {
+                OwnedHqlExpr  match = getExtractSelect(transform, src, false);
+                assertex(match);
+                OwnedHqlExpr lhs = createSelectExpr(LINK(childSelf), LINK(tgt));
+                assigns.append(*createAssign(lhs.getClear(), ensureSerialized(match, serialForm)));
+                break;
+            }
+        case no_record:
+            ensureSerialized(assigns, transform, src, tgt, serialForm);
+            break;
+        case no_ifblock:
+            ensureSerialized(assigns, transform, src->queryChild(1), tgt->queryChild(1), serialForm);
+            break;
+        }
+    }
+}
+
 IHqlExpression * ensureSerialized(IHqlExpression * expr, IAtom * serialForm)
 {
     ITypeInfo * type = expr->queryType();
     Owned<ITypeInfo> serialType = getSerializedForm(type, serialForm);
     if (type == serialType)
         return LINK(expr);
+
+    if (expr->getOperator() == no_createrow)
+    {
+        IHqlExpression * serialRecord = queryRecord(serialType);
+        IHqlExpression * exprRecord = expr->queryRecord();
+        IHqlExpression * transform = expr->queryChild(0);
+        HqlExprArray assigns;
+        ensureSerialized(assigns, transform, exprRecord, serialRecord, serialForm);
+        OwnedHqlExpr newTransform = createValue(no_transform, makeTransformType(serialRecord->getType()), assigns);
+        return createRow(no_createrow, newTransform.getClear());
+    }
 
     HqlExprArray args;
     args.append(*LINK(expr));

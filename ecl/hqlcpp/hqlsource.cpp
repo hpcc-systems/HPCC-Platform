@@ -410,9 +410,13 @@ static void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression 
                 {
                     IHqlExpression * curPhysical = nextDiskField(diskRecord, diskIndex);
                     OwnedHqlExpr physicalSelect = createSelectExpr(LINK(diskDataset), LINK(curPhysical));
-                    if (cur->isDatarow() && !cur->hasAttribute(blobAtom) && !isInPayload())
+                    if (cur->isDatarow() && !cur->hasAttribute(blobAtom) && (!isInPayload() || (physicalSelect->queryType() != target->queryType())))
                     {
-                        createPhysicalLogicalAssigns(assigns, target, curPhysical->queryRecord(), cur->queryRecord(), physicalSelect, allowTranslate, NotFound);
+                        HqlExprArray subassigns;
+                        OwnedHqlExpr childSelf = createSelector(no_self, cur, NULL);
+                        createPhysicalLogicalAssigns(subassigns, childSelf, curPhysical->queryRecord(), cur->queryRecord(), physicalSelect, false, NotFound);
+                        OwnedHqlExpr transform = createValue(no_transform, makeTransformType(cur->queryRecord()->getType()), subassigns);
+                        newValue.setown(createRow(no_createrow, transform.getClear()));
                     }
                     else
                         newValue.setown(convertIndexPhysical2LogicalValue(cur, physicalSelect, allowTranslate));
@@ -500,10 +504,10 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             {
                 //This should support other non serialized formats.  E.g., link counted strings. 
                 //Simplest would be to move getSerializedForm code + call that first.
-                if (cur->hasAttribute(_linkCounted_Atom))
+                if (cur->hasAttribute(_linkCounted_Atom) || cur->isDatarow())
                 {
                     newField = getSerializedForm(cur, diskAtom);
-                    assertex(newField != cur);
+                    assertex(newField != cur || cur->isDatarow());
                 }
                 else
                 {

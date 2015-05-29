@@ -436,11 +436,10 @@ static int doMain(int argc, const char *argv[])
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;
 
-    if (processor.printKeywordsToXml())
-        return 0;
-
     try
     {
+        if (processor.printKeywordsToXml())
+            return 0;
         if (!processor.processFiles())
             return 2;
     }

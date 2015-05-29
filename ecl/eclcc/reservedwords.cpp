@@ -575,8 +575,10 @@ void printKeywordsToXml()
      buffer.append("</xml>\n");
 
      Owned<IFile> treeFile = createIFile("ECLKeywords.xml");
+     assertex(treeFile);
      Owned<IFileIO> io = treeFile->open(IFOcreaterw);
+     assertex(io);
      Owned<IIOStream> out = createIOStream(io);
-
+     assertex(out);
      out->write(buffer.length(), buffer.str());
 }

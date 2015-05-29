@@ -27,35 +27,52 @@ shift
 PATH_PRE=$(type -path hpcc_setenv)
 source ${PATH_PRE}
 PID_NAME="$PID/$(basename $PWD).pid"
-COMP_NAME="$(basename $PWD)"
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
 
 # this must match jsocket hard limit
 export handlelimit=32768
 
+component=$(basename $PWD)
+export logfile="${LOG_DIR}/${component}/init_${component}_$(date +%Y_%m_%d_%H_%M_%S).log"
+
 export SENTINEL="dafilesrv.sentinel"
+log "Removing ${SENTINEL}"
 rm -f ${SENTINEL}
 
 killed()
 {
+    log "Attempting to kill $component"
     kill_process ${PID_NAME} dafilesrv 3 ${SENTINEL}
+    if [[ $? -eq 1 ]]; then
+      log "could not kill $component"
+    else
+      log "$component Stopped"
+    fi
     exit 255
 }
 
-ulimit -c unlimited
-ulimit -n $handlelimit
+log "Setting core and handle limit"
+ulimit -Sc hard
+[[ $? -ne 0 ]] && log "Failed to set core file limit"
+ulimit -Sn hard
+[[ $? -ne 0 ]] && log "Failed to set file descriptor limit"
 
 trap "killed" SIGINT SIGTERM SIGKILL
-dafilesrv -L $log -I ${COMP_NAME} &
+log "Calling dafilesrv -L $log -I $component &"
+dafilesrv -L $log -I $component &
 echo $! > $PID_NAME
 wait
+log "Removing $PID_NAME"
 rm $PID_NAME
 
 while [[ -e ${SENTINEL} ]]; do
     sleep 5
     if [[ -e ${SENTINEL} ]]; then
-        dafilesrv -L $log -I ${COMP_NAME} &
+        log "Calling dafilesrv -L $log -I $component &"
+        dafilesrv -L $log -I $component &
         echo $! > $PID_NAME
         wait
+        log "Removing $PID_NAME"
         rm $PID_NAME
     fi
 done
