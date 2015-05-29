@@ -105,12 +105,10 @@ interface ITrackChanges
     virtual void registerPropAppend(size32_t l) = 0;
 };
 
-class ChangeInfo : public CInterface, implements IInterface
+class ChangeInfo : public CInterfaceOf<IInterface>
 {
     DECL_NAMEDCOUNT;
 public:
-    IMPLEMENT_IINTERFACE;
-
     ChangeInfo(IPropertyTree &_owner) : owner(&_owner) { INIT_NAMEDCOUNT; tree.setown(createPTree(RESERVED_CHANGE_NODE)); }
     const IPropertyTree *queryOwner() const { return owner; }
     const void *queryFindParam() const { return &owner; }
@@ -193,7 +191,7 @@ private: // data
 
 ///////////////////
 
-class CPTStack : public CInterface, public IArrayOf<PTree>
+class CPTStack : public IArrayOf<PTree>
 {
     bool _fill(IPropertyTree &root, const char *xpath, IPropertyTree &tail);
 public:
@@ -226,10 +224,6 @@ class CServerConnection;
 class CBranchChange;
 ///////////////////
 class CSubscriberContainerList;
-
-#ifdef __64BIT__
-#pragma pack(push,1)    // 64bit pack CRemoteTree's  (could probably do for 32bit also)
-#endif
 
 class CRemoteTreeBase : public PTree
 {
@@ -266,10 +260,6 @@ public:
 protected: // data
     __int64 serverId;
 };
-
-#ifdef __64BIT__
-#pragma pack(pop)   
-#endif
 
 class CTrackChanges
 {
@@ -581,7 +571,7 @@ public:
     virtual unsigned queryConnections() { return connections.ordinality(); }
 };
 
-class CXPathIterator : public CInterface, implements IPropertyTreeIterator
+class CXPathIterator : public CInterfaceOf<IPropertyTreeIterator>
 {
     DECL_NAMEDCOUNT;
     IPropertyTree *root;
@@ -593,8 +583,6 @@ class CXPathIterator : public CInterface, implements IPropertyTreeIterator
     IPTIteratorCodes flags;
     bool validateServerIds;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CXPathIterator(IPropertyTree *_root, IPropertyTree *_matchTree, IPTIteratorCodes _flags) : root(_root), matchTree(_matchTree), flags(_flags)
     {
         INIT_NAMEDCOUNT;
