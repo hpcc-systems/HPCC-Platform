@@ -1226,18 +1226,28 @@ void holeIntFormat(size32_t maxlen, char * target, __int64 value, unsigned width
 
 void holeRealFormat(size32_t maxlen, char * target, double value, unsigned width, unsigned places)
 {
-    if ((int) width < 0)
+    if ((int) width <= 0)
         return;
-    char temp[500];
-    if (width > sizeof(temp)) 
+
+    const unsigned tempSize = 500;
+    char temp[tempSize*2+2];  // Space for leading digits/0, '-' and \0 terminator
+
+    //Ensure that we output at most 2*tempSize characters.
+    unsigned formatWidth = width < tempSize ? width : tempSize;
+    if (places >= formatWidth)
+        places = formatWidth-1;
+    unsigned written = sprintf(temp, "%*.*f", formatWidth, places, value);
+
+    const char * src = temp;
+    if (written > width)
     {
-        unsigned delta = width - sizeof(temp);
-        memset(target, ' ', delta);
-        target += delta;
-        width = sizeof(temp);
+        //Strip a leading 0 for very small numbers.
+        if (*src == '0')
+        {
+            written--;
+            src++;
+        }
     }
-    if (places >= width)             places = width-1;
-    unsigned written = sprintf(temp, "%*.*f", width, places, value);
     if (written > width)
     {
         memset(target, '*', width);
@@ -1245,7 +1255,12 @@ void holeRealFormat(size32_t maxlen, char * target, double value, unsigned width
             target[width-places-1] = '.';
     }
     else
-        memcpy(target, temp, width);
+    {
+        unsigned delta = width - written;
+        if (delta)
+            memset(target, ' ', delta);
+        memcpy(target+delta, src, written);
+    }
 }
 
 //=============================================================================
