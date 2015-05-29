@@ -416,13 +416,15 @@ private:
     void replaceSelf(IPropertyTree *val);
 
 protected: // data
-    byte flags;
     IPropertyTree *parent; // ! currently only used if tree embedded into array, used to locate position.
-
     HashKeyElement *name;
     ChildMap *children;
     IPTArrayValue *value;
-    AttrMap attributes;
+    //The packing (#pragma pack) is overridden because very large numbers of these objects are created, and the
+    //following two members currently cause 8 bytes to be wasted.  Refactoring the contents of AttrMap into this
+    //class would allow the fields to pack cleanly.
+    AttrMap attributes;     // this has 2 "extra" bytes - which could pack into the space following the count
+    byte flags;             // this could also pack into the space following the count.
 };
 
 #ifdef __64BIT__
@@ -536,7 +538,7 @@ private: // data
 
 class CPTreeMaker : public CInterfaceOf<IPTreeMaker>
 {
-    bool rootProvided, noRoot;
+    bool rootProvided, noRoot;  // pack into the space following the link count
     IPropertyTree *root;
     ICopyArrayOf<IPropertyTree> ptreeStack;
     IPTreeNodeCreator *nodeCreator;

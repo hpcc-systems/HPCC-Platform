@@ -2358,6 +2358,8 @@ static bool suppressedOrphanUnlock=false;
 #undef new
 #endif
 
+//Do not override the packing for this class - otherwise the fixed size allocator will allocate
+//misaligned objects, which can cause problems on some architectures (especially for atomic operations)
 class CServerRemoteTree : public CRemoteTreeBase
 {
     DECL_NAMEDCOUNT;
