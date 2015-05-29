@@ -450,7 +450,6 @@ interface IDFUWorkUnitFactory : extends IInterface
                                                         __int64 *cachehint,         // set to NULL if caching not required
                                                         unsigned *total) = 0;       // set to NULL if caching not required
     virtual unsigned numWorkUnits()=0;
-    virtual unsigned numWorkUnitsFiltered(DFUsortfield *filters,const void *filterbuf)=0;
     virtual __int64  subscribe(const char *xpath,void *iface) =0;       // internal use
 };
 

@@ -1970,6 +1970,12 @@ void EclAgent::doProcess()
                 w->deleteTemporaries();
         }
 
+        if (globals->getPropBool("DUMPFINALWU", false))
+        {
+            StringBuffer xml;
+            exportWorkUnitToXML(wuRead, xml, true, false, true);
+            fprintf(stdout, "%s", xml.str());
+        }
         wuRead.clear(); // have a write lock still, but don't want to leave dangling unlocked wuRead after releasing write lock
                         // or else something can delete whilst still referenced (e.g. on complete signal)
         w.clear();

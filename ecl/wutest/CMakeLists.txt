@@ -36,6 +36,7 @@ include_directories (
          ./../../system/jlib 
          ./../../common/environment 
          ./../../common/workunit 
+         ./../../testing/unittests 
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -55,6 +56,7 @@ target_link_libraries ( wutest
          eclrtl 
          deftype
          workunit 
+         ${CPPUNIT_LIBRARIES}
     )
     
 if ( FORCE_WORKUNITS_TO_CASSANDRA )

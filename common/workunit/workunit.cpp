@@ -1417,6 +1417,10 @@ public:
             { return queryExtendedWU(c)->calculateHash(prevHash); }
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
             { queryExtendedWU(c)->copyWorkUnit(cached, all); }
+    virtual IPropertyTree *queryPTree() const
+            { return queryExtendedWU(c)->queryPTree(); }
+    virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
+            { return queryExtendedWU(c)->getUnpackedTree(includeProgress); }
     virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned)
             { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned); }
     virtual void packWorkUnit(bool pack)
@@ -2147,6 +2151,7 @@ public:
         UniqueScopes us;
         if (secmgr /* && secmgr->authTypeRequired(RT_WORKUNIT_SCOPE) tbd */)
         {
+            // MORE - this will defeat any lazy-fetch mechanism in the incoming iterator
             scopes.setown(secmgr->createResourceList("wuscopes"));
             ForEach(*ptreeIter)
             {
@@ -2198,19 +2203,19 @@ CWorkUnitFactory::~CWorkUnitFactory()
 {
 }
 
-IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *scope, ISecManager *secmgr, ISecUser *secuser)
 {
-    checkWuScopeSecAccess(user, secmgr, secuser, SecAccess_Write, "Create", true, true);
+    checkWuScopeSecAccess(scope, secmgr, secuser, SecAccess_Write, "Create", true, true);
     Owned<CLocalWorkUnit> cw = _createWorkUnit(wuid, secmgr, secuser);
-    if (user)
-        cw->setWuScope(user);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
+    if (scope)
+        cw->setWuScope(scope);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
     IWorkUnit* ret = &cw->lockRemote(false);   // Note - this may throw exception if user does not have rights.
     ret->setDebugValue("CREATED_BY", app, true);
-    ret->setDebugValue("CREATED_FOR", user, true);
+    ret->setDebugValue("CREATED_FOR", scope, true);
     return ret;
 }
 
-IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *user, ISecManager *secmgr, ISecUser *secuser)
+IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, ISecManager *secmgr, ISecUser *secuser)
 {
     StringBuffer wuid("W");
     char result[32];
@@ -2221,7 +2226,7 @@ IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *user, I
     wuid.append(result);
     if (workUnitTraceLevel > 1)
         PrintLog("createWorkUnit created %s", wuid.str());
-    IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, user, secmgr, secuser);
+    IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, scope, secmgr, secuser);
     if (workUnitTraceLevel > 1)
         PrintLog("createWorkUnit created %s", ret->queryWuid());
     addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
@@ -2534,18 +2539,6 @@ void CWorkUnitFactory::clearAborting(const char *wuid)
     }
 }
 
-unsigned CWorkUnitFactory::numWorkUnitsFiltered(WUSortField *filters,
-                                    const void *filterbuf,
-                                    ISecManager *secmgr,
-                                    ISecUser *secuser)
-{
-    if (!filters && !secuser && !secmgr)
-        return numWorkUnits();
-    unsigned total;
-    Owned<IConstWorkUnitIterator> iter =  getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,&total,secmgr,secuser);
-    return total;
-}
-
 static CriticalSection deleteDllLock;
 static Owned<IWorkQueueThread> deleteDllWorkQ;
 
@@ -2580,7 +2573,18 @@ public:
     {
         removeShutdownHook(*this);
     }
-
+    virtual unsigned validateRepository(bool fixErrors)
+    {
+        return 0;
+    }
+    virtual void deleteRepository(bool recreate)
+    {
+        UNIMPLEMENTED; // And will probably never be!
+    }
+    virtual void createRepository()
+    {
+        // Nothing to do
+    }
     virtual CLocalWorkUnit *_createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuRoot;
@@ -2955,6 +2959,10 @@ protected:
     SessionId session;
 };
 
+extern WORKUNIT_API IConstWorkUnitIterator *createConstWUIterator(IPropertyTreeIterator *iter, ISecManager *secmgr, ISecUser *secuser)
+{
+    return new CConstWUIterator(iter, secmgr, secuser);
+}
 static CriticalSection factoryCrit;
 static Owned<ILoadedDllEntry> workunitServerPlugin;  // NOTE - unload AFTER the factory is released!
 static Owned<IWorkUnitFactory> factory;
@@ -2985,9 +2993,11 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
         CriticalBlock b(factoryCrit);
         if (!factory)   // NOTE - this "double test" paradigm is not guaranteed threadsafe on modern systems/compilers - I think in this instance that is harmless even in the (extremely) unlikely event that it resulted in the setown being called twice.
         {
+            const char *forceEnv = getenv("FORCE_DALI_WORKUNITS");
+            bool forceDali = forceEnv && !strieq(forceEnv, "off") && !strieq(forceEnv, "0");
             Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/WorkUnitsServer", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
             // MORE - arguably should be looking in the config section that corresponds to the dali we connected to. If you want to allow some dalis to be configured to use a WU server and others not.
-            if (conn)
+            if (conn && !forceDali)
             {
                 const IPropertyTree *ptree = conn->queryRoot();
                 const char *pluginName = ptree->queryProp("@plugin");
@@ -3022,6 +3032,19 @@ public:
         : baseFactory(_baseFactory), defaultSecMgr(_secMgr), defaultSecUser(_secUser)
     {
     }
+    virtual unsigned validateRepository(bool fix)
+    {
+        return baseFactory->validateRepository(fix);
+    }
+    virtual void deleteRepository(bool recreate)
+    {
+        return baseFactory->deleteRepository(recreate);
+    }
+    virtual void createRepository()
+    {
+        return baseFactory->createRepository();
+    }
+
     virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
@@ -3135,15 +3158,6 @@ public:
     virtual unsigned numWorkUnits()
     {
         return baseFactory->numWorkUnits();
-    }
-
-    virtual unsigned numWorkUnitsFiltered(WUSortField *filters,
-                                        const void *filterbuf,
-                                        ISecManager *secMgr, ISecUser *secUser)
-    {
-        if (!secMgr) secMgr = defaultSecMgr.get();
-        if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->numWorkUnitsFiltered(filters, filterbuf, secMgr, secUser);
     }
 
     virtual bool isAborting(const char *wuid) const
@@ -3286,7 +3300,7 @@ void CLocalWorkUnit::beforeDispose()
 
 void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
 {
-    TIME_SECTION("WUDELETE cleanupAndDelete total");
+    MTIME_SECTION(queryActiveTimer(), "WUDELETE cleanupAndDelete total");
     // Delete any related things in SDS etc that might otherwise be forgotten
     if (p->getPropBool("@protected", false))
         throw MakeStringException(WUERR_WorkunitProtected, "%s: Workunit is protected",p->queryName());
@@ -5092,6 +5106,11 @@ static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char 
         to->setPropTree(xpath, match);
 }
 
+IPropertyTree *CLocalWorkUnit::queryPTree() const
+{
+    return p;
+}
+
 void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
 {
     CLocalWorkUnit *from = QUERYINTERFACE(cached, CLocalWorkUnit);
@@ -5222,6 +5241,9 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     }
 
     p->setProp("@codeVersion", fromP->queryProp("@codeVersion"));
+    p->setProp("@buildVersion", fromP->queryProp("@buildVersion"));
+    p->setProp("@eclVersion", fromP->queryProp("@eclVersion"));
+    p->setProp("@hash", fromP->queryProp("@hash"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
@@ -5678,6 +5700,11 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else
             statTree->removeProp("@max");
     }
+}
+
+void CLocalWorkUnit::_loadStatistics() const
+{
+    statistics.load(p,"Statistics/*");
 }
 
 IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter * filter) const
@@ -8892,20 +8919,15 @@ void exportWorkUnitToXMLFileWithHiddenPasswords(IPropertyTree *p, const char *fi
 
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords)
 {
-    const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
-    if (!w)
-    {
-        const CLockedWorkUnit *wl = QUERYINTERFACE(wu, const CLockedWorkUnit);
-        if (wl)
-            w = wl->c;
-    }
-    if (w)
+    // MORE - queryPTree isn't really safe without holding CLocalWorkUnit::crit - really need to move these functions into CLocalWorkunit
+    const IExtendedWUInterface *ewu = queryExtendedWU(wu);
+    if (ewu)
     {
         Linked<IPropertyTree> p;
         if (unpack||includeProgress)
-            p.setown(w->getUnpackedTree(includeProgress));
+            p.setown(ewu->getUnpackedTree(includeProgress));
         else
-            p.set(w->p);
+            p.set(ewu->queryPTree());
         if (hidePasswords && p->hasProp("Variables/Variable[Format/@password]"))
             return exportWorkUnitToXMLWithHiddenPasswords(p, str);
         toXML(p, str, 0, XML_Format|XML_SortTags);
@@ -8915,33 +8937,22 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
     return str;
 }
 
-extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack, bool includeProgress, bool hidePasswords)
-{
-    StringBuffer x;
-    str.set(exportWorkUnitToXML(wu,x,unpack, includeProgress, hidePasswords).str());
-    return str;
-}
-
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords)
 {
-    const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
-    if (!w)
-    {
-        const CLockedWorkUnit *wl = QUERYINTERFACE(wu, const CLockedWorkUnit);
-        if (wl)
-            w = wl->c;
-    }
-    if (w)
+    const IExtendedWUInterface *ewu = queryExtendedWU(wu);
+    if (ewu)
     {
         Linked<IPropertyTree> p;
         if (unpack||includeProgress)
-            p.setown(w->getUnpackedTree(includeProgress));
+            p.setown(ewu->getUnpackedTree(includeProgress));
         else
-            p.set(w->p);
+            p.set(ewu->queryPTree());
         if (hidePasswords && p->hasProp("Variables/Variable[Format/@password]"))
             return exportWorkUnitToXMLFileWithHiddenPasswords(p, filename, extraXmlFlags);
         saveXML(filename, p, 0, XML_Format|XML_SortTags|extraXmlFlags);
     }
+    else
+        throw makeStringException(0, "Unrecognized workunit format");
 }
 
 
@@ -9807,9 +9818,14 @@ extern WORKUNIT_API IWorkflowScheduleConnection * getWorkflowScheduleConnection(
     return new CWorkflowScheduleConnection(wuid);
 }
 
-extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IWorkUnit * wu)
+extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IConstWorkUnit * wu)
 {
     return QUERYINTERFACE(wu, IExtendedWUInterface);
+}
+
+extern WORKUNIT_API const IExtendedWUInterface * queryExtendedWU(const IConstWorkUnit * wu)
+{
+    return QUERYINTERFACE(wu, const IExtendedWUInterface);
 }
 
 

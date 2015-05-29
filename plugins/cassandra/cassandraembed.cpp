@@ -261,6 +261,12 @@ public:
             rtlFail(0, err.str());
         }
     }
+    void set(CassFuture *_future)
+    {
+        if (future)
+            cass_future_free(future);
+        future = _future;
+    }
 private:
     CassandraFuture(const CassandraFuture &);
     CassFuture *future;
@@ -320,6 +326,9 @@ class CassandraStatement : public CInterface
 {
 public:
     CassandraStatement(CassStatement *_statement) : statement(_statement)
+    {
+    }
+    CassandraStatement(const char *simple) : statement(cass_statement_new(cass_string_init(simple), 0))
     {
     }
     ~CassandraStatement()
@@ -2162,6 +2171,7 @@ interface ICassandraSession
 {
     virtual CassSession *querySession() const = 0;
     virtual CassandraPrepared *prepareStatement(const char *query) const = 0;
+    virtual unsigned queryTraceLevel() const = 0;
 };
 
 
@@ -2271,6 +2281,22 @@ public:
         return true;
     }
 } rootNameColumnMapper;
+
+// WuidColumnMapper is used for columns containing a wuid that is NOT in the resulting XML - it
+// is an error to try to map such a column to/from the XML representation
+
+class WuidColumnMapper : implements CassandraColumnMapper
+{
+public:
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    {
+        throwUnexpected();
+    }
+    virtual bool fromXML(CassStatement *statement, unsigned idx, IPTree *row, const char *name, int userVal)
+    {
+        throwUnexpected();
+    }
+} wuidColumnMapper;
 
 class GraphIdColumnMapper : implements CassandraColumnMapper
 {
@@ -2507,11 +2533,12 @@ public:
     {
         // NOTE - name here provides a list of attributes that we should NOT be mapping
         Owned<IAttributeIterator> attrs = row->getAttributes();
-        unsigned numItems = attrs->count();
+        unsigned numItems = 0;
         ForEach(*attrs)
         {
-            const char *key = attrs->queryName();
-            if (strstr(name, key) == NULL) // MORE - should really check that the following char is a @
+            StringBuffer key = attrs->queryName();
+            key.append('@');
+            if (strstr(name, key) == NULL)
                 numItems++;
         }
         if (numItems)
@@ -2521,11 +2548,12 @@ public:
                 CassandraCollection collection(cass_collection_new(CASS_COLLECTION_TYPE_MAP, numItems));
                 ForEach(*attrs)
                 {
-                    const char *key = attrs->queryName();
-                    if (strstr(name, key) == NULL) // MORE - should really check that the following char is a @
+                    StringBuffer key = attrs->queryName();
+                    key.append('@');
+                    if (strstr(name, key) == NULL)
                     {
                         const char *value = attrs->queryValue();
-                        check(cass_collection_append_string(collection, cass_string_init(key+1)));  // skip the @
+                        check(cass_collection_append_string(collection, cass_string_init(attrs->queryName()+1)));  // skip the @
                         check(cass_collection_append_string(collection, cass_string_init(value)));
                     }
                 }
@@ -2537,6 +2565,23 @@ public:
             return false;
     }
 } attributeMapColumnMapper;
+
+class QueryTextColumnMapper : public StringColumnMapper
+{
+public:
+    virtual IPTree *toXML(IPTree *row, const char *name, const CassValue *value)
+    {
+        // Name is "Query/Text ...
+        IPTree *query = row->queryPropTree("Query");
+        if (!query)
+        {
+            query = createPTree("Query");
+            query = row->setPropTree("Query", query);
+            row->setProp("Query/@fetchEntire", "1"); // Compatibility...
+        }
+        return StringColumnMapper::toXML(query, "Text", value);
+    }
+} queryTextColumnMapper;
 
 class GraphMapColumnMapper : implements CassandraColumnMapper
 {
@@ -2612,6 +2657,7 @@ public:
         {
             query = createPTree("Query");
             row->setPropTree("Query", query);
+            row->setProp("Query/@fetchEntire", "1"); // Compatibility...
         }
         return GraphMapColumnMapper::toXML(query, "Associated", value);
     }
@@ -2676,24 +2722,13 @@ struct CassandraXmlMapping
     CassandraColumnMapper &mapper;
 };
 
-const CassandraXmlMapping wuExceptionsMappings [] =
+struct CassandraTableInfo
 {
-    {"wuid", "text", NULL, rootNameColumnMapper},
-    {"attributes", "map<text, text>", "", attributeMapColumnMapper},
-    {"value", "text", ".", stringColumnMapper},
-    {"ts", "timeuuid", NULL, timestampColumnMapper}, // must be last since we don't bind it, so it would throw out the colidx values of following fields
-    { NULL, "wuExceptions", "((wuid), ts)", stringColumnMapper}
+    const char *x;
+    const CassandraXmlMapping *mappings;
 };
 
-const CassandraXmlMapping wuStatisticsMappings [] =
-{
-    {"wuid", "text", NULL, rootNameColumnMapper},
-    {"kind", "text", "@kind", stringColumnMapper},
-    {"attributes", "map<text, text>", "@kind", attributeMapColumnMapper},
-    { NULL, "wuStatistics", "((wuid), kind)", stringColumnMapper}
-};
-
-const CassandraXmlMapping workunitsMappings [] =
+static const CassandraXmlMapping workunitsMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"clustername", "text", "@clusterName", stringColumnMapper},
@@ -2705,32 +2740,142 @@ const CassandraXmlMapping workunitsMappings [] =
     {"state", "text", "@state", stringColumnMapper},
 
     {"debug", "map<text, text>", "Debug", simpleMapColumnMapper},
-    {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state", attributeMapColumnMapper},  // name is the suppression list
-    {"graphs", "map<text, text>", "Graphs", graphMapColumnMapper},
+    {"attributes", "map<text, text>", "@wuid@clusterName@jobName@priorityClass@protected@scope@submitID@state@", attributeMapColumnMapper},  // name is the suppression list, note trailing @
+    {"graphs", "map<text, text>", "Graphs", graphMapColumnMapper}, // MORE - make me lazy...
     {"plugins", "list<text>", "Plugins", pluginListColumnMapper},
-    {"query", "text", "Query/Text", stringColumnMapper},   // This probably wants to be a child just because of size? Or at least needs to be lazy...
+    {"query", "text", "Query/Text", queryTextColumnMapper},        // MORE - make me lazy...
     {"associations", "map<text, text>", "Query/Associated", associationsMapColumnMapper},
     {"workflow", "map<text, text>", "Workflow", workflowMapColumnMapper},
     { NULL, "workunits", "((wuid))", stringColumnMapper}
 };
 
-const CassandraXmlMapping graphProgressMappings [] =
+static const CassandraXmlMapping workunitInfoMappings [] =  // A cut down version of the workunit mappings - used when querying with no key
+{
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"clustername", "text", "@clusterName", stringColumnMapper},
+    {"jobname", "text", "@jobName", stringColumnMapper},
+    {"priorityclass", "int", "@priorityClass", intColumnMapper},
+    {"protected", "boolean", "@protected", boolColumnMapper},
+    {"scope", "text", "@scope", stringColumnMapper},
+    {"submitID", "text", "@submitID", stringColumnMapper},
+    {"state", "text", "@state", stringColumnMapper},
+    { NULL, "workunits", "((wuid))", stringColumnMapper}
+};
+
+// The following describe secondary tables - they contain copies of the basic wu information but keyed by different fields
+
+static const CassandraXmlMapping ownerMappings [] =
+{
+    {"submitID", "text", "@submitID", stringColumnMapper},
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"clustername", "text", "@clusterName", stringColumnMapper},
+    {"jobname", "text", "@jobName", stringColumnMapper},
+    {"priorityclass", "int", "@priorityClass", intColumnMapper},
+    {"protected", "boolean", "@protected", boolColumnMapper},
+    {"scope", "text", "@scope", stringColumnMapper},
+    {"state", "text", "@state", stringColumnMapper},
+    { NULL, "workunitsByOwner", "((submitID), wuid)", stringColumnMapper}
+};
+
+static const CassandraXmlMapping clusterMappings [] =
+{
+    {"clustername", "text", "@clusterName", stringColumnMapper},
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"submitID", "text", "@submitID", stringColumnMapper},
+    {"jobname", "text", "@jobName", stringColumnMapper},
+    {"priorityclass", "int", "@priorityClass", intColumnMapper},
+    {"protected", "boolean", "@protected", boolColumnMapper},
+    {"scope", "text", "@scope", stringColumnMapper},
+    {"state", "text", "@state", stringColumnMapper},
+    { NULL, "workunitsByCluster", "((clustername), wuid)", stringColumnMapper}
+};
+
+static const CassandraXmlMapping jobnameMappings [] =
+{
+    {"jobname", "text", "@jobName", stringColumnMapper},
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"submitID", "text", "@submitID", stringColumnMapper},
+    {"clustername", "text", "@clusterName", stringColumnMapper},
+    {"priorityclass", "int", "@priorityClass", intColumnMapper},
+    {"protected", "boolean", "@protected", boolColumnMapper},
+    {"scope", "text", "@scope", stringColumnMapper},
+    {"state", "text", "@state", stringColumnMapper},
+    { NULL, "workunitsByJobname", "((jobname), wuid)", stringColumnMapper}
+};
+
+static const CassandraXmlMapping * const secondaryTables [] = { ownerMappings, clusterMappings, jobnameMappings, NULL };
+
+// The following describe child tables - all keyed by wuid
+
+enum ChildTablesEnum { WuExceptionsChild, WuStatisticsChild, WuGraphProgressChild, WuResultsChild, WuVariablesChild, ChildTablesSize };
+
+struct ChildTableInfo
+{
+    const char *parentElement;
+    const char *childElement;
+    ChildTablesEnum index;
+    const CassandraXmlMapping *mappings;
+};
+
+static const CassandraXmlMapping wuExceptionsMappings [] =
+{
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"attributes", "map<text, text>", "", attributeMapColumnMapper},
+    {"value", "text", ".", stringColumnMapper},
+    {"ts", "timeuuid", NULL, timestampColumnMapper}, // must be last since we don't bind it, so it would throw out the colidx values of following fields
+    { NULL, "wuExceptions", "((wuid), ts)", stringColumnMapper}
+};
+
+static const ChildTableInfo wuExceptionsTable =
+{
+    "Exceptions", "Exception",
+    WuExceptionsChild,
+    wuExceptionsMappings
+};
+
+static const CassandraXmlMapping wuStatisticsMappings [] =
+{
+    {"wuid", "text", NULL, rootNameColumnMapper},
+    {"ts", "bigint", "@ts", bigintColumnMapper},  // MORE - should change this to a timeuuid ?
+    {"kind", "text", "@kind", stringColumnMapper},
+    {"creator", "text", "@creator", stringColumnMapper},
+    {"scope", "text", "@scope", stringColumnMapper},
+    {"attributes", "map<text, text>", "@ts@kind@creator@scope@", attributeMapColumnMapper},
+    { NULL, "wuStatistics", "((wuid), ts, kind, creator, scope)", stringColumnMapper}
+};
+
+static const ChildTableInfo wuStatisticsTable =
+{
+    "Statistics", "Statistic",
+    WuStatisticsChild,
+    wuStatisticsMappings
+};
+
+static const CassandraXmlMapping wuGraphProgressMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"graphID", "text", NULL, graphIdColumnMapper},
     {"progress", "blob", NULL, progressColumnMapper},  // NOTE - order of these is significant - this creates the subtree that ones below will modify
     {"subgraphID", "text", "@id", subgraphIdColumnMapper},
     {"state", "int", "@_state", intColumnMapper},
-    { NULL, "graphprogress", "((wuid), graphid, subgraphid)", stringColumnMapper}
+    { NULL, "wuGraphProgress", "((wuid), graphid, subgraphid)", stringColumnMapper}
 };
 
-const CassandraXmlMapping wuResultsMappings [] =
+static const ChildTableInfo wuGraphProgressTable =
+{
+    "Bit of a", "Special case",
+    WuGraphProgressChild,
+    wuGraphProgressMappings
+};
+
+static const CassandraXmlMapping wuResultsMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"sequence", "int", "@sequence", intColumnMapper},
     {"name", "text", "@name", stringColumnMapper},
     {"format", "text", "@format", stringColumnMapper},  // xml, xmlset, csv, or null to mean raw. Could probably switch to int if we wanted
     {"status", "text", "@status", stringColumnMapper},
+    {"attributes", "map<text, text>", "@sequence@name@format@status@", attributeMapColumnMapper},  // name is the suppression list. We could consider folding format/status into this?
     {"rowcount", "int", "rowCount", intColumnMapper}, // This is the number of rows in result (which may be stored in a file rather than in value)
     {"totalrowcount", "bigint", "totalRowCount", bigintColumnMapper},// This is the number of rows in value
     {"schemaRaw", "blob", "SchemaRaw", blobColumnMapper},
@@ -2739,9 +2884,16 @@ const CassandraXmlMapping wuResultsMappings [] =
     { NULL, "wuResults", "((wuid), sequence)", stringColumnMapper}
 };
 
+static const ChildTableInfo wuResultsTable =
+{
+    "Results", "Result",
+    WuResultsChild,
+    wuResultsMappings
+};
+
 // This looks very similar to the above, but the key is different...
 
-const CassandraXmlMapping wuVariablesMappings [] =
+static const CassandraXmlMapping wuVariablesMappings [] =
 {
     {"wuid", "text", NULL, rootNameColumnMapper},
     {"sequence", "int", "@sequence", defaultedIntColumnMapper},  // Note - should be either variable or temporary...
@@ -2755,6 +2907,16 @@ const CassandraXmlMapping wuVariablesMappings [] =
     {"value", "blob", "Value", blobColumnMapper},
     { NULL, "wuVariables", "((wuid), sequence, name)", stringColumnMapper}
 };
+
+static const ChildTableInfo wuVariablesTable =
+{
+    "Variables", "Variable", // Actually sometimes uses Variables, sometimes Temporaries.... MORE - think about how to fix that...
+    WuVariablesChild,
+    wuVariablesMappings
+};
+
+// Order should match the enum above
+static const ChildTableInfo * const childTables [] = { &wuExceptionsTable, &wuStatisticsTable, &wuGraphProgressTable, &wuResultsTable, &wuVariablesTable, NULL };
 
 void getBoundFieldNames(const CassandraXmlMapping *mappings, StringBuffer &names, StringBuffer &bindings, IPTree *inXML, StringBuffer &tableName)
 {
@@ -2783,6 +2945,13 @@ void getFieldNames(const CassandraXmlMapping *mappings, StringBuffer &names, Str
     tableName.append(mappings->columnType);
 }
 
+const char *queryTableName(const CassandraXmlMapping *mappings)
+{
+    while (mappings->columnName)
+        mappings++;
+    return mappings->columnType;
+}
+
 StringBuffer & describeTable(const CassandraXmlMapping *mappings, StringBuffer &out)
 {
     StringBuffer fields;
@@ -2791,20 +2960,70 @@ StringBuffer & describeTable(const CassandraXmlMapping *mappings, StringBuffer &
         fields.appendf("%s %s,", mappings->columnName, mappings->columnType);
         mappings++;
     }
-    return out.appendf("CREATE TABLE IF NOT EXISTS HPCC.%s (%s PRIMARY KEY %s);", mappings->columnType, fields.str(), mappings->xpath);
+    return out.appendf("CREATE TABLE IF NOT EXISTS %s (%s PRIMARY KEY %s);", mappings->columnType, fields.str(), mappings->xpath);
 }
 
-const CassResult *fetchDataForWu(const char *wuid, CassSession *session, const CassandraXmlMapping *mappings)
+const CassResult *executeQuery(CassSession *session, CassStatement *statement)
+{
+    CassandraFuture future(cass_session_execute(session, statement));
+    future.wait("executeQuery");
+    return cass_future_get_result(future);
+}
+
+const CassResult *fetchDataForKey(const char *key, CassSession *session, const CassandraXmlMapping *mappings)
 {
     StringBuffer names;
     StringBuffer tableName;
-    getFieldNames(mappings+1, names, tableName);  // mappings+1 means we don't return the wuid column
-    VStringBuffer selectQuery("select %s from HPCC.%s where wuid='%s';", names.str()+1, tableName.str(), wuid);
-    DBGLOG("%s", selectQuery.str());
+    getFieldNames(mappings+(key?1:0), names, tableName);  // mappings+1 means we don't return the key column
+    VStringBuffer selectQuery("select %s from %s", names.str()+1, tableName.str());
+    if (key)
+        selectQuery.appendf(" where %s='%s'", mappings->columnName, key); // MORE - should consider using prepared for this - is it faster?
+    selectQuery.append(';');
+    //if (traceLevel >= 2)
+    //    DBGLOG("%s", selectQuery.str());
     CassandraStatement statement(cass_statement_new(cass_string_init(selectQuery.str()), 0));
-    CassandraFuture future(cass_session_execute(session, statement));
-    future.wait("execute");
-    return cass_future_get_result(future);
+    return executeQuery(session, statement);
+}
+
+const CassResult *fetchDataForKeyAndWuid(const char *key, const char *wuid, CassSession *session, const CassandraXmlMapping *mappings)
+{
+    StringBuffer names;
+    StringBuffer tableName;
+    getFieldNames(mappings+2, names, tableName);  // mappings+1 means we don't return the key column
+    VStringBuffer selectQuery("select %s from %s where %s='%s' and wuid='%s'", names.str()+1, tableName.str(), mappings->columnName, key, wuid); // MORE - should consider using prepared/bind for this - is it faster?
+    selectQuery.append(';');
+    //if (traceLevel >= 2)
+    //    DBGLOG("%s", selectQuery.str());
+    CassandraStatement statement(cass_statement_new(cass_string_init(selectQuery.str()), 0));
+    return executeQuery(session, statement);
+}
+
+void deleteSecondaryByKey(const CassandraXmlMapping *mappings, const char *wuid, const char *key, const ICassandraSession *sessionCache, CassBatch *batch)
+{
+    if (key && *key)
+    {
+        StringBuffer names;
+        StringBuffer tableName;
+        getFieldNames(mappings, names, tableName);
+        VStringBuffer insertQuery("DELETE from %s where %s=? and wuid=?;", tableName.str(), mappings[0].columnName);
+        Owned<CassandraPrepared> prepared = sessionCache->prepareStatement(insertQuery);
+        CassandraStatement update(cass_prepared_bind(*prepared));
+        check(cass_statement_bind_string(update, 0, cass_string_init(key)));
+        check(cass_statement_bind_string(update, 1, cass_string_init(wuid)));
+        check(cass_batch_add_statement(batch, update));
+    }
+}
+
+void deleteChildByWuid(const CassandraXmlMapping *mappings, const char *wuid, const ICassandraSession *sessionCache, CassBatch *batch)
+{
+    StringBuffer names;
+    StringBuffer tableName;
+    getFieldNames(mappings, names, tableName);
+    VStringBuffer insertQuery("DELETE from %s where wuid=?;", tableName.str());
+    Owned<CassandraPrepared> prepared = sessionCache->prepareStatement(insertQuery);
+    CassandraStatement update(cass_prepared_bind(*prepared));
+    check(cass_statement_bind_string(update, 0, cass_string_init(wuid)));
+    check(cass_batch_add_statement(batch, update));
 }
 
 void executeSimpleCommand(CassSession *session, const char *command)
@@ -2820,41 +3039,22 @@ void ensureTable(CassSession *session, const CassandraXmlMapping *mappings)
     executeSimpleCommand(session, describeTable(mappings, schema));
 }
 
-static void getBindingsString(const CassandraXmlMapping *mappings, StringBuffer &bindings, IPTree *inXML)
-{
-    bindings.append(",*");  // For wuid
-    unsigned colidx = 1;
-    while (mappings[colidx].columnName)
-    {
-        if (mappings[colidx].mapper.fromXML(NULL, 0, inXML, mappings[colidx].xpath))
-            bindings.append(",*");
-        colidx++;
-    }
-}
-
-static void bindFromXML(const CassandraXmlMapping *mappings, CassStatement *statement, IPTree *inXML, int defaultValue)
-{
-    unsigned colidx = 1;
-    unsigned bindidx = 1;
-    while (mappings[colidx].columnName)
-    {
-        if (mappings[colidx].mapper.fromXML(statement, bindidx, inXML, mappings[colidx].xpath, defaultValue))
-            bindidx++;
-        colidx++;
-    }
-}
-
-extern void simpleXMLtoCassandra(const ICassandraSession *session, CassBatch *batch, const CassandraXmlMapping *mappings, const char *wuid, IPTree *inXML)
+extern void simpleXMLtoCassandra(const ICassandraSession *session, CassBatch *batch, const CassandraXmlMapping *mappings, IPTree *inXML)
 {
     StringBuffer names;
     StringBuffer bindings;
     StringBuffer tableName;
     getBoundFieldNames(mappings, names, bindings, inXML, tableName);
-    VStringBuffer insertQuery("INSERT into HPCC.%s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
+    VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     Owned<CassandraPrepared> prepared = session->prepareStatement(insertQuery);
     CassandraStatement update(cass_prepared_bind(*prepared));
-    check(cass_statement_bind_string(update, 0, cass_string_init(wuid)));
-    bindFromXML(mappings, update, inXML, 0);
+    unsigned bindidx = 0;
+    while (mappings->columnName)
+    {
+        if (mappings->mapper.fromXML(update, bindidx, inXML, mappings->xpath, 0))
+            bindidx++;
+        mappings++;
+    }
     check(cass_batch_add_statement(batch, update));
 }
 
@@ -2869,11 +3069,18 @@ extern void childXMLtoCassandra(const ICassandraSession *session, CassBatch *bat
             StringBuffer names;
             StringBuffer tableName;
             getBoundFieldNames(mappings, names, bindings, &result, tableName);
-            VStringBuffer insertQuery("INSERT into HPCC.%s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
+            VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
             Owned<CassandraPrepared> prepared = session->prepareStatement(insertQuery);
             CassandraStatement update(cass_prepared_bind(*prepared));
             check(cass_statement_bind_string(update, 0, cass_string_init(wuid)));
-            bindFromXML(mappings, update, &result, defaultValue);
+            unsigned bindidx = 1; // We already bound wuid
+            unsigned colidx = 1; // We already bound wuid
+            while (mappings[colidx].columnName)
+            {
+                if (mappings[colidx].mapper.fromXML(update, bindidx, &result, mappings[colidx].xpath, defaultValue))
+                    bindidx++;
+                colidx++;
+            }
             check(cass_batch_add_statement(batch, update));
         }
         while (elements->next());
@@ -2886,30 +3093,6 @@ extern void childXMLtoCassandra(const ICassandraSession *session, CassBatch *bat
     childXMLtoCassandra(session, batch, mappings, inXML->queryName(), elements, defaultValue);
 }
 
-
-extern void cassandraToChildXML(CassSession *session, const CassandraXmlMapping *mappings, const char *wuid, IPTree *wuTree, const char *parentName, const char *childName)
-{
-    CassandraResult result(fetchDataForWu(wuid, session, mappings));
-    Owned<IPTree> parent = createPTree(parentName);
-    CassandraIterator rows(cass_iterator_from_result(result));
-    while (cass_iterator_next(rows))
-    {
-        CassandraIterator cols(cass_iterator_from_row(cass_iterator_get_row(rows)));
-        Owned<IPTree> child = createPTree(childName);
-        unsigned colidx = 1;
-        while (cass_iterator_next(cols))
-        {
-            assertex(mappings[colidx].columnName);
-            const CassValue *value = cass_iterator_get_column(cols);
-            if (value && !cass_value_is_null(value))
-                mappings[colidx].mapper.toXML(child, mappings[colidx].xpath, value);
-            colidx++;
-        }
-        parent->addPropTree(childName, child.getClear());
-    }
-    wuTree->addPropTree(parentName, parent.getClear());
-}
-
 extern void wuResultsXMLtoCassandra(const ICassandraSession *session, CassBatch *batch, IPTree *inXML, const char *xpath)
 {
     childXMLtoCassandra(session, batch, wuResultsMappings, inXML, xpath, 0);
@@ -2920,9 +3103,9 @@ extern void wuVariablesXMLtoCassandra(const ICassandraSession *session, CassBatc
     childXMLtoCassandra(session, batch, wuVariablesMappings, inXML, xpath, defaultSequence);
 }
 
-extern void cassandraToWuResultsXML(CassSession *session, const char *wuid, IPTree *wuTree)
+extern void cassandraToWuChildXML(CassSession *session, const CassandraXmlMapping *mappings, const char *parentElement, const char *childElement, const char *wuid, IPTree *wuTree)
 {
-    CassandraResult result(fetchDataForWu(wuid, session, wuResultsMappings));
+    CassandraResult result(fetchDataForKey(wuid, session, mappings));
     Owned<IPTree> results;
     CassandraIterator rows(cass_iterator_from_result(result));
     while (cass_iterator_next(rows))
@@ -2930,27 +3113,27 @@ extern void cassandraToWuResultsXML(CassSession *session, const char *wuid, IPTr
         CassandraIterator cols(cass_iterator_from_row(cass_iterator_get_row(rows)));
         Owned<IPTree> child;
         if (!results)
-            results.setown(createPTree("Results"));
-        child.setown(createPTree("Result"));
-        unsigned colidx = 1;
+            results.setown(createPTree(parentElement));
+        child.setown(createPTree(childElement));
+        unsigned colidx = 1;  // We did not fetch wuid
         while (cass_iterator_next(cols))
         {
-            assertex(wuResultsMappings[colidx].columnName);
+            assertex(mappings[colidx].columnName);
             const CassValue *value = cass_iterator_get_column(cols);
             if (value && !cass_value_is_null(value))
-                wuResultsMappings[colidx].mapper.toXML(child, wuResultsMappings[colidx].xpath, value);
+                mappings[colidx].mapper.toXML(child, mappings[colidx].xpath, value);
             colidx++;
         }
         const char *childName = child->queryName();
         results->addPropTree(childName, child.getClear());
     }
     if (results)
-        wuTree->addPropTree("Results", results.getClear());
+        wuTree->addPropTree(parentElement, results.getClear());
 }
 
 extern void cassandraToWuVariablesXML(CassSession *session, const char *wuid, IPTree *wuTree)
 {
-    CassandraResult result(fetchDataForWu(wuid, session, wuVariablesMappings));
+    CassandraResult result(fetchDataForKey(wuid, session, wuVariablesMappings));
     Owned<IPTree> variables;
     Owned<IPTree> temporaries;
     CassandraIterator rows(cass_iterator_from_result(result));
@@ -3006,7 +3189,7 @@ extern void graphProgressXMLtoCassandra(CassSession *session, IPTree *inXML)
     StringBuffer bindings;
     StringBuffer tableName;
     int numBound = getFieldNames(graphProgressMappings, names, bindings, tableName);
-    VStringBuffer insertQuery("INSERT into HPCC.%s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
+    VStringBuffer insertQuery("INSERT into %s (%s) values (%s);", tableName.str(), names.str()+1, bindings.str()+1);
     DBGLOG("%s", insertQuery.str());
     CassandraBatch batch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED));
     CassandraFuture futurePrep(cass_session_prepare(session, cass_string_init(insertQuery)));
@@ -3088,14 +3271,13 @@ extern void cassandraToGraphProgressXML(CassSession *session, const char *wuid)
 
 extern IPTree *cassandraToWorkunitXML(CassSession *session, const char *wuid)
 {
-    CassandraResult result(fetchDataForWu(wuid, session, workunitsMappings));
+    CassandraResult result(fetchDataForKey(wuid, session, workunitsMappings));
     CassandraIterator rows(cass_iterator_from_result(result));
     if (cass_iterator_next(rows)) // should just be one
     {
         Owned<IPTree> wuXML = createPTree(wuid);
+        wuXML->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
         CassandraIterator cols(cass_iterator_from_row(cass_iterator_get_row(rows)));
-        wuXML->setPropTree("Query", createPTree("Query"));
-        wuXML->setProp("Query/@fetchEntire", "1");
         unsigned colidx = 1;  // wuid is not returned
         while (cass_iterator_next(cols))
         {
@@ -3120,6 +3302,12 @@ static const CassValue *getSingleResult(const CassResult *result)
         return NULL;
 }
 
+static StringBuffer &getCassString(StringBuffer &str, const CassValue *value)
+{
+    CassString output;
+    check(cass_value_get_string(value, &output));
+    return str.append(output.length, output.data);
+}
 
 /*
 extern void cassandraTestGraphProgressXML()
@@ -3152,7 +3340,8 @@ public:
         : sessionCache(_sessionCache), CLocalWorkUnit(secmgr, secuser)
     {
         CLocalWorkUnit::loadPTree(wuXML);
-        allDirty = false;   // Debatable...
+        allDirty = false;   // Debatable... depends where the XML came from! If we read it from Cassandra. it's not. Otherwise, it is...
+        memset(childLoaded, 0, sizeof(childLoaded));
         abortDirty = true;
         abortState = false;
     }
@@ -3169,20 +3358,40 @@ public:
 
     virtual void cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
     {
+        const char *wuid = queryWuid();
         CLocalWorkUnit::cleanupAndDelete(deldll, deleteOwned, deleteExclusions);
-        printStackReport();
-        UNIMPLEMENTED;
+        if (!batch)
+            batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED)));
+        deleteChildren(wuid);
+        deleteSecondaries(wuid);
+        Owned<CassandraPrepared> prepared = sessionCache->prepareStatement("DELETE from workunits where wuid=?;");
+        CassandraStatement update(cass_prepared_bind(*prepared));
+        check(cass_statement_bind_string(update, 0, cass_string_init(wuid)));
+        check(cass_batch_add_statement(*batch, update));
+        CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), *batch));
+        futureBatch.wait("execute");
+        batch.clear();
     }
 
     virtual void commit()
     {
         CLocalWorkUnit::commit();
-        StringBuffer s; toXML(p, s); DBGLOG("%s", s.str());
+        if (sessionCache->queryTraceLevel() >= 8)
+        {
+            StringBuffer s; toXML(p, s); DBGLOG("CCassandraWorkUnit::commit\n%s", s.str());
+        }
         if (batch)
         {
-            simpleXMLtoCassandra(sessionCache, *batch, workunitsMappings, queryWuid(), p);  // This just does the parent row
+            const char *wuid = queryWuid();
+            if (prev) // Holds the values of the "basic" info at the last commit
+                updateSecondaries(wuid);
+            simpleXMLtoCassandra(sessionCache, *batch, workunitsMappings, p);  // This just does the parent row
             if (allDirty)
             {
+                // MORE - this delete is technically correct, but if we assert that the only place that copyWorkUnit is used is to populate an
+                // empty newly-created WU, it is unnecessary.
+                //deleteChildren(wuid);
+
                 wuResultsXMLtoCassandra(sessionCache, *batch, p, "Results/Result");
                 wuVariablesXMLtoCassandra(sessionCache, *batch, p, "Variables/Variable", ResultSequenceStored);
                 wuVariablesXMLtoCassandra(sessionCache, *batch, p, "Temporaries/Variable", ResultSequenceInternal); // NOTE - lookups may also request ResultSequenceOnce
@@ -3192,15 +3401,32 @@ public:
             else
             {
                 ResultPTreeIterator dirtyResultsIterator(dirtyResults);
-                childXMLtoCassandra(sessionCache, *batch, wuResultsMappings, queryWuid(), &dirtyResultsIterator, 0);  // MORE - all the other dirty subtrees... TBD
+                childXMLtoCassandra(sessionCache, *batch, wuResultsMappings, wuid, &dirtyResultsIterator, 0);  // MORE - all the other dirty subtrees... TBD
             }
             CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), *batch));
             futureBatch.wait("execute");
             batch.setown(new CassandraBatch(cass_batch_new(CASS_BATCH_TYPE_UNLOGGED))); // Commit leaves it locked...
+            prev.clear();
             allDirty = false;
         }
         else
             DBGLOG("No batch present??");
+    }
+
+    virtual void setUser(const char *user)
+    {
+        if (trackSecondaryChange(user, ownerMappings))
+            CLocalWorkUnit::setUser(user);
+    }
+    virtual void setClusterName(const char *cluster)
+    {
+        if (trackSecondaryChange(cluster, clusterMappings))
+            CLocalWorkUnit::setClusterName(cluster);
+    }
+    virtual void setJobName(const char *jobname)
+    {
+        if (trackSecondaryChange(jobname, jobnameMappings))
+            CLocalWorkUnit::setJobName(jobname);
     }
 
     virtual void _lockRemote()
@@ -3215,6 +3441,7 @@ public:
     {
 //        printStackReport();
 //        UNIMPLEMENTED;
+        commit();
         batch.clear();
     }
 
@@ -3257,21 +3484,104 @@ public:
 
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
     {
-        // This populates entire XML tree - so we need to note that we did so to ensure everything is flushed by commit
+        // Make sure that any required updates to the secondary files happen
+        IPropertyTree *fromP = queryExtendedWU(cached)->queryPTree();
+        for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
+            trackSecondaryChange(fromP->queryProp(mapping[0]->xpath), *mapping);
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
+            checkChildLoaded(**table);
         CLocalWorkUnit::copyWorkUnit(cached, all);
+        memset(childLoaded, 1, sizeof(childLoaded));
         allDirty = true;
     }
 
     virtual void _loadResults() const
     {
-        // Lazy populate the Results branch of p from Cassandra
-        cassandraToWuResultsXML(sessionCache->querySession(), queryWuid(), p);
-        // MORE - we should really also override CLocalWUResult so that value and schema can be lazy-fetched
+        checkChildLoaded(wuResultsTable);        // Lazy populate the Results branch of p from Cassandra
         CLocalWorkUnit::_loadResults();
-        StringBuffer buf; toXML(p, buf); DBGLOG("After _loadResults:\n%s", buf.str());
     }
 
+    virtual void _loadStatistics() const
+    {
+        checkChildLoaded(wuStatisticsTable);        // Lazy populate the Statistics branch of p from Cassandra
+        CLocalWorkUnit::_loadStatistics();
+    }
+
+    virtual IPropertyTree *queryPTree() const
+    {
+        // If anyone wants the whole ptree, we'd better make sure we have fully loaded it...
+        CriticalBlock b(crit);
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
+            checkChildLoaded(**table);
+        return p;
+    }
 protected:
+    // Delete child table rows
+    void deleteChildren(const char *wuid)
+    {
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
+            deleteChildByWuid(table[0]->mappings, wuid, sessionCache, *batch);
+    }
+
+    // Lazy-populate a portion of WU xml from a child table
+    void checkChildLoaded(const ChildTableInfo &child) const
+    {
+        // NOTE - should be called inside critsec
+        if (!childLoaded[child.index])
+        {
+            cassandraToWuChildXML(sessionCache->querySession(), child.mappings, child.parentElement, child.childElement, queryWuid(), p);
+            childLoaded[child.index] = true;
+        }
+    }
+
+    // Update secondary tables (used to search wuids by orner, state, jobname etc)
+
+    void updateSecondaryTable(const CassandraXmlMapping *mappings, const char *wuid, const char *prevKey)
+    {
+        deleteSecondaryByKey(mappings, wuid, prevKey, sessionCache, *batch);
+        if (p->hasProp(mappings[0].xpath))
+            simpleXMLtoCassandra(sessionCache, *batch, mappings, p);
+    }
+
+    void deleteSecondaries(const char *wuid)
+    {
+        for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
+        {
+            deleteSecondaryByKey(*mapping, wuid, p->queryProp(mapping[0]->xpath), sessionCache, *batch);
+        }
+    }
+
+    void updateSecondaries(const char *wuid)
+    {
+        for (const CassandraXmlMapping *const * mapping = secondaryTables; *mapping; mapping++)
+        {
+            updateSecondaryTable(*mapping, wuid, prev->queryProp(mapping[0]->xpath));
+        }
+    }
+
+    // Keep track of previously committed values for fields that we have a secondary table for, so that we can update them appropriately when we commit
+
+    bool trackSecondaryChange(const char *newval, const CassandraXmlMapping *mappings)
+    {
+        if (!newval)
+            newval = "";
+        const char *oldval = p->queryProp(mappings->xpath);
+        if (!oldval)
+             oldval = "";
+        if (streq(newval, oldval))
+            return false;  // No change
+        if (!prev)
+        {
+            prev.setown(createPTree());
+            prev->setProp(mappings->xpath, oldval);
+        }
+        else if (!prev->hasProp(mappings->xpath))
+            prev->setProp(mappings->xpath, oldval);
+        return true;
+    }
+
+    // Allows us to iterate over an array of IPTrees - MORE this could be in jptree? Should save the trees not the results I suspect.
+
     class ResultPTreeIterator : implements CInterfaceOf<IPTreeIterator>
     {
     public:
@@ -3306,7 +3616,10 @@ protected:
     const ICassandraSession *sessionCache;
     mutable bool abortDirty;
     mutable bool abortState;
+    mutable bool childLoaded[ChildTablesSize];
     bool allDirty;
+    Owned<IPTree> prev;
+
     Owned<CassandraBatch> batch;
     IArrayOf<IWUResult> dirtyResults;
 };
@@ -3314,7 +3627,7 @@ protected:
 class CCasssandraWorkUnitFactory : public CWorkUnitFactory, implements ICassandraSession
 {
 public:
-    CCasssandraWorkUnitFactory(const IPropertyTree *props) : cluster(cass_cluster_new())
+    CCasssandraWorkUnitFactory(const IPropertyTree *props) : cluster(cass_cluster_new()), randomizeSuffix(0), randState((unsigned) get_cycles_now())
     {
         StringArray options;
         Owned<IPTreeIterator> it = props->getElements("Option");
@@ -3325,54 +3638,59 @@ public:
             const char *val = item.queryProp("@value");
             if (opt && val)
             {
-                VStringBuffer optstr("%s=%s", opt, val);
-                options.append(optstr);
+                if (strieq(opt, "randomWuidSuffix"))
+                    randomizeSuffix = atoi(val);
+                else if (strieq(opt, "traceLevel"))
+                    traceLevel = atoi(val);
+                else
+                {
+                    VStringBuffer optstr("%s=%s", opt, val);
+                    options.append(optstr);
+                }
             }
         }
         cluster.setOptions(options);
-        session.set(cass_session_new());
-//        CassandraFuture future(cass_session_connect_keyspace(session, cluster, "hpcc"));
-        CassandraFuture future(cass_session_connect(session, cluster));  // Since we don't know if HPCC keyspace exists, easier not to connect to it but rather specify it explicitly in each query
-        future.wait("connect");
-        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS hpcc WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1' } ;"); // MORE - options from props!
-        executeSimpleCommand(session, create);
-        ensureTable(session, workunitsMappings);
-        ensureTable(session, wuResultsMappings);
-        ensureTable(session, wuVariablesMappings);
-        ensureTable(session, wuExceptionsMappings);
-        ensureTable(session, wuStatisticsMappings);
+        if (cluster.keyspace.isEmpty())
+            cluster.keyspace.set("hpcc");
+        connect();
     }
+
     ~CCasssandraWorkUnitFactory()
     {
     }
-    /*
-    virtual IWorkUnit * createWorkUnit(const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser) { printStackReport(); UNIMPLEMENTED; }
-    virtual bool deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
-    virtual IConstWorkUnit * openWorkUnit(const char * wuid, bool lock, ISecManager *secmgr, ISecUser *secuser)
-    {
-        // MORE - what to do about lock?
-        Owned<IPTree> wuXML = cassandraToWorkunitXML(session, wuid);
-        if (wuXML)
-            return new CConstCassandraWorkUnit(wuXML.getClear(), NULL, NULL);
-        else
-            return NULL;
-    }
-    virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
-    virtual int setTracingLevel(int newlevel) { UNIMPLEMENTED; }
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *user, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
-*/
+
     virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
-        unsigned suffix = 0;
+        unsigned suffix;
+        unsigned suffixLength;
+        if (randomizeSuffix)  // May need to enable this option if you are expecting to create hundreds of workunits / second
+        {
+            suffix = rand_r(&randState);
+            suffixLength = randomizeSuffix;
+        }
+        else
+        {
+            suffix = 0;
+            suffixLength = 0;
+        }
+        Owned<CassandraPrepared> prepared = prepareStatement("INSERT INTO workunits (wuid) VALUES (?) IF NOT EXISTS;");
         loop
         {
             // Create a unique WUID by adding suffixes until we managed to add a new value
             StringBuffer useWuid(wuid);
             if (suffix)
-                useWuid.appendf("-%u", suffix);
-            VStringBuffer insert("INSERT INTO HPCC.workunits (wuid) VALUES ('%s') IF NOT EXISTS;", useWuid.str());
-            DBGLOG("%s", insert.str());
-            CassandraStatement statement(cass_statement_new(cass_string_init(insert.str()), 0));
+            {
+                useWuid.append("-");
+                for (unsigned i = 0; i < suffixLength; i++)
+                {
+                    useWuid.appendf("%c", '0'+suffix%10);
+                    suffix /= 10;
+                }
+            }
+            CassandraStatement statement(cass_prepared_bind(*prepared));
+            check(cass_statement_bind_string(statement, 0, cass_string_init(useWuid.str())));
+            if (traceLevel >= 2)
+                DBGLOG("Try creating %s", useWuid.str());
             CassandraFuture future(cass_session_execute(session, statement));
             future.wait("execute");
             CassandraResult result(cass_future_get_result(future));
@@ -3381,11 +3699,15 @@ public:
             {
                 // A single column result indicates success, - the single column should be called '[applied]' and have the value 'true'
                 // If there are multiple columns it will be '[applied]' (value false) and the fields of the existing row
-                Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, createPTree(useWuid), secmgr, secuser);
+                Owned<IPTree> wuXML = createPTree(useWuid);
+                wuXML->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+                Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser);
                 wu->lockRemote(true);
                 return wu.getClear();
             }
-            suffix++;
+            suffix = rand_r(&randState);
+            if (suffixLength<9)
+                suffixLength++;
         }
     }
     virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, bool lock, ISecManager *secmgr, ISecUser *secuser)
@@ -3408,47 +3730,38 @@ public:
     }
 
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) { UNIMPLEMENTED; }
-    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser)
+    {
+        return getWorkUnitsByXXX(ownerMappings, owner, secmgr, secuser);
+    }
     virtual IConstWorkUnitIterator * getWorkUnitsByState(WUState state, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
     virtual IConstWorkUnitIterator * getWorkUnitsByECL(const char * ecl, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
-    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
+    virtual IConstWorkUnitIterator * getWorkUnitsByCluster(const char * cluster, ISecManager *secmgr, ISecUser *secuser)
+    {
+        return getWorkUnitsByXXX(clusterMappings, cluster, secmgr, secuser);
+    }
     virtual IConstWorkUnitIterator * getWorkUnitsByXPath(const char * xpath, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
     virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField * sortorder, WUSortField * filters, const void * filterbuf,
                                                         unsigned startoffset, unsigned maxnum, const char * queryowner, __int64 * cachehint, unsigned *total,
                                                         ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
-    virtual unsigned numWorkUnits() { UNIMPLEMENTED; }
+    virtual unsigned numWorkUnits()
+    {
+        Owned<CassandraPrepared> prepared = prepareStatement("SELECT COUNT(*) FROM workunits;");
+        CassandraStatement statement(cass_prepared_bind(*prepared));
+        CassandraFuture future(cass_session_execute(session, statement));
+        future.wait("select count(*)");
+        CassandraResult result(cass_future_get_result(future));
+        return getUnsignedResult(NULL, getSingleResult(result));
+    }
     /*
-    virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf, ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
     virtual void descheduleAllWorkUnits(ISecManager *secmgr, ISecUser *secuser) { UNIMPLEMENTED; }
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) { UNIMPLEMENTED; }
     virtual bool isAborting(const char *wuid) const { UNIMPLEMENTED; }
     virtual void clearAborting(const char *wuid) { UNIMPLEMENTED; }
     */
-    virtual CassSession *querySession() const { return session; };
-    virtual CassandraPrepared *prepareStatement(const char *query) const
-    {
-        CriticalBlock b(cacheCrit);
-        Linked<CassandraPrepared> cached = preparedCache.getValue(query);
-        if (cached)
-        {
-            DBGLOG("prepareStatement: Reusing %s", query);
-            return cached.getClear();
-        }
-        {
-            DBGLOG("prepareStatement: Binding %s", query);
-            // We don't want to block cache lookups while we prepare a new bound statement
-            // Note - if multiple threads try to prepare the same (new) statement at the same time, it's not catastrophic
-            CriticalUnblock b(cacheCrit);
-            CassandraFuture futurePrep(cass_session_prepare(session, cass_string_init(query)));
-            futurePrep.wait("prepare statement");
-            cached.setown(new CassandraPrepared(cass_future_get_prepared(futurePrep)));
-        }
-        preparedCache.setValue(query, cached); // NOTE - this links parameter
-        return cached.getClear();
-    }
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
     {
-        VStringBuffer select("select state from hpcc.workunits where wuid = '%s';", wuid);
+        VStringBuffer select("select state from workunits where wuid = '%s';", wuid);
         CassandraStatement statement(cass_statement_new(cass_string_init(select.str()), 0));
         unsigned start = msTick();
         loop
@@ -3496,7 +3809,225 @@ public:
             Sleep(1000); // MORE - may want to back off as waited gets longer...
         }
     }
+
+    unsigned validateRepository(bool fix)
+    {
+        unsigned errCount = 0;
+        // MORE - if the batch gets too big you may need to flush it occasionally
+        CassandraBatch batch(fix ? cass_batch_new(CASS_BATCH_TYPE_LOGGED) : NULL);
+        // 1. Check that every entry in main wu table has matching entries in secondary tables
+        CassandraResult result(fetchDataForKey(NULL, session, workunitInfoMappings));
+        CassandraIterator rows(cass_iterator_from_result(result));
+        while (cass_iterator_next(rows))
+        {
+            Owned<IPTree> wuXML = rowToPTree(NULL, workunitInfoMappings, cass_iterator_get_row(rows));
+            const char *wuid = wuXML->queryName();
+            // For each secondary file, check that we get matching XML
+            for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
+                errCount += validateSecondary(*mapping, wuid, wuXML, batch);
+        }
+        // 2. Check that there are no orphaned entries in secondary or child tables
+        for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
+            errCount += checkOrphans(*mapping, 1, batch);
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
+            errCount += checkOrphans(table[0]->mappings, 0, batch);
+        // 3. Commit fixes
+        if (batch)
+        {
+            CassandraFuture futureBatch(cass_session_execute_batch(session, batch));
+            futureBatch.wait("Fix_repository");
+        }
+        return errCount;
+    }
+
+    virtual void deleteRepository(bool recreate)
+    {
+        // USE WITH CARE!
+        session.set(cass_session_new());
+        CassandraFuture future(cass_session_connect(session, cluster));
+        future.wait("connect without keyspace to delete");
+        VStringBuffer deleteKeyspace("DROP KEYSPACE IF EXISTS %s;", cluster.keyspace.get());
+        executeSimpleCommand(session, deleteKeyspace);
+        if (recreate)
+            connect();
+        else
+            session.set(NULL);
+    }
+
+    virtual void createRepository()
+    {
+        session.set(cass_session_new());
+        CassandraFuture future(cass_session_connect(session, cluster));
+        future.wait("connect without keyspace");
+        VStringBuffer create("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' } ;", cluster.keyspace.get()); // MORE - options from props? Not 100% sure if they are appropriate.
+        executeSimpleCommand(session, create);
+        connect();
+        ensureTable(session, workunitsMappings);
+        for (const CassandraXmlMapping * const * mapping = secondaryTables; *mapping; mapping++)
+            ensureTable(session, *mapping);
+        for (const ChildTableInfo * const * table = childTables; *table != NULL; table++)
+            ensureTable(session, table[0]->mappings);
+    }
+
+    // Interface ICassandraSession
+    virtual CassSession *querySession() const { return session; };
+    virtual unsigned queryTraceLevel() const { return traceLevel; };
+    virtual CassandraPrepared *prepareStatement(const char *query) const
+    {
+        assertex(session);
+        CriticalBlock b(cacheCrit);
+        Linked<CassandraPrepared> cached = preparedCache.getValue(query);
+        if (cached)
+        {
+            if (traceLevel >= 2)
+                DBGLOG("prepareStatement: Reusing %s", query);
+            return cached.getClear();
+        }
+        {
+            if (traceLevel >= 2)
+                DBGLOG("prepareStatement: Binding %s", query);
+            // We don't want to block cache lookups while we prepare a new bound statement
+            // Note - if multiple threads try to prepare the same (new) statement at the same time, it's not catastrophic
+            CriticalUnblock b(cacheCrit);
+            CassandraFuture futurePrep(cass_session_prepare(session, cass_string_init(query)));
+            futurePrep.wait("prepare statement");
+            cached.setown(new CassandraPrepared(cass_future_get_prepared(futurePrep)));
+        }
+        preparedCache.setValue(query, cached); // NOTE - this links parameter
+        return cached.getClear();
+    }
 private:
+    void connect()
+    {
+        session.set(cass_session_new());
+        CassandraFuture future(cass_session_connect_keyspace(session, cluster, cluster.keyspace));
+        future.wait("connect with keyspace");
+    }
+    bool checkWuExists(const char *wuid)
+    {
+        Owned<CassandraPrepared> prepared = prepareStatement("SELECT COUNT(*) FROM workunits where wuid=?;");
+        CassandraStatement statement(cass_prepared_bind(*prepared));
+        cass_statement_bind_string(statement, 0, cass_string_init(wuid));
+        CassandraFuture future(cass_session_execute(session, statement));
+        future.wait("select count(*)");
+        CassandraResult result(cass_future_get_result(future));
+        return getUnsignedResult(NULL, getSingleResult(result)) != 0; // Shouldn't be more than 1, either
+    }
+
+    IConstWorkUnitIterator * getWorkUnitsByXXX(const CassandraXmlMapping *mappings, const char *key, ISecManager *secmgr, ISecUser *secuser)
+    {
+        if (!key || !*key)
+            mappings=workunitInfoMappings;   // Historically, providing no value on a call to getWorkUnitsByOwner (for example) filter meant unfiltered...
+        CassandraResult result(fetchDataForKey(key, session, mappings));
+        Owned<IPTree> parent = createPTree("WorkUnits");
+        CassandraIterator rows(cass_iterator_from_result(result));
+        while (cass_iterator_next(rows))
+        {
+            Owned<IPTree> wuXML = rowToPTree(key, mappings, cass_iterator_get_row(rows));
+            const char *wuid = wuXML->queryName();
+            parent->addPropTree(wuid, wuXML.getClear());
+        }
+        Owned<IPropertyTreeIterator> iter = parent->getElements("*");
+        return createConstWUIterator(iter, secmgr, secuser);
+    }
+
+    unsigned validateSecondary(const CassandraXmlMapping *mappings, const char *wuid, IPTree *wuXML, CassBatch *batch)
+    {
+        unsigned errCount = 0;
+        const char *childKey = wuXML->queryProp(mappings->xpath);
+        if (childKey && *childKey)
+        {
+            CassandraResult result(fetchDataForKeyAndWuid(childKey, wuid, session, mappings));
+            switch (cass_result_row_count(result))
+            {
+            case 0:
+                DBGLOG("Missing secondary data in %s for wuid=%s %s=%s", queryTableName(mappings), wuid, mappings->columnName, childKey);
+                if (batch)
+                    simpleXMLtoCassandra(this, batch, mappings, wuXML);
+                errCount++;
+                break;
+            case 1:
+            {
+                Owned<IPTree> secXML = rowToPTree(NULL, mappings+2, cass_result_first_row(result));   // wuid and key not returned
+                secXML->setProp(mappings->xpath, childKey);
+                secXML->renameProp("/", wuid);
+                if (!areMatchingPTrees(wuXML, secXML))
+                {
+                    DBGLOG("Mismatched data in %s for wuid %s", queryTableName(mappings), wuid);
+                    if (batch)
+                        simpleXMLtoCassandra(this, batch, mappings, wuXML);
+                    errCount++;
+                }
+                break;
+            }
+            default:
+                DBGLOG("Multiple secondary data %d in %s for wuid %s", (int) cass_result_row_count(result), queryTableName(mappings), wuid); // This should be impossible!
+                if (batch)
+                {
+                    deleteSecondaryByKey(mappings, wuid, childKey, this, batch);
+                    simpleXMLtoCassandra(this, batch, mappings, wuXML);
+                }
+                break;
+            }
+        }
+        return errCount;
+    }
+
+    unsigned checkOrphans(const CassandraXmlMapping *mappings, unsigned wuidIndex, CassBatch *batch)
+    {
+        unsigned errCount = 0;
+        CassandraResult result(fetchDataForKey(NULL, session, mappings));
+        CassandraIterator rows(cass_iterator_from_result(result));
+        while (cass_iterator_next(rows))
+        {
+            const CassRow *row = cass_iterator_get_row(rows);
+            StringBuffer wuid;
+            getCassString(wuid, cass_row_get_column(row, wuidIndex));
+            if (!checkWuExists(wuid))
+            {
+                DBGLOG("Orphaned data in %s for wuid=%s", queryTableName(mappings), wuid.str());
+                if (batch)
+                {
+                    if (wuidIndex)
+                    {
+                        StringBuffer key;
+                        getCassString(key, cass_row_get_column(row, 0));
+                        deleteSecondaryByKey(mappings, wuid, key, this, batch);
+                    }
+                    else
+                        deleteChildByWuid(mappings, wuid, this, batch);
+                }
+                errCount++;
+            }
+        }
+        return errCount;
+    }
+
+
+    IPTree *rowToPTree(const char *key, const CassandraXmlMapping *mappings, const CassRow *row)
+    {
+        CassandraIterator cols(cass_iterator_from_row(row));
+        Owned<IPTree> xml = createPTree("row");  // May be overwritten below if wuid field is processed
+        if (key && *key)
+        {
+            xml->setProp(mappings->xpath, key);
+            mappings++;
+        }
+        while (cass_iterator_next(cols))
+        {
+            assertex(mappings->columnName);
+            const CassValue *value = cass_iterator_get_column(cols);
+            if (value && !cass_value_is_null(value))
+                mappings->mapper.toXML(xml, mappings->xpath, value);
+            mappings++;
+        }
+        return xml.getClear();
+
+    }
+
+    unsigned randomizeSuffix;
+    unsigned traceLevel;
+    unsigned randState;
     CassandraCluster cluster;
     CassandraSession session;
     mutable CriticalSection cacheCrit;
@@ -3511,7 +4042,3 @@ extern "C" EXPORT IWorkUnitFactory *createWorkUnitFactory(const IPropertyTree *p
     return new cassandraembed::CCasssandraWorkUnitFactory(props);
 }
 
-extern EXPORT void forceLinkCassandraEmbed()
-{
-    // Makes debugging easier...
-}
