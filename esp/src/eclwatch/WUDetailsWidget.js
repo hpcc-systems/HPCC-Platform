@@ -54,6 +54,7 @@ define([
     "dijit/form/Button",
     "dijit/form/DropDownButton",
     "dijit/form/ValidationTextBox",
+    "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
@@ -114,6 +115,8 @@ define([
             this.zapDescription = registry.byId(this.id + "ZapDescription");
             this.warnHistory = registry.byId(this.id + "WarnHistory");
             this.warnTimings = registry.byId(this.id + "WarnTimings");
+            this.clusters = registry.byId(this.id + "Clusters");
+            this.allowedClusters = registry.byId(this.id + "AllowedClusters");
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
             this.zapDialog = registry.byId(this.id + "ZapDialog");
@@ -141,10 +144,12 @@ define([
             var protectedCheckbox = registry.byId(this.id + "Protected");
             var context = this;
             this.wu.update({
-                Scope: dom.byId(context.id + "Scope").value,
-                Description: dom.byId(context.id + "Description").value,
+                State: dom.byId(this.id + "State").innerHTML,
                 Jobname: dom.byId(context.id + "Jobname").value,
-                Protected: protectedCheckbox.get("value")
+                Description: dom.byId(context.id + "Description").value,
+                Protected: protectedCheckbox.get("value"),
+                Scope: dom.byId(context.id + "Scope").value,
+                ClusterSelection: this.allowedClusters.get("value")
             }, null);
         },
         _onRestore: function (event) {
@@ -236,6 +241,7 @@ define([
                 this.wu.refresh();
             }
             this.infoGridWidget.init(params);
+            this.checkIfClustersAllowed();
         },
 
         initTab: function () {
@@ -318,6 +324,35 @@ define([
                 }
             }
             return text;
+        },
+
+        checkIfClustersAllowed: function () {
+            var context = this;
+            WsWorkunits.WUInfo({
+                request: {
+                    Wuid: this.wu.Wuid
+                }
+            }).then(function (response) {
+                if (lang.exists("WUInfoResponse.Workunit.AllowedClusters.AllowedCluster", response)) {
+                    var targetData = response.WUInfoResponse.Workunit.AllowedClusters.AllowedCluster;
+                    if (targetData.length >= 1) {
+                        context.allowedClusters.options.push({
+                            label: "&nbsp;",
+                            value: ""
+                        });
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.allowedClusters.options.push({
+                                label: targetData[i],
+                                value: targetData[i]
+                            });
+                        }
+                        context.allowedClusters.set("value", "")
+                        domClass.add(context.id + "Cluster", "hidden");
+                    } else {
+                        domClass.add(context.id + "AllowedClusters", "hidden");
+                    }
+                }
+            });
         },
 
         updateInput: function (name, oldValue, newValue) {
