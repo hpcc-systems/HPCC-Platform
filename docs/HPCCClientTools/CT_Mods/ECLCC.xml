@@ -35,7 +35,7 @@
     <releaseinfo>© 2015 HPCC Systems<superscript>®</superscript>. All rights
     reserved</releaseinfo>
 
-    <date><emphasis role="bold">BETA</emphasis></date>
+    <date><emphasis role="bold"></emphasis></date>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
@@ -443,6 +443,12 @@
                 <entry>--legacy</entry>
 
                 <entry>Use legacy import semantics (deprecated)</entry>
+              </row>
+
+              <row>
+                <entry>--keywords</entry>
+
+                <entry>Outputs a list of ECL reserved words to stdout</entry>
               </row>
 
               <row>
