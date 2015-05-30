@@ -112,10 +112,14 @@ _ecl_opts_roxie()
     local subcmdname="${COMP_WORDS[subcmdpos]}"
     case "${subcmdname}" in
         "" | ecl)
-            echo "--help attach detach check reload"
+            echo "--help attach detach check reload unused-files"
             ;;
         attach | detach | check | reload)
             echo -n "--wait= "
+            _ecl_opts_common
+            ;;
+        "unused-files")
+            echo -n "--delete-recursive --delete-subfiles --delete --check-packagemaps --wait="
             _ecl_opts_common
             ;;
          *)

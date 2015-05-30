@@ -89,6 +89,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_UPDATE_DFS "--update-dfs"
 #define ECLOPT_GLOBAL_SCOPE "--global-scope"
 #define ECLOPT_DELETE_FILES "--delete"
+#define ECLOPT_DELETE_SUBFILES "--delete-subfiles"
+#define ECLOPT_DELETE_RECURSIVE "--delete-recursive"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
