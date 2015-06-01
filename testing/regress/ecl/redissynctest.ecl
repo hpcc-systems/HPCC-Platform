@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+//class=embedded
+//class=3rdparty
+
 //nothor
 
 IMPORT redis FROM lib_redis;
