@@ -4173,7 +4173,7 @@ void * CChunkedHeap::inlineDoAllocate(unsigned allocatorId, unsigned maxSpillCos
     //The latter is done outside the spinblock, to reduce the window for contention.
     ChunkedHeaplet * donorHeaplet;
     char * chunk;
-    for (;;)
+    loop
     {
         {
             SpinBlock b(crit);
